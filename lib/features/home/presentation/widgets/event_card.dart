@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/core/themes/hb_theme.dart';
+import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
+import 'package:intl/intl.dart';
 
-class EventCard extends StatelessWidget {
-  final Map<String, dynamic> event;
+class EventCard extends ConsumerWidget {
+  final Activity activity;
 
-  const EventCard({super.key, required this.event});
+  const EventCard({super.key, required this.activity});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFavorite = ref.watch(favoritesProvider).contains(activity.id);
     return GestureDetector(
-      onTap: () => context.push('/event/${event['id']}'),
+      onTap: () {
+        debugPrint('Tapped activity: ${activity.id} - ${activity.title}');
+        context.push('/event/${activity.id}', extra: activity);
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -35,12 +44,12 @@ class EventCard extends StatelessWidget {
                     top: Radius.circular(16),
                   ),
                   child: CachedNetworkImage(
-                    imageUrl: event['image'],
-                    height: 180,
+                    imageUrl: activity.imageUrl ?? 'https://via.placeholder.com/400x300',
+                    height: 140,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      height: 180,
+                      height: 140,
                       color: Colors.grey[300],
                       child: const Center(
                         child: CircularProgressIndicator(
@@ -49,7 +58,7 @@ class EventCard extends StatelessWidget {
                       ),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      height: 180,
+                      height: 140,
                       color: Colors.grey[300],
                       child: const Icon(
                         Icons.image_not_supported,
@@ -60,6 +69,7 @@ class EventCard extends StatelessWidget {
                   ),
                 ),
                 // Badge catégorie
+                if (activity.category != null)
                 Positioned(
                   top: 12,
                   left: 12,
@@ -69,11 +79,11 @@ class EventCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _getCategoryColor(event['category']),
+                      color: _getCategoryColor(activity.category!.slug),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      event['category'],
+                      activity.category!.name,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -102,44 +112,16 @@ class EventCard extends StatelessWidget {
                     child: IconButton(
                       padding: EdgeInsets.zero,
                       onPressed: () {
-                        // Toggle favorite
+                        ref.read(favoritesProvider.notifier).toggleFavorite(activity.id);
                       },
                       icon: Icon(
-                        event['isFavorite'] == true
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: event['isFavorite'] == true
-                            ? Colors.red
-                            : Colors.grey,
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.grey,
                         size: 20,
                       ),
                     ),
                   ),
                 ),
-                // Badge places restantes
-                if (event['spotsLeft'] != null && event['spotsLeft'] < 5)
-                  Positioned(
-                    bottom: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${event['spotsLeft']} places restantes',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
             // Contenu
@@ -150,7 +132,7 @@ class EventCard extends StatelessWidget {
                 children: [
                   // Titre
                   Text(
-                    event['title'],
+                    activity.title,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -160,7 +142,9 @@ class EventCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  // Date et heure
+                  // Date et heure (Mocked/Formatted for now if activity doesn't have explicit date fields)
+                  // Using first slot if available
+                  if (activity.nextSlot != null)
                   Row(
                     children: [
                       const Icon(
@@ -170,7 +154,7 @@ class EventCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        event['date'],
+                        DateFormat('dd MMM').format(activity.nextSlot!.startDateTime),
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 14,
@@ -184,7 +168,7 @@ class EventCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        event['time'],
+                        DateFormat('HH:mm').format(activity.nextSlot!.startDateTime),
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 14,
@@ -204,7 +188,7 @@ class EventCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          event['location'],
+                           activity.city?.name ?? 'Lieu inconnu',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -212,33 +196,15 @@ class EventCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          event['distance'],
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   // Tags
-                  if (event['tags'] != null)
+                  if (activity.tags != null && activity.tags!.isNotEmpty)
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
-                      children: (event['tags'] as List).map((tag) {
+                      children: activity.tags!.take(3).map((tag) {
                         return Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -249,7 +215,7 @@ class EventCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            tag,
+                            tag.name,
                             style: const TextStyle(
                               color: Color(0xFFFF6B35),
                               fontSize: 11,
@@ -270,17 +236,13 @@ class EventCard extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: event['price'] == 'Gratuit'
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.blue.withOpacity(0.1),
+                          color: Colors.blue.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          event['price'],
-                          style: TextStyle(
-                            color: event['price'] == 'Gratuit'
-                                ? Colors.green[700]
-                                : Colors.blue[700],
+                           activity.priceMin == 0 ? 'Gratuit' : '${activity.priceMin}€',
+                          style: const TextStyle(
+                             color: Colors.blue,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -288,7 +250,8 @@ class EventCard extends StatelessWidget {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          context.push('/booking/${event['id']}');
+                          // Direct booking link
+                          context.push('/booking/${activity.id}', extra: activity);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFF6B35),
@@ -320,8 +283,8 @@ class EventCard extends StatelessWidget {
     );
   }
 
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
+  Color _getCategoryColor(String slug) {
+    switch (slug.toLowerCase()) {
       case 'atelier':
         return Colors.purple;
       case 'concert':
@@ -330,7 +293,7 @@ class EventCard extends StatelessWidget {
         return Colors.red;
       case 'sport':
         return Colors.green;
-      case 'marché':
+      case 'marche':
         return Colors.orange;
       case 'culture':
         return Colors.indigo;

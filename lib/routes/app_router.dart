@@ -13,9 +13,12 @@ import '../features/profile/presentation/screens/settings_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
-import '../features/booking/presentation/screens/booking_screen.dart';
+import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
+import '../features/booking/presentation/screens/booking_participant_screen.dart';
+import '../features/booking/presentation/screens/booking_payment_screen.dart';
 import '../features/booking/presentation/screens/booking_confirmation_screen.dart';
-import '../features/booking/presentation/screens/my_bookings_screen.dart';
+import '../features/booking/presentation/screens/bookings_list_screen.dart';
+import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
 
@@ -98,25 +101,44 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Booking routes
       GoRoute(
-        path: '/booking/:eventId',
+        path: '/booking/:activityId',
         name: 'booking',
         builder: (context, state) {
-          final eventId = state.pathParameters['eventId']!;
-          return BookingScreen(eventId: eventId);
+          final activity = state.extra as Activity;
+          return BookingSlotSelectionScreen(activity: activity);
         },
+        routes: [
+          GoRoute(
+            path: 'participants',
+            name: 'booking-participants',
+            builder: (context, state) {
+              final activity = state.extra as Activity;
+              return BookingParticipantScreen(activity: activity);
+            },
+          ),
+          GoRoute(
+            path: 'payment',
+            name: 'booking-payment',
+            builder: (context, state) {
+              final activity = state.extra as Activity;
+              return BookingPaymentScreen(activity: activity);
+            },
+          ),
+          GoRoute(
+            path: 'confirmation',
+            name: 'booking-confirmation',
+            builder: (context, state) {
+              final activity = state.extra as Activity;
+              return BookingConfirmationScreen(activity: activity);
+            },
+          ),
+        ],
       ),
-      GoRoute(
-        path: '/booking-confirmation/:bookingId',
-        name: 'booking-confirmation',
-        builder: (context, state) {
-          final bookingId = state.pathParameters['bookingId']!;
-          return BookingConfirmationScreen(bookingId: bookingId);
-        },
-      ),
+      
       GoRoute(
         path: '/my-bookings',
         name: 'my-bookings',
-        builder: (context, state) => const MyBookingsScreen(),
+        builder: (context, state) => const BookingsListScreen(),
       ),
 
       // Settings

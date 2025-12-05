@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/domain/repositories/activity_repository.dart';
+import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
+import 'package:lehiboo/domain/entities/activity.dart';
+
+// Create a provider for the activities future to ensure it's cached and doesn't re-run on every build
+final recommendedActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
+  final repository = ref.watch(activityRepositoryProvider);
+  return repository.searchActivities(query: '');
+});
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +30,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch the future provider
+    final activitiesAsyncValue = ref.watch(recommendedActivitiesProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
@@ -34,13 +46,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               width: 120,
               height: 32,
               fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Text('Le Hiboo', style: TextStyle(color: Color(0xFFFF6B35), fontWeight: FontWeight.bold)),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Color(0xFF1E3A8A)),
-            onPressed: () => context.push('/search'),
+            icon: const Icon(Icons.notifications_none, color: Color(0xFF1E3A8A)),
+            onPressed: () {},
           ),
           IconButton(
             icon: const Icon(Icons.person_outline, color: Color(0xFF1E3A8A)),
@@ -58,6 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Hero section avec image et texte + section de recherche superposée
           SliverToBoxAdapter(
             child: Stack(
+              clipBehavior: Clip.none, // Allow overflow for the search bar
               children: [
                 // Hero background
                 Container(
@@ -66,7 +80,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       // Image de fond
                       Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           image: DecorationImage(
                             image: NetworkImage(
                               'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80'
@@ -106,7 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   Shadow(
                                     blurRadius: 10.0,
                                     color: Colors.black.withOpacity(0.5),
-                                    offset: Offset(2, 2),
+                                    offset: const Offset(2, 2),
                                   ),
                                 ],
                               ),
@@ -124,7 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         Shadow(
                                           blurRadius: 10.0,
                                           color: Colors.black.withOpacity(0.5),
-                                          offset: Offset(2, 2),
+                                          offset: const Offset(2, 2),
                                         ),
                                       ],
                                     ),
@@ -132,14 +146,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   TextSpan(
                                     text: 'locale',
                                     style: TextStyle(
-                                      color: Color(0xFFFF6B35),
+                                      color: const Color(0xFFFF6B35),
                                       fontSize: 28,
                                       fontWeight: FontWeight.bold,
                                       shadows: [
                                         Shadow(
                                           blurRadius: 10.0,
                                           color: Colors.black.withOpacity(0.5),
-                                          offset: Offset(2, 2),
+                                          offset: const Offset(2, 2),
                                         ),
                                       ],
                                     ),
@@ -154,7 +168,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         Shadow(
                                           blurRadius: 10.0,
                                           color: Colors.black.withOpacity(0.5),
-                                          offset: Offset(2, 2),
+                                          offset: const Offset(2, 2),
                                         ),
                                       ],
                                     ),
@@ -172,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   Shadow(
                                     blurRadius: 10.0,
                                     color: Colors.black.withOpacity(0.5),
-                                    offset: Offset(2, 2),
+                                    offset: const Offset(2, 2),
                                   ),
                                 ],
                               ),
@@ -201,98 +215,98 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ],
                     ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Barre de recherche
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Color(0xFFF8F8F8),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Color(0xFFE5E5E5),
-                        ),
-                      ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Recherchez votre ville, une activité ...',
-                          hintStyle: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 14,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.grey[400],
-                            size: 20,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Boutons de filtre temporel
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildTimeFilterChip('Aujourd\'hui', 0),
-                          const SizedBox(width: 8),
-                          _buildTimeFilterChip('Demain', 1),
-                          const SizedBox(width: 8),
-                          _buildTimeFilterChip('Cette semaine', 2),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Bouton rechercher
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => context.push('/search'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF6B35),
-                          shape: RoundedRectangleBorder(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Barre de recherche
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8F8F8),
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFE5E5E5),
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Rechercher',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: 'Recherchez votre ville, une activité ...',
+                              hintStyle: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 14,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: Colors.grey[400],
+                                size: 20,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        // Boutons de filtre temporel
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildTimeFilterChip('Aujourd\'hui', 0),
+                              const SizedBox(width: 8),
+                              _buildTimeFilterChip('Demain', 1),
+                              const SizedBox(width: 8),
+                              _buildTimeFilterChip('Cette semaine', 2),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Bouton rechercher
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => context.push('/search'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF6B35),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Rechercher',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Recherche avancée
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () => context.push('/filters'),
+                            icon: const Icon(
+                              Icons.tune,
+                              color: Color(0xFFFF6B35),
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'Recherche avancée',
+                              style: TextStyle(
+                                color: Color(0xFFFF6B35),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    // Recherche avancée
-                    Center(
-                      child: TextButton.icon(
-                        onPressed: () => context.push('/filters'),
-                        icon: Icon(
-                          Icons.tune,
-                          color: Color(0xFFFF6B35),
-                          size: 18,
-                        ),
-                        label: Text(
-                          'Recherche avancée',
-                          style: TextStyle(
-                            color: Color(0xFFFF6B35),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
                   ),
                 ),
               ],
@@ -336,58 +350,77 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
 
-          // Section Activités recommandées
+          // Section Activités recommandées (Dynamic from Repository)
           SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Les recommandations',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D3748),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => context.push('/events'),
-                            child: Text(
-                              'Voir plus',
-                              style: TextStyle(
-                                color: Color(0xFFFF6B35),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Les recommandations',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2D3748),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 280,
+                      TextButton(
+                        onPressed: () => context.push('/events'),
+                        child: const Text(
+                          'Voir plus',
+                          style: TextStyle(
+                            color: Color(0xFFFF6B35),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Use AsyncValue from Riverpod
+                activitiesAsyncValue.when(
+                  data: (activities) {
+                    if (activities.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text('Aucune activité trouvée.'),
+                      );
+                    }
+                    return SizedBox(
+                      height: 400,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: 5,
+                        itemCount: activities.length,
                         itemBuilder: (context, index) {
-                          final events = _getDemoEvents();
-                          final event = events[index % events.length];
+                          final activity = activities[index];
                           return Container(
                             width: 260,
                             margin: const EdgeInsets.only(right: 16),
-                            child: _buildEventCard(event),
+                            child: EventCard(activity: activity),
                           );
                         },
                       ),
-                    ),
-                  ],
+                    );
+                  },
+                  loading: () => const SizedBox(
+                    height: 280,
+                    child: Center(child: CircularProgressIndicator(color: Color(0xFFFF6B35))),
+                  ),
+                  error: (err, stack) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text('Erreur: $err', style: const TextStyle(color: Colors.red)),
+                  ),
                 ),
-              ),
+              ],
+            ),
+          ),
+
 
               // Section Web/Retrouvez-nous
               SliverToBoxAdapter(
@@ -395,7 +428,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   margin: const EdgeInsets.all(20),
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       colors: [Color(0xFFFF6B35), Color(0xFFFF8B5A)],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
@@ -405,7 +438,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Retrouvez vos événements en toute simplicité',
                         style: TextStyle(
                           color: Colors.white,
@@ -426,12 +459,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: Color(0xFFFF6B35),
+                          foregroundColor: const Color(0xFFFF6B35),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: Text('Découvrir le site'),
+                        child: const Text('Découvrir le site'),
                       ),
                     ],
                   ),
@@ -443,8 +476,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
                         'Offres et bons plans',
                         style: TextStyle(
@@ -471,7 +504,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               color: Colors.purple,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.electric_bolt,
                               color: Colors.white,
                               size: 24,
@@ -482,7 +515,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'ELECTRO',
                                   style: TextStyle(
                                     color: Colors.purple,
@@ -513,8 +546,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
                         'Top 6 des villes',
                         style: TextStyle(
@@ -559,7 +592,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          const Text(
                             'Les articles',
                             style: TextStyle(
                               fontSize: 20,
@@ -569,7 +602,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           TextButton(
                             onPressed: () {},
-                            child: Text(
+                            child: const Text(
                               'Voir tout',
                               style: TextStyle(
                                 color: Color(0xFFFF6B35),
@@ -610,19 +643,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   margin: const EdgeInsets.all(20),
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Color(0xFFF8F8F8),
+                    color: const Color(0xFFF8F8F8),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Color(0xFFE5E5E5)),
+                    border: Border.all(color: const Color(0xFFE5E5E5)),
                   ),
                   child: Column(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.mail_outline,
                         size: 48,
                         color: Color(0xFFFF6B35),
                       ),
                       const SizedBox(height: 16),
-                      Text(
+                      const Text(
                         'Nos meilleures découvertes dans votre boîte mail',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -648,11 +681,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Color(0xFFE5E5E5)),
+                            borderSide: const BorderSide(color: Color(0xFFE5E5E5)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Color(0xFFE5E5E5)),
+                            borderSide: const BorderSide(color: Color(0xFFE5E5E5)),
                           ),
                         ),
                       ),
@@ -662,13 +695,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFFF6B35),
+                            backgroundColor: const Color(0xFFFF6B35),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             'S\'inscrire',
                             style: TextStyle(
                               color: Colors.white,
@@ -683,15 +716,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
-              // Espace en bas
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
-            ],
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
     );
   }
-
 
   Widget _buildTimeFilterChip(String label, int index) {
     final isSelected = _selectedTimeFilter == index;
@@ -768,170 +797,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTagChip(String label) {
-    return Chip(
-      label: Text(
-        label,
-        style: TextStyle(
-          color: Color(0xFF2D3748),
-          fontSize: 14,
-        ),
-      ),
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: Color(0xFFE5E5E5),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    );
-  }
-
-  Widget _buildEventCard(Map<String, dynamic> event) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image avec badges
-          Container(
-            height: 140,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              image: DecorationImage(
-                image: NetworkImage(event['image']),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Stack(
-              children: [
-                // Badge category
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      event['category'],
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2D3748),
-                      ),
-                    ),
-                  ),
-                ),
-                // Favorite button
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        event['isFavorite'] ? Icons.favorite : Icons.favorite_border,
-                        color: event['isFavorite'] ? Colors.red : Colors.grey,
-                        size: 20,
-                      ),
-                      onPressed: () {},
-                      padding: const EdgeInsets.all(4),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Content
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event['title'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${event['date']} • ${event['time']}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '${event['location']} • ${event['distance']}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        event['price'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFF6B35),
-                        ),
-                      ),
-                      if (event['spotsLeft'] != null)
-                        Text(
-                          '${event['spotsLeft']} places',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: event['spotsLeft'] <= 5 ? Colors.red : Colors.grey[600],
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1030,7 +895,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     'Lire l\'article',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFFFF6B35),
+                      color: const Color(0xFFFF6B35),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1041,84 +906,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
-  }
-
-
-  List<Map<String, dynamic>> _getDemoEvents() {
-    return [
-      {
-        'id': '1',
-        'title': 'Atelier poterie pour enfants',
-        'category': 'Atelier',
-        'date': 'Samedi 15 juin',
-        'time': '14h00 - 16h00',
-        'location': 'Centre culturel',
-        'distance': '0.8 km',
-        'price': 'Gratuit',
-        'image': 'https://picsum.photos/400/300?random=1',
-        'isFavorite': false,
-        'spotsLeft': 3,
-        'totalSpots': 12,
-        'tags': ['Enfants', 'Créatif', 'Intérieur'],
-      },
-      {
-        'id': '2',
-        'title': 'Concert Jazz au parc',
-        'category': 'Concert',
-        'date': 'Dimanche 16 juin',
-        'time': '17h00',
-        'location': 'Parc municipal',
-        'distance': '1.2 km',
-        'price': '15€',
-        'image': 'https://picsum.photos/400/300?random=2',
-        'isFavorite': true,
-        'spotsLeft': 20,
-        'totalSpots': 50,
-        'tags': ['Musique', 'Extérieur', 'Tout public'],
-      },
-      {
-        'id': '3',
-        'title': 'Marché des producteurs locaux',
-        'category': 'Marché',
-        'date': 'Samedi 15 juin',
-        'time': '8h00 - 13h00',
-        'location': 'Place du marché',
-        'distance': '0.5 km',
-        'price': 'Gratuit',
-        'image': 'https://picsum.photos/400/300?random=3',
-        'isFavorite': false,
-        'tags': ['Alimentation', 'Local', 'Famille'],
-      },
-      {
-        'id': '4',
-        'title': 'Spectacle de magie',
-        'category': 'Spectacle',
-        'date': 'Vendredi 14 juin',
-        'time': '20h30',
-        'location': 'Théâtre municipal',
-        'distance': '2.1 km',
-        'price': '12€ - 18€',
-        'image': 'https://picsum.photos/400/300?random=4',
-        'isFavorite': false,
-        'spotsLeft': 10,
-        'totalSpots': 80,
-        'tags': ['Famille', 'Divertissement', 'Intérieur'],
-      },
-      {
-        'id': '5',
-        'title': 'Cours de yoga en plein air',
-        'category': 'Sport',
-        'date': 'Dimanche 16 juin',
-        'time': '9h00 - 10h30',
-        'location': 'Jardin botanique',
-        'distance': '1.8 km',
-        'price': '10€',
-        'image': 'https://picsum.photos/400/300?random=5',
-        'isFavorite': true,
-        'spotsLeft': 5,
-        'totalSpots': 15,
-        'tags': ['Sport', 'Bien-être', 'Extérieur'],
-      },
-    ];
   }
 }

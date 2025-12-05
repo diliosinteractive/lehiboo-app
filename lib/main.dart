@@ -4,6 +4,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/themes/app_theme.dart';
 import 'routes/app_router.dart';
 import 'config/dio_client.dart';
+import 'data/repositories/fake_activity_repository_impl.dart';
+import 'domain/repositories/activity_repository.dart'; // Ensure provider is reachable
+import 'features/booking/data/repositories/fake_booking_repository_impl.dart';
+import 'features/booking/presentation/controllers/booking_flow_controller.dart'; // Exposure of bookingRepositoryProvider
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,8 +25,13 @@ void main() async {
   // Initialize other services here (Firebase, etc.)
 
   runApp(
-    const ProviderScope(
-      child: LeHibooApp(),
+    ProviderScope(
+      overrides: [
+        // Inject Fake Repositories for offline testing
+        activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),
+        bookingRepositoryProvider.overrideWithValue(FakeBookingRepositoryImpl()),
+      ],
+      child: const LeHibooApp(),
     ),
   );
 }
@@ -37,8 +46,8 @@ class LeHibooApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Le Hiboo',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme(),
-      darkTheme: AppTheme.darkTheme(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
       routerConfig: router,
     );
