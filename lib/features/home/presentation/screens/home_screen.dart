@@ -235,14 +235,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
                     // Boutons de filtre temporel
-                    Row(
-                      children: [
-                        _buildTimeFilterChip('Aujourd\'hui', 0),
-                        const SizedBox(width: 8),
-                        _buildTimeFilterChip('Demain', 1),
-                        const SizedBox(width: 8),
-                        _buildTimeFilterChip('Cette semaine', 2),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildTimeFilterChip('Aujourd\'hui', 0),
+                          const SizedBox(width: 8),
+                          _buildTimeFilterChip('Demain', 1),
+                          const SizedBox(width: 8),
+                          _buildTimeFilterChip('Cette semaine', 2),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
                     // Bouton rechercher
