@@ -9,8 +9,9 @@ import 'package:intl/intl.dart';
 
 class EventCard extends ConsumerWidget {
   final Activity activity;
+  final bool isCompact;
 
-  const EventCard({super.key, required this.activity});
+  const EventCard({super.key, required this.activity, this.isCompact = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,8 +21,7 @@ class EventCard extends ConsumerWidget {
         debugPrint('Tapped activity: ${activity.id} - ${activity.title}');
         context.push('/event/${activity.id}', extra: activity);
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+      child: Container( // Removed margin bottom as grid handles spacing
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -45,11 +45,11 @@ class EventCard extends ConsumerWidget {
                   ),
                   child: CachedNetworkImage(
                     imageUrl: activity.imageUrl ?? 'https://via.placeholder.com/400x300',
-                    height: 140,
+                    height: isCompact ? 100 : 140,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      height: 140,
+                      height: isCompact ? 100 : 140,
                       color: Colors.grey[300],
                       child: const Center(
                         child: CircularProgressIndicator(
@@ -58,7 +58,7 @@ class EventCard extends ConsumerWidget {
                       ),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      height: 140,
+                      height: isCompact ? 100 : 140,
                       color: Colors.grey[300],
                       child: const Icon(
                         Icons.image_not_supported,
@@ -71,12 +71,12 @@ class EventCard extends ConsumerWidget {
                 // Badge catégorie
                 if (activity.category != null)
                 Positioned(
-                  top: 12,
-                  left: 12,
+                  top: 8,
+                  left: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: 8,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: _getCategoryColor(activity.category!.slug),
@@ -86,7 +86,7 @@ class EventCard extends ConsumerWidget {
                       activity.category!.name,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -94,11 +94,11 @@ class EventCard extends ConsumerWidget {
                 ),
                 // Bouton favori
                 Positioned(
-                  top: 12,
-                  right: 12,
+                  top: 8,
+                  right: 8,
                   child: Container(
-                    width: 36,
-                    height: 36,
+                    width: 30,
+                    height: 30,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
@@ -117,7 +117,7 @@ class EventCard extends ConsumerWidget {
                       icon: Icon(
                         isFavorite ? Icons.favorite : Icons.favorite_border,
                         color: isFavorite ? Colors.red : Colors.grey,
-                        size: 20,
+                        size: 18,
                       ),
                     ),
                   ),
@@ -125,156 +125,178 @@ class EventCard extends ConsumerWidget {
               ],
             ),
             // Contenu
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Titre
-                  Text(
-                    activity.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D3748),
+            Expanded( // Use Expanded to fill remaining space properly without overflow if possible, but Column is in Container. 
+              // Actually better to padding and column.
+              child: Padding(
+                padding: EdgeInsets.all(isCompact ? 10 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Titre
+                    Text(
+                      activity.title,
+                      style: TextStyle(
+                        fontSize: isCompact ? 14 : 18,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF2D3748),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  // Date et heure (Mocked/Formatted for now if activity doesn't have explicit date fields)
-                  // Using first slot if available
-                  if (activity.nextSlot != null)
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        DateFormat('dd MMM').format(activity.nextSlot!.startDateTime),
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
+                    if (!isCompact) const SizedBox(height: 8),
+                    // Date et heure
+                    if (activity.nextSlot != null)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 12,
+                          color: Colors.grey,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        DateFormat('HH:mm').format(activity.nextSlot!.startDateTime),
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Lieu et distance
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                           activity.city?.name ?? 'Lieu inconnu',
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('dd MMM').format(activity.nextSlot!.startDateTime),
                           style: TextStyle(
                             color: Colors.grey[600],
-                            fontSize: 14,
+                            fontSize: 12,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Tags
-                  if (activity.tags != null && activity.tags!.isNotEmpty)
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: activity.tags!.take(3).map((tag) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
+                        if (!isCompact) ...[
+                          const SizedBox(width: 12),
+                          const Icon(
+                            Icons.access_time,
+                            size: 12,
+                            color: Colors.grey,
                           ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF6B35).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            tag.name,
-                            style: const TextStyle(
-                              color: Color(0xFFFF6B35),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                          const SizedBox(width: 4),
+                          Text(
+                            DateFormat('HH:mm').format(activity.nextSlot!.startDateTime),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
                             ),
                           ),
-                        );
-                      }).toList(),
+                        ],
+                      ],
                     ),
-                  const SizedBox(height: 12),
-                  // Prix et bouton réserver
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                           activity.priceMin == 0 ? 'Gratuit' : '${activity.priceMin}€',
-                          style: const TextStyle(
-                             color: Colors.blue,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                    // Location
+                    if (!isCompact) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: Colors.grey,
                           ),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Direct booking link
-                          context.push('/booking/${activity.id}', extra: activity);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF6B35),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                               activity.city?.name ?? 'Lieu inconnu',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                        ),
-                        child: const Text(
-                          'Réserver',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
+                    
+                    // Tags - Hidden in compact mode
+                    if (!isCompact && activity.tags != null && activity.tags!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: activity.tags!.take(3).map((tag) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF6B35).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              tag.name,
+                              style: const TextStyle(
+                                color: Color(0xFFFF6B35),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                    
+                    SizedBox(height: isCompact ? 8 : 12),
+                    // Prix et bouton réserver
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isCompact ? 8 : 12,
+                            vertical: isCompact ? 4 : 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                             activity.priceMin == 0 ? 'Gratuit' : '${activity.priceMin}€',
+                            style: TextStyle(
+                               color: Colors.blue,
+                              fontSize: isCompact ? 12 : 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (isCompact)
+                          InkWell(
+                            onTap: () => context.push('/booking/${activity.id}', extra: activity),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFF6B35),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+                            ),
+                          )
+                        else
+                          ElevatedButton(
+                            onPressed: () {
+                              context.push('/booking/${activity.id}', extra: activity);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF6B35),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
+                            ),
+                            child: const Text(
+                              'Réserver',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

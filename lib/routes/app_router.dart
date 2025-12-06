@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/home/presentation/screens/home_screen.dart';
+import '../features/home/presentation/screens/city_detail_screen.dart'; // Import
 import '../features/events/presentation/screens/event_detail_screen.dart';
 import '../features/events/presentation/screens/event_list_screen.dart';
 import '../features/search/presentation/screens/search_screen.dart';
@@ -85,6 +86,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/map',
         name: 'map',
         builder: (context, state) => const MapViewScreen(),
+      ),
+
+      // City details
+      GoRoute(
+        path: '/city/:slug',
+        name: 'city-detail',
+        builder: (context, state) {
+          final slug = state.pathParameters['slug']!;
+          return CityDetailScreen(citySlug: slug);
+        },
       ),
 
       // Search routes

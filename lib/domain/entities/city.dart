@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'city.freezed.dart';
+part 'city.g.dart';
 
 @freezed
 class City with _$City {
@@ -11,5 +12,9 @@ class City with _$City {
     double? lat,
     double? lng,
     String? region,
+    String? description, // New field for detailed page
+    String? imageUrl,    // New field for cover image
   }) = _City;
+
+  factory City.fromJson(Map<String, dynamic> json) => _$CityFromJson(json);
 }

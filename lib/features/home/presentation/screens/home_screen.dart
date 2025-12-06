@@ -4,14 +4,24 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/domain/repositories/activity_repository.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/domain/entities/city.dart';
 
-// Create a provider for the activities future to ensure it's cached and doesn't re-run on every build
+// Providers
+final topCitiesProvider = FutureProvider<List<City>>((ref) async {
+  final repository = ref.watch(activityRepositoryProvider);
+  return repository.getTopCities();
+});
+
 final recommendedActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
   final repository = ref.watch(activityRepositoryProvider);
   return repository.searchActivities(query: '');
 });
 
 class HomeScreen extends ConsumerStatefulWidget {
+// ... existing code ...
+
+// Methods moved to State class
+// ... rest of file
   const HomeScreen({super.key});
 
   @override
@@ -543,43 +553,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // Section Top 6 des villes
               SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        'Top 6 des villes',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      height: 200,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: GridView.count(
-                        crossAxisCount: 2,
-                        scrollDirection: Axis.horizontal,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 0.75,
-                        children: [
-                          _buildCityCard('Paris', 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=2073'),
-                          _buildCityCard('Lyon', 'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?q=80&w=2071'),
-                          _buildCityCard('Marseille', 'https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070'),
-                          _buildCityCard('Toulouse', 'https://images.unsplash.com/photo-1574958269340-fa927503f3dd?q=80&w=2070'),
-                          _buildCityCard('Nice', 'https://images.unsplash.com/photo-1491166617655-0723a0999cfc?q=80&w=2071'),
-                          _buildCityCard('Bordeaux', 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2071'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+                child: _buildTopCitiesSection(),
               ),
 
               // Section Articles
@@ -751,6 +725,89 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Widget _buildTopCitiesSection() {
+    final citiesAsyncValue = ref.watch(topCitiesProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Top 6 des villes',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          height: 200,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: citiesAsyncValue.when(
+            data: (cities) => GridView.builder(
+              scrollDirection: Axis.horizontal,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.75,
+              ),
+              itemCount: cities.length,
+              itemBuilder: (context, index) {
+                 final city = cities[index];
+                 return _buildCityCard(city);
+              },
+            ),
+            loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFF6B35))),
+            error: (err, stack) => Text('Erreur: $err', maxLines: 1),
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildCityCard(City city) {
+    return GestureDetector(
+      onTap: () => context.push('/city/${city.slug}'),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          image: DecorationImage(
+            image: NetworkImage(city.imageUrl ?? 'https://placehold.co/200'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Colors.black.withOpacity(0.6),
+              ],
+            ),
+          ),
+          alignment: Alignment.bottomLeft,
+          padding: const EdgeInsets.all(8),
+          child: Text(
+            city.name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryCard(String title, String imageUrl, IconData icon) {
     return GestureDetector(
       onTap: () => context.push('/events?category=$title'),
@@ -801,43 +858,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildCityCard(String cityName, String imageUrl) {
-    return GestureDetector(
-      onTap: () => context.push('/events?city=$cityName'),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          image: DecorationImage(
-            image: NetworkImage(imageUrl),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withOpacity(0.6),
-              ],
-            ),
-          ),
-          alignment: Alignment.bottomLeft,
-          padding: const EdgeInsets.all(8),
-          child: Text(
-            cityName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildArticleCard(String title, String description, String imageUrl) {
     return Container(

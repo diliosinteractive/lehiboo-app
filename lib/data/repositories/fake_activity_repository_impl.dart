@@ -3,6 +3,7 @@ import 'package:lehiboo/core/mock/mock_data.dart';
 import 'package:lehiboo/data/mappers/activity_mapper.dart';
 import 'package:lehiboo/data/models/activity_dto.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/domain/entities/city.dart';
 import 'package:lehiboo/domain/repositories/activity_repository.dart';
 
 class FakeActivityRepositoryImpl implements ActivityRepository {
@@ -33,5 +34,23 @@ class FakeActivityRepositoryImpl implements ActivityRepository {
     
     if (jsonItem == null) return null;
     return ActivityDto.fromJson(jsonItem).toDomain();
+  }
+  @override
+  Future<List<City>> getTopCities() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    final List<dynamic> jsonList = json.decode(MockData.cities);
+    // Take first 6 as top cities
+    return jsonList.take(6).map((json) => City.fromJson(json)).toList();
+  }
+
+  @override
+  Future<City> getCityBySlug(String slug) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final List<dynamic> jsonList = json.decode(MockData.cities);
+    final cityJson = jsonList.firstWhere(
+      (c) => c['slug'] == slug,
+      orElse: () => throw Exception('City not found'),
+    );
+    return City.fromJson(cityJson);
   }
 }

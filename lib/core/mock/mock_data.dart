@@ -105,4 +105,194 @@ class MockData {
   }
 ]
 ''';
+  static const String cities = '''
+[
+  {
+    "id": "valenciennes",
+    "name": "Valenciennes",
+    "slug": "valenciennes",
+    "description": "Valenciennes, 'l'Athènes du Nord', est riche d'un patrimoine culturel et artistique exceptionnel. Découvrez ses musées, ses parcs et sa vie locale dynamique.",
+    "image_url": "https://images.unsplash.com/photo-1549144511-3085f269dc56?q=80&w=2070",
+    "lat": 50.3570,
+    "lng": 3.5230,
+    "region": "Nord"
+  },
+  {
+    "id": "anzin",
+    "name": "Anzin",
+    "slug": "anzin",
+    "description": "Ville historique du bassin minier, Anzin offre de nombreux espaces verts et des activités culturelles variées au cœur du Valenciennois.",
+    "image_url": "https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070",
+    "lat": 50.3717,
+    "lng": 3.5033,
+    "region": "Nord"
+  },
+  {
+    "id": "beuvrages",
+    "name": "Beuvrages",
+    "slug": "beuvrages",
+    "description": "Beuvrages est une commune verte et accueillante, idéale pour les promenades en famille et la découverte de la nature locale.",
+    "image_url": "https://images.unsplash.com/photo-1444723121867-2291d1dee5c2?q=80&w=2070",
+    "lat": 50.3860,
+    "lng": 3.5110,
+    "region": "Nord"
+  },
+  {
+    "id": "bruay-sur-l-escaut",
+    "name": "Bruay-sur-l'Escaut",
+    "slug": "bruay-sur-l-escaut",
+    "description": "Située le long de l'Escaut, Bruay est une ville dynamique proposant de nombreuses activités fluviales et de plein air.",
+    "image_url": "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?q=80&w=2070",
+    "lat": 50.3990,
+    "lng": 3.5410,
+    "region": "Nord"
+  },
+  {
+    "id": "saint-saulve",
+    "name": "Saint-Saulve",
+    "slug": "saint-saulve",
+    "description": "Saint-Saulve allie culture et nature avec son parc municipal renommé et une programmation artistique de qualité tout au long de l'année.",
+    "image_url": "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=2076",
+    "lat": 50.3700,
+    "lng": 3.5460,
+    "region": "Nord"
+  },
+  {
+    "id": "trith-saint-leger",
+    "name": "Trith-Saint-Léger",
+    "slug": "trith-saint-leger",
+    "description": "Ville sportive et fleurie, Trith-Saint-Léger est réputée pour ses infrastructures de loisirs et son cadre de vie agréable.",
+    "image_url": "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2144",
+    "lat": 50.3323,
+    "lng": 3.4839,
+    "region": "Nord"
+  },
+  {
+    "id": "aulnoy-lez-valenciennes",
+    "name": "Aulnoy-lez-Valenciennes",
+    "slug": "aulnoy-lez-valenciennes",
+    "description": "Commune dynamique de la banlieue sud de Valenciennes, offrant un cadre de vie paisible.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "marly",
+    "name": "Marly",
+    "slug": "marly",
+    "description": "Marly est une ville agréable, connue pour son golf et ses espaces verts.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "la-sentinelle",
+    "name": "La Sentinelle",
+    "slug": "la-sentinelle",
+    "description": "Ville chargée d'histoire minière, inscrite au patrimoine mondial de l'UNESCO.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "petit-foret",
+    "name": "Petit-Forêt",
+    "slug": "petit-foret",
+    "description": "Ville commerciale et dynamique au nord de Valenciennes.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "raismes",
+    "name": "Raismes",
+    "slug": "raismes",
+    "description": "Connue pour sa grande forêt domaniale, Raismes est le poumon vert de l'agglomération.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "escaupont",
+    "name": "Escaupont",
+    "slug": "escaupont",
+    "description": "Commune paisible traversée par l'Escaut.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "onnaing",
+    "name": "Onnaing",
+    "slug": "onnaing",
+    "description": "Ville industrielle en plein renouveau, célèbre pour sa faïencerie.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "estreux",
+    "name": "Estreux",
+    "slug": "estreux",
+    "description": "Petit village rural au charme authentique.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "saultain",
+    "name": "Saultain",
+    "slug": "saultain",
+    "description": "Village calme et résidentiel à l'est de Valenciennes.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "preseau",
+    "name": "Préseau",
+    "slug": "preseau",
+    "description": "Village typique de l'Avesnois, entouré de champs et de pâturages.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "artres",
+    "name": "Artres",
+    "slug": "artres",
+    "description": "Commune rurale traversée par la Rhonelle, offrant de belles balades.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "famars",
+    "name": "Famars",
+    "slug": "famars",
+    "description": "Site archéologique important et village dynamique.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "maing",
+    "name": "Maing",
+    "slug": "maing",
+    "description": "Village classé au patrimoine, traversé par l'Escaut.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "prouvy",
+    "name": "Prouvy",
+    "slug": "prouvy",
+    "description": "Commune active avec un important parc d'activités.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "rouvignies",
+    "name": "Rouvignies",
+    "slug": "rouvignies",
+    "description": "Petit village bordé par l'Escaut.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "wavrechain-sous-denain",
+    "name": "Wavrechain-sous-denain",
+    "slug": "wavrechain-sous-denain",
+    "description": "Commune au passé industriel riche, proche de Denain.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "herin",
+    "name": "Herin",
+    "slug": "herin",
+    "description": "Ville résidentielle paisible à l'ouest de Valenciennes.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  },
+  {
+    "id": "aubry-du-hainaut",
+    "name": "Aubry-du-Hainaut",
+    "slug": "aubry-du-hainaut",
+    "description": "Village rural accueillant, porte du Parc naturel régional.",
+    "image_url": "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=2070"
+  }
+]
+''';
 }
