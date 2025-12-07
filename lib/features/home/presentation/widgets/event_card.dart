@@ -33,6 +33,7 @@ class EventCard extends ConsumerWidget {
             ),
           ],
         ),
+        clipBehavior: Clip.hardEdge,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -45,11 +46,11 @@ class EventCard extends ConsumerWidget {
                   ),
                   child: CachedNetworkImage(
                     imageUrl: activity.imageUrl ?? 'https://via.placeholder.com/400x300',
-                    height: isCompact ? 100 : 140,
+                    height: isCompact ? 220 : 140,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      height: isCompact ? 100 : 140,
+                      height: isCompact ? 220 : 140,
                       color: Colors.grey[300],
                       child: const Center(
                         child: CircularProgressIndicator(
@@ -58,7 +59,7 @@ class EventCard extends ConsumerWidget {
                       ),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      height: isCompact ? 100 : 140,
+                      height: isCompact ? 220 : 140,
                       color: Colors.grey[300],
                       child: const Icon(
                         Icons.image_not_supported,
@@ -125,117 +126,120 @@ class EventCard extends ConsumerWidget {
               ],
             ),
             // Contenu
-            Expanded( // Use Expanded to fill remaining space properly without overflow if possible, but Column is in Container. 
-              // Actually better to padding and column.
+            Expanded(
               child: Padding(
                 padding: EdgeInsets.all(isCompact ? 10 : 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Titre
-                    Text(
-                      activity.title,
-                      style: TextStyle(
-                        fontSize: isCompact ? 14 : 18,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF2D3748),
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (!isCompact) const SizedBox(height: 8),
-                    // Date et heure
-                    if (activity.nextSlot != null)
-                    Row(
+                    // Top section: Title and date
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.calendar_today,
-                          size: 12,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
+                        // Titre
                         Text(
-                          DateFormat('dd MMM').format(activity.nextSlot!.startDateTime),
+                          activity.title,
                           style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
+                            fontSize: isCompact ? 14 : 18,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF2D3748),
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        if (!isCompact) ...[
-                          const SizedBox(width: 12),
-                          const Icon(
-                            Icons.access_time,
-                            size: 12,
-                            color: Colors.grey,
+                        if (!isCompact) const SizedBox(height: 8),
+                        // Date et heure
+                        if (activity.nextSlot != null)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 12,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                DateFormat('dd MMM').format(activity.nextSlot!.startDateTime),
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
+                              if (!isCompact) ...[
+                                const SizedBox(width: 12),
+                                const Icon(
+                                  Icons.access_time,
+                                  size: 12,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  DateFormat('HH:mm').format(activity.nextSlot!.startDateTime),
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            DateFormat('HH:mm').format(activity.nextSlot!.startDateTime),
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
+                        // Location
+                        if (!isCompact) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 14,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  activity.city?.name ?? 'Lieu inconnu',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        // Tags - Hidden in compact mode
+                        if (!isCompact && activity.tags != null && activity.tags!.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: activity.tags!.take(3).map((tag) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF6B35).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  tag.name,
+                                  style: const TextStyle(
+                                    color: Color(0xFFFF6B35),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ],
                       ],
                     ),
-                    // Location
-                    if (!isCompact) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            size: 14,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                               activity.city?.name ?? 'Lieu inconnu',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 14,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    
-                    // Tags - Hidden in compact mode
-                    if (!isCompact && activity.tags != null && activity.tags!.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: activity.tags!.take(3).map((tag) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF6B35).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              tag.name,
-                              style: const TextStyle(
-                                color: Color(0xFFFF6B35),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                    
-                    SizedBox(height: isCompact ? 8 : 12),
-                    // Prix et bouton réserver
+                    // Bottom section: Prix et bouton réserver
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -249,9 +253,9 @@ class EventCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                             activity.priceMin == 0 ? 'Gratuit' : '${activity.priceMin}€',
+                            activity.priceMin == 0 ? 'Gratuit' : '${activity.priceMin}€',
                             style: TextStyle(
-                               color: Colors.blue,
+                              color: Colors.blue,
                               fontSize: isCompact ? 12 : 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -259,7 +263,7 @@ class EventCard extends ConsumerWidget {
                         ),
                         if (isCompact)
                           InkWell(
-                            onTap: () => context.push('/booking/${activity.id}', extra: activity),
+                            onTap: () => context.push('/event/${activity.id}', extra: activity),
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: const BoxDecoration(
@@ -272,7 +276,7 @@ class EventCard extends ConsumerWidget {
                         else
                           ElevatedButton(
                             onPressed: () {
-                              context.push('/booking/${activity.id}', extra: activity);
+                              context.push('/event/${activity.id}', extra: activity);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF6B35),
@@ -285,7 +289,7 @@ class EventCard extends ConsumerWidget {
                               ),
                             ),
                             child: const Text(
-                              'Réserver',
+                              'Voir',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,

@@ -1,21 +1,19 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lehiboo/domain/repositories/activity_repository.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/domain/entities/city.dart';
-
-// Providers
-final topCitiesProvider = FutureProvider<List<City>>((ref) async {
-  final repository = ref.watch(activityRepositoryProvider);
-  return repository.getTopCities();
-});
-
-final recommendedActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
-  final repository = ref.watch(activityRepositoryProvider);
-  return repository.searchActivities(query: '');
-});
+import 'package:lehiboo/features/blog/presentation/widgets/blog_section.dart';
+import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_section.dart';
+import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
+import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
+import 'package:lehiboo/features/search/domain/models/event_filter.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import '../../data/models/mobile_app_config.dart';
+import '../providers/home_providers.dart';
+import '../widgets/ads_banners_section.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
 // ... existing code ...
@@ -38,10 +36,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  /// Refresh all home screen data
+  Future<void> _refreshData() async {
+    // Invalidate all providers to force refresh
+    ref.invalidate(homeActivitiesProvider);
+    ref.invalidate(featuredActivitiesProvider);
+    ref.invalidate(categoriesProvider);
+    ref.invalidate(homeCitiesProvider);
+    ref.invalidate(mobileAppConfigProvider);
+
+    // Wait a bit for the providers to start refreshing
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Watch the future provider
-    final activitiesAsyncValue = ref.watch(recommendedActivitiesProvider);
+    // Watch the future provider - now using real API
+    final activitiesAsyncValue = ref.watch(homeActivitiesProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
@@ -70,294 +81,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () => context.push('/profile'),
           ),
           IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF1E3A8A)),
-            onPressed: () {},
+            icon: const Icon(Icons.settings_outlined, color: Color(0xFF1E3A8A)),
+            onPressed: () => context.push('/settings'),
           ),
         ],
       ),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          // Hero section avec image et texte + section de recherche superposée
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        color: const Color(0xFFFF6B35),
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+          // Hero section avec recherche intégrée
           SliverToBoxAdapter(
-            child: Stack(
-              clipBehavior: Clip.none, // Allow overflow for the search bar
-              children: [
-                // Hero background
-                Container(
-                  height: 320,
-                  child: Stack(
-                    children: [
-                      // Image de fond
-                      Container(
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: NetworkImage(
-                              'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80'
-                            ),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      // Overlay gradient
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withOpacity(0.1),
-                              Colors.black.withOpacity(0.5),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Texte overlay
-                      Positioned(
-                        left: 20,
-                        right: 20,
-                        bottom: 140,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Trouvez votre prochaine',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                shadows: [
-                                  Shadow(
-                                    blurRadius: 10.0,
-                                    color: Colors.black.withOpacity(0.5),
-                                    offset: const Offset(2, 2),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: 'aventure ',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      shadows: [
-                                        Shadow(
-                                          blurRadius: 10.0,
-                                          color: Colors.black.withOpacity(0.5),
-                                          offset: const Offset(2, 2),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: 'locale',
-                                    style: TextStyle(
-                                      color: const Color(0xFFFF6B35),
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      shadows: [
-                                        Shadow(
-                                          blurRadius: 10.0,
-                                          color: Colors.black.withOpacity(0.5),
-                                          offset: const Offset(2, 2),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: ' près de',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      shadows: [
-                                        Shadow(
-                                          blurRadius: 10.0,
-                                          color: Colors.black.withOpacity(0.5),
-                                          offset: const Offset(2, 2),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              'chez vous',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                shadows: [
-                                  Shadow(
-                                    blurRadius: 10.0,
-                                    color: Colors.black.withOpacity(0.5),
-                                    offset: const Offset(2, 2),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Section de recherche superposée
-                Positioned(
-                  bottom: -20,
-                  left: 20,
-                  right: 20,
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Barre de recherche
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8F8F8),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFFE5E5E5),
-                            ),
-                          ),
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Recherchez votre ville, une activité ...',
-                              hintStyle: TextStyle(
-                                color: Colors.grey[500],
-                                fontSize: 14,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: Colors.grey[400],
-                                size: 20,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Boutons de filtre temporel
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _buildTimeFilterChip('Aujourd\'hui', 0),
-                              const SizedBox(width: 8),
-                              _buildTimeFilterChip('Demain', 1),
-                              const SizedBox(width: 8),
-                              _buildTimeFilterChip('Cette semaine', 2),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Bouton rechercher
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () => context.push('/search'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF6B35),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              'Rechercher',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Recherche avancée
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: () => context.push('/filters'),
-                            icon: const Icon(
-                              Icons.tune,
-                              color: Color(0xFFFF6B35),
-                              size: 18,
-                            ),
-                            label: const Text(
-                              'Recherche avancée',
-                              style: TextStyle(
-                                color: Color(0xFFFF6B35),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: _buildHeroSearchSection(),
           ),
 
-          // Espace pour compenser la superposition
+          // Section Publicités dynamiques depuis WordPress (au-dessus des thématiques)
           const SliverToBoxAdapter(
-            child: SizedBox(height: 100),
+            child: AdsBannersSection(),
           ),
 
-          // Section catégories
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Grid des catégories
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildCategoryCard(
-                          'Concert',
-                          'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=2070',
-                          Icons.music_note,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildCategoryCard(
-                          'Médiathèque',
-                          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2070',
-                          Icons.library_books,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          // Section thématiques (Dynamic from API)
+          const SliverToBoxAdapter(
+            child: ThematiquesSection(),
           ),
 
           // Section Activités recommandées (Dynamic from Repository)
@@ -431,8 +178,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
 
+          // Section Toutes les catégories (Chips list)
+          const SliverToBoxAdapter(
+            child: CategoriesChipsSection(),
+          ),
 
-              // Section Web/Retrouvez-nous
+          // Section Web/Retrouvez-nous
               SliverToBoxAdapter(
                 child: Container(
                   margin: const EdgeInsets.all(20),
@@ -481,135 +232,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
-              // Section Promotions
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        'Offres et bons plans',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.purple.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.purple,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.electric_bolt,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'ELECTRO',
-                                  style: TextStyle(
-                                    color: Colors.purple,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                                Text(
-                                  'Jusqu\'à -50% sur les spectacles',
-                                  style: TextStyle(
-                                    color: Colors.grey[700],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
-
               // Section Top 6 des villes
               SliverToBoxAdapter(
                 child: _buildTopCitiesSection(),
               ),
 
-              // Section Articles
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Les articles',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D3748),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: const Text(
-                              'Voir tout',
-                              style: TextStyle(
-                                color: Color(0xFFFF6B35),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        children: [
-                          _buildArticleCard(
-                            'Top des activités famille',
-                            'Découvrez les meilleures activités pour profiter en famille ce week-end dans votre région.',
-                            'https://images.unsplash.com/photo-1609220136736-443140cffec6?q=80&w=2070',
-                          ),
-                          const SizedBox(height: 16),
-                          _buildArticleCard(
-                            'Nouveaux partenaires',
-                            'De nouveaux lieux et activités rejoignent Le Hiboo pour enrichir votre expérience locale.',
-                            'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=2069',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+              // Section Articles (Dynamic from API)
+              const SliverToBoxAdapter(
+                child: BlogSection(),
               ),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
               // Section Newsletter
               SliverToBoxAdapter(
@@ -690,8 +322,302 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroSearchSection() {
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final configAsyncValue = ref.watch(mobileAppConfigProvider);
+    final currentUser = ref.watch(currentUserProvider);
+
+    // Get config or default
+    final config = configAsyncValue.valueOrNull ?? MobileAppConfig.defaultConfig();
+    final heroConfig = config.hero;
+    final hasImage = heroConfig.image.isNotEmpty;
+
+    // Build personalized greeting for logged-in users
+    String? greetingMessage;
+    if (currentUser != null && currentUser.firstName != null && currentUser.firstName!.isNotEmpty) {
+      final hour = DateTime.now().hour;
+      String greeting;
+      if (hour < 12) {
+        greeting = 'Bonjour';
+      } else if (hour < 18) {
+        greeting = 'Bon après-midi';
+      } else {
+        greeting = 'Bonsoir';
+      }
+      greetingMessage = '$greeting ${currentUser.firstName} !';
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        // Use image if available, otherwise gradient
+        image: hasImage
+            ? DecorationImage(
+                image: CachedNetworkImageProvider(heroConfig.image),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.4),
+                  BlendMode.darken,
+                ),
+              )
+            : null,
+        gradient: hasImage
+            ? null
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF1E3A8A), // Bleu foncé
+                  Color(0xFF3B82F6), // Bleu clair
+                ],
+              ),
+      ),
+      child: Column(
+        children: [
+          // Texte d'accroche - Dynamic from config
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Message de bienvenue personnalisé pour les utilisateurs connectés
+                if (greetingMessage != null) ...[
+                  Text(
+                    greetingMessage,
+                    style: const TextStyle(
+                      color: Color(0xFFFFD700), // Doré pour ressortir
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 3,
+                          color: Colors.black45,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Text(
+                  heroConfig.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    height: 1.3,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 3,
+                        color: Colors.black45,
+                      ),
+                    ],
+                  ),
+                ),
+                if (heroConfig.subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    heroConfig.subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      shadows: const [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 2,
+                          color: Colors.black38,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Bloc de recherche
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Barre de recherche cliquable
+                GestureDetector(
+                  onTap: () => context.push('/search'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFF6B35).withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: Color(0xFFFF6B35), size: 22),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Rechercher une activité...',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Filtres rapides
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildQuickFilterChip(
+                        label: "Aujourd'hui",
+                        icon: Icons.today,
+                        isSelected: _selectedTimeFilter == 0,
+                        onTap: () {
+                          setState(() => _selectedTimeFilter = 0);
+                          filterNotifier.setDateFilter(DateFilterType.today);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildQuickFilterChip(
+                        label: 'Demain',
+                        icon: Icons.event,
+                        isSelected: _selectedTimeFilter == 1,
+                        onTap: () {
+                          setState(() => _selectedTimeFilter = 1);
+                          filterNotifier.setDateFilter(DateFilterType.tomorrow);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildQuickFilterChip(
+                        label: 'Ce week-end',
+                        icon: Icons.weekend,
+                        isSelected: _selectedTimeFilter == 2,
+                        onTap: () {
+                          setState(() => _selectedTimeFilter = 2);
+                          filterNotifier.setDateFilter(DateFilterType.thisWeekend);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildQuickFilterChip(
+                        label: 'Gratuit',
+                        icon: Icons.local_offer,
+                        isSelected: _selectedTimeFilter == 3,
+                        onTap: () {
+                          setState(() => _selectedTimeFilter = 3);
+                          filterNotifier.setOnlyFree(true);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Bouton Rechercher - Dynamic text from config
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => context.push('/search'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B35),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.search, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          config.texts.exploreButtonText,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickFilterChip({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFF6B35) : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFFF6B35) : const Color(0xFFE5E5E5),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFFF6B35).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : Colors.grey[600],
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : const Color(0xFF2D3748),
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -726,7 +652,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildTopCitiesSection() {
-    final citiesAsyncValue = ref.watch(topCitiesProvider);
+    final citiesAsyncValue = ref.watch(homeCitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -860,72 +786,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 
 
-  Widget _buildArticleCard(String title, String description, String imageUrl) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-              image: DecorationImage(
-                image: NetworkImage(imageUrl),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                      height: 1.4,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Lire l\'article',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: const Color(0xFFFF6B35),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

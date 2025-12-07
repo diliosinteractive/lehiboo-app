@@ -28,7 +28,9 @@ mixin _$City {
   String? get region => throw _privateConstructorUsedError;
   String? get description =>
       throw _privateConstructorUsedError; // New field for detailed page
-  String? get imageUrl => throw _privateConstructorUsedError;
+  String? get imageUrl =>
+      throw _privateConstructorUsedError; // New field for cover image
+  int? get eventCount => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -48,7 +50,8 @@ abstract class $CityCopyWith<$Res> {
       double? lng,
       String? region,
       String? description,
-      String? imageUrl});
+      String? imageUrl,
+      int? eventCount});
 }
 
 /// @nodoc
@@ -72,6 +75,7 @@ class _$CityCopyWithImpl<$Res, $Val extends City>
     Object? region = freezed,
     Object? description = freezed,
     Object? imageUrl = freezed,
+    Object? eventCount = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -106,6 +110,10 @@ class _$CityCopyWithImpl<$Res, $Val extends City>
           ? _value.imageUrl
           : imageUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      eventCount: freezed == eventCount
+          ? _value.eventCount
+          : eventCount // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -125,7 +133,8 @@ abstract class _$$CityImplCopyWith<$Res> implements $CityCopyWith<$Res> {
       double? lng,
       String? region,
       String? description,
-      String? imageUrl});
+      String? imageUrl,
+      int? eventCount});
 }
 
 /// @nodoc
@@ -146,6 +155,7 @@ class __$$CityImplCopyWithImpl<$Res>
     Object? region = freezed,
     Object? description = freezed,
     Object? imageUrl = freezed,
+    Object? eventCount = freezed,
   }) {
     return _then(_$CityImpl(
       id: null == id
@@ -180,6 +190,10 @@ class __$$CityImplCopyWithImpl<$Res>
           ? _value.imageUrl
           : imageUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      eventCount: freezed == eventCount
+          ? _value.eventCount
+          : eventCount // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -195,7 +209,8 @@ class _$CityImpl implements _City {
       this.lng,
       this.region,
       this.description,
-      this.imageUrl});
+      this.imageUrl,
+      this.eventCount});
 
   factory _$CityImpl.fromJson(Map<String, dynamic> json) =>
       _$$CityImplFromJson(json);
@@ -217,10 +232,13 @@ class _$CityImpl implements _City {
 // New field for detailed page
   @override
   final String? imageUrl;
+// New field for cover image
+  @override
+  final int? eventCount;
 
   @override
   String toString() {
-    return 'City(id: $id, name: $name, slug: $slug, lat: $lat, lng: $lng, region: $region, description: $description, imageUrl: $imageUrl)';
+    return 'City(id: $id, name: $name, slug: $slug, lat: $lat, lng: $lng, region: $region, description: $description, imageUrl: $imageUrl, eventCount: $eventCount)';
   }
 
   @override
@@ -237,13 +255,15 @@ class _$CityImpl implements _City {
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.imageUrl, imageUrl) ||
-                other.imageUrl == imageUrl));
+                other.imageUrl == imageUrl) &&
+            (identical(other.eventCount, eventCount) ||
+                other.eventCount == eventCount));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, name, slug, lat, lng, region, description, imageUrl);
+  int get hashCode => Object.hash(runtimeType, id, name, slug, lat, lng, region,
+      description, imageUrl, eventCount);
 
   @JsonKey(ignore: true)
   @override
@@ -268,7 +288,8 @@ abstract class _City implements City {
       final double? lng,
       final String? region,
       final String? description,
-      final String? imageUrl}) = _$CityImpl;
+      final String? imageUrl,
+      final int? eventCount}) = _$CityImpl;
 
   factory _City.fromJson(Map<String, dynamic> json) = _$CityImpl.fromJson;
 
@@ -288,6 +309,8 @@ abstract class _City implements City {
   String? get description;
   @override // New field for detailed page
   String? get imageUrl;
+  @override // New field for cover image
+  int? get eventCount;
   @override
   @JsonKey(ignore: true)
   _$$CityImplCopyWith<_$CityImpl> get copyWith =>

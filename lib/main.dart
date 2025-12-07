@@ -4,10 +4,26 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/themes/app_theme.dart';
 import 'routes/app_router.dart';
 import 'config/dio_client.dart';
+
+// API Repositories
+import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/domain/repositories/auth_repository.dart';
+import 'features/events/data/repositories/event_repository_impl.dart';
+import 'features/events/domain/repositories/event_repository.dart';
+import 'features/booking/data/repositories/api_booking_repository_impl.dart';
+import 'features/booking/presentation/controllers/booking_flow_controller.dart'; // For bookingRepositoryProvider
+import 'features/favorites/data/repositories/favorites_repository_impl.dart';
+import 'features/favorites/domain/repositories/favorites_repository.dart';
+import 'features/blog/data/repositories/blog_repository_impl.dart';
+import 'features/blog/domain/repositories/blog_repository.dart';
+
+// Fake Repositories (for offline testing)
 import 'data/repositories/fake_activity_repository_impl.dart';
-import 'domain/repositories/activity_repository.dart'; // Ensure provider is reachable
+import 'domain/repositories/activity_repository.dart';
 import 'features/booking/data/repositories/fake_booking_repository_impl.dart';
-import 'features/booking/presentation/controllers/booking_flow_controller.dart'; // Exposure of bookingRepositoryProvider
+
+// Configuration flag - set to false to use fake data
+const bool useRealApi = true;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,14 +42,48 @@ void main() async {
 
   runApp(
     ProviderScope(
-      overrides: [
-        // Inject Fake Repositories for offline testing
-        activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),
-        bookingRepositoryProvider.overrideWithValue(FakeBookingRepositoryImpl()),
-      ],
+      overrides: useRealApi
+          ? _getRealApiOverrides()
+          : _getFakeDataOverrides(),
       child: const LeHibooApp(),
     ),
   );
+}
+
+/// Real API repositories - connects to LeHiboo WordPress API v2
+List<Override> _getRealApiOverrides() {
+  return [
+    // Auth Repository
+    authRepositoryProvider.overrideWith((ref) {
+      return ref.read(authRepositoryImplProvider);
+    }),
+    // Event Repository
+    eventRepositoryProvider.overrideWith((ref) {
+      return ref.read(eventRepositoryImplProvider);
+    }),
+    // Booking Repository
+    bookingRepositoryProvider.overrideWith((ref) {
+      return ref.read(apiBookingRepositoryImplProvider);
+    }),
+    // Favorites Repository
+    favoritesRepositoryProvider.overrideWith((ref) {
+      return ref.read(favoritesRepositoryImplProvider);
+    }),
+    // Blog Repository
+    blogRepositoryProvider.overrideWith((ref) {
+      return ref.read(blogRepositoryImplProvider);
+    }),
+    // Keep activity repository for backward compatibility
+    activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),
+  ];
+}
+
+/// Fake data repositories - for offline testing and development
+List<Override> _getFakeDataOverrides() {
+  return [
+    activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),
+    bookingRepositoryProvider.overrideWithValue(FakeBookingRepositoryImpl()),
+  ];
 }
 
 class LeHibooApp extends ConsumerWidget {

@@ -29,7 +29,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         context.go('/favorites');
         break;
       case 3:
-        context.go('/profile');
+        context.go('/bookings');
         break;
     }
   }
@@ -91,7 +91,7 @@ class _MainScaffoldState extends State<MainScaffold> {
             _buildNavItem(Icons.explore_outlined, 'Explorer', 1),
             const SizedBox(width: 48), // Space for FAB
             _buildNavItem(Icons.favorite_outline, 'Favoris', 2),
-            _buildNavItem(Icons.person_outline, 'Profil', 3),
+            _buildNavItem(Icons.confirmation_number_outlined, 'Réservas', 3),
           ],
         ),
       ),

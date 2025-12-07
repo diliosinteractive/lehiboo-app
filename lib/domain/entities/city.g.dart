@@ -15,6 +15,7 @@ _$CityImpl _$$CityImplFromJson(Map<String, dynamic> json) => _$CityImpl(
       region: json['region'] as String?,
       description: json['description'] as String?,
       imageUrl: json['imageUrl'] as String?,
+      eventCount: (json['eventCount'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$CityImplToJson(_$CityImpl instance) =>
@@ -27,4 +28,5 @@ Map<String, dynamic> _$$CityImplToJson(_$CityImpl instance) =>
       'region': instance.region,
       'description': instance.description,
       'imageUrl': instance.imageUrl,
+      'eventCount': instance.eventCount,
     };

@@ -5,9 +5,10 @@ class AppConstants {
   static const String appDescription = 'Trouvez votre prochaine sortie près de chez vous';
 
   // API Configuration
+  // API v2 base URL - uses WordPress REST API with lehiboo namespace
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api.lehiboo.fr/v1',
+    defaultValue: 'https://preprod.lehiboo.com/wp-json/lehiboo/v2',
   );
   static const String apiKey = String.fromEnvironment(
     'API_KEY',

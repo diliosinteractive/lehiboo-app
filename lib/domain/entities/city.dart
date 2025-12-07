@@ -14,6 +14,7 @@ class City with _$City {
     String? region,
     String? description, // New field for detailed page
     String? imageUrl,    // New field for cover image
+    int? eventCount,     // Number of events in this city
   }) = _City;
 
   factory City.fromJson(Map<String, dynamic> json) => _$CityFromJson(json);
