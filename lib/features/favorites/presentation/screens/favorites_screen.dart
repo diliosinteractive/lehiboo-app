@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lehiboo/domain/repositories/activity_repository.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
+import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
+import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
+
+/// Provider for all activities (cached)
+final _allActivitiesProvider = FutureProvider.autoDispose<List<Activity>>((ref) async {
+  final eventRepository = ref.watch(eventRepositoryProvider);
+
+  try {
+    final result = await eventRepository.getEvents(
+      page: 1,
+      perPage: 100,
+    );
+    return EventToActivityMapper.toActivities(result.events);
+  } catch (e) {
+    return [];
+  }
+});
 
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
@@ -11,7 +27,7 @@ class FavoritesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final favoriteIds = ref.watch(favoritesProvider);
-    final activityRepository = ref.watch(activityRepositoryProvider);
+    final allActivitiesAsync = ref.watch(_allActivitiesProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
@@ -23,30 +39,62 @@ class FavoritesScreen extends ConsumerWidget {
       ),
       body: favoriteIds.isEmpty
           ? _buildEmptyState()
-          : FutureBuilder<List<Activity>>(
-              // Optimally we'd have a getActivitiesByIds method, but for now filtering search results is okay for MVP/Mock
-              future: activityRepository.searchActivities(query: ''),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFFFF6B35)));
-                }
-                
-                final allActivities = snapshot.data ?? [];
-                final favoriteActivities = allActivities.where((a) => favoriteIds.contains(a.id)).toList();
+          : allActivitiesAsync.when(
+              data: (allActivities) {
+                final favoriteActivities = allActivities
+                    .where((a) => favoriteIds.contains(a.id))
+                    .toList();
 
                 if (favoriteActivities.isEmpty) {
-                   return _buildEmptyState();
+                  return _buildEmptyState();
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: favoriteActivities.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    return EventCard(activity: favoriteActivities[index]);
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(_allActivitiesProvider);
                   },
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.50,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: favoriteActivities.length,
+                    itemBuilder: (context, index) {
+                      return EventCard(
+                        activity: favoriteActivities[index],
+                        isCompact: true,
+                      );
+                    },
+                  ),
                 );
               },
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
+              ),
+              error: (error, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: Colors.grey[300]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Erreur de chargement',
+                      style: TextStyle(color: Colors.grey[500]),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => ref.invalidate(_allActivitiesProvider),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF6B35),
+                      ),
+                      child: const Text('Réessayer', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              ),
             ),
     );
   }

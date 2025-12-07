@@ -143,6 +143,8 @@ class _ActiveChip extends StatelessWidget {
         return const Color(0xFF10B981);
       case FilterChipType.city:
         return const Color(0xFF0EA5E9);
+      case FilterChipType.location:
+        return const Color(0xFF22C55E);
       case FilterChipType.thematique:
         return const Color(0xFFEC4899);
       case FilterChipType.category:
@@ -168,6 +170,8 @@ class _ActiveChip extends StatelessWidget {
         return Icons.euro;
       case FilterChipType.city:
         return Icons.location_on;
+      case FilterChipType.location:
+        return Icons.my_location;
       case FilterChipType.thematique:
         return Icons.category;
       case FilterChipType.category:

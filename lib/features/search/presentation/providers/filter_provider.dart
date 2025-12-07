@@ -313,6 +313,9 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       case FilterChipType.city:
         clearCity();
         break;
+      case FilterChipType.location:
+        clearLocation();
+        break;
       case FilterChipType.thematique:
         if (value != null) removeThematique(value);
         break;
@@ -359,6 +362,9 @@ final filteredEventsProvider = FutureProvider<List<Activity>>((ref) async {
       location: filter.citySlug,
       dateFrom: dateFromStr,
       dateTo: dateToStr,
+      lat: filter.latitude,
+      lng: filter.longitude,
+      radius: filter.latitude != null ? filter.radiusKm.toInt() : null,
       perPage: filter.perPage,
       page: filter.page,
     );
@@ -407,6 +413,15 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
       id: 'city',
       label: filter.cityName!,
       type: FilterChipType.city,
+    ));
+  }
+
+  // Location (geolocation)
+  if (filter.latitude != null && filter.longitude != null) {
+    chips.add(ActiveFilterChip(
+      id: 'location',
+      label: 'Autour de moi (${filter.radiusKm.toInt()} km)',
+      type: FilterChipType.location,
     ));
   }
 

@@ -110,6 +110,7 @@ class EventFilter with _$EventFilter {
         priceFilterType != null ||
         onlyFree ||
         citySlug != null ||
+        latitude != null ||
         thematiquesSlugs.isNotEmpty ||
         categoriesSlugs.isNotEmpty ||
         organizerSlug != null ||
@@ -127,6 +128,7 @@ class EventFilter with _$EventFilter {
     if (dateFilterType != null) count++;
     if (priceFilterType != null || onlyFree) count++;
     if (citySlug != null) count++;
+    if (latitude != null) count++;
     if (thematiquesSlugs.isNotEmpty) count += thematiquesSlugs.length;
     if (categoriesSlugs.isNotEmpty) count += categoriesSlugs.length;
     if (organizerSlug != null) count++;
@@ -286,6 +288,7 @@ enum FilterChipType {
   date,
   price,
   city,
+  location,
   thematique,
   category,
   organizer,

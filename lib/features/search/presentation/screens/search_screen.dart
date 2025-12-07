@@ -150,12 +150,14 @@ class _EmptyResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 40),
             Icon(
               hasFilters ? Icons.filter_list_off : Icons.search_off,
               size: 80,
@@ -198,6 +200,7 @@ class _EmptyResults extends StatelessWidget {
                 label: const Text('Effacer les filtres'),
               ),
             ],
+            const SizedBox(height: 40),
           ],
         ),
       ),

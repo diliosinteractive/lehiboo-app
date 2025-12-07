@@ -80,10 +80,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: const Icon(Icons.person_outline, color: Color(0xFF1E3A8A)),
             onPressed: () => context.push('/profile'),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Color(0xFF1E3A8A)),
-            onPressed: () => context.push('/settings'),
-          ),
         ],
       ),
       body: RefreshIndicator(
@@ -95,6 +91,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Hero section avec recherche intégrée
           SliverToBoxAdapter(
             child: _buildHeroSearchSection(),
+          ),
+
+          // Section Recherches enregistrées (seulement si des recherches existent)
+          SliverToBoxAdapter(
+            child: _buildSavedSearchesSection(),
           ),
 
           // Section Publicités dynamiques depuis WordPress (au-dessus des thématiques)
@@ -565,6 +566,121 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Section des recherches enregistrées - ne s'affiche que si des recherches existent
+  Widget _buildSavedSearchesSection() {
+    final savedSearches = ref.watch(savedSearchesProvider);
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+
+    // Ne rien afficher si pas de recherches enregistrées
+    if (savedSearches.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Vos recherches',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  ref.read(savedSearchesProvider.notifier).clearAll();
+                },
+                child: Text(
+                  'Effacer',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: savedSearches.take(5).map((search) {
+              return GestureDetector(
+                onTap: () {
+                  // Appliquer les filtres de la recherche sauvegardée
+                  if (search.query.isNotEmpty) {
+                    filterNotifier.setSearchQuery(search.query);
+                  }
+                  if (search.citySlug != null && search.cityName != null) {
+                    filterNotifier.setCity(search.citySlug!, search.cityName!);
+                  }
+                  if (search.thematiqueSlug != null) {
+                    filterNotifier.addThematique(search.thematiqueSlug!);
+                  }
+                  context.push('/events');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE5E5E5)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.history,
+                        size: 14,
+                        color: Color(0xFFFF6B35),
+                      ),
+                      const SizedBox(width: 6),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 150),
+                        child: Text(
+                          search.displayLabel,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF2D3748),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          ref.read(savedSearchesProvider.notifier).removeSearch(search);
+                        },
+                        child: Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

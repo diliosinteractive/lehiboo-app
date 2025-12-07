@@ -1,8 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/city.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../events/domain/repositories/event_repository.dart';
 import '../../../events/data/mappers/event_to_activity_mapper.dart';
 import '../../data/models/mobile_app_config.dart';
@@ -162,4 +165,103 @@ final mobileAppConfigProvider = FutureProvider<MobileAppConfig>((ref) async {
     // Return default config if API fails
     return MobileAppConfig.defaultConfig();
   }
+});
+
+/// Model for a saved/recent search
+class SavedSearch {
+  final String query;
+  final String? citySlug;
+  final String? cityName;
+  final String? thematiqueSlug;
+  final String? thematiqueName;
+  final DateTime savedAt;
+
+  SavedSearch({
+    required this.query,
+    this.citySlug,
+    this.cityName,
+    this.thematiqueSlug,
+    this.thematiqueName,
+    required this.savedAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'query': query,
+    'citySlug': citySlug,
+    'cityName': cityName,
+    'thematiqueSlug': thematiqueSlug,
+    'thematiqueName': thematiqueName,
+    'savedAt': savedAt.toIso8601String(),
+  };
+
+  factory SavedSearch.fromJson(Map<String, dynamic> json) => SavedSearch(
+    query: json['query'] ?? '',
+    citySlug: json['citySlug'],
+    cityName: json['cityName'],
+    thematiqueSlug: json['thematiqueSlug'],
+    thematiqueName: json['thematiqueName'],
+    savedAt: DateTime.tryParse(json['savedAt'] ?? '') ?? DateTime.now(),
+  );
+
+  /// Display label for the search chip
+  String get displayLabel {
+    final parts = <String>[];
+    if (query.isNotEmpty) parts.add('"$query"');
+    if (cityName != null) parts.add(cityName!);
+    if (thematiqueName != null) parts.add(thematiqueName!);
+    return parts.join(' • ');
+  }
+}
+
+/// Notifier for managing saved searches
+class SavedSearchesNotifier extends StateNotifier<List<SavedSearch>> {
+  SavedSearchesNotifier() : super([]) {
+    _loadSearches();
+  }
+
+  Future<void> _loadSearches() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(AppConstants.keyRecentSearches);
+      if (jsonString != null) {
+        final List<dynamic> decoded = json.decode(jsonString);
+        state = decoded.map((e) => SavedSearch.fromJson(e)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error loading saved searches: $e');
+    }
+  }
+
+  Future<void> _saveSearches() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = json.encode(state.map((s) => s.toJson()).toList());
+      await prefs.setString(AppConstants.keyRecentSearches, jsonString);
+    } catch (e) {
+      debugPrint('Error saving searches: $e');
+    }
+  }
+
+  Future<void> addSearch(SavedSearch search) async {
+    // Remove duplicate if exists
+    state = state.where((s) => s.displayLabel != search.displayLabel).toList();
+    // Add to beginning
+    state = [search, ...state].take(AppConstants.maxRecentSearches).toList();
+    await _saveSearches();
+  }
+
+  Future<void> removeSearch(SavedSearch search) async {
+    state = state.where((s) => s.savedAt != search.savedAt).toList();
+    await _saveSearches();
+  }
+
+  Future<void> clearAll() async {
+    state = [];
+    await _saveSearches();
+  }
+}
+
+/// Provider for saved/recent searches
+final savedSearchesProvider = StateNotifierProvider<SavedSearchesNotifier, List<SavedSearch>>((ref) {
+  return SavedSearchesNotifier();
 });

@@ -14,7 +14,19 @@ class BookingsListScreen extends ConsumerWidget {
     final bookingsAsync = ref.watch(bookingsListControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mes réservations')),
+      appBar: AppBar(
+        title: const Text('Mes réservations'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/profile');
+            }
+          },
+        ),
+      ),
       body: bookingsAsync.when(
         data: (bookings) {
           if (bookings.isEmpty) {

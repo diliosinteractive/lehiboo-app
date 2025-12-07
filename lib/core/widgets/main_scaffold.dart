@@ -29,7 +29,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         context.go('/favorites');
         break;
       case 3:
-        context.go('/bookings');
+        context.go('/my-bookings');
         break;
     }
   }

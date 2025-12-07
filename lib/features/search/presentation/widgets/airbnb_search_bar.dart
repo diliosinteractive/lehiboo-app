@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 
@@ -524,14 +525,98 @@ class _TabButton extends StatelessWidget {
 }
 
 /// "Where" tab content
-class _WhereTab extends ConsumerWidget {
+class _WhereTab extends ConsumerStatefulWidget {
   final TextEditingController searchController;
 
   const _WhereTab({required this.searchController});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_WhereTab> createState() => _WhereTabState();
+}
+
+class _WhereTabState extends ConsumerState<_WhereTab> {
+  bool _isLoadingLocation = false;
+  double _selectedRadius = 20.0;
+
+  final List<double> _radiusOptions = [5, 10, 20, 50, 100];
+
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLoadingLocation = true);
+
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showError('Les services de localisation sont désactivés');
+        return;
+      }
+
+      // Check permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _showError('Permission de localisation refusée');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _showError('Permission de localisation refusée définitivement. Activez-la dans les paramètres.');
+        return;
+      }
+
+      // Get current position
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+      );
+
+      // Update filter with location
+      final filterNotifier = ref.read(eventFilterProvider.notifier);
+      filterNotifier.setLocation(position.latitude, position.longitude, _selectedRadius);
+      filterNotifier.clearCity(); // Clear city when using geolocation
+    } catch (e) {
+      _showError('Impossible d\'obtenir votre position');
+    } finally {
+      setState(() => _isLoadingLocation = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red[400],
+        ),
+      );
+    }
+    setState(() => _isLoadingLocation = false);
+  }
+
+  void _updateRadius(double radius) {
+    setState(() => _selectedRadius = radius);
+
+    final filter = ref.read(eventFilterProvider);
+    if (filter.latitude != null && filter.longitude != null) {
+      // Update radius if location is already set
+      ref.read(eventFilterProvider.notifier).setLocation(
+        filter.latitude!,
+        filter.longitude!,
+        radius,
+      );
+    }
+  }
+
+  void _clearLocation() {
+    ref.read(eventFilterProvider.notifier).clearLocation();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final filter = ref.watch(eventFilterProvider);
+    final hasLocation = filter.latitude != null && filter.longitude != null;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -540,7 +625,7 @@ class _WhereTab extends ConsumerWidget {
         children: [
           // Search input
           TextField(
-            controller: searchController,
+            controller: widget.searchController,
             decoration: InputDecoration(
               hintText: 'Recherchez une ville, une activité...',
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -555,6 +640,120 @@ class _WhereTab extends ConsumerWidget {
             onChanged: (value) => filterNotifier.setSearchQuery(value),
           ),
           const SizedBox(height: 16),
+
+          // Geolocation button
+          const Text(
+            'Ma position',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Color(0xFF222222),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Geolocation button
+          GestureDetector(
+            onTap: _isLoadingLocation ? null : _getCurrentLocation,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: hasLocation ? const Color(0xFFFF6B35) : Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: hasLocation ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isLoadingLocation)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.grey,
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.my_location,
+                      size: 18,
+                      color: hasLocation ? Colors.white : const Color(0xFFFF6B35),
+                    ),
+                  const SizedBox(width: 8),
+                  Text(
+                    hasLocation
+                        ? 'Autour de moi (${filter.radiusKm.toInt()} km)'
+                        : 'Autour de moi',
+                    style: TextStyle(
+                      color: hasLocation ? Colors.white : Colors.grey[800],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (hasLocation) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _clearLocation,
+                      child: const Icon(
+                        Icons.close,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          // Radius slider (only show when location is active or loading)
+          if (hasLocation || _isLoadingLocation) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Rayon de recherche',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                color: Color(0xFF666666),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _radiusOptions.map((radius) {
+                final isSelected = _selectedRadius == radius ||
+                    (hasLocation && filter.radiusKm == radius);
+                return GestureDetector(
+                  onTap: () => _updateRadius(radius),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFFFF6B35).withOpacity(0.15) : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      '${radius.toInt()} km',
+                      style: TextStyle(
+                        color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[700],
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+
+          const SizedBox(height: 20),
+
           // Popular cities
           const Text(
             'Villes populaires',
