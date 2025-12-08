@@ -23,11 +23,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  bool _isLocalLoading = false;
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
+
+    // FORCE UI UPDATE
+    setState(() {
+      _isLocalLoading = true;
+    });
+    
+    // Tiny delay to ensure the UI renders the spinner
+    await Future.delayed(const Duration(milliseconds: 50));
 
     final success = await ref.read(authProvider.notifier).login(
       email: _emailController.text.trim(),
@@ -37,18 +47,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (success && mounted) {
       // Small delay to let the user see the success state/loader
       // and ensure smooth transition
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 1500));
       if (mounted) {
         context.go('/');
       }
+    } else if (mounted) {
+      setState(() {
+        _isLocalLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    // Show loading if state is loading OR if we are authenticated (transitioning)
-    final isLoading = authState.isLoading || authState.isAuthenticated;
+    // Show loading if state is loading OR if we are authenticated (transitioning) OR local loading
+    final isLoading = authState.isLoading || authState.isAuthenticated || _isLocalLoading;
 
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.errorMessage != null) {

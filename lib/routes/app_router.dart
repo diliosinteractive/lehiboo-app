@@ -27,6 +27,7 @@ import '../features/booking/presentation/screens/bookings_list_screen.dart';
 import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
+import '../features/partners/presentation/screens/partner_detail_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -127,6 +128,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final eventId = state.pathParameters['id']!;
           return EventDetailScreen(eventId: eventId);
+        },
+      ),
+      // Alias route for /events/:id
+      GoRoute(
+        path: '/events/:id',
+        builder: (context, state) {
+          final eventId = state.pathParameters['id']!;
+          return EventDetailScreen(eventId: eventId);
+        },
+      ),
+      // Partner route
+      GoRoute(
+        path: '/partner/:id',
+        name: 'partner-detail',
+        builder: (context, state) {
+          final partnerId = state.pathParameters['id']!;
+          return PartnerDetailScreen(partnerId: partnerId);
         },
       ),
       GoRoute(

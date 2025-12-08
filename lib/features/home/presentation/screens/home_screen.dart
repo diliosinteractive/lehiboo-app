@@ -14,6 +14,7 @@ import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart'
 import '../../data/models/mobile_app_config.dart';
 import '../providers/home_providers.dart';
 import '../widgets/ads_banners_section.dart';
+import '../../../../core/widgets/feedback/skeleton_event_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
 // ... existing code ...
@@ -166,9 +167,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     );
                   },
-                  loading: () => const SizedBox(
-                    height: 280,
-                    child: Center(child: CircularProgressIndicator(color: Color(0xFFFF6B35))),
+                  loading: () => SizedBox(
+                    height: 400,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: 3,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          width: 260,
+                          margin: const EdgeInsets.only(right: 16),
+                          child: const SkeletonEventCard(),
+                        );
+                      },
+                    ),
                   ),
                   error: (err, stack) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -389,51 +401,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 // Message de bienvenue personnalisé pour les utilisateurs connectés
                 if (greetingMessage != null) ...[
-                  Row(
-                    children: [
-                      Text(
-                        greetingMessage,
-                        style: const TextStyle(
-                          color: Color(0xFFFF6B35), // Orange Le Hiboo
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0, 1),
-                              blurRadius: 3,
-                              color: Colors.black26,
-                            ),
-                          ],
+                  Text(
+                    greetingMessage,
+                    style: const TextStyle(
+                      color: Color(0xFFFF6B35), // Orange Le Hiboo
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 3,
+                          color: Colors.black26,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/petit_boo_logo.png',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              Icons.face,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 8),
                 ],

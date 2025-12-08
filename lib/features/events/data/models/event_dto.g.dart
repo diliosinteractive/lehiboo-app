@@ -12,10 +12,15 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String,
       slug: json['slug'] as String,
       excerpt: json['excerpt'] as String?,
+      content: json['content'] as String?,
       featuredImage: _parseImage(json['featured_image']),
+      gallery: _parseGallery(json['gallery']),
       category: json['category'] == null
           ? null
           : EventCategoryDto.fromJson(json['category'] as Map<String, dynamic>),
+      thematique: json['thematique'] == null
+          ? null
+          : ThematiqueDto.fromJson(json['thematique'] as Map<String, dynamic>),
       dates: json['dates'] == null
           ? null
           : EventDatesDto.fromJson(json['dates'] as Map<String, dynamic>),
@@ -44,8 +49,11 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'title': instance.title,
       'slug': instance.slug,
       'excerpt': instance.excerpt,
+      'content': instance.content,
       'featured_image': instance.featuredImage,
+      'gallery': instance.gallery,
       'category': instance.category,
+      'thematique': instance.thematique,
       'dates': instance.dates,
       'location': instance.location,
       'pricing': instance.pricing,
@@ -196,6 +204,12 @@ _$EventOrganizerDtoImpl _$$EventOrganizerDtoImplFromJson(
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       avatar: json['avatar'] as String?,
+      description: json['description'] as String?,
+      logo: json['logo'] as String?,
+      website: json['website'] as String?,
+      phone: json['phone'] as String?,
+      email: json['email'] as String?,
+      verified: json['verified'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$EventOrganizerDtoImplToJson(
@@ -204,6 +218,12 @@ Map<String, dynamic> _$$EventOrganizerDtoImplToJson(
       'id': instance.id,
       'name': instance.name,
       'avatar': instance.avatar,
+      'description': instance.description,
+      'logo': instance.logo,
+      'website': instance.website,
+      'phone': instance.phone,
+      'email': instance.email,
+      'verified': instance.verified,
     };
 
 _$EventCapacityDtoImpl _$$EventCapacityDtoImplFromJson(

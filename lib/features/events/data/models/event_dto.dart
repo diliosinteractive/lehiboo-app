@@ -10,8 +10,11 @@ class EventDto with _$EventDto {
     required String title,
     required String slug,
     String? excerpt,
+    String? content, // Full HTML description
     @JsonKey(name: 'featured_image', fromJson: _parseImage) EventImageDto? featuredImage,
+    @JsonKey(fromJson: _parseGallery) List<String>? gallery, // Image gallery URLs
     EventCategoryDto? category,
+    ThematiqueDto? thematique, // Main thematique
     EventDatesDto? dates,
     EventLocationDto? location,
     EventPricingDto? pricing,
@@ -24,6 +27,19 @@ class EventDto with _$EventDto {
 
   factory EventDto.fromJson(Map<String, dynamic> json) =>
       _$EventDtoFromJson(json);
+}
+
+/// Parse gallery which can be a list of strings or list of objects
+List<String>? _parseGallery(dynamic value) {
+  if (value == null) return null;
+  if (value is List) {
+    return value.map((item) {
+      if (item is String) return item;
+      if (item is Map) return item['url']?.toString() ?? item['full']?.toString() ?? '';
+      return '';
+    }).where((s) => s.isNotEmpty).toList();
+  }
+  return null;
 }
 
 /// Parse featured_image which can be either a String URL or an object with sizes
@@ -168,6 +184,12 @@ class EventOrganizerDto with _$EventOrganizerDto {
     required int id,
     required String name,
     String? avatar,
+    String? description,
+    String? logo,
+    String? website,
+    String? phone,
+    String? email,
+    @Default(false) bool verified,
   }) = _EventOrganizerDto;
 
   factory EventOrganizerDto.fromJson(Map<String, dynamic> json) =>

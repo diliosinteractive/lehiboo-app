@@ -14,6 +14,9 @@ import '../../data/models/mobile_app_config.dart';
 final homeActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
   final eventRepository = ref.watch(eventRepositoryProvider);
 
+  // FORCE DELAY TO SHOW SKELETON (User Request)
+  await Future.delayed(const Duration(seconds: 2));
+
   try {
     // Fetch events from real API
     final result = await eventRepository.getEvents(
@@ -34,6 +37,9 @@ final homeActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
 /// Provider for featured/promoted activities
 final featuredActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
   final eventRepository = ref.watch(eventRepositoryProvider);
+
+  // FORCE DELAY TO SHOW SKELETON (User Request)
+  await Future.delayed(const Duration(seconds: 2));
 
   try {
     // Fetch featured events

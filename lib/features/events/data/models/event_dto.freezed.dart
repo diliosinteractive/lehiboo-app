@@ -24,9 +24,16 @@ mixin _$EventDto {
   String get title => throw _privateConstructorUsedError;
   String get slug => throw _privateConstructorUsedError;
   String? get excerpt => throw _privateConstructorUsedError;
+  String? get content =>
+      throw _privateConstructorUsedError; // Full HTML description
   @JsonKey(name: 'featured_image', fromJson: _parseImage)
   EventImageDto? get featuredImage => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseGallery)
+  List<String>? get gallery =>
+      throw _privateConstructorUsedError; // Image gallery URLs
   EventCategoryDto? get category => throw _privateConstructorUsedError;
+  ThematiqueDto? get thematique =>
+      throw _privateConstructorUsedError; // Main thematique
   EventDatesDto? get dates => throw _privateConstructorUsedError;
   EventLocationDto? get location => throw _privateConstructorUsedError;
   EventPricingDto? get pricing => throw _privateConstructorUsedError;
@@ -53,9 +60,12 @@ abstract class $EventDtoCopyWith<$Res> {
       String title,
       String slug,
       String? excerpt,
+      String? content,
       @JsonKey(name: 'featured_image', fromJson: _parseImage)
       EventImageDto? featuredImage,
+      @JsonKey(fromJson: _parseGallery) List<String>? gallery,
       EventCategoryDto? category,
+      ThematiqueDto? thematique,
       EventDatesDto? dates,
       EventLocationDto? location,
       EventPricingDto? pricing,
@@ -67,6 +77,7 @@ abstract class $EventDtoCopyWith<$Res> {
 
   $EventImageDtoCopyWith<$Res>? get featuredImage;
   $EventCategoryDtoCopyWith<$Res>? get category;
+  $ThematiqueDtoCopyWith<$Res>? get thematique;
   $EventDatesDtoCopyWith<$Res>? get dates;
   $EventLocationDtoCopyWith<$Res>? get location;
   $EventPricingDtoCopyWith<$Res>? get pricing;
@@ -91,8 +102,11 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? title = null,
     Object? slug = null,
     Object? excerpt = freezed,
+    Object? content = freezed,
     Object? featuredImage = freezed,
+    Object? gallery = freezed,
     Object? category = freezed,
+    Object? thematique = freezed,
     Object? dates = freezed,
     Object? location = freezed,
     Object? pricing = freezed,
@@ -119,14 +133,26 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.excerpt
           : excerpt // ignore: cast_nullable_to_non_nullable
               as String?,
+      content: freezed == content
+          ? _value.content
+          : content // ignore: cast_nullable_to_non_nullable
+              as String?,
       featuredImage: freezed == featuredImage
           ? _value.featuredImage
           : featuredImage // ignore: cast_nullable_to_non_nullable
               as EventImageDto?,
+      gallery: freezed == gallery
+          ? _value.gallery
+          : gallery // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
       category: freezed == category
           ? _value.category
           : category // ignore: cast_nullable_to_non_nullable
               as EventCategoryDto?,
+      thematique: freezed == thematique
+          ? _value.thematique
+          : thematique // ignore: cast_nullable_to_non_nullable
+              as ThematiqueDto?,
       dates: freezed == dates
           ? _value.dates
           : dates // ignore: cast_nullable_to_non_nullable
@@ -183,6 +209,18 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
 
     return $EventCategoryDtoCopyWith<$Res>(_value.category!, (value) {
       return _then(_value.copyWith(category: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $ThematiqueDtoCopyWith<$Res>? get thematique {
+    if (_value.thematique == null) {
+      return null;
+    }
+
+    return $ThematiqueDtoCopyWith<$Res>(_value.thematique!, (value) {
+      return _then(_value.copyWith(thematique: value) as $Val);
     });
   }
 
@@ -260,9 +298,12 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       String title,
       String slug,
       String? excerpt,
+      String? content,
       @JsonKey(name: 'featured_image', fromJson: _parseImage)
       EventImageDto? featuredImage,
+      @JsonKey(fromJson: _parseGallery) List<String>? gallery,
       EventCategoryDto? category,
+      ThematiqueDto? thematique,
       EventDatesDto? dates,
       EventLocationDto? location,
       EventPricingDto? pricing,
@@ -276,6 +317,8 @@ abstract class _$$EventDtoImplCopyWith<$Res>
   $EventImageDtoCopyWith<$Res>? get featuredImage;
   @override
   $EventCategoryDtoCopyWith<$Res>? get category;
+  @override
+  $ThematiqueDtoCopyWith<$Res>? get thematique;
   @override
   $EventDatesDtoCopyWith<$Res>? get dates;
   @override
@@ -303,8 +346,11 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? title = null,
     Object? slug = null,
     Object? excerpt = freezed,
+    Object? content = freezed,
     Object? featuredImage = freezed,
+    Object? gallery = freezed,
     Object? category = freezed,
+    Object? thematique = freezed,
     Object? dates = freezed,
     Object? location = freezed,
     Object? pricing = freezed,
@@ -331,14 +377,26 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value.excerpt
           : excerpt // ignore: cast_nullable_to_non_nullable
               as String?,
+      content: freezed == content
+          ? _value.content
+          : content // ignore: cast_nullable_to_non_nullable
+              as String?,
       featuredImage: freezed == featuredImage
           ? _value.featuredImage
           : featuredImage // ignore: cast_nullable_to_non_nullable
               as EventImageDto?,
+      gallery: freezed == gallery
+          ? _value._gallery
+          : gallery // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
       category: freezed == category
           ? _value.category
           : category // ignore: cast_nullable_to_non_nullable
               as EventCategoryDto?,
+      thematique: freezed == thematique
+          ? _value.thematique
+          : thematique // ignore: cast_nullable_to_non_nullable
+              as ThematiqueDto?,
       dates: freezed == dates
           ? _value.dates
           : dates // ignore: cast_nullable_to_non_nullable
@@ -383,9 +441,12 @@ class _$EventDtoImpl implements _EventDto {
       required this.title,
       required this.slug,
       this.excerpt,
+      this.content,
       @JsonKey(name: 'featured_image', fromJson: _parseImage)
       this.featuredImage,
+      @JsonKey(fromJson: _parseGallery) final List<String>? gallery,
       this.category,
+      this.thematique,
       this.dates,
       this.location,
       this.pricing,
@@ -394,7 +455,8 @@ class _$EventDtoImpl implements _EventDto {
       this.organizer,
       final List<String>? tags,
       @JsonKey(name: 'is_favorite') this.isFavorite = false})
-      : _tags = tags;
+      : _gallery = gallery,
+        _tags = tags;
 
   factory _$EventDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$EventDtoImplFromJson(json);
@@ -408,10 +470,28 @@ class _$EventDtoImpl implements _EventDto {
   @override
   final String? excerpt;
   @override
+  final String? content;
+// Full HTML description
+  @override
   @JsonKey(name: 'featured_image', fromJson: _parseImage)
   final EventImageDto? featuredImage;
+  final List<String>? _gallery;
+  @override
+  @JsonKey(fromJson: _parseGallery)
+  List<String>? get gallery {
+    final value = _gallery;
+    if (value == null) return null;
+    if (_gallery is EqualUnmodifiableListView) return _gallery;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+// Image gallery URLs
   @override
   final EventCategoryDto? category;
+  @override
+  final ThematiqueDto? thematique;
+// Main thematique
   @override
   final EventDatesDto? dates;
   @override
@@ -440,7 +520,7 @@ class _$EventDtoImpl implements _EventDto {
 
   @override
   String toString() {
-    return 'EventDto(id: $id, title: $title, slug: $slug, excerpt: $excerpt, featuredImage: $featuredImage, category: $category, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, isFavorite: $isFavorite)';
+    return 'EventDto(id: $id, title: $title, slug: $slug, excerpt: $excerpt, content: $content, featuredImage: $featuredImage, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, isFavorite: $isFavorite)';
   }
 
   @override
@@ -452,10 +532,14 @@ class _$EventDtoImpl implements _EventDto {
             (identical(other.title, title) || other.title == title) &&
             (identical(other.slug, slug) || other.slug == slug) &&
             (identical(other.excerpt, excerpt) || other.excerpt == excerpt) &&
+            (identical(other.content, content) || other.content == content) &&
             (identical(other.featuredImage, featuredImage) ||
                 other.featuredImage == featuredImage) &&
+            const DeepCollectionEquality().equals(other._gallery, _gallery) &&
             (identical(other.category, category) ||
                 other.category == category) &&
+            (identical(other.thematique, thematique) ||
+                other.thematique == thematique) &&
             (identical(other.dates, dates) || other.dates == dates) &&
             (identical(other.location, location) ||
                 other.location == location) &&
@@ -478,8 +562,11 @@ class _$EventDtoImpl implements _EventDto {
       title,
       slug,
       excerpt,
+      content,
       featuredImage,
+      const DeepCollectionEquality().hash(_gallery),
       category,
+      thematique,
       dates,
       location,
       pricing,
@@ -509,9 +596,12 @@ abstract class _EventDto implements EventDto {
       required final String title,
       required final String slug,
       final String? excerpt,
+      final String? content,
       @JsonKey(name: 'featured_image', fromJson: _parseImage)
       final EventImageDto? featuredImage,
+      @JsonKey(fromJson: _parseGallery) final List<String>? gallery,
       final EventCategoryDto? category,
+      final ThematiqueDto? thematique,
       final EventDatesDto? dates,
       final EventLocationDto? location,
       final EventPricingDto? pricing,
@@ -533,11 +623,18 @@ abstract class _EventDto implements EventDto {
   @override
   String? get excerpt;
   @override
+  String? get content;
+  @override // Full HTML description
   @JsonKey(name: 'featured_image', fromJson: _parseImage)
   EventImageDto? get featuredImage;
   @override
+  @JsonKey(fromJson: _parseGallery)
+  List<String>? get gallery;
+  @override // Image gallery URLs
   EventCategoryDto? get category;
   @override
+  ThematiqueDto? get thematique;
+  @override // Main thematique
   EventDatesDto? get dates;
   @override
   EventLocationDto? get location;
@@ -2185,6 +2282,12 @@ mixin _$EventOrganizerDto {
   int get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String? get avatar => throw _privateConstructorUsedError;
+  String? get description => throw _privateConstructorUsedError;
+  String? get logo => throw _privateConstructorUsedError;
+  String? get website => throw _privateConstructorUsedError;
+  String? get phone => throw _privateConstructorUsedError;
+  String? get email => throw _privateConstructorUsedError;
+  bool get verified => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -2198,7 +2301,16 @@ abstract class $EventOrganizerDtoCopyWith<$Res> {
           EventOrganizerDto value, $Res Function(EventOrganizerDto) then) =
       _$EventOrganizerDtoCopyWithImpl<$Res, EventOrganizerDto>;
   @useResult
-  $Res call({int id, String name, String? avatar});
+  $Res call(
+      {int id,
+      String name,
+      String? avatar,
+      String? description,
+      String? logo,
+      String? website,
+      String? phone,
+      String? email,
+      bool verified});
 }
 
 /// @nodoc
@@ -2217,6 +2329,12 @@ class _$EventOrganizerDtoCopyWithImpl<$Res, $Val extends EventOrganizerDto>
     Object? id = null,
     Object? name = null,
     Object? avatar = freezed,
+    Object? description = freezed,
+    Object? logo = freezed,
+    Object? website = freezed,
+    Object? phone = freezed,
+    Object? email = freezed,
+    Object? verified = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -2231,6 +2349,30 @@ class _$EventOrganizerDtoCopyWithImpl<$Res, $Val extends EventOrganizerDto>
           ? _value.avatar
           : avatar // ignore: cast_nullable_to_non_nullable
               as String?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      logo: freezed == logo
+          ? _value.logo
+          : logo // ignore: cast_nullable_to_non_nullable
+              as String?,
+      website: freezed == website
+          ? _value.website
+          : website // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      verified: null == verified
+          ? _value.verified
+          : verified // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -2243,7 +2385,16 @@ abstract class _$$EventOrganizerDtoImplCopyWith<$Res>
       __$$EventOrganizerDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int id, String name, String? avatar});
+  $Res call(
+      {int id,
+      String name,
+      String? avatar,
+      String? description,
+      String? logo,
+      String? website,
+      String? phone,
+      String? email,
+      bool verified});
 }
 
 /// @nodoc
@@ -2260,6 +2411,12 @@ class __$$EventOrganizerDtoImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? avatar = freezed,
+    Object? description = freezed,
+    Object? logo = freezed,
+    Object? website = freezed,
+    Object? phone = freezed,
+    Object? email = freezed,
+    Object? verified = null,
   }) {
     return _then(_$EventOrganizerDtoImpl(
       id: null == id
@@ -2274,6 +2431,30 @@ class __$$EventOrganizerDtoImplCopyWithImpl<$Res>
           ? _value.avatar
           : avatar // ignore: cast_nullable_to_non_nullable
               as String?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      logo: freezed == logo
+          ? _value.logo
+          : logo // ignore: cast_nullable_to_non_nullable
+              as String?,
+      website: freezed == website
+          ? _value.website
+          : website // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      verified: null == verified
+          ? _value.verified
+          : verified // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -2282,7 +2463,15 @@ class __$$EventOrganizerDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
   const _$EventOrganizerDtoImpl(
-      {required this.id, required this.name, this.avatar});
+      {required this.id,
+      required this.name,
+      this.avatar,
+      this.description,
+      this.logo,
+      this.website,
+      this.phone,
+      this.email,
+      this.verified = false});
 
   factory _$EventOrganizerDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$EventOrganizerDtoImplFromJson(json);
@@ -2293,10 +2482,23 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
   final String name;
   @override
   final String? avatar;
+  @override
+  final String? description;
+  @override
+  final String? logo;
+  @override
+  final String? website;
+  @override
+  final String? phone;
+  @override
+  final String? email;
+  @override
+  @JsonKey()
+  final bool verified;
 
   @override
   String toString() {
-    return 'EventOrganizerDto(id: $id, name: $name, avatar: $avatar)';
+    return 'EventOrganizerDto(id: $id, name: $name, avatar: $avatar, description: $description, logo: $logo, website: $website, phone: $phone, email: $email, verified: $verified)';
   }
 
   @override
@@ -2306,12 +2508,21 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
             other is _$EventOrganizerDtoImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.avatar, avatar) || other.avatar == avatar));
+            (identical(other.avatar, avatar) || other.avatar == avatar) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.logo, logo) || other.logo == logo) &&
+            (identical(other.website, website) || other.website == website) &&
+            (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.email, email) || other.email == email) &&
+            (identical(other.verified, verified) ||
+                other.verified == verified));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, avatar);
+  int get hashCode => Object.hash(runtimeType, id, name, avatar, description,
+      logo, website, phone, email, verified);
 
   @JsonKey(ignore: true)
   @override
@@ -2332,7 +2543,13 @@ abstract class _EventOrganizerDto implements EventOrganizerDto {
   const factory _EventOrganizerDto(
       {required final int id,
       required final String name,
-      final String? avatar}) = _$EventOrganizerDtoImpl;
+      final String? avatar,
+      final String? description,
+      final String? logo,
+      final String? website,
+      final String? phone,
+      final String? email,
+      final bool verified}) = _$EventOrganizerDtoImpl;
 
   factory _EventOrganizerDto.fromJson(Map<String, dynamic> json) =
       _$EventOrganizerDtoImpl.fromJson;
@@ -2343,6 +2560,18 @@ abstract class _EventOrganizerDto implements EventOrganizerDto {
   String get name;
   @override
   String? get avatar;
+  @override
+  String? get description;
+  @override
+  String? get logo;
+  @override
+  String? get website;
+  @override
+  String? get phone;
+  @override
+  String? get email;
+  @override
+  bool get verified;
   @override
   @JsonKey(ignore: true)
   _$$EventOrganizerDtoImplCopyWith<_$EventOrganizerDtoImpl> get copyWith =>
