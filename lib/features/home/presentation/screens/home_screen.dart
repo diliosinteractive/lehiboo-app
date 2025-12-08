@@ -389,20 +389,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 // Message de bienvenue personnalisé pour les utilisateurs connectés
                 if (greetingMessage != null) ...[
-                  Text(
-                    greetingMessage,
-                    style: const TextStyle(
-                      color: Color(0xFFFFD700), // Doré pour ressortir
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(0, 1),
-                          blurRadius: 3,
-                          color: Colors.black45,
+                  Row(
+                    children: [
+                      Text(
+                        greetingMessage,
+                        style: const TextStyle(
+                          color: Color(0xFFFF6B35), // Orange Le Hiboo
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(0, 1),
+                              blurRadius: 3,
+                              color: Colors.black26,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/petit_boo_logo.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Icon(
+                              Icons.face,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                 ],

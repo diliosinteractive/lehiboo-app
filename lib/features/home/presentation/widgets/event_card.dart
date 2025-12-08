@@ -6,6 +6,7 @@ import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/utils/guest_guard.dart';
 
 class EventCard extends ConsumerWidget {
   final Activity activity;
@@ -112,8 +113,15 @@ class EventCard extends ConsumerWidget {
                     ),
                     child: IconButton(
                       padding: EdgeInsets.zero,
-                      onPressed: () {
-                        ref.read(favoritesProvider.notifier).toggleFavorite(activity.id);
+                      onPressed: () async {
+                        final canProceed = await GuestGuard.check(
+                          context: context,
+                          ref: ref,
+                          featureName: 'ajouter aux favoris',
+                        );
+                        if (canProceed) {
+                          ref.read(favoritesProvider.notifier).toggleFavorite(activity.id);
+                        }
                       },
                       icon: Icon(
                         isFavorite ? Icons.favorite : Icons.favorite_border,

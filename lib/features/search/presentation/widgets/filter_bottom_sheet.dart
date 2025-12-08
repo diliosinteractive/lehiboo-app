@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
+import '../../../thematiques/presentation/providers/thematiques_provider.dart';
+import '../../../thematiques/data/models/thematique_dto.dart';
 
 /// Show the filter bottom sheet
 Future<void> showFilterBottomSheet(BuildContext context) {
@@ -131,17 +133,27 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                     ),
                     const SizedBox(height: 24),
                     // Thematiques filter section
-                    _FilterSection(
-                      title: 'Thématiques',
-                      icon: Icons.category,
-                      child: _ThematiquesFilterSection(
-                        selectedSlugs: _tempFilter.thematiquesSlugs,
-                        onChanged: (slugs) {
-                          setState(() {
-                            _tempFilter = _tempFilter.copyWith(thematiquesSlugs: slugs);
-                          });
-                        },
-                      ),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final thematiquesAsync = ref.watch(thematiquesProvider);
+                        return thematiquesAsync.when(
+                          data: (thematiques) => _FilterSection(
+                            title: 'Thématiques',
+                            icon: Icons.category,
+                            child: _ThematiquesFilterSection(
+                              selectedSlugs: _tempFilter.thematiquesSlugs,
+                              thematiques: thematiques,
+                              onChanged: (slugs) {
+                                setState(() {
+                                  _tempFilter = _tempFilter.copyWith(thematiquesSlugs: slugs);
+                                });
+                              },
+                            ),
+                          ),
+                          loading: () => const Center(child: CircularProgressIndicator()),
+                          error: (_, __) => const SizedBox(),
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
                     // Audience filter section
@@ -416,46 +428,70 @@ class _PriceFilterSection extends StatelessWidget {
 /// Thematiques filter section
 class _ThematiquesFilterSection extends StatelessWidget {
   final List<String> selectedSlugs;
+  final List<ThematiqueDto> thematiques;
   final ValueChanged<List<String>> onChanged;
 
   const _ThematiquesFilterSection({
     required this.selectedSlugs,
+    required this.thematiques,
     required this.onChanged,
   });
 
-  static const _thematiques = [
-    {'name': 'Concert', 'slug': 'concert', 'icon': Icons.music_note},
-    {'name': 'Spectacle', 'slug': 'spectacle', 'icon': Icons.theater_comedy},
-    {'name': 'Sport', 'slug': 'sport', 'icon': Icons.sports},
-    {'name': 'Atelier', 'slug': 'atelier', 'icon': Icons.build},
-    {'name': 'Exposition', 'slug': 'exposition', 'icon': Icons.museum},
-    {'name': 'Festival', 'slug': 'festival', 'icon': Icons.celebration},
-    {'name': 'Conférence', 'slug': 'conference', 'icon': Icons.mic},
-    {'name': 'Cinéma', 'slug': 'cinema', 'icon': Icons.movie},
-    {'name': 'Gastronomie', 'slug': 'gastronomie', 'icon': Icons.restaurant},
-    {'name': 'Marché', 'slug': 'marche', 'icon': Icons.store},
-    {'name': 'Nature', 'slug': 'nature', 'icon': Icons.park},
-    {'name': 'Visite', 'slug': 'visite', 'icon': Icons.location_city},
-  ];
+  // Icon mapping
+  static const _iconMapping = {
+    'concert': Icons.music_note,
+    'spectacle': Icons.theater_comedy,
+    'sport': Icons.sports,
+    'atelier': Icons.build,
+    'exposition': Icons.museum,
+    'festival': Icons.celebration,
+    'conference': Icons.mic,
+    'cinema': Icons.movie,
+    'gastronomie': Icons.restaurant,
+    'marche': Icons.store,
+    'nature': Icons.park,
+    'visite': Icons.location_city,
+    'famille-enfants': Icons.child_care,
+    'art-culture': Icons.palette,
+    'musique-concert': Icons.music_note,
+    'cinema-spectacle': Icons.theater_comedy,
+    'cuisine-gastronomie': Icons.restaurant,
+    'formation-education': Icons.school,
+    'litterature-lecture': Icons.menu_book,
+    'mode-design': Icons.checkroom,
+    'nature-environnement': Icons.park,
+    'numerique-technologie': Icons.computer,
+    'patrimoine-histoire': Icons.castle,
+    'sport-bien-etre': Icons.fitness_center,
+  };
 
   @override
   Widget build(BuildContext context) {
+    if (thematiques.isEmpty) {
+      return const Text('Aucune thématique disponible');
+    }
+
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: _thematiques.map((t) {
-        final slug = t['slug'] as String;
-        final isSelected = selectedSlugs.contains(slug);
+      children: thematiques.map((t) {
+        final isSelected = selectedSlugs.contains(t.slug);
+        
+        // Try to find icon from mapping, or use category default
+        final icon = _iconMapping[t.slug] ?? 
+                     _iconMapping[t.slug.split('-').last] ?? // Try partial match
+                     Icons.local_activity;
+
         return _SelectableChip(
-          label: t['name'] as String,
-          icon: t['icon'] as IconData,
+          label: t.name,
+          icon: icon,
           isSelected: isSelected,
           onTap: () {
             final newList = List<String>.from(selectedSlugs);
             if (isSelected) {
-              newList.remove(slug);
+              newList.remove(t.slug);
             } else {
-              newList.add(slug);
+              newList.add(t.slug);
             }
             onChanged(newList);
           },

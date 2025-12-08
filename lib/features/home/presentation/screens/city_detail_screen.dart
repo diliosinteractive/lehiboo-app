@@ -170,13 +170,32 @@ class CityDetailScreen extends ConsumerWidget {
                         ),
                       ],
                       const SizedBox(height: 24),
-                      const Text(
-                        'Activités populaires',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A1A),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Activités populaires',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => context.push(
+                              Uri(path: '/search', queryParameters: {'city': city.slug}).toString(),
+                            ),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFFFF6B35),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            icon: const Icon(Icons.tune, size: 16),
+                            label: const Text(
+                              'Filtrer',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                     ],

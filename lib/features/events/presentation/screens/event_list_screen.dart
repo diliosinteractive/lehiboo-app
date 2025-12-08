@@ -178,11 +178,19 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
     // Initialize category filter from widget parameter if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final filterNotifier = ref.read(eventFilterProvider.notifier);
+      
+      // If passing specific filters via navigation, reset previous state
+      if (widget.categorySlug != null || widget.city != null) {
+        filterNotifier.resetAll();
+      }
+
       if (widget.categorySlug != null) {
         filterNotifier.addThematique(widget.categorySlug!);
       }
       if (widget.city != null) {
-        filterNotifier.setCity(widget.city!, widget.city!);
+        // Use slug as name temporarily, or capitalize it
+        final cityName = widget.city![0].toUpperCase() + widget.city!.substring(1);
+        filterNotifier.setCity(widget.city!, cityName);
       }
     });
   }

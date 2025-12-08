@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:html_unescape/html_unescape.dart';
 import '../providers/thematiques_provider.dart';
 import '../../data/models/thematique_dto.dart';
 
@@ -119,11 +120,14 @@ class ThematiqueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = thematique.image?.medium ?? thematique.image?.large;
+    final unescape = HtmlUnescape();
 
     return GestureDetector(
       onTap: () {
-        // Navigate to events filtered by thematique
-        context.push('/events?thematique=${thematique.slug}');
+        // Navigate to search screen with pre-filled category
+        context.push(
+          Uri(path: '/search', queryParameters: {'categorySlug': thematique.slug}).toString(),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -193,7 +197,7 @@ class ThematiqueCard extends StatelessWidget {
                   const Spacer(),
                   // Name
                   Text(
-                    thematique.name,
+                    unescape.convert(thematique.name),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,

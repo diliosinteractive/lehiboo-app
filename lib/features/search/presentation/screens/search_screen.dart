@@ -9,7 +9,14 @@ import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/active_filter_chips.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  final String? categorySlug;
+  final String? city;
+
+  const SearchScreen({
+    super.key,
+    this.categorySlug,
+    this.city,
+  });
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -17,6 +24,37 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _showExpandedSearch = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize filters if provided
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final filterNotifier = ref.read(eventFilterProvider.notifier);
+      if (widget.categorySlug != null || widget.city != null) {
+        filterNotifier.resetAll();
+        // If we have initial params, we probably want to see results immediately, 
+        // effectively treating this as a results page, so maybe start collapsed?
+        // But the user requested "use this module", which implies the tabs interface.
+        // Let's keep it expanded by default unless we decide otherwise.
+        
+        // Actually, if I clicked a specific category, I might expect to see results for it.
+        // But if I want to "Use the module", I probably want to tweak filters?
+        // Let's stick to simple init for now.
+      }
+      
+      if (widget.categorySlug != null) {
+        filterNotifier.addThematique(widget.categorySlug!);
+        // If pre-filtered, maybe we don't start expanded?
+        setState(() => _showExpandedSearch = false);
+      }
+      if (widget.city != null) {
+        final cityName = widget.city![0].toUpperCase() + widget.city!.substring(1);
+        filterNotifier.setCity(widget.city!, cityName);
+        setState(() => _showExpandedSearch = false);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

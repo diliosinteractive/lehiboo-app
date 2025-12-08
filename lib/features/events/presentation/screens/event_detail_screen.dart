@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lehiboo/domain/repositories/activity_repository.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/utils/guest_guard.dart';
 
 class EventDetailScreen extends ConsumerStatefulWidget {
   final String eventId;
@@ -87,7 +88,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 backgroundColor: Colors.white,
                 child: IconButton(
                   icon: const Icon(Icons.favorite_border, color: Colors.black),
-                  onPressed: () {},
+                  onPressed: () async {
+                    final canProceed = await GuestGuard.check(
+                      context: context,
+                      ref: ref,
+                      featureName: 'ajouter aux favoris',
+                    );
+                    if (canProceed) {
+                      // TODO: Implement toggle favorite
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 16),
@@ -236,7 +246,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               ),
               const Spacer(),
               ElevatedButton(
-                onPressed: () => context.push('/booking/${activity.id}', extra: activity),
+                onPressed: () async {
+                  final canProceed = await GuestGuard.check(
+                    context: context,
+                    ref: ref,
+                    featureName: 'réserver cette activité',
+                  );
+                  if (canProceed) {
+                    context.push('/booking/${activity.id}', extra: activity);
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF6B35),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
