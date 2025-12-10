@@ -22,7 +22,7 @@ class BookingsListScreen extends ConsumerWidget {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go('/profile');
+              context.go('/');
             }
           },
         ),

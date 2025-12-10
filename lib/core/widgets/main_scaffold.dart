@@ -85,13 +85,19 @@ class _MainScaffoldState extends State<MainScaffold> {
         height: 70,
         padding: EdgeInsets.zero,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildNavItem(Icons.home_rounded, 'Accueil', 0),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: _buildNavItem(Icons.home_rounded, 'Accueil', 0),
+            ),
             _buildNavItem(Icons.explore_outlined, 'Explorer', 1),
-            const SizedBox(width: 48), // Space for FAB
+            const SizedBox(width: 64), // Space for FAB
             _buildNavItem(Icons.favorite_outline, 'Favoris', 2),
-            _buildNavItem(Icons.confirmation_number_outlined, 'Réservas', 3),
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: _buildNavItem(Icons.confirmation_number_outlined, 'Réservations', 3),
+            ),
           ],
         ),
       ),

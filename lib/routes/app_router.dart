@@ -101,6 +101,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'profile',
             builder: (context, state) => const ProfileScreen(),
           ),
+          GoRoute(
+            path: '/my-bookings',
+            name: 'my-bookings',
+            builder: (context, state) => const BookingsListScreen(),
+          ),
         ],
       ),
 
@@ -218,11 +223,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       
-      GoRoute(
-        path: '/my-bookings',
-        name: 'my-bookings',
-        builder: (context, state) => const BookingsListScreen(),
-      ),
+
 
       // Settings
       GoRoute(
