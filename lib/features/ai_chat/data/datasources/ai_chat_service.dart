@@ -76,6 +76,10 @@ class AiChatService {
     }
   }
 
+  void updateUserContext(Map<String, dynamic> context) {
+    _userContext.addAll(context);
+  }
+
   void resetConversation() {
     _conversationId = null;
     _userContext = {};

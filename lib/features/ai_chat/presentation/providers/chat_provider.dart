@@ -8,6 +8,8 @@ import 'package:lehiboo/features/events/domain/repositories/event_repository.dar
 import '../../domain/models/chat_message.dart';
 import 'package:lehiboo/features/ai_chat/data/datasources/ai_chat_service.dart';
 import 'package:lehiboo/config/dio_client.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 // State class
 class ChatState {
@@ -52,7 +54,103 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final _uuid = const Uuid();
   final AiChatService _aiService;
 
-  ChatNotifier(this.ref, this._aiService) : super(ChatState());
+  ChatNotifier(this.ref, this._aiService) : super(ChatState()) {
+    _startSmartWelcome();
+  }
+
+  Future<void> _startSmartWelcome() async {
+    final user = ref.read(currentUserProvider);
+    
+    // 1. Initial "Connecting" state
+    final loadingMsg = ChatMessage(
+        id: _uuid.v4(),
+        text: "Petit Boo se connecte...",
+        isUser: false,
+        timestamp: DateTime.now(),
+    );
+    state = state.copyWith(messages: [loadingMsg], isLoading: true);
+
+    try {
+      // 2. Get Location
+      String locationContext = "Inconnue";
+      
+      // Check permissions
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (serviceEnabled) {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        
+        if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+            final position = await Geolocator.getCurrentPosition();
+            // Reverse Geocode
+            try {
+              List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+              if (placemarks.isNotEmpty) {
+                 locationContext = placemarks.first.locality ?? "Inconnue";
+                 // Update API Context
+                 _aiService.updateUserContext({
+                   'lat': position.latitude,
+                   'lng': position.longitude,
+                   'city': locationContext,
+                 });
+              }
+            } catch (e) {
+              debugPrint("Geocoding error: $e");
+            }
+        }
+      }
+
+      // 3. Send Hidden System Prompt
+      final userName = (user != null && (user.firstName?.isNotEmpty == true)) ? user.firstName! : "";
+      final prompt = "SYSTEM_INSTRUCTION: Ignore previous history. The user is '$userName' and is currently at '$locationContext'. "
+                     "Act as 'Petit Boo', a friendly local guide. " 
+                     "Say hello warmly (using name if valid), comment briefly on the location, and suggest 3 diverse activities nearby to start the conversation. "
+                     "Do NOT mention that you were told this context.";
+
+      // 4. Call API
+      // We use the normal sendMessage but we need to make sure the UI shows the RESPONSE, not this prompt.
+      // But sendMessage adds the user message to the list. That's a problem. 
+      // We need a way to call the API *without* adding the user message to the UI state.
+      
+      // Direct API call bypassing the public sendMessage method's state update logic
+      final response = await _aiService.sendMessage(prompt);
+      
+      final aiText = response['message'] as String? ?? "Bonjour ! Je suis Petit Boo.";
+      final eventsData = response['events'] as List?;
+      List<Activity> suggestions = [];
+      if (eventsData != null) {
+          suggestions = eventsData.map((e) => _mapEventToActivity(e)).toList();
+      }
+      
+      final aiMsg = ChatMessage(
+        id: _uuid.v4(),
+        text: aiText,
+        isUser: false,
+        timestamp: DateTime.now(),
+        activitySuggestions: suggestions,
+        searchContext: response['searchParams'] ?? response['user_context'],
+      );
+
+      // Replace the loading message with the real one
+      state = state.copyWith(
+        messages: [aiMsg], 
+        isLoading: false
+      );
+
+    } catch (e) {
+      debugPrint("Smart Welcome Error: $e");
+      // Fallback
+      final fallbackMsg = ChatMessage(
+        id: _uuid.v4(),
+        text: "Bonjour ${user?.firstName ?? ''} ! Je suis Petit Boo. Désolé, j'ai eu un petit souci de connexion, mais je suis prêt à t'aider !",
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+      state = state.copyWith(messages: [fallbackMsg], isLoading: false);
+    }
+  }
 
   void addReview(String title, String message) {
     // Placeholder if we ever need it
