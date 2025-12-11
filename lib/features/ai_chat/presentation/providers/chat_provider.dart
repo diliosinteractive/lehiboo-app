@@ -86,6 +86,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
       
       final aiText = response['message'] as String? ?? "Désolé, je n'ai pas compris.";
       final eventsData = response['events'] as List?;
+      // Use searchParams if available (V2 Update), fallback to user_context
+      final searchParams = response['searchParams'] as Map<String, dynamic>?;
+      final userContext = response['user_context'] as Map<String, dynamic>?;
+      
       List<Activity> suggestions = [];
 
       if (eventsData != null) {
@@ -98,6 +102,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
         isUser: false,
         timestamp: DateTime.now(),
         activitySuggestions: suggestions,
+        searchContext: searchParams ?? userContext,
       );
 
       state = state.copyWith(

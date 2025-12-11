@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/chat_provider.dart';
-import '../../domain/models/chat_message.dart'; // Add this import
+import '../../domain/models/chat_message.dart';
+import '../widgets/ai_suggestion_carousel.dart';
 
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
@@ -476,19 +478,70 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               ),
             ),
             // Activity suggestions if any
+            // Activity suggestions if any
             if (!isUser && message.activitySuggestions != null && message.activitySuggestions!.isNotEmpty)
-               // Simple card preview logic here
                Padding(
-                 padding: const EdgeInsets.only(top: 10),
-                 child: Text(
-                   "[${message.activitySuggestions!.length} activités trouvées]", 
-                   style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                 padding: const EdgeInsets.only(top: 12),
+                 child: AiSuggestionCarousel(
+                   activities: message.activitySuggestions!,
+                   onMoreTap: () => _navigateToSearchWithContext(message),
                  ),
                ),
           ],
         ),
       ),
     );
+  }
+
+  void _navigateToSearchWithContext(ChatMessage message) {
+    // Extract context for pre-filling filters
+    final contextMap = message.searchContext;
+    final Map<String, String> queryParams = {};
+
+    if (contextMap != null) {
+      debugPrint("Deep Search Context: $contextMap");
+
+      // Direct Mapping from V2 'searchParams'
+      
+      // 1. City
+      if (contextMap['city'] != null) {
+        queryParams['city'] = contextMap['city'];
+      } else if (contextMap['location'] is Map && contextMap['location']['city'] != null) {
+        // Fallback for userContext structure
+        queryParams['city'] = contextMap['location']['city'];
+      }
+
+      // 2. Category
+      if (contextMap['category'] != null) {
+        queryParams['categorySlug'] = contextMap['category'];
+      } else if (contextMap['activityType'] != null && contextMap['activityType'] != 'multi') {
+        // Fallback
+        queryParams['categorySlug'] = contextMap['activityType'];
+      }
+
+      // 3. Search Query (Tags)
+      if (contextMap['tags'] is List && (contextMap['tags'] as List).isNotEmpty) {
+        // Use the first tag as search query? Or pass all?
+        // Let's us commas or just the first relevant one.
+        queryParams['search'] = (contextMap['tags'] as List).first.toString();
+      }
+
+      // 4. Dates
+      if (contextMap['dates'] != null) {
+        // 'thisWeekend' -> 'weekend'
+        String dateVal = contextMap['dates'].toString();
+        if (dateVal == 'thisWeekend') dateVal = 'weekend';
+        queryParams['dateFilter'] = dateVal;
+      }
+
+      // 5. Free Only
+      if (contextMap['freeOnly'] == true) {
+        queryParams['onlyFree'] = 'true';
+      }
+    }
+    
+    debugPrint("Navigating to search with: $queryParams");
+    context.pushNamed('search', queryParameters: queryParams);
   }
   
   Widget _buildInfoStep({required IconData icon, required String text}) {

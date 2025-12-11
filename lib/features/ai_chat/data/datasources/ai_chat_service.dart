@@ -12,6 +12,22 @@ class AiChatService {
   List<Map<String, dynamic>> _history = [];
   
   AiChatService(this._dio);
+  String? _apiKey;
+
+  Future<void> _fetchApiKey() async {
+    try {
+      // NOTE: dio base URL is already .../lehiboo/v2
+      final response = await _dio.get('/auth/ai-token');
+      if (response.data['success'] == true && response.data['data'] != null) {
+        _apiKey = response.data['data']['api_key'];
+      } else {
+        throw Exception("Impossible de créer la session Chat.");
+      }
+    } catch (e) {
+      debugPrint("Error fetching AI Token: $e");
+      rethrow;
+    }
+  }
   
   Future<Map<String, dynamic>> sendMessage(String message) async {
     _conversationId ??= const Uuid().v4();
@@ -20,6 +36,11 @@ class AiChatService {
     final url = '${AppConstants.aiBaseUrl}/mobile/chat';
 
     try {
+      // Lazy load API Key
+      if (_apiKey == null) {
+        await _fetchApiKey();
+      }
+
       final response = await _dio.post(
         url,
         data: {
@@ -30,7 +51,7 @@ class AiChatService {
         },
         options: Options(
           headers: {
-            'X-API-Key': AppConstants.apiKey,
+            if (_apiKey != null) 'X-API-Key': _apiKey!,
             'X-Requested-With': 'XMLHttpRequest',
           },
         ),

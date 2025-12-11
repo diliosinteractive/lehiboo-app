@@ -13,7 +13,7 @@ class AppConstants {
   static const String aiBaseUrl = 'https://preprod.lehiboo.com/api-planner';
   static const String apiKey = String.fromEnvironment(
     'API_KEY',
-    defaultValue: 'lhb_mobile_v2_key_secure_2024',
+    defaultValue: '',
   );
   static const Duration apiTimeout = Duration(seconds: 30);
   static const int maxRetries = 3;
