@@ -45,71 +45,77 @@ class ChatState {
 
 // Provider
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
-  final dio = ref.watch(dioProvider); // Watch dioProvider
-  final aiService = AiChatService(dio); // Inject Dio
+  final dio = ref.watch(dioProvider); 
+  ref.watch(currentUserProvider); // Force rebuild on auth change
+  final aiService = AiChatService(dio);
   return ChatNotifier(ref, aiService);
 });
 
 class ChatNotifier extends StateNotifier<ChatState> {
   final Ref ref;
-  final _uuid = const Uuid();
   final AiChatService _aiService;
+  final Uuid _uuid = const Uuid();
 
   ChatNotifier(this.ref, this._aiService) : super(ChatState()) {
-    _startSmartWelcome();
+    startSmartWelcome();
   }
 
-  Future<void> _startSmartWelcome() async {
+  Future<void> startSmartWelcome() async {
+    String userName = "Voyageur";
+    String locationContext = "Paris"; // Default fallback
+
     final user = ref.read(currentUserProvider);
-    
-    // 1. Initial "Connecting" state
-    final loadingMsg = ChatMessage(
+    if (user != null && user.firstName != null) {
+      userName = user.firstName!;
+    }
+
+    // Initial Loading State
+    state = state.copyWith(isLoading: true, messages: [
+      ChatMessage(
         id: _uuid.v4(),
         text: "Petit Boo se connecte...",
         isUser: false,
         timestamp: DateTime.now(),
-    );
-    state = state.copyWith(messages: [loadingMsg], isLoading: true);
+      )
+    ]);
 
     try {
-      // 2. Get Location
-      String locationContext = "Inconnue";
-      
-      // Check permissions
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (serviceEnabled) {
         LocationPermission permission = await Geolocator.checkPermission();
         if (permission == LocationPermission.denied) {
           permission = await Geolocator.requestPermission();
         }
-        
         if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
-            final position = await Geolocator.getCurrentPosition();
-            // Reverse Geocode
-            try {
-              List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
-              if (placemarks.isNotEmpty) {
-                 locationContext = placemarks.first.locality ?? "Inconnue";
-                 // Update API Context
-                 _aiService.updateUserContext({
-                   'lat': position.latitude,
-                   'lng': position.longitude,
-                   'city': locationContext,
-                 });
-              }
-            } catch (e) {
-              debugPrint("Geocoding error: $e");
+          Position position = await Geolocator.getCurrentPosition();
+          try {
+            List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+            if (placemarks.isNotEmpty) {
+              locationContext = placemarks.first.locality ?? "Paris";
             }
+          } catch (e) {
+            debugPrint("Geocoding error: $e");
+          }
         }
       }
+    } catch (e) {
+      debugPrint("Location error: $e");
+    }
 
-      // 3. Send Hidden System Prompt
-      final userName = (user != null && (user.firstName?.isNotEmpty == true)) ? user.firstName! : "";
-      final prompt = "SYSTEM_INSTRUCTION: Ignore previous history. The user is '$userName' and is currently at '$locationContext'. "
+    try {
+    final prompt = "SYSTEM_INSTRUCTION: Ignore previous history. The user is '$userName' and is currently at '$locationContext'. "
                      "Act as 'Petit Boo', a friendly local guide. " 
-                     "Say hello warmly (using name if valid). "
-                     "IMPORTANT: You MUST execute a search to find 3 real activities in or around '$locationContext' and return them as structured events. "
-                     "Do NOT just make up suggestions in text. If no events are found, text-only is okay. "
+                     "Say hello warmly. Use EMOJIS to be friendly and expressive! 🌟 "
+                     "IMPORTANT: Execute a search to find 3 REAL, DIVERSE activities around '$locationContext': "
+                     "1. Something cultural or fun (Theater, Show, Comedy). "
+                     "2. Something active or thrilling (Sport, Adventure). "
+                     "3. A local city event or discovery. "
+                     "Present them pedagogically in your text (e.g. 'Si vous aimez rire...', 'Pour des sensations...'). "
+                     "Focus on PERSUADING the user to go out. Explain WHY these are great choices. "
+                     "If you cannot find an activity for a specific category, DO NOT mention it in the text. Only describe what you found. "
+                     "Do NOT include URLs or links in the text. Refer to the cards below. "
+                     "You MUST return them as structured events. "
+                     "Do NOT just make up suggestions in text. "
                      "Do NOT mention that you were told this context.";
 
       // 4. Call API

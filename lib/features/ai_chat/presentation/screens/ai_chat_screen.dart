@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
@@ -471,11 +472,18 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2)),
             ],
           ),
-          child: Text(
-            message.text,
-            style: TextStyle(
-              color: isUser ? Colors.white : const Color(0xFF222222),
-              height: 1.4,
+          child: MarkdownBody(
+            data: message.text,
+            styleSheet: MarkdownStyleSheet(
+              p: TextStyle(
+                color: isUser ? Colors.white : const Color(0xFF222222),
+                height: 1.4,
+                fontSize: 16, // Consistent font size
+              ),
+              strong: TextStyle( // Bold text
+                 fontWeight: FontWeight.bold,
+                 color: isUser ? Colors.white : const Color(0xFF222222),
+              ),
             ),
           ),
         ),
