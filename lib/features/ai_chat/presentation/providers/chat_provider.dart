@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:uuid/uuid.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/domain/entities/city.dart';
@@ -106,7 +107,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final userName = (user != null && (user.firstName?.isNotEmpty == true)) ? user.firstName! : "";
       final prompt = "SYSTEM_INSTRUCTION: Ignore previous history. The user is '$userName' and is currently at '$locationContext'. "
                      "Act as 'Petit Boo', a friendly local guide. " 
-                     "Say hello warmly (using name if valid), comment briefly on the location, and suggest 3 diverse activities nearby to start the conversation. "
+                     "Say hello warmly (using name if valid). "
+                     "IMPORTANT: You MUST execute a search to find 3 real activities in or around '$locationContext' and return them as structured events. "
+                     "Do NOT just make up suggestions in text. If no events are found, text-only is okay. "
                      "Do NOT mention that you were told this context.";
 
       // 4. Call API
