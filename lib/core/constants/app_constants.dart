@@ -10,9 +10,10 @@ class AppConstants {
     'API_BASE_URL',
     defaultValue: 'https://preprod.lehiboo.com/wp-json/lehiboo/v2',
   );
+  static const String aiBaseUrl = 'https://preprod.lehiboo.com/api-planner';
   static const String apiKey = String.fromEnvironment(
     'API_KEY',
-    defaultValue: '',
+    defaultValue: 'lhb_mobile_v2_key_secure_2024',
   );
   static const Duration apiTimeout = Duration(seconds: 30);
   static const int maxRetries = 3;

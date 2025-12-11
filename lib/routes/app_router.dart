@@ -28,6 +28,8 @@ import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
 import '../features/partners/presentation/screens/partner_detail_screen.dart';
+import '../features/ai_chat/presentation/screens/ai_welcome_screen.dart';
+import '../features/ai_chat/presentation/screens/ai_chat_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -247,6 +249,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/notifications',
         name: 'notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      // AI Chat
+      GoRoute(
+        path: '/ai-welcome',
+        name: 'ai-welcome',
+        builder: (context, state) => const AiWelcomeScreen(),
+      ),
+      GoRoute(
+        path: '/ai-chat',
+        name: 'ai-chat',
+        builder: (context, state) => const AiChatScreen(),
       ),
     ],
 

@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>L'application utilise la reconnaissance vocale pour vous permettre de discuter avec Petit Boo.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>L'application utilise le microphone pour enregistrer votre voix lors des discussions avec Petit Boo.</string>
 </dict>
 </plist>

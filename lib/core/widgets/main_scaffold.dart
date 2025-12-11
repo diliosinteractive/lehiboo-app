@@ -35,7 +35,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   void _onFabTapped() {
-    context.push('/search'); // Navigate to search/AI chat
+    context.push('/ai-welcome'); // Open Petit Boo AI Chat
   }
 
   @override
