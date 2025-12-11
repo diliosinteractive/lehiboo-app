@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/domain/entities/city.dart';
+import 'package:lehiboo/domain/entities/taxonomy.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart'; // To fetch actual activities for mock
 import '../../domain/models/chat_message.dart';
@@ -129,12 +131,63 @@ class ChatNotifier extends StateNotifier<ChatState> {
   // Helper to map API Event to Domain Activity
   // Ideally this should be in a Mapper class, but keeping it here for speed/simplicity as per instructions
   Activity _mapEventToActivity(Map<String, dynamic> json) {
+    // Helper to safely parse double
+    double? parseDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      return null;
+    }
+
+    // Map Category
+    Category? category;
+    if (json['category'] is Map) {
+      final cat = json['category'];
+      category = Category(
+        id: '', // Not provided by API V2 yet
+        slug: cat['slug'] ?? '',
+        name: cat['name'] ?? '',
+      );
+    }
+
+    // Map Tags (Thematiques)
+    List<Tag>? tags;
+    if (json['thematiques'] is List) {
+      tags = (json['thematiques'] as List).map((t) {
+        return Tag(
+          id: '',
+          slug: t['slug'] ?? '',
+          name: t['name'] ?? '',
+        );
+      }).toList();
+    }
+
+    // Map City
+    City? city;
+    if (json['location'] is Map) {
+      final loc = json['location'];
+      city = City(
+        id: '',
+        name: loc['city'] ?? '',
+        slug: loc['city']?.toString().toLowerCase() ?? '',
+        lat: parseDouble(loc['lat']),
+        lng: parseDouble(loc['lng']),
+      );
+    }
+
+    final price = parseDouble(json['price']);
+
     return Activity(
       id: json['id']?.toString() ?? '',
       title: json['title'] ?? 'Activité sans titre',
-      slug: json['slug'] ?? 'activite-${json['id']}', // Fallback slug
+      slug: json['slug'] ?? 'activite-${json['id']}',
       description: json['description'] ?? '',
-      imageUrl: json['image'],
+      imageUrl: json['image'] ?? json['thumbnail'] ?? json['image_url'], // Priority to 'image'
+      isFree: price == 0 || json['priceLabel'] == 'Gratuit',
+      priceMin: price,
+      city: city,
+      category: category,
+      tags: tags,
     );
   }
 

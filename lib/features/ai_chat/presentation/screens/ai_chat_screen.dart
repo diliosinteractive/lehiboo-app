@@ -449,47 +449,47 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.isUser;
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.all(16),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        decoration: BoxDecoration(
-          color: isUser ? const Color(0xFFFF6B35) : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: isUser ? const Radius.circular(20) : Radius.zero,
-            bottomRight: isUser ? Radius.zero : const Radius.circular(20),
-          ),
-          boxShadow: isUser ? [] : [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2)),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message.text,
-              style: TextStyle(
-                color: isUser ? Colors.white : const Color(0xFF222222),
-                height: 1.4,
-              ),
+    final hasSuggestions = !isUser && message.activitySuggestions != null && message.activitySuggestions!.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        // Text Bubble
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.all(16),
+          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+          decoration: BoxDecoration(
+            color: isUser ? const Color(0xFFFF6B35) : Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(20),
+              topRight: const Radius.circular(20),
+              bottomLeft: isUser ? const Radius.circular(20) : Radius.zero,
+              bottomRight: isUser ? Radius.zero : const Radius.circular(20),
             ),
-            // Activity suggestions if any
-            // Activity suggestions if any
-            if (!isUser && message.activitySuggestions != null && message.activitySuggestions!.isNotEmpty)
-               Padding(
-                 padding: const EdgeInsets.only(top: 12),
-                 child: AiSuggestionCarousel(
-                   activities: message.activitySuggestions!,
-                   onMoreTap: () => _navigateToSearchWithContext(message),
-                 ),
-               ),
-          ],
+            boxShadow: isUser ? [] : [
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: Text(
+            message.text,
+            style: TextStyle(
+              color: isUser ? Colors.white : const Color(0xFF222222),
+              height: 1.4,
+            ),
+          ),
         ),
-      ),
+
+        // Suggestions Carousel (Full Width, outside bubble)
+        if (hasSuggestions)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 16),
+            child: AiSuggestionCarousel(
+              activities: message.activitySuggestions!,
+              onMoreTap: () => _navigateToSearchWithContext(message),
+            ),
+          ),
+      ],
     );
   }
 

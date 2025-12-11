@@ -14,20 +14,23 @@ class AiSuggestionCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Limit to max 10 items as requested
+    final displayList = activities.take(10).toList();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 220,
+          height: 400, // Increased height for 9:16 images + info
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: activities.length + (onMoreTap != null ? 1 : 0),
+            itemCount: displayList.length + (onMoreTap != null ? 1 : 0),
             itemBuilder: (context, index) {
-              if (index == activities.length) {
+              if (index == displayList.length) {
                 return _buildMoreCard(context);
               }
-              return _AiActivityCard(activity: activities[index]);
+              return _AiActivityCard(activity: displayList[index]);
             },
           ),
         ),
@@ -90,13 +93,10 @@ class _AiActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-         // Assuming generic route, or use ID directly
-         // context.push('/event/${activity.id}');
-         // For now, logging, assuming user handles navigation logic or GoRouter
          context.push('/event/${activity.id}');
       },
       child: Container(
-        width: 200,
+        width: 220, // Adjusted width for 9:16 proportion
         margin: const EdgeInsets.only(right: 12, bottom: 8, top: 4),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -112,22 +112,26 @@ class _AiActivityCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Area
+            // Image Area (9:16 Aspect Ratio)
             Expanded(
-              flex: 3,
+              flex: 4, // More space for image
               child: Stack(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                      image: DecorationImage(
-                        image: NetworkImage(activity.imageUrl ?? 'https://via.placeholder.com/400x300'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  // Match Score (Mocked visualization because field missing in Activity entity for now, 
-                  // but available in API DTO. We assume high match for AI suggestions)
+                   ClipRRect(
+                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                     child: SizedBox(
+                       width: double.infinity,
+                       height: double.infinity,
+                       child: (activity.imageUrl?.isNotEmpty == true)
+                           ? Image.network(
+                               activity.imageUrl!,
+                               fit: BoxFit.cover,
+                               errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                             )
+                           : _buildPlaceholder(),
+                     ),
+                   ),
+
                   Positioned(
                     top: 10,
                     right: 10,
@@ -143,7 +147,7 @@ class _AiActivityCard extends StatelessWidget {
                           Icon(Icons.auto_awesome, size: 12, color: Color(0xFFFF6B35)),
                           SizedBox(width: 4),
                           Text(
-                            "Top match",
+                            "Match",
                             style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF6B35)),
                           ),
                         ],
@@ -155,7 +159,7 @@ class _AiActivityCard extends StatelessWidget {
             ),
             // Content Area
             Expanded(
-              flex: 2,
+              flex: 1, // Reduced space for text
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -177,20 +181,12 @@ class _AiActivityCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          activity.isFree == true ? "Gratuit" : "Payant", // Simplified
+                          activity.isFree == true ? "Gratuit" : "Payant", 
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: activity.isFree == true ? Colors.green : Colors.grey[600],
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF6B35).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFFFF6B35)),
                         ),
                       ],
                     ),
@@ -199,6 +195,25 @@ class _AiActivityCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFFF6B35), Color(0xFFFF8F66)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Image.asset(
+          'assets/images/petit_boo.png',
+          width: 50,
+          color: Colors.white, // Tinting white to look good on orange gradient
         ),
       ),
     );
