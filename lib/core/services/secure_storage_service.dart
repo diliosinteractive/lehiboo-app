@@ -49,12 +49,30 @@ class SecureStorageService {
     return await _storage.read(key: AppConstants.keyUserRole);
   }
 
+  Future<void> saveUserEmail(String email) async {
+    await _storage.write(key: 'user_email', value: email);
+  }
+
+  Future<String?> getUserEmail() async {
+    return await _storage.read(key: 'user_email');
+  }
+
+  Future<void> saveUserDisplayName(String name) async {
+    await _storage.write(key: 'user_display_name', value: name);
+  }
+
+  Future<String?> getUserDisplayName() async {
+    return await _storage.read(key: 'user_display_name');
+  }
+
   // Clear all auth data
   Future<void> clearAuthData() async {
     await _storage.delete(key: AppConstants.keyAuthToken);
     await _storage.delete(key: AppConstants.keyRefreshToken);
     await _storage.delete(key: AppConstants.keyUserId);
     await _storage.delete(key: AppConstants.keyUserRole);
+    await _storage.delete(key: 'user_email');
+    await _storage.delete(key: 'user_display_name');
   }
 
   // Check if user is authenticated

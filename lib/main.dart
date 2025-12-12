@@ -23,6 +23,10 @@ import 'data/repositories/fake_activity_repository_impl.dart';
 import 'domain/repositories/activity_repository.dart';
 import 'features/booking/data/repositories/fake_booking_repository_impl.dart';
 
+// Providers and Storage
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lehiboo/features/ai_chat/presentation/providers/chat_provider.dart';
+
 // Configuration flag - set to false to use fake data
 const bool useRealApi = true;
 
@@ -52,11 +56,17 @@ void main() async {
 
   // Initialize other services here (Firebase, etc.)
 
+  // Initialize SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+
   runApp(
     ProviderScope(
-      overrides: useRealApi
-          ? _getRealApiOverrides()
-          : _getFakeDataOverrides(),
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        ...(useRealApi
+            ? _getRealApiOverrides()
+            : _getFakeDataOverrides()),
+      ],
       child: const LeHibooApp(),
     ),
   );

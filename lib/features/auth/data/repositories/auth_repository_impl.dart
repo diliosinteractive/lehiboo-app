@@ -163,7 +163,23 @@ class AuthRepositoryImpl implements AuthRepository {
     final isAuth = await isAuthenticated();
     if (!isAuth) return null;
 
-    return _cachedUser;
+    // Try to restore from storage
+    final userId = await _secureStorage.getUserId();
+    final role = await _secureStorage.getUserRole();
+    final email = await _secureStorage.getUserEmail();
+    final name = await _secureStorage.getUserDisplayName();
+
+    if (userId != null) {
+      _cachedUser = HbUser(
+        id: userId,
+        email: email ?? '',
+        displayName: name ?? '',
+        role: _parseRole(role),
+      );
+      return _cachedUser;
+    }
+
+    return null;
   }
 
   @override
@@ -179,6 +195,8 @@ class AuthRepositoryImpl implements AuthRepository {
     await _secureStorage.saveRefreshToken(response.tokens.refreshToken);
     await _secureStorage.saveUserId(user.id);
     await _secureStorage.saveUserRole(user.role.name);
+    await _secureStorage.saveUserEmail(user.email);
+    await _secureStorage.saveUserDisplayName(user.displayName ?? '');
 
     _cachedUser = user;
 
@@ -188,5 +206,17 @@ class AuthRepositoryImpl implements AuthRepository {
       refreshToken: response.tokens.refreshToken,
       expiresIn: response.tokens.expiresIn,
     );
+  }
+
+  UserRole _parseRole(String? role) {
+    if (role == null) return UserRole.subscriber;
+    try {
+      return UserRole.values.firstWhere(
+        (e) => e.name == role,
+        orElse: () => UserRole.subscriber,
+      );
+    } catch (_) {
+      return UserRole.subscriber;
+    }
   }
 }

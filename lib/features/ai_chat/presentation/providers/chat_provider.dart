@@ -11,6 +11,8 @@ import 'package:lehiboo/features/ai_chat/data/datasources/ai_chat_service.dart';
 import 'package:lehiboo/config/dio_client.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lehiboo/features/ai_chat/data/datasources/ai_context_storage.dart';
 
 // State class
 class ChatState {
@@ -44,10 +46,19 @@ class ChatState {
 
 
 // Provider
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError(); // Override in main.dart
+});
+
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
   final dio = ref.watch(dioProvider); 
   ref.watch(currentUserProvider); // Force rebuild on auth change
-  final aiService = AiChatService(dio);
+  
+  // Get SharedPreferences (must be overridden in main)
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final contextStorage = AiContextStorage(prefs);
+  
+  final aiService = AiChatService(dio, contextStorage);
   return ChatNotifier(ref, aiService);
 });
 
@@ -55,6 +66,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final Ref ref;
   final AiChatService _aiService;
   final Uuid _uuid = const Uuid();
+
+  // Expose service for debug
+  AiChatService get aiService => _aiService;
+  Map<String, dynamic> get userContext => _aiService.userContext;
 
   ChatNotifier(this.ref, this._aiService) : super(ChatState()) {
     startSmartWelcome();
@@ -114,9 +129,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
                      "Focus on PERSUADING the user to go out. Explain WHY these are great choices. "
                      "If you cannot find an activity for a specific category, DO NOT mention it in the text. Only describe what you found. "
                      "Do NOT include URLs or links in the text. Refer to the cards below. "
-                     "You MUST return them as structured events. "
+                     "You MUST return them as structured events using the 'findEvents' tool. "
                      "Do NOT just make up suggestions in text. "
-                     "Do NOT mention that you were told this context.";
+                     "MEMORY: Store any key user insights in 'user_context'.";
 
       // 4. Call API
       // We use the normal sendMessage but we need to make sure the UI shows the RESPONSE, not this prompt.
