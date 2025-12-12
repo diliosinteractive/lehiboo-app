@@ -65,6 +65,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   String get _otpCode => _controllers.map((c) => c.text).join();
 
   Future<void> _verifyOtp() async {
+    if (_isLoading) return; // Prevent double submission
     if (_otpCode.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

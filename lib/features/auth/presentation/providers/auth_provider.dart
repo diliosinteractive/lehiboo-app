@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -79,8 +80,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return result;
       }
       
-      // No OTP required (shouldn't happen with 2FA, but handle it)
-      state = state.copyWith(status: AuthStatus.unauthenticated);
+      // No OTP required (shouldn't happen with 2FA enabled, but if backend returns false, treat as authenticated)
+      // FIX: Previously set to unauthenticated, which caused immediate logout
+      state = state.copyWith(
+        status: AuthStatus.authenticated,
+        user: HbUser(
+          id: result.userId ?? '',
+          email: result.email ?? '',
+          displayName: '', // We might need to fetch profile or get it from login result if available
+        ),
+      );
+      // Ideally trigger a user fetch here to get full profile
+      // _authRepository.getCurrentUser() or similar if the login response doesn't provide full user object
+      // But the login response seems to return tokens, so we should be good to fetch profile next key
+      
       return result;
     } catch (e) {
       state = state.copyWith(
@@ -149,6 +162,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      final errorMessage = e.toString();
+      debugPrint('🚨 Verify OTP Error: $errorMessage');
+      
+      // Handle case where user is already verified (e.g. double submission or retry)
+      if (errorMessage.contains('user_already_verified')) {
+         debugPrint('🚨 Treating already verified as success');
+         state = state.copyWith(
+            status: AuthStatus.unauthenticated, // Will redirect to login (since we don't have token)
+            pendingUserId: null,
+            pendingEmail: null,
+            errorMessage: 'Votre compte est déjà vérifié. Veuillez vous connecter.',
+         );
+         return true; // Treat as handled/success to allow navigation
+      }
+
       state = state.copyWith(
         status: AuthStatus.pendingVerification,
         errorMessage: _parseOtpError(e),

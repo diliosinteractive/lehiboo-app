@@ -57,8 +57,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           : null,
     );
 
+    debugPrint('📱 Register result: $result');
+    debugPrint('📱 Result userId: ${result?.userId}');
+    debugPrint('📱 Result email: ${result?.email}');
+    debugPrint('📱 Mounted: $mounted');
+
     if (result != null && mounted) {
-      // Navigate to OTP verification screen
+      debugPrint('📱 Navigating to /verify-otp...');
       context.push(
         '/verify-otp',
         extra: {
@@ -66,6 +71,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           'email': result.email,
         },
       );
+      debugPrint('📱 Navigation called!');
+    } else {
+      debugPrint('📱 NOT navigating - result: $result, mounted: $mounted');
     }
   }
 
@@ -73,7 +81,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
+    // Listen for state changes to handle navigation
     ref.listen<AuthState>(authProvider, (previous, next) {
+      // Handle errors
       if (next.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -82,6 +92,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         );
         ref.read(authProvider.notifier).clearError();
+      }
+      
+      // Navigate to OTP screen when pendingVerification state is reached
+      if (next.status == AuthStatus.pendingVerification && 
+          next.pendingUserId != null && 
+          next.pendingEmail != null) {
+        debugPrint('📱 ref.listen: Navigating to OTP screen!');
+        context.push(
+          '/verify-otp',
+          extra: {
+            'userId': next.pendingUserId,
+            'email': next.pendingEmail,
+          },
+        );
       }
     });
 
