@@ -19,6 +19,7 @@ import '../features/profile/presentation/screens/settings_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
 import '../features/booking/presentation/screens/booking_participant_screen.dart';
 import '../features/booking/presentation/screens/booking_payment_screen.dart';
@@ -39,26 +40,35 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) async {
        final prefs = await SharedPreferences.getInstance();
        final onboardingCompleted = prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
+       final isAuthenticated = authState.isAuthenticated;
+       
+       // Auth-related routes
        final isLoggingIn = state.matchedLocation == '/login';
        final isRegistering = state.matchedLocation == '/register';
        final isResettingPassword = state.matchedLocation == '/forgot-password';
+       final isVerifyingOtp = state.matchedLocation == '/verify-otp';
        final isOnboarding = state.matchedLocation == '/onboarding';
+       final isAuthRoute = isLoggingIn || isRegistering || isResettingPassword || isVerifyingOtp;
        
-       // If onboarding not completed, go to onboarding
-       if (!onboardingCompleted) {
+       // 1. If onboarding not completed, go to onboarding
+       if (!onboardingCompleted && !isOnboarding) {
          return '/onboarding';
        }
        
-       // If onboarding completed but user still on onboarding page, go to login
+       // 2. If onboarding completed but user on onboarding page, go to login
        if (onboardingCompleted && isOnboarding) {
          return '/login';
        }
        
-       // If not authenticated and not in auth/onboarding/guest flow, let them roam (Guest Mode by default effectively)
-       // BUT user asked: "Après onboarding -> Screen de connexion".
-       // So if onboarding just finished (we are redirected from there), we should go to Login. 
-       // The user said: "On doit pouvoir donner la posibilité de naviguer en invité". 
-       // So standard flow: Onboarding -> Login (with Guest button) -> Home.
+       // 3. If not authenticated and not on auth route, redirect to login
+       if (!isAuthenticated && !isAuthRoute && !isOnboarding) {
+         return '/login';
+       }
+       
+       // 4. If authenticated and on auth route, redirect to home
+       if (isAuthenticated && isAuthRoute) {
+         return '/';
+       }
        
        return null;
     },
@@ -126,6 +136,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/forgot-password',
         name: 'forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/verify-otp',
+        name: 'verify-otp',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return OtpVerificationScreen(
+            userId: extra?['userId'] ?? '',
+            email: extra?['email'] ?? '',
+          );
+        },
       ),
 
       // Event routes

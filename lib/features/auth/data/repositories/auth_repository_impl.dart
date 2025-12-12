@@ -21,7 +21,7 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._apiDataSource, this._secureStorage);
 
   @override
-  Future<AuthResult> register({
+  Future<RegistrationResult> register({
     required String email,
     required String password,
     required String firstName,
@@ -36,7 +36,38 @@ class AuthRepositoryImpl implements AuthRepository {
       phone: phone,
     );
 
+    return RegistrationResult(
+      pendingVerification: response.pendingVerification,
+      userId: response.userId,
+      email: response.email,
+      message: response.message,
+    );
+  }
+
+  @override
+  Future<AuthResult> verifyOtp({
+    required String userId,
+    required String email,
+    required String otp,
+  }) async {
+    final response = await _apiDataSource.verifyOtp(
+      userId: userId,
+      email: email,
+      otp: otp,
+    );
+
     return _handleAuthResponse(response);
+  }
+
+  @override
+  Future<void> resendOtp({
+    required String userId,
+    required String email,
+  }) async {
+    await _apiDataSource.resendOtp(
+      userId: userId,
+      email: email,
+    );
   }
 
   @override

@@ -47,7 +47,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    final success = await ref.read(authProvider.notifier).register(
+    final result = await ref.read(authProvider.notifier).register(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       firstName: _firstNameController.text.trim(),
@@ -57,8 +57,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           : null,
     );
 
-    if (success && mounted) {
-      context.go('/');
+    if (result != null && mounted) {
+      // Navigate to OTP verification screen
+      context.push(
+        '/verify-otp',
+        extra: {
+          'userId': result.userId,
+          'email': result.email,
+        },
+      );
     }
   }
 

@@ -1,13 +1,42 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/entities/user.dart';
 
+/// Result of initial registration - pending OTP verification
+class RegistrationResult {
+  final bool pendingVerification;
+  final String userId;
+  final String email;
+  final String message;
+
+  RegistrationResult({
+    required this.pendingVerification,
+    required this.userId,
+    required this.email,
+    required this.message,
+  });
+}
+
 abstract class AuthRepository {
-  Future<AuthResult> register({
+  /// Register a new user - returns pending verification result
+  Future<RegistrationResult> register({
     required String email,
     required String password,
     required String firstName,
     required String lastName,
     String? phone,
+  });
+
+  /// Verify OTP and complete registration
+  Future<AuthResult> verifyOtp({
+    required String userId,
+    required String email,
+    required String otp,
+  });
+
+  /// Resend OTP code
+  Future<void> resendOtp({
+    required String userId,
+    required String email,
   });
 
   Future<AuthResult> login({

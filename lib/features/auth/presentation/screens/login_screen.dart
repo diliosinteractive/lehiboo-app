@@ -246,40 +246,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    // Divider
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: Colors.grey[300])),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'ou',
-                            style: TextStyle(color: Colors.grey[500]),
-                          ),
-                        ),
-                        Expanded(child: Divider(color: Colors.grey[300])),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Continue without account
-                    OutlinedButton(
-                      onPressed: isLoading ? null : () => context.go('/'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey[300]!),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Continuer sans compte',
-                        style: TextStyle(
-                          color: Color(0xFF2D3748),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 32),
                     // Register link
                     Row(

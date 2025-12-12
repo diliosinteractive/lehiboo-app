@@ -3,33 +3,43 @@ import '../../../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
+enum AuthStatus { initial, loading, authenticated, unauthenticated, pendingVerification, error }
 
 class AuthState {
   final AuthStatus status;
   final HbUser? user;
   final String? errorMessage;
+  // For OTP verification flow
+  final String? pendingUserId;
+  final String? pendingEmail;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.user,
     this.errorMessage,
+    this.pendingUserId,
+    this.pendingEmail,
   });
 
   AuthState copyWith({
     AuthStatus? status,
     HbUser? user,
     String? errorMessage,
+    String? pendingUserId,
+    String? pendingEmail,
   }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
       errorMessage: errorMessage,
+      pendingUserId: pendingUserId ?? this.pendingUserId,
+      pendingEmail: pendingEmail ?? this.pendingEmail,
     );
   }
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isLoading => status == AuthStatus.loading;
+  bool get isPendingVerification => status == AuthStatus.pendingVerification;
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -71,7 +81,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<bool> register({
+  /// Register a new user - returns RegistrationResult with pending verification
+  Future<RegistrationResult?> register({
     required String email,
     required String password,
     required String firstName,
@@ -88,14 +99,67 @@ class AuthNotifier extends StateNotifier<AuthState> {
         lastName: lastName,
         phone: phone,
       );
+      
+      // Store pending verification info in state
+      state = state.copyWith(
+        status: AuthStatus.pendingVerification,
+        pendingUserId: result.userId,
+        pendingEmail: result.email,
+      );
+      
+      return result;
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: _parseError(e),
+      );
+      return null;
+    }
+  }
+
+  /// Verify OTP and complete registration
+  Future<bool> verifyOtp({
+    required String userId,
+    required String email,
+    required String otp,
+  }) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+
+    try {
+      final result = await _authRepository.verifyOtp(
+        userId: userId,
+        email: email,
+        otp: otp,
+      );
       state = state.copyWith(
         status: AuthStatus.authenticated,
         user: result.user,
+        pendingUserId: null,
+        pendingEmail: null,
       );
       return true;
     } catch (e) {
       state = state.copyWith(
-        status: AuthStatus.error,
+        status: AuthStatus.pendingVerification,
+        errorMessage: _parseOtpError(e),
+      );
+      return false;
+    }
+  }
+
+  /// Resend OTP code
+  Future<bool> resendOtp({
+    required String userId,
+    required String email,
+  }) async {
+    try {
+      await _authRepository.resendOtp(
+        userId: userId,
+        email: email,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
         errorMessage: _parseError(e),
       );
       return false;
@@ -142,6 +206,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return 'Erreur de connexion. Vérifiez votre connexion internet.';
     }
     return 'Une erreur est survenue. Veuillez réessayer.';
+  }
+
+  String _parseOtpError(dynamic e) {
+    final message = e.toString();
+    if (message.contains('invalid_otp')) {
+      return 'Code de vérification invalide';
+    } else if (message.contains('otp_expired')) {
+      return 'Le code a expiré. Veuillez en demander un nouveau.';
+    } else if (message.contains('too_many_attempts')) {
+      return 'Trop de tentatives. Réessayez dans 15 minutes.';
+    }
+    return 'Code de vérification invalide';
   }
 }
 

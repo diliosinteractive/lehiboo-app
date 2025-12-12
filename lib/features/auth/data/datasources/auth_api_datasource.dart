@@ -8,12 +8,37 @@ final authApiDataSourceProvider = Provider<AuthApiDataSource>((ref) {
   return AuthApiDataSource(dio);
 });
 
+/// Result of registration - pending OTP verification
+class RegisterResult {
+  final bool pendingVerification;
+  final String userId;
+  final String email;
+  final String message;
+
+  RegisterResult({
+    required this.pendingVerification,
+    required this.userId,
+    required this.email,
+    required this.message,
+  });
+
+  factory RegisterResult.fromJson(Map<String, dynamic> json) {
+    return RegisterResult(
+      pendingVerification: json['pending_verification'] ?? true,
+      userId: json['user_id']?.toString() ?? '',
+      email: json['email'] ?? '',
+      message: json['message'] ?? 'Un code de vérification a été envoyé',
+    );
+  }
+}
+
 class AuthApiDataSource {
   final Dio _dio;
 
   AuthApiDataSource(this._dio);
 
-  Future<AuthResponseDto> register({
+  /// Register a new user - returns pending verification result
+  Future<RegisterResult> register({
     required String email,
     required String password,
     required String firstName,
@@ -31,7 +56,48 @@ class AuthApiDataSource {
       },
     );
 
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return RegisterResult.fromJson(data['data']);
+    }
+    throw Exception(data['data']?['message'] ?? 'Registration failed');
+  }
+
+  /// Verify OTP code and complete registration
+  Future<AuthResponseDto> verifyOtp({
+    required String userId,
+    required String email,
+    required String otp,
+  }) async {
+    final response = await _dio.post(
+      '/auth/verify-otp',
+      data: {
+        'user_id': userId,
+        'email': email,
+        'otp': otp,
+      },
+    );
+
     return _parseAuthResponse(response.data);
+  }
+
+  /// Resend OTP code
+  Future<void> resendOtp({
+    required String userId,
+    required String email,
+  }) async {
+    final response = await _dio.post(
+      '/auth/resend-otp',
+      data: {
+        'user_id': userId,
+        'email': email,
+      },
+    );
+
+    final data = response.data;
+    if (data['success'] != true) {
+      throw Exception(data['data']?['message'] ?? 'Failed to resend OTP');
+    }
   }
 
   Future<AuthResponseDto> login({
