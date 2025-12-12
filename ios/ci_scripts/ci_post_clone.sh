@@ -26,6 +26,6 @@ flutter pub get
 # Install CocoaPods dependencies
 echo "Installing CocoaPods dependencies..."
 cd ios
-pod install
+pod install --repo-update
 
 echo "Build setup complete!"
