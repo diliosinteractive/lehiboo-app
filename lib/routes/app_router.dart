@@ -41,6 +41,8 @@ final routerProvider = Provider<GoRouter>((ref) {
        final prefs = await SharedPreferences.getInstance();
        final onboardingCompleted = prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
        final isAuthenticated = authState.isAuthenticated;
+       final isPendingOtp = authState.status == AuthStatus.pendingVerification || 
+                           authState.status == AuthStatus.pendingLoginOtp;
        
        // Auth-related routes
        final isLoggingIn = state.matchedLocation == '/login';
@@ -60,12 +62,18 @@ final routerProvider = Provider<GoRouter>((ref) {
          return '/login';
        }
        
-       // 3. If not authenticated and not on auth route, redirect to login
+       // 3. If pending OTP and not on verify-otp, stay on current route (don't redirect)
+       // This allows the navigation to /verify-otp to complete
+       if (isPendingOtp && isVerifyingOtp) {
+         return null; // Allow access to OTP screen
+       }
+       
+       // 4. If not authenticated and not on auth route, redirect to login
        if (!isAuthenticated && !isAuthRoute && !isOnboarding) {
          return '/login';
        }
        
-       // 4. If authenticated and on auth route, redirect to home
+       // 5. If authenticated and on auth route, redirect to home
        if (isAuthenticated && isAuthRoute) {
          return '/';
        }
