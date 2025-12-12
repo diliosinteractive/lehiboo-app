@@ -39,18 +39,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Tiny delay to ensure the UI renders the spinner
     await Future.delayed(const Duration(milliseconds: 50));
 
-    final success = await ref.read(authProvider.notifier).login(
+    final result = await ref.read(authProvider.notifier).login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
 
-    if (success && mounted) {
-      // Small delay to let the user see the success state/loader
-      // and ensure smooth transition
-      await Future.delayed(const Duration(milliseconds: 1500));
-      if (mounted) {
-        context.go('/');
-      }
+    if (result != null && result.requiresOtp && mounted) {
+      // Navigate to OTP verification screen for 2FA
+      setState(() => _isLocalLoading = false);
+      context.push(
+        '/verify-otp',
+        extra: {
+          'userId': result.userId ?? '',
+          'email': result.email ?? _emailController.text.trim(),
+          'type': 'login',
+        },
+      );
     } else if (mounted) {
       setState(() {
         _isLocalLoading = false;
@@ -95,13 +99,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B35).withOpacity(0.1),
+                          color: const Color(0xFFFF601F).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.celebration,
                           size: 50,
-                          color: Color(0xFFFF6B35),
+                          color: Color(0xFFFF601F),
                         ),
                       ),
                     ),
@@ -145,7 +149,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 2),
+                          borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
                         ),
                       ),
                       validator: (value) {
@@ -189,7 +193,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 2),
+                          borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
                         ),
                       ),
                       validator: (value) {
@@ -208,7 +212,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: const Text(
                           'Mot de passe oublié ?',
                           style: TextStyle(
-                            color: Color(0xFFFF6B35),
+                            color: Color(0xFFFF601F),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -221,7 +225,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF6B35),
+                          backgroundColor: const Color(0xFFFF601F),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -265,7 +269,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: const Text(
                             'S\'inscrire',
                             style: TextStyle(
-                              color: Color(0xFFFF6B35),
+                              color: Color(0xFFFF601F),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -283,7 +287,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   color: Colors.white.withOpacity(0.5),
                   child: const Center(
                     child: CircularProgressIndicator(
-                      color: Color(0xFFFF6B35),
+                      color: Color(0xFFFF601F),
                     ),
                   ),
                 ),

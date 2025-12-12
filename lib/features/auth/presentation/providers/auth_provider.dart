@@ -3,7 +3,7 @@ import '../../../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, pendingVerification, error }
+enum AuthStatus { initial, loading, authenticated, unauthenticated, pendingVerification, pendingLoginOtp, error }
 
 class AuthState {
   final AuthStatus status;
@@ -62,22 +62,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<bool> login({required String email, required String password}) async {
+  /// Login - may require OTP verification (2FA)
+  Future<LoginOtpResult?> login({required String email, required String password}) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
       final result = await _authRepository.login(email: email, password: password);
-      state = state.copyWith(
-        status: AuthStatus.authenticated,
-        user: result.user,
-      );
-      return true;
+      
+      if (result.requiresOtp) {
+        // OTP required - store pending info
+        state = state.copyWith(
+          status: AuthStatus.pendingLoginOtp,
+          pendingUserId: result.userId,
+          pendingEmail: result.email,
+        );
+        return result;
+      }
+      
+      // No OTP required (shouldn't happen with 2FA, but handle it)
+      state = state.copyWith(status: AuthStatus.unauthenticated);
+      return result;
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: _parseError(e),
       );
-      return false;
+      return null;
     }
   }
 
@@ -147,20 +157,52 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Resend OTP code
+  /// Resend OTP code (for registration or login)
   Future<bool> resendOtp({
     required String userId,
     required String email,
+    String type = 'register',
   }) async {
     try {
       await _authRepository.resendOtp(
         userId: userId,
         email: email,
+        type: type,
       );
       return true;
     } catch (e) {
       state = state.copyWith(
         errorMessage: _parseError(e),
+      );
+      return false;
+    }
+  }
+
+  /// Verify login OTP (2FA)
+  Future<bool> verifyLoginOtp({
+    required String userId,
+    required String email,
+    required String otp,
+  }) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+
+    try {
+      final result = await _authRepository.verifyLoginOtp(
+        userId: userId,
+        email: email,
+        otp: otp,
+      );
+      state = state.copyWith(
+        status: AuthStatus.authenticated,
+        user: result.user,
+        pendingUserId: null,
+        pendingEmail: null,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.pendingLoginOtp,
+        errorMessage: _parseOtpError(e),
       );
       return false;
     }

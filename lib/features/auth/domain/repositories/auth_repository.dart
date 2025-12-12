@@ -16,6 +16,21 @@ class RegistrationResult {
   });
 }
 
+/// Result of login - may require OTP verification (2FA)
+class LoginOtpResult {
+  final bool requiresOtp;
+  final String? userId;
+  final String? email;
+  final String? message;
+
+  LoginOtpResult({
+    required this.requiresOtp,
+    this.userId,
+    this.email,
+    this.message,
+  });
+}
+
 abstract class AuthRepository {
   /// Register a new user - returns pending verification result
   Future<RegistrationResult> register({
@@ -33,15 +48,24 @@ abstract class AuthRepository {
     required String otp,
   });
 
-  /// Resend OTP code
+  /// Resend OTP code (for registration or login)
   Future<void> resendOtp({
     required String userId,
     required String email,
+    String type = 'register',
   });
 
-  Future<AuthResult> login({
+  /// Login - may require OTP (2FA)
+  Future<LoginOtpResult> login({
     required String email,
     required String password,
+  });
+
+  /// Verify login OTP (2FA)
+  Future<AuthResult> verifyLoginOtp({
+    required String userId,
+    required String email,
+    required String otp,
   });
 
   Future<void> logout();

@@ -32,6 +32,30 @@ class RegisterResult {
   }
 }
 
+/// Result of login - may require OTP verification (2FA)
+class LoginResult {
+  final bool requiresOtp;
+  final String? userId;
+  final String? email;
+  final String? message;
+
+  LoginResult({
+    required this.requiresOtp,
+    this.userId,
+    this.email,
+    this.message,
+  });
+
+  factory LoginResult.fromJson(Map<String, dynamic> json) {
+    return LoginResult(
+      requiresOtp: json['requires_otp'] ?? false,
+      userId: json['user_id']?.toString(),
+      email: json['email']?.toString(),
+      message: json['message']?.toString(),
+    );
+  }
+}
+
 class AuthApiDataSource {
   final Dio _dio;
 
@@ -85,12 +109,14 @@ class AuthApiDataSource {
   Future<void> resendOtp({
     required String userId,
     required String email,
+    String type = 'register',
   }) async {
     final response = await _dio.post(
       '/auth/resend-otp',
       data: {
         'user_id': userId,
         'email': email,
+        'type': type,
       },
     );
 
@@ -100,7 +126,8 @@ class AuthApiDataSource {
     }
   }
 
-  Future<AuthResponseDto> login({
+  /// Login - may require OTP verification (2FA)
+  Future<LoginResult> login({
     required String email,
     required String password,
   }) async {
@@ -109,6 +136,34 @@ class AuthApiDataSource {
       data: {
         'email': email,
         'password': password,
+      },
+    );
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      final responseData = data['data'];
+      // Check if OTP is required (2FA)
+      if (responseData['requires_otp'] == true) {
+        return LoginResult.fromJson(responseData);
+      }
+      // If no OTP required, return with requiresOtp = false
+      return LoginResult(requiresOtp: false);
+    }
+    throw Exception(data['data']?['message'] ?? 'Login failed');
+  }
+
+  /// Verify login OTP (2FA)
+  Future<AuthResponseDto> verifyLoginOtp({
+    required String userId,
+    required String email,
+    required String otp,
+  }) async {
+    final response = await _dio.post(
+      '/auth/verify-login-otp',
+      data: {
+        'user_id': userId,
+        'email': email,
+        'otp': otp,
       },
     );
 

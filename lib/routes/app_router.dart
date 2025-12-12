@@ -145,6 +145,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return OtpVerificationScreen(
             userId: extra?['userId'] ?? '',
             email: extra?['email'] ?? '',
+            type: extra?['type'] ?? 'register',
           );
         },
       ),
@@ -324,7 +325,7 @@ class ErrorScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () => context.go('/'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B35),
+                backgroundColor: const Color(0xFFFF601F),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -357,7 +358,7 @@ class NotificationsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
-        backgroundColor: const Color(0xFFFF6B35),
+        backgroundColor: const Color(0xFFFF601F),
         foregroundColor: Colors.white,
       ),
       body: const Center(

@@ -63,21 +63,43 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> resendOtp({
     required String userId,
     required String email,
+    String type = 'register',
   }) async {
     await _apiDataSource.resendOtp(
       userId: userId,
       email: email,
+      type: type,
     );
   }
 
   @override
-  Future<AuthResult> login({
+  Future<LoginOtpResult> login({
     required String email,
     required String password,
   }) async {
     final response = await _apiDataSource.login(
       email: email,
       password: password,
+    );
+
+    return LoginOtpResult(
+      requiresOtp: response.requiresOtp,
+      userId: response.userId,
+      email: response.email,
+      message: response.message,
+    );
+  }
+
+  @override
+  Future<AuthResult> verifyLoginOtp({
+    required String userId,
+    required String email,
+    required String otp,
+  }) async {
+    final response = await _apiDataSource.verifyLoginOtp(
+      userId: userId,
+      email: email,
+      otp: otp,
     );
 
     return _handleAuthResponse(response);

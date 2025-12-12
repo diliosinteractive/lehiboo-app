@@ -109,13 +109,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B35).withOpacity(0.1),
+                      color: const Color(0xFFFF601F).withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.person_add,
                       size: 40,
-                      color: Color(0xFFFF6B35),
+                      color: Color(0xFFFF601F),
                     ),
                   ),
                 ),
@@ -162,7 +162,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 2),
+                            borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
                           ),
                         ),
                         validator: (value) {
@@ -191,7 +191,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 2),
+                            borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
                           ),
                         ),
                         validator: (value) {
@@ -224,7 +224,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 2),
+                      borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -257,7 +257,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 2),
+                      borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
                     ),
                   ),
                 ),
@@ -291,7 +291,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 2),
+                      borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -341,7 +341,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 2),
+                      borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -370,7 +370,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             _acceptTerms = value ?? false;
                           });
                         },
-                        activeColor: const Color(0xFFFF6B35),
+                        activeColor: const Color(0xFFFF601F),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -389,7 +389,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             TextSpan(
                               text: 'conditions d\'utilisation',
                               style: const TextStyle(
-                                color: Color(0xFFFF6B35),
+                                color: Color(0xFFFF601F),
                                 fontWeight: FontWeight.w600,
                               ),
                               recognizer: TapGestureRecognizer()
@@ -401,7 +401,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             TextSpan(
                               text: 'politique de confidentialité',
                               style: const TextStyle(
-                                color: Color(0xFFFF6B35),
+                                color: Color(0xFFFF601F),
                                 fontWeight: FontWeight.w600,
                               ),
                               recognizer: TapGestureRecognizer()
@@ -423,7 +423,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: authState.isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF6B35),
+                      backgroundColor: const Color(0xFFFF601F),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -468,7 +468,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: const Text(
                         'Se connecter',
                         style: TextStyle(
-                          color: Color(0xFFFF6B35),
+                          color: Color(0xFFFF601F),
                           fontWeight: FontWeight.w600,
                         ),
                       ),

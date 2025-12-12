@@ -50,13 +50,13 @@ class GuestRestrictionDialog extends StatelessWidget {
                 width: 70,
                 height: 70,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF6B35).withOpacity(0.1), // Gentle background
+                  color: const Color(0xFFFF601F).withOpacity(0.1), // Gentle background
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.lock_person_rounded,
                   size: 32,
-                  color: Color(0xFFFF6B35), // Brand primary color
+                  color: Color(0xFFFF601F), // Brand primary color
                 ),
               )
               .animate()
@@ -102,7 +102,7 @@ class GuestRestrictionDialog extends StatelessWidget {
                       style: TextStyle(
                         fontStyle: FontStyle.italic,
                         fontSize: 13,
-                        color: Color(0xFFFF6B35),
+                        color: Color(0xFFFF601F),
                       ),
                     ),
                   ],
@@ -121,7 +121,7 @@ class GuestRestrictionDialog extends StatelessWidget {
                     context.push('/login'); // Go to login
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B35), // Solid Brand Color
+                    backgroundColor: const Color(0xFFFF601F), // Solid Brand Color
                     foregroundColor: Colors.white,
                     elevation: 0, // Flat
                     shape: RoundedRectangleBorder(

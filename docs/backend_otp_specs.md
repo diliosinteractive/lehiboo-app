@@ -1,11 +1,13 @@
 # Spécifications Backend - Vérification Email OTP
 
 ## Objectif
-Implémenter une vérification par code OTP (6 chiffres) lors de l'inscription pour valider l'email de l'utilisateur avant de finaliser la création du compte.
+Implémenter une vérification par code OTP (6 chiffres) pour :
+1. **Inscription** : Valider l'email avant de finaliser la création du compte
+2. **Connexion (2FA)** : Ajouter une couche de sécurité supplémentaire
 
 ---
 
-## Flow d'inscription modifié
+## Flow d'inscription avec OTP
 
 ```mermaid
 sequenceDiagram
@@ -26,7 +28,27 @@ sequenceDiagram
 
 ---
 
-## Nouveaux Endpoints Requis
+## Flow de connexion avec OTP (2FA)
+
+```mermaid
+sequenceDiagram
+    participant App as App Mobile
+    participant API as API Backend
+    participant Mail as Service Email
+    
+    App->>API: POST /auth/login
+    API->>API: Valider email/password
+    API->>Mail: Envoyer OTP par email
+    API-->>App: { requires_otp: true, user_id }
+    
+    App->>API: POST /auth/verify-login-otp
+    API->>API: Vérifier OTP
+    API-->>App: { success: true, tokens, user }
+```
+
+---
+
+## Endpoints - Inscription
 
 ### 1. Modifier `POST /auth/register`
 
@@ -58,14 +80,15 @@ sequenceDiagram
 
 ---
 
-### 2. Nouveau `POST /auth/verify-otp`
+### 2. `POST /auth/verify-otp` (pour inscription)
 
 **Request:**
 ```json
 {
   "user_id": "123",
   "email": "user@example.com",
-  "otp": "123456"
+  "otp": "123456",
+  "type": "register"
 }
 ```
 
@@ -92,39 +115,75 @@ sequenceDiagram
 }
 ```
 
-**Response (erreur - code invalide):**
+---
+
+## Endpoints - Connexion (2FA)
+
+### 3. Modifier `POST /auth/login`
+
+**Request (inchangée):**
 ```json
 {
-  "success": false,
+  "email": "user@example.com",
+  "password": "MonMotDePasse123"
+}
+```
+
+**Response (modifiée - OTP requis):**
+```json
+{
+  "success": true,
   "data": {
-    "code": "invalid_otp",
-    "message": "Code de vérification invalide"
+    "requires_otp": true,
+    "user_id": "123",
+    "email": "user@example.com",
+    "message": "Un code de vérification a été envoyé à votre adresse email"
   }
 }
 ```
 
-**Response (erreur - code expiré):**
+> ⚠️ **Important**: L'email/password est validé, mais les tokens ne sont PAS retournés. L'OTP est envoyé par email.
+
+---
+
+### 4. `POST /auth/verify-login-otp` (pour connexion)
+
+**Request:**
 ```json
 {
-  "success": false,
+  "user_id": "123",
+  "email": "user@example.com",
+  "otp": "123456"
+}
+```
+
+**Response (succès):**
+```json
+{
+  "success": true,
   "data": {
-    "code": "otp_expired",
-    "message": "Le code a expiré. Veuillez en demander un nouveau."
+    "user": { ... },
+    "tokens": {
+      "access_token": "...",
+      "refresh_token": "...",
+      "expires_in": 3600
+    }
   }
 }
 ```
 
 ---
 
-### 3. Nouveau `POST /auth/resend-otp`
+### 5. `POST /auth/resend-otp`
 
-Pour renvoyer un nouveau code si l'utilisateur ne l'a pas reçu.
+Pour renvoyer un nouveau code (inscription ou connexion).
 
 **Request:**
 ```json
 {
   "user_id": "123",
-  "email": "user@example.com"
+  "email": "user@example.com",
+  "type": "login"
 }
 ```
 
@@ -149,12 +208,13 @@ Pour renvoyer un nouveau code si l'utilisateur ne l'a pas reçu.
 | Tentatives max | 5 (puis bloquer 15 min) |
 | Stockage | Table `user_otp` ou meta WordPress |
 
-### Structure Table `user_otp` (si applicable)
+### Structure Table `user_otp`
 ```sql
 CREATE TABLE user_otp (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   user_id BIGINT NOT NULL,
   otp_code VARCHAR(6) NOT NULL,
+  otp_type ENUM('register', 'login') DEFAULT 'register',
   expires_at DATETIME NOT NULL,
   attempts INT DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -165,28 +225,32 @@ CREATE TABLE user_otp (
 
 ---
 
-## Email Template
+## Email Templates
 
+### Inscription
 **Sujet:** `Votre code de vérification LeHiboo`
+
+### Connexion (2FA)
+**Sujet:** `Code de connexion sécurisée LeHiboo`
 
 **Corps:**
 ```
 Bonjour {first_name},
 
-Votre code de vérification est :
+Votre code de connexion est :
 
     {OTP_CODE}
 
 Ce code expire dans 10 minutes.
 
-Si vous n'avez pas créé de compte sur LeHiboo, ignorez cet email.
+Si vous n'avez pas tenté de vous connecter, changez immédiatement votre mot de passe.
 
 L'équipe LeHiboo
 ```
 
 ---
 
-## Codes d'erreur à implémenter
+## Codes d'erreur
 
 | Code | Message | HTTP Status |
 |------|---------|-------------|
@@ -195,15 +259,25 @@ L'équipe LeHiboo
 | `too_many_attempts` | Trop de tentatives, réessayez dans 15 min | 429 |
 | `user_already_verified` | Ce compte est déjà vérifié | 400 |
 | `user_not_found` | Utilisateur non trouvé | 404 |
+| `invalid_credentials` | Email ou mot de passe incorrect | 401 |
 
 ---
 
 ## Checklist Backend
 
+### Inscription OTP
 - [ ] Modifier `/auth/register` pour créer un compte non vérifié
 - [ ] Générer et stocker le code OTP
 - [ ] Envoyer l'email avec le code
 - [ ] Créer endpoint `/auth/verify-otp`
-- [ ] Créer endpoint `/auth/resend-otp`
+
+### Connexion OTP (2FA)
+- [ ] Modifier `/auth/login` pour retourner `requires_otp`
+- [ ] Générer et envoyer OTP après validation email/password
+- [ ] Créer endpoint `/auth/verify-login-otp`
+
+### Commun
+- [ ] Créer endpoint `/auth/resend-otp` avec support `type`
 - [ ] Implémenter la logique anti-brute-force
 - [ ] Nettoyer les OTP expirés (cron job)
+

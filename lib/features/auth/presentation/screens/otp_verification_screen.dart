@@ -8,11 +8,13 @@ import '../providers/auth_provider.dart';
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String userId;
   final String email;
+  final String type; // 'register' or 'login'
 
   const OtpVerificationScreen({
     super.key,
     required this.userId,
     required this.email,
+    this.type = 'register',
   });
 
   @override
@@ -27,6 +29,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   bool _isResending = false;
   int _resendCountdown = 0;
   Timer? _countdownTimer;
+
+  bool get _isLoginOtp => widget.type == 'login';
 
   @override
   void initState() {
@@ -74,11 +78,23 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final success = await ref.read(authProvider.notifier).verifyOtp(
-        userId: widget.userId,
-        email: widget.email,
-        otp: _otpCode,
-      );
+      bool success;
+      
+      if (_isLoginOtp) {
+        // Verify login OTP (2FA)
+        success = await ref.read(authProvider.notifier).verifyLoginOtp(
+          userId: widget.userId,
+          email: widget.email,
+          otp: _otpCode,
+        );
+      } else {
+        // Verify registration OTP
+        success = await ref.read(authProvider.notifier).verifyOtp(
+          userId: widget.userId,
+          email: widget.email,
+          otp: _otpCode,
+        );
+      }
 
       if (success && mounted) {
         context.go('/');
@@ -99,6 +115,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
       final success = await ref.read(authProvider.notifier).resendOtp(
         userId: widget.userId,
         email: widget.email,
+        type: widget.type,
       );
 
       if (success && mounted) {
@@ -182,13 +199,13 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF6B35).withValues(alpha: 0.1),
+                    color: const Color(0xFFFF601F).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.mail_outline,
                     size: 40,
-                    color: Color(0xFFFF6B35),
+                    color: Color(0xFFFF601F),
                   ),
                 ),
               ),
@@ -257,7 +274,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFFFF6B35),
+                              color: Color(0xFFFF601F),
                               width: 2,
                             ),
                           ),
@@ -280,7 +297,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _verifyOtp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B35),
+                    backgroundColor: const Color(0xFFFF601F),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -336,13 +353,13 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Color(0xFFFF6B35),
+                                color: Color(0xFFFF601F),
                               ),
                             )
                           : const Text(
                               'Renvoyer',
                               style: TextStyle(
-                                color: Color(0xFFFF6B35),
+                                color: Color(0xFFFF601F),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
