@@ -1,20 +1,15 @@
+import 'package:lehiboo/config/env_config.dart';
+
 class AppConstants {
   // App Info
   static const String appName = 'Le Hiboo';
   static const String appVersion = '1.0.0';
   static const String appDescription = 'Trouvez votre prochaine sortie près de chez vous';
 
-  // API Configuration
-  // API v2 base URL - uses WordPress REST API with lehiboo namespace
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://preprod.lehiboo.com/wp-json/lehiboo/v2',
-  );
-  static const String aiBaseUrl = 'https://preprod.lehiboo.com/api-planner';
-  static const String apiKey = String.fromEnvironment(
-    'API_KEY',
-    defaultValue: '',
-  );
+  // API Configuration - uses EnvConfig for environment-specific values
+  static String get baseUrl => EnvConfig.apiBaseUrl;
+  static String get aiBaseUrl => EnvConfig.aiBaseUrl;
+  static String get apiKey => EnvConfig.apiKey;
   static const Duration apiTimeout = Duration(seconds: 30);
   static const int maxRetries = 3;
 
@@ -112,13 +107,13 @@ class AppConstants {
   static const String instagramUrl = 'https://instagram.com/lehiboo';
   static const String twitterUrl = 'https://twitter.com/lehiboo';
   static const String linkedinUrl = 'https://linkedin.com/company/lehiboo';
-  static const String websiteUrl = 'https://lehiboo.fr';
+  static String get websiteUrl => EnvConfig.websiteUrl;
 
   // Support
   static const String supportEmail = 'support@lehiboo.fr';
   static const String supportPhone = '+33 1 23 45 67 89';
-  static const String privacyPolicyUrl = 'https://lehiboo.fr/privacy';
-  static const String termsOfServiceUrl = 'https://lehiboo.fr/terms';
+  static String get privacyPolicyUrl => EnvConfig.privacyPolicyUrl;
+  static String get termsOfServiceUrl => EnvConfig.termsOfServiceUrl;
 
   // Map Configuration
   static const double defaultMapZoom = 14.0;

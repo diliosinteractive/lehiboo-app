@@ -31,10 +31,20 @@ void main() async {
   await initializeDateFormatting('fr_FR', null);
 
   // Load environment variables
+  // Use dart-define to specify environment: --dart-define=ENV=production
+  const String environment = String.fromEnvironment('ENV', defaultValue: 'development');
+  final String envFile = environment == 'production' ? '.env.production' : '.env.development';
+  
   try {
-    await dotenv.load(fileName: '.env');
+    await dotenv.load(fileName: envFile);
+    debugPrint('Loaded environment: $environment from $envFile');
   } catch (e) {
-    debugPrint('Could not load .env file: $e');
+    debugPrint('Could not load $envFile, falling back to .env: $e');
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (e2) {
+      debugPrint('Could not load .env file: $e2');
+    }
   }
 
   // Initialize Dio client
