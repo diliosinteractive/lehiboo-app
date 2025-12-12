@@ -83,7 +83,7 @@ class FavoritesScreen extends ConsumerWidget {
                 );
               },
               loading: () => const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
+                child: CircularProgressIndicator(color: Color(0xFFFF601F)),
               ),
               error: (error, _) => Center(
                 child: Column(
@@ -99,7 +99,7 @@ class FavoritesScreen extends ConsumerWidget {
                     ElevatedButton(
                       onPressed: () => ref.invalidate(_allActivitiesProvider),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6B35),
+                        backgroundColor: const Color(0xFFFF601F),
                       ),
                       child: const Text('Réessayer', style: TextStyle(color: Colors.white)),
                     ),

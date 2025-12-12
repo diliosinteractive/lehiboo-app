@@ -57,7 +57,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                   padding: const EdgeInsets.all(14),
                   child: const Icon(
                     Icons.search,
-                    color: Color(0xFFFF6B35),
+                    color: Color(0xFFFF601F),
                     size: 24,
                   ),
                 ),
@@ -104,7 +104,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: activeChips.isNotEmpty
-                                  ? const Color(0xFFFF6B35)
+                                  ? const Color(0xFFFF601F)
                                   : Colors.grey.withOpacity(0.3),
                               width: activeChips.isNotEmpty ? 2 : 1,
                             ),
@@ -114,7 +114,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                             Icons.tune,
                             size: 18,
                             color: activeChips.isNotEmpty
-                                ? const Color(0xFFFF6B35)
+                                ? const Color(0xFFFF601F)
                                 : Colors.grey[700],
                           ),
                         ),
@@ -125,7 +125,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFFF6B35),
+                                color: Color(0xFFFF601F),
                                 shape: BoxShape.circle,
                               ),
                               constraints: const BoxConstraints(
@@ -286,16 +286,16 @@ class _QuickFilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.white,
+          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : Colors.grey.withOpacity(0.3),
+            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFF6B35).withOpacity(0.3),
+                    color: const Color(0xFFFF601F).withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -437,7 +437,7 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
                     widget.onSearch?.call();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B35),
+                    backgroundColor: const Color(0xFFFF601F),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -496,7 +496,7 @@ class _TabButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFF6B35).withOpacity(0.1) : null,
+            color: isSelected ? const Color(0xFFFF601F).withOpacity(0.1) : null,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -505,7 +505,7 @@ class _TabButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: isSelected ? const Color(0xFFFF6B35) : Colors.grey,
+                color: isSelected ? const Color(0xFFFF601F) : Colors.grey,
               ),
               const SizedBox(width: 8),
               Text(
@@ -513,7 +513,7 @@ class _TabButton extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[700],
+                  color: isSelected ? const Color(0xFFFF601F) : Colors.grey[700],
                 ),
               ),
             ],
@@ -658,10 +658,10 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: hasLocation ? const Color(0xFFFF6B35) : Colors.grey[100],
+                color: hasLocation ? const Color(0xFFFF601F) : Colors.grey[100],
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: hasLocation ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+                  color: hasLocation ? const Color(0xFFFF601F) : Colors.grey.shade300,
                 ),
               ),
               child: Row(
@@ -680,7 +680,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
                     Icon(
                       Icons.my_location,
                       size: 18,
-                      color: hasLocation ? Colors.white : const Color(0xFFFF6B35),
+                      color: hasLocation ? Colors.white : const Color(0xFFFF601F),
                     ),
                   const SizedBox(width: 8),
                   Text(
@@ -731,17 +731,17 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFFF6B35).withOpacity(0.15) : Colors.grey[100],
+                      color: isSelected ? const Color(0xFFFF601F).withOpacity(0.15) : Colors.grey[100],
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+                        color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
                         width: isSelected ? 2 : 1,
                       ),
                     ),
                     child: Text(
                       '${radius.toInt()} km',
                       style: TextStyle(
-                        color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[700],
+                        color: isSelected ? const Color(0xFFFF601F) : Colors.grey[700],
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                         fontSize: 13,
                       ),
@@ -805,10 +805,10 @@ class _CityChip extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[100],
+          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
           ),
         ),
         child: Text(
@@ -887,8 +887,8 @@ class _WhenTab extends ConsumerWidget {
           OutlinedButton.icon(
             onPressed: () => _showDateRangePicker(context, ref),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFFF6B35),
-              side: const BorderSide(color: Color(0xFFFF6B35)),
+              foregroundColor: const Color(0xFFFF601F),
+              side: const BorderSide(color: Color(0xFFFF601F)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -914,7 +914,7 @@ class _WhenTab extends ConsumerWidget {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFFFF6B35),
+              primary: Color(0xFFFF601F),
             ),
           ),
           child: child!,
@@ -948,10 +948,10 @@ class _DateFilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[100],
+          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
           ),
         ),
         child: Text(
@@ -1063,10 +1063,10 @@ class _ThematiqueChip extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[100],
+          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
           ),
         ),
         child: Row(
@@ -1110,10 +1110,10 @@ class _PriceChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[100],
+          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
           ),
         ),
         child: Text(

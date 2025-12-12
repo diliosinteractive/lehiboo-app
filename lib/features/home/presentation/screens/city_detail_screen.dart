@@ -111,7 +111,7 @@ class CityDetailScreen extends ConsumerWidget {
                 expandedHeight: 250.0,
                 floating: false,
                 pinned: true,
-                backgroundColor: const Color(0xFFFF6B35),
+                backgroundColor: const Color(0xFFFF601F),
                 flexibleSpace: FlexibleSpaceBar(
                   title: Text(city.name),
                   background: Stack(
@@ -122,7 +122,7 @@ class CityDetailScreen extends ConsumerWidget {
                           city.imageUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
-                            color: const Color(0xFFFF6B35).withOpacity(0.3),
+                            color: const Color(0xFFFF601F).withOpacity(0.3),
                           ),
                         ),
                       Container(
@@ -186,7 +186,7 @@ class CityDetailScreen extends ConsumerWidget {
                               Uri(path: '/search', queryParameters: {'city': city.slug}).toString(),
                             ),
                             style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFFFF6B35),
+                              foregroundColor: const Color(0xFFFF601F),
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
                             icon: const Icon(Icons.tune, size: 16),
@@ -238,7 +238,7 @@ class CityDetailScreen extends ConsumerWidget {
                   child: Center(
                     child: Padding(
                       padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
+                      child: CircularProgressIndicator(color: Color(0xFFFF601F)),
                     ),
                   ),
                 ),
@@ -255,7 +255,7 @@ class CityDetailScreen extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFF6B35))),
+        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFF601F))),
         error: (err, stack) => Center(child: Text('Erreur: $err')),
       ),
     );

@@ -44,6 +44,10 @@ final routerProvider = Provider<GoRouter>((ref) {
        final isPendingOtp = authState.status == AuthStatus.pendingVerification || 
                            authState.status == AuthStatus.pendingLoginOtp;
        
+       debugPrint('🔀 Router redirect: ${state.matchedLocation}');
+       debugPrint('🔀 AuthStatus: ${authState.status}');
+       debugPrint('🔀 isPendingOtp: $isPendingOtp');
+       
        // Auth-related routes
        final isLoggingIn = state.matchedLocation == '/login';
        final isRegistering = state.matchedLocation == '/register';
@@ -54,30 +58,39 @@ final routerProvider = Provider<GoRouter>((ref) {
        
        // 1. If onboarding not completed, go to onboarding
        if (!onboardingCompleted && !isOnboarding) {
+         debugPrint('🔀 Redirecting to /onboarding');
          return '/onboarding';
        }
        
        // 2. If onboarding completed but user on onboarding page, go to login
        if (onboardingCompleted && isOnboarding) {
+         debugPrint('🔀 Redirecting to /login (from onboarding)');
          return '/login';
        }
        
-       // 3. If pending OTP and not on verify-otp, stay on current route (don't redirect)
-       // This allows the navigation to /verify-otp to complete
-       if (isPendingOtp && isVerifyingOtp) {
-         return null; // Allow access to OTP screen
+       // 3. If pending OTP verification, FORCE redirect to /verify-otp
+       if (isPendingOtp) {
+         if (isVerifyingOtp) {
+           debugPrint('🔀 Already on OTP screen - no redirect');
+           return null; // Already on OTP screen
+         }
+         debugPrint('🔀 Pending OTP - FORCING redirect to /verify-otp');
+         return '/verify-otp'; // Force redirect to OTP screen
        }
        
        // 4. If not authenticated and not on auth route, redirect to login
        if (!isAuthenticated && !isAuthRoute && !isOnboarding) {
+         debugPrint('🔀 Redirecting to /login (not authenticated)');
          return '/login';
        }
        
        // 5. If authenticated and on auth route, redirect to home
        if (isAuthenticated && isAuthRoute) {
+         debugPrint('🔀 Redirecting to / (authenticated)');
          return '/';
        }
        
+       debugPrint('🔀 No redirect');
        return null;
     },
     routes: [
@@ -150,10 +163,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'verify-otp',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
+          // Get from extra if available, otherwise from authState (for redirect case)
+          final userId = extra?['userId'] ?? authState.pendingUserId ?? '';
+          final email = extra?['email'] ?? authState.pendingEmail ?? '';
+          final type = extra?['type'] ?? (authState.status == AuthStatus.pendingLoginOtp ? 'login' : 'register');
           return OtpVerificationScreen(
-            userId: extra?['userId'] ?? '',
-            email: extra?['email'] ?? '',
-            type: extra?['type'] ?? 'register',
+            userId: userId,
+            email: email,
+            type: type,
           );
         },
       ),

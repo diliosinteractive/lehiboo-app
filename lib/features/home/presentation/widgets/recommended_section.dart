@@ -58,7 +58,7 @@ class RecommendedSection extends StatelessWidget {
                 child: const Text(
                   'Voir tout',
                   style: TextStyle(
-                    color: Color(0xFFFF6B35),
+                    color: Color(0xFFFF601F),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -188,7 +188,7 @@ class RecommendedSection extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: event['price'] == 'Gratuit'
                                         ? Colors.green.withOpacity(0.1)
-                                        : const Color(0xFFFF6B35).withOpacity(0.1),
+                                        : const Color(0xFFFF601F).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -196,7 +196,7 @@ class RecommendedSection extends StatelessWidget {
                                     style: TextStyle(
                                       color: event['price'] == 'Gratuit'
                                           ? Colors.green[700]
-                                          : const Color(0xFFFF6B35),
+                                          : const Color(0xFFFF601F),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),

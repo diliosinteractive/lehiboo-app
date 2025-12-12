@@ -75,7 +75,7 @@ class ThematiquesSection extends ConsumerWidget {
               ),
               child: const Center(
                 child: CircularProgressIndicator(
-                  color: Color(0xFFFF6B35),
+                  color: Color(0xFFFF601F),
                 ),
               ),
             );
@@ -240,7 +240,7 @@ class ThematiqueCard extends StatelessWidget {
       case 'festival':
         return const Color(0xFFEF4444);
       default:
-        return const Color(0xFFFF6B35);
+        return const Color(0xFFFF601F);
     }
   }
 

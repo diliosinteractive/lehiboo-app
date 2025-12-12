@@ -27,7 +27,7 @@ class PartnerDetailScreen extends ConsumerWidget {
       body: eventsAsync.when(
         data: (events) => _buildContent(context, events),
         loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
+          child: CircularProgressIndicator(color: Color(0xFFFF601F)),
         ),
         error: (error, stack) => _buildErrorState(context, error),
       ),
@@ -54,7 +54,7 @@ class PartnerDetailScreen extends ConsumerWidget {
               icon: const Icon(Icons.arrow_back),
               label: const Text('Retour'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B35),
+                backgroundColor: const Color(0xFFFF601F),
                 foregroundColor: Colors.white,
               ),
             ),
@@ -76,7 +76,7 @@ class PartnerDetailScreen extends ConsumerWidget {
         SliverAppBar(
           expandedHeight: 200,
           pinned: true,
-          backgroundColor: const Color(0xFFFF6B35),
+          backgroundColor: const Color(0xFFFF601F),
           leading: IconButton(
             icon: const CircleAvatar(
               backgroundColor: Colors.white,
@@ -90,7 +90,7 @@ class PartnerDetailScreen extends ConsumerWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFFFF6B35), Color(0xFFE55A2B)],
+                  colors: [Color(0xFFFF601F), Color(0xFFE55A2B)],
                 ),
               ),
               child: SafeArea(
@@ -126,7 +126,7 @@ class PartnerDetailScreen extends ConsumerWidget {
                                 style: const TextStyle(
                                   fontSize: 36,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFFFF6B35),
+                                  color: Color(0xFFFF601F),
                                 ),
                               ),
                             ),
@@ -196,7 +196,7 @@ class PartnerDetailScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF6B35).withAlpha(25),
+                    color: const Color(0xFFFF601F).withAlpha(25),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -204,7 +204,7 @@ class PartnerDetailScreen extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF6B35),
+                      color: Color(0xFFFF601F),
                     ),
                   ),
                 ),
@@ -308,7 +308,7 @@ class PartnerDetailScreen extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFF6B35),
+                        color: Color(0xFFFF601F),
                       ),
                     ),
                   ],

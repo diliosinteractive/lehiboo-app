@@ -47,7 +47,7 @@ class AiSuggestionCarousel extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFFF6B35).withOpacity(0.3)),
+          border: Border.all(color: const Color(0xFFFF601F).withOpacity(0.3)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -62,10 +62,10 @@ class AiSuggestionCarousel extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF6B35).withOpacity(0.1),
+                color: const Color(0xFFFF601F).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.search, color: Color(0xFFFF6B35), size: 30),
+              child: const Icon(Icons.search, color: Color(0xFFFF601F), size: 30),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -73,7 +73,7 @@ class AiSuggestionCarousel extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFFF6B35),
+                color: Color(0xFFFF601F),
                 height: 1.2,
               ),
             ),
@@ -144,11 +144,11 @@ class _AiActivityCard extends StatelessWidget {
                       ),
                       child: Row(
                         children: const [
-                          Icon(Icons.auto_awesome, size: 12, color: Color(0xFFFF6B35)),
+                          Icon(Icons.auto_awesome, size: 12, color: Color(0xFFFF601F)),
                           SizedBox(width: 4),
                           Text(
                             "Match",
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF6B35)),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF601F)),
                           ),
                         ],
                       ),
@@ -204,7 +204,7 @@ class _AiActivityCard extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFFF6B35), Color(0xFFFF8F66)],
+          colors: [Color(0xFFFF601F), Color(0xFFFF8F66)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

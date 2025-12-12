@@ -81,7 +81,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       },
                       child: const Text(
                         'Effacer',
-                        style: TextStyle(color: Color(0xFFFF6B35)),
+                        style: TextStyle(color: Color(0xFFFF601F)),
                       ),
                     ),
                   ],
@@ -241,7 +241,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6B35),
+                        backgroundColor: const Color(0xFFFF601F),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -286,7 +286,7 @@ class _FilterSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 20, color: const Color(0xFFFF6B35)),
+            Icon(icon, size: 20, color: const Color(0xFFFF601F)),
             const SizedBox(width: 8),
             Text(
               title,
@@ -409,7 +409,7 @@ class _PriceFilterSection extends StatelessWidget {
             min: _sliderMin,
             max: _sliderMax,
             divisions: 50,
-            activeColor: const Color(0xFFFF6B35),
+            activeColor: const Color(0xFFFF601F),
             inactiveColor: Colors.grey[300],
             labels: RangeLabels(
               '${validMin.toInt()}€',
@@ -643,10 +643,10 @@ class _SelectableChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.white,
+          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
           ),
         ),

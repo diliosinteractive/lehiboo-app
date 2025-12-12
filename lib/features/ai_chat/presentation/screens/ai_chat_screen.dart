@@ -124,7 +124,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
         title: Row(
           children: [
             CircleAvatar(
-              backgroundColor: const Color(0xFFFF6B35),
+              backgroundColor: const Color(0xFFFF601F),
               radius: 18,
               child: ClipOval(
                 child: Image.asset('assets/images/petit_boo_logo.png', fit: BoxFit.cover),
@@ -183,10 +183,10 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFF6B35).withOpacity(0.1),
+                              color: const Color(0xFFFF601F).withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.auto_awesome, color: Color(0xFFFF6B35), size: 24),
+                            child: const Icon(Icons.auto_awesome, color: Color(0xFFFF601F), size: 24),
                           ),
                           const SizedBox(width: 16),
                           const Expanded(
@@ -295,7 +295,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                         child: ElevatedButton(
                           onPressed: () => Navigator.pop(context),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF6B35),
+                            backgroundColor: const Color(0xFFFF601F),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -354,7 +354,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           if (chatState.isLoading)
             const Padding(
               padding: EdgeInsets.all(8.0),
-              child: LinearProgressIndicator(color: Color(0xFFFF6B35), backgroundColor: Colors.white),
+              child: LinearProgressIndicator(color: Color(0xFFFF601F), backgroundColor: Colors.white),
             ),
 
           // Input Area
@@ -399,7 +399,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                       return GestureDetector(
                         onTap: hasText ? _handleSendMessage : _startListening,
                         child: CircleAvatar(
-                          backgroundColor: hasText ? const Color(0xFFFF6B35) : (_isListening ? Colors.red : Colors.grey[200]),
+                          backgroundColor: hasText ? const Color(0xFFFF601F) : (_isListening ? Colors.red : Colors.grey[200]),
                           radius: 24,
                           child: Icon(
                             hasText ? Icons.send : (_isListening ? Icons.stop : Icons.mic),
@@ -461,7 +461,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           padding: const EdgeInsets.all(16),
           constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
           decoration: BoxDecoration(
-            color: isUser ? const Color(0xFFFF6B35) : Colors.white,
+            color: isUser ? const Color(0xFFFF601F) : Colors.white,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(20),
               topRight: const Radius.circular(20),
@@ -564,7 +564,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: const Color(0xFFFF6B35), size: 20),
+            child: Icon(icon, color: const Color(0xFFFF601F), size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -597,7 +597,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
              child: const Text("Fermer"), // For demo
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6B35)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF601F)),
             onPressed: () {
                // Navigate to Login/Register handled by main router
                Navigator.of(context).pop();

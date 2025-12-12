@@ -54,7 +54,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       body: eventAsync.when(
         data: (event) => _buildContent(event),
         loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
+          child: CircularProgressIndicator(color: Color(0xFFFF601F)),
         ),
         error: (error, stack) => _buildErrorState(error),
       ),
@@ -81,7 +81,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               icon: const Icon(Icons.arrow_back),
               label: const Text('Retour'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B35),
+                backgroundColor: const Color(0xFFFF601F),
                 foregroundColor: Colors.white,
               ),
             ),
@@ -259,7 +259,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       color: _currentImageIndex == entry.key
-                          ? const Color(0xFFFF6B35)
+                          ? const Color(0xFFFF601F)
                           : Colors.white.withOpacity(0.5),
                     ),
                   );
@@ -337,13 +337,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             decoration: BoxDecoration(
               color: event.isFree
                   ? Colors.green.withOpacity(0.1)
-                  : const Color(0xFFFF6B35).withOpacity(0.1),
+                  : const Color(0xFFFF601F).withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               event.isFree ? 'Gratuit' : '${event.minPrice?.toStringAsFixed(0) ?? 0}€',
               style: TextStyle(
-                color: event.isFree ? Colors.green : const Color(0xFFFF6B35),
+                color: event.isFree ? Colors.green : const Color(0xFFFF601F),
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -381,10 +381,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFF6B35).withOpacity(0.1),
+              color: const Color(0xFFFF601F).withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.calendar_today, color: Color(0xFFFF6B35), size: 24),
+            child: const Icon(Icons.calendar_today, color: Color(0xFFFF601F), size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -498,7 +498,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               child: Text(
                 _isDescriptionExpanded ? 'Voir moins' : 'Voir plus',
                 style: const TextStyle(
-                  color: Color(0xFFFF6B35),
+                  color: Color(0xFFFF601F),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -545,7 +545,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B35).withOpacity(0.1),
+                      color: const Color(0xFFFF601F).withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: event.organizerLogo != null
@@ -561,7 +561,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                               style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFFF6B35),
+                                color: Color(0xFFFF601F),
                               ),
                             ),
                           ),
@@ -737,7 +737,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFF6B35),
+                        color: Color(0xFFFF601F),
                       ),
                     ),
                   ],
@@ -778,7 +778,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFFF6B35),
+                  color: Color(0xFFFF601F),
                 ),
               ),
             ],
@@ -796,7 +796,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF6B35),
+              backgroundColor: const Color(0xFFFF601F),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(

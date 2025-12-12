@@ -55,7 +55,7 @@ class EventCard extends ConsumerWidget {
                       color: Colors.grey[300],
                       child: const Center(
                         child: CircularProgressIndicator(
-                          color: Color(0xFFFF6B35),
+                          color: Color(0xFFFF601F),
                         ),
                       ),
                     ),
@@ -230,13 +230,13 @@ class EventCard extends ConsumerWidget {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFF6B35).withOpacity(0.1),
+                                  color: const Color(0xFFFF601F).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   tag.name,
                                   style: const TextStyle(
-                                    color: Color(0xFFFF6B35),
+                                    color: Color(0xFFFF601F),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -275,7 +275,7 @@ class EventCard extends ConsumerWidget {
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFFF6B35),
+                                color: Color(0xFFFF601F),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.arrow_forward, color: Colors.white, size: 16),
@@ -287,7 +287,7 @@ class EventCard extends ConsumerWidget {
                               context.push('/event/${activity.id}', extra: activity);
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF6B35),
+                              backgroundColor: const Color(0xFFFF601F),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -332,7 +332,7 @@ class EventCard extends ConsumerWidget {
       case 'culture':
         return Colors.indigo;
       default:
-        return const Color(0xFFFF6B35);
+        return const Color(0xFFFF601F);
     }
   }
 }

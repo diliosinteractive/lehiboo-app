@@ -117,7 +117,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6B35),
+                        backgroundColor: const Color(0xFFFF601F),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -171,12 +171,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: const Color(0xFFFF6B35).withOpacity(0.1),
+                    color: const Color(0xFFFF601F).withOpacity(0.1),
                     child: Center(
                       child: Icon(
                         _getIconForTitle(content.title),
                         size: 80,
-                        color: const Color(0xFFFF6B35),
+                        color: const Color(0xFFFF601F),
                       ),
                     ),
                   );
@@ -223,8 +223,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       width: _currentPage == index ? 24 : 8,
       decoration: BoxDecoration(
         color: _currentPage == index 
-            ? const Color(0xFFFF6B35) 
-            : const Color(0xFFFF6B35).withOpacity(0.2),
+            ? const Color(0xFFFF601F) 
+            : const Color(0xFFFF601F).withOpacity(0.2),
         borderRadius: BorderRadius.circular(4),
       ),
     );

@@ -186,7 +186,7 @@ class CategoryChip extends StatelessWidget {
       case 'cuisine-gastronomie':
         return const Color(0xFFEF4444); // Red
       case 'famille-enfants':
-        return const Color(0xFFFF6B35); // Brand
+        return const Color(0xFFFF601F); // Brand
       default:
         return const Color(0xFF94A3B8); // Slate
     }

@@ -43,7 +43,7 @@ class CategoryFilterChips extends StatelessWidget {
               avatar: Icon(
                 category['icon'] as IconData,
                 size: 18,
-                color: isSelected ? Colors.white : const Color(0xFFFF6B35),
+                color: isSelected ? Colors.white : const Color(0xFFFF601F),
               ),
               label: Text(
                 category['label'] as String,
@@ -53,12 +53,12 @@ class CategoryFilterChips extends StatelessWidget {
                 ),
               ),
               backgroundColor: Colors.white,
-              selectedColor: const Color(0xFFFF6B35),
+              selectedColor: const Color(0xFFFF601F),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
                   color: isSelected
-                      ? const Color(0xFFFF6B35)
+                      ? const Color(0xFFFF601F)
                       : Colors.grey.withOpacity(0.3),
                 ),
               ),

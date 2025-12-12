@@ -47,7 +47,7 @@ class ActiveFilterChips extends ConsumerWidget {
                     'Tout effacer',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFFFF6B35),
+                      color: Color(0xFFFF601F),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -138,7 +138,7 @@ class _ActiveChip extends StatelessWidget {
       case FilterChipType.search:
         return const Color(0xFF6366F1);
       case FilterChipType.date:
-        return const Color(0xFFFF6B35);
+        return const Color(0xFFFF601F);
       case FilterChipType.price:
         return const Color(0xFF10B981);
       case FilterChipType.city:
@@ -284,10 +284,10 @@ class _CompactActiveChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(left: 10, right: 2, top: 2, bottom: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF6B35).withOpacity(0.1),
+        color: const Color(0xFFFF601F).withOpacity(0.1),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFFFF6B35).withOpacity(0.3),
+          color: const Color(0xFFFF601F).withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -297,7 +297,7 @@ class _CompactActiveChip extends StatelessWidget {
             _formatLabel(chip),
             style: const TextStyle(
               fontSize: 13,
-              color: Color(0xFFFF6B35),
+              color: Color(0xFFFF601F),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -307,13 +307,13 @@ class _CompactActiveChip extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF6B35).withOpacity(0.2),
+                color: const Color(0xFFFF601F).withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.close,
                 size: 12,
-                color: Color(0xFFFF6B35),
+                color: Color(0xFFFF601F),
               ),
             ),
           ),

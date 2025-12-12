@@ -99,7 +99,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     },
                     icon: Icon(
                       _showExpandedSearch ? Icons.search_off : Icons.search,
-                      color: const Color(0xFFFF6B35),
+                      color: const Color(0xFFFF601F),
                     ),
                   ),
                 ],
@@ -143,7 +143,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 },
                 loading: () => const Center(
                   child: CircularProgressIndicator(
-                    color: Color(0xFFFF6B35),
+                    color: Color(0xFFFF601F),
                   ),
                 ),
                 error: (error, _) => Center(
@@ -236,8 +236,8 @@ class _EmptyResults extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onClearFilters,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFFF6B35),
-                  side: const BorderSide(color: Color(0xFFFF6B35)),
+                  foregroundColor: const Color(0xFFFF601F),
+                  side: const BorderSide(color: Color(0xFFFF601F)),
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 icon: const Icon(Icons.clear),
@@ -460,17 +460,17 @@ class _SortOption extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: isSelected ? const Color(0xFFFF6B35) : Colors.grey,
+        color: isSelected ? const Color(0xFFFF601F) : Colors.grey,
       ),
       title: Text(
         label,
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? const Color(0xFFFF6B35) : null,
+          color: isSelected ? const Color(0xFFFF601F) : null,
         ),
       ),
       trailing: isSelected
-          ? const Icon(Icons.check, color: Color(0xFFFF6B35))
+          ? const Icon(Icons.check, color: Color(0xFFFF601F))
           : null,
       onTap: onTap,
     );

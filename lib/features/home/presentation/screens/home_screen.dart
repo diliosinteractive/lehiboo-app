@@ -68,7 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               width: 120,
               height: 32,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Text('Le Hiboo', style: TextStyle(color: Color(0xFFFF6B35), fontWeight: FontWeight.bold)),
+              errorBuilder: (context, error, stackTrace) => const Text('Le Hiboo', style: TextStyle(color: Color(0xFFFF601F), fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -85,7 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        color: const Color(0xFFFF6B35),
+        color: const Color(0xFFFF601F),
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
@@ -132,7 +132,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: const Text(
                           'Voir plus',
                           style: TextStyle(
-                            color: Color(0xFFFF6B35),
+                            color: Color(0xFFFF601F),
                             fontSize: 14,
                           ),
                         ),
@@ -203,7 +203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFF6B35), Color(0xFFFF8B5A)],
+                      colors: [Color(0xFFFF601F), Color(0xFFFF8B5A)],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                     ),
@@ -233,7 +233,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFFFF6B35),
+                          foregroundColor: const Color(0xFFFF601F),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -271,7 +271,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const Icon(
                         Icons.mail_outline,
                         size: 48,
-                        color: Color(0xFFFF6B35),
+                        color: Color(0xFFFF601F),
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -314,7 +314,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF6B35),
+                            backgroundColor: const Color(0xFFFF601F),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -404,7 +404,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Text(
                     greetingMessage,
                     style: const TextStyle(
-                      color: Color(0xFFFF6B35), // Orange Le Hiboo
+                      color: Color(0xFFFF601F), // Orange Le Hiboo
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       shadows: [
@@ -480,11 +480,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFF5F5F5),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFF6B35).withOpacity(0.3)),
+                      border: Border.all(color: const Color(0xFFFF601F).withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.search, color: Color(0xFFFF6B35), size: 22),
+                        const Icon(Icons.search, color: Color(0xFFFF601F), size: 22),
                         const SizedBox(width: 12),
                         Text(
                           'Rechercher une activité...',
@@ -552,7 +552,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: ElevatedButton(
                     onPressed: () => context.push('/search'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF6B35),
+                      backgroundColor: const Color(0xFFFF601F),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -663,7 +663,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const Icon(
                         Icons.history,
                         size: 14,
-                        color: Color(0xFFFF6B35),
+                        color: Color(0xFFFF601F),
                       ),
                       const SizedBox(width: 6),
                       ConstrainedBox(
@@ -711,16 +711,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.white,
+          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : const Color(0xFFE5E5E5),
+            color: isSelected ? const Color(0xFFFF601F) : const Color(0xFFE5E5E5),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFF6B35).withOpacity(0.3),
+                    color: const Color(0xFFFF601F).withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -761,10 +761,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.white,
+          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : const Color(0xFFE5E5E5),
+            color: isSelected ? const Color(0xFFFF601F) : const Color(0xFFE5E5E5),
           ),
         ),
         child: Text(
@@ -815,7 +815,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                  return _buildCityCard(city);
               },
             ),
-            loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFF6B35))),
+            loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFF601F))),
             error: (err, stack) => Text('Erreur: $err', maxLines: 1),
           ),
         ),

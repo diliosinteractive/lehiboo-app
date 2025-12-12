@@ -107,7 +107,7 @@ class BlogPostCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B35).withOpacity(0.1),
+                      color: const Color(0xFFFF601F).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -115,7 +115,7 @@ class BlogPostCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFFFF6B35),
+                        color: Color(0xFFFF601F),
                       ),
                     ),
                   ),
@@ -183,12 +183,12 @@ class BlogPostCard extends StatelessWidget {
 
     if (imageUrl == null) {
       return Container(
-        color: const Color(0xFFFF6B35).withOpacity(0.1),
+        color: const Color(0xFFFF601F).withOpacity(0.1),
         child: const Center(
           child: Icon(
             Icons.article,
             size: 40,
-            color: Color(0xFFFF6B35),
+            color: Color(0xFFFF601F),
           ),
         ),
       );
@@ -201,18 +201,18 @@ class BlogPostCard extends StatelessWidget {
         color: Colors.grey[200],
         child: const Center(
           child: CircularProgressIndicator(
-            color: Color(0xFFFF6B35),
+            color: Color(0xFFFF601F),
             strokeWidth: 2,
           ),
         ),
       ),
       errorWidget: (context, url, error) => Container(
-        color: const Color(0xFFFF6B35).withOpacity(0.1),
+        color: const Color(0xFFFF601F).withOpacity(0.1),
         child: const Center(
           child: Icon(
             Icons.article,
             size: 40,
-            color: Color(0xFFFF6B35),
+            color: Color(0xFFFF601F),
           ),
         ),
       ),

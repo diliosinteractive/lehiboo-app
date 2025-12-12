@@ -110,7 +110,7 @@ class _BannerCard extends StatelessWidget {
                     color: Colors.grey[200],
                     child: const Center(
                       child: CircularProgressIndicator(
-                        color: Color(0xFFFF6B35),
+                        color: Color(0xFFFF601F),
                         strokeWidth: 2,
                       ),
                     ),
@@ -130,8 +130,8 @@ class _BannerCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFFFF6B35),
-            const Color(0xFFFF6B35).withOpacity(0.7),
+            const Color(0xFFFF601F),
+            const Color(0xFFFF601F).withOpacity(0.7),
           ],
         ),
       ),

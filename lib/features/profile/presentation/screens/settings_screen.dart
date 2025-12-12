@@ -33,7 +33,7 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           _buildSectionHeader('Application'),
           ListTile(
-            leading: const Icon(Icons.restart_alt, color: Color(0xFFFF6B35)),
+            leading: const Icon(Icons.restart_alt, color: Color(0xFFFF601F)),
             title: const Text('Revoir l\'introduction'),
             subtitle: const Text('Redémarrer le tutoriel d\'accueil'),
             onTap: () => _showResetConfirmation(context),
@@ -83,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
               context.pop();
               _resetOnboarding(context);
             },
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF6B35)),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF601F)),
             child: const Text('Redémarrer'),
           ),
         ],

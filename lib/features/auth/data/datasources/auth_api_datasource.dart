@@ -159,7 +159,7 @@ class AuthApiDataSource {
     required String otp,
   }) async {
     final response = await _dio.post(
-      '/auth/verify-login-otp',
+      '/auth/verify-otp',
       data: {
         'user_id': userId,
         'email': email,

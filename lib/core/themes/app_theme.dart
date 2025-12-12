@@ -43,7 +43,7 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       iconTheme: const IconThemeData(color: HbColors.textPrimary),
-      titleTextStyle: GoogleFonts.poppins(
+      titleTextStyle: GoogleFonts.montserrat(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: HbColors.textPrimary,
@@ -70,7 +70,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        textStyle: GoogleFonts.poppins(
+        textStyle: GoogleFonts.montserrat(
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
@@ -86,7 +86,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        textStyle: GoogleFonts.poppins(
+        textStyle: GoogleFonts.montserrat(
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),

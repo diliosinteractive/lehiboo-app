@@ -22,7 +22,7 @@ class AiWelcomeScreen extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFFF6B35).withOpacity(0.2),
+                    const Color(0xFFFF601F).withOpacity(0.2),
                     Colors.transparent,
                   ],
                 ),
@@ -45,7 +45,7 @@ class AiWelcomeScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFFF6B35).withValues(alpha: 0.3),
+                          color: const Color(0xFFFF601F).withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -112,7 +112,7 @@ class AiWelcomeScreen extends StatelessWidget {
                          context.replace('/ai-chat');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6B35),
+                        backgroundColor: const Color(0xFFFF601F),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(

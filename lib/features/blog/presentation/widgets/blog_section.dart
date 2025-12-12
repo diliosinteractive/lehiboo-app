@@ -33,7 +33,7 @@ class BlogSection extends ConsumerWidget {
                 child: const Text(
                   'Voir tout',
                   style: TextStyle(
-                    color: Color(0xFFFF6B35),
+                    color: Color(0xFFFF601F),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -90,7 +90,7 @@ class BlogSection extends ConsumerWidget {
                     ),
                     child: const Center(
                       child: CircularProgressIndicator(
-                        color: Color(0xFFFF6B35),
+                        color: Color(0xFFFF601F),
                       ),
                     ),
                   ),

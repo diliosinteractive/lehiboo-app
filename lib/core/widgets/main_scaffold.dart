@@ -49,11 +49,11 @@ class _MainScaffoldState extends State<MainScaffold> {
           width: 75,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFFFF6B35), // Fond orange uni
+            color: const Color(0xFFFF601F), // Fond orange uni
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFF6B35).withOpacity(0.4),
+                color: const Color(0xFFFF601F).withOpacity(0.4),
                 blurRadius: 15,
                 spreadRadius: 2,
                 offset: const Offset(0, 8),
@@ -118,14 +118,14 @@ class _MainScaffoldState extends State<MainScaffold> {
           children: [
             Icon(
               icon,
-              color: isActive ? const Color(0xFFFF6B35) : Colors.grey,
+              color: isActive ? const Color(0xFFFF601F) : Colors.grey,
               size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isActive ? const Color(0xFFFF6B35) : Colors.grey,
+                color: isActive ? const Color(0xFFFF601F) : Colors.grey,
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),

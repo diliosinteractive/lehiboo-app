@@ -227,7 +227,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               decoration: InputDecoration(
                 hintText: 'Rechercher une activité...',
                 hintStyle: TextStyle(color: Colors.grey[400]),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFFFF6B35)),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFFFF601F)),
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -242,7 +242,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                     IconButton(
                       icon: Icon(
                         Icons.tune,
-                        color: filter.hasActiveFilters ? const Color(0xFFFF6B35) : Colors.grey,
+                        color: filter.hasActiveFilters ? const Color(0xFFFF601F) : Colors.grey,
                       ),
                       onPressed: () => showFilterBottomSheet(context),
                     ),
@@ -322,21 +322,21 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: filter.hasActiveFilters ? const Color(0xFFFF6B35) : Colors.white,
+                        color: filter.hasActiveFilters ? const Color(0xFFFF601F) : Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFFF6B35), width: 2),
+                        border: Border.all(color: const Color(0xFFFF601F), width: 2),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.tune, size: 16, color: filter.hasActiveFilters ? Colors.white : const Color(0xFFFF6B35)),
+                          Icon(Icons.tune, size: 16, color: filter.hasActiveFilters ? Colors.white : const Color(0xFFFF601F)),
                           const SizedBox(width: 6),
                           Text(
                             filter.hasActiveFilters ? 'Filtres (${filter.activeFilterCount})' : 'Filtres',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: filter.hasActiveFilters ? Colors.white : const Color(0xFFFF6B35),
+                              color: filter.hasActiveFilters ? Colors.white : const Color(0xFFFF601F),
                             ),
                           ),
                         ],
@@ -358,7 +358,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   onRefresh: () async {
                     ref.invalidate(filteredEventsProvider);
                   },
-                  color: const Color(0xFFFF6B35),
+                  color: const Color(0xFFFF601F),
                   child: GridView.builder(
                     padding: const EdgeInsets.all(16),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -378,7 +378,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                 );
               },
               loading: () => const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
+                child: CircularProgressIndicator(color: Color(0xFFFF601F)),
               ),
               error: (error, stack) => _buildErrorState(error.toString()),
             ),
@@ -399,13 +399,13 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color(0xFFFF6B35).withOpacity(0.1),
+              color: const Color(0xFFFF601F).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.event_busy,
               size: 50,
-              color: Color(0xFFFF6B35),
+              color: Color(0xFFFF601F),
             ),
           ),
           const SizedBox(height: 24),
@@ -436,7 +436,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                 filterNotifier.resetAll();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B35),
+                backgroundColor: const Color(0xFFFF601F),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -487,7 +487,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               ref.invalidate(filteredEventsProvider);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF6B35),
+              backgroundColor: const Color(0xFFFF601F),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -522,10 +522,10 @@ class _QuickFilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.white,
+          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : Colors.grey.shade300,
+            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
             width: 1.5,
           ),
         ),

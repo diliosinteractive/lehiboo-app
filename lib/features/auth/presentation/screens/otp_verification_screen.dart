@@ -136,7 +136,19 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   }
 
   void _onOtpDigitChanged(int index, String value) {
-    if (value.isNotEmpty && index < 5) {
+    if (value.length == 6) {
+      // Handle paste of full code
+      for (int i = 0; i < 6; i++) {
+        _controllers[i].text = value[i];
+      }
+      // Unfocus and verify
+      FocusScope.of(context).unfocus();
+      _verifyOtp();
+      return;
+    }
+
+    // Handle normal single digit entry
+    if (value.length == 1 && index < 5) {
       _focusNodes[index + 1].requestFocus();
     }
     
@@ -256,7 +268,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                         focusNode: _focusNodes[index],
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
-                        maxLength: 1,
+                        maxLength: 6, // Allow pasting full code
                         enabled: !_isLoading,
                         style: const TextStyle(
                           fontSize: 24,
@@ -265,6 +277,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                         ),
                         decoration: InputDecoration(
                           counterText: '',
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12), // Fix clipping
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -284,6 +297,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                         ),
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(6), // Enforce max length via formatter
                         ],
                         onChanged: (value) => _onOtpDigitChanged(index, value),
                       ),
