@@ -1,4 +1,4 @@
-package com.lehiboo.lehiboo
+package com.dilios.lehiboo
 
 import io.flutter.embedding.android.FlutterActivity
 

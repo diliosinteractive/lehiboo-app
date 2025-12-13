@@ -461,43 +461,76 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     return Column(
       crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        // Text Bubble
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          padding: const EdgeInsets.all(16),
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-          decoration: BoxDecoration(
-            color: isUser ? const Color(0xFFFF601F) : Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(20),
-              topRight: const Radius.circular(20),
-              bottomLeft: isUser ? const Radius.circular(20) : Radius.zero,
-              bottomRight: isUser ? Radius.zero : const Radius.circular(20),
+        Row(
+          mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // AI Avatar
+            if (!isUser)
+              Container(
+                margin: const EdgeInsets.only(right: 8, bottom: 8),
+                child: const CircleAvatar(
+                  backgroundColor: Color(0xFFFEEAD4), // Light Orange
+                  radius: 16,
+                   // Ideally use an asset image here if available, e.g. 'assets/images/petit_boo_head.png'
+                   // For now, using an icon as placeholder or the requested "head" if provided
+                  child: Icon(Icons.auto_awesome, size: 16, color: Color(0xFFFF601F)),
+                ),
+              ),
+
+            // Text Bubble
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.all(16),
+              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.70),
+              decoration: BoxDecoration(
+                color: isUser ? const Color(0xFFFF601F) : Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: isUser ? const Radius.circular(20) : Radius.zero,
+                  bottomRight: isUser ? Radius.zero : const Radius.circular(20),
+                ),
+                boxShadow: isUser ? [] : [
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2)),
+                ],
+              ),
+              child: MarkdownBody(
+                data: message.text,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    color: isUser ? Colors.white : const Color(0xFF222222),
+                    height: 1.4,
+                    fontSize: 16,
+                  ),
+                  strong: TextStyle(
+                     fontWeight: FontWeight.bold,
+                     color: isUser ? Colors.white : const Color(0xFF222222),
+                  ),
+                ),
+              ),
             ),
-            boxShadow: isUser ? [] : [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2)),
-            ],
+          ],
+        ),
+        
+        // Timestamp
+        Padding(
+          padding: EdgeInsets.only(
+            left: isUser ? 0 : 48, // Indent for avatar
+            right: isUser ? 0 : 0, 
+            bottom: 8
           ),
-          child: MarkdownBody(
-            data: message.text,
-            styleSheet: MarkdownStyleSheet(
-              p: TextStyle(
-                color: isUser ? Colors.white : const Color(0xFF222222),
-                height: 1.4,
-                fontSize: 16, // Consistent font size
-              ),
-              strong: TextStyle( // Bold text
-                 fontWeight: FontWeight.bold,
-                 color: isUser ? Colors.white : const Color(0xFF222222),
-              ),
-            ),
+          child: Text(
+            // Format: 12 déc, 14:30
+            "${message.timestamp.day} ${_getMonthName(message.timestamp.month)}, ${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}",
+            style: TextStyle(fontSize: 10, color: Colors.grey[400]),
           ),
         ),
 
         // Suggestions Carousel (Full Width, outside bubble)
         if (hasSuggestions)
           Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 16),
+            padding: const EdgeInsets.only(top: 8, bottom: 16, left: 40), // Align with text
             child: AiSuggestionCarousel(
               activities: message.activitySuggestions!,
               onMoreTap: () => _navigateToSearchWithContext(message),
@@ -505,6 +538,11 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           ),
       ],
     );
+  }
+
+  String _getMonthName(int month) {
+    const months = ['janv', 'févr', 'mars', 'avril', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
+    return months[month - 1];
   }
 
   void _navigateToSearchWithContext(ChatMessage message) {
