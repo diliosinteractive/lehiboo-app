@@ -54,5 +54,16 @@ class AiContextStorage {
   Future<void> clear() async {
     await _prefs.remove(_key);
     await _prefs.remove(_historyKey);
+    // Do not clear memory setting preference
+  }
+  
+  static const String _memoryEnabledKey = 'ai_memory_enabled';
+  
+  bool getMemoryEnabled() {
+     return _prefs.getBool(_memoryEnabledKey) ?? true;
+  }
+  
+  Future<void> setMemoryEnabled(bool enabled) async {
+    await _prefs.setBool(_memoryEnabledKey, enabled);
   }
 }

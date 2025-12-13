@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../providers/chat_provider.dart';
 import '../../domain/models/chat_message.dart';
 import '../widgets/ai_suggestion_carousel.dart';
+import 'ai_brain_screen.dart';
+
 
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
@@ -318,11 +320,18 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               );
             },
           ),
-          // Debug Brain Button
+          // Brain Button
           IconButton(
-            icon: const Icon(Icons.psychology_outlined),
-            tooltip: 'Debug Cerveau IA',
-            onPressed: () => _showDebugContext(context),
+            icon: const Icon(Icons.psychology),
+            tooltip: 'Mémoire de Petit Boo',
+            onPressed: () {
+               showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const AiBrainScreen(),
+              );
+            },
           ),
         ],
       ),
@@ -652,53 +661,5 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     );
   }
 
-  void _showDebugContext(BuildContext context) {
-     final aiService = ref.read(chatProvider.notifier).aiService; // Get public getter or expose it
-     // Note: chatProvider exposes ChatState, not Notifier. 
-     // We need to access the underlying service via provider reference if possible, 
-     // or expose context via ChatState.
-     // Better approach: Expose userContext in ChatState or just read it from the Notifier for debug.
-  
-     // Assuming we can get it from the notifier for now (requires notifier to be public or have getter)
-     // Actually, ref.read(chatProvider.notifier) returns ChatNotifier. 
-     // We need to add a getter in ChatNotifier first to access internal AiChatService safely.
-     
-     final chatNotifier = ref.read(chatProvider.notifier);
-     final contextMap = chatNotifier.userContext; // We need to add this getter to ChatNotifier
 
-     showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-             Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                   const Text("🧠 Cerveau de l'IA", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                   IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-                ],
-             ),
-             const Divider(),
-             Expanded(
-               child: SingleChildScrollView(
-                 child: SelectableText(
-                   contextMap.toString(), // Todo: Pretty print this
-                   style: const TextStyle(fontFamily: 'Courier', fontSize: 12),
-                 ),
-               ),
-             ),
-          ],
-        ),
-      ),
-    );
-  }
 }

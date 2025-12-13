@@ -67,9 +67,28 @@ class ChatNotifier extends StateNotifier<ChatState> {
   final AiChatService _aiService;
   final Uuid _uuid = const Uuid();
 
-  // Expose service for debug
+  // Expose service for debug & brain
   AiChatService get aiService => _aiService;
   Map<String, dynamic> get userContext => _aiService.userContext;
+  bool get isMemoryEnabled => _aiService.isMemoryEnabled;
+  
+  void updateBrainKey(String key, dynamic value) {
+    _aiService.updateContextKey(key, value);
+    // Force UI rebuild if needed (though context is not deep watched in state usually)
+    // But since BrainScreen will likely read from provider or service directly, it might be fine.
+    // Ideally we should have a 'version' in state to trigger rebuilds, 
+    // but for now let's rely on the BrainScreen rebuilding itself or using a Stream if we had one.
+  }
+
+  void removeBrainKey(String key) {
+    _aiService.removeContextKey(key);
+  }
+
+  void toggleMemory(bool enabled) {
+    _aiService.setMemoryEnabled(enabled);
+    // Trigger state update to refresh UI listeners
+    state = state.copyWith(); 
+  }
 
   ChatNotifier(this.ref, this._aiService) : super(ChatState()) {
     startSmartWelcome();
