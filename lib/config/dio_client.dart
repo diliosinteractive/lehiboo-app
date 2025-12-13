@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,8 @@ class DioClient {
 
   static Dio get instance => _dio;
   static FlutterSecureStorage get storage => _storage;
+
+  // Basic Auth helper removed
 
   static void initialize() {
     _storage = const FlutterSecureStorage(

@@ -11,6 +11,7 @@ import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chi
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import '../../../../config/dio_client.dart';
 import '../../data/models/mobile_app_config.dart';
 import '../providers/home_providers.dart';
 import '../widgets/ads_banners_section.dart';

@@ -67,8 +67,8 @@ class _MainScaffoldState extends State<MainScaffold> {
             shape: const CircleBorder(),
             child: Padding(
               padding: const EdgeInsets.all(14.0), // Icone un peu plus petite/centrée
-              child: Image.network(
-                'https://preprod.lehiboo.com/wp-content/plugins/eventlist/assets/img/unknow_user.png',
+              child: Image.asset(
+                'assets/images/petit_boo.png',
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => const Icon(Icons.search, color: Colors.white, size: 30),
               ),

@@ -50,3 +50,13 @@ fi
 pod install --repo-update
 
 echo "Build setup complete!"
+
+# Prepare Flutter iOS Build
+# This step ensures that Generated.xcconfig and other Flutter build artifacts are present.
+# We use --config-only to avoid a full build here, as Xcode will handle the archiving.
+# We also use --no-codesign to avoid signing issues during this preparation phase.
+echo "Preparing Flutter iOS build..."
+flutter build ios --config-only --no-codesign --release
+
+# Note: Xcode Cloud will proceed to build the 'Runner' scheme after this script finishes.
+
