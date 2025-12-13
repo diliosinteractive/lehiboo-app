@@ -78,12 +78,59 @@ class ChatNotifier extends StateNotifier<ChatState> {
   Future<void> startSmartWelcome() async {
     String userName = "Voyageur";
     String locationContext = "Paris"; // Default fallback
+    String? userId;
 
     final user = ref.read(currentUserProvider);
-    if (user != null && user.firstName != null) {
-      userName = user.firstName!;
+    if (user != null) {
+      if (user.firstName != null) userName = user.firstName!;
+      userId = user.id;
     }
 
+    // 1. Attempt to Sync History if logged in
+    if (userId != null) {
+      state = state.copyWith(isLoading: true);
+      try {
+        final history = await _aiService.fetchRemoteHistory(userId);
+        if (history.isNotEmpty) {
+           // Reconstruct messages from history
+           final messages = history.where((h) {
+             // Filter out System Instructions if they leaked into history
+             final content = h['content'] as String? ?? '';
+             return !content.startsWith('SYSTEM_INSTRUCTION');
+           }).map((h) {
+             final isUser = h['role'] == 'user';
+             
+             // Reconstruct suggestions if events exist in history
+             List<Activity> suggestions = [];
+             if (!isUser && h['events'] != null && h['events'] is List) {
+               suggestions = (h['events'] as List).map((e) => _mapEventToActivity(e)).toList();
+             }
+
+             return ChatMessage(
+               id: _uuid.v4(), // or use h['id'] if available
+               text: h['content'] ?? '',
+               isUser: isUser,
+               timestamp: h['timestamp'] != null ? DateTime.parse(h['timestamp']) : DateTime.now(),
+               activitySuggestions: suggestions,
+             );
+           }).toList();
+           
+           if (messages.isNotEmpty) {
+             state = state.copyWith(
+               messages: messages,
+               isLoading: false,
+               messageCount: messages.where((m) => m.isUser).length,
+             );
+             return; // Stop here, don't show Smart Welcome if we have history
+           }
+        }
+      } catch (e) {
+        debugPrint("History sync error: $e");
+      }
+    }
+
+    // 2. If no history or guest, show Smart Welcome
+    
     // Initial Loading State
     state = state.copyWith(isLoading: true, messages: [
       ChatMessage(
@@ -93,7 +140,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
         timestamp: DateTime.now(),
       )
     ]);
-
+    
+    // ... (Location Logic same as before) ...
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (serviceEnabled) {
@@ -118,28 +166,22 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
 
     try {
-    final prompt = "SYSTEM_INSTRUCTION: Ignore previous history. The user is '$userName' and is currently at '$locationContext'. "
+        final prompt = "SYSTEM_INSTRUCTION: Ignore previous history. The user is '$userName' and is currently at '$locationContext'. "
                      "Act as 'Petit Boo', a friendly local guide. " 
                      "Say hello warmly. Use EMOJIS to be friendly and expressive! 🌟 "
-                     "IMPORTANT: Execute a search to find 3 REAL, DIVERSE activities around '$locationContext': "
-                     "1. Something cultural or fun (Theater, Show, Comedy). "
-                     "2. Something active or thrilling (Sport, Adventure). "
-                     "3. A local city event or discovery. "
-                     "Present them pedagogically in your text (e.g. 'Si vous aimez rire...', 'Pour des sensations...'). "
-                     "Focus on PERSUADING the user to go out. Explain WHY these are great choices. "
-                     "If you cannot find an activity for a specific category, DO NOT mention it in the text. Only describe what you found. "
-                     "Do NOT include URLs or links in the text. Refer to the cards below. "
-                     "You MUST return them as structured events using the 'findEvents' tool. "
-                     "Do NOT just make up suggestions in text. "
-                     "MEMORY: Store any key user insights in 'user_context'.";
+                     "TASK: Find 3 REAL, DIVERSE activities around '$locationContext' (Cultural, Active, Discovery). "
+                     "CRITICAL: You MUST use the 'findEvents' tool to return the activities. "
+                     "1. FIRST, call 'findEvents' with specific keywords/dates to get real data. "
+                     "2. THEN, write your friendly response based ONLY on the data returned by the tool. "
+                     "3. Do NOT hallucinate activities. If 'findEvents' returns nothing, say you couldn't find anything specific but offer general advice. "
+                     "4. In your text, be pedagogical and persuasive. Do NOT include URLs. Refer to the cards below. "
+                     "MEMORY: Store any key user insights in 'user_context'. "
+                     "REMEMBER: If the 'events' list is empty, valid cards will NOT appear, and you will look broken. USE THE TOOL.";
 
-      // 4. Call API
-      // We use the normal sendMessage but we need to make sure the UI shows the RESPONSE, not this prompt.
-      // But sendMessage adds the user message to the list. That's a problem. 
-      // We need a way to call the API *without* adding the user message to the UI state.
-      
-      // Direct API call bypassing the public sendMessage method's state update logic
-      final response = await _aiService.sendMessage(prompt);
+      // Direct API call
+      // Pass userId if available to link session
+      // Don't add this system prompt to local history
+      final response = await _aiService.sendMessage(prompt, userId: userId, addToHistory: false);
       
       final aiText = response['message'] as String? ?? "Bonjour ! Je suis Petit Boo.";
       final eventsData = response['events'] as List?;
@@ -157,7 +199,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
         searchContext: response['searchParams'] ?? response['user_context'],
       );
 
-      // Replace the loading message with the real one
       state = state.copyWith(
         messages: [aiMsg], 
         isLoading: false
@@ -165,7 +206,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     } catch (e) {
       debugPrint("Smart Welcome Error: $e");
-      // Fallback
       final fallbackMsg = ChatMessage(
         id: _uuid.v4(),
         text: "Bonjour ${user?.firstName ?? ''} ! Je suis Petit Boo. Désolé, j'ai eu un petit souci de connexion, mais je suis prêt à t'aider !",
@@ -177,7 +217,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   void addReview(String title, String message) {
-    // Placeholder if we ever need it
+    // Placeholder
   }
 
   Future<void> sendMessage(String text) async {
@@ -190,7 +230,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       return;
     }
 
-    // Add user message
+    // Add user message to UI
     final userMsg = ChatMessage(
       id: _uuid.v4(),
       text: text,
@@ -205,12 +245,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
     );
 
     try {
-      // Call Real AI Service
-      final response = await _aiService.sendMessage(text);
+      // Call Real AI Service with userId
+      final response = await _aiService.sendMessage(text, userId: user?.id);
       
       final aiText = response['message'] as String? ?? "Désolé, je n'ai pas compris.";
       final eventsData = response['events'] as List?;
-      // Use searchParams if available (V2 Update), fallback to user_context
       final searchParams = response['searchParams'] as Map<String, dynamic>?;
       final userContext = response['user_context'] as Map<String, dynamic>?;
       
@@ -235,7 +274,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
       );
 
     } catch (e) {
-      // Handle Error
       final errorMsg = ChatMessage(
         id: _uuid.v4(),
         text: "Oups ! Une erreur est survenue lors de la communication avec Petit Boo. Réessayez plus tard.",
@@ -246,7 +284,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
         messages: [...state.messages, errorMsg],
         isLoading: false,
       );
-      print("AI Error: $e");
+      debugPrint("AI Error: $e");
     }
   }
 
@@ -266,9 +304,17 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (json['category'] is Map) {
       final cat = json['category'];
       category = Category(
-        id: '', // Not provided by API V2 yet
+        id: '', 
         slug: cat['slug'] ?? '',
         name: cat['name'] ?? '',
+      );
+    } else if (json['category'] is String) {
+      // Backend V2 (JSONB)
+      final catName = json['category'] as String;
+      category = Category(
+        id: '', 
+        slug: catName.toLowerCase(), // Simple slug generated from name
+        name: catName,
       );
     }
 

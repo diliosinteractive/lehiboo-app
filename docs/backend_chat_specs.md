@@ -29,6 +29,7 @@ Pour garantir une expérience continue (cross-device) et une mémoire long terme
             "id": "msg_124",
             "role": "assistant",
             "content": "Quel type de cuisine ?",
+            "events": [ { "id": 1, "title": "Pizza..." } ],
             "timestamp": "2023-10-27T10:00:05Z"
           }
         ]

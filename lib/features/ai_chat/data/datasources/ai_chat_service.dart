@@ -40,7 +40,47 @@ class AiChatService {
     }
   }
   
-  Future<Map<String, dynamic>> sendMessage(String message) async {
+  // Fetch remote history
+  Future<List<Map<String, dynamic>>> fetchRemoteHistory(String userId) async {
+    final url = '${AppConstants.aiBaseUrl}/mobile/chat/history';
+  
+    try {
+      if (_apiKey == null) await _fetchApiKey();
+      
+      final response = await _dio.get(
+        url,
+        queryParameters: {'userId': userId, 'limit': '50'},
+        options: Options(headers: {if (_apiKey != null) 'X-API-Key': _apiKey!}),
+      );
+      
+      if (response.data['success'] == true && response.data['data'] != null) {
+        final data = response.data['data'];
+        
+        // 1. Sync History
+        final List<dynamic> historyList = data['history'] ?? [];
+        
+        // Backend now returns full JSONB objects including 'events', so no need to merge!
+        _history = historyList.map((e) => e as Map<String, dynamic>).toList();
+        
+        await _contextStorage.saveHistory(_history);
+        
+        // 2. Sync Context (if provided)
+        if (data['user_context'] != null) {
+          debugPrint("🧠 Synced User Context from History: ${data['user_context']}");
+          _userContext = Map<String, dynamic>.from(data['user_context']);
+          await _contextStorage.saveContext(_userContext);
+        }
+
+        return _history;
+      }
+      return [];
+    } catch (e) {
+      debugPrint("Fetch History Error: $e");
+      return []; // Fail silently or locally
+    }
+  }
+
+  Future<Map<String, dynamic>> sendMessage(String message, {String? userId, bool addToHistory = true}) async {
     _conversationId ??= const Uuid().v4();
     final url = '${AppConstants.aiBaseUrl}/mobile/chat';
 
@@ -60,6 +100,7 @@ class AiChatService {
           'message': message,
           'conversation_id': _conversationId,
           'user_context': _userContext,
+          if (userId != null) 'userId': userId,
           // Sliding Window: Send only last 4 messages (Backend Spec)
           'history': _history.length > 4 ? _history.sublist(_history.length - 4) : _history,
         },
@@ -71,31 +112,40 @@ class AiChatService {
         ),
       );
 
-      final data = response.data;
+      final responseData = response.data;
+      // Handle standard API wrapper { success: true, data: { ... } }
+      final data = (responseData['data'] != null && responseData['data'] is Map) 
+          ? responseData['data'] 
+          : responseData;
       
+      debugPrint("🤖 AI Response Raw: ${responseData.keys.toList()}");
+      if (data != responseData) debugPrint("🤖 AI Response Data unwrapped: ${data.keys.toList()}");
+
       // Update local context and persist if changed
       if (data['user_context'] != null) {
-        _userContext = data['user_context'];
+        debugPrint("🧠 Saving User Context: ${data['user_context']}");
+        _userContext = Map<String, dynamic>.from(data['user_context']);
         await _contextStorage.saveContext(_userContext);
+      } else {
+        debugPrint("⚠️ No user_context in response");
       }
       
-      // Update history from response (or append manually if backend doesn't return it full)
-      // Spec: Backend returns the 2 new messages in 'history' or full? 
-      // Current behavior: It returns updated history.
-      // But we are sending TRUNCATED history (sliding window).
-      // So relying on backend response for FULL history is risky if backend only echoes back what we sent.
-      // Better strategy: Append new messages to our local FULL history.
-      
+      // Update history
       final aiMessageContent = data['message'] as String?;
       if (aiMessageContent != null) {
-        _history.add({
-          'role': 'user',
-          'content': message, // We reconstruct it to be safe
-          'timestamp': DateTime.now().toIso8601String(),
-        });
+        // Only add USER message if requested (avoid adding system prompts)
+        if (addToHistory) {
+          _history.add({
+            'role': 'user',
+            'content': message, 
+            'timestamp': DateTime.now().toIso8601String(),
+          });
+        }
+        
         _history.add({
           'role': 'assistant',
           'content': aiMessageContent,
+          'events': data['events'], // Persist events!
           'timestamp': DateTime.now().toIso8601String(),
         });
         

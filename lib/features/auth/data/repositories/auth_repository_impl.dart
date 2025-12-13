@@ -168,12 +168,16 @@ class AuthRepositoryImpl implements AuthRepository {
     final role = await _secureStorage.getUserRole();
     final email = await _secureStorage.getUserEmail();
     final name = await _secureStorage.getUserDisplayName();
+    final firstName = await _secureStorage.getUserFirstName();
+    final lastName = await _secureStorage.getUserLastName();
 
     if (userId != null) {
       _cachedUser = HbUser(
         id: userId,
         email: email ?? '',
         displayName: name ?? '',
+        firstName: firstName,
+        lastName: lastName,
         role: _parseRole(role),
       );
       return _cachedUser;
@@ -197,6 +201,8 @@ class AuthRepositoryImpl implements AuthRepository {
     await _secureStorage.saveUserRole(user.role.name);
     await _secureStorage.saveUserEmail(user.email);
     await _secureStorage.saveUserDisplayName(user.displayName ?? '');
+    if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
+    if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
 
     _cachedUser = user;
 
