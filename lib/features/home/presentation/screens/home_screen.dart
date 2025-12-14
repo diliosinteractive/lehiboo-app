@@ -30,11 +30,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   int _selectedTimeFilter = 0;
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -473,29 +475,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             child: Column(
               children: [
-                // Barre de recherche cliquable
-                GestureDetector(
-                  onTap: () => context.push('/search?openFilter=true'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFF601F).withOpacity(0.3)),
+                // Barre de recherche
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFF601F).withOpacity(0.3)),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      icon: const Icon(Icons.search, color: Color(0xFFFF601F), size: 22),
+                      hintText: 'Rechercher une activité...',
+                      hintStyle: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 15,
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.search, color: Color(0xFFFF601F), size: 22),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Rechercher une activité...',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (value) {
+                      if (value.trim().isNotEmpty) {
+                        ref.read(eventFilterProvider.notifier).setSearchQuery(value.trim());
+                        context.push('/search');
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -551,7 +556,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => context.push('/search?openFilter=true'),
+                    onPressed: () {
+                      if (_searchController.text.trim().isNotEmpty) {
+                        ref.read(eventFilterProvider.notifier).setSearchQuery(_searchController.text.trim());
+                        context.push('/search');
+                      } else {
+                        context.push('/search?openFilter=true');
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF601F),
                       foregroundColor: Colors.white,

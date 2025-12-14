@@ -26,14 +26,12 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String firstName,
     required String lastName,
-    String? phone,
   }) async {
     final response = await _apiDataSource.register(
       email: email,
       password: password,
       firstName: firstName,
       lastName: lastName,
-      phone: phone,
     );
 
     return RegistrationResult(

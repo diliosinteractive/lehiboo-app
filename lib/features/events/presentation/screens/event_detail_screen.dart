@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:intl/intl.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
+import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../domain/entities/event.dart';
@@ -39,7 +40,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   bool _showStickyTitle = false;
   int _currentImageIndex = 0;
   final Map<String, int> _ticketQuantities = {};
-  bool _isFavorite = false;
   bool _isDescriptionExpanded = false;
   static const int _maxDescriptionLength = 250;
 
@@ -161,27 +161,36 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             },
           ),
           const SizedBox(width: 8),
-          _buildCircularButton(
-            icon: _isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: _isFavorite ? Colors.red : null,
-            onTap: () async {
-               final canProceed = await GuestGuard.check(
+          Consumer(
+            builder: (context, ref, child) {
+              final isFavorite = ref.watch(favoritesProvider).value?.any((e) => e.id == widget.eventId) ?? false;
+            
+            return _buildCircularButton(
+              icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: isFavorite ? Colors.red : null,
+              onTap: () async {
+                final canProceed = await GuestGuard.check(
                   context: context,
                   ref: ref,
                   featureName: 'fav',
                 );
                 if (canProceed) {
-                  setState(() => _isFavorite = !_isFavorite);
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  ScaffoldMessenger.of(context).showSnackBar(
+                   ref.read(favoritesProvider.notifier).toggleFavorite(event);
+                   
+                   ScaffoldMessenger.of(context).clearSnackBars();
+                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(_isFavorite ? 'Ajouté aux favoris' : 'Retiré des favoris'),
+                      content: Text(isFavorite ? 'Retiré des favoris' : 'Ajouté aux favoris'), // Logic inverted because we react to the *old* state here before re-render, or better to use the optimistic new state? Actually with riverpod check...
+                      // Actually, let's keep it simple. The provider updates state, so 'isFavorite' will flip on rebuild. 
+                      // Ideally we'd show the message based on the action intent. 
                       duration: const Duration(seconds: 1),
                     )
                   );
                 }
-            },
-          ),
+              },
+            );
+          },
+        ),
           const SizedBox(width: 12),
         ],
         flexibleSpace: FlexibleSpaceBar(

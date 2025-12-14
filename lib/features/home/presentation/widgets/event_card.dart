@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:intl/intl.dart';
@@ -16,7 +18,9 @@ class EventCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isFavorite = ref.watch(favoritesProvider).contains(activity.id);
+    final favoritesState = ref.watch(favoritesProvider);
+    final isFavorite = favoritesState.value?.any((e) => e.id == activity.id) ?? false;
+
     return GestureDetector(
       onTap: () {
         debugPrint('Tapped activity: ${activity.id} - ${activity.title}');
@@ -120,7 +124,42 @@ class EventCard extends ConsumerWidget {
                           featureName: 'ajouter aux favoris',
                         );
                         if (canProceed) {
-                          ref.read(favoritesProvider.notifier).toggleFavorite(activity.id);
+                          // Simple mapping to Event for favoriting
+                          final event = Event(
+                            id: activity.id,
+                            title: activity.title,
+                            description: '',
+                            shortDescription: '',
+                            category: EventCategory.other,
+                            targetAudiences: [],
+                            startDate: activity.nextSlot?.startDateTime ?? DateTime.now(),
+                            endDate: activity.nextSlot?.endDateTime ?? DateTime.now(),
+                            venue: activity.city?.name ?? '',
+                            address: '',
+                            city: activity.city?.name ?? '',
+                            postalCode: '',
+                            latitude: 0,
+                            longitude: 0,
+                            images: activity.imageUrl != null ? [activity.imageUrl!] : [],
+                            coverImage: activity.imageUrl,
+                            priceType: activity.priceMin == 0 ? PriceType.free : PriceType.paid,
+                            minPrice: activity.priceMin,
+                            maxPrice: activity.priceMax,
+                            isIndoor: false,
+                            isOutdoor: false,
+                            tags: [],
+                            organizerId: '',
+                            organizerName: '',
+                            isFavorite: isFavorite, // Use current state
+                            isFeatured: false,
+                            isRecommended: false,
+                            status: EventStatus.upcoming,
+                            hasDirectBooking: false,
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                            views: 0
+                          );
+                          ref.read(favoritesProvider.notifier).toggleFavorite(event);
                         }
                       },
                       icon: Icon(

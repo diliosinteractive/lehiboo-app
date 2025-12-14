@@ -99,20 +99,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF601F).withOpacity(0.1),
                           shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.celebration,
-                          size: 50,
-                          color: Color(0xFFFF601F),
+                          image: const DecorationImage(
+                            image: AssetImage('assets/images/logo_picto_lehiboo.png'),
+                            fit: BoxFit.cover,
+                          ),
+                          border: Border.all(
+                            color: const Color(0xFFFF601F).withOpacity(0.1),
+                            width: 1,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 32),
                     // Title
                     const Text(
-                      'Bon retour !',
+                      'Bienvenue sur Le Hiboo !',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -252,25 +254,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 32),
                     // Register link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Column(
                       children: [
                         Text(
-                          'Pas encore de compte ? ',
+                          'Pas encore de compte ?',
                           style: TextStyle(color: Colors.grey[600]),
                         ),
-                        TextButton(
-                          onPressed: isLoading ? null : () => context.push('/register'),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: const Text(
-                            'S\'inscrire',
-                            style: TextStyle(
-                              color: Color(0xFFFF601F),
-                              fontWeight: FontWeight.w600,
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: OutlinedButton(
+                            onPressed: isLoading ? null : () => context.push('/register'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: const BorderSide(color: Color(0xFFFF601F), width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Créer un compte',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold, // Increased weight for visibility
+                                color: Color(0xFFFF601F),
+                              ),
                             ),
                           ),
                         ),

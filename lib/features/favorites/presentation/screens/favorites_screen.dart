@@ -27,8 +27,7 @@ class FavoritesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favoriteIds = ref.watch(favoritesProvider);
-    final allActivitiesAsync = ref.watch(_allActivitiesProvider);
+    final favoritesAsync = ref.watch(favoritesProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
@@ -48,65 +47,61 @@ class FavoritesScreen extends ConsumerWidget {
           },
         ),
       ),
-      body: favoriteIds.isEmpty
-          ? _buildEmptyState()
-          : allActivitiesAsync.when(
-              data: (allActivities) {
-                final favoriteActivities = allActivities
-                    .where((a) => favoriteIds.contains(a.id))
-                    .toList();
+      body: favoritesAsync.when(
+        data: (favorites) {
+          if (favorites.isEmpty) {
+            return _buildEmptyState();
+          }
 
-                if (favoriteActivities.isEmpty) {
-                  return _buildEmptyState();
-                }
+          final activities = EventToActivityMapper.toActivities(favorites);
 
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(_allActivitiesProvider);
-                  },
-                  child: GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.50,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: favoriteActivities.length,
-                    itemBuilder: (context, index) {
-                      return EventCard(
-                        activity: favoriteActivities[index],
-                        isCompact: true,
-                      );
-                    },
-                  ),
+          return RefreshIndicator(
+            onRefresh: () async {
+              return ref.refresh(favoritesProvider);
+            },
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.50,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: activities.length,
+              itemBuilder: (context, index) {
+                return EventCard(
+                  activity: activities[index],
+                  isCompact: true,
                 );
               },
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFF601F)),
-              ),
-              error: (error, _) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.grey[300]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur de chargement',
-                      style: TextStyle(color: Colors.grey[500]),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => ref.invalidate(_allActivitiesProvider),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF601F),
-                      ),
-                      child: const Text('Réessayer', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ),
             ),
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+        ),
+        error: (error, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.grey[300]),
+              const SizedBox(height: 16),
+              Text(
+                'Erreur de chargement',
+                style: TextStyle(color: Colors.grey[500]),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => ref.refresh(favoritesProvider),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF601F),
+                ),
+                child: const Text('Réessayer', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

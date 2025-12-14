@@ -109,11 +109,6 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/images/logo_picto_lehiboo.png"
   remove_alpha_ios: true
   background_color_ios: "#FF601F"
-  web:
-    generate: true
-    image_path: "assets/images/logo_picto_lehiboo.png"
-    background_color: "#FF601F"
-    theme_color: "#FF601F"
   windows:
     generate: true
     image_path: "assets/images/logo_picto_lehiboo.png"

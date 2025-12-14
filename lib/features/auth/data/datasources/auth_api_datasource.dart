@@ -67,7 +67,6 @@ class AuthApiDataSource {
     required String password,
     required String firstName,
     required String lastName,
-    String? phone,
   }) async {
     final response = await _dio.post(
       '/auth/register',
@@ -76,7 +75,6 @@ class AuthApiDataSource {
         'password': password,
         'first_name': firstName,
         'last_name': lastName,
-        if (phone != null) 'phone': phone,
       },
     );
 

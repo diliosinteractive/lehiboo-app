@@ -38,7 +38,6 @@ abstract class AuthRepository {
     required String password,
     required String firstName,
     required String lastName,
-    String? phone,
   });
 
   /// Verify OTP and complete registration
