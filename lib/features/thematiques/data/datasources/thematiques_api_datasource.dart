@@ -14,6 +14,10 @@ class ThematiquesApiDatasource {
       '/thematiques',
       queryParameters: {
         'include_count': includeCount.toString(),
+        'per_page': '100',
+        'number': '100',
+        'limit': '100',
+        'posts_per_page': '100',
       },
     );
 

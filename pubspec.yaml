@@ -98,12 +98,36 @@ dev_dependencies:
   custom_lint: ^0.6.4
   riverpod_lint: ^2.3.10
   go_router_builder: ^2.5.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo_picto_lehiboo.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FF601F"
+  adaptive_icon_foreground: "assets/images/logo_picto_lehiboo.png"
+  remove_alpha_ios: true
+  background_color_ios: "#FF601F"
+  web:
+    generate: true
+    image_path: "assets/images/logo_picto_lehiboo.png"
+    background_color: "#FF601F"
+    theme_color: "#FF601F"
+  windows:
+    generate: true
+    image_path: "assets/images/logo_picto_lehiboo.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/images/logo_picto_lehiboo.png"
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
+    - assets/images/thematiques/
     - assets/icons/
     - assets/animations/
     - .env
