@@ -82,7 +82,13 @@ class EventRepositoryImpl implements EventRepository {
   @override
   Future<Event> getEventById(int id) async {
     final dto = await _apiDataSource.getEventById(id);
-    return EventMapper.toEvent(dto);
+    try {
+      return EventMapper.toEvent(dto);
+    } catch (e, stack) {
+      print('EventRepositoryImpl: Error mapping DTO to Event for id $id: $e');
+      print(stack);
+      rethrow;
+    }
   }
 
   @override

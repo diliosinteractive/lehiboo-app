@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../models/event_dto.dart';
+import '../models/event_availability_dto.dart';
 
 final eventsApiDataSourceProvider = Provider<EventsApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -103,9 +104,40 @@ class EventsApiDataSource {
     final data = response.data;
 
     if (data['success'] == true && data['data'] != null) {
-      return EventDto.fromJson(data['data']);
+      debugPrint('getEventById: Raw data received for $id');
+      try {
+        return EventDto.fromJson(data['data']);
+      } catch (e, stack) {
+        debugPrint('getEventById Error parsing DTO: $e');
+        debugPrint(stack.toString());
+        rethrow;
+      }
     }
     throw Exception(data['data']?['message'] ?? 'Failed to load event');
+  }
+
+  /// Fetch availability (slots & tickets) for an event
+  Future<EventAvailabilityResponseDto> getEventAvailability(int eventId, {String? date}) async {
+    final queryParams = <String, dynamic>{};
+    if (date != null && date.isNotEmpty) queryParams['date'] = date;
+
+    final response = await _dio.get(
+      '/events/$eventId/availability',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+    final data = response.data;
+
+    if (data['success'] == true && data['data'] != null) {
+      debugPrint('getEventAvailability: Data received for $eventId');
+      try {
+        return EventAvailabilityResponseDto.fromJson(data['data']);
+      } catch (e, stack) {
+        debugPrint('getEventAvailability Error parsing DTO: $e');
+        debugPrint(stack.toString());
+        rethrow;
+      }
+    }
+    throw Exception(data['data']?['message'] ?? 'Failed to load availability');
   }
 
   Future<List<EventCategoryDto>> getCategories({

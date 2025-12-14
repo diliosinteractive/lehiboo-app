@@ -224,9 +224,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final categorySlug = state.uri.queryParameters['categorySlug'];
           final city = state.uri.queryParameters['city'];
+          final openFilter = state.uri.queryParameters['openFilter'] == 'true';
           return SearchScreen(
             categorySlug: categorySlug,
             city: city,
+            autoOpenFilter: openFilter,
           );
         },
       ),

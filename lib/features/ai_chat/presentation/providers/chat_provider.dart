@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart' hide Category;
+import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/domain/entities/city.dart';
@@ -115,7 +116,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
            final messages = history.where((h) {
              // Filter out System Instructions if they leaked into history
              final content = h['content'] as String? ?? '';
-             return !content.startsWith('SYSTEM_INSTRUCTION');
+             final upperContent = content.toUpperCase();
+             return !upperContent.startsWith('SYSTEM_INSTRUCTION') && !upperContent.startsWith('SYSTEM INSTRUCTION') && !upperContent.startsWith('ACT UNDER THE NAME');
            }).map((h) {
              final isUser = h['role'] == 'user';
              
@@ -145,6 +147,22 @@ class ChatNotifier extends StateNotifier<ChatState> {
         }
       } catch (e) {
         debugPrint("History sync error: $e");
+      }
+      
+      // 1.5 Fetch Quota
+      try {
+        final quota = await _aiService.getQuota(userId);
+        if (quota.isNotEmpty) {
+           final used = quota['used'] as int? ?? 0;
+           final isLimitReached = quota['is_limit_reached'] as bool? ?? false;
+           
+           state = state.copyWith(
+             messageCount: used,
+             isLimitReached: isLimitReached,
+           );
+        }
+      } catch (e) {
+        debugPrint("Quota sync error: $e");
       }
     }
 
@@ -244,9 +262,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
     final limit = 5;
 
     // Check limits
-    if (user == null && state.messageCount >= limit) {
-      state = state.copyWith(isLimitReached: true);
-      return;
+    // Anonymous users (user == null) are NOT limited per spec.
+    // Authenticated users: Check state.isLimitReached (synced with backend)
+    if (user != null && state.isLimitReached) {
+      return; 
     }
 
     // Add user message to UI
@@ -293,6 +312,19 @@ class ChatNotifier extends StateNotifier<ChatState> {
       );
 
     } catch (e) {
+      debugPrint("AI Error: $e");
+      
+      // Check for 403 Limit Reached
+      if (e is DioException && e.response?.statusCode == 403) {
+         // Limit reached!
+         state = state.copyWith(
+           messages: state.messages.where((m) => m != userMsg).toList(), // Remove the message that failed
+           isLoading: false,
+           isLimitReached: true,
+         );
+         return;
+      }
+
       final errorMsg = ChatMessage(
         id: _uuid.v4(),
         text: "Oups ! Une erreur est survenue lors de la communication avec Petit Boo. Réessayez plus tard.",
@@ -303,7 +335,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
         messages: [...state.messages, errorMsg],
         isLoading: false,
       );
-      debugPrint("AI Error: $e");
     }
   }
 

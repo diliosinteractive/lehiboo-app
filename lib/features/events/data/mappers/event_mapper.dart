@@ -1,4 +1,5 @@
 import '../../domain/entities/event.dart';
+import '../../domain/entities/event_submodels.dart';
 import '../models/event_dto.dart';
 
 class EventMapper {
@@ -63,7 +64,7 @@ class EventMapper {
       category = _parseCategorySlug(dto.category!.slug);
     }
 
-    // Get featured image URL (prefer large or full)
+    // Get featured image URL (prefer large or full from featuredImage, fallback to thumbnail)
     String? imageUrl;
     if (dto.featuredImage != null) {
       imageUrl = dto.featuredImage!.large ??
@@ -71,11 +72,39 @@ class EventMapper {
                  dto.featuredImage!.medium ??
                  dto.featuredImage!.thumbnail;
     }
+    // Fallback to thumbnail field (used by organizer events API)
+    imageUrl ??= dto.thumbnail;
+
+    // Collect all images (featured + gallery)
+    final allImages = <String>{};
+    if (imageUrl != null) allImages.add(imageUrl);
+    if (dto.gallery != null) {
+      allImages.addAll(dto.gallery!);
+    }
+
+    // Ticket Mapping Logic: Prefer "tickets" (V2), fallback to "ticketTypes" (Legacy)
+    List<Ticket> mappedTickets = [];
+    if (dto.tickets != null && dto.tickets!.isNotEmpty) {
+      mappedTickets = dto.tickets!.map((e) => Ticket.fromJson(e as Map<String, dynamic>)).toList();
+    } else if (dto.ticketTypes != null && dto.ticketTypes!.isNotEmpty) {
+      mappedTickets = dto.ticketTypes!.map((e) => Ticket.fromJson(e as Map<String, dynamic>)).toList();
+    }
+
+    // TimeSlot Parsing safely
+    TimeSlotConfig? timeSlots;
+    if (dto.timeSlots != null) {
+       try {
+         timeSlots = TimeSlotConfig.fromJson(dto.timeSlots!);
+       } catch (e) {
+         timeSlots = null;
+       }
+    }
 
     return Event(
       id: dto.id.toString(),
       title: dto.title,
       description: dto.excerpt ?? '',
+      fullDescription: dto.content,
       shortDescription: _truncateDescription(dto.excerpt ?? ''),
       category: category,
       targetAudiences: const [EventAudience.all],
@@ -88,13 +117,13 @@ class EventMapper {
       latitude: dto.location?.lat ?? 0.0,
       longitude: dto.location?.lng ?? 0.0,
       distance: null,
-      images: imageUrl != null ? [imageUrl] : [],
-      coverImage: imageUrl,
+      images: allImages.toList(),
+      coverImage: imageUrl ?? (allImages.isNotEmpty ? allImages.first : null),
       priceType: priceType,
       price: dto.pricing?.min == dto.pricing?.max ? dto.pricing?.min : null,
       minPrice: dto.pricing?.min,
       maxPrice: dto.pricing?.max,
-      isIndoor: true, // Default, API doesn't provide this info
+      isIndoor: true, 
       isOutdoor: false,
       tags: dto.tags ?? [],
       organizerId: dto.organizer?.id.toString() ?? '',
@@ -108,10 +137,31 @@ class EventMapper {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       views: 0,
-      rating: null, // API returns dynamic ratings object
+      rating: null,
       reviewsCount: null,
       availableSeats: dto.availability?.spotsRemaining,
       totalSeats: dto.availability?.totalCapacity,
+      tickets: mappedTickets,
+      timeSlots: timeSlots,
+      calendar: dto.calendar != null ? CalendarConfig.fromJson(dto.calendar!) : null,
+      recurrence: dto.recurrence != null ? RecurrenceConfig.fromJson(dto.recurrence!) : null,
+      extraServices: dto.extraServices?.map((e) => ExtraService.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      coupons: dto.coupons?.map((e) => Coupon.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      seatConfig: dto.seatConfig != null ? SeatConfig.fromJson(dto.seatConfig!) : null,
+      externalBooking: dto.externalBooking != null ? ExternalBooking.fromJson(dto.externalBooking!) : null,
+      eventTypeTerm: dto.eventType != null ? TaxonomyTerm.fromJson(dto.eventType!) : null,
+      targetAudienceTerms: dto.targetAudience?.map((e) => TaxonomyTerm.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      
+      // RICH CONTENT MAPPING
+      locationDetails: _mapLocationDetails(dto.organizer?.practicalInfo),
+      coOrganizers: dto.coOrganizers?.map((e) => CoOrganizer(
+        id: e.id.toString(),
+        name: e.name,
+        role: e.role,
+        imageUrl: e.logo,
+        url: e.profileUrl,
+      )).toList() ?? [],
+      socialMedia: dto.socialMedia != null ? SocialMediaConfig.fromJson(dto.socialMedia!) : null,
     );
   }
 
@@ -171,5 +221,18 @@ class EventMapper {
   static String _truncateDescription(String description, {int maxLength = 150}) {
     if (description.length <= maxLength) return description;
     return '${description.substring(0, maxLength)}...';
+  }
+
+  static LocationDetails? _mapLocationDetails(OrganizerPracticalInfoDto? practicalInfo) {
+    if (practicalInfo == null) return null;
+    return LocationDetails(
+      pmr: AccessibilityConfig(available: practicalInfo.pmr, note: practicalInfo.pmrInfos),
+      food: AccessibilityConfig(available: practicalInfo.restauration, note: practicalInfo.restaurationInfos),
+      drinks: AccessibilityConfig(available: practicalInfo.boisson, note: practicalInfo.boissonInfos),
+      parking: practicalInfo.stationnement != null 
+          ? RichInfoConfig(description: practicalInfo.stationnement!) 
+          : null,
+      transport: null, 
+    );
   }
 }

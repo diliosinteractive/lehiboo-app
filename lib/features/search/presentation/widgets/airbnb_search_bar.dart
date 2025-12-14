@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
+import '../../../thematiques/presentation/providers/thematiques_provider.dart';
+import '../../../home/presentation/providers/home_providers.dart';
 
 /// Airbnb-style search bar widget
 class AirbnbSearchBar extends ConsumerStatefulWidget {
@@ -27,6 +29,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
   Widget build(BuildContext context) {
     final filter = ref.watch(eventFilterProvider);
     final activeChips = ref.watch(activeFilterChipsProvider);
+    final filterOptions = ref.watch(filterOptionsProvider);
 
     return Column(
       children: [
@@ -77,7 +80,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _getSearchSubtitle(filter),
+                        _getSearchSubtitle(filter, filterOptions.thematiques, filterOptions.categories),
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -165,20 +168,64 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
     if (filter.cityName != null) {
       return filter.cityName!;
     }
+    if (filter.latitude != null && filter.longitude != null) {
+      return "Autour de moi";
+    }
     return "Rechercher une activité";
   }
 
-  String _getSearchSubtitle(EventFilter filter) {
+  String _getSearchSubtitle(EventFilter filter, List<dynamic> thematiques, List<EventCategoryInfo> categories) {
     final parts = <String>[];
 
+    // 1. Où (Where) - Only if not already in Title
+    bool locationInTitle = filter.cityName != null || (filter.latitude != null && filter.longitude != null);
+    if (!locationInTitle) {
+       // If no location filter is set, we can say "Où ?" or just skip it to keep it short. 
+       // User asked to "Add Where".
+       parts.add("Où ?");
+    }
+
+    // 2. Quand (When)
     if (filter.dateFilterLabel != null) {
       parts.add(filter.dateFilterLabel!);
     } else {
       parts.add("Quand ?");
     }
 
-    if (filter.thematiquesSlugs.isNotEmpty) {
-      parts.add("${filter.thematiquesSlugs.length} thématique${filter.thematiquesSlugs.length > 1 ? 's' : ''}");
+    // 3. Quoi (What)
+    final whatParts = <String>[];
+    
+    // Categories
+    for (final slug in filter.categoriesSlugs) {
+      final match = categories.where((c) => c.slug == slug).firstOrNull;
+      if (match != null) whatParts.add(match.name);
+    }
+    
+    // Thematiques
+    for (final slug in filter.thematiquesSlugs) {
+      // thematiques list might be generic dynamic or DTO, casting safely
+      // Assuming it has .slug and .name properties if it's the DTO list
+      try {
+        final match = thematiques.where((t) => t.slug == slug).firstOrNull;
+        if (match != null) whatParts.add(match.name);
+      } catch (e) {
+        // Fallback if dynamic lookup fails
+         whatParts.add(slug);
+      }
+    }
+
+    // Audience / Format / Price (optional to add to "Quoi")
+    if (filter.familyFriendly) whatParts.add("Famille");
+    if (filter.accessiblePMR) whatParts.add("PMR");
+    if (filter.onlineOnly) whatParts.add("En ligne");
+    if (filter.onlyFree) whatParts.add("Gratuit");
+
+    if (whatParts.isNotEmpty) {
+       if (whatParts.length > 2) {
+         parts.add("${whatParts.length} filtres");
+       } else {
+         parts.add(whatParts.join(", "));
+       }
     } else {
       parts.add("Quoi ?");
     }
@@ -369,20 +416,58 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
+        // We remove shadow/border as it might be inside a bottom sheet now
+        // or keep it if we want the 'card' look.
+        // Let's keep it subtle or remove if it conflicts.
+        // Assuming user wants a clean sheet, but let's stick to existing style
+        // but maybe lighter shadow?
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max, // Changed to max to fill space
         children: [
+          // Global Search Input
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Recherchez une ville, une activité...',
+                prefixIcon: const Icon(Icons.search, color: Color(0xFFFF601F)),
+                filled: true,
+                fillColor: const Color(0xFFF5F5F7),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          _searchController.clear();
+                          filterNotifier.setSearchQuery('');
+                          setState(() {});
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: (value) {
+                filterNotifier.setSearchQuery(value);
+                setState(() {});
+              },
+            ),
+          ),
+          
           // Tab bar
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
                 _TabButton(
@@ -407,20 +492,33 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
             ),
           ),
           const Divider(height: 1),
+          const SizedBox(height: 16),
           // Content based on selected tab
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: _buildTabContent(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: _buildTabContent(),
+              ),
+            ),
           ),
           // Search button
-          Padding(
-            padding: const EdgeInsets.all(16),
+          Container(
+            padding: EdgeInsets.only(
+              left: 16, 
+              right: 16, 
+              top: 16, 
+              bottom: MediaQuery.of(context).padding.bottom + 16
+            ),
             child: Row(
               children: [
                 // Clear filters
                 if (filter.hasActiveFilters)
                   TextButton(
-                    onPressed: () => filterNotifier.resetAll(),
+                    onPressed: () {
+                       filterNotifier.resetAll();
+                       _searchController.clear();
+                    },
                     child: const Text(
                       'Effacer tout',
                       style: TextStyle(
@@ -433,22 +531,24 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
                 // Search button
                 ElevatedButton.icon(
                   onPressed: () {
-                    filterNotifier.setSearchQuery(_searchController.text);
+                    // Search query is already updated via onChanged
                     widget.onSearch?.call();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF601F),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    elevation: 4,
+                    shadowColor: const Color(0xFFFF601F).withOpacity(0.4),
                   ),
                   icon: const Icon(Icons.search, size: 20),
                   label: const Text(
                     'Rechercher',
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
@@ -464,7 +564,7 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
   Widget _buildTabContent() {
     switch (_selectedTab) {
       case 0:
-        return _WhereTab(searchController: _searchController);
+        return const _WhereTab();
       case 1:
         return const _WhenTab();
       case 2:
@@ -526,9 +626,7 @@ class _TabButton extends StatelessWidget {
 
 /// "Where" tab content
 class _WhereTab extends ConsumerStatefulWidget {
-  final TextEditingController searchController;
-
-  const _WhereTab({required this.searchController});
+  const _WhereTab();
 
   @override
   ConsumerState<_WhereTab> createState() => _WhereTabState();
@@ -623,23 +721,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search input
-          TextField(
-            controller: widget.searchController,
-            decoration: InputDecoration(
-              hintText: 'Recherchez une ville, une activité...',
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              filled: true,
-              fillColor: Colors.grey[100],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
-            onChanged: (value) => filterNotifier.setSearchQuery(value),
-          ),
-          const SizedBox(height: 16),
+          // Global Search is now above tabs
 
           // Geolocation button
           const Text(
@@ -974,14 +1056,36 @@ class _WhatTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(eventFilterProvider);
     final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final filterOptions = ref.watch(filterOptionsProvider);
+    final thematiques = ref.watch(thematiquesProvider);
 
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Categories
+          if (filterOptions.categories.isNotEmpty) ...[
+            const Text(
+              'Catégories',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: Color(0xFF222222),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _CategoriesFilter(
+              categories: filterOptions.categories,
+              selectedSlugs: filter.categoriesSlugs,
+              onChanged: (slug) => filterNotifier.toggleCategory(slug),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // Thematiques
           const Text(
-            'Type d\'activité',
+            'Thématiques',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
@@ -989,21 +1093,27 @@ class _WhatTab extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _ThematiqueChip(name: 'Concert', slug: 'concert', icon: Icons.music_note),
-              _ThematiqueChip(name: 'Spectacle', slug: 'spectacle', icon: Icons.theater_comedy),
-              _ThematiqueChip(name: 'Sport', slug: 'sport', icon: Icons.sports),
-              _ThematiqueChip(name: 'Atelier', slug: 'atelier', icon: Icons.build),
-              _ThematiqueChip(name: 'Exposition', slug: 'exposition', icon: Icons.museum),
-              _ThematiqueChip(name: 'Festival', slug: 'festival', icon: Icons.celebration),
-              _ThematiqueChip(name: 'Conférence', slug: 'conference', icon: Icons.mic),
-              _ThematiqueChip(name: 'Gastronomie', slug: 'gastronomie', icon: Icons.restaurant),
-            ],
+          thematiques.when(
+            data: (data) {
+              if (data.isEmpty) return const Text('Aucune thématique disponible');
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: data.map((t) {
+                  return _ThematiqueChip(
+                    name: t.name,
+                    slug: t.slug,
+                    // Basic icon mapping or default
+                    icon: Icons.label_outline, 
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const CircularProgressIndicator(),
+            error: (_, __) => const Text('Erreur de chargement'),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
+
           // Price filter
           const Text(
             'Budget',
@@ -1035,7 +1145,240 @@ class _WhatTab extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 24),
+
+          // Audience
+          const Text(
+            'Public',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Color(0xFF222222),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _FilterToggleChip(
+                label: 'En famille',
+                icon: Icons.family_restroom,
+                isSelected: filter.familyFriendly,
+                onTap: () => filterNotifier.setFamilyFriendly(!filter.familyFriendly),
+              ),
+              _FilterToggleChip(
+                label: 'Accessible PMR',
+                icon: Icons.accessible,
+                isSelected: filter.accessiblePMR,
+                onTap: () => filterNotifier.setAccessiblePMR(!filter.accessiblePMR),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Format
+          const Text(
+            'Format',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Color(0xFF222222),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _FilterToggleChip(
+                label: 'En ligne',
+                icon: Icons.videocam,
+                isSelected: filter.onlineOnly,
+                onTap: () => filterNotifier.setOnlineOnly(!filter.onlineOnly),
+              ),
+              _FilterToggleChip(
+                label: 'En présentiel',
+                icon: Icons.location_on,
+                isSelected: filter.inPersonOnly,
+                onTap: () => filterNotifier.setInPersonOnly(!filter.inPersonOnly),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _CategoriesFilter extends StatefulWidget {
+  final List<EventCategoryInfo> categories;
+  final List<String> selectedSlugs;
+  final ValueChanged<String> onChanged;
+
+  const _CategoriesFilter({
+    required this.categories,
+    required this.selectedSlugs,
+    required this.onChanged,
+  });
+
+  @override
+  State<_CategoriesFilter> createState() => _CategoriesFilterState();
+}
+
+class _CategoriesFilterState extends State<_CategoriesFilter> {
+  bool _isExpanded = false;
+  static const int _initialLimit = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    final showAll = _isExpanded || widget.categories.length <= _initialLimit;
+    final displayedCategories = showAll 
+        ? widget.categories 
+        : widget.categories.take(_initialLimit).toList();
+    final hiddenCount = widget.categories.length - _initialLimit;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: displayedCategories.map((c) {
+            final isSelected = widget.selectedSlugs.contains(c.slug);
+            
+            // Icon mapping
+            IconData iconData = Icons.label_outline;
+             if (c.icon != null) {
+               if (c.icon!.contains('music')) iconData = Icons.music_note;
+               else if (c.icon!.contains('movie')) iconData = Icons.movie;
+               else if (c.icon!.contains('sport')) iconData = Icons.sports;
+               else if (c.icon!.contains('restaurant')) iconData = Icons.restaurant;
+               else if (c.icon!.contains('child')) iconData = Icons.child_care;
+               else if (c.icon!.contains('palette')) iconData = Icons.palette;
+               else if (c.icon!.contains('school')) iconData = Icons.school;
+               else if (c.icon!.contains('book')) iconData = Icons.menu_book;
+               else if (c.icon!.contains('park')) iconData = Icons.park;
+               else if (c.icon!.contains('computer')) iconData = Icons.computer;
+               else if (c.icon!.contains('castle')) iconData = Icons.castle;
+               else if (c.icon!.contains('fitness')) iconData = Icons.fitness_center;
+             }
+
+            return GestureDetector(
+              onTap: () => widget.onChanged(c.slug),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      iconData,
+                      size: 16,
+                      color: isSelected ? Colors.white : Colors.grey[700],
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      c.name,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.grey[800],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        if (widget.categories.length > _initialLimit) ...[
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isExpanded ? 'Voir moins' : 'Voir plus ($hiddenCount)',
+                    style: const TextStyle(
+                      color: Color(0xFFFF601F),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: const Color(0xFFFF601F),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _FilterToggleChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FilterToggleChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : Colors.grey[700],
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[800],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -126,10 +126,10 @@ class AiChatService {
           : responseData;
       
       debugPrint("🤖 AI Response Raw: ${responseData.keys.toList()}");
-      if (data != responseData) debugPrint("🤖 AI Response Data unwrapped: ${data.keys.toList()}");
 
       // Update local context and persist if changed AND memory enabled
       if (data['user_context'] != null && _isMemoryEnabled) {
+        // ... (existing logic)
         debugPrint("🧠 Saving User Context: ${data['user_context']}");
         _userContext = Map<String, dynamic>.from(data['user_context']);
         await _contextStorage.saveContext(_userContext);
@@ -151,7 +151,7 @@ class AiChatService {
         
         _history.add({
           'role': 'assistant',
-          'content': aiMessageContent,
+          'content': aiMessageContent, 
           'events': data['events'], // Persist events!
           'timestamp': DateTime.now().toIso8601String(),
         });
@@ -196,6 +196,28 @@ class AiChatService {
     if (!enabled) {
       // Optional: Clear local history/context when disabled? 
       // For now, keeping it but not using it, as per privacy "pause" logic.
+    }
+  }
+
+  Future<Map<String, dynamic>> getQuota(String userId) async {
+    final url = '${AppConstants.aiBaseUrl}/mobile/chat/quota';
+  
+    try {
+      if (_apiKey == null) await _fetchApiKey();
+      
+      final response = await _dio.get(
+        url,
+        queryParameters: {'userId': userId},
+        options: Options(headers: {if (_apiKey != null) 'X-API-Key': _apiKey!}),
+      );
+      
+      if (response.data['success'] == true && response.data['data'] != null) {
+        return response.data['data'] as Map<String, dynamic>;
+      }
+      return {};
+    } catch (e) {
+      debugPrint("Get Quota Error: $e");
+      return {};
     }
   }
 

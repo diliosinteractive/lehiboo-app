@@ -359,6 +359,7 @@ final filteredEventsProvider = FutureProvider<List<Activity>>((ref) async {
     final result = await eventRepository.getEvents(
       search: filter.searchQuery.isNotEmpty ? filter.searchQuery : null,
       thematique: filter.thematiquesSlugs.isNotEmpty ? filter.thematiquesSlugs.first : null,
+      categorySlug: filter.categoriesSlugs.isNotEmpty ? filter.categoriesSlugs.first : null,
       location: filter.citySlug,
       dateFrom: dateFromStr,
       dateTo: dateToStr,
@@ -502,20 +503,24 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
 /// Provider for available filter options
 final filterOptionsProvider = Provider<FilterOptionsData>((ref) {
   final thematiques = ref.watch(thematiquesProvider);
+  final categories = ref.watch(categoriesProvider);
   final cities = ref.watch(homeCitiesProvider);
 
   return FilterOptionsData(
     thematiques: thematiques.valueOrNull ?? [],
+    categories: categories.valueOrNull ?? [],
     cities: cities.valueOrNull ?? [],
   );
 });
 
 class FilterOptionsData {
   final List<dynamic> thematiques;
+  final List<EventCategoryInfo> categories;
   final List<dynamic> cities;
 
   FilterOptionsData({
     required this.thematiques,
+    required this.categories,
     required this.cities,
   });
 }

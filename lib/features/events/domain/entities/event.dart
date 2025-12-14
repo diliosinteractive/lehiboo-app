@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'event_submodels.dart';
 
 enum EventCategory {
   show, // Spectacle
@@ -45,7 +46,8 @@ enum PriceType {
 class Event extends Equatable {
   final String id;
   final String title;
-  final String description;
+  final String description; // Typically the excerpt
+  final String? fullDescription; // Full HTML content
   final String shortDescription;
   final EventCategory category;
   final List<EventAudience> targetAudiences;
@@ -97,10 +99,28 @@ class Event extends Equatable {
   final String? contactEmail;
   final String? website;
 
+  // --- NEW FIELDS from V2 API ---
+  final List<Ticket> tickets;
+  final TimeSlotConfig? timeSlots;
+  final CalendarConfig? calendar;
+  final RecurrenceConfig? recurrence;
+  final List<ExtraService> extraServices;
+  final List<Coupon> coupons;
+  final SeatConfig? seatConfig;
+  final ExternalBooking? externalBooking;
+  final TaxonomyTerm? eventTypeTerm; // Maps to 'event_type' from API
+  final List<TaxonomyTerm> targetAudienceTerms; // Maps to 'target_audience' from API
+
+  // --- RICH CONTENT V2 ---
+  final LocationDetails? locationDetails;
+  final List<CoOrganizer> coOrganizers;
+  final SocialMediaConfig? socialMedia;
+
   const Event({
     required this.id,
     required this.title,
     required this.description,
+    this.fullDescription,
     required this.shortDescription,
     required this.category,
     required this.targetAudiences,
@@ -151,6 +171,20 @@ class Event extends Equatable {
     this.contactPhone,
     this.contactEmail,
     this.website,
+    // Defaults for new fields to ensure backward compatibility during migration
+    this.tickets = const [],
+    this.timeSlots,
+    this.calendar,
+    this.recurrence,
+    this.extraServices = const [],
+    this.coupons = const [],
+    this.seatConfig,
+    this.externalBooking,
+    this.eventTypeTerm,
+    this.targetAudienceTerms = const [],
+    this.locationDetails,
+    this.coOrganizers = const [],
+    this.socialMedia,
   });
 
   bool get isFree => priceType == PriceType.free;
@@ -188,6 +222,10 @@ class Event extends Equatable {
   }
 
   String get categoryLabel {
+    // Prefer the new TaxonomyTerm if available
+    if (eventTypeTerm != null) {
+      return eventTypeTerm!.name;
+    }
     switch (category) {
       case EventCategory.show:
         return 'Spectacle';
@@ -221,6 +259,10 @@ class Event extends Equatable {
   }
 
   String get audienceLabel {
+    // Prefer new TaxonomyTerms
+    if (targetAudienceTerms.isNotEmpty) {
+      return targetAudienceTerms.map((t) => t.name).join(', ');
+    }
     if (targetAudiences.contains(EventAudience.all)) {
       return 'Tout public';
     }
@@ -264,10 +306,28 @@ class Event extends Equatable {
     return '${distance!.toStringAsFixed(1)} km';
   }
 
+  String get durationLabel {
+    Duration diff;
+    if (duration != null) {
+      diff = duration!;
+    } else {
+      diff = endDate.difference(startDate);
+    }
+    
+    final hours = diff.inHours;
+    final minutes = diff.inMinutes.remainder(60);
+    
+    if (hours > 0) {
+      return '$hours h ${minutes > 0 ? '$minutes' : ''}';
+    }
+    return '$minutes min';
+  }
+
   Event copyWith({
     String? id,
     String? title,
     String? description,
+    String? fullDescription,
     String? shortDescription,
     EventCategory? category,
     List<EventAudience>? targetAudiences,
@@ -318,11 +378,25 @@ class Event extends Equatable {
     String? contactPhone,
     String? contactEmail,
     String? website,
+    List<Ticket>? tickets,
+    TimeSlotConfig? timeSlots,
+    CalendarConfig? calendar,
+    RecurrenceConfig? recurrence,
+    List<ExtraService>? extraServices,
+    List<Coupon>? coupons,
+    SeatConfig? seatConfig,
+    ExternalBooking? externalBooking,
+    TaxonomyTerm? eventTypeTerm,
+    List<TaxonomyTerm>? targetAudienceTerms,
+    LocationDetails? locationDetails,
+    List<CoOrganizer>? coOrganizers,
+    SocialMediaConfig? socialMedia,
   }) {
     return Event(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
+      fullDescription: fullDescription ?? this.fullDescription,
       shortDescription: shortDescription ?? this.shortDescription,
       category: category ?? this.category,
       targetAudiences: targetAudiences ?? this.targetAudiences,
@@ -373,6 +447,19 @@ class Event extends Equatable {
       contactPhone: contactPhone ?? this.contactPhone,
       contactEmail: contactEmail ?? this.contactEmail,
       website: website ?? this.website,
+      tickets: tickets ?? this.tickets,
+      timeSlots: timeSlots ?? this.timeSlots,
+      calendar: calendar ?? this.calendar,
+      recurrence: recurrence ?? this.recurrence,
+      extraServices: extraServices ?? this.extraServices,
+      coupons: coupons ?? this.coupons,
+      seatConfig: seatConfig ?? this.seatConfig,
+      externalBooking: externalBooking ?? this.externalBooking,
+      eventTypeTerm: eventTypeTerm ?? this.eventTypeTerm,
+      targetAudienceTerms: targetAudienceTerms ?? this.targetAudienceTerms,
+      locationDetails: locationDetails ?? this.locationDetails,
+      coOrganizers: coOrganizers ?? this.coOrganizers,
+      socialMedia: socialMedia ?? this.socialMedia,
     );
   }
 
@@ -381,6 +468,7 @@ class Event extends Equatable {
         id,
         title,
         description,
+        fullDescription,
         shortDescription,
         category,
         targetAudiences,
@@ -431,5 +519,18 @@ class Event extends Equatable {
         contactPhone,
         contactEmail,
         website,
+        tickets,
+        timeSlots,
+        calendar,
+        recurrence,
+        extraServices,
+        coupons,
+        seatConfig,
+        externalBooking,
+        eventTypeTerm,
+        targetAudienceTerms,
+        locationDetails,
+        coOrganizers,
+        socialMedia,
       ];
 }

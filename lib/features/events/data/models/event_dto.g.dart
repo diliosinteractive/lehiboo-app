@@ -9,11 +9,12 @@ part of 'event_dto.dart';
 _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
     _$EventDtoImpl(
       id: (json['id'] as num).toInt(),
-      title: json['title'] as String,
-      slug: json['slug'] as String,
-      excerpt: json['excerpt'] as String?,
-      content: json['content'] as String?,
+      title: _parseHtmlString(json['title']),
+      slug: _parseHtmlString(json['slug']),
+      excerpt: _parseHtmlString(json['excerpt']),
+      content: _parseHtmlString(json['content']),
       featuredImage: _parseImage(json['featured_image']),
+      thumbnail: _parseStringOrNull(json['thumbnail']),
       gallery: _parseGallery(json['gallery']),
       category: json['category'] == null
           ? null
@@ -39,7 +40,23 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
           ? null
           : EventOrganizerDto.fromJson(
               json['organizer'] as Map<String, dynamic>),
-      tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      tags: _parseStringList(json['tags']),
+      ticketTypes: json['ticket_types'] as List<dynamic>?,
+      tickets: json['tickets'] as List<dynamic>?,
+      timeSlots: _parseMapOrNull(json['time_slots']),
+      calendar: _parseMapOrNull(json['calendar']),
+      recurrence: _parseMapOrNull(json['recurrence']),
+      extraServices: json['extra_services'] as List<dynamic>?,
+      coupons: json['coupons'] as List<dynamic>?,
+      seatConfig: _parseMapOrNull(json['seat_config']),
+      externalBooking: _parseMapOrNull(json['external_booking']),
+      eventType: _parseMapOrNull(json['event_type']),
+      targetAudience: json['target_audience'] as List<dynamic>?,
+      locationDetails: _parseMapOrNull(json['location_details']),
+      coOrganizers: (json['coorganizers'] as List<dynamic>?)
+          ?.map((e) => CoOrganizerDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      socialMedia: _parseMapOrNull(json['social_media']),
       isFavorite: json['is_favorite'] as bool? ?? false,
     );
 
@@ -51,6 +68,7 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'excerpt': instance.excerpt,
       'content': instance.content,
       'featured_image': instance.featuredImage,
+      'thumbnail': instance.thumbnail,
       'gallery': instance.gallery,
       'category': instance.category,
       'thematique': instance.thematique,
@@ -61,6 +79,20 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'ratings': instance.ratings,
       'organizer': instance.organizer,
       'tags': instance.tags,
+      'ticket_types': instance.ticketTypes,
+      'tickets': instance.tickets,
+      'time_slots': instance.timeSlots,
+      'calendar': instance.calendar,
+      'recurrence': instance.recurrence,
+      'extra_services': instance.extraServices,
+      'coupons': instance.coupons,
+      'seat_config': instance.seatConfig,
+      'external_booking': instance.externalBooking,
+      'event_type': instance.eventType,
+      'target_audience': instance.targetAudience,
+      'location_details': instance.locationDetails,
+      'coorganizers': instance.coOrganizers,
+      'social_media': instance.socialMedia,
       'is_favorite': instance.isFavorite,
     };
 
@@ -82,13 +114,15 @@ Map<String, dynamic> _$$EventImageDtoImplToJson(_$EventImageDtoImpl instance) =>
 
 _$EventDatesDtoImpl _$$EventDatesDtoImplFromJson(Map<String, dynamic> json) =>
     _$EventDatesDtoImpl(
-      startDate: json['start_date'] as String?,
-      endDate: json['end_date'] as String?,
-      startTime: json['start_time'] as String?,
-      endTime: json['end_time'] as String?,
-      display: json['display'] as String?,
-      durationMinutes: (json['duration_minutes'] as num?)?.toInt(),
-      isRecurring: json['is_recurring'] as bool? ?? false,
+      startDate: _parseStringOrNull(json['start_date']),
+      endDate: _parseStringOrNull(json['end_date']),
+      startTime: _parseStringOrNull(json['start_time']),
+      endTime: _parseStringOrNull(json['end_time']),
+      display: _parseStringOrNull(json['display']),
+      durationMinutes: _parseIntOrNull(json['duration_minutes']),
+      isRecurring: json['is_recurring'] == null
+          ? false
+          : _parseBool(json['is_recurring']),
     );
 
 Map<String, dynamic> _$$EventDatesDtoImplToJson(_$EventDatesDtoImpl instance) =>
@@ -105,11 +139,11 @@ Map<String, dynamic> _$$EventDatesDtoImplToJson(_$EventDatesDtoImpl instance) =>
 _$EventPricingDtoImpl _$$EventPricingDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$EventPricingDtoImpl(
-      isFree: json['is_free'] as bool? ?? false,
-      min: (json['min'] as num?)?.toDouble() ?? 0,
-      max: (json['max'] as num?)?.toDouble() ?? 0,
+      isFree: json['is_free'] == null ? false : _parseBool(json['is_free']),
+      min: json['min'] == null ? 0 : _parseDouble(json['min']),
+      max: json['max'] == null ? 0 : _parseDouble(json['max']),
       currency: json['currency'] as String? ?? 'EUR',
-      display: json['display'] as String?,
+      display: _parseStringOrNull(json['display']),
     );
 
 Map<String, dynamic> _$$EventPricingDtoImplToJson(
@@ -125,10 +159,10 @@ Map<String, dynamic> _$$EventPricingDtoImplToJson(
 _$EventAvailabilityDtoImpl _$$EventAvailabilityDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$EventAvailabilityDtoImpl(
-      status: json['status'] as String?,
-      totalCapacity: (json['total_capacity'] as num?)?.toInt(),
-      spotsRemaining: (json['spots_remaining'] as num?)?.toInt(),
-      percentageFilled: (json['percentage_filled'] as num?)?.toInt(),
+      status: _parseStringOrNull(json['status']),
+      totalCapacity: _parseIntOrNull(json['total_capacity']),
+      spotsRemaining: _parseIntOrNull(json['spots_remaining']),
+      percentageFilled: _parseIntOrNull(json['percentage_filled']),
     );
 
 Map<String, dynamic> _$$EventAvailabilityDtoImplToJson(
@@ -143,12 +177,12 @@ Map<String, dynamic> _$$EventAvailabilityDtoImplToJson(
 _$EventCategoryDtoImpl _$$EventCategoryDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$EventCategoryDtoImpl(
-      id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
-      slug: json['slug'] as String,
-      description: json['description'] as String?,
-      icon: json['icon'] as String?,
-      eventCount: (json['event_count'] as num?)?.toInt(),
+      id: json['id'] == null ? 0 : _parseInt(json['id']),
+      name: json['name'] == null ? '' : _parseHtmlString(json['name']),
+      slug: json['slug'] == null ? '' : _parseHtmlString(json['slug']),
+      description: _parseHtmlString(json['description']),
+      icon: _parseStringOrNull(json['icon']),
+      eventCount: _parseIntOrNull(json['event_count']),
     );
 
 Map<String, dynamic> _$$EventCategoryDtoImplToJson(
@@ -201,15 +235,44 @@ Map<String, dynamic> _$$EventLocationDtoImplToJson(
 _$EventOrganizerDtoImpl _$$EventOrganizerDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$EventOrganizerDtoImpl(
-      id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
-      avatar: json['avatar'] as String?,
-      description: json['description'] as String?,
-      logo: json['logo'] as String?,
-      website: json['website'] as String?,
-      phone: json['phone'] as String?,
-      email: json['email'] as String?,
-      verified: json['verified'] as bool? ?? false,
+      id: json['id'] == null ? 0 : _parseInt(json['id']),
+      name: json['name'] == null ? '' : _parseHtmlString(json['name']),
+      avatar: _parseStringOrNull(json['avatar']),
+      description: _parseHtmlString(json['description']),
+      logo: _parseStringOrNull(json['logo']),
+      logoSizes: _parseMapOrNull(json['logo_sizes']),
+      website: _parseStringOrNull(json['website']),
+      phone: _parseStringOrNull(json['phone']),
+      email: _parseStringOrNull(json['email']),
+      coverImage: _parseStringOrNull(json['cover_image']),
+      contact: json['contact'] == null
+          ? null
+          : OrganizerContactDto.fromJson(
+              json['contact'] as Map<String, dynamic>),
+      location: json['location'] == null
+          ? null
+          : OrganizerLocationDto.fromJson(
+              json['location'] as Map<String, dynamic>),
+      practicalInfo: json['practical_info'] == null
+          ? null
+          : OrganizerPracticalInfoDto.fromJson(
+              json['practical_info'] as Map<String, dynamic>),
+      socialLinks: (json['social_links'] as List<dynamic>?)
+          ?.map(
+              (e) => OrganizerSocialLinkDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      stats: json['stats'] == null
+          ? null
+          : OrganizerStatsDto.fromJson(json['stats'] as Map<String, dynamic>),
+      categories: (json['categories'] as List<dynamic>?)
+          ?.map((e) => EventCategoryDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      partnerships: (json['partnerships'] as List<dynamic>?)
+          ?.map((e) => CoOrganizerDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      profileUrl: _parseStringOrNull(json['profile_url']),
+      memberSince: _parseStringOrNull(json['member_since']),
+      verified: json['verified'] == null ? false : _parseBool(json['verified']),
     );
 
 Map<String, dynamic> _$$EventOrganizerDtoImplToJson(
@@ -220,10 +283,132 @@ Map<String, dynamic> _$$EventOrganizerDtoImplToJson(
       'avatar': instance.avatar,
       'description': instance.description,
       'logo': instance.logo,
+      'logo_sizes': instance.logoSizes,
       'website': instance.website,
       'phone': instance.phone,
       'email': instance.email,
+      'cover_image': instance.coverImage,
+      'contact': instance.contact,
+      'location': instance.location,
+      'practical_info': instance.practicalInfo,
+      'social_links': instance.socialLinks,
+      'stats': instance.stats,
+      'categories': instance.categories,
+      'partnerships': instance.partnerships,
+      'profile_url': instance.profileUrl,
+      'member_since': instance.memberSince,
       'verified': instance.verified,
+    };
+
+_$OrganizerSocialLinkDtoImpl _$$OrganizerSocialLinkDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$OrganizerSocialLinkDtoImpl(
+      type: _parseStringOrNull(json['type']),
+      url: _parseStringOrNull(json['url']),
+      icon: _parseStringOrNull(json['icon']),
+    );
+
+Map<String, dynamic> _$$OrganizerSocialLinkDtoImplToJson(
+        _$OrganizerSocialLinkDtoImpl instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'url': instance.url,
+      'icon': instance.icon,
+    };
+
+_$OrganizerStatsDtoImpl _$$OrganizerStatsDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$OrganizerStatsDtoImpl(
+      totalEvents: _parseIntOrNull(json['total_events']),
+    );
+
+Map<String, dynamic> _$$OrganizerStatsDtoImplToJson(
+        _$OrganizerStatsDtoImpl instance) =>
+    <String, dynamic>{
+      'total_events': instance.totalEvents,
+    };
+
+_$OrganizerContactDtoImpl _$$OrganizerContactDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$OrganizerContactDtoImpl(
+      phone: _parseStringOrNull(json['phone']),
+      email: _parseStringOrNull(json['email']),
+      website: _parseStringOrNull(json['website']),
+    );
+
+Map<String, dynamic> _$$OrganizerContactDtoImplToJson(
+        _$OrganizerContactDtoImpl instance) =>
+    <String, dynamic>{
+      'phone': instance.phone,
+      'email': instance.email,
+      'website': instance.website,
+    };
+
+_$OrganizerLocationDtoImpl _$$OrganizerLocationDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$OrganizerLocationDtoImpl(
+      city: _parseStringOrNull(json['city']),
+      country: _parseStringOrNull(json['country']),
+      postcode: _parseStringOrNull(json['postcode']),
+      address: _parseStringOrNull(json['address']),
+    );
+
+Map<String, dynamic> _$$OrganizerLocationDtoImplToJson(
+        _$OrganizerLocationDtoImpl instance) =>
+    <String, dynamic>{
+      'city': instance.city,
+      'country': instance.country,
+      'postcode': instance.postcode,
+      'address': instance.address,
+    };
+
+_$OrganizerPracticalInfoDtoImpl _$$OrganizerPracticalInfoDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$OrganizerPracticalInfoDtoImpl(
+      pmr: json['pmr'] as bool? ?? false,
+      pmrInfos: json['pmr_infos'] as String?,
+      restauration: json['restauration'] as bool? ?? false,
+      restaurationInfos: json['restauration_infos'] as String?,
+      boisson: json['boisson'] as bool? ?? false,
+      boissonInfos: json['boisson_infos'] as String?,
+      stationnement: json['stationnement'] as String?,
+      eventType: json['event_type'] as String?,
+    );
+
+Map<String, dynamic> _$$OrganizerPracticalInfoDtoImplToJson(
+        _$OrganizerPracticalInfoDtoImpl instance) =>
+    <String, dynamic>{
+      'pmr': instance.pmr,
+      'pmr_infos': instance.pmrInfos,
+      'restauration': instance.restauration,
+      'restauration_infos': instance.restaurationInfos,
+      'boisson': instance.boisson,
+      'boisson_infos': instance.boissonInfos,
+      'stationnement': instance.stationnement,
+      'event_type': instance.eventType,
+    };
+
+_$CoOrganizerDtoImpl _$$CoOrganizerDtoImplFromJson(Map<String, dynamic> json) =>
+    _$CoOrganizerDtoImpl(
+      id: json['id'] == null ? 0 : _parseInt(json['id']),
+      name: json['name'] == null ? '' : _parseHtmlString(json['name']),
+      logo: _parseStringOrNull(json['logo']),
+      role: _parseStringOrNull(json['role']),
+      roleLabel: _parseStringOrNull(json['role_label']),
+      city: _parseStringOrNull(json['city']),
+      profileUrl: _parseStringOrNull(json['profile_url']),
+    );
+
+Map<String, dynamic> _$$CoOrganizerDtoImplToJson(
+        _$CoOrganizerDtoImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'logo': instance.logo,
+      'role': instance.role,
+      'role_label': instance.roleLabel,
+      'city': instance.city,
+      'profile_url': instance.profileUrl,
     };
 
 _$EventCapacityDtoImpl _$$EventCapacityDtoImplFromJson(
@@ -261,12 +446,15 @@ Map<String, dynamic> _$$EventsResponseDtoImplToJson(
 
 _$PaginationDtoImpl _$$PaginationDtoImplFromJson(Map<String, dynamic> json) =>
     _$PaginationDtoImpl(
-      currentPage: (json['current_page'] as num).toInt(),
-      perPage: (json['per_page'] as num).toInt(),
-      totalItems: (json['total_items'] as num).toInt(),
-      totalPages: (json['total_pages'] as num).toInt(),
-      hasNext: json['has_next'] as bool? ?? false,
-      hasPrev: json['has_prev'] as bool? ?? false,
+      currentPage:
+          json['current_page'] == null ? 1 : _parseInt(json['current_page']),
+      perPage: json['per_page'] == null ? 10 : _parseInt(json['per_page']),
+      totalItems:
+          json['total_items'] == null ? 0 : _parseInt(json['total_items']),
+      totalPages:
+          json['total_pages'] == null ? 0 : _parseInt(json['total_pages']),
+      hasNext: json['has_next'] == null ? false : _parseBool(json['has_next']),
+      hasPrev: json['has_prev'] == null ? false : _parseBool(json['has_prev']),
     );
 
 Map<String, dynamic> _$$PaginationDtoImplToJson(_$PaginationDtoImpl instance) =>
@@ -313,10 +501,10 @@ Map<String, dynamic> _$$FiltersResponseDtoImplToJson(
 
 _$ThematiqueDtoImpl _$$ThematiqueDtoImplFromJson(Map<String, dynamic> json) =>
     _$ThematiqueDtoImpl(
-      id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
-      slug: json['slug'] as String,
-      eventCount: (json['event_count'] as num?)?.toInt(),
+      id: json['id'] == null ? 0 : _parseInt(json['id']),
+      name: json['name'] == null ? '' : _parseHtmlString(json['name']),
+      slug: json['slug'] == null ? '' : _parseHtmlString(json['slug']),
+      eventCount: _parseIntOrNull(json['event_count']),
     );
 
 Map<String, dynamic> _$$ThematiqueDtoImplToJson(_$ThematiqueDtoImpl instance) =>

@@ -152,7 +152,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       );
                     }
                     return SizedBox(
-                      height: 400,
+                      height: 340, // Reduced from 400
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -160,9 +160,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         itemBuilder: (context, index) {
                           final activity = activities[index];
                           return Container(
-                            width: 260,
+                            width: 200, // Reduced from 260
                             margin: const EdgeInsets.only(right: 16),
-                            child: EventCard(activity: activity),
+                            child: EventCard(activity: activity, isCompact: true),
                           );
                         },
                       ),
@@ -475,7 +475,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 // Barre de recherche cliquable
                 GestureDetector(
-                  onTap: () => context.push('/search'),
+                  onTap: () => context.push('/search?openFilter=true'),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
@@ -551,7 +551,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => context.push('/search'),
+                    onPressed: () => context.push('/search?openFilter=true'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF601F),
                       foregroundColor: Colors.white,

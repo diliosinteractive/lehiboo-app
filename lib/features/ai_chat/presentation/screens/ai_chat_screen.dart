@@ -73,11 +73,13 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     setState(() => _isListening = true);
     await _speech.listen(
       onResult: (result) {
+        // Guard: If we stopped listening (e.g. sent message), ignore late results
+        if (!_isListening) return;
+        
         setState(() {
           _textController.text = result.recognizedWords;
           if (result.finalResult) {
             _isListening = false;
-            // Optional: Auto-send? Let's wait for user to confirm
           }
         });
       },
@@ -86,11 +88,16 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   }
 
   void _stopListening() async {
+    setState(() => _isListening = false); // Update UI immediately
     await _speech.stop();
-    setState(() => _isListening = false);
   }
 
-  void _handleSendMessage() {
+  void _handleSendMessage() async {
+    // 1. Stop listening immediately to prevent text updates
+    if (_isListening) {
+      _stopListening();
+    }
+
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
@@ -360,7 +367,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
              Padding(
                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                child: Text(
-                 "${5 - chatState.messageCount} messages gratuits restants",
+                 "${(5 - chatState.messageCount).clamp(0, 5)} messages gratuits restants",
                  style: TextStyle(fontSize: 10, color: Colors.grey[400]),
                ),
              ),
@@ -392,14 +399,15 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     child: TextField(
                       controller: _textController,
                       decoration: InputDecoration(
-                        hintText: _isListening ? 'Je vous écoute...' : 'Écrivez votre message...',
+                        hintText: chatState.isLimitReached ? 'Limite atteinte (5/5)' : (_isListening ? 'Je vous écoute...' : 'Écrivez votre message...'),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: _isListening ? Colors.red[50] : const Color(0xFFF5F5F5),
+                        fillColor: chatState.isLimitReached ? Colors.grey[200] : (_isListening ? Colors.red[50] : const Color(0xFFF5F5F5)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        enabled: !chatState.isLimitReached,
                       ),
                       onSubmitted: (_) => _handleSendMessage(),
                     ),
@@ -411,10 +419,14 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     valueListenable: _textController,
                     builder: (context, value, child) {
                       final hasText = value.text.isNotEmpty;
+                      final isLimitReached = ref.read(chatProvider).isLimitReached;
+                      
                       return GestureDetector(
-                        onTap: hasText ? _handleSendMessage : _startListening,
+                        onTap: isLimitReached ? null : (hasText ? _handleSendMessage : _startListening),
                         child: CircleAvatar(
-                          backgroundColor: hasText ? const Color(0xFFFF601F) : (_isListening ? Colors.red : Colors.grey[200]),
+                          backgroundColor: isLimitReached 
+                              ? Colors.grey[300] 
+                              : (hasText ? const Color(0xFFFF601F) : (_isListening ? Colors.red : Colors.grey[200])),
                           radius: 24,
                           child: Icon(
                             hasText ? Icons.send : (_isListening ? Icons.stop : Icons.mic),
@@ -478,12 +490,12 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             if (!isUser)
               Container(
                 margin: const EdgeInsets.only(right: 8, bottom: 8),
-                child: const CircleAvatar(
-                  backgroundColor: Color(0xFFFEEAD4), // Light Orange
+                child: CircleAvatar(
+                  backgroundColor: const Color(0xFFFF601F),
                   radius: 16,
-                   // Ideally use an asset image here if available, e.g. 'assets/images/petit_boo_head.png'
-                   // For now, using an icon as placeholder or the requested "head" if provided
-                  child: Icon(Icons.auto_awesome, size: 16, color: Color(0xFFFF601F)),
+                  child: ClipOval(
+                    child: Image.asset('assets/images/petit_boo_logo.png', fit: BoxFit.cover),
+                  ),
                 ),
               ),
 
@@ -639,24 +651,145 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text("Oups, limite atteinte !"),
-        content: const Text(
-          "Vous avez utilisé vos 5 échanges gratuits. Créez un compte ou connectez-vous pour continuer à discuter avec Petit Boo.",
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header Image/Icon
+              Container(
+                height: 140,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF0EB), // Light orange bg
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                alignment: Alignment.center,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                   // Glow effect
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF601F).withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    // Main Icon/Image
+                    ClipOval(
+                      child: Image.asset(
+                         'assets/images/petit_boo_logo.png', // Assuming this asset exists from previous steps
+                         width: 80,
+                         height: 80,
+                         fit: BoxFit.cover,
+                      ),
+                    ),
+                    // Lock icon badge
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                        ),
+                        child: const Icon(Icons.lock, color: Color(0xFFFF601F), size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const Text(
+                      "Oups, c'est déjà fini ?",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Petit Boo a besoin d'énergie pour continuer à chercher des pépites pour vous ! Rechargez son stock de Hibons pour débloquer la conversation.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // CTA Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                           // TODO: Navigate to store
+                           Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF601F),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                          shadowColor: const Color(0xFFFF601F).withOpacity(0.4),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.stars_rounded, color: Colors.amber),
+                            SizedBox(width: 8),
+                            Text(
+                              "Obtenir des Hibons",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                     const SizedBox(height: 12),
+                     // Secondary Button
+                     TextButton(
+                       onPressed: () => Navigator.of(context).pop(),
+                       style: TextButton.styleFrom(
+                         foregroundColor: Colors.grey[500],
+                       ),
+                       child: const Text("Peut-être plus tard"),
+                     ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-             onPressed: () => Navigator.of(context).pop(), 
-             child: const Text("Fermer"), 
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF601F)),
-            onPressed: () {
-               Navigator.of(context).pop();
-            },
-            child: const Text("Se connecter", style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }

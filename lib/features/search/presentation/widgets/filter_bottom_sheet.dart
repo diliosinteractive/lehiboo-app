@@ -4,6 +4,7 @@ import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../../../thematiques/presentation/providers/thematiques_provider.dart';
 import '../../../thematiques/data/models/thematique_dto.dart';
+import '../../../home/presentation/providers/home_providers.dart';
 
 /// Show the filter bottom sheet
 Future<void> showFilterBottomSheet(BuildContext context) {
@@ -152,6 +153,28 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           ),
                           loading: () => const Center(child: CircularProgressIndicator()),
                           error: (_, __) => const SizedBox(),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    // Categories filter section
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final filterOptions = ref.watch(filterOptionsProvider);
+                        if (filterOptions.categories.isEmpty) return const SizedBox();
+                        
+                        return _FilterSection(
+                          title: 'Catégories',
+                          icon: Icons.grid_view_rounded,
+                          child: _CategoriesFilterSection(
+                            selectedSlugs: _tempFilter.categoriesSlugs,
+                            categories: filterOptions.categories,
+                            onChanged: (slugs) {
+                              setState(() {
+                                _tempFilter = _tempFilter.copyWith(categoriesSlugs: slugs);
+                              });
+                            },
+                          ),
                         );
                       },
                     ),
@@ -672,6 +695,122 @@ class _SelectableChip extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Categories filter section with expandable list
+class _CategoriesFilterSection extends StatefulWidget {
+  final List<String> selectedSlugs;
+  final List<EventCategoryInfo> categories;
+  final ValueChanged<List<String>> onChanged;
+
+  const _CategoriesFilterSection({
+    required this.selectedSlugs,
+    required this.categories,
+    required this.onChanged,
+  });
+
+  @override
+  State<_CategoriesFilterSection> createState() => _CategoriesFilterSectionState();
+}
+
+class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
+  bool _isExpanded = false;
+  static const int _initialLimit = 8; // Show only 8 items initially
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.categories.isEmpty) {
+      return const Text('Aucune catégorie disponible');
+    }
+
+    // Determine which categories to show
+    final showAll = _isExpanded || widget.categories.length <= _initialLimit;
+    final displayedCategories = showAll 
+        ? widget.categories 
+        : widget.categories.take(_initialLimit).toList();
+    
+    final hiddenCount = widget.categories.length - _initialLimit;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: displayedCategories.map((c) {
+            final isSelected = widget.selectedSlugs.contains(c.slug);
+            
+            // Map simple icon names to IconData if possible, or use default
+            IconData iconData = Icons.label_outline;
+             if (c.icon != null) {
+               if (c.icon!.contains('music')) iconData = Icons.music_note;
+               else if (c.icon!.contains('movie')) iconData = Icons.movie;
+               else if (c.icon!.contains('sport')) iconData = Icons.sports;
+               else if (c.icon!.contains('restaurant')) iconData = Icons.restaurant;
+               else if (c.icon!.contains('child')) iconData = Icons.child_care;
+               else if (c.icon!.contains('palette')) iconData = Icons.palette;
+               else if (c.icon!.contains('school')) iconData = Icons.school;
+               else if (c.icon!.contains('book')) iconData = Icons.menu_book;
+               else if (c.icon!.contains('park')) iconData = Icons.park;
+               else if (c.icon!.contains('computer')) iconData = Icons.computer;
+               else if (c.icon!.contains('castle')) iconData = Icons.castle;
+               else if (c.icon!.contains('fitness')) iconData = Icons.fitness_center;
+             }
+
+            return _SelectableChip(
+              label: c.name,
+              icon: iconData,
+              isSelected: isSelected,
+              onTap: () {
+                final newList = List<String>.from(widget.selectedSlugs);
+                if (isSelected) {
+                  newList.remove(c.slug);
+                } else {
+                  newList.add(c.slug);
+                }
+                widget.onChanged(newList);
+              },
+            );
+          }).toList(),
+        ),
+        
+        // "Voir plus" / "Voir moins" button
+        if (widget.categories.length > _initialLimit) ...[
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isExpanded ? 'Voir moins' : 'Voir plus ($hiddenCount)',
+                    style: const TextStyle(
+                      color: Color(0xFFFF601F),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: const Color(0xFFFF601F),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

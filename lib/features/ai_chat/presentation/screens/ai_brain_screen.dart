@@ -148,12 +148,14 @@ class _AiBrainScreenState extends ConsumerState<AiBrainScreen> {
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(context).size.height * 0.4,
                 ),
-                child: ListView.separated(
+                child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: contextMap.length,
-                  separatorBuilder: (c, i) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final key = contextMap.keys.elementAt(index);
+                    // Filter out internal keys (metadata)
+                    if (key.startsWith('_')) return const SizedBox.shrink();
+                    
                     final value = contextMap[key];
                     return _buildMemoryItem(context, notifier, key, value);
                   },
@@ -202,43 +204,223 @@ class _AiBrainScreenState extends ConsumerState<AiBrainScreen> {
   }
   
   Widget _buildMemoryItem(BuildContext context, ChatNotifier notifier, String key, dynamic value) {
-     return ListTile(
-       contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-       title: Text(
-         _formatKey(key),
-         style: TextStyle(color: Colors.grey[600], fontSize: 13),
-       ),
-       subtitle: Text(
-         value.toString(),
-         style: const TextStyle(
-           color: Color(0xFF222222), 
-           fontSize: 16, 
-           fontWeight: FontWeight.w500
-         ),
-       ),
-       trailing: Row(
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           IconButton(
-             icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.blue),
-             onPressed: () => _showEditDialog(context, notifier, key, value),
-           ),
-           IconButton(
-             icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-             onPressed: () => _confirmDelete(context, notifier, key),
+     final label = _translateKey(key);
+     final formattedValue = _formatValue(key, value);
+     final icon = _getIconForKey(key);
+
+     return Container(
+       margin: const EdgeInsets.only(bottom: 12),
+       decoration: BoxDecoration(
+         color: Colors.white,
+         borderRadius: BorderRadius.circular(16),
+         border: Border.all(color: Colors.grey[200]!),
+         boxShadow: [
+           BoxShadow(
+             color: Colors.black.withOpacity(0.02),
+             blurRadius: 8,
+             offset: const Offset(0, 2),
            ),
          ],
+       ),
+       child: ListTile(
+         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+         leading: Container(
+           padding: const EdgeInsets.all(10),
+           decoration: BoxDecoration(
+             color: const Color(0xFFFF601F).withOpacity(0.1),
+             shape: BoxShape.circle,
+           ),
+           child: Icon(icon, color: const Color(0xFFFF601F), size: 20),
+         ),
+         title: Text(
+           label,
+           style: TextStyle(
+             color: Colors.grey[600],
+             fontSize: 12,
+             fontWeight: FontWeight.w500,
+           ),
+         ),
+         subtitle: Padding(
+           padding: const EdgeInsets.only(top: 4),
+           child: Text(
+             formattedValue,
+             style: const TextStyle(
+               color: Color(0xFF2D3748),
+               fontSize: 16,
+               fontWeight: FontWeight.w600,
+             ),
+           ),
+         ),
+         trailing: PopupMenuButton<String>(
+           icon: const Icon(Icons.more_vert, color: Colors.grey),
+           onSelected: (action) {
+             if (action == 'edit') {
+               _showEditDialog(context, notifier, key, value);
+             } else if (action == 'delete') {
+               _confirmDelete(context, notifier, key);
+             }
+           },
+           itemBuilder: (context) => [
+             const PopupMenuItem(
+               value: 'edit',
+               child: Row(
+                 children: [
+                   Icon(Icons.edit_outlined, size: 20, color: Colors.blue),
+                   SizedBox(width: 12),
+                   Text("Modifier"),
+                 ],
+               ),
+             ),
+             const PopupMenuItem(
+               value: 'delete',
+               child: Row(
+                 children: [
+                   Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                   SizedBox(width: 12),
+                   Text("Oublier"),
+                 ],
+               ),
+             ),
+           ],
+         ),
        ),
      );
   }
   
-  String _formatKey(String key) {
-    // Convert camelCase or snake_case to Human Readable
-    // e.g. favorite_food -> Favorite food
-    // cuisineFavorite -> Cuisine favorite
+  String _translateKey(String key) {
+    const translations = {
+      'first_name': 'Prénom',
+      'last_name': 'Nom',
+      'nickname': 'Surnom',
+      'age': 'Âge',
+      'age_group': 'Tranche d\'âge',
+      'birth_year': 'Année de naissance',
+      'city': 'Ville',
+      'region': 'Région',
+      'favorite_activities': 'Activités favorites',
+      'disliked_activities': 'Activités à éviter',
+      'favorite_categories': 'Catégories préférées',
+      'group_type': 'Type de groupe',
+      'has_children': 'Enfants',
+      'children_ages': 'Âges des enfants',
+      'budget_preference': 'Budget',
+      'max_distance': 'Distance max',
+      'interests': 'Centres d\'intérêt',
+      'dietary_preferences': 'Régime alimentaire',
+      'mobility_constraints': 'Mobilité réduite',
+      'pet_friendly_needed': 'Animaux acceptés',
+      'preferred_times': 'Moments préférés',
+      'notes': 'Autres infos',
+    };
+    return translations[key] ?? _formatHumanKey(key);
+  }
+
+  String _formatHumanKey(String key) {
     final formatted = key.replaceAll('_', ' ').replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}').trim();
     if (formatted.isEmpty) return key;
     return formatted[0].toUpperCase() + formatted.substring(1).toLowerCase();
+  }
+
+  String _formatValue(String key, dynamic value) {
+    if (value == null) return 'Non défini';
+    
+    // Handle booleans
+    if (value is bool) {
+      if (key == 'has_children' || key == 'mobility_constraints' || key == 'pet_friendly_needed') {
+        return value ? 'Oui' : 'Non';
+      }
+    }
+
+    // Handle lists
+    if (value is List) {
+       if (value.isEmpty) return 'Aucun';
+       return value.join(', ');
+    }
+    
+    final stringValue = value.toString();
+
+    // Specific formatting for known enums
+    if (key == 'age_group') {
+      const map = {
+        'child': 'Enfant',
+        'teen': 'Ado',
+        'young_adult': 'Jeune adulte',
+        'adult': 'Adulte',
+        'senior': 'Senior'
+      };
+      return map[stringValue] ?? stringValue;
+    }
+    
+    if (key == 'group_type') {
+      const map = {
+        'solo': 'Solo',
+        'couple': 'En couple',
+        'family': 'En famille',
+        'friends': 'Entre amis',
+      };
+      return map[stringValue] ?? stringValue;
+    }
+
+    if (key == 'budget_preference') {
+       const map = {
+        'free': 'Gratuit',
+        'low': 'Éco (€)',
+        'medium': 'Moyen (€€)',
+        'high': 'Élevé (€€€)',
+        'no_limit': 'Illimité',
+      };
+      return map[stringValue] ?? stringValue;
+    }
+    
+    if (key == 'max_distance') {
+      return '$stringValue km';
+    }
+
+    if (key == 'age' || key == 'birth_year') {
+      return stringValue;
+    }
+
+    return stringValue;
+  }
+
+  IconData _getIconForKey(String key) {
+    switch (key) {
+      case 'first_name':
+      case 'last_name':
+      case 'nickname':
+        return Icons.person_outline;
+      case 'age':
+      case 'age_group':
+      case 'birth_year':
+        return Icons.cake_outlined;
+      case 'city':
+      case 'region':
+        return Icons.location_on_outlined;
+      case 'max_distance':
+        return Icons.map_outlined;
+      case 'favorite_activities':
+      case 'favorite_categories':
+      case 'interests':
+        return Icons.favorite_border;
+      case 'disliked_activities':
+        return Icons.thumb_down_outlined;
+      case 'group_type':
+      case 'has_children':
+      case 'children_ages':
+        return Icons.people_outline;
+      case 'budget_preference':
+        return Icons.euro_symbol;
+      case 'dietary_preferences':
+        return Icons.restaurant_menu;
+      case 'pet_friendly_needed':
+        return Icons.pets;
+      case 'mobility_constraints':
+        return Icons.accessible;
+      case 'preferred_times':
+        return Icons.schedule;
+      default:
+        return Icons.info_outline;
+    }
   }
 
   void _showEditDialog(BuildContext context, ChatNotifier notifier, String key, dynamic currentValue) {
@@ -246,7 +428,7 @@ class _AiBrainScreenState extends ConsumerState<AiBrainScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Modifier ${_formatKey(key)}"),
+        title: Text("Modifier ${_translateKey(key)}"),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
@@ -275,7 +457,7 @@ class _AiBrainScreenState extends ConsumerState<AiBrainScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Oublier cette info ?"),
-        content: Text("Voulez-vous vraiment que Petit Boo oublie : ${_formatKey(key)} ?"),
+        content: Text("Voulez-vous vraiment que Petit Boo oublie : ${_translateKey(key)} ?"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Non")),
           TextButton(

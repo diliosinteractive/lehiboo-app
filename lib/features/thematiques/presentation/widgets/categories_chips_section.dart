@@ -1,36 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:html_unescape/html_unescape.dart';
 import 'package:html_unescape/html_unescape.dart';
 import '../providers/thematiques_provider.dart';
-import '../../data/models/thematique_dto.dart';
+import '../../../home/presentation/providers/home_providers.dart';
 
 class CategoriesChipsSection extends ConsumerWidget {
   const CategoriesChipsSection({super.key});
 
   @override
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final categoriesAsync = ref.watch(categoriesProvider);
     final thematiquesAsync = ref.watch(thematiquesProvider);
 
-    return thematiquesAsync.when(
-      data: (thematiques) {
-        if (thematiques.isEmpty) {
+    return categoriesAsync.when(
+      data: (categories) {
+        if (categories.isEmpty) {
           return const SizedBox.shrink();
+        }
+
+        // Sort by event count descending
+        final sortedCategories = List.of(categories)
+          ..sort((a, b) => b.eventCount.compareTo(a.eventCount));
+
+        // Take top 6
+        final displayedCategories = sortedCategories.take(6).toList();
+
+        // Create a map of slug/icon -> imageUrl from thematiques for fallback
+        final Map<String, String> thematiqueImages = {};
+        if (thematiquesAsync.hasValue) {
+          for (final t in thematiquesAsync.value!) {
+             final imageUrl = t.image?.thumbnail ?? t.image?.medium ?? t.image?.large;
+             if (imageUrl != null) {
+               thematiqueImages[t.slug] = imageUrl;
+             }
+          }
         }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 24),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Toutes les catégories',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3748),
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Toutes les catégories',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D3748),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => _showAllCategoriesBottomSheet(context, sortedCategories, thematiqueImages),
+                    child: const Text(
+                      'Voir tout',
+                      style: TextStyle(
+                        color: Color(0xFFFF601F),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -46,14 +83,43 @@ class CategoriesChipsSection extends ConsumerWidget {
                   return Wrap(
                     spacing: 12,
                     runSpacing: 12,
-                    children: thematiques.map((thematique) {
+                    children: displayedCategories.map((category) {
+                      // Try to find an image from thematiques with same slug
+                      final fallbackImage = thematiqueImages[category.slug];
+
                       return SizedBox(
                         width: itemWidth,
-                        child: CategoryChip(thematique: thematique),
+                        child: CategoryCard(
+                          name: category.name,
+                          slug: category.slug,
+                          iconName: category.icon,
+                          eventCount: category.eventCount,
+                          imageUrl: fallbackImage,
+                        ),
                       );
                     }).toList(),
                   );
                 },
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => _showAllCategoriesBottomSheet(context, sortedCategories, thematiqueImages),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2D3748),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.white,
+                  ),
+                  child: const Text('Voir toutes les catégories'),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -85,69 +151,314 @@ class CategoriesChipsSection extends ConsumerWidget {
       error: (error, _) => const SizedBox.shrink(),
     );
   }
+
+  void _showAllCategoriesBottomSheet(
+      BuildContext context,
+      List<EventCategoryInfo> allCategories,
+      Map<String, String> thematiqueImages,
+      ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) {
+          return _AllCategoriesSheet(
+            categories: allCategories,
+            scrollController: scrollController,
+            thematiqueImages: thematiqueImages,
+          );
+        },
+      ),
+    );
+  }
 }
 
-class CategoryChip extends StatelessWidget {
-  final ThematiqueDto thematique;
+class _AllCategoriesSheet extends StatefulWidget {
+  final List<EventCategoryInfo> categories;
+  final ScrollController scrollController;
+  final Map<String, String> thematiqueImages;
 
-  const CategoryChip({super.key, required this.thematique});
-  
+  const _AllCategoriesSheet({
+    required this.categories,
+    required this.scrollController,
+    required this.thematiqueImages,
+  });
+
+  @override
+  State<_AllCategoriesSheet> createState() => _AllCategoriesSheetState();
+}
+
+class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
+  late List<EventCategoryInfo> _filteredCategories;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredCategories = widget.categories;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterCategories(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredCategories = widget.categories;
+      } else {
+        final lowerQuery = query.toLowerCase();
+        final unescape = HtmlUnescape();
+        _filteredCategories = widget.categories.where((category) {
+          return unescape.convert(category.name).toLowerCase().contains(lowerQuery);
+        }).toList();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final color = _getCategoryColor(thematique.slug);
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 20),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // Header & Search
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Toutes les catégories (${widget.categories.length})',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3748),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                      color: Colors.grey[600],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _searchController,
+                  onChanged: _filterCategories,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher une catégorie...',
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFFF601F)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // List
+          Expanded(
+            child: _filteredCategories.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aucune catégorie trouvée',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    controller: widget.scrollController,
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                    itemCount: _filteredCategories.length,
+                    itemBuilder: (context, index) {
+                      final category = _filteredCategories[index];
+                      // Try to find an image from thematiques with same slug
+                      final fallbackImage = widget.thematiqueImages[category.slug];
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: CategoryCard(
+                          name: category.name,
+                          slug: category.slug,
+                          iconName: category.icon,
+                          eventCount: category.eventCount,
+                          imageUrl: fallbackImage,
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class CategoryCard extends StatelessWidget {
+  final String name;
+  final String slug;
+  final String? iconName;
+  final String? imageUrl;
+  final int? eventCount;
+
+  const CategoryCard({
+    super.key,
+    required this.name,
+    required this.slug,
+    this.iconName,
+    this.imageUrl,
+    this.eventCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _getCategoryColor(slug);
     final unescape = HtmlUnescape();
-    final displayName = unescape.convert(thematique.name);
+    final displayName = unescape.convert(name);
 
     return GestureDetector(
       onTap: () {
         context.push(
-          Uri(path: '/search', queryParameters: {'categorySlug': thematique.slug}).toString(),
+          Uri(path: '/search', queryParameters: {'categorySlug': slug}).toString(),
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1,
-          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
+            // Image or Icon container
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+                color: imageUrl != null ? Colors.grey[100] : color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                image: imageUrl != null
+                    ? DecorationImage(
+                        image: CachedNetworkImageProvider(
+                          imageUrl!,
+                          errorListener: (Object exception) {
+                            // This callback is for image loading errors.
+                            // If the intention is to refresh the categoriesProvider
+                            // when an image fails to load, this is where it would go.
+                            // However, directly calling ref.refresh here might not be
+                            // the best UX as it would refresh all categories for one image error.
+                            // For now, we'll just log or handle the image error.
+                            // If the user explicitly wants to refresh the whole provider on image error,
+                            // uncomment the line below.
+                            // ref.refresh(categoriesProvider);
+                          },
+                        ),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
-              child: Icon(
-                _getIconData(thematique.icon ?? thematique.slug),
-                color: color,
-                size: 20,
+              child: imageUrl == null
+                  ? Icon(
+                      _getIconData(iconName ?? slug),
+                      color: color,
+                      size: 24,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            
+            // Text content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    displayName,
+                    style: const TextStyle(
+                      color: Color(0xFF2D3748),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (eventCount != null && eventCount! > 0) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '$eventCount événement${eventCount! > 1 ? 's' : ''}',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                displayName,
-                style: const TextStyle(
-                  color: Color(0xFF2D3748),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+            
+            // Chevron
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey[400],
+              size: 20,
             ),
           ],
         ),
