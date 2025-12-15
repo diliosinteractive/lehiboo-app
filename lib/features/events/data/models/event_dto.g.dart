@@ -366,13 +366,13 @@ _$OrganizerPracticalInfoDtoImpl _$$OrganizerPracticalInfoDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$OrganizerPracticalInfoDtoImpl(
       pmr: json['pmr'] as bool? ?? false,
-      pmrInfos: json['pmr_infos'] as String?,
+      pmrInfos: _parseStringOrNull(json['pmr_infos']),
       restauration: json['restauration'] as bool? ?? false,
-      restaurationInfos: json['restauration_infos'] as String?,
+      restaurationInfos: _parseStringOrNull(json['restauration_infos']),
       boisson: json['boisson'] as bool? ?? false,
-      boissonInfos: json['boisson_infos'] as String?,
-      stationnement: json['stationnement'] as String?,
-      eventType: json['event_type'] as String?,
+      boissonInfos: _parseStringOrNull(json['boisson_infos']),
+      stationnement: _parseStringOrNull(json['stationnement']),
+      eventType: _parseStringOrNull(json['event_type']),
     );
 
 Map<String, dynamic> _$$OrganizerPracticalInfoDtoImplToJson(

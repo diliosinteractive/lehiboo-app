@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
+import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart'; // Import Alerts
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../widgets/airbnb_search_bar.dart';
@@ -87,6 +89,96 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
+  Future<void> _saveCurrentSearch(BuildContext context, {bool isAlert = false}) async {
+    final filter = ref.read(eventFilterProvider);
+    
+    // Generate default name
+    String defaultName = filter.searchQuery;
+    if (defaultName.isEmpty && filter.cityName != null) {
+      defaultName = filter.cityName!;
+    }
+    if (defaultName.isEmpty) {
+      defaultName = isAlert ? 'Mon Alerte' : 'Ma Recherche';
+    }
+
+    final nameController = TextEditingController(text: defaultName);
+
+    // Prompt user for name
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isAlert ? 'Créer une alerte' : 'Enregistrer la recherche'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isAlert 
+                ? 'Donnez un nom à cette alerte pour la retrouver facilement :'
+                : 'Donnez un nom à cette recherche pour la retrouver facilement :'
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Nom',
+                border: OutlineInputBorder(),
+                hintText: 'Ex: Concerts à Paris',
+              ),
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                Navigator.pop(context, nameController.text.trim());
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF601F),
+            ),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null) return; // User cancelled
+
+    // Call API via provider
+    // We don't await the result to block UI, but ideally we show loading
+    // For now simple fire and forget with snackbar, the provider handles state update
+    await ref.read(alertsProvider.notifier).createAlert(
+      name: name,
+      filter: filter,
+      isAlert: isAlert,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isAlert 
+            ? 'Alerte "$name" créée avec succès !' 
+            : 'Recherche "$name" enregistrée !'
+          ),
+          backgroundColor: const Color(0xFF1E3A8A),
+        ),
+      );
+    }
+  }
+
+  void _showCreateAlertDialog(BuildContext context) {
+    // We can reuse the same logic, passing isAlert: true
+    _saveCurrentSearch(context, isAlert: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredEvents = ref.watch(filteredEventsProvider);
@@ -114,26 +206,107 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              if (context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go('/');
-                              }
-                            },
-                            icon: const Icon(Icons.arrow_back),
-                          ),
-                          const Text(
-                            'Rechercher',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                if (context.canPop()) {
+                                  context.pop();
+                                } else {
+                                  context.go('/');
+                                }
+                              },
+                              icon: const Icon(Icons.arrow_back),
                             ),
-                          ),
-                        ],
+                            const Text(
+                              'Rechercher',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            // Save Search Button
+                            if (filter.hasActiveFilters)
+                              Consumer(
+                                builder: (context, ref, child) {
+                                  final alertsAsync = ref.watch(alertsProvider);
+                                  
+                                  // Determine if saved
+                                  // We handle loading/error gracefully by just assuming false if not loaded
+                                  final isAlreadySaved = alertsAsync.maybeWhen(
+                                    data: (alerts) {
+                                      final notifier = ref.read(alertsProvider.notifier);
+                                      return notifier.isFilterSaved(filter);
+                                    },
+                                    orElse: () => false,
+                                  );
+
+                                  if (isAlreadySaved) {
+                                    return OutlinedButton(
+                                      onPressed: null, // Disable button if already saved
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        side: BorderSide(color: Colors.grey[400]!, width: 1),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        backgroundColor: Colors.grey[100],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.bookmark, size: 18, color: Colors.grey[500]),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Recherche\nenregistrée',
+                                            textAlign: TextAlign.start,
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 10,
+                                              height: 1.1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+
+                                  return OutlinedButton(
+                                    onPressed: () => _saveCurrentSearch(context),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      side: const BorderSide(color: Color(0xFFFF601F), width: 1),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      backgroundColor: const Color(0xFFFF601F).withOpacity(0.05),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.bookmark_border, size: 18, color: Color(0xFFFF601F)),
+                                        const SizedBox(width: 4),
+                                        const Text(
+                                          'Sauvegarder\nma recherche',
+                                          textAlign: TextAlign.start,
+                                          style: TextStyle(
+                                            color: Color(0xFFFF601F),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 10,
+                                            height: 1.1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 8),
                       // Compact Search Bar that opens the sheet
@@ -158,6 +331,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         onClearFilters: () {
                           ref.read(eventFilterProvider.notifier).resetAll();
                         },
+                        onCreateAlert: () => _showCreateAlertDialog(context),
                       ),
                     );
                   }
@@ -384,10 +558,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 class _EmptyResults extends StatelessWidget {
   final bool hasFilters;
   final VoidCallback onClearFilters;
+  final VoidCallback? onCreateAlert;
 
   const _EmptyResults({
     required this.hasFilters,
     required this.onClearFilters,
+    this.onCreateAlert,
   });
 
   @override
@@ -431,6 +607,20 @@ class _EmptyResults extends StatelessWidget {
             ),
             if (hasFilters) ...[
               const SizedBox(height: 24),
+              // Créer une alerte
+              if (onCreateAlert != null) ...[
+                ElevatedButton.icon(
+                  onPressed: onCreateAlert,
+                  icon: const Icon(Icons.notifications_active_outlined),
+                  label: const Text('M\'alerter des nouveaux événements'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E3A8A), // Bleu foncé
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               OutlinedButton.icon(
                 onPressed: onClearFilters,
                 style: OutlinedButton.styleFrom(

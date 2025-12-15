@@ -181,6 +181,8 @@ class SavedSearch {
   final String? thematiqueSlug;
   final String? thematiqueName;
   final DateTime savedAt;
+  final bool hasAlert;
+  final String? displayName;
 
   SavedSearch({
     required this.query,
@@ -189,32 +191,46 @@ class SavedSearch {
     this.thematiqueSlug,
     this.thematiqueName,
     required this.savedAt,
+    this.hasAlert = false,
+    this.displayName,
   });
 
   Map<String, dynamic> toJson() => {
-    'query': query,
-    'citySlug': citySlug,
-    'cityName': cityName,
-    'thematiqueSlug': thematiqueSlug,
-    'thematiqueName': thematiqueName,
-    'savedAt': savedAt.toIso8601String(),
-  };
+        'query': query,
+        'citySlug': citySlug,
+        'cityName': cityName,
+        'thematiqueSlug': thematiqueSlug,
+        'thematiqueName': thematiqueName,
+        'savedAt': savedAt.toIso8601String(),
+        'hasAlert': hasAlert,
+        'displayName': displayName,
+      };
 
   factory SavedSearch.fromJson(Map<String, dynamic> json) => SavedSearch(
-    query: json['query'] ?? '',
-    citySlug: json['citySlug'],
-    cityName: json['cityName'],
-    thematiqueSlug: json['thematiqueSlug'],
-    thematiqueName: json['thematiqueName'],
-    savedAt: DateTime.tryParse(json['savedAt'] ?? '') ?? DateTime.now(),
-  );
+        query: json['query'] ?? '',
+        citySlug: json['citySlug'],
+        cityName: json['cityName'],
+        thematiqueSlug: json['thematiqueSlug'],
+        thematiqueName: json['thematiqueName'],
+        savedAt: DateTime.tryParse(json['savedAt'] ?? '') ?? DateTime.now(),
+        hasAlert: json['hasAlert'] ?? false,
+        displayName: json['displayName'],
+      );
 
   /// Display label for the search chip
   String get displayLabel {
+    if (displayName != null && displayName!.isNotEmpty) {
+      return displayName!;
+    }
+    
     final parts = <String>[];
     if (query.isNotEmpty) parts.add('"$query"');
     if (cityName != null) parts.add(cityName!);
     if (thematiqueName != null) parts.add(thematiqueName!);
+    
+    if (parts.isEmpty && hasAlert) return 'Alerte personnalisée';
+    if (parts.isEmpty) return 'Recherche sauvegardée';
+    
     return parts.join(' • ');
   }
 }
@@ -249,8 +265,15 @@ class SavedSearchesNotifier extends StateNotifier<List<SavedSearch>> {
   }
 
   Future<void> addSearch(SavedSearch search) async {
-    // Remove duplicate if exists
-    state = state.where((s) => s.displayLabel != search.displayLabel).toList();
+    // Remove duplicate if exists (check by name or criteria)
+    state = state.where((s) {
+       // unique by custom name if provided
+       if (search.displayName != null && s.displayName == search.displayName) return false;
+       // or unique by criteria if no name provided (fallback)
+       if (search.displayName == null && s.displayLabel == search.displayLabel) return false;
+       return true;
+    }).toList();
+    
     // Add to beginning
     state = [search, ...state].take(AppConstants.maxRecentSearches).toList();
     await _saveSearches();

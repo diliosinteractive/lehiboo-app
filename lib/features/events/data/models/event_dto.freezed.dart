@@ -4367,18 +4367,19 @@ OrganizerPracticalInfoDto _$OrganizerPracticalInfoDtoFromJson(
 mixin _$OrganizerPracticalInfoDto {
 // PMR
   bool get pmr => throw _privateConstructorUsedError;
-  @JsonKey(name: 'pmr_infos')
+  @JsonKey(name: 'pmr_infos', fromJson: _parseStringOrNull)
   String? get pmrInfos => throw _privateConstructorUsedError; // Restauration
   bool get restauration => throw _privateConstructorUsedError;
-  @JsonKey(name: 'restauration_infos')
+  @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull)
   String? get restaurationInfos =>
       throw _privateConstructorUsedError; // Boisson
   bool get boisson => throw _privateConstructorUsedError;
-  @JsonKey(name: 'boisson_infos')
+  @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull)
   String? get boissonInfos =>
       throw _privateConstructorUsedError; // Stationnement
+  @JsonKey(fromJson: _parseStringOrNull)
   String? get stationnement => throw _privateConstructorUsedError; // Event Type
-  @JsonKey(name: 'event_type')
+  @JsonKey(name: 'event_type', fromJson: _parseStringOrNull)
   String? get eventType => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -4395,13 +4396,17 @@ abstract class $OrganizerPracticalInfoDtoCopyWith<$Res> {
   @useResult
   $Res call(
       {bool pmr,
-      @JsonKey(name: 'pmr_infos') String? pmrInfos,
+      @JsonKey(name: 'pmr_infos', fromJson: _parseStringOrNull)
+      String? pmrInfos,
       bool restauration,
-      @JsonKey(name: 'restauration_infos') String? restaurationInfos,
+      @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull)
+      String? restaurationInfos,
       bool boisson,
-      @JsonKey(name: 'boisson_infos') String? boissonInfos,
-      String? stationnement,
-      @JsonKey(name: 'event_type') String? eventType});
+      @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull)
+      String? boissonInfos,
+      @JsonKey(fromJson: _parseStringOrNull) String? stationnement,
+      @JsonKey(name: 'event_type', fromJson: _parseStringOrNull)
+      String? eventType});
 }
 
 /// @nodoc
@@ -4475,13 +4480,17 @@ abstract class _$$OrganizerPracticalInfoDtoImplCopyWith<$Res>
   @useResult
   $Res call(
       {bool pmr,
-      @JsonKey(name: 'pmr_infos') String? pmrInfos,
+      @JsonKey(name: 'pmr_infos', fromJson: _parseStringOrNull)
+      String? pmrInfos,
       bool restauration,
-      @JsonKey(name: 'restauration_infos') String? restaurationInfos,
+      @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull)
+      String? restaurationInfos,
       bool boisson,
-      @JsonKey(name: 'boisson_infos') String? boissonInfos,
-      String? stationnement,
-      @JsonKey(name: 'event_type') String? eventType});
+      @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull)
+      String? boissonInfos,
+      @JsonKey(fromJson: _parseStringOrNull) String? stationnement,
+      @JsonKey(name: 'event_type', fromJson: _parseStringOrNull)
+      String? eventType});
 }
 
 /// @nodoc
@@ -4548,13 +4557,16 @@ class __$$OrganizerPracticalInfoDtoImplCopyWithImpl<$Res>
 class _$OrganizerPracticalInfoDtoImpl implements _OrganizerPracticalInfoDto {
   const _$OrganizerPracticalInfoDtoImpl(
       {this.pmr = false,
-      @JsonKey(name: 'pmr_infos') this.pmrInfos,
+      @JsonKey(name: 'pmr_infos', fromJson: _parseStringOrNull) this.pmrInfos,
       this.restauration = false,
-      @JsonKey(name: 'restauration_infos') this.restaurationInfos,
+      @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull)
+      this.restaurationInfos,
       this.boisson = false,
-      @JsonKey(name: 'boisson_infos') this.boissonInfos,
-      this.stationnement,
-      @JsonKey(name: 'event_type') this.eventType});
+      @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull)
+      this.boissonInfos,
+      @JsonKey(fromJson: _parseStringOrNull) this.stationnement,
+      @JsonKey(name: 'event_type', fromJson: _parseStringOrNull)
+      this.eventType});
 
   factory _$OrganizerPracticalInfoDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$OrganizerPracticalInfoDtoImplFromJson(json);
@@ -4564,28 +4576,29 @@ class _$OrganizerPracticalInfoDtoImpl implements _OrganizerPracticalInfoDto {
   @JsonKey()
   final bool pmr;
   @override
-  @JsonKey(name: 'pmr_infos')
+  @JsonKey(name: 'pmr_infos', fromJson: _parseStringOrNull)
   final String? pmrInfos;
 // Restauration
   @override
   @JsonKey()
   final bool restauration;
   @override
-  @JsonKey(name: 'restauration_infos')
+  @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull)
   final String? restaurationInfos;
 // Boisson
   @override
   @JsonKey()
   final bool boisson;
   @override
-  @JsonKey(name: 'boisson_infos')
+  @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull)
   final String? boissonInfos;
 // Stationnement
   @override
+  @JsonKey(fromJson: _parseStringOrNull)
   final String? stationnement;
 // Event Type
   @override
-  @JsonKey(name: 'event_type')
+  @JsonKey(name: 'event_type', fromJson: _parseStringOrNull)
   final String? eventType;
 
   @override
@@ -4636,15 +4649,18 @@ class _$OrganizerPracticalInfoDtoImpl implements _OrganizerPracticalInfoDto {
 
 abstract class _OrganizerPracticalInfoDto implements OrganizerPracticalInfoDto {
   const factory _OrganizerPracticalInfoDto(
-          {final bool pmr,
-          @JsonKey(name: 'pmr_infos') final String? pmrInfos,
-          final bool restauration,
-          @JsonKey(name: 'restauration_infos') final String? restaurationInfos,
-          final bool boisson,
-          @JsonKey(name: 'boisson_infos') final String? boissonInfos,
-          final String? stationnement,
-          @JsonKey(name: 'event_type') final String? eventType}) =
-      _$OrganizerPracticalInfoDtoImpl;
+      {final bool pmr,
+      @JsonKey(name: 'pmr_infos', fromJson: _parseStringOrNull)
+      final String? pmrInfos,
+      final bool restauration,
+      @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull)
+      final String? restaurationInfos,
+      final bool boisson,
+      @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull)
+      final String? boissonInfos,
+      @JsonKey(fromJson: _parseStringOrNull) final String? stationnement,
+      @JsonKey(name: 'event_type', fromJson: _parseStringOrNull)
+      final String? eventType}) = _$OrganizerPracticalInfoDtoImpl;
 
   factory _OrganizerPracticalInfoDto.fromJson(Map<String, dynamic> json) =
       _$OrganizerPracticalInfoDtoImpl.fromJson;
@@ -4652,22 +4668,23 @@ abstract class _OrganizerPracticalInfoDto implements OrganizerPracticalInfoDto {
   @override // PMR
   bool get pmr;
   @override
-  @JsonKey(name: 'pmr_infos')
+  @JsonKey(name: 'pmr_infos', fromJson: _parseStringOrNull)
   String? get pmrInfos;
   @override // Restauration
   bool get restauration;
   @override
-  @JsonKey(name: 'restauration_infos')
+  @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull)
   String? get restaurationInfos;
   @override // Boisson
   bool get boisson;
   @override
-  @JsonKey(name: 'boisson_infos')
+  @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull)
   String? get boissonInfos;
   @override // Stationnement
+  @JsonKey(fromJson: _parseStringOrNull)
   String? get stationnement;
   @override // Event Type
-  @JsonKey(name: 'event_type')
+  @JsonKey(name: 'event_type', fromJson: _parseStringOrNull)
   String? get eventType;
   @override
   @JsonKey(ignore: true)

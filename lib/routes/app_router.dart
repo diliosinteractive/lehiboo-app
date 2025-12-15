@@ -31,6 +31,7 @@ import '../core/widgets/main_scaffold.dart';
 import '../features/partners/presentation/screens/partner_detail_screen.dart';
 import '../features/ai_chat/presentation/screens/ai_welcome_screen.dart';
 import '../features/ai_chat/presentation/screens/ai_chat_screen.dart';
+import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -274,7 +275,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       
-
+      
 
       // Settings
       GoRoute(
@@ -293,11 +294,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Notifications
+      // Notifications (Now Alerts & Saved Searches)
       GoRoute(
         path: '/notifications',
         name: 'notifications',
-        builder: (context, state) => const NotificationsScreen(),
+        builder: (context, state) => const AlertsListScreen(),
       ),
       // AI Chat
       GoRoute(
@@ -371,25 +372,6 @@ class ErrorScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// Notifications Screen placeholder
-class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
-        backgroundColor: const Color(0xFFFF601F),
-        foregroundColor: Colors.white,
-      ),
-      body: const Center(
-        child: Text('Écran des notifications'),
       ),
     );
   }

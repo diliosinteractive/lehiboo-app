@@ -170,9 +170,9 @@ class ProfileScreen extends ConsumerWidget {
         ),
         _buildMenuItem(
           context,
-          icon: Icons.notifications_outlined,
-          title: 'Notifications',
-          subtitle: 'Gérer vos alertes',
+          icon: Icons.notifications_none_rounded, // Slightly more modern icon if possible
+          title: 'Mes Alertes & Recherches',
+          subtitle: 'Gérer vos recherches enregistrées',
           onTap: () => context.push('/notifications'),
         ),
         _buildMenuItem(

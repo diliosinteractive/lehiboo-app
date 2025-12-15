@@ -95,17 +95,31 @@ class FavoriteEventDto {
 
   factory FavoriteEventDto.fromJson(Map<String, dynamic> json) {
     return FavoriteEventDto(
-      id: json['id'] as int,
-      title: json['title'] as String,
-      slug: json['slug'] as String,
-      thumbnail: json['thumbnail'] as String?,
-      date: json['date'] as String,
-      time: json['time'] as String?,
-      venue: json['venue'] as String?,
-      city: json['city'] as String?,
+      id: _parseInt(json['id']),
+      title: _parseString(json['title']) ?? '',
+      slug: _parseString(json['slug']) ?? '',
+      thumbnail: _parseString(json['thumbnail']),
+      date: _parseString(json['date']) ?? '',
+      time: _parseString(json['time']),
+      venue: _parseString(json['venue']),
+      city: _parseString(json['city']),
       price: json['price'] != null ? EventPriceDto.fromJson(json['price']) : null,
       isUpcoming: json['is_upcoming'] as bool? ?? true,
-      favoritedAt: json['favorited_at'] as String?,
+      favoritedAt: _parseString(json['favorited_at']),
     );
   }
+}
+
+String? _parseString(dynamic value) {
+  if (value == null) return null;
+  if (value is bool) return null;
+  if (value is String) return value.isEmpty ? null : value;
+  return value.toString();
+}
+
+int _parseInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
 }

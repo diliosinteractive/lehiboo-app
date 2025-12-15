@@ -61,10 +61,10 @@ List<String>? _parseGallery(dynamic value) {
   return null;
 }
 
-/// Parse featured_image which can be either a String URL or an object with sizes
 EventImageDto? _parseImage(dynamic value) {
   if (value == null) return null;
   if (value is String) {
+    if (value.isEmpty) return null;
     // If it's a direct URL string, use it for all sizes
     return EventImageDto(
       thumbnail: value,
@@ -73,8 +73,29 @@ EventImageDto? _parseImage(dynamic value) {
       full: value,
     );
   }
-  if (value is Map<String, dynamic>) {
-    return EventImageDto.fromJson(value);
+  if (value is Map) {
+    // Sanitize the map to ensure we don't pass booleans to fromJson
+    // which would cause "type 'bool' is not a subtype of type 'String?'"
+    final safeMap = <String, dynamic>{};
+    
+    // Helper to safely get string
+    String? getSafeString(dynamic v) {
+      if (v is String && v.isNotEmpty) return v;
+      if (v is int) return null;
+      if (v is bool) return null;
+      return null;
+    }
+
+    safeMap['thumbnail'] = getSafeString(value['thumbnail']);
+    safeMap['medium'] = getSafeString(value['medium']);
+    safeMap['large'] = getSafeString(value['large']);
+    safeMap['full'] = getSafeString(value['full']);
+
+    // Remove null keys to let Freezed handle them (though we put nulls above, handled by fromJson?)
+    // Actually EventImageDto.fromJson handles explicit nulls fine for nullable fields.
+    // The issue was non-nulls being WRONG types.
+    
+    return EventImageDto.fromJson(safeMap);
   }
   return null;
 }
@@ -353,21 +374,21 @@ class OrganizerPracticalInfoDto with _$OrganizerPracticalInfoDto {
   const factory OrganizerPracticalInfoDto({
     // PMR
     @Default(false) bool pmr,
-    @JsonKey(name: 'pmr_infos') String? pmrInfos,
+    @JsonKey(name: 'pmr_infos', fromJson: _parseStringOrNull) String? pmrInfos,
     
     // Restauration
     @Default(false) bool restauration,
-    @JsonKey(name: 'restauration_infos') String? restaurationInfos,
+    @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull) String? restaurationInfos,
     
     // Boisson
     @Default(false) bool boisson,
-    @JsonKey(name: 'boisson_infos') String? boissonInfos,
+    @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull) String? boissonInfos,
     
     // Stationnement
-    String? stationnement,
+    @JsonKey(fromJson: _parseStringOrNull) String? stationnement,
     
     // Event Type
-    @JsonKey(name: 'event_type') String? eventType,
+    @JsonKey(name: 'event_type', fromJson: _parseStringOrNull) String? eventType,
   }) = _OrganizerPracticalInfoDto;
 
   factory OrganizerPracticalInfoDto.fromJson(Map<String, dynamic> json) =>

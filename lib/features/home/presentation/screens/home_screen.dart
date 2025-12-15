@@ -13,6 +13,8 @@ import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import '../../../../config/dio_client.dart';
 import '../../data/models/mobile_app_config.dart';
+import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import '../providers/home_providers.dart';
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
@@ -31,7 +33,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
-  int _selectedTimeFilter = 0;
 
   @override
   void dispose() {
@@ -347,6 +348,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildHeroSearchSection() {
     final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final filterState = ref.watch(eventFilterProvider);
     final configAsyncValue = ref.watch(mobileAppConfigProvider);
     final currentUser = ref.watch(currentUserProvider);
 
@@ -512,40 +514,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _buildQuickFilterChip(
                         label: "Aujourd'hui",
                         icon: Icons.today,
-                        isSelected: _selectedTimeFilter == 0,
+                        isSelected: filterState.dateFilterType == DateFilterType.today,
                         onTap: () {
-                          setState(() => _selectedTimeFilter = 0);
-                          filterNotifier.setDateFilter(DateFilterType.today);
+                          if (filterState.dateFilterType == DateFilterType.today) {
+                            filterNotifier.clearDateFilter();
+                          } else {
+                            filterNotifier.setDateFilter(DateFilterType.today);
+                          }
                         },
                       ),
                       const SizedBox(width: 8),
                       _buildQuickFilterChip(
                         label: 'Demain',
                         icon: Icons.event,
-                        isSelected: _selectedTimeFilter == 1,
+                        isSelected: filterState.dateFilterType == DateFilterType.tomorrow,
                         onTap: () {
-                          setState(() => _selectedTimeFilter = 1);
-                          filterNotifier.setDateFilter(DateFilterType.tomorrow);
+                          if (filterState.dateFilterType == DateFilterType.tomorrow) {
+                             filterNotifier.clearDateFilter();
+                          } else {
+                             filterNotifier.setDateFilter(DateFilterType.tomorrow);
+                          }
                         },
                       ),
                       const SizedBox(width: 8),
                       _buildQuickFilterChip(
                         label: 'Ce week-end',
                         icon: Icons.weekend,
-                        isSelected: _selectedTimeFilter == 2,
+                        isSelected: filterState.dateFilterType == DateFilterType.thisWeekend,
                         onTap: () {
-                          setState(() => _selectedTimeFilter = 2);
-                          filterNotifier.setDateFilter(DateFilterType.thisWeekend);
+                          if (filterState.dateFilterType == DateFilterType.thisWeekend) {
+                            filterNotifier.clearDateFilter();
+                          } else {
+                            filterNotifier.setDateFilter(DateFilterType.thisWeekend);
+                          }
                         },
                       ),
                       const SizedBox(width: 8),
                       _buildQuickFilterChip(
                         label: 'Gratuit',
                         icon: Icons.local_offer,
-                        isSelected: _selectedTimeFilter == 3,
+                        isSelected: filterState.onlyFree,
                         onTap: () {
-                          setState(() => _selectedTimeFilter = 3);
-                          filterNotifier.setOnlyFree(true);
+                          filterNotifier.setOnlyFree(!filterState.onlyFree);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildQuickFilterChip(
+                        label: 'Famille',
+                        icon: Icons.family_restroom,
+                        isSelected: filterState.familyFriendly,
+                        onTap: () {
+                          filterNotifier.setFamilyFriendly(!filterState.familyFriendly);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildQuickFilterChip(
+                        label: 'En ligne',
+                        icon: Icons.computer,
+                        isSelected: filterState.onlineOnly,
+                        onTap: () {
+                          filterNotifier.setOnlineOnly(!filterState.onlineOnly);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildQuickFilterChip(
+                        label: 'Accessible PMR',
+                        icon: Icons.accessible,
+                        isSelected: filterState.accessiblePMR,
+                        onTap: () {
+                          filterNotifier.setAccessiblePMR(!filterState.accessiblePMR);
                         },
                       ),
                     ],
@@ -597,118 +634,160 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// Section des recherches enregistrées - ne s'affiche que si des recherches existent
+  /// Section des recherches enregistrées
   Widget _buildSavedSearchesSection() {
-    final savedSearches = ref.watch(savedSearchesProvider);
+    final alertsAsync = ref.watch(alertsProvider);
     final filterNotifier = ref.read(eventFilterProvider.notifier);
 
-    // Ne rien afficher si pas de recherches enregistrées
-    if (savedSearches.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    return alertsAsync.when(
+      data: (alerts) {
+        if (alerts.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   const Text(
+                    'Vos recherches',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D3748),
+                    ),
+                  ),
+                  // "Effacer tout" feature might not be directly supported by batch delete API yet
+                  // but we can imply iterate delete or hide button if not supported.
+                  // For now, hiding "Effacer tout" as it's dangerous without batch API.
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 44, // Fixed height for chips
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                itemCount: alerts.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final alert = alerts[index];
+                  final label = alert.name;
+                  final hasAlert = alert.enablePush;
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      // Apply filters from Alert
+                      filterNotifier.applyFilters(alert.filter);
+                      context.push('/search');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: hasAlert
+                              ? const Color(0xFFFF601F).withOpacity(0.3) 
+                              : const Color(0xFFE5E5E5),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            hasAlert ? Icons.notifications_active_outlined : Icons.history,
+                            size: 16,
+                            color: hasAlert ? const Color(0xFFFF601F) : Colors.grey[600],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: hasAlert ? const Color(0xFFFF601F) : const Color(0xFF2D3748),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 1,
+                            height: 16,
+                            color: Colors.grey[300],
+                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              ref.read(alertsProvider.notifier).deleteAlert(alert.id);
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (err, stack) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.withOpacity(0.2)),
+          ),
+          child: Row(
             children: [
-              const Text(
-                'Vos recherches',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D3748),
+              Icon(Icons.cloud_off, size: 20, color: Colors.red[400]),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "Service indisponible momentanément",
+                  style: TextStyle(color: Colors.red[700], fontSize: 13),
                 ),
               ),
               TextButton(
-                onPressed: () {
-                  ref.read(savedSearchesProvider.notifier).clearAll();
-                },
-                child: Text(
-                  'Effacer',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
+                onPressed: () => ref.refresh(alertsProvider),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor: Colors.red[700],
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: Colors.red.withOpacity(0.2)),
                   ),
                 ),
+                child: const Text("Réessayer", style: TextStyle(fontSize: 12)),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: savedSearches.take(5).map((search) {
-              return GestureDetector(
-                onTap: () {
-                  // Appliquer les filtres de la recherche sauvegardée
-                  if (search.query.isNotEmpty) {
-                    filterNotifier.setSearchQuery(search.query);
-                  }
-                  if (search.citySlug != null && search.cityName != null) {
-                    filterNotifier.setCity(search.citySlug!, search.cityName!);
-                  }
-                  if (search.thematiqueSlug != null) {
-                    filterNotifier.addThematique(search.thematiqueSlug!);
-                  }
-                  context.push('/events');
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFE5E5E5)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.history,
-                        size: 14,
-                        color: Color(0xFFFF601F),
-                      ),
-                      const SizedBox(width: 6),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 150),
-                        child: Text(
-                          search.displayLabel,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF2D3748),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      GestureDetector(
-                        onTap: () {
-                          ref.read(savedSearchesProvider.notifier).removeSearch(search);
-                        },
-                        child: Icon(
-                          Icons.close,
-                          size: 14,
-                          color: Colors.grey[400],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -763,34 +842,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildTimeFilterChip(String label, int index) {
-    final isSelected = _selectedTimeFilter == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedTimeFilter = index;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : const Color(0xFFE5E5E5),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF2D3748),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildTopCitiesSection() {
     final citiesAsyncValue = ref.watch(homeCitiesProvider);
