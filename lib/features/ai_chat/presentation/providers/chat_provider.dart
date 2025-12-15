@@ -188,6 +188,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
         }
         if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
           Position position = await Geolocator.getCurrentPosition();
+          
+          // Inject into Brain
+          _aiService.updateContextKey('latitude', position.latitude);
+          _aiService.updateContextKey('longitude', position.longitude);
+
           try {
             List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
             if (placemarks.isNotEmpty) {
@@ -203,12 +208,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
 
     try {
-        final prompt = "SYSTEM_INSTRUCTION: Ignore previous history. The user is '$userName' and is currently at '$locationContext'. "
+        final userContextCoords = _aiService.userContext['latitude'] != null 
+            ? " (Lat: ${_aiService.userContext['latitude']}, Lng: ${_aiService.userContext['longitude']})" 
+            : "";
+
+        final prompt = "SYSTEM_INSTRUCTION: Ignore previous history. The user is '$userName' and is currently at '$locationContext'$userContextCoords. "
                      "Act as 'Petit Boo', a friendly local guide. " 
                      "Say hello warmly. Use EMOJIS to be friendly and expressive! 🌟 "
                      "TASK: Find 3 REAL, DIVERSE activities around '$locationContext' (Cultural, Active, Discovery). "
                      "CRITICAL: You MUST use the 'findEvents' tool to return the activities. "
-                     "1. FIRST, call 'findEvents' with specific keywords/dates to get real data. "
+                     "1. FIRST, call 'findEvents' with specific keywords OR location parameters (latitude, longitude, radius_km) to get real data. "
                      "2. THEN, write your friendly response based ONLY on the data returned by the tool. "
                      "3. Do NOT hallucinate activities. If 'findEvents' returns nothing, say you couldn't find anything specific but offer general advice. "
                      "4. In your text, be pedagogical and persuasive. Do NOT include URLs. Refer to the cards below. "

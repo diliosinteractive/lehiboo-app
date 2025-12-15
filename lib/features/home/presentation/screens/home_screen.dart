@@ -18,6 +18,7 @@ import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.d
 import '../providers/home_providers.dart';
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
+import '../widgets/home_cities_section.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
 // ... existing code ...
@@ -48,6 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.invalidate(featuredActivitiesProvider);
     ref.invalidate(categoriesProvider);
     ref.invalidate(homeCitiesProvider);
+    ref.invalidate(alertsProvider);
     ref.invalidate(mobileAppConfigProvider);
 
     // Wait a bit for the providers to start refreshing
@@ -62,27 +64,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFF601F), // Brand Orange
         elevation: 0,
         toolbarHeight: 60,
         title: Row(
           children: [
             Image.asset(
-              'assets/images/logo-header.png',
+              'assets/images/logo_lehiboo_blanc_x3_2.png',
               width: 120,
               height: 32,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Text('Le Hiboo', style: TextStyle(color: Color(0xFFFF601F), fontWeight: FontWeight.bold)),
+              errorBuilder: (context, error, stackTrace) => const Text('Le Hiboo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none, color: Color(0xFF1E3A8A)),
+            icon: const Icon(Icons.favorite_border, color: Colors.white),
+            onPressed: () => context.push('/favorites'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Colors.white),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.person_outline, color: Color(0xFF1E3A8A)),
+            icon: const Icon(Icons.person_outline, color: Colors.white),
             onPressed: () => context.push('/profile'),
           ),
         ],
@@ -101,6 +107,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Section Recherches enregistrées (seulement si des recherches existent)
           SliverToBoxAdapter(
             child: _buildSavedSearchesSection(),
+          ),
+
+          // Section Filtre par Ville
+          const SliverToBoxAdapter(
+            child: HomeCitiesSection(),
           ),
 
           // Section Publicités dynamiques depuis WordPress (au-dessus des thématiques)
@@ -481,7 +492,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFFF601F).withOpacity(0.3)),
                   ),

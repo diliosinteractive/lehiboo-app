@@ -147,6 +147,17 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     );
   }
 
+  void setBoundingBox(double neLat, double neLng, double swLat, double swLng) {
+    state = state.copyWith(
+      northEastLat: neLat,
+      northEastLng: neLng,
+      southWestLat: swLat,
+      southWestLng: swLng,
+      latitude: null, // Clear point search if using bounds
+      longitude: null,
+    );
+  }
+
   void clearLocation() {
     state = state.copyWith(
       latitude: null,

@@ -1,0 +1,27 @@
+Subject: Requirements for Map Navigation & location-based AI Search
+
+Hello Backend Team,
+
+We are implementing a new map-based navigation feature (similar to Airbnb/Facebook Events) and improving our "Around Me" logic. To support this effectively, we need the following API enhancements:
+
+1.  **Geospatial Bounding Box Search**:
+    -   Current API (`GET /events`) supports `lat`/`lng` + `radius`.
+    -   **Requirement**: We need support for searching by **Bounding Box** (`northEastLat`, `northEastLng`, `southWestLat`, `southWestLng`). This is critical for the "Search as I move the map" feature, allowing us to fetch events exactly within the visible screen area.
+    -   Ideally, this endpoint should optionally return "lightweight" objects (ID, Lat, Lng, Title, CategoryIcon) for pins to render quickly, with full details loaded only on selection.
+
+2.  **Address & Location Data**:
+    -   Please ensure `Event` objects consistently return high-quality `latitude` and `longitude` derived from their addresses.
+    -   Verify that the `location` field (JSONB or relationship) correctly maps these coordinates.
+
+3.  **AI Tooling (`findEvents`)**:
+    -   We want the "Petit Boo" AI to perform proximity searches (e.g., "Find activities within 5km of me" or "around my current location").
+    -   **Requirement**: Update the `findEvents` tool definition to accept `latitude`, `longitude`, and `radius_km` parameters.
+    -   The system prompt should be updated to prioritize these parameters when the user provides location context or asks for "nearby" items.
+
+4.  **City Filtering**:
+    -   We are moving towards a coordinate-based city filter. When a user selects a "City" filter, we will likely send the city's coordinates and a default radius (e.g., 10km) or a bounding box, rather than just the city slug. Please ensure the API handles this well.
+
+Let us know if these changes are feasible or if you have an alternative recommendation for geospatial indexing.
+
+Best,
+The Mobile Team

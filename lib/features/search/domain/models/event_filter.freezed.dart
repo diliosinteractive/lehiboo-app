@@ -244,6 +244,11 @@ mixin _$EventFilter {
   double? get latitude => throw _privateConstructorUsedError;
   double? get longitude => throw _privateConstructorUsedError;
   double get radiusKm =>
+      throw _privateConstructorUsedError; // Bounding Box (Search this area)
+  double? get northEastLat => throw _privateConstructorUsedError;
+  double? get northEastLng => throw _privateConstructorUsedError;
+  double? get southWestLat => throw _privateConstructorUsedError;
+  double? get southWestLng =>
       throw _privateConstructorUsedError; // Category filters (multi-select)
   List<String> get thematiquesSlugs => throw _privateConstructorUsedError;
   List<String> get categoriesSlugs =>
@@ -288,6 +293,10 @@ abstract class $EventFilterCopyWith<$Res> {
       double? latitude,
       double? longitude,
       double radiusKm,
+      double? northEastLat,
+      double? northEastLng,
+      double? southWestLat,
+      double? southWestLng,
       List<String> thematiquesSlugs,
       List<String> categoriesSlugs,
       String? organizerSlug,
@@ -328,6 +337,10 @@ class _$EventFilterCopyWithImpl<$Res, $Val extends EventFilter>
     Object? latitude = freezed,
     Object? longitude = freezed,
     Object? radiusKm = null,
+    Object? northEastLat = freezed,
+    Object? northEastLng = freezed,
+    Object? southWestLat = freezed,
+    Object? southWestLng = freezed,
     Object? thematiquesSlugs = null,
     Object? categoriesSlugs = null,
     Object? organizerSlug = freezed,
@@ -394,6 +407,22 @@ class _$EventFilterCopyWithImpl<$Res, $Val extends EventFilter>
           ? _value.radiusKm
           : radiusKm // ignore: cast_nullable_to_non_nullable
               as double,
+      northEastLat: freezed == northEastLat
+          ? _value.northEastLat
+          : northEastLat // ignore: cast_nullable_to_non_nullable
+              as double?,
+      northEastLng: freezed == northEastLng
+          ? _value.northEastLng
+          : northEastLng // ignore: cast_nullable_to_non_nullable
+              as double?,
+      southWestLat: freezed == southWestLat
+          ? _value.southWestLat
+          : southWestLat // ignore: cast_nullable_to_non_nullable
+              as double?,
+      southWestLng: freezed == southWestLng
+          ? _value.southWestLng
+          : southWestLng // ignore: cast_nullable_to_non_nullable
+              as double?,
       thematiquesSlugs: null == thematiquesSlugs
           ? _value.thematiquesSlugs
           : thematiquesSlugs // ignore: cast_nullable_to_non_nullable
@@ -468,6 +497,10 @@ abstract class _$$EventFilterImplCopyWith<$Res>
       double? latitude,
       double? longitude,
       double radiusKm,
+      double? northEastLat,
+      double? northEastLng,
+      double? southWestLat,
+      double? southWestLng,
       List<String> thematiquesSlugs,
       List<String> categoriesSlugs,
       String? organizerSlug,
@@ -506,6 +539,10 @@ class __$$EventFilterImplCopyWithImpl<$Res>
     Object? latitude = freezed,
     Object? longitude = freezed,
     Object? radiusKm = null,
+    Object? northEastLat = freezed,
+    Object? northEastLng = freezed,
+    Object? southWestLat = freezed,
+    Object? southWestLng = freezed,
     Object? thematiquesSlugs = null,
     Object? categoriesSlugs = null,
     Object? organizerSlug = freezed,
@@ -572,6 +609,22 @@ class __$$EventFilterImplCopyWithImpl<$Res>
           ? _value.radiusKm
           : radiusKm // ignore: cast_nullable_to_non_nullable
               as double,
+      northEastLat: freezed == northEastLat
+          ? _value.northEastLat
+          : northEastLat // ignore: cast_nullable_to_non_nullable
+              as double?,
+      northEastLng: freezed == northEastLng
+          ? _value.northEastLng
+          : northEastLng // ignore: cast_nullable_to_non_nullable
+              as double?,
+      southWestLat: freezed == southWestLat
+          ? _value.southWestLat
+          : southWestLat // ignore: cast_nullable_to_non_nullable
+              as double?,
+      southWestLng: freezed == southWestLng
+          ? _value.southWestLng
+          : southWestLng // ignore: cast_nullable_to_non_nullable
+              as double?,
       thematiquesSlugs: null == thematiquesSlugs
           ? _value._thematiquesSlugs
           : thematiquesSlugs // ignore: cast_nullable_to_non_nullable
@@ -641,6 +694,10 @@ class _$EventFilterImpl extends _EventFilter {
       this.latitude,
       this.longitude,
       this.radiusKm = 50,
+      this.northEastLat,
+      this.northEastLng,
+      this.southWestLat,
+      this.southWestLng,
       final List<String> thematiquesSlugs = const [],
       final List<String> categoriesSlugs = const [],
       this.organizerSlug,
@@ -696,6 +753,15 @@ class _$EventFilterImpl extends _EventFilter {
   @override
   @JsonKey()
   final double radiusKm;
+// Bounding Box (Search this area)
+  @override
+  final double? northEastLat;
+  @override
+  final double? northEastLng;
+  @override
+  final double? southWestLat;
+  @override
+  final double? southWestLng;
 // Category filters (multi-select)
   final List<String> _thematiquesSlugs;
 // Category filters (multi-select)
@@ -761,7 +827,7 @@ class _$EventFilterImpl extends _EventFilter {
 
   @override
   String toString() {
-    return 'EventFilter(searchQuery: $searchQuery, dateFilterType: $dateFilterType, startDate: $startDate, endDate: $endDate, priceFilterType: $priceFilterType, priceMin: $priceMin, priceMax: $priceMax, onlyFree: $onlyFree, citySlug: $citySlug, cityName: $cityName, latitude: $latitude, longitude: $longitude, radiusKm: $radiusKm, thematiquesSlugs: $thematiquesSlugs, categoriesSlugs: $categoriesSlugs, organizerSlug: $organizerSlug, organizerName: $organizerName, tagsSlugs: $tagsSlugs, familyFriendly: $familyFriendly, accessiblePMR: $accessiblePMR, onlineOnly: $onlineOnly, inPersonOnly: $inPersonOnly, sortBy: $sortBy, page: $page, perPage: $perPage)';
+    return 'EventFilter(searchQuery: $searchQuery, dateFilterType: $dateFilterType, startDate: $startDate, endDate: $endDate, priceFilterType: $priceFilterType, priceMin: $priceMin, priceMax: $priceMax, onlyFree: $onlyFree, citySlug: $citySlug, cityName: $cityName, latitude: $latitude, longitude: $longitude, radiusKm: $radiusKm, northEastLat: $northEastLat, northEastLng: $northEastLng, southWestLat: $southWestLat, southWestLng: $southWestLng, thematiquesSlugs: $thematiquesSlugs, categoriesSlugs: $categoriesSlugs, organizerSlug: $organizerSlug, organizerName: $organizerName, tagsSlugs: $tagsSlugs, familyFriendly: $familyFriendly, accessiblePMR: $accessiblePMR, onlineOnly: $onlineOnly, inPersonOnly: $inPersonOnly, sortBy: $sortBy, page: $page, perPage: $perPage)';
   }
 
   @override
@@ -794,6 +860,14 @@ class _$EventFilterImpl extends _EventFilter {
                 other.longitude == longitude) &&
             (identical(other.radiusKm, radiusKm) ||
                 other.radiusKm == radiusKm) &&
+            (identical(other.northEastLat, northEastLat) ||
+                other.northEastLat == northEastLat) &&
+            (identical(other.northEastLng, northEastLng) ||
+                other.northEastLng == northEastLng) &&
+            (identical(other.southWestLat, southWestLat) ||
+                other.southWestLat == southWestLat) &&
+            (identical(other.southWestLng, southWestLng) ||
+                other.southWestLng == southWestLng) &&
             const DeepCollectionEquality()
                 .equals(other._thematiquesSlugs, _thematiquesSlugs) &&
             const DeepCollectionEquality()
@@ -834,6 +908,10 @@ class _$EventFilterImpl extends _EventFilter {
         latitude,
         longitude,
         radiusKm,
+        northEastLat,
+        northEastLng,
+        southWestLat,
+        southWestLng,
         const DeepCollectionEquality().hash(_thematiquesSlugs),
         const DeepCollectionEquality().hash(_categoriesSlugs),
         organizerSlug,
@@ -877,6 +955,10 @@ abstract class _EventFilter extends EventFilter {
       final double? latitude,
       final double? longitude,
       final double radiusKm,
+      final double? northEastLat,
+      final double? northEastLng,
+      final double? southWestLat,
+      final double? southWestLng,
       final List<String> thematiquesSlugs,
       final List<String> categoriesSlugs,
       final String? organizerSlug,
@@ -920,6 +1002,14 @@ abstract class _EventFilter extends EventFilter {
   double? get longitude;
   @override
   double get radiusKm;
+  @override // Bounding Box (Search this area)
+  double? get northEastLat;
+  @override
+  double? get northEastLng;
+  @override
+  double? get southWestLat;
+  @override
+  double? get southWestLng;
   @override // Category filters (multi-select)
   List<String> get thematiquesSlugs;
   @override

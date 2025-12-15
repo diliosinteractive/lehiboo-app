@@ -2,7 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../entities/event.dart';
 import '../../data/models/event_dto.dart';
 
+import '../../../../domain/entities/city.dart';
+
 abstract class EventRepository {
+  Future<List<City>> getCities();
   Future<EventsResult> getEvents({
     int page = 1,
     int perPage = 20,
@@ -24,6 +27,11 @@ abstract class EventRepository {
     double? lat,
     double? lng,
     int? radius,
+    double? northEastLat,
+    double? northEastLng,
+    double? southWestLat,
+    double? southWestLng,
+    bool? lightweight,
     String? orderBy,
     String? order,
     bool includePast = true,
@@ -35,7 +43,7 @@ abstract class EventRepository {
 
   Future<List<ThematiqueDto>> getThematiques();
 
-  Future<List<CityDto>> getCities();
+
 
   Future<FiltersResponseDto> getFilters();
 }

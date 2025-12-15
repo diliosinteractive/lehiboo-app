@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../models/event_dto.dart';
 import '../models/event_availability_dto.dart';
+import '../../../../domain/entities/city.dart';
+import '../models/city_with_coordinates_dto.dart';
 
 final eventsApiDataSourceProvider = Provider<EventsApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -36,6 +38,11 @@ class EventsApiDataSource {
     double? lat,
     double? lng,
     int? radius,
+    double? northEastLat,
+    double? northEastLng,
+    double? southWestLat,
+    double? southWestLng,
+    bool? lightweight,
     String? orderBy,
     String? order,
     bool includePast = true, // Include past events (preprod has incomplete date data)
@@ -66,6 +73,16 @@ class EventsApiDataSource {
       queryParams['lng'] = lng;
       if (radius != null) queryParams['radius'] = radius;
     }
+    
+    if (northEastLat != null && northEastLng != null && southWestLat != null && southWestLng != null) {
+      queryParams['north_east_lat'] = northEastLat;
+      queryParams['north_east_lng'] = northEastLng;
+      queryParams['south_west_lat'] = southWestLat;
+      queryParams['south_west_lng'] = southWestLng;
+    }
+    
+    if (lightweight == true) queryParams['lightweight'] = true;
+
     if (orderBy != null) queryParams['orderby'] = orderBy;
     if (order != null) queryParams['order'] = order;
 
@@ -80,10 +97,61 @@ class EventsApiDataSource {
 
     if (data['success'] == true && data['data'] != null) {
       final eventsData = data['data'];
+      
+      // Handle "lightweight" response structure (pins vs events)
+      if (eventsData['pins'] != null) {
+        debugPrint('Handling lightweight response with ${eventsData['pins'].length} pins');
+        
+        // Map pins to EventDto structure
+        final pins = eventsData['pins'] as List;
+        final mappedEvents = pins.map<Map<String, dynamic>>((pin) {
+          // Pin structure typically: {id, title, lat, lng, category_icon, price_min, price_max, ...}
+          return <String, dynamic>{
+            'id': pin['id'],
+            'title': pin['title'] ?? '',
+            'slug': '', // Missing in pins usually
+            'featured_image': <String, dynamic>{
+              'thumbnail': pin['thumbnail'] ?? pin['image'],
+              'medium': pin['thumbnail'] ?? pin['image'],
+              'large': pin['thumbnail'] ?? pin['image'],
+              'full': pin['thumbnail'] ?? pin['image'],
+            },
+            'location': <String, dynamic>{
+              'lat': pin['lat'],
+              'lng': pin['lng'],
+            },
+            'pricing': <String, dynamic>{
+               'min': (pin['price_min'] ?? pin['price'] ?? 0).toDouble(),
+               'max': (pin['price_max'] ?? pin['price'] ?? 0).toDouble(),
+               'is_free': (pin['price'] == 0 || pin['price_min'] == 0),
+            },
+            'dates': <String, dynamic>{
+               // Pins usually lack full dates, use current or nulls if possible, 
+               // actually EventMapper handles null dates by using Now().
+            }
+          };
+        }).toList();
+        
+        // Inject into data for parsing
+        eventsData['events'] = mappedEvents;
+        
+        // Mock pagination for lightweight mode if missing
+        if (eventsData['pagination'] == null) {
+          eventsData['pagination'] = <String, dynamic>{
+            'current_page': 1,
+            'per_page': pins.length > 0 ? pins.length : 50,
+            'total_items': eventsData['total_count'] ?? pins.length,
+            'total_pages': 1,
+            'has_next': false,
+            'has_prev': false,
+          };
+        }
+      }
+
       debugPrint('Events count in response: ${(eventsData['events'] as List?)?.length ?? 0}');
 
       if ((eventsData['events'] as List?)?.isNotEmpty == true) {
-        debugPrint('First event raw: ${eventsData['events'][0]}');
+        // debugPrint('First event raw: ${eventsData['events'][0]}');
       }
 
       try {
@@ -170,15 +238,34 @@ class EventsApiDataSource {
     throw Exception(data['data']?['message'] ?? 'Failed to load thematiques');
   }
 
-  Future<List<CityDto>> getCities() async {
-    final response = await _dio.get('/cities');
-    final data = response.data;
-
-    if (data['success'] == true && data['data'] != null) {
-      final citiesJson = data['data']['cities'] as List;
-      return citiesJson.map((c) => CityDto.fromJson(c)).toList();
+  Future<List<City>> getCities() async {
+    try {
+      final response = await _dio.get('/cities');
+      
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'];
+        final citiesList = data['cities'] as List<dynamic>;
+        
+        return citiesList.map((json) {
+           final dto = CityWithCoordinatesDto.fromJson(json);
+           return City(
+             id: dto.name, 
+             name: dto.name,
+             slug: dto.name.toLowerCase().replaceAll(' ', '-'),
+             lat: dto.lat,
+             lng: dto.lng,
+             region: dto.region,
+             eventCount: dto.eventCount,
+             imageUrl: dto.imageUrl,
+           );
+        }).toList();
+      } else {
+        throw Exception('Failed to load cities');
+      }
+    } catch (e) {
+      debugPrint('Error fetching cities: $e');
+      return [];
     }
-    throw Exception(data['data']?['message'] ?? 'Failed to load cities');
   }
 
   Future<FiltersResponseDto> getFilters() async {

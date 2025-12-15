@@ -45,6 +45,10 @@ _$EventFilterImpl _$$EventFilterImplFromJson(Map<String, dynamic> json) =>
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       radiusKm: (json['radiusKm'] as num?)?.toDouble() ?? 50,
+      northEastLat: (json['northEastLat'] as num?)?.toDouble(),
+      northEastLng: (json['northEastLng'] as num?)?.toDouble(),
+      southWestLat: (json['southWestLat'] as num?)?.toDouble(),
+      southWestLng: (json['southWestLng'] as num?)?.toDouble(),
       thematiquesSlugs: (json['thematiquesSlugs'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
@@ -84,6 +88,10 @@ Map<String, dynamic> _$$EventFilterImplToJson(_$EventFilterImpl instance) =>
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'radiusKm': instance.radiusKm,
+      'northEastLat': instance.northEastLat,
+      'northEastLng': instance.northEastLng,
+      'southWestLat': instance.southWestLat,
+      'southWestLng': instance.southWestLng,
       'thematiquesSlugs': instance.thematiquesSlugs,
       'categoriesSlugs': instance.categoriesSlugs,
       'organizerSlug': instance.organizerSlug,

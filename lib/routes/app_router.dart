@@ -125,11 +125,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               );
             },
           ),
-          GoRoute(
-            path: '/favorites',
-            name: 'favorites',
-            builder: (context, state) => const FavoritesScreen(),
-          ),
+
           GoRoute(
             path: '/profile',
             name: 'profile',
@@ -202,10 +198,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           return PartnerDetailScreen(partnerId: partnerId);
         },
       ),
+      // Favorites
+      GoRoute(
+        path: '/favorites',
+        name: 'favorites',
+        builder: (context, state) => const FavoritesScreen(),
+      ),
       GoRoute(
         path: '/map',
         name: 'map',
-        builder: (context, state) => const MapViewScreen(),
+        builder: (context, state) {
+          final lat = double.tryParse(state.uri.queryParameters['lat'] ?? '');
+          final lng = double.tryParse(state.uri.queryParameters['lng'] ?? '');
+          final zoom = double.tryParse(state.uri.queryParameters['zoom'] ?? '');
+          return MapViewScreen(
+            initialLat: lat,
+            initialLng: lng,
+            initialZoom: zoom,
+          );
+        },
       ),
 
       // City details

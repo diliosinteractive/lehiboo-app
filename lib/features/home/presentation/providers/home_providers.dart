@@ -81,21 +81,31 @@ final homeCitiesProvider = FutureProvider<List<City>>((ref) async {
   final eventRepository = ref.watch(eventRepositoryProvider);
 
   try {
-    final citiesDto = await eventRepository.getCities();
-    // Convert CityDto to City objects, sorted by event count
-    final sortedCities = List.of(citiesDto)
+    final cities = await eventRepository.getCities();
+    
+    // Sort by event count
+    final sortedCities = List.of(cities)
       ..sort((a, b) => (b.eventCount ?? 0).compareTo(a.eventCount ?? 0));
 
     return sortedCities
-        .take(6) // Top 6 cities with most events
-        .map((cityDto) => City(
-              id: cityDto.id.toString(),
-              name: cityDto.name,
-              slug: cityDto.slug,
-              eventCount: cityDto.eventCount,
-              // Default image for cities - could be enhanced with real images
-              imageUrl: _getCityImageUrl(cityDto.name),
-            ))
+        .take(6)
+        .map((city) {
+            // Inject local image if API doesn't provide one
+            final imageUrl = city.imageUrl ?? _getCityImageUrl(city.name);
+            // Freezed copyWith is not easily available if generated file is not updated.
+            // But we can return new City since we have the factory.
+             return City(
+              id: city.id,
+              name: city.name,
+              slug: city.slug,
+              lat: city.lat,
+              lng: city.lng,
+              region: city.region,
+              description: city.description,
+              eventCount: city.eventCount,
+              imageUrl: imageUrl,
+            );
+        })
         .toList();
   } catch (e) {
     return [];

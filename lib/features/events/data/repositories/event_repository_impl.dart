@@ -4,6 +4,7 @@ import '../../domain/repositories/event_repository.dart';
 import '../datasources/events_api_datasource.dart';
 import '../mappers/event_mapper.dart';
 import '../models/event_dto.dart';
+import '../../../../domain/entities/city.dart';
 
 final eventRepositoryImplProvider = Provider<EventRepository>((ref) {
   final apiDataSource = ref.read(eventsApiDataSourceProvider);
@@ -37,6 +38,11 @@ class EventRepositoryImpl implements EventRepository {
     double? lat,
     double? lng,
     int? radius,
+    double? northEastLat,
+    double? northEastLng,
+    double? southWestLat,
+    double? southWestLng,
+    bool? lightweight,
     String? orderBy,
     String? order,
     bool includePast = true,
@@ -62,6 +68,11 @@ class EventRepositoryImpl implements EventRepository {
       lat: lat,
       lng: lng,
       radius: radius,
+      northEastLat: northEastLat,
+      northEastLng: northEastLng,
+      southWestLat: southWestLat,
+      southWestLng: southWestLng,
+      lightweight: lightweight,
       orderBy: orderBy,
       order: order,
       includePast: includePast,
@@ -102,7 +113,7 @@ class EventRepositoryImpl implements EventRepository {
   }
 
   @override
-  Future<List<CityDto>> getCities() async {
+  Future<List<City>> getCities() async {
     return await _apiDataSource.getCities();
   }
 

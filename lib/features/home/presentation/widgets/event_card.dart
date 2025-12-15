@@ -49,30 +49,41 @@ class EventCard extends ConsumerWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(16),
                   ),
-                  child: CachedNetworkImage(
-                    imageUrl: activity.imageUrl ?? 'https://via.placeholder.com/400x300',
-                    height: isCompact ? 220 : 140,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      height: isCompact ? 220 : 140,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFFF601F),
+                  child: activity.imageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: activity.imageUrl!,
+                          height: isCompact ? 220 : 140,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            height: isCompact ? 220 : 140,
+                            color: Colors.grey[300],
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFFFF601F),
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            height: isCompact ? 220 : 140,
+                            color: const Color(0xFFFF601F),
+                            padding: const EdgeInsets.all(32),
+                            child: Image.asset(
+                              'assets/images/logo_picto_lehiboo.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          height: isCompact ? 220 : 140,
+                          width: double.infinity,
+                          color: const Color(0xFFFF601F),
+                          padding: const EdgeInsets.all(32),
+                          child: Image.asset(
+                            'assets/images/logo_picto_lehiboo.png',
+                            fit: BoxFit.contain,
+                          ),
                         ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: isCompact ? 220 : 140,
-                      color: Colors.grey[300],
-                      child: const Icon(
-                        Icons.image_not_supported,
-                        size: 50,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ),
                 ),
                 // Badge catégorie
                 if (activity.category != null)

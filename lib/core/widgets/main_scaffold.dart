@@ -14,6 +14,11 @@ class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
+    if (index == 2) {
+      context.push('/map');
+      return;
+    }
+
     setState(() {
       _selectedIndex = index;
     });
@@ -24,9 +29,6 @@ class _MainScaffoldState extends State<MainScaffold> {
         break;
       case 1:
         context.go('/explore');
-        break;
-      case 2:
-        context.go('/favorites');
         break;
       case 3:
         context.go('/my-bookings');
@@ -93,7 +95,7 @@ class _MainScaffoldState extends State<MainScaffold> {
             ),
             _buildNavItem(Icons.explore_outlined, 'Explorer', 1),
             const SizedBox(width: 64), // Space for FAB
-            _buildNavItem(Icons.favorite_outline, 'Favoris', 2),
+            _buildNavItem(Icons.map_outlined, 'Carte', 2),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: _buildNavItem(Icons.confirmation_number_outlined, 'Réservations', 3),

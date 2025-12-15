@@ -72,6 +72,12 @@ class EventFilter with _$EventFilter {
     double? latitude,
     double? longitude,
     @Default(50) double radiusKm,
+    
+    // Bounding Box (Search this area)
+    double? northEastLat,
+    double? northEastLng,
+    double? southWestLat,
+    double? southWestLng,
 
     // Category filters (multi-select)
     @Default([]) List<String> thematiquesSlugs,
@@ -111,6 +117,7 @@ class EventFilter with _$EventFilter {
         onlyFree ||
         citySlug != null ||
         latitude != null ||
+        northEastLat != null ||
         thematiquesSlugs.isNotEmpty ||
         categoriesSlugs.isNotEmpty ||
         organizerSlug != null ||
@@ -206,6 +213,14 @@ class EventFilter with _$EventFilter {
       params['lat'] = latitude.toString();
       params['lng'] = longitude.toString();
       params['radius'] = radiusKm.toString();
+    }
+    
+    // Bounding Box
+    if (northEastLat != null && northEastLng != null && southWestLat != null && southWestLng != null) {
+      params['north_east_lat'] = northEastLat.toString();
+      params['north_east_lng'] = northEastLng.toString();
+      params['south_west_lat'] = southWestLat.toString();
+      params['south_west_lng'] = southWestLng.toString();
     }
 
     // Categories

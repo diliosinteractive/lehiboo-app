@@ -15,26 +15,50 @@ class AlertsApiDataSource {
   AlertsApiDataSource(this._dio);
 
   Future<List<AlertDto>> getAlerts() async {
-    final response = await _dio.get('/me/alerts');
-    
-    if (response.statusCode == 200) {
-      final data = response.data;
-      // Handle the wrapped response structure {success: true, data: {alerts: [...]}}
-      if (data is Map<String, dynamic> && 
-          data.containsKey('data') && 
-          data['data'] is Map<String, dynamic> &&
-          data['data'].containsKey('alerts')) {
-        
-        final List<dynamic> alertsData = data['data']['alerts'];
-        return alertsData.map((e) => AlertDto.fromJson(e)).toList();
-      }
-      
-      // Fallback if structure is different (e.g. direct list)
-      if (data is List) {
-        return data.map((e) => AlertDto.fromJson(e)).toList();
+    const int maxRetries = 3;
+    const Duration retryDelay = Duration(milliseconds: 500);
+
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final response = await _dio.get('/me/alerts');
+
+        if (response.statusCode == 200) {
+          final data = response.data;
+          // Handle the wrapped response structure {success: true, data: {alerts: [...]}}
+          if (data is Map<String, dynamic> &&
+              data.containsKey('data') &&
+              data['data'] is Map<String, dynamic> &&
+              data['data'].containsKey('alerts')) {
+
+            final List<dynamic> alertsData = data['data']['alerts'];
+            return alertsData.map((e) => AlertDto.fromJson(e)).toList();
+          }
+
+          // Fallback if structure is different (e.g. direct list)
+          if (data is List) {
+            return data.map((e) => AlertDto.fromJson(e)).toList();
+          }
+
+          // Log the data to debug why it failed
+          print('❌ Parsing Failed. Response structure unexpected: $data');
+        }
+      } on DioException catch (e) {
+        // Only retry on server errors (5xx) or connection timeouts
+        if (e.response != null && e.response!.statusCode != null && e.response!.statusCode! >= 500) {
+           if (attempt < maxRetries) {
+             print('⚠️ 5xx Error fetching alerts. Retrying... ($attempt/$maxRetries)');
+             await Future.delayed(retryDelay * attempt); // Exponential-ish backoff
+             continue;
+           }
+        }
+        // If it's a 4xx error or we ran out of retries, rethrow
+        rethrow;
+      } catch (e) {
+        // For non-dio errors, rethrow immediately
+        rethrow;
       }
     }
-    throw Exception('Failed to fetch alerts: Invalid response format');
+    throw Exception('Failed to fetch alerts after $maxRetries attempts');
   }
 
   Future<AlertDto> createAlert({
