@@ -84,7 +84,7 @@ class CityDetailScreen extends ConsumerWidget {
     final activitiesAsyncValue = ref.watch(cityActivitiesProvider(citySlug));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+
       body: cityAsyncValue.when(
         data: (city) {
           if (city == null) {

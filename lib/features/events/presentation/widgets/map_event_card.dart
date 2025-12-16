@@ -43,8 +43,42 @@ class MapEventCard extends ConsumerWidget {
                 imageUrl: activity.imageUrl!,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(color: Colors.grey[800]),
-                errorWidget: (context, url, error) => Container(
-                color: const Color(0xFFFF601F), // HbColors.brandPrimary
+                errorWidget: (context, url, error) {
+                  // Fallback 1: Theme Image
+                  if (activity.category != null) {
+                    return Image.asset(
+                      'assets/images/thematiques/${activity.category!.slug.toLowerCase()}.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback 2: Logo
+                        return Container(
+                          color: const Color(0xFFFF601F), // HbColors.brandPrimary
+                          padding: const EdgeInsets.all(24),
+                          child: Image.asset(
+                            'assets/images/logo_picto_lehiboo.png',
+                            fit: BoxFit.contain,
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  // Fallback 2: Logo
+                  return Container(
+                    color: const Color(0xFFFF601F), // HbColors.brandPrimary
+                    padding: const EdgeInsets.all(24),
+                    child: Image.asset(
+                      'assets/images/logo_picto_lehiboo.png',
+                      fit: BoxFit.contain,
+                    ),
+                  );
+                },
+              )
+            else if (activity.category != null)
+              Image.asset(
+                'assets/images/thematiques/${activity.category!.slug.toLowerCase()}.png',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: const Color(0xFFFF601F), // HbColors.brandPrimary
                   padding: const EdgeInsets.all(24),
                   child: Image.asset(
                     'assets/images/logo_picto_lehiboo.png',

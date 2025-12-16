@@ -114,7 +114,11 @@ class Event extends Equatable {
   // --- RICH CONTENT V2 ---
   final LocationDetails? locationDetails;
   final List<CoOrganizer> coOrganizers;
+
   final SocialMediaConfig? socialMedia;
+
+  // Added field for raw category slug (fallback image logic)
+  final String? rawCategorySlug;
 
   const Event({
     required this.id,
@@ -184,7 +188,9 @@ class Event extends Equatable {
     this.targetAudienceTerms = const [],
     this.locationDetails,
     this.coOrganizers = const [],
+
     this.socialMedia,
+    this.rawCategorySlug,
   });
 
   bool get isFree => priceType == PriceType.free;
@@ -390,7 +396,9 @@ class Event extends Equatable {
     List<TaxonomyTerm>? targetAudienceTerms,
     LocationDetails? locationDetails,
     List<CoOrganizer>? coOrganizers,
+
     SocialMediaConfig? socialMedia,
+    String? rawCategorySlug,
   }) {
     return Event(
       id: id ?? this.id,
@@ -459,7 +467,9 @@ class Event extends Equatable {
       targetAudienceTerms: targetAudienceTerms ?? this.targetAudienceTerms,
       locationDetails: locationDetails ?? this.locationDetails,
       coOrganizers: coOrganizers ?? this.coOrganizers,
+
       socialMedia: socialMedia ?? this.socialMedia,
+      rawCategorySlug: rawCategorySlug ?? this.rawCategorySlug,
     );
   }
 
@@ -532,5 +542,6 @@ class Event extends Equatable {
         locationDetails,
         coOrganizers,
         socialMedia,
+        rawCategorySlug, // Add to props
       ];
 }

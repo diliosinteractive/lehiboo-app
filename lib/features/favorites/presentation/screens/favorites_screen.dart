@@ -30,7 +30,7 @@ class FavoritesScreen extends ConsumerWidget {
     final favoritesAsync = ref.watch(favoritesProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+
       appBar: AppBar(
         title: const Text('Mes favoris'),
         backgroundColor: Colors.white,

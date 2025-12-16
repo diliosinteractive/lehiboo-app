@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../models/event_dto.dart';
 import '../models/event_availability_dto.dart';
+import '../models/home_feed_response_dto.dart';
 import '../../../../domain/entities/city.dart';
 import '../models/city_with_coordinates_dto.dart';
 
@@ -182,6 +183,34 @@ class EventsApiDataSource {
       }
     }
     throw Exception(data['data']?['message'] ?? 'Failed to load event');
+  }
+
+  Future<HomeFeedResponseDto> getHomeFeed({
+    double? lat,
+    double? lng,
+    int? radius,
+    int? limit,
+  }) async {
+    final queryParams = <String, dynamic>{};
+    if (lat != null) queryParams['lat'] = lat;
+    if (lng != null) queryParams['lng'] = lng;
+    if (radius != null) queryParams['radius'] = radius;
+    if (limit != null) queryParams['limit'] = limit;
+
+    final response = await _dio.get('/home-feed', queryParameters: queryParams);
+    final data = response.data;
+
+    if (data['success'] == true && data['data'] != null) {
+      debugPrint('getHomeFeed: Data received');
+      try {
+        return HomeFeedResponseDto.fromJson(data);
+      } catch (e, stack) {
+        debugPrint('getHomeFeed Error parsing DTO: $e');
+        debugPrint(stack.toString());
+        rethrow;
+      }
+    }
+    throw Exception(data['data']?['message'] ?? 'Failed to load home feed');
   }
 
   /// Fetch availability (slots & tickets) for an event

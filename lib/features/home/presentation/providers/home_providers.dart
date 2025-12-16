@@ -3,35 +3,83 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/city.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../events/domain/repositories/event_repository.dart';
 import '../../../events/data/mappers/event_to_activity_mapper.dart';
 import '../../data/models/mobile_app_config.dart';
+import 'user_location_provider.dart';
+import '../../../../features/events/data/models/home_feed_response_dto.dart';
+import '../../../../features/events/domain/entities/event.dart';
+import '../../../events/data/mappers/event_mapper.dart';
 
-/// Provider for recommended activities/events from the real API
-final homeActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
+// Unified Home Feed Provider
+final homeFeedProvider = FutureProvider<HomeFeedResponseDto>((ref) async {
   final eventRepository = ref.watch(eventRepositoryProvider);
+  final userLocationAsync = ref.watch(userLocationProvider);
+  
+  // Wait for location to resolve (or error/null) before fetching feed
+  // But don't block forever if location is disabled
+  final userLocation = userLocationAsync.valueOrNull;
+
+  return await eventRepository.getHomeFeed(
+    lat: userLocation?.lat,
+    lng: userLocation?.lng,
+    radius: userLocation != null ? 30 : null,
+    limit: 10,
+  );
+});
+
+/// Provider for TODAY's activities (derived from Feed)
+final homeTodayActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
+  final feedAsync = ref.watch(homeFeedProvider);
+  
+  return feedAsync.when(
+    data: (dto) {
+      if (dto.data?.today == null) return [];
+      final events = dto.data!.today.map(EventMapper.toEvent).toList();
+      return EventToActivityMapper.toActivities(events);
+    },
+    loading: () => [], // Return empty while loading feed (Handled by UI skeleton)
+    error: (err, stack) => [],
+  );
+});
+
+/// Provider for TOMORROW's activities (derived from Feed)
+final homeTomorrowActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
+  final feedAsync = ref.watch(homeFeedProvider);
+  
+  return feedAsync.when(
+    data: (dto) {
+      if (dto.data?.tomorrow == null) return [];
+      final events = dto.data!.tomorrow.map(EventMapper.toEvent).toList();
+      return EventToActivityMapper.toActivities(events);
+    },
+    loading: () => [],
+    error: (err, stack) => [],
+  );
+});
+
+/// Provider for recommended activities/events (derived from Feed)
+final homeActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
+  final feedAsync = ref.watch(homeFeedProvider);
 
   // FORCE DELAY TO SHOW SKELETON (User Request)
-  await Future.delayed(const Duration(seconds: 2));
-
-  try {
-    // Fetch events from real API
-    final result = await eventRepository.getEvents(
-      page: 1,
-      perPage: 10,
-      orderBy: 'date',
-      order: 'asc',
-    );
-
-    // Convert Event to Activity for compatibility with existing widgets
-    return EventToActivityMapper.toActivities(result.events);
-  } catch (e) {
-    // If real API fails, return empty list instead of crashing
-    return [];
-  }
+  // Moving delay here to affect all sections equally if they depend on feed?
+  // Or keep it per provider? The feed will take time anyway.
+  await Future.delayed(const Duration(seconds: 1)); // Reduced to 1s
+  
+  return feedAsync.when(
+    data: (dto) {
+      if (dto.data?.recommended == null) return [];
+      final events = dto.data!.recommended.map(EventMapper.toEvent).toList();
+      return EventToActivityMapper.toActivities(events);
+    },
+    loading: () => [],
+    error: (err, stack) => [],
+  );
 });
 
 /// Provider for featured/promoted activities

@@ -11,7 +11,7 @@ class AppTheme {
   static final lightTheme = ThemeData(
     useMaterial3: true,
     primaryColor: HbColors.brandPrimary,
-    scaffoldBackgroundColor: HbColors.graySoft,
+    scaffoldBackgroundColor: HbColors.orangePastel,
     
     // Color Scheme
     colorScheme: ColorScheme.fromSeed(
@@ -19,7 +19,7 @@ class AppTheme {
       primary: HbColors.brandPrimary,
       secondary: HbColors.brandSecondary,
       surface: HbColors.white,
-      background: HbColors.graySoft,
+      background: HbColors.orangePastel,
       error: HbColors.error,
     ),
 
@@ -71,7 +71,7 @@ class AppTheme {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         textStyle: GoogleFonts.montserrat(
-          fontSize: 16,
+          fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
       ),

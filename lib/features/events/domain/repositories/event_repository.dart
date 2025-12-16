@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../entities/event.dart';
 import '../../data/models/event_dto.dart';
+import '../../data/models/event_availability_dto.dart';
+import '../../data/models/home_feed_response_dto.dart';
 
 import '../../../../domain/entities/city.dart';
 
@@ -44,6 +46,13 @@ abstract class EventRepository {
   Future<List<ThematiqueDto>> getThematiques();
 
 
+
+  Future<HomeFeedResponseDto> getHomeFeed({
+    double? lat,
+    double? lng,
+    int? radius,
+    int? limit,
+  });
 
   Future<FiltersResponseDto> getFilters();
 }

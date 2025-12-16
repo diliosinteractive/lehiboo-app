@@ -448,12 +448,24 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.dilios.lehiboo',
               ),
-              eventsAsync.when(
-                data: (result) => MarkerLayer(
-                  markers: _buildMarkers(result.events),
-                ),
-                loading: () => const MarkerLayer(markers: []),
-                error: (_, __) => const MarkerLayer(markers: []),
+              // Marker Layer with "Previous Data" persistence
+              Builder(
+                builder: (context) {
+                  // If we have data, show it.
+                  if (eventsAsync.hasValue) {
+                     return MarkerLayer(
+                       markers: _buildMarkers(eventsAsync.value!.events),
+                     );
+                  }
+                  
+                  // If loading AND NO previous data (initial load)
+                  if (eventsAsync.isLoading) {
+                     return const MarkerLayer(markers: []);
+                  }
+                  
+                  // Error case
+                  return const MarkerLayer(markers: []);
+                },
               ),
               RichAttributionWidget(
                 attributions: [
@@ -576,33 +588,59 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
             left: 0,
             right: 0,
             height: 200,
-            child: eventsAsync.when(
-              data: (result) {
-                if (result.events.isEmpty) return const SizedBox.shrink();
+            child: Builder(
+              builder: (context) {
+                if (eventsAsync.hasValue) {
+                  final result = eventsAsync.value!;
+                  if (result.events.isEmpty) return const SizedBox.shrink();
+                  
+                  return PageView.builder(
+                    controller: _pageController,
+                    itemCount: result.events.length,
+                    onPageChanged: (index) => _onPageChanged(index, result.events),
+                    padEnds: true,
+                    itemBuilder: (context, index) {
+                      final event = result.events[index];
+                      return AnimatedBuilder(
+                        animation: _pageController,
+                        builder: (context, child) {
+                          double value = 1.0;
+                          if (_pageController.position.haveDimensions) {
+                            value = _pageController.page! - index;
+                            value = (1 - (value.abs() * 0.3)).clamp(0.85, 1.0);
+                          } else {
+                             value = (index == (_selectedIndex == -1 ? 0 : _selectedIndex)) ? 1.0 : 0.85;
+                          }
+                          return Center(
+                            child: SizedBox(
+                              height: Curves.easeOut.transform(value) * 200,
+                              width: Curves.easeOut.transform(value) * 350,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: MapEventCard(activity: _eventToActivity(event)),
+                        ),
+                      );
+                    },
+                  );
+                }
                 
-                return PageView.builder(
-                  controller: _pageController,
-                  itemCount: result.events.length,
-                  onPageChanged: (index) => _onPageChanged(index, result.events),
-                  padEnds: true, 
-                  itemBuilder: (context, index) {
-                    final event = result.events[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: MapEventCard(activity: _eventToActivity(event)),
-                    );
-                  },
-                );
+                if (eventsAsync.isLoading) {
+                   return const Center(
+                    child: Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                  );
+                }
+                
+                return const SizedBox.shrink();
               },
-              loading: () => const Center(
-                child: Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-              ),
-              error: (_,__) => const SizedBox.shrink(),
             ),
           ),
         ],

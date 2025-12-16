@@ -28,7 +28,7 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
     final alertsAsync = ref.watch(alertsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+
       appBar: AppBar(
         title: const Text(
           'Mes Alertes & Recherches',

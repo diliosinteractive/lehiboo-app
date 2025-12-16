@@ -220,6 +220,7 @@ _$EventLocationDtoImpl _$$EventLocationDtoImplFromJson(
       city: _parseStringOrNull(json['city']),
       lat: _parseDoubleOrNull(json['lat']),
       lng: _parseDoubleOrNull(json['lng']),
+      distanceKm: _parseDoubleOrNull(json['distance_km']),
     );
 
 Map<String, dynamic> _$$EventLocationDtoImplToJson(
@@ -230,6 +231,7 @@ Map<String, dynamic> _$$EventLocationDtoImplToJson(
       'city': instance.city,
       'lat': instance.lat,
       'lng': instance.lng,
+      'distance_km': instance.distanceKm,
     };
 
 _$EventOrganizerDtoImpl _$$EventOrganizerDtoImplFromJson(

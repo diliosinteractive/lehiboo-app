@@ -6,6 +6,7 @@ import 'package:lehiboo/features/events/domain/repositories/event_repository.dar
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
+import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart'; // Import Alerts
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 
 /// Provider for events list from real API
@@ -171,10 +172,13 @@ class EventListScreen extends ConsumerStatefulWidget {
 
 class _EventListScreenState extends ConsumerState<EventListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
+    
     // Initialize category filter from widget parameter if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final filterNotifier = ref.read(eventFilterProvider.notifier);
@@ -198,7 +202,19 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      final filteredEventsState = ref.read(filteredEventsProvider);
+      filteredEventsState.whenData((data) {
+        if (data.hasMore && !filteredEventsState.isLoading) {
+           ref.read(eventFilterProvider.notifier).nextPage();
+        }
+      });
+    }
   }
 
   @override
@@ -209,7 +225,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
     final eventsAsync = ref.watch(filteredEventsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+
       appBar: AppBar(
         title: Text(widget.title ?? 'Explorer les événements'),
         backgroundColor: Colors.white,
@@ -269,7 +285,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               height: 40,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 children: [
                   _QuickFilterChip(
                     label: "Aujourd'hui",
@@ -350,7 +366,10 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
           // Events list
           Expanded(
             child: eventsAsync.when(
-              data: (activities) {
+              data: (paginatedData) {
+                final activities = paginatedData.activities;
+                final hasMore = paginatedData.hasMore;
+                
                 if (activities.isEmpty) {
                   return _buildEmptyState(filter);
                 }
@@ -359,33 +378,184 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                     ref.invalidate(filteredEventsProvider);
                   },
                   color: const Color(0xFFFF601F),
-                  child: GridView.builder(
+                  child: ListView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.50,
-                    ),
-                    itemCount: activities.length,
+                    itemCount: activities.length + 1, // +1 for loader/footer
                     itemBuilder: (context, index) {
-                      return EventCard(
-                        activity: activities[index],
-                        isCompact: true,
+                      if (index == activities.length) {
+                        // Footer
+                        if (hasMore) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 32),
+                            child: Center(
+                              child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                            ),
+                          );
+                        } else {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
+                            child: Column(
+                              children: [
+                                const Text(
+                                  "C'est tout pour le moment !",
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: () => _saveCurrentSearch(context, isAlert: true),
+                                  icon: const Icon(Icons.notifications_active_outlined),
+                                  label: const Text('M\'alerter des nouveautés'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF1E3A8A),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 50),
+                              ],
+                            ),
+                          );
+                        }
+                      }
+                      
+                      // Using GridView inside ListView via index mapping is tricky, changed to ListView with cards for simplicity
+                      // Or if we want Grid:
+                      // Getting a grid inside expanded with infinite scroll:
+                      // Actually users usually prefer list or grid. The previous code used GridView.builder.
+                      // To keep GridView with infinite scroll loader at bottom:
+                      
+                      // We can return a tailored item. But GridView itembuilder builds cells. 
+                      // If we want a loader at the bottom of a grid, the grid needs to span full width.
+                      // Easier to use CustomScrollView with SliverGrid and SliverToBoxAdapter for loader.
+                      
+                      return Padding(
+                         padding: const EdgeInsets.only(bottom: 12),
+                         child: EventCard(activity: activities[index]),
                       );
                     },
                   ),
                 );
               },
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFF601F)),
-              ),
+              loading: () {
+                 // Handle re-loading with data
+                 final previousData = eventsAsync.valueOrNull;
+                 if (previousData != null && previousData.activities.isNotEmpty) {
+                    final activities = previousData.activities;
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: activities.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == activities.length) {
+                           return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 32),
+                            child: Center(
+                              child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                            ),
+                          );
+                        }
+                        return Padding(
+                           padding: const EdgeInsets.only(bottom: 12),
+                           child: EventCard(activity: activities[index]),
+                        );
+                      },
+                    );
+                 }
+              
+                 return const Center(
+                   child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                 );
+              },
               error: (error, stack) => _buildErrorState(error.toString()),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _saveCurrentSearch(BuildContext context, {bool isAlert = false}) async {
+    final filter = ref.read(eventFilterProvider);
+    
+    String defaultName = filter.searchQuery;
+    if (defaultName.isEmpty && filter.cityName != null) {
+      defaultName = filter.cityName!;
+    }
+    if (defaultName.isEmpty) {
+      defaultName = isAlert ? 'Mon Alerte' : 'Ma Recherche';
+    }
+
+    final nameController = TextEditingController(text: defaultName);
+
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isAlert ? 'Créer une alerte' : 'Enregistrer la recherche'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isAlert 
+                ? 'Donnez un nom à cette alerte pour la retrouver facilement :'
+                : 'Donnez un nom à cette recherche pour la retrouver facilement :'
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Nom',
+                border: OutlineInputBorder(),
+                hintText: 'Ex: Concerts à Paris',
+              ),
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                Navigator.pop(context, nameController.text.trim());
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF601F),
+            ),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null) return;
+
+    await ref.read(alertsProvider.notifier).createAlert(
+      name: name,
+      filter: filter,
+      isAlert: isAlert,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isAlert 
+            ? 'Alerte "$name" créée avec succès !' 
+            : 'Recherche "$name" enregistrée !'
+          ),
+          backgroundColor: const Color(0xFF1E3A8A),
+        ),
+      );
+    }
   }
 
   Widget _buildEmptyState(EventFilter filter) {
@@ -477,7 +647,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
-              ),
+                ),
               textAlign: TextAlign.center,
             ),
           ),

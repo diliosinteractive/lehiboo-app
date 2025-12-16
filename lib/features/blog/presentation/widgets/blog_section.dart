@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/blog_providers.dart';
 import 'blog_post_card.dart';
@@ -18,12 +19,12 @@ class BlogSection extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Derniers articles',
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A),
+                  color: const Color(0xFF1A1A1A),
                 ),
               ),
               TextButton(

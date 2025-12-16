@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -36,12 +37,12 @@ class ThematiquesSection extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     "Explorer par type d'événement",
-                    style: TextStyle(
+                    style: GoogleFonts.montserrat(
                       fontSize: 19, // Slightly smaller to fit "type d'événement"
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
+                      color: const Color(0xFF2D3748),
                     ),
                   ),
                   TextButton(
@@ -328,30 +329,8 @@ class CategoryTypeCard extends StatelessWidget {
   }
 
   String? _getLocalAsset(String slug) {
-    const assets = {
-      'concert': 'assets/images/thematiques/concert.png',
-      'spectacle': 'assets/images/thematiques/spectacle.png',
-      'sport': 'assets/images/thematiques/sport.png',
-      'atelier': 'assets/images/thematiques/atelier.png',
-      'exposition': 'assets/images/thematiques/exposition.png',
-      'festival': 'assets/images/thematiques/festival.png',
-      'automobile': 'assets/images/thematiques/automobile.png',
-      'couture': 'assets/images/thematiques/couture.png',
-      'cuisine': 'assets/images/thematiques/cuisine.png',
-      'informatique': 'assets/images/thematiques/informatique.png',
-      'cinema': 'assets/images/thematiques/cinema.png',
-      'conference': 'assets/images/thematiques/conference.png',
-      
-      // Category specific mappings
-      'theatre': 'assets/images/thematiques/spectacle.png',
-      'musique': 'assets/images/thematiques/concert.png',
-      'marche': 'assets/images/thematiques/cuisine.png', // Fallback for market
-      'formation': 'assets/images/thematiques/conference.png',
-      'loisirs': 'assets/images/thematiques/atelier.png',
-      'culture': 'assets/images/thematiques/exposition.png',
-      'autre': 'assets/images/thematiques/atelier.png',
-    };
-    return assets[slug.toLowerCase()];
+    if (slug.isEmpty) return null;
+    return 'assets/images/thematiques/${slug.toLowerCase()}.png';
   }
 
   Color _getCategoryColor(String slug) {

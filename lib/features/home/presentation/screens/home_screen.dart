@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
@@ -15,10 +16,11 @@ import '../../../../config/dio_client.dart';
 import '../../data/models/mobile_app_config.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
-import '../providers/home_providers.dart';
+
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
 import '../widgets/home_cities_section.dart';
+import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
 // ... existing code ...
@@ -62,7 +64,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final activitiesAsyncValue = ref.watch(homeActivitiesProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      // backgroundColor removed to inherit from Theme (HbColors.orangePastel)
       appBar: AppBar(
         backgroundColor: const Color(0xFFFF601F), // Brand Orange
         elevation: 0,
@@ -129,17 +131,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildActivitySection(
+                  context,
+                  ref,
+                  provider: homeTodayActivitiesProvider,
+                  baseTitle: 'Activités disponibles aujourd\'hui',
+                  emptyMessage: 'Aucune activité pour aujourd\'hui',
+                  viewAllPath: '/search?date=today',
+                ),
+                _buildActivitySection(
+                  context,
+                  ref,
+                  provider: homeTomorrowActivitiesProvider,
+                  baseTitle: 'Activités disponibles demain',
+                  emptyMessage: 'Aucune activité pour demain',
+                  viewAllPath: '/search?date=tomorrow',
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Les recommandations',
-                        style: TextStyle(
+                        style: GoogleFonts.montserrat(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
+                          color: const Color(0xFF2D3748),
                         ),
                       ),
                       TextButton(
@@ -166,7 +184,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       );
                     }
                     return SizedBox(
-                      height: 340, // Reduced from 400
+                      height: 420, // Increased from 340 to 420 to fit new EventCard design
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -183,7 +201,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     );
                   },
                   loading: () => SizedBox(
-                    height: 400,
+                    height: 420,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -227,9 +245,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Retrouvez vos événements en toute simplicité',
-                        style: TextStyle(
+                        style: GoogleFonts.montserrat(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -289,13 +307,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         color: Color(0xFFFF601F),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Nos meilleures découvertes dans votre boîte mail',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: GoogleFonts.montserrat(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
+                          color: const Color(0xFF2D3748),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -383,94 +401,118 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       greetingMessage = '$greeting ${currentUser.firstName} !';
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        // Use image if available, otherwise gradient
-        image: hasImage
-            ? DecorationImage(
-                image: CachedNetworkImageProvider(heroConfig.image),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.4),
-                  BlendMode.darken,
-                ),
-              )
-            : null,
-        gradient: hasImage
-            ? null
-            : const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF1E3A8A), // Bleu foncé
-                  Color(0xFF3B82F6), // Bleu clair
-                ],
-              ),
-      ),
-      child: Column(
-        children: [
-          // Texte d'accroche - Dynamic from config
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Message de bienvenue personnalisé pour les utilisateurs connectés
-                if (greetingMessage != null) ...[
-                  Text(
-                    greetingMessage,
-                    style: const TextStyle(
-                      color: Color(0xFFFF601F), // Orange Le Hiboo
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(0, 1),
-                          blurRadius: 3,
-                          color: Colors.black26,
-                        ),
+    return Stack(
+      children: [
+        // Layer 1: Background Image or Gradient (Bottom)
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              image: hasImage
+                  ? DecorationImage(
+                      image: CachedNetworkImageProvider(heroConfig.image),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              gradient: hasImage
+                  ? null
+                  : const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF1E3A8A), // Bleu foncé
+                        Color(0xFF3B82F6), // Bleu clair
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                Text(
-                  heroConfig.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    height: 1.3,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(0, 1),
-                        blurRadius: 3,
-                        color: Colors.black45,
-                      ),
-                    ],
-                  ),
-                ),
-                if (heroConfig.subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    heroConfig.subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      shadows: const [
-                        Shadow(
-                          offset: Offset(0, 1),
-                          blurRadius: 2,
-                          color: Colors.black38,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
             ),
           ),
+        ),
+        
+        // Layer 2: Black Gradient Overlay (Middle)
+        if (hasImage)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.7), // Strong darkness at top
+                    Colors.black.withOpacity(0.3),
+                    Colors.transparent, // Clear at bottom
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+          ),
+
+        // Layer 3: Content (Top)
+        Column(
+          mainAxisSize: MainAxisSize.min, // S'adapte au contenu
+          children: [
+            // Texte d'accroche - Dynamic from config
+            Padding(
+              // Increased top padding to "aerated" the header as requested
+              padding: const EdgeInsets.fromLTRB(20, 180, 20, 24), 
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Message de bienvenue personnalisé pour les utilisateurs connectés
+                  if (greetingMessage != null) ...[
+                    Text(
+                      greetingMessage,
+                      style: GoogleFonts.montserrat(
+                        color: const Color(0xFFFF601F), // Orange Le Hiboo
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        shadows: [
+                          Shadow(
+                            offset: const Offset(0, 1),
+                            blurRadius: 4,
+                            color: Colors.black.withValues(alpha: 0.8),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  Text(
+                    heroConfig.title,
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                      shadows: [
+                        Shadow(
+                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                          color: Colors.black.withValues(alpha: 0.9),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (heroConfig.subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      heroConfig.subtitle,
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white.withValues(alpha: 0.95),
+                        fontSize: 17,
+                        fontWeight: FontWeight.w500,
+                        shadows: [
+                          Shadow(
+                            offset: const Offset(0, 1),
+                            blurRadius: 3,
+                            color: Colors.black.withValues(alpha: 0.8),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           // Bloc de recherche
           Container(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
@@ -640,8 +682,112 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
           ),
-        ],
-      ),
+        ], // Close Main Column children
+      ), // Close Main Column
+      ], // Closing Stack children
+    ); // Closing Stack
+  }
+
+
+
+  Widget _buildActivitySection(
+    BuildContext context,
+    WidgetRef ref, {
+    required FutureProvider<List<Activity>> provider,
+    required String baseTitle,
+    required String emptyMessage,
+    required String viewAllPath,
+  }) {
+    final activitiesAsyncValue = ref.watch(provider);
+    final userLocationAsync = ref.watch(userLocationProvider);
+    final cityName = userLocationAsync.value?.cityName;
+    
+    // Construct dynamic title: "Title • City >" 
+    final title = cityName != null ? '$baseTitle • $cityName' : baseTitle;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2D3748),
+                    // Add Highlight effect like in screenshot? 
+                    // For now, user just asked for the sections.
+                    // To do "highlight" style we would need a Stack/Container behind text.
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton( // Arrow or "Voir tout"
+                 icon: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF2D3748)),
+                 onPressed: () => context.push(viewAllPath),
+              )
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        activitiesAsyncValue.when(
+          data: (activities) {
+            if (activities.isEmpty) {
+              // Hide section if empty? Or show message? 
+              // User said "put 10". If 0, maybe hide to avoid clutter.
+              // But let's show empty message for clarity during dev.
+              return SizedBox.shrink(); 
+              /* return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(emptyMessage, style: TextStyle(color: Colors.grey[600])),
+              ); */
+            }
+            return SizedBox(
+              height: 420,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: activities.length,
+                itemBuilder: (context, index) {
+                  final activity = activities[index];
+                  return Container(
+                    width: 200,
+                    margin: const EdgeInsets.only(right: 16),
+                    child: EventCard(
+                      activity: activity, 
+                      isCompact: true,
+                      showTimeBadge: true, // Show time for Today/Tomorrow lists
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+          loading: () => SizedBox(
+            height: 420,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: 3,
+              itemBuilder: (context, index) {
+                return Container(
+                  width: 200,
+                  margin: const EdgeInsets.only(right: 16),
+                  child: const SkeletonEventCard(),
+                );
+              },
+            ),
+          ),
+          error: (err, stack) => SizedBox.shrink(), // Silent error
+        ),
+        const SizedBox(height: 24), // Spacing between sections
+      ],
     );
   }
 
@@ -664,12 +810,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   const Text(
+                   Text(
                     'Vos recherches',
-                    style: TextStyle(
+                    style: GoogleFonts.montserrat(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
+                      color: const Color(0xFF2D3748),
                     ),
                   ),
                   // "Effacer tout" feature might not be directly supported by batch delete API yet
@@ -865,10 +1011,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
             'Top 6 des villes',
-            style: const TextStyle(
+            style: GoogleFonts.montserrat(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
+              color: const Color(0xFF2D3748),
             ),
           ),
         ),

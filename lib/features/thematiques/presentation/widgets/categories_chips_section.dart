@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:html_unescape/html_unescape.dart';
+
 import 'package:html_unescape/html_unescape.dart';
 import '../providers/thematiques_provider.dart';
 import '../../../home/presentation/providers/home_providers.dart';
@@ -49,12 +50,12 @@ class CategoriesChipsSection extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Toutes les catégories',
-                    style: TextStyle(
+                    style: GoogleFonts.montserrat(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
+                      color: const Color(0xFF2D3748),
                     ),
                   ),
                   TextButton(

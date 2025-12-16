@@ -1,6 +1,7 @@
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/taxonomy.dart';
 import '../../../../domain/entities/city.dart';
+import '../../../../domain/entities/partner.dart';
 import '../../domain/entities/event.dart';
 
 /// Maps Event entities (from real API) to Activity entities (used by existing widgets)
@@ -11,7 +12,7 @@ class EventToActivityMapper {
     if (event.category != EventCategory.other) {
       category = Category(
         id: event.category.index.toString(),
-        slug: _categoryToSlug(event.category),
+        slug: event.rawCategorySlug ?? _categoryToSlug(event.category),
         name: event.categoryLabel,
       );
     }
@@ -83,6 +84,15 @@ class EventToActivityMapper {
               : IndoorOutdoor.outdoor,
       durationMinutes: event.duration?.inMinutes,
       city: city,
+      partner: Partner(
+        id: event.organizerId,
+        name: event.organizerName,
+        logoUrl: event.organizerLogo,
+        description: event.organizerDescription,
+        email: event.contactEmail,
+        phone: event.contactPhone,
+        website: event.website,
+      ),
       nextSlot: nextSlot,
     );
   }

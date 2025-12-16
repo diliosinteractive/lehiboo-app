@@ -14,7 +14,7 @@ class ProfileScreen extends ConsumerWidget {
     final isAuthenticated = authState.isAuthenticated;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+
       appBar: AppBar(
         title: const Text('Profil'),
         backgroundColor: Colors.white,

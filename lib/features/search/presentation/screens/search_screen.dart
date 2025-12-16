@@ -27,9 +27,13 @@ class SearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
+    
     // Initialize filters if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final filterNotifier = ref.read(eventFilterProvider.notifier);
@@ -50,6 +54,35 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         _showSearchBottomSheet();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      final filteredEventsState = ref.read(filteredEventsProvider);
+      filteredEventsState.whenData((data) {
+        if (data.hasMore) {
+          // Debounce/Throttle could be added here if needed, but repository can handle concurrent calls
+          // or we can check a local loading flag. For now, rely on repo/provider stability.
+          // Better: Check if we are already fetching? The provider is AsyncNotifier, 
+          // but we don't have an explicit "isLoadingMore" exposed easily in the 'data' part 
+          // unless we add it to state. 
+          // We'll trust the logic: if we are at bottom, request next page.
+          // The provider build logic handles page increments.
+          
+          // Wait, we need to only trigger if NOT already loading.
+          // The AsyncValue.isLoading is true when fetching.
+          if (!filteredEventsState.isLoading) {
+             ref.read(eventFilterProvider.notifier).nextPage();
+          }
+        }
+      });
+    }
   }
 
   void _showSearchBottomSheet() {
@@ -186,9 +219,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final filter = ref.watch(eventFilterProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+
       body: SafeArea(
         child: CustomScrollView(
+          controller: _scrollController,
           slivers: [
             // Floating App Bar with Search
             SliverAppBar(
@@ -323,7 +357,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             
             // Results section
              filteredEvents.when(
-                data: (activities) {
+                data: (paginatedData) {
+                  final activities = paginatedData.activities;
+                  
                   if (activities.isEmpty) {
                     return SliverFillRemaining(
                       child: _EmptyResults(
@@ -338,19 +374,44 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   return SliverMainAxisGroup(
                     slivers: _buildResultsSlivers(
                       activities: activities,
+                      hasMore: paginatedData.hasMore,
                       filter: filter,
                       context: context,
                       ref: ref,
                     ),
                   );
                 },
-                loading: () => const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFFF601F),
+                loading: () {
+                   // If we have data (previous state), show it with loading at bottom
+                   // But AsyncNotifier.when default handling often shows loading immediately entirely.
+                   // We need to handle 'skipLoadingOnReload: true' or check if value exists.
+                   
+                   // Actually, if we are scrolling (pagination), we want to show the list AND the loader.
+                   // AsyncValue.when(skipLoadingOnReload: true) is not available directly on the method but 
+                   // we can check .hasValue.
+                   
+                   final previousData = filteredEvents.valueOrNull;
+                   if (previousData != null && previousData.activities.isNotEmpty) {
+                      return SliverMainAxisGroup(
+                        slivers: _buildResultsSlivers(
+                          activities: previousData.activities,
+                          hasMore: true, // If loading, assumption is likely true or just show spinner
+                          isLoadingMore: true,
+                          filter: filter,
+                          context: context,
+                          ref: ref,
+                        ),
+                      );
+                   }
+                
+                   return const SliverFillRemaining(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFFF601F),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
                 error: (error, _) => SliverFillRemaining(
                   child: Center(
                     child: Column(
@@ -376,6 +437,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
   List<Widget> _buildResultsSlivers({
     required List<dynamic> activities,
+    required bool hasMore,
+    bool isLoadingMore = false,
     required EventFilter filter,
     required BuildContext context,
     required WidgetRef ref,
@@ -444,10 +507,51 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
       ),
-      // Bottom padding
-      const SliverToBoxAdapter(
-        child: SizedBox(height: 100),
-      ),
+      
+      // Loading indicator or "Alert Me" button
+      if (hasMore || isLoadingMore) 
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: CircularProgressIndicator(
+                 color: Color(0xFFFF601F),
+              ),
+            ),
+          ),
+        )
+      else
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+            child: Column(
+              children: [
+                const Text(
+                  "C'est tout pour le moment !",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _showCreateAlertDialog(context),
+                  icon: const Icon(Icons.notifications_active_outlined),
+                  label: const Text('M\'alerter des nouveautés'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E3A8A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 50), // Bottom padding
+              ],
+            ),
+          ),
+        ),
     ];
   }
 

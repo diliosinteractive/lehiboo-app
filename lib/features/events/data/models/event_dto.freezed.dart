@@ -2648,6 +2648,8 @@ mixin _$EventLocationDto {
   double? get lat => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseDoubleOrNull)
   double? get lng => throw _privateConstructorUsedError;
+  @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
+  double? get distanceKm => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -2667,7 +2669,9 @@ abstract class $EventLocationDtoCopyWith<$Res> {
       @JsonKey(fromJson: _parseStringOrNull) String? address,
       @JsonKey(fromJson: _parseStringOrNull) String? city,
       @JsonKey(fromJson: _parseDoubleOrNull) double? lat,
-      @JsonKey(fromJson: _parseDoubleOrNull) double? lng});
+      @JsonKey(fromJson: _parseDoubleOrNull) double? lng,
+      @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
+      double? distanceKm});
 }
 
 /// @nodoc
@@ -2688,6 +2692,7 @@ class _$EventLocationDtoCopyWithImpl<$Res, $Val extends EventLocationDto>
     Object? city = freezed,
     Object? lat = freezed,
     Object? lng = freezed,
+    Object? distanceKm = freezed,
   }) {
     return _then(_value.copyWith(
       venueName: freezed == venueName
@@ -2710,6 +2715,10 @@ class _$EventLocationDtoCopyWithImpl<$Res, $Val extends EventLocationDto>
           ? _value.lng
           : lng // ignore: cast_nullable_to_non_nullable
               as double?,
+      distanceKm: freezed == distanceKm
+          ? _value.distanceKm
+          : distanceKm // ignore: cast_nullable_to_non_nullable
+              as double?,
     ) as $Val);
   }
 }
@@ -2728,7 +2737,9 @@ abstract class _$$EventLocationDtoImplCopyWith<$Res>
       @JsonKey(fromJson: _parseStringOrNull) String? address,
       @JsonKey(fromJson: _parseStringOrNull) String? city,
       @JsonKey(fromJson: _parseDoubleOrNull) double? lat,
-      @JsonKey(fromJson: _parseDoubleOrNull) double? lng});
+      @JsonKey(fromJson: _parseDoubleOrNull) double? lng,
+      @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
+      double? distanceKm});
 }
 
 /// @nodoc
@@ -2747,6 +2758,7 @@ class __$$EventLocationDtoImplCopyWithImpl<$Res>
     Object? city = freezed,
     Object? lat = freezed,
     Object? lng = freezed,
+    Object? distanceKm = freezed,
   }) {
     return _then(_$EventLocationDtoImpl(
       venueName: freezed == venueName
@@ -2769,6 +2781,10 @@ class __$$EventLocationDtoImplCopyWithImpl<$Res>
           ? _value.lng
           : lng // ignore: cast_nullable_to_non_nullable
               as double?,
+      distanceKm: freezed == distanceKm
+          ? _value.distanceKm
+          : distanceKm // ignore: cast_nullable_to_non_nullable
+              as double?,
     ));
   }
 }
@@ -2782,7 +2798,9 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
       @JsonKey(fromJson: _parseStringOrNull) this.address,
       @JsonKey(fromJson: _parseStringOrNull) this.city,
       @JsonKey(fromJson: _parseDoubleOrNull) this.lat,
-      @JsonKey(fromJson: _parseDoubleOrNull) this.lng});
+      @JsonKey(fromJson: _parseDoubleOrNull) this.lng,
+      @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
+      this.distanceKm});
 
   factory _$EventLocationDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$EventLocationDtoImplFromJson(json);
@@ -2802,10 +2820,13 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
   @override
   @JsonKey(fromJson: _parseDoubleOrNull)
   final double? lng;
+  @override
+  @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
+  final double? distanceKm;
 
   @override
   String toString() {
-    return 'EventLocationDto(venueName: $venueName, address: $address, city: $city, lat: $lat, lng: $lng)';
+    return 'EventLocationDto(venueName: $venueName, address: $address, city: $city, lat: $lat, lng: $lng, distanceKm: $distanceKm)';
   }
 
   @override
@@ -2818,13 +2839,15 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
             (identical(other.address, address) || other.address == address) &&
             (identical(other.city, city) || other.city == city) &&
             (identical(other.lat, lat) || other.lat == lat) &&
-            (identical(other.lng, lng) || other.lng == lng));
+            (identical(other.lng, lng) || other.lng == lng) &&
+            (identical(other.distanceKm, distanceKm) ||
+                other.distanceKm == distanceKm));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode =>
-      Object.hash(runtimeType, venueName, address, city, lat, lng);
+      Object.hash(runtimeType, venueName, address, city, lat, lng, distanceKm);
 
   @JsonKey(ignore: true)
   @override
@@ -2843,13 +2866,14 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
 
 abstract class _EventLocationDto implements EventLocationDto {
   const factory _EventLocationDto(
-          {@JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
-          final String? venueName,
-          @JsonKey(fromJson: _parseStringOrNull) final String? address,
-          @JsonKey(fromJson: _parseStringOrNull) final String? city,
-          @JsonKey(fromJson: _parseDoubleOrNull) final double? lat,
-          @JsonKey(fromJson: _parseDoubleOrNull) final double? lng}) =
-      _$EventLocationDtoImpl;
+      {@JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+      final String? venueName,
+      @JsonKey(fromJson: _parseStringOrNull) final String? address,
+      @JsonKey(fromJson: _parseStringOrNull) final String? city,
+      @JsonKey(fromJson: _parseDoubleOrNull) final double? lat,
+      @JsonKey(fromJson: _parseDoubleOrNull) final double? lng,
+      @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
+      final double? distanceKm}) = _$EventLocationDtoImpl;
 
   factory _EventLocationDto.fromJson(Map<String, dynamic> json) =
       _$EventLocationDtoImpl.fromJson;
@@ -2869,6 +2893,9 @@ abstract class _EventLocationDto implements EventLocationDto {
   @override
   @JsonKey(fromJson: _parseDoubleOrNull)
   double? get lng;
+  @override
+  @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
+  double? get distanceKm;
   @override
   @JsonKey(ignore: true)
   _$$EventLocationDtoImplCopyWith<_$EventLocationDtoImpl> get copyWith =>

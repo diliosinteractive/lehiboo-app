@@ -291,6 +291,20 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Widget _buildHeroGallery(Event event) {
     if (event.images.isEmpty) {
+      if (event.rawCategorySlug != null) {
+        return Image.asset(
+          'assets/images/thematiques/${event.rawCategorySlug!.toLowerCase()}.png',
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 400,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey[200],
+              child: const Center(child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey)),
+            );
+          },
+        );
+      }
        return Container(
          color: Colors.grey[200],
          child: const Center(child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey)),
@@ -330,7 +344,19 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 placeholder: (context, url) => Container(color: Colors.grey[100]),
-                errorWidget: (context, url, err) => Container(color: Colors.grey[200]),
+                errorWidget: (context, url, err) {
+                  // Fallback 1: Theme Image
+                  if (event.rawCategorySlug != null) {
+                    return Image.asset(
+                      'assets/images/thematiques/${event.rawCategorySlug!.toLowerCase()}.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(color: Colors.grey[200]);
+                      },
+                    );
+                  }
+                  return Container(color: Colors.grey[200]);
+                },
               ),
             );
           }).toList(),

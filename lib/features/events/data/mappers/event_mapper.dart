@@ -145,6 +145,7 @@ class EventMapper {
       timeSlots: timeSlots,
       calendar: dto.calendar != null ? CalendarConfig.fromJson(dto.calendar!) : null,
       recurrence: dto.recurrence != null ? RecurrenceConfig.fromJson(dto.recurrence!) : null,
+      duration: dto.dates?.durationMinutes != null ? Duration(minutes: dto.dates!.durationMinutes!) : null,
       extraServices: dto.extraServices?.map((e) => ExtraService.fromJson(e as Map<String, dynamic>)).toList() ?? [],
       coupons: dto.coupons?.map((e) => Coupon.fromJson(e as Map<String, dynamic>)).toList() ?? [],
       seatConfig: dto.seatConfig != null ? SeatConfig.fromJson(dto.seatConfig!) : null,
@@ -162,6 +163,7 @@ class EventMapper {
         url: e.profileUrl,
       )).toList() ?? [],
       socialMedia: dto.socialMedia != null ? SocialMediaConfig.fromJson(dto.socialMedia!) : null,
+      rawCategorySlug: dto.category?.slug,
     );
   }
 

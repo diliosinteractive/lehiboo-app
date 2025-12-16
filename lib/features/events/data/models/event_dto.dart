@@ -192,6 +192,7 @@ class EventLocationDto with _$EventLocationDto {
     @JsonKey(fromJson: _parseStringOrNull) String? city,
     @JsonKey(fromJson: _parseDoubleOrNull) double? lat,
     @JsonKey(fromJson: _parseDoubleOrNull) double? lng,
+    @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull) double? distanceKm,
   }) = _EventLocationDto;
 
   factory EventLocationDto.fromJson(Map<String, dynamic> json) =>

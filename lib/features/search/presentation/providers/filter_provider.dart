@@ -351,41 +351,134 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
   }
 }
 
-/// Provider for filtered events results
-final filteredEventsProvider = FutureProvider<List<Activity>>((ref) async {
-  final filter = ref.watch(eventFilterProvider);
-  final eventRepository = ref.watch(eventRepositoryProvider);
+/// State class for paginated results
+class PaginatedActivities {
+  final List<Activity> activities;
+  final bool hasMore;
+  final bool isLoadingMore;
 
-  try {
-    // Convert DateTime to String format for API
-    String? dateFromStr;
-    String? dateToStr;
-    if (filter.startDate != null) {
-      dateFromStr = '${filter.startDate!.year}-${filter.startDate!.month.toString().padLeft(2, '0')}-${filter.startDate!.day.toString().padLeft(2, '0')}';
-    }
-    if (filter.endDate != null) {
-      dateToStr = '${filter.endDate!.year}-${filter.endDate!.month.toString().padLeft(2, '0')}-${filter.endDate!.day.toString().padLeft(2, '0')}';
-    }
+  const PaginatedActivities({
+    required this.activities,
+    required this.hasMore,
+    this.isLoadingMore = false,
+  });
 
-    final result = await eventRepository.getEvents(
-      search: filter.searchQuery.isNotEmpty ? filter.searchQuery : null,
-      thematique: filter.thematiquesSlugs.isNotEmpty ? filter.thematiquesSlugs.first : null,
-      categorySlug: filter.categoriesSlugs.isNotEmpty ? filter.categoriesSlugs.first : null,
-      location: filter.citySlug,
-      dateFrom: dateFromStr,
-      dateTo: dateToStr,
-      lat: filter.latitude,
-      lng: filter.longitude,
-      radius: filter.latitude != null ? filter.radiusKm.toInt() : null,
-      perPage: filter.perPage,
-      page: filter.page,
+  PaginatedActivities copyWith({
+    List<Activity>? activities,
+    bool? hasMore,
+    bool? isLoadingMore,
+  }) {
+    return PaginatedActivities(
+      activities: activities ?? this.activities,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
-
-    return EventToActivityMapper.toActivities(result.events);
-  } catch (e) {
-    return [];
   }
+}
+
+/// Notifier for filtered events results with pagination support
+final filteredEventsProvider = AsyncNotifierProvider<FilteredEventsNotifier, PaginatedActivities>(() {
+  return FilteredEventsNotifier();
 });
+
+class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
+  // Keep track of the *current* filter hash/signature to detect changes
+  // We can't rely just on ref.watch in build() because we manipulate state
+  // differently for page changes vs filter changes.
+  EventFilter? _lastFilter;
+
+  @override
+  Future<PaginatedActivities> build() async {
+    final filter = ref.watch(eventFilterProvider);
+    final eventRepository = ref.watch(eventRepositoryProvider);
+    
+    // Check if keys changed (excluding page)
+    final isNewSearch = _isDifferentSearch(filter);
+    _lastFilter = filter;
+
+    // If it's a new search, or if we are verifying valid initial build
+    // But wait, if page > 1, it means we triggered loadMore. 
+    // BUT ref.watch(filter) will trigger rebuild every time page increments in filter. 
+    // So we need to handle that.
+    
+    // Actually, `EventFilterNotifier` updates state.page which triggers this build.
+    // If page == 1, it's a fresh search.
+    // If page > 1, it's a load more.
+    
+    // HOWEVER, we need to access the *previous* state data to append if page > 1.
+    final previousActivities = state.valueOrNull?.activities ?? [];
+
+    try {
+      // Prepare query params
+      String? dateFromStr;
+      String? dateToStr;
+      if (filter.startDate != null) {
+        dateFromStr = '${filter.startDate!.year}-${filter.startDate!.month.toString().padLeft(2, '0')}-${filter.startDate!.day.toString().padLeft(2, '0')}';
+      }
+      if (filter.endDate != null) {
+        dateToStr = '${filter.endDate!.year}-${filter.endDate!.month.toString().padLeft(2, '0')}-${filter.endDate!.day.toString().padLeft(2, '0')}';
+      }
+
+      final result = await eventRepository.getEvents(
+        search: filter.searchQuery.isNotEmpty ? filter.searchQuery : null,
+        thematique: filter.thematiquesSlugs.isNotEmpty ? filter.thematiquesSlugs.first : null,
+        categorySlug: filter.categoriesSlugs.isNotEmpty ? filter.categoriesSlugs.first : null,
+        location: filter.citySlug,
+        dateFrom: dateFromStr,
+        dateTo: dateToStr,
+        lat: filter.latitude,
+        lng: filter.longitude,
+        radius: filter.latitude != null ? filter.radiusKm.toInt() : null,
+        perPage: filter.perPage,
+        page: filter.page,
+      );
+
+      final newActivities = EventToActivityMapper.toActivities(result.events);
+      final hasMore = result.hasNext; 
+
+      if (filter.page == 1) {
+        // New search: Replace everything
+        return PaginatedActivities(
+          activities: newActivities,
+          hasMore: hasMore,
+        );
+      } else {
+        // Load more: Append
+        return PaginatedActivities(
+          activities: [...previousActivities, ...newActivities],
+          hasMore: hasMore,
+        );
+      }
+    } catch (e) {
+      if (filter.page > 1) {
+         // If error during load more, keep existing list but maybe show error?
+         // For now return existing valid state but stop loading
+         return PaginatedActivities(
+           activities: previousActivities,
+           hasMore: false, // Prevent infinite error loops
+         );
+      }
+      rethrow;
+    }
+  }
+
+  bool _isDifferentSearch(EventFilter current) {
+    if (_lastFilter == null) return true;
+    final last = _lastFilter!;
+    // If page changed but nothing else, it is NOT a "new search" in the sense of reset
+    if (current.page != last.page) return false;
+    
+    // Otherwise check for equality of everything else (simplified check works if copyWith works well)
+    // Actually, if reference changed and it's not page, it's likely a filter change.
+    // But since `EventFilter` is immutable and we use Freezed-like pattern manually,
+    // simplistic check is:
+    return current.searchQuery != last.searchQuery ||
+           current.citySlug != last.citySlug ||
+           current.thematiquesSlugs.toString() != last.thematiquesSlugs.toString(); 
+           // ... others. 
+           // In practice, since build() is re-triggered, we mainly care about `current.page`
+  }
+}
 
 /// Provider for active filter chips (for UI display)
 final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
