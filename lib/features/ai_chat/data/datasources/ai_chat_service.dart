@@ -163,8 +163,27 @@ class AiChatService {
       
       return data;
     } catch (e) {
+      // If 403 and we have a userId, it might be a limit issue.
+      // If standard retry logic is needed, handle here.
       debugPrint("AiChatService Error: $e");
       rethrow;
+    }
+  }
+  
+  Future<void> unlockQuota(String userId) async {
+    final url = '${AppConstants.aiBaseUrl}/mobile/chat/unlock';
+    try {
+      if (_apiKey == null) await _fetchApiKey();
+      
+      await _dio.post(
+        url,
+        data: {'userId': userId},
+        options: Options(headers: {if (_apiKey != null) 'X-API-Key': _apiKey!}),
+      );
+    } catch (e) {
+      debugPrint("Unlock Quota Error (Ignored if 404): $e");
+      // We ignore errors here because the endpoint might not exist, 
+      // and we have a fallback in ChatNotifier.
     }
   }
 

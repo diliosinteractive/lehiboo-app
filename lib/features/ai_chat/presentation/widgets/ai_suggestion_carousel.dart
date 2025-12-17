@@ -22,7 +22,7 @@ class AiSuggestionCarousel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 340, // Adjusted height for compact card
+          height: 360, // Adjusted height for compact card to avoid overflow
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -196,7 +196,18 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF2D3748)),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              // Fallback if history is empty
+              if (widget.type == 'login') {
+                context.go('/login');
+              } else {
+                context.go('/register');
+              }
+            }
+          },
         ),
       ),
       body: SafeArea(

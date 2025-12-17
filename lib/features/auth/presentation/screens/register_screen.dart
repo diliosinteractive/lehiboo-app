@@ -59,18 +59,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     debugPrint('📱 Result email: ${result?.email}');
     debugPrint('📱 Mounted: $mounted');
 
-    if (result != null && mounted) {
-      debugPrint('📱 Navigating to /verify-otp...');
-      context.push(
-        '/verify-otp',
-        extra: {
-          'userId': result.userId,
-          'email': result.email,
-        },
-      );
-      debugPrint('📱 Navigation called!');
-    } else {
-      debugPrint('📱 NOT navigating - result: $result, mounted: $mounted');
+    // Navigation is handled by ref.listen in build()
+    debugPrint('📱 Register result: $result');
+    if (result == null) {
+      debugPrint('📱 Registration failed');
     }
   }
 

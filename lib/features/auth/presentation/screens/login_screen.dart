@@ -44,10 +44,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       password: _passwordController.text,
     );
 
+    // Navigation is handled by ref.listen or listener
     if (result != null && result.requiresOtp && mounted) {
-      // Navigate to OTP verification screen for 2FA
-      setState(() => _isLocalLoading = false);
-      context.push(
+       // Explicit navigation for OTP flow as it might not be fully state-driven in all cases
+       setState(() => _isLocalLoading = false);
+       context.push(
         '/verify-otp',
         extra: {
           'userId': result.userId ?? '',

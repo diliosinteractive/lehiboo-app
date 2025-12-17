@@ -8,7 +8,10 @@ import '../providers/chat_provider.dart';
 import '../../domain/models/chat_message.dart';
 import '../widgets/ai_suggestion_carousel.dart';
 import '../widgets/typing_bubble.dart';
+import '../widgets/ai_suggestion_carousel.dart';
+import '../widgets/typing_bubble.dart';
 import 'ai_brain_screen.dart';
+import 'package:lehiboo/features/gamification/presentation/providers/gamification_provider.dart'; // Import Gamification Provider
 
 
 class AiChatScreen extends ConsumerStatefulWidget {
@@ -759,49 +762,146 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     ),
                     const SizedBox(height: 24),
                     
-                    // CTA Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                           // TODO: Navigate to store
-                           Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF601F),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
-                          shadowColor: const Color(0xFFFF601F).withOpacity(0.4),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.stars_rounded, color: Colors.amber),
-                            SizedBox(width: 8),
-                            Text(
-                              "Obtenir des Hibons",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    // Wallet Balance & Actions
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final walletAsync = ref.watch(gamificationNotifierProvider);
+                        
+                        return walletAsync.when(
+                          loading: () => const Center(child: CircularProgressIndicator()),
+                          error: (e, s) => const SizedBox(),
+                          data: (wallet) {
+                            return Column(
+                              children: [
+                                // Balance Info
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 24),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.shade50,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Colors.amber.shade200),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.monetization_on, color: Colors.amber, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        "Solde : ${wallet.balance} Hibons",
+                                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // 1. Option: Spend Hibons (if enough)
+                                if (wallet.balance >= 10)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 12.0),
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed: () async {
+                                           try {
+                                             await ref.read(gamificationNotifierProvider.notifier).spendHibons(10, "Message Petit Boo");
+                                             ref.read(chatProvider.notifier).resetLimit();
+                                             if (context.mounted) Navigator.pop(context);
+                                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Conversation débloquée !')));
+                                           } catch (e) {
+                                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+                                           }
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFFFF601F),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(vertical: 16),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          elevation: 4,
+                                        ),
+                                        child: const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.chat_bubble_outline, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text("Continuer pour 10 Hibons", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                // 2. Option: Watch Ad (Always visible or if not enough funds)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12.0),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton(
+                                      onPressed: () async {
+                                         // Show Loading/Mock Ad
+                                         showDialog(
+                                           context: context, 
+                                           barrierDismissible: false,
+                                           builder: (_) => const Center(child: CircularProgressIndicator())
+                                         );
+                                         await Future.delayed(const Duration(seconds: 2)); // Mock Ad Duration
+                                         if (context.mounted) Navigator.pop(context); // Close loading
+
+                                         try {
+                                           await ref.read(gamificationNotifierProvider.notifier).earnHibons(20, "Publicité Regardée");
+                                           // Auto unlock if desired, or let user click continue. Let's auto unlock for better UX?
+                                           // User asked: "pour débloquer... ou pour avoir des hibons". 
+                                           // Let's give hibons AND unlock implicitly by giving enough.
+                                           // Or simpler: Just simple unlock? No let's follow the "Economy" -> Earn -> Spend.
+                                           // So we give hibons.
+                                           if (context.mounted) {
+                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Merci ! Vous avez gagné 20 Hibons.')));
+                                           }
+                                           // If they didn't have enough before, they might now. UI updates automatically.
+                                         } catch (e) {
+                                           // ignore
+                                         }
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.blue[800],
+                                        side: BorderSide(color: Colors.blue.shade200),
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.play_circle_fill, color: Colors.blue),
+                                          SizedBox(width: 8),
+                                          Text("Regarder une pub (+20 Hibons)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // 3. Option: Buy Hibons (if low balance)
+                                if (wallet.balance < 10)
+                                   TextButton(
+                                     onPressed: () {
+                                       Navigator.pop(context);
+                                       context.push('/hibons-shop');
+                                     },
+                                     child: const Text("Recharger mes Hibons", style: TextStyle(color: Colors.grey)),
+                                   ),
+                                   
+                                // Close
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text("Peut-être plus tard", style: TextStyle(color: Colors.grey)),
+                                ),
+                              ],
+                            );
+                          }
+                        );
+                      }
                     ),
-                     const SizedBox(height: 12),
-                     // Secondary Button
-                     TextButton(
-                       onPressed: () => Navigator.of(context).pop(),
-                       style: TextButton.styleFrom(
-                         foregroundColor: Colors.grey[500],
-                       ),
-                       child: const Text("Peut-être plus tard"),
-                     ),
+
                   ],
                 ),
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../../../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -261,6 +262,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   String _parseError(dynamic e) {
+    if (e is DioException) {
+      if (e.type == DioExceptionType.badResponse) {
+        final data = e.response?.data;
+        if (data != null && data is Map<String, dynamic>) {
+          // Check for detailed validation error
+          if (data['error'] != null && data['error']['details'] != null) {
+            final details = data['error']['details'];
+            if (details is Map<String, dynamic>) {
+               // Return the first validation error message found
+               final firstError = details.values.first;
+               if (firstError is List && firstError.isNotEmpty) {
+                 return firstError.first.toString();
+               }
+               return firstError.toString();
+            }
+          }
+          // Fallback to general message if available
+           if (data['message'] != null) {
+            return data['message'].toString();
+          }
+           if (data['data'] != null && data['data']['message'] != null) {
+            return data['data']['message'].toString();
+          }
+        }
+      } else if (e.type == DioExceptionType.connectionTimeout || 
+                 e.type == DioExceptionType.receiveTimeout || 
+                 e.type == DioExceptionType.sendTimeout ||
+                 e.type == DioExceptionType.connectionError) {
+        return 'Erreur de connexion. Vérifiez votre connexion internet.';
+      }
+    }
+
     final message = e.toString();
     if (message.contains('invalid_credentials')) {
       return 'Email ou mot de passe incorrect';
@@ -270,9 +303,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return 'Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre';
     } else if (message.contains('invalid_email')) {
       return 'Adresse email invalide';
-    } else if (message.contains('network')) {
+    } else if (message.contains('network') || message.contains('SocketException')) {
       return 'Erreur de connexion. Vérifiez votre connexion internet.';
     }
+    
+    // Provide a slightly more helpful fallback if it's an Exception with a message
+    if (e is Exception) {
+      final msg = e.toString().replaceAll('Exception: ', '');
+      if (msg.isNotEmpty && !msg.startsWith('http')) return msg;
+    }
+    
     return 'Une erreur est survenue. Veuillez réessayer.';
   }
 

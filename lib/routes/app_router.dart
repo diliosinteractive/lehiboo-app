@@ -32,6 +32,10 @@ import '../features/partners/presentation/screens/partner_detail_screen.dart';
 import '../features/ai_chat/presentation/screens/ai_welcome_screen.dart';
 import '../features/ai_chat/presentation/screens/ai_chat_screen.dart';
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
+import '../features/gamification/presentation/screens/hibon_shop_screen.dart';
+import '../features/gamification/presentation/screens/lucky_wheel_screen.dart';
+import '../features/gamification/presentation/screens/achievements_screen.dart';
+import '../features/gamification/presentation/screens/gamification_dashboard_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -69,14 +73,16 @@ final routerProvider = Provider<GoRouter>((ref) {
          return '/login';
        }
        
-       // 3. If pending OTP verification, FORCE redirect to /verify-otp
+       // 3. If pending OTP verification
        if (isPendingOtp) {
-         if (isVerifyingOtp) {
-           debugPrint('🔀 Already on OTP screen - no redirect');
-           return null; // Already on OTP screen
+         // Allow navigation to other auth routes (back to register, login, etc)
+         if (isAuthRoute) {
+           debugPrint('🔀 Pending OTP - Allowing auth route: ${state.matchedLocation}');
+           return null; 
          }
+         
          debugPrint('🔀 Pending OTP - FORCING redirect to /verify-otp');
-         return '/verify-otp'; // Force redirect to OTP screen
+         return '/verify-otp'; // Force redirect to OTP screen for non-auth routes
        }
        
        // 4. If not authenticated and not on auth route, redirect to login
@@ -321,6 +327,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/ai-chat',
         name: 'ai-chat',
         builder: (context, state) => const AiChatScreen(),
+      ),
+      // Gamification
+      GoRoute(
+        path: '/hibons-shop',
+        name: 'hibons-shop',
+        builder: (context, state) => const HibonShopScreen(),
+      ),
+      GoRoute(
+        path: '/hibons-dashboard',
+        name: 'hibons-dashboard',
+        builder: (context, state) => const GamificationDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/lucky-wheel',
+        name: 'lucky-wheel',
+        builder: (context, state) => const LuckyWheelScreen(),
+      ),
+      GoRoute(
+        path: '/achievements',
+        name: 'achievements',
+        builder: (context, state) => const AchievementsScreen(),
       ),
     ],
 

@@ -21,6 +21,7 @@ import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
 import '../widgets/home_cities_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
+import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
 // ... existing code ...
@@ -92,6 +93,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.person_outline, color: Colors.white),
             onPressed: () => context.push('/profile'),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+            child: GestureDetector(
+              onTap: () => context.push('/hibons-dashboard'),
+              child: const HibonCounterWidget(compact: true),
+            ),
           ),
         ],
       ),
