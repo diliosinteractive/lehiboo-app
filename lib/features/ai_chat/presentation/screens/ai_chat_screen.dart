@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/chat_provider.dart';
 import '../../domain/models/chat_message.dart';
 import '../widgets/ai_suggestion_carousel.dart';
+import '../widgets/typing_bubble.dart';
 import 'ai_brain_screen.dart';
 
 
@@ -104,7 +105,11 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     ref.read(chatProvider.notifier).sendMessage(text);
     _textController.clear();
     
-    // Scroll to bottom
+    // Scroll to bottom immediately for user message
+    _scrollToBottom();
+  }
+  
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -124,6 +129,20 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     ref.listen(chatProvider.select((s) => s.isLimitReached), (previous, next) {
       if (next) {
         _showLimitReachedDialog(context);
+      }
+    });
+
+    // Auto-scroll on new messages
+    ref.listen(chatProvider.select((s) => s.messages.length), (previous, next) {
+      if (next > (previous ?? 0)) {
+        _scrollToBottom();
+      }
+    });
+    
+    // Auto-scroll when loading starts (to show typing bubble)
+    ref.listen(chatProvider.select((s) => s.isLoading), (previous, next) {
+      if (next) { // If started loading
+         _scrollToBottom();
       }
     });
 
@@ -349,11 +368,17 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: chatState.messages.isEmpty ? 1 : chatState.messages.length, // +1 for Empty Welcome
+              itemCount: chatState.messages.isEmpty 
+                  ? 1 
+                  : chatState.messages.length + (chatState.isLoading ? 1 : 0),
               itemBuilder: (context, index) {
                 if (chatState.messages.isEmpty) {
-                   // Initial Welcome visual
                    return _buildWelcomeBanner();
+                }
+                
+                // If is loading and this is the last item
+                if (chatState.isLoading && index == chatState.messages.length) {
+                  return const TypingBubble();
                 }
                 
                 final message = chatState.messages[index];
@@ -371,13 +396,6 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                  style: TextStyle(fontSize: 10, color: Colors.grey[400]),
                ),
              ),
-
-          // Loading Indicator
-          if (chatState.isLoading)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: LinearProgressIndicator(color: Color(0xFFFF601F), backgroundColor: Colors.white),
-            ),
 
           // Input Area
           Container(

@@ -16,20 +16,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
 
   final List<OnboardingContent> _contents = [
-    OnboardingContent(
-      title: 'Découvrez des activités uniques',
-      description: 'Explorez une variété d\'événements et d\'activités locales, adaptés à tous les goûts et tous les âges. Culture, sport, divertissement...',
-      imagePath: 'assets/images/onboarding_unique.png',
+    const OnboardingContent(
+      title: 'Vibrez au rythme de votre ville',
+      description: 'Découvrez les concerts, festivals et soirées qui font bouger votre région. Ne ratez plus aucun événement musical.',
+      imagePath: 'assets/images/onboarding_n_1.png',
     ),
-    OnboardingContent(
-      title: 'Réservez en toute simplicité',
-      description: 'Accédez à toutes les informations pratiques (prix, horaires, lieu) et réservez vos places en quelques clics, directement depuis l\'application.',
-      imagePath: 'assets/images/onboarding_booking.png',
+    const OnboardingContent(
+      title: 'Savourez chaque instant',
+      description: 'Des marchés gourmands aux meilleures adresses de street food, trouvez les pépites culinaires autour de vous.',
+      imagePath: 'assets/images/onboarding_n_2.png',
     ),
-    OnboardingContent(
-      title: 'Vivez des moments inoubliables',
-      description: 'Profitez pleinement de vos sorties en famille ou entre amis. Créez des souvenirs mémorables et partagez-les avec vos proches.',
-      imagePath: 'assets/images/onboarding_moments.png',
+    const OnboardingContent(
+      title: 'Restez Connecté',
+      description: 'Recevez toutes les communications de la ville, restez informé des événements de votre municipalité et gardez le contact avec votre mairie.',
+      imagePath: 'assets/images/onboarding_city_comms.png',
+    ),
+    const OnboardingContent(
+      title: 'Libérez votre créativité',
+      description: 'Participez à des ateliers uniques : poterie, peinture, et bien plus. Rencontrez des passionnés et apprenez en vous amusant.',
+      imagePath: 'assets/images/onboarding_n_3.png',
     ),
   ];
 
@@ -42,166 +47,111 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.keyOnboardingCompleted, true);
-    
+
     if (mounted) {
-      // Go to login screen instead of home, as requested
-      context.go('/login'); 
+      context.go('/login');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Skip button
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: _completeOnboarding,
-                child: const Text(
-                  'Passer',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                  ),
+      body: Stack(
+        children: [
+          // Background Image with PageView
+          PageView.builder(
+            controller: _pageController,
+            itemCount: _contents.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return _buildPage(_contents[index]);
+            },
+          ),
+
+          // LeHiboo Logo
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 20,
+            left: 20,
+            child: Image.asset(
+              'assets/images/logo_lehiboo_blanc_x3_2.png',
+              width: 100, // Adjust size as needed
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          // Skip button
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            right: 20,
+            child: TextButton(
+              onPressed: _completeOnboarding,
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.black.withValues(alpha: 0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text(
+                'Passer',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            
-            // PageView
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _contents.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  return _buildPage(_contents[index]);
-                },
-              ),
-            ),
-            
-            // Bottom section with indicators and buttons
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  // Indicators
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _contents.length,
-                      (index) => _buildDot(index),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  // Main Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_currentPage == _contents.length - 1) {
-                          _completeOnboarding();
-                        } else {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeIn,
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF601F),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        _currentPage == _contents.length - 1 ? 'C\'est parti !' : 'Suivant',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
 
-  Widget _buildPage(OnboardingContent content) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Image
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-               margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
+          // Bottom Section (Indicators & Button)
+          Positioned(
+            bottom: 40,
+            left: 20,
+            right: 20,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Indicators
+                Row(
+                  children: List.generate(
+                    _contents.length,
+                    (index) => _buildDot(index),
                   ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Image.asset(
-                content.imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xFFFF601F).withOpacity(0.1),
-                    child: Center(
-                      child: Icon(
-                        _getIconForTitle(content.title),
-                        size: 80,
-                        color: const Color(0xFFFF601F),
-                      ),
+                ),
+
+                // Next / Finish Button
+                ElevatedButton(
+                  onPressed: () {
+                    if (_currentPage == _contents.length - 1) {
+                      _completeOnboarding();
+                    } else {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeIn,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF601F),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
                     ),
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 40),
-          Text(
-            content.title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            content.description,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-              height: 1.5,
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _currentPage == _contents.length - 1 ? 'C\'est parti' : 'Suivant',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -209,10 +159,75 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  IconData _getIconForTitle(String title) {
-    if (title.contains('Activités')) return Icons.explore_outlined;
-    if (title.contains('Réservez')) return Icons.calendar_today_outlined;
-    return Icons.favorite_border_outlined;
+  Widget _buildPage(OnboardingContent content) {
+    return Stack(
+      children: [
+        // Full screen image
+        Positioned.fill(
+          child: Image.asset(
+            content.imagePath,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.grey[900],
+                child: const Center(
+                  child: Icon(Icons.image_not_supported, color: Colors.white54, size: 50),
+                ),
+              );
+            },
+          ),
+        ),
+
+        // Gradient Overlay
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0.0, 0.5, 1.0],
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.1),
+                  Colors.black.withValues(alpha: 0.9),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Text Content
+        Positioned(
+          bottom: 140, // Space for bottom navigation
+          left: 24,
+          right: 24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                content.title,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                content.description,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withValues(alpha: 0.9),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildDot(int index) {
@@ -222,9 +237,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       height: 8,
       width: _currentPage == index ? 24 : 8,
       decoration: BoxDecoration(
-        color: _currentPage == index 
-            ? const Color(0xFFFF601F) 
-            : const Color(0xFFFF601F).withOpacity(0.2),
+        color: _currentPage == index
+            ? const Color(0xFFFF601F)
+            : Colors.white.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(4),
       ),
     );

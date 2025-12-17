@@ -59,10 +59,6 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
           LatLng(widget.initialLat!, widget.initialLng!), 
           widget.initialZoom ?? 13.0
         );
-        // Also trigger search in this new area
-        // _searchInArea(); // Will be triggered by movement listener or manually?
-        // Movement listener usually triggers it, but we might want to force it.
-        // Actually movement debounce listener handles it.
       });
     }
   }
@@ -95,11 +91,6 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   void _searchInArea() {
     final bounds = _mapController.camera.visibleBounds;
     
-    // Update filter with new bounds
-    // Note: We also ensure priceMax is high enough to not filter accidentally
-    // ref.read(eventFilterProvider.notifier).setPriceRange(0, 10000); 
-    // Actually better to let user control price, but standard default might be issue.
-    
     ref.read(eventFilterProvider.notifier).setBoundingBox(
       bounds.northEast.latitude,
       bounds.northEast.longitude,
@@ -117,11 +108,6 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
         LatLng(position.latitude, position.longitude),
         15.0
       );
-      
-      // Also update search to around me (which sets lat/lng and clears bounds usually, 
-      // but here we might want to just let the camera move trigger the bounds search?
-      // Actually standard behavior: move camera -> waits -> triggers bounds search.
-      // So no need to manually setLocation if we have auto-refresh!)
       
     } catch (e) {
       if (mounted) {
@@ -170,19 +156,9 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   }
 
   void _onMapReady() {
-    // If specific coordinates are passed (e.g. from city chip), they are handled in initState postFrameCallback.
-    // If NOT passed, we check if we should default to user location.
-    
     if (widget.initialLat == null || widget.initialLng == null) {
-      // No specific target. Check if filter has something set (maybe from previous state)
-      // IF filter also doesn't have explicit lat/lng (or we want to prioritize "Near Me" on fresh open)
-      // Let's rely on _locateMe() which requests permission and moves map.
-      // We do this with a slight delay to ensure everything is ready.
-      
       _locateMe();
     } else {
-       // If widget args were present, map is likely already moving there via initState callback.
-       // But we still need to trigger search.
        Future.delayed(const Duration(milliseconds: 500), () {
         if(mounted) _searchInArea();
       });
@@ -212,17 +188,11 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
     });
 
     return groupEntries.map((group) {
-      // The group contains multiple events at the same location.
-      // We take the first one to determine the marker position.
       final firstEntry = group.first;
       final position = LatLng(firstEntry.value.latitude, firstEntry.value.longitude);
       
-      // Check if this group contains the currently selected event
       final isSelected = group.any((e) => e.key == _selectedIndex);
       
-      // For display, if the group is selected, we ideally show the selected event's info.
-      // If not, we show the first one (or the "cheapest" maybe?).
-      // Let's settle on: if selected, show selected event info. Else first.
       final displayEntry = isSelected 
           ? group.firstWhere((e) => e.key == _selectedIndex)
           : group.first;
@@ -232,13 +202,12 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
 
       return Marker(
         point: position,
-        width: isSelected ? 100.0 : 60.0, // Slightly wider to accommodate badge
+        width: isSelected ? 100.0 : 60.0,
         height: isSelected ? 100.0 : 60.0,
         alignment: Alignment.topCenter,
         child: GestureDetector(
           onTap: () {
             if (count == 1) {
-              // Standard behavior
               _pageController.animateToPage(
                 displayEntry.key,
                 duration: const Duration(milliseconds: 300),
@@ -246,7 +215,6 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
               );
               setState(() => _selectedIndex = displayEntry.key);
             } else {
-              // Group behavior
               _showMultiEventList(context, group);
             }
           },
@@ -254,7 +222,6 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
             clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: [
-              // Main Marker Column
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -297,11 +264,10 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                 ],
               ),
               
-              // Count Badge (if multiple)
               if (count > 1)
                 Positioned(
                   top: 0,
-                  right: 0, // Adjust relative to alignment
+                  right: 0,
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
@@ -387,8 +353,8 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                           ? const Icon(Icons.check_circle, color: Color(0xFFFF601F))
                           : const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                       onTap: () {
-                        context.pop(); // Close sheet
-                        _pageController.jumpToPage(entry.key); // Jump first to ensure loading
+                        context.pop();
+                        _pageController.jumpToPage(entry.key);
                         setState(() => _selectedIndex = entry.key);
                       },
                     );
@@ -425,6 +391,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(eventsProvider);
     final filter = ref.watch(eventFilterProvider);
+    final isLoading = eventsAsync.isLoading || eventsAsync.isRefreshing;
 
     return Scaffold(
       body: Stack(
@@ -443,27 +410,17 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
             ),
             children: [
               TileLayer(
-                // CartoDB Voyager (Pretty, colorful, light 2D map)
                 urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.dilios.lehiboo',
               ),
-              // Marker Layer with "Previous Data" persistence
               Builder(
                 builder: (context) {
-                  // If we have data, show it.
                   if (eventsAsync.hasValue) {
                      return MarkerLayer(
                        markers: _buildMarkers(eventsAsync.value!.events),
                      );
                   }
-                  
-                  // If loading AND NO previous data (initial load)
-                  if (eventsAsync.isLoading) {
-                     return const MarkerLayer(markers: []);
-                  }
-                  
-                  // Error case
                   return const MarkerLayer(markers: []);
                 },
               ),
@@ -482,7 +439,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
             ],
           ),
           
-          // TOP BAR: Back Button + Date Filter + Filter Button
+          // TOP BAR
           Positioned(
             top: 0,
             left: 0,
@@ -490,70 +447,94 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
             child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
+                child: Column(
                   children: [
-                    Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () => context.pop(),
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: () => context.pop(),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildDateChip('Aujourd\'hui', DateFilterType.today, filter),
+                                const SizedBox(width: 8),
+                                _buildDateChip('Demain', DateFilterType.tomorrow, filter),
+                                const SizedBox(width: 8),
+                                _buildDateChip('Ce week-end', DateFilterType.thisWeekend, filter),
+                                const SizedBox(width: 8),
+                                _buildDateChip('Cette semaine', DateFilterType.thisWeek, filter),
+                                const SizedBox(width: 8),
+                                _buildDateChip('Ce mois', DateFilterType.thisMonth, filter),
+                                const SizedBox(width: 8),
+                                _buildBooleanChip('Gratuit', filter.onlyFree, (val) {
+                                  ref.read(eventFilterProvider.notifier).setOnlyFree(val);
+                                }),
+                                const SizedBox(width: 8),
+                                _buildBooleanChip('En famille', filter.familyFriendly, (val) {
+                                  ref.read(eventFilterProvider.notifier).setFamilyFriendly(val);
+                                }),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.tune, color: Color(0xFFFF601F)),
+                            onPressed: () => showFilterBottomSheet(context),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    // Date Filters Horizontal Scroll
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
+                    if (isLoading)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            _buildDateChip('Aujourd\'hui', DateFilterType.today, filter),
-                            const SizedBox(width: 8),
-                            _buildDateChip('Demain', DateFilterType.tomorrow, filter),
-                            const SizedBox(width: 8),
-                            _buildDateChip('Ce week-end', DateFilterType.thisWeekend, filter),
-                            const SizedBox(width: 8),
-                            _buildDateChip('Cette semaine', DateFilterType.thisWeek, filter),
-                            const SizedBox(width: 8),
-                            _buildDateChip('Ce mois', DateFilterType.thisMonth, filter),
-                            const SizedBox(width: 8),
-                            _buildBooleanChip('Gratuit', filter.onlyFree, (val) {
-                              ref.read(eventFilterProvider.notifier).setOnlyFree(val);
-                            }),
-                            const SizedBox(width: 8),
-                            _buildBooleanChip('En famille', filter.familyFriendly, (val) {
-                              ref.read(eventFilterProvider.notifier).setFamilyFriendly(val);
-                            }),
+                            SizedBox(
+                              width: 14, 
+                              height: 14, 
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF601F))
+                            ),
+                            SizedBox(width: 8),
+                            Text("Recherche en cours...", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Full Filter Button
-                    Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.tune, color: Color(0xFFFF601F)),
-                        onPressed: () => showFilterBottomSheet(context),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
           ),
           
-          // RIGHT SIDE CONTROLS: Zoom & Locate
+          // RIGHT SIDE CONTROLS
           Positioned(
              right: 16,
-             bottom: 220, // Above carousel
+             bottom: 220, // Revert position
              child: Column(
                children: [
                  FloatingActionButton.small(
@@ -587,12 +568,58 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
             bottom: 30,
             left: 0,
             right: 0,
-            height: 200,
+            height: 200, // Revert height
             child: Builder(
               builder: (context) {
                 if (eventsAsync.hasValue) {
                   final result = eventsAsync.value!;
-                  if (result.events.isEmpty) return const SizedBox.shrink();
+                  if (result.events.isEmpty) {
+                    return Center(
+                      child: GestureDetector(
+                        onTap: () => context.push('/ai-chat'),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(25),
+                                child: Image.asset(
+                                  'assets/images/petit_boo.png',
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Flexible(
+                                child: Text(
+                                  "Oups, c'est calme par ici !\nBesoin d'un coup de pouce ?",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
                   
                   return PageView.builder(
                     controller: _pageController,
@@ -602,40 +629,29 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                     itemBuilder: (context, index) {
                       final event = result.events[index];
                       return AnimatedBuilder(
-                        animation: _pageController,
-                        builder: (context, child) {
-                          double value = 1.0;
-                          if (_pageController.position.haveDimensions) {
-                            value = _pageController.page! - index;
-                            value = (1 - (value.abs() * 0.3)).clamp(0.85, 1.0);
-                          } else {
-                             value = (index == (_selectedIndex == -1 ? 0 : _selectedIndex)) ? 1.0 : 0.85;
-                          }
-                          return Center(
-                            child: SizedBox(
-                              height: Curves.easeOut.transform(value) * 200,
-                              width: Curves.easeOut.transform(value) * 350,
-                              child: child,
-                            ),
-                          );
-                        },
+                         animation: _pageController,
+                         builder: (context, child) {
+                           double value = 1.0;
+                           if (_pageController.position.haveDimensions) {
+                             value = _pageController.page! - index;
+                             value = (1 - (value.abs() * 0.3)).clamp(0.85, 1.0);
+                           } else {
+                              value = (index == (_selectedIndex == -1 ? 0 : _selectedIndex)) ? 1.0 : 0.85;
+                           }
+                           return Center(
+                             child: SizedBox(
+                               height: Curves.easeOut.transform(value) * 200, // Revert height calculation
+                               width: Curves.easeOut.transform(value) * 350, // Revert width calculation
+                               child: child,
+                             ),
+                           );
+                         },
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: MapEventCard(activity: _eventToActivity(event)),
+                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                           child: MapEventCard(activity: _eventToActivity(event)),
                         ),
                       );
                     },
-                  );
-                }
-                
-                if (eventsAsync.isLoading) {
-                   return const Center(
-                    child: Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
                   );
                 }
                 

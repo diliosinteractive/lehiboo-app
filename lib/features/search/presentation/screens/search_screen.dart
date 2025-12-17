@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart'; // Import Alerts
+import 'package:lehiboo/features/ai_chat/presentation/providers/chat_engagement_provider.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../widgets/airbnb_search_bar.dart';
@@ -361,6 +362,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   final activities = paginatedData.activities;
                   
                   if (activities.isEmpty) {
+                    // Trigger Smart AI Bubble
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                       ref.read(chatEngagementProvider.notifier).onSearchEmpty();
+                    });
+
                     return SliverFillRemaining(
                       child: _EmptyResults(
                         hasFilters: filter.hasActiveFilters,

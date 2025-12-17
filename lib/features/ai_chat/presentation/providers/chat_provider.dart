@@ -220,7 +220,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
                      "1. FIRST, call 'findEvents' with specific keywords OR location parameters (latitude, longitude, radius_km) to get real data. "
                      "2. THEN, write your friendly response based ONLY on the data returned by the tool. "
                      "3. Do NOT hallucinate activities. If 'findEvents' returns nothing, say you couldn't find anything specific but offer general advice. "
-                     "4. In your text, be pedagogical and persuasive. Do NOT include URLs. Refer to the cards below. "
+                     "4. In your text, be pedagogical and persuasive. "
+                     "5. ABSOLUTELY NO LINKS or URLs. If referring to a place, just use its name. "
                      "MEMORY: Store any key user insights in 'user_context'. "
                      "REMEMBER: If the 'events' list is empty, valid cards will NOT appear, and you will look broken. USE THE TOOL.";
 
@@ -273,7 +274,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
     // Check limits
     // Anonymous users (user == null) are NOT limited per spec.
     // Authenticated users: Check state.isLimitReached (synced with backend)
-    if (user != null && state.isLimitReached) {
+    // Authenticated users: Check state.isLimitReached (synced with backend)
+    if (user != null && (state.isLimitReached || state.messageCount >= limit)) {
+      if (!state.isLimitReached) {
+        state = state.copyWith(isLimitReached: true);
+      }
       return; 
     }
 
@@ -295,7 +300,18 @@ class ChatNotifier extends StateNotifier<ChatState> {
       // Call Real AI Service with userId
       final response = await _aiService.sendMessage(text, userId: user?.id);
       
-      final aiText = response['message'] as String? ?? "Désolé, je n'ai pas compris.";
+      var aiText = response['message'] as String? ?? "Désolé, je n'ai pas compris.";
+      
+      // STRIP RAW URLs & Markdown Links
+      final urlRegExp = RegExp(r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)');
+      final mdLinkRegExp = RegExp(r'\[([^\]]+)\]\((https?:\/\/[^\)]+)\)');
+      
+      // 1. Replace Markdown links with just the text label
+      aiText = aiText.replaceAllMapped(mdLinkRegExp, (match) => match.group(1) ?? "");
+      
+      // 2. Remove remaining raw URLs
+      aiText = aiText.replaceAll(urlRegExp, "");
+
       final eventsData = response['events'] as List?;
       final searchParams = response['searchParams'] as Map<String, dynamic>?;
       final userContext = response['user_context'] as Map<String, dynamic>?;

@@ -121,10 +121,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: AdsBannersSection(),
           ),
 
-          // Section thématiques (Dynamic from API)
-          const SliverToBoxAdapter(
-            child: ThematiquesSection(),
-          ),
+
 
           // Section Activités recommandées (Dynamic from Repository)
           SliverToBoxAdapter(
@@ -194,7 +191,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           return Container(
                             width: 200, // Reduced from 260
                             margin: const EdgeInsets.only(right: 16),
-                            child: EventCard(activity: activity, isCompact: true),
+                            child: EventCard(
+                              activity: activity,
+                              heroTagPrefix: 'home_main',
+                              isCompact: true,
+                            ),
                           );
                         },
                       ),
@@ -222,6 +223,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
+          ),
+
+          // Section thématiques (Dynamic from API)
+          const SliverToBoxAdapter(
+            child: ThematiquesSection(),
           ),
 
           // Section Toutes les catégories (Chips list)
@@ -759,11 +765,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   return Container(
                     width: 200,
                     margin: const EdgeInsets.only(right: 16),
-                    child: EventCard(
-                      activity: activity, 
-                      isCompact: true,
-                      showTimeBadge: true, // Show time for Today/Tomorrow lists
-                    ),
+                      child: EventCard(
+                        activity: activity, 
+                        isCompact: true,
+                        showTimeBadge: true,
+                        heroTagPrefix: baseTitle.toLowerCase().contains('demain') ? 'tomorrow' : 'today',
+                      ),
                   );
                 },
               ),

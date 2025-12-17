@@ -14,8 +14,15 @@ class EventCard extends ConsumerWidget {
   final Activity activity;
   final bool isCompact;
   final bool showTimeBadge;
+  final String? heroTagPrefix; // Added prefix
 
-  const EventCard({super.key, required this.activity, this.isCompact = false, this.showTimeBadge = false});
+  const EventCard({
+    super.key, 
+    required this.activity, 
+    this.isCompact = false, 
+    this.showTimeBadge = false,
+    this.heroTagPrefix,
+  });
 
   String _formatDuration(int minutes) {
     if (minutes < 60) {
@@ -52,7 +59,7 @@ class EventCard extends ConsumerWidget {
               children: [
                 // Image - Taller (Portrait/9:16 approx) & Fully Rounded
                 Hero(
-                  tag: 'event_image_${activity.id}_${key.hashCode}',
+                  tag: 'event_image_${heroTagPrefix ?? 'card'}_${activity.id}',
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16), // Rounded all corners like TripAdvisor
                     child: SizedBox(
