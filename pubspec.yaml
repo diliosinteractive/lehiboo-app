@@ -76,6 +76,7 @@ dependencies:
   # Payment & Tickets
   flutter_stripe: ^10.1.1
   qr_flutter: ^4.1.0
+  screen_brightness: ^1.0.1
 
   # Content
   flutter_markdown: ^0.7.1

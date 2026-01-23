@@ -161,13 +161,12 @@ class StripePaymentDto with _$StripePaymentDto {
       _$StripePaymentDtoFromJson(json);
 }
 
-// List Bookings Response
+// List Bookings Response - Structure réelle de l'API Laravel
 @freezed
 class BookingsListResponseDto with _$BookingsListResponseDto {
   const factory BookingsListResponseDto({
-    required List<BookingListItemDto> bookings,
-    required PaginationInfoDto pagination,
-    required BookingsSummaryDto summary,
+    required List<BookingListItemDto> data,
+    MetaInfoDto? meta,
   }) = _BookingsListResponseDto;
 
   factory BookingsListResponseDto.fromJson(Map<String, dynamic> json) =>
@@ -175,18 +174,45 @@ class BookingsListResponseDto with _$BookingsListResponseDto {
 }
 
 @freezed
+class MetaInfoDto with _$MetaInfoDto {
+  const factory MetaInfoDto({
+    required int total,
+    @JsonKey(name: 'per_page') required int perPage,
+    @JsonKey(name: 'current_page') required int currentPage,
+    @JsonKey(name: 'last_page') required int lastPage,
+  }) = _MetaInfoDto;
+
+  factory MetaInfoDto.fromJson(Map<String, dynamic> json) =>
+      _$MetaInfoDtoFromJson(json);
+}
+
+@freezed
 class BookingListItemDto with _$BookingListItemDto {
   const factory BookingListItemDto({
     required int id,
-    required String reference,
+    String? uuid,
+    String? reference,
     required String status,
-    required BookingEventInfoDto event,
-    @JsonKey(name: 'tickets_count') required int ticketsCount,
-    @JsonKey(name: 'total_paid') required double totalPaid,
-    required String currency,
-    @JsonKey(name: 'booked_at') required String bookedAt,
-    @JsonKey(name: 'is_upcoming') required bool isUpcoming,
-    @JsonKey(name: 'can_cancel') required bool canCancel,
+    @JsonKey(name: 'event_id') int? eventId,
+    @JsonKey(name: 'slot_id') int? slotId,
+    @JsonKey(name: 'user_id') int? userId,
+    // Convenience fields (camelCase from API)
+    String? eventTitle,
+    String? eventSlug,
+    String? eventImage,
+    String? slotDate,
+    double? grandTotal,
+    double? totalAmount,
+    int? ticketCount,
+    @JsonKey(name: 'customer_email') String? customerEmail,
+    @JsonKey(name: 'customer_first_name') String? customerFirstName,
+    @JsonKey(name: 'customer_last_name') String? customerLastName,
+    @JsonKey(name: 'can_cancel') bool? canCancel,
+    @JsonKey(name: 'created_at') String? createdAt,
+    String? createdAt2,
+    // Relations loaded by API
+    BookingEventDto? event,
+    BookingSlotDto? slot,
   }) = _BookingListItemDto;
 
   factory BookingListItemDto.fromJson(Map<String, dynamic> json) =>
@@ -194,27 +220,40 @@ class BookingListItemDto with _$BookingListItemDto {
 }
 
 @freezed
-class PaginationInfoDto with _$PaginationInfoDto {
-  const factory PaginationInfoDto({
-    @JsonKey(name: 'current_page') required int currentPage,
-    @JsonKey(name: 'total_items') required int totalItems,
-    @JsonKey(name: 'total_pages') required int totalPages,
-  }) = _PaginationInfoDto;
+class BookingEventDto with _$BookingEventDto {
+  const factory BookingEventDto({
+    String? id, // UUID string
+    @JsonKey(name: 'internal_id') int? internalId,
+    String? uuid,
+    required String title,
+    String? slug,
+    @JsonKey(name: 'featured_image') String? featuredImage,
+    @JsonKey(name: 'cover_image') String? coverImage,
+    @JsonKey(name: 'venue_name') String? venueName,
+    String? city,
+  }) = _BookingEventDto;
 
-  factory PaginationInfoDto.fromJson(Map<String, dynamic> json) =>
-      _$PaginationInfoDtoFromJson(json);
+  factory BookingEventDto.fromJson(Map<String, dynamic> json) =>
+      _$BookingEventDtoFromJson(json);
 }
 
 @freezed
-class BookingsSummaryDto with _$BookingsSummaryDto {
-  const factory BookingsSummaryDto({
-    required int upcoming,
-    required int past,
-    required int cancelled,
-  }) = _BookingsSummaryDto;
+class BookingSlotDto with _$BookingSlotDto {
+  const factory BookingSlotDto({
+    String? id, // UUID string
+    @JsonKey(name: 'event_id') int? eventId,
+    @JsonKey(name: 'slot_date') String? slotDate,
+    String? date,
+    @JsonKey(name: 'start_time') String? startTime,
+    @JsonKey(name: 'end_time') String? endTime,
+    @JsonKey(name: 'start_datetime') String? startDatetime,
+    String? startDate,
+    @JsonKey(name: 'end_datetime') String? endDatetime,
+    String? endDate,
+  }) = _BookingSlotDto;
 
-  factory BookingsSummaryDto.fromJson(Map<String, dynamic> json) =>
-      _$BookingsSummaryDtoFromJson(json);
+  factory BookingSlotDto.fromJson(Map<String, dynamic> json) =>
+      _$BookingSlotDtoFromJson(json);
 }
 
 // Tickets Response

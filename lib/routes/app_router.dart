@@ -26,6 +26,9 @@ import '../features/booking/presentation/screens/booking_participant_screen.dart
 import '../features/booking/presentation/screens/booking_payment_screen.dart';
 import '../features/booking/presentation/screens/booking_confirmation_screen.dart';
 import '../features/booking/presentation/screens/bookings_list_screen.dart';
+import '../features/booking/presentation/screens/booking_detail_screen.dart';
+import '../features/booking/presentation/screens/ticket_detail_screen.dart';
+import '../domain/entities/booking.dart' as booking_entity;
 import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
@@ -291,6 +294,35 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
+      ),
+      // Booking detail route
+      GoRoute(
+        path: '/booking-detail/:id',
+        name: 'booking-detail',
+        builder: (context, state) {
+          final bookingId = state.pathParameters['id']!;
+          final booking = state.extra as booking_entity.Booking?;
+          return BookingDetailScreen(
+            bookingId: bookingId,
+            initialBooking: booking,
+          );
+        },
+      ),
+      // Ticket detail route
+      GoRoute(
+        path: '/ticket/:id',
+        name: 'ticket-detail',
+        builder: (context, state) {
+          final ticketId = state.pathParameters['id']!;
+          final extra = state.extra as Map<String, dynamic>?;
+          return TicketDetailScreen(
+            ticketId: ticketId,
+            ticket: extra?['ticket'] as booking_entity.Ticket?,
+            tickets: extra?['tickets'] as List<booking_entity.Ticket>?,
+            initialIndex: extra?['initialIndex'] as int? ?? 0,
+            booking: extra?['booking'] as booking_entity.Booking?,
+          );
+        },
       ),
       
       

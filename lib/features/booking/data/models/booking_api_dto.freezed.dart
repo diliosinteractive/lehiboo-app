@@ -2648,9 +2648,8 @@ BookingsListResponseDto _$BookingsListResponseDtoFromJson(
 
 /// @nodoc
 mixin _$BookingsListResponseDto {
-  List<BookingListItemDto> get bookings => throw _privateConstructorUsedError;
-  PaginationInfoDto get pagination => throw _privateConstructorUsedError;
-  BookingsSummaryDto get summary => throw _privateConstructorUsedError;
+  List<BookingListItemDto> get data => throw _privateConstructorUsedError;
+  MetaInfoDto? get meta => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -2664,13 +2663,9 @@ abstract class $BookingsListResponseDtoCopyWith<$Res> {
           $Res Function(BookingsListResponseDto) then) =
       _$BookingsListResponseDtoCopyWithImpl<$Res, BookingsListResponseDto>;
   @useResult
-  $Res call(
-      {List<BookingListItemDto> bookings,
-      PaginationInfoDto pagination,
-      BookingsSummaryDto summary});
+  $Res call({List<BookingListItemDto> data, MetaInfoDto? meta});
 
-  $PaginationInfoDtoCopyWith<$Res> get pagination;
-  $BookingsSummaryDtoCopyWith<$Res> get summary;
+  $MetaInfoDtoCopyWith<$Res>? get meta;
 }
 
 /// @nodoc
@@ -2687,39 +2682,30 @@ class _$BookingsListResponseDtoCopyWithImpl<$Res,
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? bookings = null,
-    Object? pagination = null,
-    Object? summary = null,
+    Object? data = null,
+    Object? meta = freezed,
   }) {
     return _then(_value.copyWith(
-      bookings: null == bookings
-          ? _value.bookings
-          : bookings // ignore: cast_nullable_to_non_nullable
+      data: null == data
+          ? _value.data
+          : data // ignore: cast_nullable_to_non_nullable
               as List<BookingListItemDto>,
-      pagination: null == pagination
-          ? _value.pagination
-          : pagination // ignore: cast_nullable_to_non_nullable
-              as PaginationInfoDto,
-      summary: null == summary
-          ? _value.summary
-          : summary // ignore: cast_nullable_to_non_nullable
-              as BookingsSummaryDto,
+      meta: freezed == meta
+          ? _value.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as MetaInfoDto?,
     ) as $Val);
   }
 
   @override
   @pragma('vm:prefer-inline')
-  $PaginationInfoDtoCopyWith<$Res> get pagination {
-    return $PaginationInfoDtoCopyWith<$Res>(_value.pagination, (value) {
-      return _then(_value.copyWith(pagination: value) as $Val);
-    });
-  }
+  $MetaInfoDtoCopyWith<$Res>? get meta {
+    if (_value.meta == null) {
+      return null;
+    }
 
-  @override
-  @pragma('vm:prefer-inline')
-  $BookingsSummaryDtoCopyWith<$Res> get summary {
-    return $BookingsSummaryDtoCopyWith<$Res>(_value.summary, (value) {
-      return _then(_value.copyWith(summary: value) as $Val);
+    return $MetaInfoDtoCopyWith<$Res>(_value.meta!, (value) {
+      return _then(_value.copyWith(meta: value) as $Val);
     });
   }
 }
@@ -2733,15 +2719,10 @@ abstract class _$$BookingsListResponseDtoImplCopyWith<$Res>
       __$$BookingsListResponseDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {List<BookingListItemDto> bookings,
-      PaginationInfoDto pagination,
-      BookingsSummaryDto summary});
+  $Res call({List<BookingListItemDto> data, MetaInfoDto? meta});
 
   @override
-  $PaginationInfoDtoCopyWith<$Res> get pagination;
-  @override
-  $BookingsSummaryDtoCopyWith<$Res> get summary;
+  $MetaInfoDtoCopyWith<$Res>? get meta;
 }
 
 /// @nodoc
@@ -2757,23 +2738,18 @@ class __$$BookingsListResponseDtoImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? bookings = null,
-    Object? pagination = null,
-    Object? summary = null,
+    Object? data = null,
+    Object? meta = freezed,
   }) {
     return _then(_$BookingsListResponseDtoImpl(
-      bookings: null == bookings
-          ? _value._bookings
-          : bookings // ignore: cast_nullable_to_non_nullable
+      data: null == data
+          ? _value._data
+          : data // ignore: cast_nullable_to_non_nullable
               as List<BookingListItemDto>,
-      pagination: null == pagination
-          ? _value.pagination
-          : pagination // ignore: cast_nullable_to_non_nullable
-              as PaginationInfoDto,
-      summary: null == summary
-          ? _value.summary
-          : summary // ignore: cast_nullable_to_non_nullable
-              as BookingsSummaryDto,
+      meta: freezed == meta
+          ? _value.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as MetaInfoDto?,
     ));
   }
 }
@@ -2782,30 +2758,26 @@ class __$$BookingsListResponseDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$BookingsListResponseDtoImpl implements _BookingsListResponseDto {
   const _$BookingsListResponseDtoImpl(
-      {required final List<BookingListItemDto> bookings,
-      required this.pagination,
-      required this.summary})
-      : _bookings = bookings;
+      {required final List<BookingListItemDto> data, this.meta})
+      : _data = data;
 
   factory _$BookingsListResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$BookingsListResponseDtoImplFromJson(json);
 
-  final List<BookingListItemDto> _bookings;
+  final List<BookingListItemDto> _data;
   @override
-  List<BookingListItemDto> get bookings {
-    if (_bookings is EqualUnmodifiableListView) return _bookings;
+  List<BookingListItemDto> get data {
+    if (_data is EqualUnmodifiableListView) return _data;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_bookings);
+    return EqualUnmodifiableListView(_data);
   }
 
   @override
-  final PaginationInfoDto pagination;
-  @override
-  final BookingsSummaryDto summary;
+  final MetaInfoDto? meta;
 
   @override
   String toString() {
-    return 'BookingsListResponseDto(bookings: $bookings, pagination: $pagination, summary: $summary)';
+    return 'BookingsListResponseDto(data: $data, meta: $meta)';
   }
 
   @override
@@ -2813,16 +2785,14 @@ class _$BookingsListResponseDtoImpl implements _BookingsListResponseDto {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$BookingsListResponseDtoImpl &&
-            const DeepCollectionEquality().equals(other._bookings, _bookings) &&
-            (identical(other.pagination, pagination) ||
-                other.pagination == pagination) &&
-            (identical(other.summary, summary) || other.summary == summary));
+            const DeepCollectionEquality().equals(other._data, _data) &&
+            (identical(other.meta, meta) || other.meta == meta));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType,
-      const DeepCollectionEquality().hash(_bookings), pagination, summary);
+  int get hashCode => Object.hash(
+      runtimeType, const DeepCollectionEquality().hash(_data), meta);
 
   @JsonKey(ignore: true)
   @override
@@ -2841,24 +2811,233 @@ class _$BookingsListResponseDtoImpl implements _BookingsListResponseDto {
 
 abstract class _BookingsListResponseDto implements BookingsListResponseDto {
   const factory _BookingsListResponseDto(
-          {required final List<BookingListItemDto> bookings,
-          required final PaginationInfoDto pagination,
-          required final BookingsSummaryDto summary}) =
-      _$BookingsListResponseDtoImpl;
+      {required final List<BookingListItemDto> data,
+      final MetaInfoDto? meta}) = _$BookingsListResponseDtoImpl;
 
   factory _BookingsListResponseDto.fromJson(Map<String, dynamic> json) =
       _$BookingsListResponseDtoImpl.fromJson;
 
   @override
-  List<BookingListItemDto> get bookings;
+  List<BookingListItemDto> get data;
   @override
-  PaginationInfoDto get pagination;
-  @override
-  BookingsSummaryDto get summary;
+  MetaInfoDto? get meta;
   @override
   @JsonKey(ignore: true)
   _$$BookingsListResponseDtoImplCopyWith<_$BookingsListResponseDtoImpl>
       get copyWith => throw _privateConstructorUsedError;
+}
+
+MetaInfoDto _$MetaInfoDtoFromJson(Map<String, dynamic> json) {
+  return _MetaInfoDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$MetaInfoDto {
+  int get total => throw _privateConstructorUsedError;
+  @JsonKey(name: 'per_page')
+  int get perPage => throw _privateConstructorUsedError;
+  @JsonKey(name: 'current_page')
+  int get currentPage => throw _privateConstructorUsedError;
+  @JsonKey(name: 'last_page')
+  int get lastPage => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $MetaInfoDtoCopyWith<MetaInfoDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $MetaInfoDtoCopyWith<$Res> {
+  factory $MetaInfoDtoCopyWith(
+          MetaInfoDto value, $Res Function(MetaInfoDto) then) =
+      _$MetaInfoDtoCopyWithImpl<$Res, MetaInfoDto>;
+  @useResult
+  $Res call(
+      {int total,
+      @JsonKey(name: 'per_page') int perPage,
+      @JsonKey(name: 'current_page') int currentPage,
+      @JsonKey(name: 'last_page') int lastPage});
+}
+
+/// @nodoc
+class _$MetaInfoDtoCopyWithImpl<$Res, $Val extends MetaInfoDto>
+    implements $MetaInfoDtoCopyWith<$Res> {
+  _$MetaInfoDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? total = null,
+    Object? perPage = null,
+    Object? currentPage = null,
+    Object? lastPage = null,
+  }) {
+    return _then(_value.copyWith(
+      total: null == total
+          ? _value.total
+          : total // ignore: cast_nullable_to_non_nullable
+              as int,
+      perPage: null == perPage
+          ? _value.perPage
+          : perPage // ignore: cast_nullable_to_non_nullable
+              as int,
+      currentPage: null == currentPage
+          ? _value.currentPage
+          : currentPage // ignore: cast_nullable_to_non_nullable
+              as int,
+      lastPage: null == lastPage
+          ? _value.lastPage
+          : lastPage // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$MetaInfoDtoImplCopyWith<$Res>
+    implements $MetaInfoDtoCopyWith<$Res> {
+  factory _$$MetaInfoDtoImplCopyWith(
+          _$MetaInfoDtoImpl value, $Res Function(_$MetaInfoDtoImpl) then) =
+      __$$MetaInfoDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {int total,
+      @JsonKey(name: 'per_page') int perPage,
+      @JsonKey(name: 'current_page') int currentPage,
+      @JsonKey(name: 'last_page') int lastPage});
+}
+
+/// @nodoc
+class __$$MetaInfoDtoImplCopyWithImpl<$Res>
+    extends _$MetaInfoDtoCopyWithImpl<$Res, _$MetaInfoDtoImpl>
+    implements _$$MetaInfoDtoImplCopyWith<$Res> {
+  __$$MetaInfoDtoImplCopyWithImpl(
+      _$MetaInfoDtoImpl _value, $Res Function(_$MetaInfoDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? total = null,
+    Object? perPage = null,
+    Object? currentPage = null,
+    Object? lastPage = null,
+  }) {
+    return _then(_$MetaInfoDtoImpl(
+      total: null == total
+          ? _value.total
+          : total // ignore: cast_nullable_to_non_nullable
+              as int,
+      perPage: null == perPage
+          ? _value.perPage
+          : perPage // ignore: cast_nullable_to_non_nullable
+              as int,
+      currentPage: null == currentPage
+          ? _value.currentPage
+          : currentPage // ignore: cast_nullable_to_non_nullable
+              as int,
+      lastPage: null == lastPage
+          ? _value.lastPage
+          : lastPage // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$MetaInfoDtoImpl implements _MetaInfoDto {
+  const _$MetaInfoDtoImpl(
+      {required this.total,
+      @JsonKey(name: 'per_page') required this.perPage,
+      @JsonKey(name: 'current_page') required this.currentPage,
+      @JsonKey(name: 'last_page') required this.lastPage});
+
+  factory _$MetaInfoDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MetaInfoDtoImplFromJson(json);
+
+  @override
+  final int total;
+  @override
+  @JsonKey(name: 'per_page')
+  final int perPage;
+  @override
+  @JsonKey(name: 'current_page')
+  final int currentPage;
+  @override
+  @JsonKey(name: 'last_page')
+  final int lastPage;
+
+  @override
+  String toString() {
+    return 'MetaInfoDto(total: $total, perPage: $perPage, currentPage: $currentPage, lastPage: $lastPage)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$MetaInfoDtoImpl &&
+            (identical(other.total, total) || other.total == total) &&
+            (identical(other.perPage, perPage) || other.perPage == perPage) &&
+            (identical(other.currentPage, currentPage) ||
+                other.currentPage == currentPage) &&
+            (identical(other.lastPage, lastPage) ||
+                other.lastPage == lastPage));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, total, perPage, currentPage, lastPage);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$MetaInfoDtoImplCopyWith<_$MetaInfoDtoImpl> get copyWith =>
+      __$$MetaInfoDtoImplCopyWithImpl<_$MetaInfoDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$MetaInfoDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _MetaInfoDto implements MetaInfoDto {
+  const factory _MetaInfoDto(
+          {required final int total,
+          @JsonKey(name: 'per_page') required final int perPage,
+          @JsonKey(name: 'current_page') required final int currentPage,
+          @JsonKey(name: 'last_page') required final int lastPage}) =
+      _$MetaInfoDtoImpl;
+
+  factory _MetaInfoDto.fromJson(Map<String, dynamic> json) =
+      _$MetaInfoDtoImpl.fromJson;
+
+  @override
+  int get total;
+  @override
+  @JsonKey(name: 'per_page')
+  int get perPage;
+  @override
+  @JsonKey(name: 'current_page')
+  int get currentPage;
+  @override
+  @JsonKey(name: 'last_page')
+  int get lastPage;
+  @override
+  @JsonKey(ignore: true)
+  _$$MetaInfoDtoImplCopyWith<_$MetaInfoDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 BookingListItemDto _$BookingListItemDtoFromJson(Map<String, dynamic> json) {
@@ -2868,20 +3047,37 @@ BookingListItemDto _$BookingListItemDtoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$BookingListItemDto {
   int get id => throw _privateConstructorUsedError;
-  String get reference => throw _privateConstructorUsedError;
+  String? get uuid => throw _privateConstructorUsedError;
+  String? get reference => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
-  BookingEventInfoDto get event => throw _privateConstructorUsedError;
-  @JsonKey(name: 'tickets_count')
-  int get ticketsCount => throw _privateConstructorUsedError;
-  @JsonKey(name: 'total_paid')
-  double get totalPaid => throw _privateConstructorUsedError;
-  String get currency => throw _privateConstructorUsedError;
-  @JsonKey(name: 'booked_at')
-  String get bookedAt => throw _privateConstructorUsedError;
-  @JsonKey(name: 'is_upcoming')
-  bool get isUpcoming => throw _privateConstructorUsedError;
+  @JsonKey(name: 'event_id')
+  int? get eventId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'slot_id')
+  int? get slotId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'user_id')
+  int? get userId =>
+      throw _privateConstructorUsedError; // Convenience fields (camelCase from API)
+  String? get eventTitle => throw _privateConstructorUsedError;
+  String? get eventSlug => throw _privateConstructorUsedError;
+  String? get eventImage => throw _privateConstructorUsedError;
+  String? get slotDate => throw _privateConstructorUsedError;
+  double? get grandTotal => throw _privateConstructorUsedError;
+  double? get totalAmount => throw _privateConstructorUsedError;
+  int? get ticketCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'customer_email')
+  String? get customerEmail => throw _privateConstructorUsedError;
+  @JsonKey(name: 'customer_first_name')
+  String? get customerFirstName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'customer_last_name')
+  String? get customerLastName => throw _privateConstructorUsedError;
   @JsonKey(name: 'can_cancel')
-  bool get canCancel => throw _privateConstructorUsedError;
+  bool? get canCancel => throw _privateConstructorUsedError;
+  @JsonKey(name: 'created_at')
+  String? get createdAt => throw _privateConstructorUsedError;
+  String? get createdAt2 =>
+      throw _privateConstructorUsedError; // Relations loaded by API
+  BookingEventDto? get event => throw _privateConstructorUsedError;
+  BookingSlotDto? get slot => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -2897,17 +3093,30 @@ abstract class $BookingListItemDtoCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
-      String reference,
+      String? uuid,
+      String? reference,
       String status,
-      BookingEventInfoDto event,
-      @JsonKey(name: 'tickets_count') int ticketsCount,
-      @JsonKey(name: 'total_paid') double totalPaid,
-      String currency,
-      @JsonKey(name: 'booked_at') String bookedAt,
-      @JsonKey(name: 'is_upcoming') bool isUpcoming,
-      @JsonKey(name: 'can_cancel') bool canCancel});
+      @JsonKey(name: 'event_id') int? eventId,
+      @JsonKey(name: 'slot_id') int? slotId,
+      @JsonKey(name: 'user_id') int? userId,
+      String? eventTitle,
+      String? eventSlug,
+      String? eventImage,
+      String? slotDate,
+      double? grandTotal,
+      double? totalAmount,
+      int? ticketCount,
+      @JsonKey(name: 'customer_email') String? customerEmail,
+      @JsonKey(name: 'customer_first_name') String? customerFirstName,
+      @JsonKey(name: 'customer_last_name') String? customerLastName,
+      @JsonKey(name: 'can_cancel') bool? canCancel,
+      @JsonKey(name: 'created_at') String? createdAt,
+      String? createdAt2,
+      BookingEventDto? event,
+      BookingSlotDto? slot});
 
-  $BookingEventInfoDtoCopyWith<$Res> get event;
+  $BookingEventDtoCopyWith<$Res>? get event;
+  $BookingSlotDtoCopyWith<$Res>? get slot;
 }
 
 /// @nodoc
@@ -2924,65 +3133,141 @@ class _$BookingListItemDtoCopyWithImpl<$Res, $Val extends BookingListItemDto>
   @override
   $Res call({
     Object? id = null,
-    Object? reference = null,
+    Object? uuid = freezed,
+    Object? reference = freezed,
     Object? status = null,
-    Object? event = null,
-    Object? ticketsCount = null,
-    Object? totalPaid = null,
-    Object? currency = null,
-    Object? bookedAt = null,
-    Object? isUpcoming = null,
-    Object? canCancel = null,
+    Object? eventId = freezed,
+    Object? slotId = freezed,
+    Object? userId = freezed,
+    Object? eventTitle = freezed,
+    Object? eventSlug = freezed,
+    Object? eventImage = freezed,
+    Object? slotDate = freezed,
+    Object? grandTotal = freezed,
+    Object? totalAmount = freezed,
+    Object? ticketCount = freezed,
+    Object? customerEmail = freezed,
+    Object? customerFirstName = freezed,
+    Object? customerLastName = freezed,
+    Object? canCancel = freezed,
+    Object? createdAt = freezed,
+    Object? createdAt2 = freezed,
+    Object? event = freezed,
+    Object? slot = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
-      reference: null == reference
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reference: freezed == reference
           ? _value.reference
           : reference // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as String,
-      event: null == event
-          ? _value.event
-          : event // ignore: cast_nullable_to_non_nullable
-              as BookingEventInfoDto,
-      ticketsCount: null == ticketsCount
-          ? _value.ticketsCount
-          : ticketsCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      totalPaid: null == totalPaid
-          ? _value.totalPaid
-          : totalPaid // ignore: cast_nullable_to_non_nullable
-              as double,
-      currency: null == currency
-          ? _value.currency
-          : currency // ignore: cast_nullable_to_non_nullable
-              as String,
-      bookedAt: null == bookedAt
-          ? _value.bookedAt
-          : bookedAt // ignore: cast_nullable_to_non_nullable
-              as String,
-      isUpcoming: null == isUpcoming
-          ? _value.isUpcoming
-          : isUpcoming // ignore: cast_nullable_to_non_nullable
-              as bool,
-      canCancel: null == canCancel
+      eventId: freezed == eventId
+          ? _value.eventId
+          : eventId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      slotId: freezed == slotId
+          ? _value.slotId
+          : slotId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      userId: freezed == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      eventTitle: freezed == eventTitle
+          ? _value.eventTitle
+          : eventTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventSlug: freezed == eventSlug
+          ? _value.eventSlug
+          : eventSlug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventImage: freezed == eventImage
+          ? _value.eventImage
+          : eventImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      slotDate: freezed == slotDate
+          ? _value.slotDate
+          : slotDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      grandTotal: freezed == grandTotal
+          ? _value.grandTotal
+          : grandTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
+      totalAmount: freezed == totalAmount
+          ? _value.totalAmount
+          : totalAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      ticketCount: freezed == ticketCount
+          ? _value.ticketCount
+          : ticketCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      customerEmail: freezed == customerEmail
+          ? _value.customerEmail
+          : customerEmail // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerFirstName: freezed == customerFirstName
+          ? _value.customerFirstName
+          : customerFirstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerLastName: freezed == customerLastName
+          ? _value.customerLastName
+          : customerLastName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      canCancel: freezed == canCancel
           ? _value.canCancel
           : canCancel // ignore: cast_nullable_to_non_nullable
-              as bool,
+              as bool?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt2: freezed == createdAt2
+          ? _value.createdAt2
+          : createdAt2 // ignore: cast_nullable_to_non_nullable
+              as String?,
+      event: freezed == event
+          ? _value.event
+          : event // ignore: cast_nullable_to_non_nullable
+              as BookingEventDto?,
+      slot: freezed == slot
+          ? _value.slot
+          : slot // ignore: cast_nullable_to_non_nullable
+              as BookingSlotDto?,
     ) as $Val);
   }
 
   @override
   @pragma('vm:prefer-inline')
-  $BookingEventInfoDtoCopyWith<$Res> get event {
-    return $BookingEventInfoDtoCopyWith<$Res>(_value.event, (value) {
+  $BookingEventDtoCopyWith<$Res>? get event {
+    if (_value.event == null) {
+      return null;
+    }
+
+    return $BookingEventDtoCopyWith<$Res>(_value.event!, (value) {
       return _then(_value.copyWith(event: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $BookingSlotDtoCopyWith<$Res>? get slot {
+    if (_value.slot == null) {
+      return null;
+    }
+
+    return $BookingSlotDtoCopyWith<$Res>(_value.slot!, (value) {
+      return _then(_value.copyWith(slot: value) as $Val);
     });
   }
 }
@@ -2997,18 +3282,32 @@ abstract class _$$BookingListItemDtoImplCopyWith<$Res>
   @useResult
   $Res call(
       {int id,
-      String reference,
+      String? uuid,
+      String? reference,
       String status,
-      BookingEventInfoDto event,
-      @JsonKey(name: 'tickets_count') int ticketsCount,
-      @JsonKey(name: 'total_paid') double totalPaid,
-      String currency,
-      @JsonKey(name: 'booked_at') String bookedAt,
-      @JsonKey(name: 'is_upcoming') bool isUpcoming,
-      @JsonKey(name: 'can_cancel') bool canCancel});
+      @JsonKey(name: 'event_id') int? eventId,
+      @JsonKey(name: 'slot_id') int? slotId,
+      @JsonKey(name: 'user_id') int? userId,
+      String? eventTitle,
+      String? eventSlug,
+      String? eventImage,
+      String? slotDate,
+      double? grandTotal,
+      double? totalAmount,
+      int? ticketCount,
+      @JsonKey(name: 'customer_email') String? customerEmail,
+      @JsonKey(name: 'customer_first_name') String? customerFirstName,
+      @JsonKey(name: 'customer_last_name') String? customerLastName,
+      @JsonKey(name: 'can_cancel') bool? canCancel,
+      @JsonKey(name: 'created_at') String? createdAt,
+      String? createdAt2,
+      BookingEventDto? event,
+      BookingSlotDto? slot});
 
   @override
-  $BookingEventInfoDtoCopyWith<$Res> get event;
+  $BookingEventDtoCopyWith<$Res>? get event;
+  @override
+  $BookingSlotDtoCopyWith<$Res>? get slot;
 }
 
 /// @nodoc
@@ -3023,57 +3322,117 @@ class __$$BookingListItemDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? reference = null,
+    Object? uuid = freezed,
+    Object? reference = freezed,
     Object? status = null,
-    Object? event = null,
-    Object? ticketsCount = null,
-    Object? totalPaid = null,
-    Object? currency = null,
-    Object? bookedAt = null,
-    Object? isUpcoming = null,
-    Object? canCancel = null,
+    Object? eventId = freezed,
+    Object? slotId = freezed,
+    Object? userId = freezed,
+    Object? eventTitle = freezed,
+    Object? eventSlug = freezed,
+    Object? eventImage = freezed,
+    Object? slotDate = freezed,
+    Object? grandTotal = freezed,
+    Object? totalAmount = freezed,
+    Object? ticketCount = freezed,
+    Object? customerEmail = freezed,
+    Object? customerFirstName = freezed,
+    Object? customerLastName = freezed,
+    Object? canCancel = freezed,
+    Object? createdAt = freezed,
+    Object? createdAt2 = freezed,
+    Object? event = freezed,
+    Object? slot = freezed,
   }) {
     return _then(_$BookingListItemDtoImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
-      reference: null == reference
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reference: freezed == reference
           ? _value.reference
           : reference // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as String,
-      event: null == event
-          ? _value.event
-          : event // ignore: cast_nullable_to_non_nullable
-              as BookingEventInfoDto,
-      ticketsCount: null == ticketsCount
-          ? _value.ticketsCount
-          : ticketsCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      totalPaid: null == totalPaid
-          ? _value.totalPaid
-          : totalPaid // ignore: cast_nullable_to_non_nullable
-              as double,
-      currency: null == currency
-          ? _value.currency
-          : currency // ignore: cast_nullable_to_non_nullable
-              as String,
-      bookedAt: null == bookedAt
-          ? _value.bookedAt
-          : bookedAt // ignore: cast_nullable_to_non_nullable
-              as String,
-      isUpcoming: null == isUpcoming
-          ? _value.isUpcoming
-          : isUpcoming // ignore: cast_nullable_to_non_nullable
-              as bool,
-      canCancel: null == canCancel
+      eventId: freezed == eventId
+          ? _value.eventId
+          : eventId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      slotId: freezed == slotId
+          ? _value.slotId
+          : slotId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      userId: freezed == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      eventTitle: freezed == eventTitle
+          ? _value.eventTitle
+          : eventTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventSlug: freezed == eventSlug
+          ? _value.eventSlug
+          : eventSlug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventImage: freezed == eventImage
+          ? _value.eventImage
+          : eventImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      slotDate: freezed == slotDate
+          ? _value.slotDate
+          : slotDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      grandTotal: freezed == grandTotal
+          ? _value.grandTotal
+          : grandTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
+      totalAmount: freezed == totalAmount
+          ? _value.totalAmount
+          : totalAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      ticketCount: freezed == ticketCount
+          ? _value.ticketCount
+          : ticketCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      customerEmail: freezed == customerEmail
+          ? _value.customerEmail
+          : customerEmail // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerFirstName: freezed == customerFirstName
+          ? _value.customerFirstName
+          : customerFirstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerLastName: freezed == customerLastName
+          ? _value.customerLastName
+          : customerLastName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      canCancel: freezed == canCancel
           ? _value.canCancel
           : canCancel // ignore: cast_nullable_to_non_nullable
-              as bool,
+              as bool?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt2: freezed == createdAt2
+          ? _value.createdAt2
+          : createdAt2 // ignore: cast_nullable_to_non_nullable
+              as String?,
+      event: freezed == event
+          ? _value.event
+          : event // ignore: cast_nullable_to_non_nullable
+              as BookingEventDto?,
+      slot: freezed == slot
+          ? _value.slot
+          : slot // ignore: cast_nullable_to_non_nullable
+              as BookingSlotDto?,
     ));
   }
 }
@@ -3083,15 +3442,27 @@ class __$$BookingListItemDtoImplCopyWithImpl<$Res>
 class _$BookingListItemDtoImpl implements _BookingListItemDto {
   const _$BookingListItemDtoImpl(
       {required this.id,
-      required this.reference,
+      this.uuid,
+      this.reference,
       required this.status,
-      required this.event,
-      @JsonKey(name: 'tickets_count') required this.ticketsCount,
-      @JsonKey(name: 'total_paid') required this.totalPaid,
-      required this.currency,
-      @JsonKey(name: 'booked_at') required this.bookedAt,
-      @JsonKey(name: 'is_upcoming') required this.isUpcoming,
-      @JsonKey(name: 'can_cancel') required this.canCancel});
+      @JsonKey(name: 'event_id') this.eventId,
+      @JsonKey(name: 'slot_id') this.slotId,
+      @JsonKey(name: 'user_id') this.userId,
+      this.eventTitle,
+      this.eventSlug,
+      this.eventImage,
+      this.slotDate,
+      this.grandTotal,
+      this.totalAmount,
+      this.ticketCount,
+      @JsonKey(name: 'customer_email') this.customerEmail,
+      @JsonKey(name: 'customer_first_name') this.customerFirstName,
+      @JsonKey(name: 'customer_last_name') this.customerLastName,
+      @JsonKey(name: 'can_cancel') this.canCancel,
+      @JsonKey(name: 'created_at') this.createdAt,
+      this.createdAt2,
+      this.event,
+      this.slot});
 
   factory _$BookingListItemDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$BookingListItemDtoImplFromJson(json);
@@ -3099,32 +3470,61 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
   @override
   final int id;
   @override
-  final String reference;
+  final String? uuid;
+  @override
+  final String? reference;
   @override
   final String status;
   @override
-  final BookingEventInfoDto event;
+  @JsonKey(name: 'event_id')
+  final int? eventId;
   @override
-  @JsonKey(name: 'tickets_count')
-  final int ticketsCount;
+  @JsonKey(name: 'slot_id')
+  final int? slotId;
   @override
-  @JsonKey(name: 'total_paid')
-  final double totalPaid;
+  @JsonKey(name: 'user_id')
+  final int? userId;
+// Convenience fields (camelCase from API)
   @override
-  final String currency;
+  final String? eventTitle;
   @override
-  @JsonKey(name: 'booked_at')
-  final String bookedAt;
+  final String? eventSlug;
   @override
-  @JsonKey(name: 'is_upcoming')
-  final bool isUpcoming;
+  final String? eventImage;
+  @override
+  final String? slotDate;
+  @override
+  final double? grandTotal;
+  @override
+  final double? totalAmount;
+  @override
+  final int? ticketCount;
+  @override
+  @JsonKey(name: 'customer_email')
+  final String? customerEmail;
+  @override
+  @JsonKey(name: 'customer_first_name')
+  final String? customerFirstName;
+  @override
+  @JsonKey(name: 'customer_last_name')
+  final String? customerLastName;
   @override
   @JsonKey(name: 'can_cancel')
-  final bool canCancel;
+  final bool? canCancel;
+  @override
+  @JsonKey(name: 'created_at')
+  final String? createdAt;
+  @override
+  final String? createdAt2;
+// Relations loaded by API
+  @override
+  final BookingEventDto? event;
+  @override
+  final BookingSlotDto? slot;
 
   @override
   String toString() {
-    return 'BookingListItemDto(id: $id, reference: $reference, status: $status, event: $event, ticketsCount: $ticketsCount, totalPaid: $totalPaid, currency: $currency, bookedAt: $bookedAt, isUpcoming: $isUpcoming, canCancel: $canCancel)';
+    return 'BookingListItemDto(id: $id, uuid: $uuid, reference: $reference, status: $status, eventId: $eventId, slotId: $slotId, userId: $userId, eventTitle: $eventTitle, eventSlug: $eventSlug, eventImage: $eventImage, slotDate: $slotDate, grandTotal: $grandTotal, totalAmount: $totalAmount, ticketCount: $ticketCount, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, canCancel: $canCancel, createdAt: $createdAt, createdAt2: $createdAt2, event: $event, slot: $slot)';
   }
 
   @override
@@ -3133,28 +3533,70 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
         (other.runtimeType == runtimeType &&
             other is _$BookingListItemDtoImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.uuid, uuid) || other.uuid == uuid) &&
             (identical(other.reference, reference) ||
                 other.reference == reference) &&
             (identical(other.status, status) || other.status == status) &&
-            (identical(other.event, event) || other.event == event) &&
-            (identical(other.ticketsCount, ticketsCount) ||
-                other.ticketsCount == ticketsCount) &&
-            (identical(other.totalPaid, totalPaid) ||
-                other.totalPaid == totalPaid) &&
-            (identical(other.currency, currency) ||
-                other.currency == currency) &&
-            (identical(other.bookedAt, bookedAt) ||
-                other.bookedAt == bookedAt) &&
-            (identical(other.isUpcoming, isUpcoming) ||
-                other.isUpcoming == isUpcoming) &&
+            (identical(other.eventId, eventId) || other.eventId == eventId) &&
+            (identical(other.slotId, slotId) || other.slotId == slotId) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.eventTitle, eventTitle) ||
+                other.eventTitle == eventTitle) &&
+            (identical(other.eventSlug, eventSlug) ||
+                other.eventSlug == eventSlug) &&
+            (identical(other.eventImage, eventImage) ||
+                other.eventImage == eventImage) &&
+            (identical(other.slotDate, slotDate) ||
+                other.slotDate == slotDate) &&
+            (identical(other.grandTotal, grandTotal) ||
+                other.grandTotal == grandTotal) &&
+            (identical(other.totalAmount, totalAmount) ||
+                other.totalAmount == totalAmount) &&
+            (identical(other.ticketCount, ticketCount) ||
+                other.ticketCount == ticketCount) &&
+            (identical(other.customerEmail, customerEmail) ||
+                other.customerEmail == customerEmail) &&
+            (identical(other.customerFirstName, customerFirstName) ||
+                other.customerFirstName == customerFirstName) &&
+            (identical(other.customerLastName, customerLastName) ||
+                other.customerLastName == customerLastName) &&
             (identical(other.canCancel, canCancel) ||
-                other.canCancel == canCancel));
+                other.canCancel == canCancel) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.createdAt2, createdAt2) ||
+                other.createdAt2 == createdAt2) &&
+            (identical(other.event, event) || other.event == event) &&
+            (identical(other.slot, slot) || other.slot == slot));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, reference, status, event,
-      ticketsCount, totalPaid, currency, bookedAt, isUpcoming, canCancel);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        uuid,
+        reference,
+        status,
+        eventId,
+        slotId,
+        userId,
+        eventTitle,
+        eventSlug,
+        eventImage,
+        slotDate,
+        grandTotal,
+        totalAmount,
+        ticketCount,
+        customerEmail,
+        customerFirstName,
+        customerLastName,
+        canCancel,
+        createdAt,
+        createdAt2,
+        event,
+        slot
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -3173,17 +3615,28 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
 
 abstract class _BookingListItemDto implements BookingListItemDto {
   const factory _BookingListItemDto(
-          {required final int id,
-          required final String reference,
-          required final String status,
-          required final BookingEventInfoDto event,
-          @JsonKey(name: 'tickets_count') required final int ticketsCount,
-          @JsonKey(name: 'total_paid') required final double totalPaid,
-          required final String currency,
-          @JsonKey(name: 'booked_at') required final String bookedAt,
-          @JsonKey(name: 'is_upcoming') required final bool isUpcoming,
-          @JsonKey(name: 'can_cancel') required final bool canCancel}) =
-      _$BookingListItemDtoImpl;
+      {required final int id,
+      final String? uuid,
+      final String? reference,
+      required final String status,
+      @JsonKey(name: 'event_id') final int? eventId,
+      @JsonKey(name: 'slot_id') final int? slotId,
+      @JsonKey(name: 'user_id') final int? userId,
+      final String? eventTitle,
+      final String? eventSlug,
+      final String? eventImage,
+      final String? slotDate,
+      final double? grandTotal,
+      final double? totalAmount,
+      final int? ticketCount,
+      @JsonKey(name: 'customer_email') final String? customerEmail,
+      @JsonKey(name: 'customer_first_name') final String? customerFirstName,
+      @JsonKey(name: 'customer_last_name') final String? customerLastName,
+      @JsonKey(name: 'can_cancel') final bool? canCancel,
+      @JsonKey(name: 'created_at') final String? createdAt,
+      final String? createdAt2,
+      final BookingEventDto? event,
+      final BookingSlotDto? slot}) = _$BookingListItemDtoImpl;
 
   factory _BookingListItemDto.fromJson(Map<String, dynamic> json) =
       _$BookingListItemDtoImpl.fromJson;
@@ -3191,69 +3644,109 @@ abstract class _BookingListItemDto implements BookingListItemDto {
   @override
   int get id;
   @override
-  String get reference;
+  String? get uuid;
+  @override
+  String? get reference;
   @override
   String get status;
   @override
-  BookingEventInfoDto get event;
+  @JsonKey(name: 'event_id')
+  int? get eventId;
   @override
-  @JsonKey(name: 'tickets_count')
-  int get ticketsCount;
+  @JsonKey(name: 'slot_id')
+  int? get slotId;
   @override
-  @JsonKey(name: 'total_paid')
-  double get totalPaid;
+  @JsonKey(name: 'user_id')
+  int? get userId;
+  @override // Convenience fields (camelCase from API)
+  String? get eventTitle;
   @override
-  String get currency;
+  String? get eventSlug;
   @override
-  @JsonKey(name: 'booked_at')
-  String get bookedAt;
+  String? get eventImage;
   @override
-  @JsonKey(name: 'is_upcoming')
-  bool get isUpcoming;
+  String? get slotDate;
+  @override
+  double? get grandTotal;
+  @override
+  double? get totalAmount;
+  @override
+  int? get ticketCount;
+  @override
+  @JsonKey(name: 'customer_email')
+  String? get customerEmail;
+  @override
+  @JsonKey(name: 'customer_first_name')
+  String? get customerFirstName;
+  @override
+  @JsonKey(name: 'customer_last_name')
+  String? get customerLastName;
   @override
   @JsonKey(name: 'can_cancel')
-  bool get canCancel;
+  bool? get canCancel;
+  @override
+  @JsonKey(name: 'created_at')
+  String? get createdAt;
+  @override
+  String? get createdAt2;
+  @override // Relations loaded by API
+  BookingEventDto? get event;
+  @override
+  BookingSlotDto? get slot;
   @override
   @JsonKey(ignore: true)
   _$$BookingListItemDtoImplCopyWith<_$BookingListItemDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
-PaginationInfoDto _$PaginationInfoDtoFromJson(Map<String, dynamic> json) {
-  return _PaginationInfoDto.fromJson(json);
+BookingEventDto _$BookingEventDtoFromJson(Map<String, dynamic> json) {
+  return _BookingEventDto.fromJson(json);
 }
 
 /// @nodoc
-mixin _$PaginationInfoDto {
-  @JsonKey(name: 'current_page')
-  int get currentPage => throw _privateConstructorUsedError;
-  @JsonKey(name: 'total_items')
-  int get totalItems => throw _privateConstructorUsedError;
-  @JsonKey(name: 'total_pages')
-  int get totalPages => throw _privateConstructorUsedError;
+mixin _$BookingEventDto {
+  String? get id => throw _privateConstructorUsedError; // UUID string
+  @JsonKey(name: 'internal_id')
+  int? get internalId => throw _privateConstructorUsedError;
+  String? get uuid => throw _privateConstructorUsedError;
+  String get title => throw _privateConstructorUsedError;
+  String? get slug => throw _privateConstructorUsedError;
+  @JsonKey(name: 'featured_image')
+  String? get featuredImage => throw _privateConstructorUsedError;
+  @JsonKey(name: 'cover_image')
+  String? get coverImage => throw _privateConstructorUsedError;
+  @JsonKey(name: 'venue_name')
+  String? get venueName => throw _privateConstructorUsedError;
+  String? get city => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
-  $PaginationInfoDtoCopyWith<PaginationInfoDto> get copyWith =>
+  $BookingEventDtoCopyWith<BookingEventDto> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $PaginationInfoDtoCopyWith<$Res> {
-  factory $PaginationInfoDtoCopyWith(
-          PaginationInfoDto value, $Res Function(PaginationInfoDto) then) =
-      _$PaginationInfoDtoCopyWithImpl<$Res, PaginationInfoDto>;
+abstract class $BookingEventDtoCopyWith<$Res> {
+  factory $BookingEventDtoCopyWith(
+          BookingEventDto value, $Res Function(BookingEventDto) then) =
+      _$BookingEventDtoCopyWithImpl<$Res, BookingEventDto>;
   @useResult
   $Res call(
-      {@JsonKey(name: 'current_page') int currentPage,
-      @JsonKey(name: 'total_items') int totalItems,
-      @JsonKey(name: 'total_pages') int totalPages});
+      {String? id,
+      @JsonKey(name: 'internal_id') int? internalId,
+      String? uuid,
+      String title,
+      String? slug,
+      @JsonKey(name: 'featured_image') String? featuredImage,
+      @JsonKey(name: 'cover_image') String? coverImage,
+      @JsonKey(name: 'venue_name') String? venueName,
+      String? city});
 }
 
 /// @nodoc
-class _$PaginationInfoDtoCopyWithImpl<$Res, $Val extends PaginationInfoDto>
-    implements $PaginationInfoDtoCopyWith<$Res> {
-  _$PaginationInfoDtoCopyWithImpl(this._value, this._then);
+class _$BookingEventDtoCopyWithImpl<$Res, $Val extends BookingEventDto>
+    implements $BookingEventDtoCopyWith<$Res> {
+  _$BookingEventDtoCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
@@ -3263,186 +3756,320 @@ class _$PaginationInfoDtoCopyWithImpl<$Res, $Val extends PaginationInfoDto>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? currentPage = null,
-    Object? totalItems = null,
-    Object? totalPages = null,
+    Object? id = freezed,
+    Object? internalId = freezed,
+    Object? uuid = freezed,
+    Object? title = null,
+    Object? slug = freezed,
+    Object? featuredImage = freezed,
+    Object? coverImage = freezed,
+    Object? venueName = freezed,
+    Object? city = freezed,
   }) {
     return _then(_value.copyWith(
-      currentPage: null == currentPage
-          ? _value.currentPage
-          : currentPage // ignore: cast_nullable_to_non_nullable
-              as int,
-      totalItems: null == totalItems
-          ? _value.totalItems
-          : totalItems // ignore: cast_nullable_to_non_nullable
-              as int,
-      totalPages: null == totalPages
-          ? _value.totalPages
-          : totalPages // ignore: cast_nullable_to_non_nullable
-              as int,
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
+      internalId: freezed == internalId
+          ? _value.internalId
+          : internalId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      slug: freezed == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      featuredImage: freezed == featuredImage
+          ? _value.featuredImage
+          : featuredImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      coverImage: freezed == coverImage
+          ? _value.coverImage
+          : coverImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      venueName: freezed == venueName
+          ? _value.venueName
+          : venueName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
 
 /// @nodoc
-abstract class _$$PaginationInfoDtoImplCopyWith<$Res>
-    implements $PaginationInfoDtoCopyWith<$Res> {
-  factory _$$PaginationInfoDtoImplCopyWith(_$PaginationInfoDtoImpl value,
-          $Res Function(_$PaginationInfoDtoImpl) then) =
-      __$$PaginationInfoDtoImplCopyWithImpl<$Res>;
+abstract class _$$BookingEventDtoImplCopyWith<$Res>
+    implements $BookingEventDtoCopyWith<$Res> {
+  factory _$$BookingEventDtoImplCopyWith(_$BookingEventDtoImpl value,
+          $Res Function(_$BookingEventDtoImpl) then) =
+      __$$BookingEventDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: 'current_page') int currentPage,
-      @JsonKey(name: 'total_items') int totalItems,
-      @JsonKey(name: 'total_pages') int totalPages});
+      {String? id,
+      @JsonKey(name: 'internal_id') int? internalId,
+      String? uuid,
+      String title,
+      String? slug,
+      @JsonKey(name: 'featured_image') String? featuredImage,
+      @JsonKey(name: 'cover_image') String? coverImage,
+      @JsonKey(name: 'venue_name') String? venueName,
+      String? city});
 }
 
 /// @nodoc
-class __$$PaginationInfoDtoImplCopyWithImpl<$Res>
-    extends _$PaginationInfoDtoCopyWithImpl<$Res, _$PaginationInfoDtoImpl>
-    implements _$$PaginationInfoDtoImplCopyWith<$Res> {
-  __$$PaginationInfoDtoImplCopyWithImpl(_$PaginationInfoDtoImpl _value,
-      $Res Function(_$PaginationInfoDtoImpl) _then)
+class __$$BookingEventDtoImplCopyWithImpl<$Res>
+    extends _$BookingEventDtoCopyWithImpl<$Res, _$BookingEventDtoImpl>
+    implements _$$BookingEventDtoImplCopyWith<$Res> {
+  __$$BookingEventDtoImplCopyWithImpl(
+      _$BookingEventDtoImpl _value, $Res Function(_$BookingEventDtoImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? currentPage = null,
-    Object? totalItems = null,
-    Object? totalPages = null,
+    Object? id = freezed,
+    Object? internalId = freezed,
+    Object? uuid = freezed,
+    Object? title = null,
+    Object? slug = freezed,
+    Object? featuredImage = freezed,
+    Object? coverImage = freezed,
+    Object? venueName = freezed,
+    Object? city = freezed,
   }) {
-    return _then(_$PaginationInfoDtoImpl(
-      currentPage: null == currentPage
-          ? _value.currentPage
-          : currentPage // ignore: cast_nullable_to_non_nullable
-              as int,
-      totalItems: null == totalItems
-          ? _value.totalItems
-          : totalItems // ignore: cast_nullable_to_non_nullable
-              as int,
-      totalPages: null == totalPages
-          ? _value.totalPages
-          : totalPages // ignore: cast_nullable_to_non_nullable
-              as int,
+    return _then(_$BookingEventDtoImpl(
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
+      internalId: freezed == internalId
+          ? _value.internalId
+          : internalId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      slug: freezed == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      featuredImage: freezed == featuredImage
+          ? _value.featuredImage
+          : featuredImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      coverImage: freezed == coverImage
+          ? _value.coverImage
+          : coverImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      venueName: freezed == venueName
+          ? _value.venueName
+          : venueName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$PaginationInfoDtoImpl implements _PaginationInfoDto {
-  const _$PaginationInfoDtoImpl(
-      {@JsonKey(name: 'current_page') required this.currentPage,
-      @JsonKey(name: 'total_items') required this.totalItems,
-      @JsonKey(name: 'total_pages') required this.totalPages});
+class _$BookingEventDtoImpl implements _BookingEventDto {
+  const _$BookingEventDtoImpl(
+      {this.id,
+      @JsonKey(name: 'internal_id') this.internalId,
+      this.uuid,
+      required this.title,
+      this.slug,
+      @JsonKey(name: 'featured_image') this.featuredImage,
+      @JsonKey(name: 'cover_image') this.coverImage,
+      @JsonKey(name: 'venue_name') this.venueName,
+      this.city});
 
-  factory _$PaginationInfoDtoImpl.fromJson(Map<String, dynamic> json) =>
-      _$$PaginationInfoDtoImplFromJson(json);
+  factory _$BookingEventDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BookingEventDtoImplFromJson(json);
 
   @override
-  @JsonKey(name: 'current_page')
-  final int currentPage;
+  final String? id;
+// UUID string
   @override
-  @JsonKey(name: 'total_items')
-  final int totalItems;
+  @JsonKey(name: 'internal_id')
+  final int? internalId;
   @override
-  @JsonKey(name: 'total_pages')
-  final int totalPages;
+  final String? uuid;
+  @override
+  final String title;
+  @override
+  final String? slug;
+  @override
+  @JsonKey(name: 'featured_image')
+  final String? featuredImage;
+  @override
+  @JsonKey(name: 'cover_image')
+  final String? coverImage;
+  @override
+  @JsonKey(name: 'venue_name')
+  final String? venueName;
+  @override
+  final String? city;
 
   @override
   String toString() {
-    return 'PaginationInfoDto(currentPage: $currentPage, totalItems: $totalItems, totalPages: $totalPages)';
+    return 'BookingEventDto(id: $id, internalId: $internalId, uuid: $uuid, title: $title, slug: $slug, featuredImage: $featuredImage, coverImage: $coverImage, venueName: $venueName, city: $city)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$PaginationInfoDtoImpl &&
-            (identical(other.currentPage, currentPage) ||
-                other.currentPage == currentPage) &&
-            (identical(other.totalItems, totalItems) ||
-                other.totalItems == totalItems) &&
-            (identical(other.totalPages, totalPages) ||
-                other.totalPages == totalPages));
+            other is _$BookingEventDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.internalId, internalId) ||
+                other.internalId == internalId) &&
+            (identical(other.uuid, uuid) || other.uuid == uuid) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.slug, slug) || other.slug == slug) &&
+            (identical(other.featuredImage, featuredImage) ||
+                other.featuredImage == featuredImage) &&
+            (identical(other.coverImage, coverImage) ||
+                other.coverImage == coverImage) &&
+            (identical(other.venueName, venueName) ||
+                other.venueName == venueName) &&
+            (identical(other.city, city) || other.city == city));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, currentPage, totalItems, totalPages);
+  int get hashCode => Object.hash(runtimeType, id, internalId, uuid, title,
+      slug, featuredImage, coverImage, venueName, city);
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$PaginationInfoDtoImplCopyWith<_$PaginationInfoDtoImpl> get copyWith =>
-      __$$PaginationInfoDtoImplCopyWithImpl<_$PaginationInfoDtoImpl>(
+  _$$BookingEventDtoImplCopyWith<_$BookingEventDtoImpl> get copyWith =>
+      __$$BookingEventDtoImplCopyWithImpl<_$BookingEventDtoImpl>(
           this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$PaginationInfoDtoImplToJson(
+    return _$$BookingEventDtoImplToJson(
       this,
     );
   }
 }
 
-abstract class _PaginationInfoDto implements PaginationInfoDto {
-  const factory _PaginationInfoDto(
-          {@JsonKey(name: 'current_page') required final int currentPage,
-          @JsonKey(name: 'total_items') required final int totalItems,
-          @JsonKey(name: 'total_pages') required final int totalPages}) =
-      _$PaginationInfoDtoImpl;
+abstract class _BookingEventDto implements BookingEventDto {
+  const factory _BookingEventDto(
+      {final String? id,
+      @JsonKey(name: 'internal_id') final int? internalId,
+      final String? uuid,
+      required final String title,
+      final String? slug,
+      @JsonKey(name: 'featured_image') final String? featuredImage,
+      @JsonKey(name: 'cover_image') final String? coverImage,
+      @JsonKey(name: 'venue_name') final String? venueName,
+      final String? city}) = _$BookingEventDtoImpl;
 
-  factory _PaginationInfoDto.fromJson(Map<String, dynamic> json) =
-      _$PaginationInfoDtoImpl.fromJson;
+  factory _BookingEventDto.fromJson(Map<String, dynamic> json) =
+      _$BookingEventDtoImpl.fromJson;
 
   @override
-  @JsonKey(name: 'current_page')
-  int get currentPage;
+  String? get id;
+  @override // UUID string
+  @JsonKey(name: 'internal_id')
+  int? get internalId;
   @override
-  @JsonKey(name: 'total_items')
-  int get totalItems;
+  String? get uuid;
   @override
-  @JsonKey(name: 'total_pages')
-  int get totalPages;
+  String get title;
+  @override
+  String? get slug;
+  @override
+  @JsonKey(name: 'featured_image')
+  String? get featuredImage;
+  @override
+  @JsonKey(name: 'cover_image')
+  String? get coverImage;
+  @override
+  @JsonKey(name: 'venue_name')
+  String? get venueName;
+  @override
+  String? get city;
   @override
   @JsonKey(ignore: true)
-  _$$PaginationInfoDtoImplCopyWith<_$PaginationInfoDtoImpl> get copyWith =>
+  _$$BookingEventDtoImplCopyWith<_$BookingEventDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
-BookingsSummaryDto _$BookingsSummaryDtoFromJson(Map<String, dynamic> json) {
-  return _BookingsSummaryDto.fromJson(json);
+BookingSlotDto _$BookingSlotDtoFromJson(Map<String, dynamic> json) {
+  return _BookingSlotDto.fromJson(json);
 }
 
 /// @nodoc
-mixin _$BookingsSummaryDto {
-  int get upcoming => throw _privateConstructorUsedError;
-  int get past => throw _privateConstructorUsedError;
-  int get cancelled => throw _privateConstructorUsedError;
+mixin _$BookingSlotDto {
+  String? get id => throw _privateConstructorUsedError; // UUID string
+  @JsonKey(name: 'event_id')
+  int? get eventId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'slot_date')
+  String? get slotDate => throw _privateConstructorUsedError;
+  String? get date => throw _privateConstructorUsedError;
+  @JsonKey(name: 'start_time')
+  String? get startTime => throw _privateConstructorUsedError;
+  @JsonKey(name: 'end_time')
+  String? get endTime => throw _privateConstructorUsedError;
+  @JsonKey(name: 'start_datetime')
+  String? get startDatetime => throw _privateConstructorUsedError;
+  String? get startDate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'end_datetime')
+  String? get endDatetime => throw _privateConstructorUsedError;
+  String? get endDate => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
-  $BookingsSummaryDtoCopyWith<BookingsSummaryDto> get copyWith =>
+  $BookingSlotDtoCopyWith<BookingSlotDto> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $BookingsSummaryDtoCopyWith<$Res> {
-  factory $BookingsSummaryDtoCopyWith(
-          BookingsSummaryDto value, $Res Function(BookingsSummaryDto) then) =
-      _$BookingsSummaryDtoCopyWithImpl<$Res, BookingsSummaryDto>;
+abstract class $BookingSlotDtoCopyWith<$Res> {
+  factory $BookingSlotDtoCopyWith(
+          BookingSlotDto value, $Res Function(BookingSlotDto) then) =
+      _$BookingSlotDtoCopyWithImpl<$Res, BookingSlotDto>;
   @useResult
-  $Res call({int upcoming, int past, int cancelled});
+  $Res call(
+      {String? id,
+      @JsonKey(name: 'event_id') int? eventId,
+      @JsonKey(name: 'slot_date') String? slotDate,
+      String? date,
+      @JsonKey(name: 'start_time') String? startTime,
+      @JsonKey(name: 'end_time') String? endTime,
+      @JsonKey(name: 'start_datetime') String? startDatetime,
+      String? startDate,
+      @JsonKey(name: 'end_datetime') String? endDatetime,
+      String? endDate});
 }
 
 /// @nodoc
-class _$BookingsSummaryDtoCopyWithImpl<$Res, $Val extends BookingsSummaryDto>
-    implements $BookingsSummaryDtoCopyWith<$Res> {
-  _$BookingsSummaryDtoCopyWithImpl(this._value, this._then);
+class _$BookingSlotDtoCopyWithImpl<$Res, $Val extends BookingSlotDto>
+    implements $BookingSlotDtoCopyWith<$Res> {
+  _$BookingSlotDtoCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
@@ -3452,140 +4079,288 @@ class _$BookingsSummaryDtoCopyWithImpl<$Res, $Val extends BookingsSummaryDto>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? upcoming = null,
-    Object? past = null,
-    Object? cancelled = null,
+    Object? id = freezed,
+    Object? eventId = freezed,
+    Object? slotDate = freezed,
+    Object? date = freezed,
+    Object? startTime = freezed,
+    Object? endTime = freezed,
+    Object? startDatetime = freezed,
+    Object? startDate = freezed,
+    Object? endDatetime = freezed,
+    Object? endDate = freezed,
   }) {
     return _then(_value.copyWith(
-      upcoming: null == upcoming
-          ? _value.upcoming
-          : upcoming // ignore: cast_nullable_to_non_nullable
-              as int,
-      past: null == past
-          ? _value.past
-          : past // ignore: cast_nullable_to_non_nullable
-              as int,
-      cancelled: null == cancelled
-          ? _value.cancelled
-          : cancelled // ignore: cast_nullable_to_non_nullable
-              as int,
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventId: freezed == eventId
+          ? _value.eventId
+          : eventId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      slotDate: freezed == slotDate
+          ? _value.slotDate
+          : slotDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      date: freezed == date
+          ? _value.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as String?,
+      startTime: freezed == startTime
+          ? _value.startTime
+          : startTime // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endTime: freezed == endTime
+          ? _value.endTime
+          : endTime // ignore: cast_nullable_to_non_nullable
+              as String?,
+      startDatetime: freezed == startDatetime
+          ? _value.startDatetime
+          : startDatetime // ignore: cast_nullable_to_non_nullable
+              as String?,
+      startDate: freezed == startDate
+          ? _value.startDate
+          : startDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endDatetime: freezed == endDatetime
+          ? _value.endDatetime
+          : endDatetime // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endDate: freezed == endDate
+          ? _value.endDate
+          : endDate // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
 
 /// @nodoc
-abstract class _$$BookingsSummaryDtoImplCopyWith<$Res>
-    implements $BookingsSummaryDtoCopyWith<$Res> {
-  factory _$$BookingsSummaryDtoImplCopyWith(_$BookingsSummaryDtoImpl value,
-          $Res Function(_$BookingsSummaryDtoImpl) then) =
-      __$$BookingsSummaryDtoImplCopyWithImpl<$Res>;
+abstract class _$$BookingSlotDtoImplCopyWith<$Res>
+    implements $BookingSlotDtoCopyWith<$Res> {
+  factory _$$BookingSlotDtoImplCopyWith(_$BookingSlotDtoImpl value,
+          $Res Function(_$BookingSlotDtoImpl) then) =
+      __$$BookingSlotDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int upcoming, int past, int cancelled});
+  $Res call(
+      {String? id,
+      @JsonKey(name: 'event_id') int? eventId,
+      @JsonKey(name: 'slot_date') String? slotDate,
+      String? date,
+      @JsonKey(name: 'start_time') String? startTime,
+      @JsonKey(name: 'end_time') String? endTime,
+      @JsonKey(name: 'start_datetime') String? startDatetime,
+      String? startDate,
+      @JsonKey(name: 'end_datetime') String? endDatetime,
+      String? endDate});
 }
 
 /// @nodoc
-class __$$BookingsSummaryDtoImplCopyWithImpl<$Res>
-    extends _$BookingsSummaryDtoCopyWithImpl<$Res, _$BookingsSummaryDtoImpl>
-    implements _$$BookingsSummaryDtoImplCopyWith<$Res> {
-  __$$BookingsSummaryDtoImplCopyWithImpl(_$BookingsSummaryDtoImpl _value,
-      $Res Function(_$BookingsSummaryDtoImpl) _then)
+class __$$BookingSlotDtoImplCopyWithImpl<$Res>
+    extends _$BookingSlotDtoCopyWithImpl<$Res, _$BookingSlotDtoImpl>
+    implements _$$BookingSlotDtoImplCopyWith<$Res> {
+  __$$BookingSlotDtoImplCopyWithImpl(
+      _$BookingSlotDtoImpl _value, $Res Function(_$BookingSlotDtoImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? upcoming = null,
-    Object? past = null,
-    Object? cancelled = null,
+    Object? id = freezed,
+    Object? eventId = freezed,
+    Object? slotDate = freezed,
+    Object? date = freezed,
+    Object? startTime = freezed,
+    Object? endTime = freezed,
+    Object? startDatetime = freezed,
+    Object? startDate = freezed,
+    Object? endDatetime = freezed,
+    Object? endDate = freezed,
   }) {
-    return _then(_$BookingsSummaryDtoImpl(
-      upcoming: null == upcoming
-          ? _value.upcoming
-          : upcoming // ignore: cast_nullable_to_non_nullable
-              as int,
-      past: null == past
-          ? _value.past
-          : past // ignore: cast_nullable_to_non_nullable
-              as int,
-      cancelled: null == cancelled
-          ? _value.cancelled
-          : cancelled // ignore: cast_nullable_to_non_nullable
-              as int,
+    return _then(_$BookingSlotDtoImpl(
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventId: freezed == eventId
+          ? _value.eventId
+          : eventId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      slotDate: freezed == slotDate
+          ? _value.slotDate
+          : slotDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      date: freezed == date
+          ? _value.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as String?,
+      startTime: freezed == startTime
+          ? _value.startTime
+          : startTime // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endTime: freezed == endTime
+          ? _value.endTime
+          : endTime // ignore: cast_nullable_to_non_nullable
+              as String?,
+      startDatetime: freezed == startDatetime
+          ? _value.startDatetime
+          : startDatetime // ignore: cast_nullable_to_non_nullable
+              as String?,
+      startDate: freezed == startDate
+          ? _value.startDate
+          : startDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endDatetime: freezed == endDatetime
+          ? _value.endDatetime
+          : endDatetime // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endDate: freezed == endDate
+          ? _value.endDate
+          : endDate // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$BookingsSummaryDtoImpl implements _BookingsSummaryDto {
-  const _$BookingsSummaryDtoImpl(
-      {required this.upcoming, required this.past, required this.cancelled});
+class _$BookingSlotDtoImpl implements _BookingSlotDto {
+  const _$BookingSlotDtoImpl(
+      {this.id,
+      @JsonKey(name: 'event_id') this.eventId,
+      @JsonKey(name: 'slot_date') this.slotDate,
+      this.date,
+      @JsonKey(name: 'start_time') this.startTime,
+      @JsonKey(name: 'end_time') this.endTime,
+      @JsonKey(name: 'start_datetime') this.startDatetime,
+      this.startDate,
+      @JsonKey(name: 'end_datetime') this.endDatetime,
+      this.endDate});
 
-  factory _$BookingsSummaryDtoImpl.fromJson(Map<String, dynamic> json) =>
-      _$$BookingsSummaryDtoImplFromJson(json);
+  factory _$BookingSlotDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BookingSlotDtoImplFromJson(json);
 
   @override
-  final int upcoming;
+  final String? id;
+// UUID string
   @override
-  final int past;
+  @JsonKey(name: 'event_id')
+  final int? eventId;
   @override
-  final int cancelled;
+  @JsonKey(name: 'slot_date')
+  final String? slotDate;
+  @override
+  final String? date;
+  @override
+  @JsonKey(name: 'start_time')
+  final String? startTime;
+  @override
+  @JsonKey(name: 'end_time')
+  final String? endTime;
+  @override
+  @JsonKey(name: 'start_datetime')
+  final String? startDatetime;
+  @override
+  final String? startDate;
+  @override
+  @JsonKey(name: 'end_datetime')
+  final String? endDatetime;
+  @override
+  final String? endDate;
 
   @override
   String toString() {
-    return 'BookingsSummaryDto(upcoming: $upcoming, past: $past, cancelled: $cancelled)';
+    return 'BookingSlotDto(id: $id, eventId: $eventId, slotDate: $slotDate, date: $date, startTime: $startTime, endTime: $endTime, startDatetime: $startDatetime, startDate: $startDate, endDatetime: $endDatetime, endDate: $endDate)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$BookingsSummaryDtoImpl &&
-            (identical(other.upcoming, upcoming) ||
-                other.upcoming == upcoming) &&
-            (identical(other.past, past) || other.past == past) &&
-            (identical(other.cancelled, cancelled) ||
-                other.cancelled == cancelled));
+            other is _$BookingSlotDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.eventId, eventId) || other.eventId == eventId) &&
+            (identical(other.slotDate, slotDate) ||
+                other.slotDate == slotDate) &&
+            (identical(other.date, date) || other.date == date) &&
+            (identical(other.startTime, startTime) ||
+                other.startTime == startTime) &&
+            (identical(other.endTime, endTime) || other.endTime == endTime) &&
+            (identical(other.startDatetime, startDatetime) ||
+                other.startDatetime == startDatetime) &&
+            (identical(other.startDate, startDate) ||
+                other.startDate == startDate) &&
+            (identical(other.endDatetime, endDatetime) ||
+                other.endDatetime == endDatetime) &&
+            (identical(other.endDate, endDate) || other.endDate == endDate));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, upcoming, past, cancelled);
+  int get hashCode => Object.hash(runtimeType, id, eventId, slotDate, date,
+      startTime, endTime, startDatetime, startDate, endDatetime, endDate);
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$BookingsSummaryDtoImplCopyWith<_$BookingsSummaryDtoImpl> get copyWith =>
-      __$$BookingsSummaryDtoImplCopyWithImpl<_$BookingsSummaryDtoImpl>(
+  _$$BookingSlotDtoImplCopyWith<_$BookingSlotDtoImpl> get copyWith =>
+      __$$BookingSlotDtoImplCopyWithImpl<_$BookingSlotDtoImpl>(
           this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$BookingsSummaryDtoImplToJson(
+    return _$$BookingSlotDtoImplToJson(
       this,
     );
   }
 }
 
-abstract class _BookingsSummaryDto implements BookingsSummaryDto {
-  const factory _BookingsSummaryDto(
-      {required final int upcoming,
-      required final int past,
-      required final int cancelled}) = _$BookingsSummaryDtoImpl;
+abstract class _BookingSlotDto implements BookingSlotDto {
+  const factory _BookingSlotDto(
+      {final String? id,
+      @JsonKey(name: 'event_id') final int? eventId,
+      @JsonKey(name: 'slot_date') final String? slotDate,
+      final String? date,
+      @JsonKey(name: 'start_time') final String? startTime,
+      @JsonKey(name: 'end_time') final String? endTime,
+      @JsonKey(name: 'start_datetime') final String? startDatetime,
+      final String? startDate,
+      @JsonKey(name: 'end_datetime') final String? endDatetime,
+      final String? endDate}) = _$BookingSlotDtoImpl;
 
-  factory _BookingsSummaryDto.fromJson(Map<String, dynamic> json) =
-      _$BookingsSummaryDtoImpl.fromJson;
+  factory _BookingSlotDto.fromJson(Map<String, dynamic> json) =
+      _$BookingSlotDtoImpl.fromJson;
 
   @override
-  int get upcoming;
+  String? get id;
+  @override // UUID string
+  @JsonKey(name: 'event_id')
+  int? get eventId;
   @override
-  int get past;
+  @JsonKey(name: 'slot_date')
+  String? get slotDate;
   @override
-  int get cancelled;
+  String? get date;
+  @override
+  @JsonKey(name: 'start_time')
+  String? get startTime;
+  @override
+  @JsonKey(name: 'end_time')
+  String? get endTime;
+  @override
+  @JsonKey(name: 'start_datetime')
+  String? get startDatetime;
+  @override
+  String? get startDate;
+  @override
+  @JsonKey(name: 'end_datetime')
+  String? get endDatetime;
+  @override
+  String? get endDate;
   @override
   @JsonKey(ignore: true)
-  _$$BookingsSummaryDtoImplCopyWith<_$BookingsSummaryDtoImpl> get copyWith =>
+  _$$BookingSlotDtoImplCopyWith<_$BookingSlotDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

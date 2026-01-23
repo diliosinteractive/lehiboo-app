@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/booking.dart';
 import '../../domain/models/booking_flow_state.dart';
 import '../../domain/repositories/booking_repository.dart';
@@ -90,17 +91,100 @@ class ApiBookingRepositoryImpl implements BookingRepository {
   Future<List<Booking>> getMyBookings() async {
     final response = await _apiDataSource.getMyBookings();
 
-    return response.bookings.map((b) => Booking(
-      id: b.id.toString(),
-      userId: '',
-      slotId: '',
-      activityId: b.event.id.toString(),
-      quantity: b.ticketsCount,
-      totalPrice: b.totalPaid,
-      currency: b.currency,
-      status: b.status,
-      createdAt: DateTime.tryParse(b.bookedAt),
-    )).toList();
+    return response.data.map((b) {
+      // Parser la date du slot depuis les différentes sources possibles
+      DateTime? slotDateTime;
+
+      // 1. Essayer depuis le slot chargé
+      if (b.slot != null) {
+        // Priorité: startDatetime ou startDate (ISO string complet)
+        if (b.slot!.startDatetime != null) {
+          slotDateTime = DateTime.tryParse(b.slot!.startDatetime!);
+        } else if (b.slot!.startDate != null) {
+          slotDateTime = DateTime.tryParse(b.slot!.startDate!);
+        } else if (b.slot!.slotDate != null && b.slot!.startTime != null) {
+          // Combiner slot_date + start_time
+          try {
+            final datePart = b.slot!.slotDate!.split('T').first;
+            slotDateTime = DateTime.parse('$datePart ${b.slot!.startTime}');
+          } catch (_) {}
+        } else if (b.slot!.date != null && b.slot!.startTime != null) {
+          try {
+            slotDateTime = DateTime.parse('${b.slot!.date} ${b.slot!.startTime}');
+          } catch (_) {}
+        }
+      }
+
+      // 2. Fallback: utiliser slotDate au niveau du booking (convenience field)
+      if (slotDateTime == null && b.slotDate != null) {
+        slotDateTime = DateTime.tryParse(b.slotDate!);
+      }
+
+      // Mapper l'activity depuis l'event chargé ou les convenience fields
+      Activity? activity;
+      if (b.event != null) {
+        activity = Activity(
+          id: b.event!.internalId?.toString() ?? b.event!.id ?? b.eventId?.toString() ?? '',
+          title: b.event!.title,
+          slug: b.event!.slug ?? '',
+          description: '',
+          imageUrl: b.event!.featuredImage ?? b.event!.coverImage,
+        );
+      } else if (b.eventTitle != null) {
+        // Utiliser les convenience fields si l'event n'est pas chargé
+        activity = Activity(
+          id: b.eventId?.toString() ?? '',
+          title: b.eventTitle!,
+          slug: b.eventSlug ?? '',
+          description: '',
+          imageUrl: b.eventImage,
+        );
+      }
+
+      // Mapper le slot
+      Slot? slot;
+      if (slotDateTime != null) {
+        slot = Slot(
+          id: b.slot?.id ?? b.slotId?.toString() ?? '',
+          activityId: b.eventId?.toString() ?? '',
+          startDateTime: slotDateTime,
+          endDateTime: _parseSlotEndDateTime(b.slot, slotDateTime),
+        );
+      }
+
+      return Booking(
+        id: b.uuid ?? b.id.toString(),
+        userId: b.userId?.toString() ?? '',
+        slotId: b.slotId?.toString() ?? '',
+        activityId: b.eventId?.toString() ?? '',
+        quantity: b.ticketCount ?? 1,
+        totalPrice: b.grandTotal ?? b.totalAmount ?? 0.0,
+        currency: 'EUR',
+        status: b.status,
+        createdAt: b.createdAt != null ? DateTime.tryParse(b.createdAt!) : null,
+        activity: activity,
+        slot: slot,
+      );
+    }).toList();
+  }
+
+  /// Parse la date de fin du slot
+  DateTime _parseSlotEndDateTime(BookingSlotDto? slot, DateTime startDateTime) {
+    if (slot == null) return startDateTime.add(const Duration(hours: 1));
+
+    if (slot.endDatetime != null) {
+      return DateTime.tryParse(slot.endDatetime!) ?? startDateTime.add(const Duration(hours: 1));
+    }
+    if (slot.endDate != null) {
+      return DateTime.tryParse(slot.endDate!) ?? startDateTime.add(const Duration(hours: 1));
+    }
+    if (slot.endTime != null) {
+      try {
+        final datePart = startDateTime.toIso8601String().split('T').first;
+        return DateTime.parse('$datePart ${slot.endTime}');
+      } catch (_) {}
+    }
+    return startDateTime.add(const Duration(hours: 1));
   }
 
   @override

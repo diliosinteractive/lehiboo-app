@@ -72,21 +72,23 @@ class BookingApiDataSource {
   Future<BookingsListResponseDto> getMyBookings({
     int page = 1,
     int perPage = 20,
-    String? status, // all, upcoming, cancelled
+    String? status, // pending, confirmed, cancelled, completed, refunded
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,
       'per_page': perPage,
     };
-    if (status != null) queryParams['status'] = status;
+    if (status != null && status != 'all') queryParams['status'] = status;
 
     final response = await _dio.get('/me/bookings', queryParameters: queryParams);
 
     final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return BookingsListResponseDto.fromJson(data['data']);
+    // L'API Laravel retourne directement { "data": [...], "meta": {...} }
+    // Pas de wrapper "success"
+    if (data is Map<String, dynamic> && data['data'] != null) {
+      return BookingsListResponseDto.fromJson(data);
     }
-    throw Exception(data['data']?['message'] ?? 'Failed to load bookings');
+    throw Exception('Failed to load bookings');
   }
 
   Future<BookingListItemDto> getBookingById(int bookingId) async {

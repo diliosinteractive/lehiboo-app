@@ -18,6 +18,12 @@ extension BookingDtoX on BookingDto {
       createdAt: createdAt,
       activity: activity?.toDomain(),
       slot: slot?.toDomain(),
+      tickets: tickets?.map((t) => t.toDomain()).toList(),
+      customerEmail: customerEmail,
+      customerFirstName: customerFirstName,
+      customerLastName: customerLastName,
+      customerPhone: customerPhone,
+      reference: reference,
     );
   }
 }
@@ -25,13 +31,36 @@ extension BookingDtoX on BookingDto {
 extension TicketDtoX on TicketDto {
   Ticket toDomain() {
     return Ticket(
-      id: id.toString(),
+      id: uuid ?? id.toString(),
       bookingId: bookingId.toString(),
-      userId: userId.toString(),
+      userId: '', // Not provided in new DTO structure
       slotId: slotId.toString(),
       ticketType: ticketType,
-      qrCodeData: qrCodeData,
+      qrCodeData: qrCode ?? qrCodeData,
+      qrSecret: qrSecret,
       status: status,
+      attendeeFirstName: attendeeFirstName,
+      attendeeLastName: attendeeLastName,
+      attendeeEmail: attendeeEmail,
+      price: price,
+      currency: currency,
+      usedAt: usedAt,
+      createdAt: createdAt,
+    );
+  }
+}
+
+extension BookingItemDtoX on BookingItemDto {
+  BookingItem toDomain() {
+    return BookingItem(
+      id: id.toString(),
+      bookingId: bookingId.toString(),
+      ticketTypeId: ticketTypeId.toString(),
+      quantity: quantity,
+      unitPrice: unitPrice,
+      totalPrice: totalPrice,
+      ticketTypeName: ticketTypeName,
+      currency: currency,
     );
   }
 }
