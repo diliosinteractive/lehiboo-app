@@ -14,9 +14,12 @@ class MapEventCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Check if favorite
+    // Check if favorite - Protected access
     final favoritesState = ref.watch(favoritesProvider);
-    final isFavorite = favoritesState.value?.any((e) => e.id == activity.id) ?? false;
+    bool isFavorite = false;
+    if (favoritesState is AsyncData<List<Event>>) {
+      isFavorite = favoritesState.value.any((e) => e.id == activity.id);
+    }
 
     return GestureDetector(
       onTap: () => context.push('/event/${activity.id}', extra: activity),
@@ -135,13 +138,24 @@ class MapEventCard extends ConsumerWidget {
                         color: const Color(0xFFFF601F),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
-                        DateFormat('d MMM', 'fr_FR').format(activity.nextSlot!.startDateTime),
-                        style: const TextStyle(
-                          color: Colors.white, 
-                          fontSize: 10, 
-                          fontWeight: FontWeight.bold
-                        ),
+                      child: Builder(
+                        builder: (context) {
+                          String dateText;
+                          try {
+                            dateText = DateFormat('d MMM', 'fr_FR').format(activity.nextSlot!.startDateTime);
+                          } catch (e) {
+                            final dt = activity.nextSlot!.startDateTime;
+                            dateText = '${dt.day}/${dt.month}';
+                          }
+                          return Text(
+                            dateText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold
+                            ),
+                          );
+                        },
                       ),
                     ),
                   Text(

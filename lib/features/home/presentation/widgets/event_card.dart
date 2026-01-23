@@ -39,7 +39,11 @@ class EventCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final favoritesState = ref.watch(favoritesProvider);
-    final isFavorite = favoritesState.value?.any((e) => e.id == activity.id) ?? false;
+    // Protected access - ignore errors in favorites
+    bool isFavorite = false;
+    if (favoritesState is AsyncData<List<Event>>) {
+      isFavorite = favoritesState.value.any((e) => e.id == activity.id);
+    }
 
     return GestureDetector(
       onTap: () {
@@ -103,13 +107,24 @@ class EventCard extends ConsumerWidget {
                            )
                         ],
                       ),
-                      child: Text(
-                        DateFormat('HH:mm').format(activity.nextSlot!.startDateTime),
-                        style: const TextStyle(
-                          color: Colors.black, // Dark text
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: Builder(
+                        builder: (context) {
+                          String timeText;
+                          try {
+                            timeText = DateFormat('HH:mm').format(activity.nextSlot!.startDateTime);
+                          } catch (e) {
+                            final dt = activity.nextSlot!.startDateTime;
+                            timeText = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                          }
+                          return Text(
+                            timeText,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   )

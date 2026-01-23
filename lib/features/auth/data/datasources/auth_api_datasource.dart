@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../models/auth_response_dto.dart';
@@ -32,18 +33,21 @@ class RegisterResult {
   }
 }
 
-/// Result of login - may require OTP verification (2FA)
+/// Result of login - may require OTP verification (2FA) or direct auth
 class LoginResult {
   final bool requiresOtp;
   final String? userId;
   final String? email;
   final String? message;
+  /// When login succeeds without OTP, this contains the auth data
+  final AuthResponseDto? authResponse;
 
   LoginResult({
     required this.requiresOtp,
     this.userId,
     this.email,
     this.message,
+    this.authResponse,
   });
 
   factory LoginResult.fromJson(Map<String, dynamic> json) {
@@ -124,7 +128,7 @@ class AuthApiDataSource {
     }
   }
 
-  /// Login - may require OTP verification (2FA)
+  /// Login - may require OTP verification (2FA) or direct auth (Laravel v2)
   Future<LoginResult> login({
     required String email,
     required String password,
@@ -138,16 +142,77 @@ class AuthApiDataSource {
     );
 
     final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
+    debugPrint('🔐 Login response received: ${data.runtimeType}');
+
+    // Laravel v2 format: { "message": "...", "data": { "user": {...}, "token": "..." } }
+    // Check if we have a successful response with user and token
+    if (data['data'] != null) {
       final responseData = data['data'];
+      debugPrint('🔐 Response data found: user=${responseData['user'] != null}, token=${responseData['token'] != null}');
+
       // Check if OTP is required (2FA)
       if (responseData['requires_otp'] == true) {
+        debugPrint('🔐 OTP required');
         return LoginResult.fromJson(responseData);
       }
-      // If no OTP required, return with requiresOtp = false
+
+      // Check if we have direct auth data (Laravel v2 - no OTP required)
+      if (responseData['user'] != null && responseData['token'] != null) {
+        try {
+          debugPrint('🔐 Parsing Laravel auth response...');
+          final authResponse = _parseLaravelAuthResponse(responseData);
+          debugPrint('🔐 Auth response parsed successfully');
+          return LoginResult(
+            requiresOtp: false,
+            authResponse: authResponse,
+          );
+        } catch (e, stackTrace) {
+          debugPrint('🔐 Error parsing auth response: $e');
+          debugPrint('🔐 Stack trace: $stackTrace');
+          rethrow;
+        }
+      }
+
+      // Fallback: no OTP required but no auth data (shouldn't happen)
+      debugPrint('🔐 Fallback: no auth data in response');
       return LoginResult(requiresOtp: false);
     }
-    throw Exception(data['data']?['message'] ?? 'Login failed');
+
+    debugPrint('🔐 No data in response, throwing exception');
+    throw Exception(data['message'] ?? 'Login failed');
+  }
+
+  /// Parse Laravel v2 auth response format
+  AuthResponseDto _parseLaravelAuthResponse(Map<String, dynamic> data) {
+    final userData = data['user'] as Map<String, dynamic>;
+    final token = data['token']?.toString() ?? '';
+
+    // Map Laravel fields to Flutter DTO
+    // Laravel returns: { id, name, email, phone, role, ... }
+    // Flutter expects: { id, email, display_name, first_name, last_name, role, ... }
+    final user = UserDto(
+      id: userData['id'] is int ? userData['id'] : int.tryParse(userData['id'].toString()) ?? 0,
+      email: userData['email']?.toString() ?? '',
+      displayName: userData['name']?.toString() ?? '',
+      firstName: userData['first_name']?.toString(),
+      lastName: userData['last_name']?.toString(),
+      phone: userData['phone']?.toString(),
+      avatarUrl: userData['avatar_url']?.toString(),
+      role: userData['role']?.toString() ?? 'customer',
+      registeredAt: userData['created_at']?.toString(),
+      isVerified: userData['is_email_verified'] == true,
+    );
+
+    // Laravel Sanctum uses single token, no refresh token
+    // We'll use the same token for both access and refresh
+    final tokens = TokensDto(
+      accessToken: token,
+      refreshToken: token, // Sanctum doesn't have refresh tokens
+      tokenType: data['token_type']?.toString() ?? 'Bearer',
+      expiresIn: 604800, // 7 days default
+    );
+
+    return AuthResponseDto(user: user, tokens: tokens);
   }
 
   /// Verify login OTP (2FA)

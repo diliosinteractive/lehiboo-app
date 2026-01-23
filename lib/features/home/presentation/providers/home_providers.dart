@@ -32,47 +32,41 @@ final homeFeedProvider = FutureProvider<HomeFeedResponseDto>((ref) async {
 
 /// Provider for TODAY's activities (derived from Feed)
 final homeTodayActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
-  final feedAsync = ref.watch(homeFeedProvider);
-  
-  return feedAsync.when(
-    data: (dto) {
-      if (dto.data?.today == null) return [];
-      final events = dto.data!.today.map(EventMapper.toEvent).toList();
-      return EventToActivityMapper.toActivities(events);
-    },
-    loading: () => [], // Return empty while loading feed (Handled by UI skeleton)
-    error: (err, stack) => [],
-  );
+  // Await the feed data - this properly waits for the async result
+  final feedDto = await ref.watch(homeFeedProvider.future);
+
+  if (feedDto.data?.today == null || feedDto.data!.today.isEmpty) {
+    return [];
+  }
+
+  final events = feedDto.data!.today.map(EventMapper.toEvent).toList();
+  return EventToActivityMapper.toActivities(events);
 });
 
 /// Provider for TOMORROW's activities (derived from Feed)
 final homeTomorrowActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
-  final feedAsync = ref.watch(homeFeedProvider);
-  
-  return feedAsync.when(
-    data: (dto) {
-      if (dto.data?.tomorrow == null) return [];
-      final events = dto.data!.tomorrow.map(EventMapper.toEvent).toList();
-      return EventToActivityMapper.toActivities(events);
-    },
-    loading: () => [],
-    error: (err, stack) => [],
-  );
+  // Await the feed data
+  final feedDto = await ref.watch(homeFeedProvider.future);
+
+  if (feedDto.data?.tomorrow == null || feedDto.data!.tomorrow.isEmpty) {
+    return [];
+  }
+
+  final events = feedDto.data!.tomorrow.map(EventMapper.toEvent).toList();
+  return EventToActivityMapper.toActivities(events);
 });
 
 /// Provider for recommended activities/events (derived from Feed)
 final homeActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
-  final feedAsync = ref.watch(homeFeedProvider);
+  // Await the feed data
+  final feedDto = await ref.watch(homeFeedProvider.future);
 
-  return feedAsync.when(
-    data: (dto) {
-      if (dto.data?.recommended == null) return [];
-      final events = dto.data!.recommended.map(EventMapper.toEvent).toList();
-      return EventToActivityMapper.toActivities(events);
-    },
-    loading: () => [],
-    error: (err, stack) => [],
-  );
+  if (feedDto.data?.recommended == null || feedDto.data!.recommended.isEmpty) {
+    return [];
+  }
+
+  final events = feedDto.data!.recommended.map(EventMapper.toEvent).toList();
+  return EventToActivityMapper.toActivities(events);
 });
 
 /// Provider for featured/promoted activities

@@ -20,7 +20,13 @@ EventDto _$EventDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$EventDto {
+  @JsonKey(fromJson: _parseEventId)
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get uuid => throw _privateConstructorUsedError; // UUID from API
+  @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull)
+  int? get internalId =>
+      throw _privateConstructorUsedError; // Integer ID from API
   @JsonKey(fromJson: _parseHtmlString)
   String get title => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseHtmlString)
@@ -50,8 +56,9 @@ mixin _$EventDto {
   @JsonKey(fromJson: _parseStringList)
   List<String>? get tags =>
       throw _privateConstructorUsedError; // New fields for V2 API
-  @JsonKey(name: 'ticket_types')
+  @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull)
   List<dynamic>? get ticketTypes => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseListOrNull)
   List<dynamic>? get tickets => throw _privateConstructorUsedError;
   @JsonKey(name: 'time_slots', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get timeSlots => throw _privateConstructorUsedError;
@@ -59,8 +66,9 @@ mixin _$EventDto {
   Map<String, dynamic>? get calendar => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseMapOrNull)
   Map<String, dynamic>? get recurrence => throw _privateConstructorUsedError;
-  @JsonKey(name: 'extra_services')
+  @JsonKey(name: 'extra_services', fromJson: _parseListOrNull)
   List<dynamic>? get extraServices => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseListOrNull)
   List<dynamic>? get coupons => throw _privateConstructorUsedError;
   @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get seatConfig => throw _privateConstructorUsedError;
@@ -69,13 +77,13 @@ mixin _$EventDto {
       throw _privateConstructorUsedError;
   @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get eventType => throw _privateConstructorUsedError;
-  @JsonKey(name: 'target_audience')
+  @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
   List<dynamic>? get targetAudience =>
       throw _privateConstructorUsedError; // Rich Content V2
   @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get locationDetails =>
       throw _privateConstructorUsedError;
-  @JsonKey(name: 'coorganizers')
+  @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
   List<CoOrganizerDto>? get coOrganizers => throw _privateConstructorUsedError;
   @JsonKey(name: 'social_media', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get socialMedia => throw _privateConstructorUsedError;
@@ -94,7 +102,9 @@ abstract class $EventDtoCopyWith<$Res> {
       _$EventDtoCopyWithImpl<$Res, EventDto>;
   @useResult
   $Res call(
-      {int id,
+      {@JsonKey(fromJson: _parseEventId) int id,
+      @JsonKey(fromJson: _parseStringOrNull) String? uuid,
+      @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull) int? internalId,
       @JsonKey(fromJson: _parseHtmlString) String title,
       @JsonKey(fromJson: _parseHtmlString) String slug,
       @JsonKey(fromJson: _parseHtmlString) String? excerpt,
@@ -112,24 +122,28 @@ abstract class $EventDtoCopyWith<$Res> {
       dynamic ratings,
       EventOrganizerDto? organizer,
       @JsonKey(fromJson: _parseStringList) List<String>? tags,
-      @JsonKey(name: 'ticket_types') List<dynamic>? ticketTypes,
-      List<dynamic>? tickets,
+      @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull)
+      List<dynamic>? ticketTypes,
+      @JsonKey(fromJson: _parseListOrNull) List<dynamic>? tickets,
       @JsonKey(name: 'time_slots', fromJson: _parseMapOrNull)
       Map<String, dynamic>? timeSlots,
       @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? calendar,
       @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? recurrence,
-      @JsonKey(name: 'extra_services') List<dynamic>? extraServices,
-      List<dynamic>? coupons,
+      @JsonKey(name: 'extra_services', fromJson: _parseListOrNull)
+      List<dynamic>? extraServices,
+      @JsonKey(fromJson: _parseListOrNull) List<dynamic>? coupons,
       @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull)
       Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       Map<String, dynamic>? externalBooking,
       @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
       Map<String, dynamic>? eventType,
-      @JsonKey(name: 'target_audience') List<dynamic>? targetAudience,
+      @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
+      List<dynamic>? targetAudience,
       @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
       Map<String, dynamic>? locationDetails,
-      @JsonKey(name: 'coorganizers') List<CoOrganizerDto>? coOrganizers,
+      @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
+      List<CoOrganizerDto>? coOrganizers,
       @JsonKey(name: 'social_media', fromJson: _parseMapOrNull)
       Map<String, dynamic>? socialMedia,
       @JsonKey(name: 'is_favorite') bool isFavorite});
@@ -158,6 +172,8 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
   @override
   $Res call({
     Object? id = null,
+    Object? uuid = freezed,
+    Object? internalId = freezed,
     Object? title = null,
     Object? slug = null,
     Object? excerpt = freezed,
@@ -195,6 +211,14 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      internalId: freezed == internalId
+          ? _value.internalId
+          : internalId // ignore: cast_nullable_to_non_nullable
+              as int?,
       title: null == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
@@ -428,7 +452,9 @@ abstract class _$$EventDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {int id,
+      {@JsonKey(fromJson: _parseEventId) int id,
+      @JsonKey(fromJson: _parseStringOrNull) String? uuid,
+      @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull) int? internalId,
       @JsonKey(fromJson: _parseHtmlString) String title,
       @JsonKey(fromJson: _parseHtmlString) String slug,
       @JsonKey(fromJson: _parseHtmlString) String? excerpt,
@@ -446,24 +472,28 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       dynamic ratings,
       EventOrganizerDto? organizer,
       @JsonKey(fromJson: _parseStringList) List<String>? tags,
-      @JsonKey(name: 'ticket_types') List<dynamic>? ticketTypes,
-      List<dynamic>? tickets,
+      @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull)
+      List<dynamic>? ticketTypes,
+      @JsonKey(fromJson: _parseListOrNull) List<dynamic>? tickets,
       @JsonKey(name: 'time_slots', fromJson: _parseMapOrNull)
       Map<String, dynamic>? timeSlots,
       @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? calendar,
       @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? recurrence,
-      @JsonKey(name: 'extra_services') List<dynamic>? extraServices,
-      List<dynamic>? coupons,
+      @JsonKey(name: 'extra_services', fromJson: _parseListOrNull)
+      List<dynamic>? extraServices,
+      @JsonKey(fromJson: _parseListOrNull) List<dynamic>? coupons,
       @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull)
       Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       Map<String, dynamic>? externalBooking,
       @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
       Map<String, dynamic>? eventType,
-      @JsonKey(name: 'target_audience') List<dynamic>? targetAudience,
+      @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
+      List<dynamic>? targetAudience,
       @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
       Map<String, dynamic>? locationDetails,
-      @JsonKey(name: 'coorganizers') List<CoOrganizerDto>? coOrganizers,
+      @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
+      List<CoOrganizerDto>? coOrganizers,
       @JsonKey(name: 'social_media', fromJson: _parseMapOrNull)
       Map<String, dynamic>? socialMedia,
       @JsonKey(name: 'is_favorite') bool isFavorite});
@@ -498,6 +528,8 @@ class __$$EventDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? uuid = freezed,
+    Object? internalId = freezed,
     Object? title = null,
     Object? slug = null,
     Object? excerpt = freezed,
@@ -535,6 +567,14 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      internalId: freezed == internalId
+          ? _value.internalId
+          : internalId // ignore: cast_nullable_to_non_nullable
+              as int?,
       title: null == title
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
@@ -667,7 +707,9 @@ class __$$EventDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$EventDtoImpl implements _EventDto {
   const _$EventDtoImpl(
-      {required this.id,
+      {@JsonKey(fromJson: _parseEventId) required this.id,
+      @JsonKey(fromJson: _parseStringOrNull) this.uuid,
+      @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull) this.internalId,
       @JsonKey(fromJson: _parseHtmlString) required this.title,
       @JsonKey(fromJson: _parseHtmlString) required this.slug,
       @JsonKey(fromJson: _parseHtmlString) this.excerpt,
@@ -685,25 +727,29 @@ class _$EventDtoImpl implements _EventDto {
       this.ratings,
       this.organizer,
       @JsonKey(fromJson: _parseStringList) final List<String>? tags,
-      @JsonKey(name: 'ticket_types') final List<dynamic>? ticketTypes,
-      final List<dynamic>? tickets,
+      @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull)
+      final List<dynamic>? ticketTypes,
+      @JsonKey(fromJson: _parseListOrNull) final List<dynamic>? tickets,
       @JsonKey(name: 'time_slots', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? timeSlots,
       @JsonKey(fromJson: _parseMapOrNull) final Map<String, dynamic>? calendar,
       @JsonKey(fromJson: _parseMapOrNull)
       final Map<String, dynamic>? recurrence,
-      @JsonKey(name: 'extra_services') final List<dynamic>? extraServices,
-      final List<dynamic>? coupons,
+      @JsonKey(name: 'extra_services', fromJson: _parseListOrNull)
+      final List<dynamic>? extraServices,
+      @JsonKey(fromJson: _parseListOrNull) final List<dynamic>? coupons,
       @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? externalBooking,
       @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? eventType,
-      @JsonKey(name: 'target_audience') final List<dynamic>? targetAudience,
+      @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
+      final List<dynamic>? targetAudience,
       @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? locationDetails,
-      @JsonKey(name: 'coorganizers') final List<CoOrganizerDto>? coOrganizers,
+      @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
+      final List<CoOrganizerDto>? coOrganizers,
       @JsonKey(name: 'social_media', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? socialMedia,
       @JsonKey(name: 'is_favorite') this.isFavorite = false})
@@ -728,7 +774,16 @@ class _$EventDtoImpl implements _EventDto {
       _$$EventDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _parseEventId)
   final int id;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  final String? uuid;
+// UUID from API
+  @override
+  @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull)
+  final int? internalId;
+// Integer ID from API
   @override
   @JsonKey(fromJson: _parseHtmlString)
   final String title;
@@ -794,7 +849,7 @@ class _$EventDtoImpl implements _EventDto {
   final List<dynamic>? _ticketTypes;
 // New fields for V2 API
   @override
-  @JsonKey(name: 'ticket_types')
+  @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull)
   List<dynamic>? get ticketTypes {
     final value = _ticketTypes;
     if (value == null) return null;
@@ -805,6 +860,7 @@ class _$EventDtoImpl implements _EventDto {
 
   final List<dynamic>? _tickets;
   @override
+  @JsonKey(fromJson: _parseListOrNull)
   List<dynamic>? get tickets {
     final value = _tickets;
     if (value == null) return null;
@@ -848,7 +904,7 @@ class _$EventDtoImpl implements _EventDto {
 
   final List<dynamic>? _extraServices;
   @override
-  @JsonKey(name: 'extra_services')
+  @JsonKey(name: 'extra_services', fromJson: _parseListOrNull)
   List<dynamic>? get extraServices {
     final value = _extraServices;
     if (value == null) return null;
@@ -859,6 +915,7 @@ class _$EventDtoImpl implements _EventDto {
 
   final List<dynamic>? _coupons;
   @override
+  @JsonKey(fromJson: _parseListOrNull)
   List<dynamic>? get coupons {
     final value = _coupons;
     if (value == null) return null;
@@ -902,7 +959,7 @@ class _$EventDtoImpl implements _EventDto {
 
   final List<dynamic>? _targetAudience;
   @override
-  @JsonKey(name: 'target_audience')
+  @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
   List<dynamic>? get targetAudience {
     final value = _targetAudience;
     if (value == null) return null;
@@ -926,7 +983,7 @@ class _$EventDtoImpl implements _EventDto {
 
   final List<CoOrganizerDto>? _coOrganizers;
   @override
-  @JsonKey(name: 'coorganizers')
+  @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
   List<CoOrganizerDto>? get coOrganizers {
     final value = _coOrganizers;
     if (value == null) return null;
@@ -952,7 +1009,7 @@ class _$EventDtoImpl implements _EventDto {
 
   @override
   String toString() {
-    return 'EventDto(id: $id, title: $title, slug: $slug, excerpt: $excerpt, content: $content, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, targetAudience: $targetAudience, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, isFavorite: $isFavorite)';
+    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, targetAudience: $targetAudience, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, isFavorite: $isFavorite)';
   }
 
   @override
@@ -961,6 +1018,9 @@ class _$EventDtoImpl implements _EventDto {
         (other.runtimeType == runtimeType &&
             other is _$EventDtoImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.uuid, uuid) || other.uuid == uuid) &&
+            (identical(other.internalId, internalId) ||
+                other.internalId == internalId) &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.slug, slug) || other.slug == slug) &&
             (identical(other.excerpt, excerpt) || other.excerpt == excerpt) &&
@@ -1018,6 +1078,8 @@ class _$EventDtoImpl implements _EventDto {
   int get hashCode => Object.hashAll([
         runtimeType,
         id,
+        uuid,
+        internalId,
         title,
         slug,
         excerpt,
@@ -1067,7 +1129,10 @@ class _$EventDtoImpl implements _EventDto {
 
 abstract class _EventDto implements EventDto {
   const factory _EventDto(
-      {required final int id,
+      {@JsonKey(fromJson: _parseEventId) required final int id,
+      @JsonKey(fromJson: _parseStringOrNull) final String? uuid,
+      @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull)
+      final int? internalId,
       @JsonKey(fromJson: _parseHtmlString) required final String title,
       @JsonKey(fromJson: _parseHtmlString) required final String slug,
       @JsonKey(fromJson: _parseHtmlString) final String? excerpt,
@@ -1085,25 +1150,29 @@ abstract class _EventDto implements EventDto {
       final dynamic ratings,
       final EventOrganizerDto? organizer,
       @JsonKey(fromJson: _parseStringList) final List<String>? tags,
-      @JsonKey(name: 'ticket_types') final List<dynamic>? ticketTypes,
-      final List<dynamic>? tickets,
+      @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull)
+      final List<dynamic>? ticketTypes,
+      @JsonKey(fromJson: _parseListOrNull) final List<dynamic>? tickets,
       @JsonKey(name: 'time_slots', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? timeSlots,
       @JsonKey(fromJson: _parseMapOrNull) final Map<String, dynamic>? calendar,
       @JsonKey(fromJson: _parseMapOrNull)
       final Map<String, dynamic>? recurrence,
-      @JsonKey(name: 'extra_services') final List<dynamic>? extraServices,
-      final List<dynamic>? coupons,
+      @JsonKey(name: 'extra_services', fromJson: _parseListOrNull)
+      final List<dynamic>? extraServices,
+      @JsonKey(fromJson: _parseListOrNull) final List<dynamic>? coupons,
       @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? externalBooking,
       @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? eventType,
-      @JsonKey(name: 'target_audience') final List<dynamic>? targetAudience,
+      @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
+      final List<dynamic>? targetAudience,
       @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? locationDetails,
-      @JsonKey(name: 'coorganizers') final List<CoOrganizerDto>? coOrganizers,
+      @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
+      final List<CoOrganizerDto>? coOrganizers,
       @JsonKey(name: 'social_media', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? socialMedia,
       @JsonKey(name: 'is_favorite') final bool isFavorite}) = _$EventDtoImpl;
@@ -1112,8 +1181,15 @@ abstract class _EventDto implements EventDto {
       _$EventDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _parseEventId)
   int get id;
   @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get uuid;
+  @override // UUID from API
+  @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull)
+  int? get internalId;
+  @override // Integer ID from API
   @JsonKey(fromJson: _parseHtmlString)
   String get title;
   @override
@@ -1154,9 +1230,10 @@ abstract class _EventDto implements EventDto {
   @JsonKey(fromJson: _parseStringList)
   List<String>? get tags;
   @override // New fields for V2 API
-  @JsonKey(name: 'ticket_types')
+  @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull)
   List<dynamic>? get ticketTypes;
   @override
+  @JsonKey(fromJson: _parseListOrNull)
   List<dynamic>? get tickets;
   @override
   @JsonKey(name: 'time_slots', fromJson: _parseMapOrNull)
@@ -1168,9 +1245,10 @@ abstract class _EventDto implements EventDto {
   @JsonKey(fromJson: _parseMapOrNull)
   Map<String, dynamic>? get recurrence;
   @override
-  @JsonKey(name: 'extra_services')
+  @JsonKey(name: 'extra_services', fromJson: _parseListOrNull)
   List<dynamic>? get extraServices;
   @override
+  @JsonKey(fromJson: _parseListOrNull)
   List<dynamic>? get coupons;
   @override
   @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull)
@@ -1182,13 +1260,13 @@ abstract class _EventDto implements EventDto {
   @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get eventType;
   @override
-  @JsonKey(name: 'target_audience')
+  @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
   List<dynamic>? get targetAudience;
   @override // Rich Content V2
   @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get locationDetails;
   @override
-  @JsonKey(name: 'coorganizers')
+  @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
   List<CoOrganizerDto>? get coOrganizers;
   @override
   @JsonKey(name: 'social_media', fromJson: _parseMapOrNull)
@@ -2933,14 +3011,14 @@ mixin _$EventOrganizerDto {
   @JsonKey(name: 'practical_info')
   OrganizerPracticalInfoDto? get practicalInfo =>
       throw _privateConstructorUsedError;
-  @JsonKey(name: 'social_links')
+  @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
   List<OrganizerSocialLinkDto>? get socialLinks =>
       throw _privateConstructorUsedError;
   @JsonKey(name: 'stats')
   OrganizerStatsDto? get stats => throw _privateConstructorUsedError;
-  @JsonKey(name: 'categories')
+  @JsonKey(name: 'categories', fromJson: _parseCategories)
   List<EventCategoryDto>? get categories => throw _privateConstructorUsedError;
-  @JsonKey(name: 'partnerships')
+  @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
   List<CoOrganizerDto>? get partnerships => throw _privateConstructorUsedError;
   @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
   String? get profileUrl => throw _privateConstructorUsedError;
@@ -2977,10 +3055,13 @@ abstract class $EventOrganizerDtoCopyWith<$Res> {
       OrganizerContactDto? contact,
       OrganizerLocationDto? location,
       @JsonKey(name: 'practical_info') OrganizerPracticalInfoDto? practicalInfo,
-      @JsonKey(name: 'social_links') List<OrganizerSocialLinkDto>? socialLinks,
+      @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
+      List<OrganizerSocialLinkDto>? socialLinks,
       @JsonKey(name: 'stats') OrganizerStatsDto? stats,
-      @JsonKey(name: 'categories') List<EventCategoryDto>? categories,
-      @JsonKey(name: 'partnerships') List<CoOrganizerDto>? partnerships,
+      @JsonKey(name: 'categories', fromJson: _parseCategories)
+      List<EventCategoryDto>? categories,
+      @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
+      List<CoOrganizerDto>? partnerships,
       @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
       String? profileUrl,
       @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
@@ -3185,10 +3266,13 @@ abstract class _$$EventOrganizerDtoImplCopyWith<$Res>
       OrganizerContactDto? contact,
       OrganizerLocationDto? location,
       @JsonKey(name: 'practical_info') OrganizerPracticalInfoDto? practicalInfo,
-      @JsonKey(name: 'social_links') List<OrganizerSocialLinkDto>? socialLinks,
+      @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
+      List<OrganizerSocialLinkDto>? socialLinks,
       @JsonKey(name: 'stats') OrganizerStatsDto? stats,
-      @JsonKey(name: 'categories') List<EventCategoryDto>? categories,
-      @JsonKey(name: 'partnerships') List<CoOrganizerDto>? partnerships,
+      @JsonKey(name: 'categories', fromJson: _parseCategories)
+      List<EventCategoryDto>? categories,
+      @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
+      List<CoOrganizerDto>? partnerships,
       @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
       String? profileUrl,
       @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
@@ -3341,11 +3425,13 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
       this.contact,
       this.location,
       @JsonKey(name: 'practical_info') this.practicalInfo,
-      @JsonKey(name: 'social_links')
+      @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
       final List<OrganizerSocialLinkDto>? socialLinks,
       @JsonKey(name: 'stats') this.stats,
-      @JsonKey(name: 'categories') final List<EventCategoryDto>? categories,
-      @JsonKey(name: 'partnerships') final List<CoOrganizerDto>? partnerships,
+      @JsonKey(name: 'categories', fromJson: _parseCategories)
+      final List<EventCategoryDto>? categories,
+      @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
+      final List<CoOrganizerDto>? partnerships,
       @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
       this.profileUrl,
       @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
@@ -3406,7 +3492,7 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
   final OrganizerPracticalInfoDto? practicalInfo;
   final List<OrganizerSocialLinkDto>? _socialLinks;
   @override
-  @JsonKey(name: 'social_links')
+  @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
   List<OrganizerSocialLinkDto>? get socialLinks {
     final value = _socialLinks;
     if (value == null) return null;
@@ -3420,7 +3506,7 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
   final OrganizerStatsDto? stats;
   final List<EventCategoryDto>? _categories;
   @override
-  @JsonKey(name: 'categories')
+  @JsonKey(name: 'categories', fromJson: _parseCategories)
   List<EventCategoryDto>? get categories {
     final value = _categories;
     if (value == null) return null;
@@ -3431,7 +3517,7 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
 
   final List<CoOrganizerDto>? _partnerships;
   @override
-  @JsonKey(name: 'partnerships')
+  @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
   List<CoOrganizerDto>? get partnerships {
     final value = _partnerships;
     if (value == null) return null;
@@ -3536,33 +3622,35 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
 
 abstract class _EventOrganizerDto implements EventOrganizerDto {
   const factory _EventOrganizerDto(
-      {@JsonKey(fromJson: _parseInt) final int id,
-      @JsonKey(fromJson: _parseHtmlString) final String name,
-      @JsonKey(fromJson: _parseStringOrNull) final String? avatar,
-      @JsonKey(fromJson: _parseHtmlString) final String? description,
-      @JsonKey(fromJson: _parseStringOrNull) final String? logo,
-      @JsonKey(name: 'logo_sizes', fromJson: _parseMapOrNull)
-      final Map<String, dynamic>? logoSizes,
-      @JsonKey(fromJson: _parseStringOrNull) final String? website,
-      @JsonKey(fromJson: _parseStringOrNull) final String? phone,
-      @JsonKey(fromJson: _parseStringOrNull) final String? email,
-      @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
-      final String? coverImage,
-      final OrganizerContactDto? contact,
-      final OrganizerLocationDto? location,
-      @JsonKey(name: 'practical_info')
-      final OrganizerPracticalInfoDto? practicalInfo,
-      @JsonKey(name: 'social_links')
-      final List<OrganizerSocialLinkDto>? socialLinks,
-      @JsonKey(name: 'stats') final OrganizerStatsDto? stats,
-      @JsonKey(name: 'categories') final List<EventCategoryDto>? categories,
-      @JsonKey(name: 'partnerships') final List<CoOrganizerDto>? partnerships,
-      @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
-      final String? profileUrl,
-      @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
-      final String? memberSince,
-      @JsonKey(fromJson: _parseBool)
-      final bool verified}) = _$EventOrganizerDtoImpl;
+          {@JsonKey(fromJson: _parseInt) final int id,
+          @JsonKey(fromJson: _parseHtmlString) final String name,
+          @JsonKey(fromJson: _parseStringOrNull) final String? avatar,
+          @JsonKey(fromJson: _parseHtmlString) final String? description,
+          @JsonKey(fromJson: _parseStringOrNull) final String? logo,
+          @JsonKey(name: 'logo_sizes', fromJson: _parseMapOrNull)
+          final Map<String, dynamic>? logoSizes,
+          @JsonKey(fromJson: _parseStringOrNull) final String? website,
+          @JsonKey(fromJson: _parseStringOrNull) final String? phone,
+          @JsonKey(fromJson: _parseStringOrNull) final String? email,
+          @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+          final String? coverImage,
+          final OrganizerContactDto? contact,
+          final OrganizerLocationDto? location,
+          @JsonKey(name: 'practical_info')
+          final OrganizerPracticalInfoDto? practicalInfo,
+          @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
+          final List<OrganizerSocialLinkDto>? socialLinks,
+          @JsonKey(name: 'stats') final OrganizerStatsDto? stats,
+          @JsonKey(name: 'categories', fromJson: _parseCategories)
+          final List<EventCategoryDto>? categories,
+          @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
+          final List<CoOrganizerDto>? partnerships,
+          @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
+          final String? profileUrl,
+          @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
+          final String? memberSince,
+          @JsonKey(fromJson: _parseBool) final bool verified}) =
+      _$EventOrganizerDtoImpl;
 
   factory _EventOrganizerDto.fromJson(Map<String, dynamic> json) =
       _$EventOrganizerDtoImpl.fromJson;
@@ -3605,16 +3693,16 @@ abstract class _EventOrganizerDto implements EventOrganizerDto {
   @JsonKey(name: 'practical_info')
   OrganizerPracticalInfoDto? get practicalInfo;
   @override
-  @JsonKey(name: 'social_links')
+  @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
   List<OrganizerSocialLinkDto>? get socialLinks;
   @override
   @JsonKey(name: 'stats')
   OrganizerStatsDto? get stats;
   @override
-  @JsonKey(name: 'categories')
+  @JsonKey(name: 'categories', fromJson: _parseCategories)
   List<EventCategoryDto>? get categories;
   @override
-  @JsonKey(name: 'partnerships')
+  @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
   List<CoOrganizerDto>? get partnerships;
   @override
   @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)

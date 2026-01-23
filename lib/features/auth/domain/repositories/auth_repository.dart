@@ -16,18 +16,21 @@ class RegistrationResult {
   });
 }
 
-/// Result of login - may require OTP verification (2FA)
+/// Result of login - may require OTP verification (2FA) or direct authentication
 class LoginOtpResult {
   final bool requiresOtp;
   final String? userId;
   final String? email;
   final String? message;
+  /// When requiresOtp is false and authResult is not null, the user is authenticated
+  final AuthResult? authResult;
 
   LoginOtpResult({
     required this.requiresOtp,
     this.userId,
     this.email,
     this.message,
+    this.authResult,
   });
 }
 

@@ -64,13 +64,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Login - may require OTP verification (2FA)
+  /// Login - may require OTP verification (2FA) or direct auth (Laravel v2)
   Future<LoginOtpResult?> login({required String email, required String password}) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
       final result = await _authRepository.login(email: email, password: password);
-      
+
       if (result.requiresOtp) {
         // OTP required - store pending info
         state = state.copyWith(
@@ -80,21 +80,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
         return result;
       }
-      
-      // No OTP required (shouldn't happen with 2FA enabled, but if backend returns false, treat as authenticated)
-      // FIX: Previously set to unauthenticated, which caused immediate logout
-      state = state.copyWith(
-        status: AuthStatus.authenticated,
-        user: HbUser(
-          id: result.userId ?? '',
-          email: result.email ?? '',
-          displayName: '', // We might need to fetch profile or get it from login result if available
-        ),
-      );
-      // Ideally trigger a user fetch here to get full profile
-      // _authRepository.getCurrentUser() or similar if the login response doesn't provide full user object
-      // But the login response seems to return tokens, so we should be good to fetch profile next key
-      
+
+      // No OTP required - check if we have auth result (Laravel v2 direct auth)
+      if (result.authResult != null) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          user: result.authResult!.user,
+        );
+        return result;
+      }
+
+      // Fallback: No OTP required but no auth result (shouldn't happen)
+      debugPrint('⚠️ Login succeeded without OTP but no auth result');
+      state = state.copyWith(status: AuthStatus.unauthenticated);
       return result;
     } catch (e) {
       state = state.copyWith(
@@ -259,6 +257,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   void clearError() {
     state = state.copyWith(errorMessage: null);
+  }
+
+  /// Update user data in state (used after profile update)
+  void updateUser(dynamic updatedUser) {
+    if (state.user == null) return;
+
+    // Handle UserDto from profile API
+    if (updatedUser is! HbUser) {
+      // Convert UserDto to HbUser
+      final currentUser = state.user!;
+      final updated = currentUser.copyWith(
+        displayName: updatedUser.displayName ?? currentUser.displayName,
+        firstName: updatedUser.firstName ?? currentUser.firstName,
+        lastName: updatedUser.lastName ?? currentUser.lastName,
+        phone: updatedUser.phone ?? currentUser.phone,
+        avatarUrl: updatedUser.avatarUrl ?? currentUser.avatarUrl,
+        isVerified: updatedUser.isVerified ?? currentUser.isVerified,
+      );
+      state = state.copyWith(user: updated);
+    } else {
+      state = state.copyWith(user: updatedUser);
+    }
   }
 
   String _parseError(dynamic e) {

@@ -29,12 +29,16 @@ class AuthMapper {
 
   static UserRole _parseRole(String role) {
     switch (role.toLowerCase()) {
+      // Laravel v2 roles
+      case 'vendor':
       case 'el_event_manager':
       case 'partner':
         return UserRole.partner;
       case 'administrator':
       case 'admin':
         return UserRole.admin;
+      case 'customer':
+      case 'subscriber':
       default:
         return UserRole.subscriber;
     }

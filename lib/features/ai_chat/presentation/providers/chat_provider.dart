@@ -113,12 +113,20 @@ class ChatNotifier extends StateNotifier<ChatState> {
         final history = await _aiService.fetchRemoteHistory(userId);
         if (history.isNotEmpty) {
            // Reconstruct messages from history
-           final messages = history.where((h) {
-             // Filter out System Instructions if they leaked into history
+           // Reconstruct messages from history
+           List<ChatMessage> messages = [];
+           String? lastEventIdsHash;
+
+           for (var h in history) {
+             // Filter out System Instructions
              final content = h['content'] as String? ?? '';
              final upperContent = content.toUpperCase();
-             return !upperContent.startsWith('SYSTEM_INSTRUCTION') && !upperContent.startsWith('SYSTEM INSTRUCTION') && !upperContent.startsWith('ACT UNDER THE NAME');
-           }).map((h) {
+             if (upperContent.startsWith('SYSTEM_INSTRUCTION') || 
+                 upperContent.startsWith('SYSTEM INSTRUCTION') || 
+                 upperContent.startsWith('ACT UNDER THE NAME')) {
+               continue;
+             }
+
              final isUser = h['role'] == 'user';
              
              // Reconstruct suggestions if events exist in history
@@ -127,15 +135,28 @@ class ChatNotifier extends StateNotifier<ChatState> {
                suggestions = (h['events'] as List).map((e) => _mapEventToActivity(e)).toList();
              }
 
-             return ChatMessage(
-               id: _uuid.v4(), // or use h['id'] if available
-               text: h['content'] ?? '',
+             // Deduplicate Suggestions:
+             // If this set of events is identical to the last set we showed, hide it.
+             // This prevents "Context Leaks" where the backend attaches the same search results 
+             // to every subsequent small-talk message.
+             if (suggestions.isNotEmpty) {
+                final currentIdsHash = suggestions.map((e) => e.id).join(',');
+                if (currentIdsHash == lastEventIdsHash) {
+                  suggestions = []; // Hide duplicate
+                } else {
+                  lastEventIdsHash = currentIdsHash; // New valid set
+                }
+             }
+
+             messages.add(ChatMessage(
+               id: _uuid.v4(),
+               text: content,
                isUser: isUser,
                timestamp: h['timestamp'] != null ? DateTime.parse(h['timestamp']) : DateTime.now(),
                activitySuggestions: suggestions,
-             );
-           }).toList();
-           
+             ));
+           }
+
            if (messages.isNotEmpty) {
              state = state.copyWith(
                messages: messages,
@@ -279,6 +300,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       if (!state.isLimitReached) {
         state = state.copyWith(isLimitReached: true);
       }
+      _pendingMessage = text; // Save message for later
       return; 
     }
 
@@ -305,7 +327,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
         // Retry Strategy for 403 (Limit Reached on Backend but Paid locally)
         if (e.response?.statusCode == 403 && user != null && !state.isLimitReached) {
            debugPrint("⚠️ Backend 403 Limit, but local is passed. Retrying as anonymous to bypass...");
-           response = await _aiService.sendMessage(text, userId: null); // Send as guest
+           try {
+             response = await _aiService.sendMessage(text, userId: null); // Send as guest
+           } catch (e2) {
+             // If guest also fails or other error, fallback to limit flow if really 403
+             if (e2 is DioException && e2.response?.statusCode == 403) {
+                 rethrow; // Go to outer catch
+             }
+             // For other errors
+             throw e2;
+           }
         } else {
            rethrow;
         }
@@ -358,6 +389,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
            isLoading: false,
            isLimitReached: true,
          );
+         _pendingMessage = text; // Save text to retry
          return;
       }
 
@@ -445,16 +477,29 @@ class ChatNotifier extends StateNotifier<ChatState> {
     );
   }
 
-  void resetLimit() {
+  // Pending message to auto-send after unlock
+  String? _pendingMessage;
+
+  Future<void> resetLimit() async {
     state = state.copyWith(isLimitReached: false, messageCount: 0);
     final user = ref.read(currentUserProvider);
     if (user != null) {
-      _aiService.unlockQuota(user.id);
+      // Must await to ensure backend is updated before we send the pending message
+      await _aiService.unlockQuota(user.id);
+    }
+    
+    // Auto-send pending message if any
+    if (_pendingMessage != null) {
+      final msgByKey = _pendingMessage!;
+      _pendingMessage = null;
+      // No delay needed if we await above, but safe to keep small one or remove
+      sendMessage(msgByKey);
     }
   }
   
   void resetConversation() {
     _aiService.resetConversation();
     state = ChatState();
+    _pendingMessage = null;
   }
 }

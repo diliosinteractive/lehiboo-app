@@ -15,6 +15,7 @@ import 'package:lehiboo/features/search/presentation/screens/search_screen.dart'
 import '../features/search/presentation/screens/filter_screen.dart';
 import '../features/favorites/presentation/screens/favorites_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
+import '../features/profile/presentation/screens/profile_edit_screen.dart';
 import '../features/profile/presentation/screens/settings_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
@@ -293,6 +294,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       
       
+
+      // Profile edit / Account
+      GoRoute(
+        path: '/account',
+        name: 'account',
+        builder: (context, state) => const ProfileEditScreen(),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        name: 'profile-edit',
+        builder: (context, state) => const ProfileEditScreen(),
+      ),
 
       // Settings
       GoRoute(

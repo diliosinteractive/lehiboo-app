@@ -6,7 +6,9 @@ part 'event_dto.g.dart';
 @freezed
 class EventDto with _$EventDto {
   const factory EventDto({
-    required int id,
+    @JsonKey(fromJson: _parseEventId) required int id,
+    @JsonKey(fromJson: _parseStringOrNull) String? uuid, // UUID from API
+    @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull) int? internalId, // Integer ID from API
     @JsonKey(fromJson: _parseHtmlString) required String title,
     @JsonKey(fromJson: _parseHtmlString) required String slug,
     @JsonKey(fromJson: _parseHtmlString) String? excerpt,
@@ -24,21 +26,21 @@ class EventDto with _$EventDto {
     EventOrganizerDto? organizer,
     @JsonKey(fromJson: _parseStringList) List<String>? tags,
     // New fields for V2 API
-    @JsonKey(name: 'ticket_types') List<dynamic>? ticketTypes,
-    List<dynamic>? tickets,
+    @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull) List<dynamic>? ticketTypes,
+    @JsonKey(fromJson: _parseListOrNull) List<dynamic>? tickets,
     @JsonKey(name: 'time_slots', fromJson: _parseMapOrNull) Map<String, dynamic>? timeSlots,
     @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? calendar,
     @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? recurrence,
-    @JsonKey(name: 'extra_services') List<dynamic>? extraServices,
-    List<dynamic>? coupons,
+    @JsonKey(name: 'extra_services', fromJson: _parseListOrNull) List<dynamic>? extraServices,
+    @JsonKey(fromJson: _parseListOrNull) List<dynamic>? coupons,
     @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull) Map<String, dynamic>? seatConfig,
     @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull) Map<String, dynamic>? externalBooking,
     @JsonKey(name: 'event_type', fromJson: _parseMapOrNull) Map<String, dynamic>? eventType,
-    @JsonKey(name: 'target_audience') List<dynamic>? targetAudience,
+    @JsonKey(name: 'target_audience', fromJson: _parseListOrNull) List<dynamic>? targetAudience,
     
     // Rich Content V2
     @JsonKey(name: 'location_details', fromJson: _parseMapOrNull) Map<String, dynamic>? locationDetails,
-    @JsonKey(name: 'coorganizers') List<CoOrganizerDto>? coOrganizers,
+    @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers) List<CoOrganizerDto>? coOrganizers,
     @JsonKey(name: 'social_media', fromJson: _parseMapOrNull) Map<String, dynamic>? socialMedia,
 
     @JsonKey(name: 'is_favorite') @Default(false) bool isFavorite,
@@ -251,6 +253,43 @@ Map<String, dynamic>? _parseMapOrNull(dynamic value) {
   return null; // Ignore Lists, Strings, etc.
 }
 
+/// Helper to safely parse List<dynamic>, handling Maps and other unexpected types
+List<dynamic>? _parseListOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is List) return value;
+  return null; // Ignore Maps, Strings, etc.
+}
+
+/// Helper to safely parse List<CoOrganizerDto>, filtering non-Map elements
+List<CoOrganizerDto>? _parseCoOrganizers(dynamic value) {
+  if (value == null) return null;
+  if (value is! List) return null;
+  return value
+      .whereType<Map<String, dynamic>>()
+      .map((e) => CoOrganizerDto.fromJson(e))
+      .toList();
+}
+
+/// Helper to safely parse List<OrganizerSocialLinkDto>, filtering non-Map elements
+List<OrganizerSocialLinkDto>? _parseSocialLinks(dynamic value) {
+  if (value == null) return null;
+  if (value is! List) return null;
+  return value
+      .whereType<Map<String, dynamic>>()
+      .map((e) => OrganizerSocialLinkDto.fromJson(e))
+      .toList();
+}
+
+/// Helper to safely parse List<EventCategoryDto>, filtering non-Map elements
+List<EventCategoryDto>? _parseCategories(dynamic value) {
+  if (value == null) return null;
+  if (value is! List) return null;
+  return value
+      .whereType<Map<String, dynamic>>()
+      .map((e) => EventCategoryDto.fromJson(e))
+      .toList();
+}
+
 List<String>? _parseStringList(dynamic value) {
   if (value == null) return null;
   if (value is List) {
@@ -294,6 +333,26 @@ int _parseInt(dynamic value) {
   return 0;
 }
 
+/// Parse event ID which can be int, UUID string, or needs to be derived from internal_id
+/// The API may return:
+/// - int: direct integer ID
+/// - String (numeric): "123" -> 123
+/// - String (UUID): "550e8400-e29b-41d4-a716-446655440000" -> hashCode for stable int
+int _parseEventId(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is String) {
+    // Try to parse as int first (for "123" format)
+    final intValue = int.tryParse(value);
+    if (intValue != null) return intValue;
+
+    // If it's a UUID string, use hashCode for a stable integer representation
+    // This ensures the same UUID always maps to the same int
+    return value.hashCode.abs();
+  }
+  return 0;
+}
+
 @freezed
 class EventOrganizerDto with _$EventOrganizerDto {
   const factory EventOrganizerDto({
@@ -310,10 +369,10 @@ class EventOrganizerDto with _$EventOrganizerDto {
     OrganizerContactDto? contact,
     OrganizerLocationDto? location,
     @JsonKey(name: 'practical_info') OrganizerPracticalInfoDto? practicalInfo,
-    @JsonKey(name: 'social_links') List<OrganizerSocialLinkDto>? socialLinks,
+    @JsonKey(name: 'social_links', fromJson: _parseSocialLinks) List<OrganizerSocialLinkDto>? socialLinks,
     @JsonKey(name: 'stats') OrganizerStatsDto? stats,
-    @JsonKey(name: 'categories') List<EventCategoryDto>? categories,
-    @JsonKey(name: 'partnerships') List<CoOrganizerDto>? partnerships,
+    @JsonKey(name: 'categories', fromJson: _parseCategories) List<EventCategoryDto>? categories,
+    @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers) List<CoOrganizerDto>? partnerships,
     @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull) String? profileUrl,
     @JsonKey(name: 'member_since', fromJson: _parseStringOrNull) String? memberSince,
     @JsonKey(fromJson: _parseBool) @Default(false) bool verified,

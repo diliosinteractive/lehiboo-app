@@ -8,7 +8,9 @@ part of 'event_dto.dart';
 
 _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
     _$EventDtoImpl(
-      id: (json['id'] as num).toInt(),
+      id: _parseEventId(json['id']),
+      uuid: _parseStringOrNull(json['uuid']),
+      internalId: _parseIntOrNull(json['internal_id']),
       title: _parseHtmlString(json['title']),
       slug: _parseHtmlString(json['slug']),
       excerpt: _parseHtmlString(json['excerpt']),
@@ -41,21 +43,19 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
           : EventOrganizerDto.fromJson(
               json['organizer'] as Map<String, dynamic>),
       tags: _parseStringList(json['tags']),
-      ticketTypes: json['ticket_types'] as List<dynamic>?,
-      tickets: json['tickets'] as List<dynamic>?,
+      ticketTypes: _parseListOrNull(json['ticket_types']),
+      tickets: _parseListOrNull(json['tickets']),
       timeSlots: _parseMapOrNull(json['time_slots']),
       calendar: _parseMapOrNull(json['calendar']),
       recurrence: _parseMapOrNull(json['recurrence']),
-      extraServices: json['extra_services'] as List<dynamic>?,
-      coupons: json['coupons'] as List<dynamic>?,
+      extraServices: _parseListOrNull(json['extra_services']),
+      coupons: _parseListOrNull(json['coupons']),
       seatConfig: _parseMapOrNull(json['seat_config']),
       externalBooking: _parseMapOrNull(json['external_booking']),
       eventType: _parseMapOrNull(json['event_type']),
-      targetAudience: json['target_audience'] as List<dynamic>?,
+      targetAudience: _parseListOrNull(json['target_audience']),
       locationDetails: _parseMapOrNull(json['location_details']),
-      coOrganizers: (json['coorganizers'] as List<dynamic>?)
-          ?.map((e) => CoOrganizerDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      coOrganizers: _parseCoOrganizers(json['coorganizers']),
       socialMedia: _parseMapOrNull(json['social_media']),
       isFavorite: json['is_favorite'] as bool? ?? false,
     );
@@ -63,6 +63,8 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
+      'uuid': instance.uuid,
+      'internal_id': instance.internalId,
       'title': instance.title,
       'slug': instance.slug,
       'excerpt': instance.excerpt,
@@ -259,19 +261,12 @@ _$EventOrganizerDtoImpl _$$EventOrganizerDtoImplFromJson(
           ? null
           : OrganizerPracticalInfoDto.fromJson(
               json['practical_info'] as Map<String, dynamic>),
-      socialLinks: (json['social_links'] as List<dynamic>?)
-          ?.map(
-              (e) => OrganizerSocialLinkDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      socialLinks: _parseSocialLinks(json['social_links']),
       stats: json['stats'] == null
           ? null
           : OrganizerStatsDto.fromJson(json['stats'] as Map<String, dynamic>),
-      categories: (json['categories'] as List<dynamic>?)
-          ?.map((e) => EventCategoryDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      partnerships: (json['partnerships'] as List<dynamic>?)
-          ?.map((e) => CoOrganizerDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      categories: _parseCategories(json['categories']),
+      partnerships: _parseCoOrganizers(json['partnerships']),
       profileUrl: _parseStringOrNull(json['profile_url']),
       memberSince: _parseStringOrNull(json['member_since']),
       verified: json['verified'] == null ? false : _parseBool(json['verified']),

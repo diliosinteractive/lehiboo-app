@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'core/themes/app_theme.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'routes/app_router.dart';
@@ -26,6 +28,9 @@ import 'features/booking/data/repositories/fake_booking_repository_impl.dart';
 // Providers and Storage
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lehiboo/features/ai_chat/presentation/providers/chat_provider.dart';
+
+// Push Notifications
+import 'features/notifications/presentation/providers/push_notification_provider.dart';
 
 // Configuration flag - set to false to use fake data
 const bool useRealApi = true;
@@ -54,7 +59,15 @@ void main() async {
   // Initialize Dio client
   DioClient.initialize();
 
-  // Initialize other services here (Firebase, etc.)
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('Firebase initialized successfully');
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
 
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
@@ -114,6 +127,10 @@ class LeHibooApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+
+    // Watch push notification provider to initialize on auth state changes
+    // The provider will auto-initialize when user logs in and unregister on logout
+    ref.watch(pushNotificationProvider);
 
     return MaterialApp.router(
       title: 'Le Hiboo',

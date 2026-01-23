@@ -80,6 +80,15 @@ class AuthRepositoryImpl implements AuthRepository {
       password: password,
     );
 
+    // If login was successful with direct auth (no OTP required)
+    if (!response.requiresOtp && response.authResponse != null) {
+      final authResult = await _handleAuthResponse(response.authResponse!);
+      return LoginOtpResult(
+        requiresOtp: false,
+        authResult: authResult,
+      );
+    }
+
     return LoginOtpResult(
       requiresOtp: response.requiresOtp,
       userId: response.userId,

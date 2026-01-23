@@ -109,7 +109,16 @@ class AiChatService {
 
           if (userId != null) 'userId': userId,
           // Sliding Window: Send only last 4 messages (Backend Spec)
-          'history': _history.length > 4 ? _history.sublist(_history.length - 4) : _history,
+          'history': _history.length > 4 
+              ? _history.sublist(_history.length - 4).map((msg) => {
+                  'role': msg['role'],
+                  'content': msg['content'],
+                  // Remove 'events', 'timestamp', 'user_context' to save tokens
+                }).toList()
+              : _history.map((msg) => {
+                  'role': msg['role'],
+                  'content': msg['content'],
+                }).toList(),
         },
         options: Options(
           headers: {

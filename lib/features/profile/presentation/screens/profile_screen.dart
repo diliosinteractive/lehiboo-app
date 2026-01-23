@@ -166,7 +166,7 @@ class ProfileScreen extends ConsumerWidget {
           icon: Icons.person_outline,
           title: 'Mon Compte',
           subtitle: 'Modifier vos informations',
-          onTap: () {}, // TODO: Implement edit profile
+          onTap: () => context.push('/account'),
         ),
         _buildMenuItem(
           context,

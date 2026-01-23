@@ -83,11 +83,18 @@ class EventMapper {
     }
 
     // Ticket Mapping Logic: Prefer "tickets" (V2), fallback to "ticketTypes" (Legacy)
+    // Filter only Map elements to avoid cast errors if API returns unexpected types
     List<Ticket> mappedTickets = [];
     if (dto.tickets != null && dto.tickets!.isNotEmpty) {
-      mappedTickets = dto.tickets!.map((e) => Ticket.fromJson(e as Map<String, dynamic>)).toList();
+      mappedTickets = dto.tickets!
+          .whereType<Map<String, dynamic>>()
+          .map((e) => Ticket.fromJson(e))
+          .toList();
     } else if (dto.ticketTypes != null && dto.ticketTypes!.isNotEmpty) {
-      mappedTickets = dto.ticketTypes!.map((e) => Ticket.fromJson(e as Map<String, dynamic>)).toList();
+      mappedTickets = dto.ticketTypes!
+          .whereType<Map<String, dynamic>>()
+          .map((e) => Ticket.fromJson(e))
+          .toList();
     }
 
     // TimeSlot Parsing safely
@@ -146,12 +153,12 @@ class EventMapper {
       calendar: dto.calendar != null ? CalendarConfig.fromJson(dto.calendar!) : null,
       recurrence: dto.recurrence != null ? RecurrenceConfig.fromJson(dto.recurrence!) : null,
       duration: dto.dates?.durationMinutes != null ? Duration(minutes: dto.dates!.durationMinutes!) : null,
-      extraServices: dto.extraServices?.map((e) => ExtraService.fromJson(e as Map<String, dynamic>)).toList() ?? [],
-      coupons: dto.coupons?.map((e) => Coupon.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      extraServices: dto.extraServices?.whereType<Map<String, dynamic>>().map((e) => ExtraService.fromJson(e)).toList() ?? [],
+      coupons: dto.coupons?.whereType<Map<String, dynamic>>().map((e) => Coupon.fromJson(e)).toList() ?? [],
       seatConfig: dto.seatConfig != null ? SeatConfig.fromJson(dto.seatConfig!) : null,
       externalBooking: dto.externalBooking != null ? ExternalBooking.fromJson(dto.externalBooking!) : null,
       eventTypeTerm: dto.eventType != null ? TaxonomyTerm.fromJson(dto.eventType!) : null,
-      targetAudienceTerms: dto.targetAudience?.map((e) => TaxonomyTerm.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      targetAudienceTerms: dto.targetAudience?.whereType<Map<String, dynamic>>().map((e) => TaxonomyTerm.fromJson(e)).toList() ?? [],
       
       // RICH CONTENT MAPPING
       locationDetails: _mapLocationDetails(dto.organizer?.practicalInfo),

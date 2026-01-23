@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
@@ -6,18 +8,79 @@ import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/thematiques/presentation/providers/thematiques_provider.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 
+const _filterPersistenceKey = 'event_filter_state';
+
 /// Main filter state provider
 final eventFilterProvider = StateNotifierProvider<EventFilterNotifier, EventFilter>((ref) {
   return EventFilterNotifier();
 });
 
-/// Filter state notifier with all update methods
+/// Filter state notifier with all update methods and persistence
 class EventFilterNotifier extends StateNotifier<EventFilter> {
-  EventFilterNotifier() : super(const EventFilter());
+  EventFilterNotifier() : super(const EventFilter()) {
+    _loadPersistedFilters();
+  }
+
+  /// Load persisted filters from SharedPreferences
+  Future<void> _loadPersistedFilters() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final filterJson = prefs.getString(_filterPersistenceKey);
+      if (filterJson != null) {
+        final filterMap = json.decode(filterJson) as Map<String, dynamic>;
+        state = _fromJson(filterMap);
+      }
+    } catch (e) {
+      // Ignore errors, use default filter
+    }
+  }
+
+  /// Persist current filter state to SharedPreferences
+  Future<void> _persistFilters() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final filterJson = json.encode(_toJson(state));
+      await prefs.setString(_filterPersistenceKey, filterJson);
+    } catch (e) {
+      // Ignore persistence errors
+    }
+  }
+
+  /// Convert filter to JSON for persistence (only persistent fields)
+  Map<String, dynamic> _toJson(EventFilter filter) {
+    return {
+      'citySlug': filter.citySlug,
+      'cityName': filter.cityName,
+      'thematiquesSlugs': filter.thematiquesSlugs,
+      'categoriesSlugs': filter.categoriesSlugs,
+      'onlyFree': filter.onlyFree,
+      'priceMin': filter.priceMin,
+      'priceMax': filter.priceMax,
+      'familyFriendly': filter.familyFriendly,
+      'accessiblePMR': filter.accessiblePMR,
+      // Don't persist: search query, dates, location (temporary filters)
+    };
+  }
+
+  /// Create filter from JSON
+  EventFilter _fromJson(Map<String, dynamic> json) {
+    return EventFilter(
+      citySlug: json['citySlug'] as String?,
+      cityName: json['cityName'] as String?,
+      thematiquesSlugs: (json['thematiquesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
+      categoriesSlugs: (json['categoriesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
+      onlyFree: json['onlyFree'] as bool? ?? false,
+      priceMin: (json['priceMin'] as num?)?.toDouble() ?? 0,
+      priceMax: (json['priceMax'] as num?)?.toDouble() ?? 1000,
+      familyFriendly: json['familyFriendly'] as bool? ?? false,
+      accessiblePMR: json['accessiblePMR'] as bool? ?? false,
+    );
+  }
 
   // Reset all filters
   void resetAll() {
     state = const EventFilter();
+    _persistFilters();
   }
 
   // Search query
@@ -103,6 +166,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       onlyFree: value,
       priceFilterType: value ? PriceFilterType.free : null,
     );
+    _persistFilters();
   }
 
   void setPriceRange(double min, double max) {
@@ -112,6 +176,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       priceMax: max,
       onlyFree: false,
     );
+    _persistFilters();
   }
 
   void clearPriceFilter() {
@@ -121,6 +186,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       priceMax: 1000,
       onlyFree: false,
     );
+    _persistFilters();
   }
 
   // City filter
@@ -129,6 +195,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       citySlug: slug,
       cityName: name,
     );
+    _persistFilters();
   }
 
   void clearCity() {
@@ -136,6 +203,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       citySlug: null,
       cityName: null,
     );
+    _persistFilters();
   }
 
   // Location filter (GPS)
@@ -172,6 +240,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       state = state.copyWith(
         thematiquesSlugs: [...state.thematiquesSlugs, slug],
       );
+      _persistFilters();
     }
   }
 
@@ -179,6 +248,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     state = state.copyWith(
       thematiquesSlugs: state.thematiquesSlugs.where((s) => s != slug).toList(),
     );
+    _persistFilters();
   }
 
   void toggleThematique(String slug) {
@@ -191,6 +261,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
 
   void clearThematiques() {
     state = state.copyWith(thematiquesSlugs: []);
+    _persistFilters();
   }
 
   // Categories (multi-select)
@@ -199,6 +270,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       state = state.copyWith(
         categoriesSlugs: [...state.categoriesSlugs, slug],
       );
+      _persistFilters();
     }
   }
 
@@ -206,6 +278,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     state = state.copyWith(
       categoriesSlugs: state.categoriesSlugs.where((s) => s != slug).toList(),
     );
+    _persistFilters();
   }
 
   void toggleCategory(String slug) {
@@ -218,6 +291,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
 
   void clearCategories() {
     state = state.copyWith(categoriesSlugs: []);
+    _persistFilters();
   }
 
   // Organizer
@@ -265,10 +339,12 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
   // Audience filters
   void setFamilyFriendly(bool value) {
     state = state.copyWith(familyFriendly: value);
+    _persistFilters();
   }
 
   void setAccessiblePMR(bool value) {
     state = state.copyWith(accessiblePMR: value);
+    _persistFilters();
   }
 
   // Format filters

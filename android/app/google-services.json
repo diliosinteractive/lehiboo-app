@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "44786304054",
+    "project_id": "lehiboo-77c35",
+    "storage_bucket": "lehiboo-77c35.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:44786304054:android:ed9fc5833d30d57ac74497",
+        "android_client_info": {
+          "package_name": "com.dilios.lehiboo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqGSXYTnOvwFjqZUmYGf9yMFgAdEDEUPQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
