@@ -59,14 +59,20 @@ Map<String, dynamic> _$$AdsConfigImplToJson(_$AdsConfigImpl instance) =>
 
 _$AdBannerImpl _$$AdBannerImplFromJson(Map<String, dynamic> json) =>
     _$AdBannerImpl(
+      id: (json['id'] as num?)?.toInt(),
       image: json['image'] as String? ?? '',
       url: json['url'] as String? ?? '',
+      title: json['title'] as String?,
+      description: json['description'] as String?,
     );
 
 Map<String, dynamic> _$$AdBannerImplToJson(_$AdBannerImpl instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'image': instance.image,
       'url': instance.url,
+      'title': instance.title,
+      'description': instance.description,
     };
 
 _$TextsConfigImpl _$$TextsConfigImplFromJson(Map<String, dynamic> json) =>

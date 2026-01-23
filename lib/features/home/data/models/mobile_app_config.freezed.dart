@@ -624,8 +624,11 @@ AdBanner _$AdBannerFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$AdBanner {
+  int? get id => throw _privateConstructorUsedError;
   String get image => throw _privateConstructorUsedError;
   String get url => throw _privateConstructorUsedError;
+  String? get title => throw _privateConstructorUsedError;
+  String? get description => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -638,7 +641,8 @@ abstract class $AdBannerCopyWith<$Res> {
   factory $AdBannerCopyWith(AdBanner value, $Res Function(AdBanner) then) =
       _$AdBannerCopyWithImpl<$Res, AdBanner>;
   @useResult
-  $Res call({String image, String url});
+  $Res call(
+      {int? id, String image, String url, String? title, String? description});
 }
 
 /// @nodoc
@@ -654,10 +658,17 @@ class _$AdBannerCopyWithImpl<$Res, $Val extends AdBanner>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = freezed,
     Object? image = null,
     Object? url = null,
+    Object? title = freezed,
+    Object? description = freezed,
   }) {
     return _then(_value.copyWith(
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int?,
       image: null == image
           ? _value.image
           : image // ignore: cast_nullable_to_non_nullable
@@ -666,6 +677,14 @@ class _$AdBannerCopyWithImpl<$Res, $Val extends AdBanner>
           ? _value.url
           : url // ignore: cast_nullable_to_non_nullable
               as String,
+      title: freezed == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -678,7 +697,8 @@ abstract class _$$AdBannerImplCopyWith<$Res>
       __$$AdBannerImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String image, String url});
+  $Res call(
+      {int? id, String image, String url, String? title, String? description});
 }
 
 /// @nodoc
@@ -692,10 +712,17 @@ class __$$AdBannerImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = freezed,
     Object? image = null,
     Object? url = null,
+    Object? title = freezed,
+    Object? description = freezed,
   }) {
     return _then(_$AdBannerImpl(
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int?,
       image: null == image
           ? _value.image
           : image // ignore: cast_nullable_to_non_nullable
@@ -704,6 +731,14 @@ class __$$AdBannerImplCopyWithImpl<$Res>
           ? _value.url
           : url // ignore: cast_nullable_to_non_nullable
               as String,
+      title: freezed == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -711,21 +746,28 @@ class __$$AdBannerImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AdBannerImpl implements _AdBanner {
-  const _$AdBannerImpl({this.image = '', this.url = ''});
+  const _$AdBannerImpl(
+      {this.id, this.image = '', this.url = '', this.title, this.description});
 
   factory _$AdBannerImpl.fromJson(Map<String, dynamic> json) =>
       _$$AdBannerImplFromJson(json);
 
+  @override
+  final int? id;
   @override
   @JsonKey()
   final String image;
   @override
   @JsonKey()
   final String url;
+  @override
+  final String? title;
+  @override
+  final String? description;
 
   @override
   String toString() {
-    return 'AdBanner(image: $image, url: $url)';
+    return 'AdBanner(id: $id, image: $image, url: $url, title: $title, description: $description)';
   }
 
   @override
@@ -733,13 +775,18 @@ class _$AdBannerImpl implements _AdBanner {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$AdBannerImpl &&
+            (identical(other.id, id) || other.id == id) &&
             (identical(other.image, image) || other.image == image) &&
-            (identical(other.url, url) || other.url == url));
+            (identical(other.url, url) || other.url == url) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.description, description) ||
+                other.description == description));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, image, url);
+  int get hashCode =>
+      Object.hash(runtimeType, id, image, url, title, description);
 
   @JsonKey(ignore: true)
   @override
@@ -756,16 +803,26 @@ class _$AdBannerImpl implements _AdBanner {
 }
 
 abstract class _AdBanner implements AdBanner {
-  const factory _AdBanner({final String image, final String url}) =
-      _$AdBannerImpl;
+  const factory _AdBanner(
+      {final int? id,
+      final String image,
+      final String url,
+      final String? title,
+      final String? description}) = _$AdBannerImpl;
 
   factory _AdBanner.fromJson(Map<String, dynamic> json) =
       _$AdBannerImpl.fromJson;
 
   @override
+  int? get id;
+  @override
   String get image;
   @override
   String get url;
+  @override
+  String? get title;
+  @override
+  String? get description;
   @override
   @JsonKey(ignore: true)
   _$$AdBannerImplCopyWith<_$AdBannerImpl> get copyWith =>

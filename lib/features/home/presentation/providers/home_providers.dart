@@ -1,18 +1,16 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:intl/intl.dart';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/city.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../events/domain/repositories/event_repository.dart';
 import '../../../events/data/mappers/event_to_activity_mapper.dart';
 import '../../data/models/mobile_app_config.dart';
+import '../../data/datasources/mobile_config_datasource.dart';
 import 'user_location_provider.dart';
 import '../../../../features/events/data/models/home_feed_response_dto.dart';
-import '../../../../features/events/domain/entities/event.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 
 // Unified Home Feed Provider
@@ -66,11 +64,6 @@ final homeTomorrowActivitiesProvider = FutureProvider<List<Activity>>((ref) asyn
 final homeActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
   final feedAsync = ref.watch(homeFeedProvider);
 
-  // FORCE DELAY TO SHOW SKELETON (User Request)
-  // Moving delay here to affect all sections equally if they depend on feed?
-  // Or keep it per provider? The feed will take time anyway.
-  await Future.delayed(const Duration(seconds: 1)); // Reduced to 1s
-  
   return feedAsync.when(
     data: (dto) {
       if (dto.data?.recommended == null) return [];
@@ -85,9 +78,6 @@ final homeActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
 /// Provider for featured/promoted activities
 final featuredActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
   final eventRepository = ref.watch(eventRepositoryProvider);
-
-  // FORCE DELAY TO SHOW SKELETON (User Request)
-  await Future.delayed(const Duration(seconds: 2));
 
   try {
     // Fetch featured events
@@ -197,38 +187,13 @@ class EventCategoryInfo {
   });
 }
 
-/// Provider for mobile app configuration from WordPress admin
+/// Provider for mobile app configuration from Laravel v2 API.
+///
+/// Returns hero section, banners/ads configuration, and customizable texts.
+/// Falls back to default config if API is unavailable.
 final mobileAppConfigProvider = FutureProvider<MobileAppConfig>((ref) async {
-  try {
-    // Call the eventlist/v1 API endpoint directly
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: 'https://preprod.lehiboo.com/wp-json',
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-
-    final response = await dio.get('/eventlist/v1/mobile-app/config');
-    final data = response.data;
-
-    debugPrint('=== Mobile App Config API Response ===');
-    debugPrint('Response: $data');
-
-    if (data != null) {
-      return MobileAppConfig.fromJson(data);
-    }
-
-    return MobileAppConfig.defaultConfig();
-  } catch (e) {
-    debugPrint('Error loading mobile app config: $e');
-    // Return default config if API fails
-    return MobileAppConfig.defaultConfig();
-  }
+  final dataSource = ref.watch(mobileConfigDataSourceProvider);
+  return await dataSource.getConfig();
 });
 
 /// Model for a saved/recent search

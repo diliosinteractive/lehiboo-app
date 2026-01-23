@@ -65,8 +65,11 @@ class AdsConfig with _$AdsConfig {
 @freezed
 class AdBanner with _$AdBanner {
   const factory AdBanner({
+    int? id,
     @Default('') String image,
     @Default('') String url,
+    String? title,
+    String? description,
   }) = _AdBanner;
 
   factory AdBanner.fromJson(Map<String, dynamic> json) =>

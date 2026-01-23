@@ -5,14 +5,17 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class EnvConfig {
   EnvConfig._();
 
-  // API Configuration
+  // API Configuration - Laravel v2
   static String get apiBaseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'https://preprod.lehiboo.com/wp-json/lehiboo/v2';
+      dotenv.env['API_BASE_URL'] ?? 'https://api.lehiboo.com/api/v1';
 
   static String get aiBaseUrl =>
-      dotenv.env['AI_BASE_URL'] ?? 'https://preprod.lehiboo.com/api-planner';
+      dotenv.env['AI_BASE_URL'] ?? 'https://api.lehiboo.com/api-planner';
 
   static String get apiKey => dotenv.env['API_KEY'] ?? '';
+
+  /// Host header for nginx reverse proxy (used when accessing API via IP)
+  static String get apiHost => dotenv.env['API_HOST'] ?? '';
 
   // Website URLs
   static String get websiteUrl => dotenv.env['WEBSITE_URL'] ?? 'https://lehiboo.fr';
@@ -46,4 +49,9 @@ class EnvConfig {
       dotenv.env['ENVIRONMENT']?.toLowerCase() != 'production';
 
   static String get environment => dotenv.env['ENVIRONMENT'] ?? 'development';
+
+  // Security
+  static String get htUsername => dotenv.env['HT_USERNAME'] ?? '';
+  static String get htPassword => dotenv.env['HT_PASSWORD'] ?? '';
+  static String get securityHeaderName => dotenv.env['SECURITY_HEADER_NAME'] ?? 'Authorization';
 }
