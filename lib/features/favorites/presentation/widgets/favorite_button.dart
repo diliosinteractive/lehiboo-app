@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -121,9 +123,10 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
         if (success) {
           widget.onChanged?.call(wasAdding);
 
-          // Show success snackbar
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
+          // Show success snackbar with forced auto-dismiss
+          final messenger = ScaffoldMessenger.of(context);
+          messenger.clearSnackBars();
+          messenger.showSnackBar(
             SnackBar(
               content: Text(
                 wasAdding ? 'Ajouté aux favoris' : 'Retiré des favoris',
@@ -134,7 +137,6 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
                 label: 'Annuler',
                 textColor: const Color(0xFFFF601F),
                 onPressed: () {
-                  // Toggle back
                   ref.read(favoritesProvider.notifier).toggleFavorite(
                     widget.event,
                     internalId: widget.internalId,
@@ -143,6 +145,10 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
               ),
             ),
           );
+          // Force dismiss after 2 seconds
+          Timer(const Duration(seconds: 2), () {
+            if (mounted) messenger.hideCurrentSnackBar();
+          });
         } else {
           // Error feedback
           HapticFeedback.heavyImpact();
