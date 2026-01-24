@@ -19,7 +19,9 @@ class UserDto with _$UserDto {
   const factory UserDto({
     required int id,
     required String email,
-    @JsonKey(name: 'display_name') required String displayName,
+    // Login/refresh returns "display_name", register returns "name"
+    @JsonKey(name: 'display_name') String? displayName,
+    String? name,
     @JsonKey(name: 'first_name') String? firstName,
     @JsonKey(name: 'last_name') String? lastName,
     String? phone,

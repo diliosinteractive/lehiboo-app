@@ -259,6 +259,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(errorMessage: null);
   }
 
+  /// Set authenticated user directly (used after business registration)
+  void setAuthenticatedUser(HbUser user) {
+    state = state.copyWith(
+      status: AuthStatus.authenticated,
+      user: user,
+      pendingUserId: null,
+      pendingEmail: null,
+      errorMessage: null,
+    );
+  }
+
+  /// Refresh auth status from repository (used after external auth changes)
+  Future<void> refreshAuthStatus() async {
+    await _checkAuthStatus();
+  }
+
   /// Update user data in state (used after profile update)
   void updateUser(dynamic updatedUser) {
     if (state.user == null) return;

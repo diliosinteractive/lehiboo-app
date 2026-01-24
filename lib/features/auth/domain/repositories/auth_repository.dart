@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/entities/user.dart';
+import '../../data/models/business_register_dto.dart';
 
 /// Result of initial registration - pending OTP verification
 class RegistrationResult {
@@ -84,6 +85,117 @@ abstract class AuthRepository {
   Future<HbUser?> getCurrentUser();
 
   Future<bool> isAuthenticated();
+
+  // ============================================================
+  // NEW REGISTRATION METHODS FOR MOBILE APP
+  // ============================================================
+
+  /// Register a customer (simple registration)
+  Future<CustomerRegistrationResult> registerCustomer({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    String? phone,
+    required bool acceptTerms,
+  });
+
+  /// Register a business account (multi-step registration)
+  Future<BusinessRegistrationResult> registerBusiness({
+    required BusinessRegisterDto dto,
+  });
+
+  /// Send OTP code for email verification
+  Future<OtpResult> sendOtpCode({
+    required String email,
+    required String type,
+  });
+
+  /// Verify OTP code
+  Future<OtpVerificationResult> verifyOtpCode({
+    required String email,
+    required String code,
+    required String type,
+  });
+
+  /// Check if email exists
+  Future<bool> checkEmailExists(String email);
+}
+
+/// Result of customer registration
+class CustomerRegistrationResult {
+  final bool pendingVerification;
+  final bool emailVerificationRequired;
+  final String? userId;
+  final String email;
+  final String message;
+  final AuthResult? authResult;
+
+  CustomerRegistrationResult({
+    required this.pendingVerification,
+    required this.emailVerificationRequired,
+    this.userId,
+    required this.email,
+    required this.message,
+    this.authResult,
+  });
+}
+
+/// Result of business registration
+class BusinessRegistrationResult {
+  final AuthResult authResult;
+  final OrganizationInfo? organization;
+  final int invitationsSent;
+  final List<String>? invitedEmails;
+
+  BusinessRegistrationResult({
+    required this.authResult,
+    this.organization,
+    required this.invitationsSent,
+    this.invitedEmails,
+  });
+}
+
+/// Organization info
+class OrganizationInfo {
+  final int id;
+  final String uuid;
+  final String name;
+  final String? type;
+
+  OrganizationInfo({
+    required this.id,
+    required this.uuid,
+    required this.name,
+    this.type,
+  });
+}
+
+/// OTP send result
+class OtpResult {
+  final bool success;
+  final String message;
+  final String? expiresAt;
+
+  OtpResult({
+    required this.success,
+    required this.message,
+    this.expiresAt,
+  });
+}
+
+/// OTP verification result
+class OtpVerificationResult {
+  final bool success;
+  final bool verified;
+  final String message;
+
+  OtpVerificationResult({
+    required this.success,
+    required this.verified,
+    required this.message,
+  });
 }
 
 class AuthResult {

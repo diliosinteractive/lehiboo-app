@@ -19,6 +19,9 @@ import '../features/profile/presentation/screens/profile_edit_screen.dart';
 import '../features/profile/presentation/screens/settings_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
+import '../features/auth/presentation/screens/register_type_screen.dart';
+import '../features/auth/presentation/screens/customer_register_screen.dart';
+import '../features/auth/presentation/screens/business_register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
@@ -59,7 +62,10 @@ final routerProvider = Provider<GoRouter>((ref) {
        
        // Auth-related routes
        final isLoggingIn = state.matchedLocation == '/login';
-       final isRegistering = state.matchedLocation == '/register';
+       final isRegistering = state.matchedLocation == '/register' ||
+                            state.matchedLocation == '/register/customer' ||
+                            state.matchedLocation == '/register/business' ||
+                            state.matchedLocation == '/register-simple';
        final isResettingPassword = state.matchedLocation == '/forgot-password';
        final isVerifyingOtp = state.matchedLocation == '/verify-otp';
        final isOnboarding = state.matchedLocation == '/onboarding';
@@ -155,10 +161,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
+      // Main register route - shows type selection
       GoRoute(
         path: '/register',
         name: 'register',
+        builder: (context, state) => const RegisterTypeScreen(),
+      ),
+      // Legacy simple register (for backwards compatibility)
+      GoRoute(
+        path: '/register-simple',
+        name: 'register-simple',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      // Customer registration (simple)
+      GoRoute(
+        path: '/register/customer',
+        name: 'register-customer',
+        builder: (context, state) => const CustomerRegisterScreen(),
+      ),
+      // Business registration (multi-step)
+      GoRoute(
+        path: '/register/business',
+        name: 'register-business',
+        builder: (context, state) => const BusinessRegisterScreen(),
       ),
       GoRoute(
         path: '/forgot-password',

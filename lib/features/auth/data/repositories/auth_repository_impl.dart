@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/secure_storage_service.dart';
 import '../../../../domain/entities/user.dart';
@@ -6,6 +7,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_api_datasource.dart';
 import '../mappers/auth_mapper.dart';
 import '../models/auth_response_dto.dart';
+import '../models/business_register_dto.dart';
 
 final authRepositoryImplProvider = Provider<AuthRepository>((ref) {
   final apiDataSource = ref.read(authApiDataSourceProvider);
@@ -231,5 +233,157 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (_) {
       return UserRole.subscriber;
     }
+  }
+
+  // ============================================================
+  // NEW REGISTRATION METHODS FOR MOBILE APP
+  // ============================================================
+
+  @override
+  Future<CustomerRegistrationResult> registerCustomer({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    String? phone,
+    required bool acceptTerms,
+  }) async {
+    final response = await _apiDataSource.registerCustomer(
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      password: password,
+      passwordConfirmation: passwordConfirmation,
+      phone: phone,
+      acceptTerms: acceptTerms,
+    );
+
+    // If we have a token and user, save and return auth result
+    AuthResult? authResult;
+    if (response.token != null && response.user != null) {
+      final user = AuthMapper.toUser(response.user!);
+      final tokens = TokensDto(
+        accessToken: response.token!,
+        refreshToken: response.token!,
+      );
+
+      await _secureStorage.saveAccessToken(tokens.accessToken);
+      await _secureStorage.saveRefreshToken(tokens.refreshToken);
+      await _secureStorage.saveUserId(user.id);
+      await _secureStorage.saveUserRole(user.role.name);
+      await _secureStorage.saveUserEmail(user.email);
+      await _secureStorage.saveUserDisplayName(user.displayName ?? '');
+      if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
+      if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
+
+      _cachedUser = user;
+
+      authResult = AuthResult(
+        user: user,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: 604800,
+      );
+    }
+
+    return CustomerRegistrationResult(
+      pendingVerification: response.pendingVerification,
+      emailVerificationRequired: response.emailVerificationRequired,
+      userId: response.userId,
+      email: response.email,
+      message: response.message,
+      authResult: authResult,
+    );
+  }
+
+  @override
+  Future<BusinessRegistrationResult> registerBusiness({
+    required BusinessRegisterDto dto,
+  }) async {
+    final response = await _apiDataSource.registerBusiness(dto: dto);
+
+    final user = AuthMapper.toUser(response.user);
+    final tokens = TokensDto(
+      accessToken: response.token,
+      refreshToken: response.token,
+    );
+
+    // Save auth data
+    await _secureStorage.saveAccessToken(tokens.accessToken);
+    await _secureStorage.saveRefreshToken(tokens.refreshToken);
+    await _secureStorage.saveUserId(user.id);
+    await _secureStorage.saveUserRole(user.role.name);
+    await _secureStorage.saveUserEmail(user.email);
+    await _secureStorage.saveUserDisplayName(user.displayName ?? '');
+    if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
+    if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
+
+    _cachedUser = user;
+
+    final authResult = AuthResult(
+      user: user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: 604800,
+    );
+
+    OrganizationInfo? orgInfo;
+    if (response.organization != null) {
+      orgInfo = OrganizationInfo(
+        id: response.organization!.id,
+        uuid: response.organization!.uuid,
+        name: response.organization!.name,
+        type: null, // API doesn't return organization_type in response
+      );
+    }
+
+    return BusinessRegistrationResult(
+      authResult: authResult,
+      organization: orgInfo,
+      invitationsSent: response.invitationsSent,
+      invitedEmails: response.invitedEmails,
+    );
+  }
+
+  @override
+  Future<OtpResult> sendOtpCode({
+    required String email,
+    required String type,
+  }) async {
+    final response = await _apiDataSource.sendOtpCode(
+      email: email,
+      type: type,
+    );
+
+    return OtpResult(
+      success: response.success,
+      message: response.message,
+      expiresAt: response.expiresAt,
+    );
+  }
+
+  @override
+  Future<OtpVerificationResult> verifyOtpCode({
+    required String email,
+    required String code,
+    required String type,
+  }) async {
+    final response = await _apiDataSource.verifyOtpCode(
+      email: email,
+      code: code,
+      type: type,
+    );
+
+    return OtpVerificationResult(
+      success: response.success,
+      verified: response.verified,
+      message: response.message,
+    );
+  }
+
+  @override
+  Future<bool> checkEmailExists(String email) async {
+    return await _apiDataSource.checkEmailExists(email);
   }
 }

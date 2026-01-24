@@ -200,9 +200,11 @@ UserDto _$UserDtoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$UserDto {
   int get id => throw _privateConstructorUsedError;
-  String get email => throw _privateConstructorUsedError;
+  String get email =>
+      throw _privateConstructorUsedError; // Login/refresh returns "display_name", register returns "name"
   @JsonKey(name: 'display_name')
-  String get displayName => throw _privateConstructorUsedError;
+  String? get displayName => throw _privateConstructorUsedError;
+  String? get name => throw _privateConstructorUsedError;
   @JsonKey(name: 'first_name')
   String? get firstName => throw _privateConstructorUsedError;
   @JsonKey(name: 'last_name')
@@ -234,7 +236,8 @@ abstract class $UserDtoCopyWith<$Res> {
   $Res call(
       {int id,
       String email,
-      @JsonKey(name: 'display_name') String displayName,
+      @JsonKey(name: 'display_name') String? displayName,
+      String? name,
       @JsonKey(name: 'first_name') String? firstName,
       @JsonKey(name: 'last_name') String? lastName,
       String? phone,
@@ -265,7 +268,8 @@ class _$UserDtoCopyWithImpl<$Res, $Val extends UserDto>
   $Res call({
     Object? id = null,
     Object? email = null,
-    Object? displayName = null,
+    Object? displayName = freezed,
+    Object? name = freezed,
     Object? firstName = freezed,
     Object? lastName = freezed,
     Object? phone = freezed,
@@ -287,10 +291,14 @@ class _$UserDtoCopyWithImpl<$Res, $Val extends UserDto>
           ? _value.email
           : email // ignore: cast_nullable_to_non_nullable
               as String,
-      displayName: null == displayName
+      displayName: freezed == displayName
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
+      name: freezed == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String?,
       firstName: freezed == firstName
           ? _value.firstName
           : firstName // ignore: cast_nullable_to_non_nullable
@@ -361,7 +369,8 @@ abstract class _$$UserDtoImplCopyWith<$Res> implements $UserDtoCopyWith<$Res> {
   $Res call(
       {int id,
       String email,
-      @JsonKey(name: 'display_name') String displayName,
+      @JsonKey(name: 'display_name') String? displayName,
+      String? name,
       @JsonKey(name: 'first_name') String? firstName,
       @JsonKey(name: 'last_name') String? lastName,
       String? phone,
@@ -391,7 +400,8 @@ class __$$UserDtoImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? email = null,
-    Object? displayName = null,
+    Object? displayName = freezed,
+    Object? name = freezed,
     Object? firstName = freezed,
     Object? lastName = freezed,
     Object? phone = freezed,
@@ -413,10 +423,14 @@ class __$$UserDtoImplCopyWithImpl<$Res>
           ? _value.email
           : email // ignore: cast_nullable_to_non_nullable
               as String,
-      displayName: null == displayName
+      displayName: freezed == displayName
           ? _value.displayName
           : displayName // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
+      name: freezed == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String?,
       firstName: freezed == firstName
           ? _value.firstName
           : firstName // ignore: cast_nullable_to_non_nullable
@@ -471,7 +485,8 @@ class _$UserDtoImpl implements _UserDto {
   const _$UserDtoImpl(
       {required this.id,
       required this.email,
-      @JsonKey(name: 'display_name') required this.displayName,
+      @JsonKey(name: 'display_name') this.displayName,
+      this.name,
       @JsonKey(name: 'first_name') this.firstName,
       @JsonKey(name: 'last_name') this.lastName,
       this.phone,
@@ -491,9 +506,12 @@ class _$UserDtoImpl implements _UserDto {
   final int id;
   @override
   final String email;
+// Login/refresh returns "display_name", register returns "name"
   @override
   @JsonKey(name: 'display_name')
-  final String displayName;
+  final String? displayName;
+  @override
+  final String? name;
   @override
   @JsonKey(name: 'first_name')
   final String? firstName;
@@ -525,7 +543,7 @@ class _$UserDtoImpl implements _UserDto {
 
   @override
   String toString() {
-    return 'UserDto(id: $id, email: $email, displayName: $displayName, firstName: $firstName, lastName: $lastName, phone: $phone, city: $city, bio: $bio, birthDate: $birthDate, avatarUrl: $avatarUrl, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, capabilities: $capabilities)';
+    return 'UserDto(id: $id, email: $email, displayName: $displayName, name: $name, firstName: $firstName, lastName: $lastName, phone: $phone, city: $city, bio: $bio, birthDate: $birthDate, avatarUrl: $avatarUrl, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, capabilities: $capabilities)';
   }
 
   @override
@@ -537,6 +555,7 @@ class _$UserDtoImpl implements _UserDto {
             (identical(other.email, email) || other.email == email) &&
             (identical(other.displayName, displayName) ||
                 other.displayName == displayName) &&
+            (identical(other.name, name) || other.name == name) &&
             (identical(other.firstName, firstName) ||
                 other.firstName == firstName) &&
             (identical(other.lastName, lastName) ||
@@ -564,6 +583,7 @@ class _$UserDtoImpl implements _UserDto {
       id,
       email,
       displayName,
+      name,
       firstName,
       lastName,
       phone,
@@ -594,7 +614,8 @@ abstract class _UserDto implements UserDto {
   const factory _UserDto(
       {required final int id,
       required final String email,
-      @JsonKey(name: 'display_name') required final String displayName,
+      @JsonKey(name: 'display_name') final String? displayName,
+      final String? name,
       @JsonKey(name: 'first_name') final String? firstName,
       @JsonKey(name: 'last_name') final String? lastName,
       final String? phone,
@@ -613,9 +634,11 @@ abstract class _UserDto implements UserDto {
   int get id;
   @override
   String get email;
-  @override
+  @override // Login/refresh returns "display_name", register returns "name"
   @JsonKey(name: 'display_name')
-  String get displayName;
+  String? get displayName;
+  @override
+  String? get name;
   @override
   @JsonKey(name: 'first_name')
   String? get firstName;

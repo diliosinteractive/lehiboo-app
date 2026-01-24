@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../models/auth_response_dto.dart';
+import '../models/business_register_dto.dart';
 
 final authApiDataSourceProvider = Provider<AuthApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -294,4 +295,235 @@ class AuthApiDataSource {
     }
     throw Exception(data['data']?['message'] ?? 'Authentication failed');
   }
+
+  // ============================================================
+  // NEW REGISTRATION METHODS FOR MOBILE APP
+  // ============================================================
+
+  /// Register a customer (simple registration)
+  /// POST /v1/auth/register
+  Future<CustomerRegisterResult> registerCustomer({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    String? phone,
+    required bool acceptTerms,
+  }) async {
+    final response = await _dio.post(
+      '/auth/register',
+      data: {
+        'first_name': firstName,
+        'last_name': lastName,
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+        if (phone != null) 'phone': phone,
+        'accept_terms': acceptTerms,
+      },
+    );
+
+    final data = response.data;
+    debugPrint('📱 Customer register response: $data');
+
+    if (data['data'] != null) {
+      final responseData = data['data'];
+      return CustomerRegisterResult(
+        user: responseData['user'] != null ? UserDto.fromJson(responseData['user']) : null,
+        token: responseData['token']?.toString(),
+        emailVerificationRequired: responseData['email_verification_required'] ?? true,
+        pendingVerification: responseData['pending_verification'] ?? true,
+        userId: responseData['user_id']?.toString() ?? responseData['user']?['id']?.toString(),
+        email: responseData['email'] ?? email,
+        message: responseData['message'] ?? data['message'] ?? 'Un code de vérification a été envoyé',
+      );
+    }
+    throw Exception(data['message'] ?? 'Registration failed');
+  }
+
+  /// Register a business account (multi-step registration)
+  /// POST /v1/auth/register/business
+  Future<BusinessRegisterResult> registerBusiness({
+    required BusinessRegisterDto dto,
+  }) async {
+    final response = await _dio.post(
+      '/auth/register/business',
+      data: dto.toJson(),
+    );
+
+    final data = response.data;
+    debugPrint('📱 Business register response: $data');
+
+    if (data['data'] != null) {
+      final responseData = data['data'];
+      return BusinessRegisterResult(
+        user: UserDto.fromJson(responseData['user']),
+        organization: responseData['organization'] != null
+            ? OrganizationDto.fromJson(responseData['organization'])
+            : null,
+        token: responseData['token']?.toString() ?? '',
+        invitationsSent: responseData['invitations_sent'] ?? 0,
+        invitedEmails: responseData['invited_emails'] != null
+            ? List<String>.from(responseData['invited_emails'])
+            : null,
+      );
+    }
+    throw Exception(data['message'] ?? 'Business registration failed');
+  }
+
+  /// Send OTP code via the new API endpoint
+  /// POST /v1/auth/otp/send
+  /// Laravel returns: { "message": "...", "expires_at": "...", "validity_minutes": 10 }
+  Future<OtpSendResult> sendOtpCode({
+    required String email,
+    required String type,
+  }) async {
+    final response = await _dio.post(
+      '/auth/otp/send',
+      data: {
+        'email': email,
+        'type': type,
+      },
+    );
+
+    final data = response.data;
+    debugPrint('📱 OTP send response: $data');
+
+    // Laravel returns the response directly at root level on success (HTTP 200)
+    // Format: { "message": "...", "expires_at": "...", "validity_minutes": 10 }
+    // On error (4xx), Dio throws an exception that is handled by the caller
+    if (data is Map<String, dynamic>) {
+      // Check for success indicators: expires_at field or message containing "succes"
+      final hasExpiresAt = data['expires_at'] != null;
+      final hasSuccessMessage = (data['message']?.toString() ?? '').toLowerCase().contains('succes');
+
+      if (hasExpiresAt || hasSuccessMessage || data['success'] == true || data['data'] != null) {
+        return OtpSendResult(
+          success: true,
+          message: data['message'] ?? data['data']?['message'] ?? 'Code envoyé',
+          expiresAt: data['expires_at'] ?? data['data']?['expires_at'],
+        );
+      }
+    }
+    throw Exception(data['message'] ?? 'Failed to send OTP');
+  }
+
+  /// Verify OTP code via the new API endpoint
+  /// POST /v1/auth/otp/verify
+  /// Laravel returns: { "message": "...", "verified": true }
+  Future<OtpVerifyResult> verifyOtpCode({
+    required String email,
+    required String code,
+    required String type,
+  }) async {
+    final response = await _dio.post(
+      '/auth/otp/verify',
+      data: {
+        'email': email,
+        'code': code,
+        'type': type,
+      },
+    );
+
+    final data = response.data;
+    debugPrint('📱 OTP verify response: $data');
+
+    // Laravel returns the response directly at root level on success (HTTP 200)
+    // Format: { "message": "...", "verified": true }
+    // On error (4xx), Dio throws an exception that is handled by the caller
+    if (data is Map<String, dynamic>) {
+      // Check for verified field at root level (Laravel format) or in data (legacy format)
+      final verified = data['verified'] ?? data['data']?['verified'] ?? false;
+
+      if (verified == true || data['success'] == true) {
+        return OtpVerifyResult(
+          success: true,
+          verified: true,
+          message: data['message'] ?? 'Code vérifié',
+        );
+      }
+    }
+    throw Exception(data['message'] ?? 'Invalid OTP code');
+  }
+
+  /// Check if email exists
+  /// POST /v1/auth/check-email
+  Future<bool> checkEmailExists(String email) async {
+    try {
+      final response = await _dio.post(
+        '/auth/check-email',
+        data: {'email': email},
+      );
+      final data = response.data;
+      return data['data']?['exists'] ?? false;
+    } catch (e) {
+      debugPrint('📱 Check email error: $e');
+      return false;
+    }
+  }
+}
+
+/// Result of customer registration
+class CustomerRegisterResult {
+  final UserDto? user;
+  final String? token;
+  final bool emailVerificationRequired;
+  final bool pendingVerification;
+  final String? userId;
+  final String email;
+  final String message;
+
+  CustomerRegisterResult({
+    this.user,
+    this.token,
+    required this.emailVerificationRequired,
+    required this.pendingVerification,
+    this.userId,
+    required this.email,
+    required this.message,
+  });
+}
+
+/// Result of business registration
+class BusinessRegisterResult {
+  final UserDto user;
+  final OrganizationDto? organization;
+  final String token;
+  final int invitationsSent;
+  final List<String>? invitedEmails;
+
+  BusinessRegisterResult({
+    required this.user,
+    this.organization,
+    required this.token,
+    required this.invitationsSent,
+    this.invitedEmails,
+  });
+}
+
+/// Result of OTP send
+class OtpSendResult {
+  final bool success;
+  final String message;
+  final String? expiresAt;
+
+  OtpSendResult({
+    required this.success,
+    required this.message,
+    this.expiresAt,
+  });
+}
+
+/// Result of OTP verify
+class OtpVerifyResult {
+  final bool success;
+  final bool verified;
+  final String message;
+
+  OtpVerifyResult({
+    required this.success,
+    required this.verified,
+    required this.message,
+  });
 }

@@ -6,7 +6,8 @@ class AuthMapper {
     return HbUser(
       id: dto.id.toString(),
       email: dto.email,
-      displayName: dto.displayName,
+      // Fallback chain: displayName (login) -> name (register) -> email
+      displayName: dto.displayName ?? dto.name ?? dto.email,
       firstName: dto.firstName,
       lastName: dto.lastName,
       phone: dto.phone,
