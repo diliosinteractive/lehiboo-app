@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
+import 'favorite_list_picker_sheet.dart';
 
 /// A reusable animated favorite button widget
 ///
@@ -13,6 +14,7 @@ import 'package:lehiboo/core/utils/guest_guard.dart';
 /// - Smooth color transition
 /// - Guest guard check before toggling
 /// - Snackbar feedback on success/error
+/// - Long-press to select a favorite list
 class FavoriteButton extends ConsumerStatefulWidget {
   /// The event to favorite/unfavorite
   final Event event;
@@ -35,6 +37,9 @@ class FavoriteButton extends ConsumerStatefulWidget {
   /// Callback when favorite state changes
   final void Function(bool isFavorite)? onChanged;
 
+  /// Whether to enable long-press to select a list
+  final bool enableLongPress;
+
   const FavoriteButton({
     super.key,
     required this.event,
@@ -44,6 +49,7 @@ class FavoriteButton extends ConsumerStatefulWidget {
     this.showBackground = true,
     this.backgroundColor,
     this.onChanged,
+    this.enableLongPress = true,
   });
 
   @override
@@ -82,7 +88,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     return ref.read(favoritesProvider.notifier).isFavorite(widget.event.id);
   }
 
-  Future<void> _toggleFavorite() async {
+  Future<void> _toggleFavorite({String? listId}) async {
     // Check guest guard
     final canProceed = await GuestGuard.check(
       context: context,
@@ -108,6 +114,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
       final success = await ref.read(favoritesProvider.notifier).toggleFavorite(
         widget.event,
         internalId: widget.internalId,
+        listId: listId,
       );
 
       if (mounted) {
@@ -167,6 +174,148 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     }
   }
 
+  Future<void> _showListPicker() async {
+    // Check guest guard
+    final canProceed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'gérer les favoris',
+    );
+
+    if (!canProceed || !mounted) return;
+
+    HapticFeedback.mediumImpact();
+
+    // Obtenir l'ID de liste actuel de l'événement
+    final currentListId = widget.event.additionalInfo?['list_id'] as String?;
+
+    if (!mounted) return;
+
+    final result = await FavoriteListPickerSheet.show(
+      context,
+      currentListId: currentListId,
+      isAlreadyFavorite: _isFavorite,
+    );
+
+    if (result == null || !mounted) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      bool success;
+
+      if (result.removeFromFavorites) {
+        // Retirer des favoris
+        success = await ref.read(favoritesProvider.notifier).toggleFavorite(
+          widget.event,
+          internalId: widget.internalId,
+        );
+
+        if (success && mounted) {
+          widget.onChanged?.call(false);
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Retiré des favoris'),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              showCloseIcon: true,
+              action: SnackBarAction(
+                label: 'Annuler',
+                textColor: const Color(0xFFFF601F),
+                onPressed: () {
+                  ref.read(favoritesProvider.notifier).toggleFavorite(
+                    widget.event,
+                    internalId: widget.internalId,
+                  );
+                },
+              ),
+            ),
+          );
+        }
+      } else if (_isFavorite) {
+        // Déjà favori: déplacer vers une autre liste
+        success = await ref.read(favoritesProvider.notifier).moveToList(
+          widget.event,
+          result.listId,
+          internalId: widget.internalId,
+        );
+
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result.listId != null
+                    ? 'Déplacé vers la liste'
+                    : 'Déplacé vers "Non classés"',
+              ),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              showCloseIcon: true,
+            ),
+          );
+        }
+      } else {
+        // Pas encore favori: ajouter avec la liste sélectionnée
+        success = await ref.read(favoritesProvider.notifier).addToList(
+          widget.event,
+          result.listId ?? '',
+          internalId: widget.internalId,
+        );
+
+        if (success && mounted) {
+          widget.onChanged?.call(true);
+
+          // Animation
+          _controller.forward(from: 0);
+
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result.listId != null
+                    ? 'Ajouté à la liste'
+                    : 'Ajouté aux favoris',
+              ),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              showCloseIcon: true,
+              action: SnackBarAction(
+                label: 'Annuler',
+                textColor: const Color(0xFFFF601F),
+                onPressed: () {
+                  ref.read(favoritesProvider.notifier).toggleFavorite(
+                    widget.event,
+                    internalId: widget.internalId,
+                  );
+                },
+              ),
+            ),
+          );
+        }
+      }
+
+      if (!success && mounted) {
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Une erreur est survenue'),
+            duration: Duration(seconds: 3),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            showCloseIcon: true,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch favorites to rebuild when state changes
@@ -178,7 +327,8 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     }
 
     return GestureDetector(
-      onTap: _toggleFavorite,
+      onTap: () => _toggleFavorite(),
+      onLongPress: widget.enableLongPress ? _showListPicker : null,
       child: AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) {
