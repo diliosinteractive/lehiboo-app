@@ -34,8 +34,23 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   void _initializeFields() {
     final user = ref.read(authProvider).user;
     if (user != null) {
-      _firstNameController.text = user.firstName ?? '';
-      _lastNameController.text = user.lastName ?? '';
+      // Try to get firstName/lastName from user fields first
+      String firstName = user.firstName ?? '';
+      String lastName = user.lastName ?? '';
+
+      // If both are empty but displayName exists, try to parse it
+      if (firstName.isEmpty && lastName.isEmpty && user.displayName.isNotEmpty) {
+        final parts = user.displayName.trim().split(' ');
+        if (parts.isNotEmpty) {
+          firstName = parts.first;
+          if (parts.length > 1) {
+            lastName = parts.skip(1).join(' ');
+          }
+        }
+      }
+
+      _firstNameController.text = firstName;
+      _lastNameController.text = lastName;
       _phoneController.text = user.phone ?? '';
     }
   }
