@@ -17,12 +17,23 @@ class FavoritesApiDataSource {
     final response = await _dio.get('/me/favorites');
 
     final data = response.data;
+
+    // Handle paginated response from Laravel Resource Collection
+    // Format: { "data": [...], "links": {...}, "meta": {...} }
+    if (data is Map<String, dynamic> && data['data'] != null) {
+      final favoritesData = data['data'];
+      if (favoritesData is List) {
+        return favoritesData.map((f) => FavoriteEventDto.fromJson(f as Map<String, dynamic>)).toList();
+      }
+    }
+
+    // Legacy format: { "success": true, "data": [...] }
     if (data['success'] == true && data['data'] != null) {
-      // API returns list directly in data['data'], not data['data']['favorites']
       final favoritesJson = data['data'] as List;
       return favoritesJson.map((f) => FavoriteEventDto.fromJson(f as Map<String, dynamic>)).toList();
     }
-    throw Exception(data['data']?['message'] ?? 'Failed to load favorites');
+
+    throw Exception(data['message'] ?? 'Failed to load favorites');
   }
 
   Future<void> addToFavorites(int eventId) async {
