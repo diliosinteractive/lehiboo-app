@@ -108,7 +108,7 @@ class EventMapper {
     }
 
     return Event(
-      id: dto.id.toString(),
+      id: dto.uuid ?? dto.id.toString(),
       title: dto.title,
       description: dto.excerpt ?? '',
       fullDescription: dto.content,
