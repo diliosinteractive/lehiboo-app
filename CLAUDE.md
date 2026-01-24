@@ -84,9 +84,16 @@ lib/
 |----------|-------------|
 | `GET /v1/home-feed` | Feed homepage |
 | `GET /v1/events` | Liste événements |
-| `GET /v1/events/{uuid}` | Détail événement |
+| `GET /v1/events/{identifier}` | Détail événement (UUID ou slug) |
+| `GET /v1/events/{uuid}/availability` | Disponibilité événement |
 | `POST /v1/me/favorites/{uuid}/toggle` | Toggle favori |
 | `GET /v1/me/favorites` | Liste favoris |
+
+---
+
+## Instructions Git
+
+**Ne JAMAIS ajouter de Co-Authored-By dans les commits.**
 
 ---
 
