@@ -67,7 +67,7 @@ class EventToActivityMapper {
     return Activity(
       id: event.id,
       title: event.title,
-      slug: event.title.toLowerCase().replaceAll(' ', '-'),
+      slug: event.slug,
       description: event.description,
       excerpt: event.shortDescription,
       imageUrl: event.coverImage ?? (event.images.isNotEmpty ? event.images.first : null),

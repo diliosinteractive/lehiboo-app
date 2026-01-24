@@ -13,14 +13,14 @@ import '../../domain/repositories/event_repository.dart';
 import '../../data/datasources/events_api_datasource.dart';
 import '../../data/models/event_availability_dto.dart';
 
-/// Provider to fetch event details by ID
-final eventDetailProvider = FutureProvider.family<Event, int>((ref, eventId) async {
+/// Provider to fetch event details by identifier (UUID or slug)
+final eventDetailProvider = FutureProvider.family<Event, String>((ref, identifier) async {
   final repository = ref.watch(eventRepositoryProvider);
-  return repository.getEventById(eventId);
+  return repository.getEvent(identifier);
 });
 
 /// Provider to fetch event availability (slots & tickets)
-final eventAvailabilityProvider = FutureProvider.family<EventAvailabilityResponseDto, int>((ref, eventId) async {
+final eventAvailabilityProvider = FutureProvider.family<EventAvailabilityResponseDto, String>((ref, eventId) async {
   final dataSource = ref.watch(eventsApiDataSourceProvider);
   return dataSource.getEventAvailability(eventId);
 });
@@ -44,7 +44,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   // Simple getter for total price
   double get _totalPrice {
-    final event = ref.read(eventDetailProvider(int.parse(widget.eventId))).valueOrNull;
+    final event = ref.read(eventDetailProvider(widget.eventId)).valueOrNull;
     if (event == null) return 0.0;
     
     double total = 0.0;
@@ -81,7 +81,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final eventAsync = ref.watch(eventDetailProvider(int.parse(widget.eventId)));
+    final eventAsync = ref.watch(eventDetailProvider(widget.eventId));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -774,8 +774,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Widget _buildDateList(Event event) {
-    final eventId = int.tryParse(event.id) ?? 0;
-    final availabilityAsync = ref.watch(eventAvailabilityProvider(eventId));
+    final availabilityAsync = ref.watch(eventAvailabilityProvider(event.id));
 
     return availabilityAsync.when(
       loading: () => Column(

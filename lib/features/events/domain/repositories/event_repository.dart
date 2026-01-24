@@ -39,7 +39,7 @@ abstract class EventRepository {
     bool includePast = true,
   });
 
-  Future<Event> getEventById(int id);
+  Future<Event> getEvent(String identifier);
 
   Future<List<EventCategoryDto>> getCategories();
 

@@ -45,6 +45,7 @@ enum PriceType {
 
 class Event extends Equatable {
   final String id;
+  final String slug;
   final String title;
   final String description; // Typically the excerpt
   final String? fullDescription; // Full HTML content
@@ -122,6 +123,7 @@ class Event extends Equatable {
 
   const Event({
     required this.id,
+    required this.slug,
     required this.title,
     required this.description,
     this.fullDescription,
@@ -331,6 +333,7 @@ class Event extends Equatable {
 
   Event copyWith({
     String? id,
+    String? slug,
     String? title,
     String? description,
     String? fullDescription,
@@ -402,6 +405,7 @@ class Event extends Equatable {
   }) {
     return Event(
       id: id ?? this.id,
+      slug: slug ?? this.slug,
       title: title ?? this.title,
       description: description ?? this.description,
       fullDescription: fullDescription ?? this.fullDescription,
@@ -476,6 +480,7 @@ class Event extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        slug,
         title,
         description,
         fullDescription,

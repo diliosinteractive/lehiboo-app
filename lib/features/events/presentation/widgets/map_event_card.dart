@@ -186,6 +186,7 @@ class MapEventCard extends ConsumerWidget {
                 onTap: () {
                    final event = Event(
                             id: activity.id,
+                            slug: activity.slug,
                             title: activity.title,
                             description: '',
                             shortDescription: '',

@@ -332,6 +332,7 @@ class EventCard extends ConsumerWidget {
   Event _activityToEvent() {
     return Event(
       id: activity.id,
+      slug: activity.slug,
       title: activity.title,
       description: '',
       shortDescription: '',

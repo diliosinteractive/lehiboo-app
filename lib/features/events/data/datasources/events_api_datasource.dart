@@ -182,21 +182,30 @@ class EventsApiDataSource {
     }
   }
 
-  Future<EventDto> getEventById(int id) async {
-    final response = await _dio.get('/events/$id');
+  /// Fetch event by identifier (UUID or slug)
+  Future<EventDto> getEvent(String identifier) async {
+    final response = await _dio.get('/events/$identifier');
     final data = response.data;
 
+    // Handle both old format { success: true, data: {...} } and new Laravel format { data: {...} }
+    Map<String, dynamic>? eventData;
     if (data['success'] == true && data['data'] != null) {
-      debugPrint('getEventById: Raw data received for $id');
+      eventData = data['data'];
+    } else if (data['data'] != null) {
+      eventData = data['data'];
+    }
+
+    if (eventData != null) {
+      debugPrint('getEvent: Raw data received for $identifier');
       try {
-        return EventDto.fromJson(data['data']);
+        return EventDto.fromJson(eventData);
       } catch (e, stack) {
-        debugPrint('getEventById Error parsing DTO: $e');
+        debugPrint('getEvent Error parsing DTO: $e');
         debugPrint(stack.toString());
         rethrow;
       }
     }
-    throw Exception(data['data']?['message'] ?? 'Failed to load event');
+    throw Exception(data['message'] ?? 'Failed to load event');
   }
 
   Future<HomeFeedResponseDto> getHomeFeed({
@@ -214,21 +223,58 @@ class EventsApiDataSource {
     final response = await _dio.get('/home-feed', queryParameters: queryParams);
     final data = response.data;
 
+    debugPrint('=== EventsApiDataSource.getHomeFeed ===');
+    debugPrint('API Response success: ${data['success']}');
+    debugPrint('API Response has data: ${data['data'] != null}');
+
+    // Handle both old format { success: true, data: {...} } and new Laravel format
+    Map<String, dynamic> responseData;
+
     if (data['success'] == true && data['data'] != null) {
-      debugPrint('getHomeFeed: Data received');
-      try {
-        return HomeFeedResponseDto.fromJson(data);
-      } catch (e, stack) {
-        debugPrint('getHomeFeed Error parsing DTO: $e');
-        debugPrint(stack.toString());
-        rethrow;
+      // Old format: { success: true, data: { today: [...], tomorrow: [...], recommended: [...] } }
+      debugPrint('getHomeFeed: Using old format');
+      responseData = data;
+    } else if (data is Map<String, dynamic> && data['data'] != null) {
+      // New Laravel format: { data: { today: [...], tomorrow: [...], recommended: [...] }, meta: {...} }
+      // Or direct format: { today: [...], tomorrow: [...], recommended: [...] }
+      debugPrint('getHomeFeed: Using new Laravel format');
+      final innerData = data['data'];
+      if (innerData is Map<String, dynamic>) {
+        // Wrap in expected format for HomeFeedResponseDto
+        responseData = {
+          'success': true,
+          'data': innerData,
+        };
+      } else {
+        throw Exception('Unexpected data format in home feed response');
       }
+    } else if (data is Map<String, dynamic> &&
+               (data['today'] != null || data['tomorrow'] != null || data['recommended'] != null)) {
+      // Direct format without wrapper: { today: [...], tomorrow: [...], recommended: [...] }
+      debugPrint('getHomeFeed: Using direct format');
+      responseData = {
+        'success': true,
+        'data': data,
+      };
+    } else {
+      debugPrint('getHomeFeed: No valid format found');
+      debugPrint('Response keys: ${data.keys.toList()}');
+      throw Exception(data['message'] ?? 'Failed to load home feed');
     }
-    throw Exception(data['data']?['message'] ?? 'Failed to load home feed');
+
+    try {
+      final result = HomeFeedResponseDto.fromJson(responseData);
+      debugPrint('getHomeFeed: Successfully parsed with today=${result.data?.today.length ?? 0}, tomorrow=${result.data?.tomorrow.length ?? 0}, recommended=${result.data?.recommended.length ?? 0}');
+      return result;
+    } catch (e, stack) {
+      debugPrint('getHomeFeed Error parsing DTO: $e');
+      debugPrint(stack.toString());
+      rethrow;
+    }
   }
 
   /// Fetch availability (slots & tickets) for an event
-  Future<EventAvailabilityResponseDto> getEventAvailability(int eventId, {String? date}) async {
+  Future<EventAvailabilityResponseDto> getEventAvailability(String eventId, {String? date}) async {
     final queryParams = <String, dynamic>{};
     if (date != null && date.isNotEmpty) queryParams['date'] = date;
 
