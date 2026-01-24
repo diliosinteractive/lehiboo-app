@@ -96,76 +96,90 @@ class EventsApiDataSource {
     debugPrint('API Response success: ${data['success']}');
     debugPrint('API Response has data: ${data['data'] != null}');
 
+    // Handle both old format { success: true, data: {...} } and new Laravel paginated format
+    Map<String, dynamic> eventsData;
+
     if (data['success'] == true && data['data'] != null) {
-      final eventsData = data['data'];
-      
-      // Handle "lightweight" response structure (pins vs events)
-      if (eventsData['pins'] != null) {
-        debugPrint('Handling lightweight response with ${eventsData['pins'].length} pins');
-        
-        // Map pins to EventDto structure
-        final pins = eventsData['pins'] as List;
-        final mappedEvents = pins.map<Map<String, dynamic>>((pin) {
-          // Pin structure typically: {id, title, lat, lng, category_icon, price_min, price_max, ...}
-          return <String, dynamic>{
-            'id': pin['id'],
-            'title': pin['title'] ?? '',
-            'slug': '', // Missing in pins usually
-            'featured_image': <String, dynamic>{
-              'thumbnail': pin['thumbnail'] ?? pin['image'],
-              'medium': pin['thumbnail'] ?? pin['image'],
-              'large': pin['thumbnail'] ?? pin['image'],
-              'full': pin['thumbnail'] ?? pin['image'],
-            },
-            'location': <String, dynamic>{
-              'lat': pin['lat'],
-              'lng': pin['lng'],
-            },
-            'pricing': <String, dynamic>{
-               'min': (pin['price_min'] ?? pin['price'] ?? 0).toDouble(),
-               'max': (pin['price_max'] ?? pin['price'] ?? 0).toDouble(),
-               'is_free': (pin['price'] == 0 || pin['price_min'] == 0),
-            },
-            'dates': <String, dynamic>{
-               // Pins usually lack full dates, use current or nulls if possible, 
-               // actually EventMapper handles null dates by using Now().
-            }
-          };
-        }).toList();
-        
-        // Inject into data for parsing
-        eventsData['events'] = mappedEvents;
-        
-        // Mock pagination for lightweight mode if missing
-        if (eventsData['pagination'] == null) {
-          eventsData['pagination'] = <String, dynamic>{
-            'current_page': 1,
-            'per_page': pins.length > 0 ? pins.length : 50,
-            'total_items': eventsData['total_count'] ?? pins.length,
-            'total_pages': 1,
-            'has_next': false,
-            'has_prev': false,
-          };
-        }
+      // Old format: { success: true, data: { events: [...], pagination: {...} } }
+      eventsData = data['data'];
+    } else if (data is Map<String, dynamic> && data['data'] != null) {
+      // New Laravel paginated format: { data: [...], meta: {...}, links: {...} }
+      final dataList = data['data'];
+      if (dataList is List) {
+        // Convert Laravel pagination format to our expected format
+        eventsData = {
+          'events': dataList,
+          'pagination': {
+            'current_page': data['meta']?['current_page'] ?? 1,
+            'per_page': data['meta']?['per_page'] ?? perPage,
+            'total_items': data['meta']?['total'] ?? dataList.length,
+            'total_pages': data['meta']?['last_page'] ?? 1,
+            'has_next': data['links']?['next'] != null,
+            'has_prev': data['links']?['prev'] != null,
+          },
+        };
+      } else {
+        eventsData = data['data'];
       }
+    } else {
+      throw Exception(data['message'] ?? 'Failed to load events');
+    }
 
-      debugPrint('Events count in response: ${(eventsData['events'] as List?)?.length ?? 0}');
+    // Handle "lightweight" response structure (pins vs events)
+    if (eventsData['pins'] != null) {
+      debugPrint('Handling lightweight response with ${eventsData['pins'].length} pins');
 
-      if ((eventsData['events'] as List?)?.isNotEmpty == true) {
-        // debugPrint('First event raw: ${eventsData['events'][0]}');
-      }
+      // Map pins to EventDto structure
+      final pins = eventsData['pins'] as List;
+      final mappedEvents = pins.map<Map<String, dynamic>>((pin) {
+        return <String, dynamic>{
+          'id': pin['id'],
+          'title': pin['title'] ?? '',
+          'slug': '',
+          'featured_image': <String, dynamic>{
+            'thumbnail': pin['thumbnail'] ?? pin['image'],
+            'medium': pin['thumbnail'] ?? pin['image'],
+            'large': pin['thumbnail'] ?? pin['image'],
+            'full': pin['thumbnail'] ?? pin['image'],
+          },
+          'location': <String, dynamic>{
+            'lat': pin['lat'],
+            'lng': pin['lng'],
+          },
+          'pricing': <String, dynamic>{
+            'min': (pin['price_min'] ?? pin['price'] ?? 0).toDouble(),
+            'max': (pin['price_max'] ?? pin['price'] ?? 0).toDouble(),
+            'is_free': (pin['price'] == 0 || pin['price_min'] == 0),
+          },
+          'dates': <String, dynamic>{},
+        };
+      }).toList();
 
-      try {
-        final result = EventsResponseDto.fromJson(data['data']);
-        debugPrint('Successfully parsed EventsResponseDto with ${result.events.length} events');
-        return result;
-      } catch (parseError, parseStack) {
-        debugPrint('Error parsing EventsResponseDto: $parseError');
-        debugPrint('Parse stack: $parseStack');
-        rethrow;
+      eventsData['events'] = mappedEvents;
+
+      if (eventsData['pagination'] == null) {
+        eventsData['pagination'] = <String, dynamic>{
+          'current_page': 1,
+          'per_page': pins.isNotEmpty ? pins.length : 50,
+          'total_items': eventsData['total_count'] ?? pins.length,
+          'total_pages': 1,
+          'has_next': false,
+          'has_prev': false,
+        };
       }
     }
-    throw Exception(data['data']?['message'] ?? 'Failed to load events');
+
+    debugPrint('Events count in response: ${(eventsData['events'] as List?)?.length ?? 0}');
+
+    try {
+      final result = EventsResponseDto.fromJson(eventsData);
+      debugPrint('Successfully parsed EventsResponseDto with ${result.events.length} events');
+      return result;
+    } catch (parseError, parseStack) {
+      debugPrint('Error parsing EventsResponseDto: $parseError');
+      debugPrint('Parse stack: $parseStack');
+      rethrow;
+    }
   }
 
   Future<EventDto> getEventById(int id) async {
