@@ -4,11 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
-import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
-import 'package:lehiboo/core/themes/hb_theme.dart';
-import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
+import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import 'package:intl/intl.dart';
-import 'package:lehiboo/core/utils/guest_guard.dart';
 
 class EventCard extends ConsumerWidget {
   final Activity activity;
@@ -38,13 +35,6 @@ class EventCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favoritesState = ref.watch(favoritesProvider);
-    // Protected access - ignore errors in favorites
-    bool isFavorite = false;
-    if (favoritesState is AsyncData<List<Event>>) {
-      isFavorite = favoritesState.value.any((e) => e.id == activity.id);
-    }
-
     return GestureDetector(
       onTap: () {
         debugPrint('Tapped activity: ${activity.id} - ${activity.title}');
@@ -149,34 +139,14 @@ class EventCard extends ConsumerWidget {
                     ),
                   ),
 
-                // Favorite Button
+                // Favorite Button (animated, reusable widget)
                 Positioned(
                   top: 12,
                   right: 12,
-                  child: GestureDetector(
-                    onTap: () async {
-                      final canProceed = await GuestGuard.check(
-                        context: context,
-                        ref: ref,
-                        featureName: 'ajouter aux favoris',
-                      );
-                      if (canProceed) {
-                        _toggleFavorite(ref, isFavorite);
-                      }
-                    },
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : Colors.grey[800],
-                        size: 18,
-                      ),
-                    ),
+                  child: FavoriteButton(
+                    event: _activityToEvent(),
+                    iconSize: 18,
+                    containerSize: 32,
                   ),
                 ),
               ],
@@ -358,9 +328,9 @@ class EventCard extends ConsumerWidget {
     );
   }
 
-  void _toggleFavorite(WidgetRef ref, bool isFavorite) {
-    // Simple mapping to Event for favoriting
-    final event = Event(
+  /// Convert Activity to Event for the FavoriteButton
+  Event _activityToEvent() {
+    return Event(
       id: activity.id,
       title: activity.title,
       description: '',
@@ -383,18 +353,18 @@ class EventCard extends ConsumerWidget {
       isIndoor: false,
       isOutdoor: false,
       tags: [],
-      organizerId: '',
-      organizerName: '',
-      isFavorite: isFavorite,
+      organizerId: activity.partner?.id ?? '',
+      organizerName: activity.partner?.name ?? '',
+      organizerLogo: activity.partner?.logoUrl,
+      isFavorite: false,
       isFeatured: false,
       isRecommended: false,
       status: EventStatus.upcoming,
       hasDirectBooking: false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      views: 0
+      views: 0,
     );
-    ref.read(favoritesProvider.notifier).toggleFavorite(event);
   }
 
   Color _getCategoryColor(String slug) {

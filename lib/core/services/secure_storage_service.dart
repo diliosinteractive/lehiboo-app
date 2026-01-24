@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../config/dio_client.dart';
 import '../constants/app_constants.dart';
 
 final secureStorageProvider = Provider<SecureStorageService>((ref) {
@@ -7,22 +9,28 @@ final secureStorageProvider = Provider<SecureStorageService>((ref) {
 });
 
 class SecureStorageService {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock,
-    ),
-  );
+  // Use the shared singleton instance to ensure consistency with JwtAuthInterceptor
+  final FlutterSecureStorage _storage = SharedSecureStorage.instance;
 
   // Auth Tokens
   Future<void> saveAccessToken(String token) async {
+    if (kDebugMode) {
+      debugPrint('🔐 SecureStorageService: Saving access token (length=${token.length})');
+    }
     await _storage.write(key: AppConstants.keyAuthToken, value: token);
+    // Verify the token was saved correctly
+    if (kDebugMode) {
+      final saved = await _storage.read(key: AppConstants.keyAuthToken);
+      debugPrint('🔐 SecureStorageService: Token saved and verified: ${saved != null && saved.isNotEmpty}');
+    }
   }
 
   Future<String?> getAccessToken() async {
-    return await _storage.read(key: AppConstants.keyAuthToken);
+    final token = await _storage.read(key: AppConstants.keyAuthToken);
+    if (kDebugMode) {
+      debugPrint('🔐 SecureStorageService: Reading access token: hasToken=${token != null && token.isNotEmpty}');
+    }
+    return token;
   }
 
   Future<void> saveRefreshToken(String token) async {

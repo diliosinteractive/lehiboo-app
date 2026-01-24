@@ -241,6 +241,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<CustomerRegistrationResult> registerCustomer({
+    required String verifiedEmailToken,
     required String firstName,
     required String lastName,
     required String email,
@@ -250,6 +251,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required bool acceptTerms,
   }) async {
     final response = await _apiDataSource.registerCustomer(
+      verifiedEmailToken: verifiedEmailToken,
       firstName: firstName,
       lastName: lastName,
       email: email,
@@ -379,6 +381,8 @@ class AuthRepositoryImpl implements AuthRepository {
       success: response.success,
       verified: response.verified,
       message: response.message,
+      verifiedEmailToken: response.verifiedEmailToken,
+      tokenExpiresInMinutes: response.tokenExpiresInMinutes,
     );
   }
 

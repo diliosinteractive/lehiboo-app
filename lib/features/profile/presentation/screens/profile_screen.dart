@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../providers/profile_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -140,11 +141,9 @@ class ProfileScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
 
-        // Statistics Section (if user has capabilities)
-        if (user.capabilities != null) ...[
-          _buildStatisticsSection(user),
-          const SizedBox(height: 24),
-        ],
+        // Statistics Section
+        _buildStatisticsSection(ref),
+        const SizedBox(height: 24),
 
         // Menu Items
         _buildMenuItem(
@@ -334,35 +333,103 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatisticsSection(user) {
+  Widget _buildStatisticsSection(WidgetRef ref) {
+    final statsAsync = ref.watch(userStatsProvider);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem(
-            icon: Icons.confirmation_number,
-            value: '0',
-            label: 'Réservations',
-          ),
-          Container(width: 1, height: 40, color: Colors.grey[200]),
-          _buildStatItem(
-            icon: Icons.favorite,
-            value: '0',
-            label: 'Favoris',
-          ),
-          Container(width: 1, height: 40, color: Colors.grey[200]),
-          _buildStatItem(
-            icon: Icons.star,
-            value: '0',
-            label: 'Avis',
-          ),
-        ],
+      child: statsAsync.when(
+        data: (stats) => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              icon: Icons.confirmation_number,
+              value: stats.bookingsCount.toString(),
+              label: 'Réservations',
+            ),
+            Container(width: 1, height: 40, color: Colors.grey[200]),
+            _buildStatItem(
+              icon: Icons.favorite,
+              value: stats.favoritesCount.toString(),
+              label: 'Favoris',
+            ),
+            Container(width: 1, height: 40, color: Colors.grey[200]),
+            _buildStatItem(
+              icon: Icons.star,
+              value: stats.reviewsCount.toString(),
+              label: 'Avis',
+            ),
+          ],
+        ),
+        loading: () => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItemLoading(label: 'Réservations'),
+            Container(width: 1, height: 40, color: Colors.grey[200]),
+            _buildStatItemLoading(label: 'Favoris'),
+            Container(width: 1, height: 40, color: Colors.grey[200]),
+            _buildStatItemLoading(label: 'Avis'),
+          ],
+        ),
+        error: (_, __) => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              icon: Icons.confirmation_number,
+              value: '-',
+              label: 'Réservations',
+            ),
+            Container(width: 1, height: 40, color: Colors.grey[200]),
+            _buildStatItem(
+              icon: Icons.favorite,
+              value: '-',
+              label: 'Favoris',
+            ),
+            Container(width: 1, height: 40, color: Colors.grey[200]),
+            _buildStatItem(
+              icon: Icons.star,
+              value: '-',
+              label: 'Avis',
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildStatItemLoading({required String label}) {
+    return Column(
+      children: [
+        const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Color(0xFFFF601F),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
     );
   }
 

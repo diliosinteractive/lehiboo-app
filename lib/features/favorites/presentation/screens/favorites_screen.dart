@@ -1,26 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
-import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
-
-/// Provider for all activities (cached)
-final _allActivitiesProvider = FutureProvider.autoDispose<List<Activity>>((ref) async {
-  final eventRepository = ref.watch(eventRepositoryProvider);
-
-  try {
-    final result = await eventRepository.getEvents(
-      page: 1,
-      perPage: 100,
-    );
-    return EventToActivityMapper.toActivities(result.events);
-  } catch (e) {
-    return [];
-  }
-});
 
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});

@@ -11,21 +11,22 @@ final dioProvider = Provider<Dio>((ref) {
   return DioClient.instance;
 });
 
+/// Singleton storage instance shared across the app
+/// This ensures consistency between token writes (auth) and reads (interceptor)
+class SharedSecureStorage {
+  static final FlutterSecureStorage instance = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
+}
+
 class DioClient {
   static late Dio _dio;
-  static late FlutterSecureStorage _storage;
 
   static Dio get instance => _dio;
-  static FlutterSecureStorage get storage => _storage;
-
-  // Basic Auth helper removed
+  static FlutterSecureStorage get storage => SharedSecureStorage.instance;
 
   static void initialize() {
-    _storage = const FlutterSecureStorage(
-      aOptions: AndroidOptions(encryptedSharedPreferences: true),
-      iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-    );
-
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
@@ -48,7 +49,7 @@ class DioClient {
 
     // Add interceptors
     _dio.interceptors.addAll([
-      JwtAuthInterceptor(_dio, _storage),
+      JwtAuthInterceptor(_dio, SharedSecureStorage.instance),
       if (kDebugMode)
         PrettyDioLogger(
           requestHeader: true,
@@ -63,7 +64,7 @@ class DioClient {
   }
 }
 
-class JwtAuthInterceptor extends Interceptor {
+class JwtAuthInterceptor extends QueuedInterceptor {
   final Dio _dio;
   final FlutterSecureStorage _storage;
   bool _isRefreshing = false;
@@ -71,7 +72,7 @@ class JwtAuthInterceptor extends Interceptor {
   JwtAuthInterceptor(this._dio, this._storage);
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     // Skip auth for public endpoints
     final publicEndpoints = [
       '/auth/login',
@@ -79,19 +80,31 @@ class JwtAuthInterceptor extends Interceptor {
       '/auth/forgot-password',
       '/auth/reset-password',
       '/auth/refresh',
+      '/auth/otp',  // OTP endpoints: /auth/otp/send, /auth/otp/verify, /auth/otp/resend
+      '/auth/check-email',
       '/events',
       '/categories',
       '/thematiques',
       '/cities',
       '/filters',
+      '/home-feed',
+      '/mobile/config',
+      '/posts',
     ];
 
     final isPublic = publicEndpoints.any((e) => options.path.startsWith(e));
 
     if (!isPublic) {
       final token = await _storage.read(key: AppConstants.keyAuthToken);
+      if (kDebugMode) {
+        debugPrint('🔐 JwtAuthInterceptor: path=${options.path}, isPublic=$isPublic, hasToken=${token != null && token.isNotEmpty}');
+      }
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ JwtAuthInterceptor: No token found for protected endpoint ${options.path}');
+        }
       }
     }
 
@@ -100,7 +113,7 @@ class JwtAuthInterceptor extends Interceptor {
       options.headers['X-API-Key'] = AppConstants.apiKey;
     }
 
-    super.onRequest(options, handler);
+    handler.next(options);
   }
 
   @override

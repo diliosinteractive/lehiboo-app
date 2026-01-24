@@ -91,7 +91,9 @@ abstract class AuthRepository {
   // ============================================================
 
   /// Register a customer (simple registration)
+  /// Requires verifiedEmailToken from OTP verification
   Future<CustomerRegistrationResult> registerCustomer({
+    required String verifiedEmailToken,
     required String firstName,
     required String lastName,
     required String email,
@@ -190,11 +192,17 @@ class OtpVerificationResult {
   final bool success;
   final bool verified;
   final String message;
+  /// Token received after successful OTP verification (for registration)
+  final String? verifiedEmailToken;
+  /// Token expiration time in minutes
+  final int? tokenExpiresInMinutes;
 
   OtpVerificationResult({
     required this.success,
     required this.verified,
     required this.message,
+    this.verifiedEmailToken,
+    this.tokenExpiresInMinutes,
   });
 }
 

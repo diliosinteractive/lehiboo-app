@@ -4,8 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:intl/intl.dart';
-import 'package:lehiboo/core/utils/guest_guard.dart';
-import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
+import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../domain/entities/event.dart';
@@ -161,36 +160,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             },
           ),
           const SizedBox(width: 8),
-          Consumer(
-            builder: (context, ref, child) {
-              final isFavorite = ref.watch(favoritesProvider).value?.any((e) => e.id == widget.eventId) ?? false;
-            
-            return _buildCircularButton(
-              icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: isFavorite ? Colors.red : null,
-              onTap: () async {
-                final canProceed = await GuestGuard.check(
-                  context: context,
-                  ref: ref,
-                  featureName: 'fav',
-                );
-                if (canProceed) {
-                   ref.read(favoritesProvider.notifier).toggleFavorite(event);
-                   
-                   ScaffoldMessenger.of(context).clearSnackBars();
-                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(isFavorite ? 'Retiré des favoris' : 'Ajouté aux favoris'), // Logic inverted because we react to the *old* state here before re-render, or better to use the optimistic new state? Actually with riverpod check...
-                      // Actually, let's keep it simple. The provider updates state, so 'isFavorite' will flip on rebuild. 
-                      // Ideally we'd show the message based on the action intent. 
-                      duration: const Duration(seconds: 1),
-                    )
-                  );
-                }
-              },
-            );
-          },
-        ),
+          // Animated FavoriteButton (handles guest guard, snackbars, and animation internally)
+          FavoriteButton(
+            event: event,
+            internalId: int.tryParse(widget.eventId),
+            iconSize: 20,
+            containerSize: 40,
+            showBackground: true,
+          ),
           const SizedBox(width: 12),
         ],
         flexibleSpace: FlexibleSpaceBar(

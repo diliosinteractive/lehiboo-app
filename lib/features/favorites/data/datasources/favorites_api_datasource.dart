@@ -18,8 +18,9 @@ class FavoritesApiDataSource {
 
     final data = response.data;
     if (data['success'] == true && data['data'] != null) {
-      final favoritesJson = data['data']['favorites'] as List;
-      return favoritesJson.map((f) => FavoriteEventDto.fromJson(f)).toList();
+      // API returns list directly in data['data'], not data['data']['favorites']
+      final favoritesJson = data['data'] as List;
+      return favoritesJson.map((f) => FavoriteEventDto.fromJson(f as Map<String, dynamic>)).toList();
     }
     throw Exception(data['data']?['message'] ?? 'Failed to load favorites');
   }
@@ -67,7 +68,8 @@ class FavoritesApiDataSource {
 }
 
 class FavoriteEventDto {
-  final int id;
+  final int id;           // Numeric ID for API calls (toggle, remove)
+  final String? uuid;     // UUID for display/comparison with other entities
   final String title;
   final String slug;
   final String? thumbnail;
@@ -78,9 +80,12 @@ class FavoriteEventDto {
   final EventPriceDto? price;
   final bool isUpcoming;
   final String? favoritedAt;
+  final String? organizerName;
+  final String? organizerLogo;
 
   FavoriteEventDto({
     required this.id,
+    this.uuid,
     required this.title,
     required this.slug,
     this.thumbnail,
@@ -91,21 +96,41 @@ class FavoriteEventDto {
     this.price,
     required this.isUpcoming,
     this.favoritedAt,
+    this.organizerName,
+    this.organizerLogo,
   });
 
+  /// Returns the string ID to use for comparisons with Activity/Event entities
+  /// Prefers UUID if available, falls back to numeric ID as string
+  String get stringId => uuid ?? id.toString();
+
   factory FavoriteEventDto.fromJson(Map<String, dynamic> json) {
+    // Extract organization/vendor name if available
+    String? orgName;
+    String? orgLogo;
+    if (json['organization'] != null) {
+      orgName = _parseString(json['organization']['company_name']);
+      orgLogo = _parseString(json['organization']['logo_url']);
+    } else if (json['vendor'] != null) {
+      orgName = _parseString(json['vendor']['company_name']);
+      orgLogo = _parseString(json['vendor']['logo_url']);
+    }
+
     return FavoriteEventDto(
       id: _parseInt(json['id']),
+      uuid: _parseString(json['uuid']),
       title: _parseString(json['title']) ?? '',
       slug: _parseString(json['slug']) ?? '',
-      thumbnail: _parseString(json['thumbnail']),
-      date: _parseString(json['date']) ?? '',
+      thumbnail: _parseString(json['thumbnail']) ?? _parseString(json['cover_image']),
+      date: _parseString(json['date']) ?? _parseString(json['start_date']) ?? '',
       time: _parseString(json['time']),
       venue: _parseString(json['venue']),
       city: _parseString(json['city']),
       price: json['price'] != null ? EventPriceDto.fromJson(json['price']) : null,
       isUpcoming: json['is_upcoming'] as bool? ?? true,
       favoritedAt: _parseString(json['favorited_at']),
+      organizerName: orgName,
+      organizerLogo: orgLogo,
     );
   }
 }

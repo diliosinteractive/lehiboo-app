@@ -108,24 +108,31 @@ class AuthApiDataSource {
     return _parseAuthResponse(response.data);
   }
 
-  /// Resend OTP code
+  /// Resend OTP code (legacy method - delegates to new endpoint)
+  /// @deprecated Use resendOtpCode() instead
   Future<void> resendOtp({
     required String userId,
     required String email,
     String type = 'register',
   }) async {
+    // Map legacy type to new type format
+    final otpType = type == 'register' ? 'email_verification' : type;
+
     final response = await _dio.post(
-      '/auth/resend-otp',
+      '/auth/otp/resend',
       data: {
-        'user_id': userId,
         'email': email,
-        'type': type,
+        'type': otpType,
       },
     );
 
     final data = response.data;
-    if (data['success'] != true) {
-      throw Exception(data['data']?['message'] ?? 'Failed to resend OTP');
+    // New API returns success differently
+    final hasExpiresAt = data['expires_at'] != null;
+    final hasSuccessMessage = (data['message']?.toString() ?? '').toLowerCase().contains('succes');
+
+    if (!hasExpiresAt && !hasSuccessMessage && data['success'] != true) {
+      throw Exception(data['message'] ?? 'Failed to resend OTP');
     }
   }
 
@@ -302,7 +309,9 @@ class AuthApiDataSource {
 
   /// Register a customer (simple registration)
   /// POST /v1/auth/register
+  /// Requires verified_email_token from OTP verification
   Future<CustomerRegisterResult> registerCustomer({
+    required String verifiedEmailToken,
     required String firstName,
     required String lastName,
     required String email,
@@ -314,6 +323,7 @@ class AuthApiDataSource {
     final response = await _dio.post(
       '/auth/register',
       data: {
+        'verified_email_token': verifiedEmailToken,
         'first_name': firstName,
         'last_name': lastName,
         'email': email,
@@ -411,7 +421,7 @@ class AuthApiDataSource {
 
   /// Verify OTP code via the new API endpoint
   /// POST /v1/auth/otp/verify
-  /// Laravel returns: { "message": "...", "verified": true }
+  /// Laravel returns: { "message": "...", "verified": true, "verified_email_token": "...", "token_expires_in_minutes": 30 }
   Future<OtpVerifyResult> verifyOtpCode({
     required String email,
     required String code,
@@ -430,21 +440,91 @@ class AuthApiDataSource {
     debugPrint('📱 OTP verify response: $data');
 
     // Laravel returns the response directly at root level on success (HTTP 200)
-    // Format: { "message": "...", "verified": true }
+    // Format: { "message": "...", "verified": true, "verified_email_token": "...", "token_expires_in_minutes": 30 }
     // On error (4xx), Dio throws an exception that is handled by the caller
     if (data is Map<String, dynamic>) {
       // Check for verified field at root level (Laravel format) or in data (legacy format)
       final verified = data['verified'] ?? data['data']?['verified'] ?? false;
 
       if (verified == true || data['success'] == true) {
+        // Extract verified_email_token for registration flow
+        final verifiedEmailToken = data['verified_email_token'] ?? data['data']?['verified_email_token'];
+        final tokenExpiresInMinutes = data['token_expires_in_minutes'] ?? data['data']?['token_expires_in_minutes'];
+
+        debugPrint('📱 OTP verified, token received: ${verifiedEmailToken != null}');
+
         return OtpVerifyResult(
           success: true,
           verified: true,
           message: data['message'] ?? 'Code vérifié',
+          verifiedEmailToken: verifiedEmailToken?.toString(),
+          tokenExpiresInMinutes: tokenExpiresInMinutes is int ? tokenExpiresInMinutes : null,
         );
       }
     }
     throw Exception(data['message'] ?? 'Invalid OTP code');
+  }
+
+  /// Resend OTP code via the new API endpoint
+  /// POST /v1/auth/otp/resend
+  /// Laravel returns: { "message": "...", "expires_at": "...", "validity_minutes": 10 }
+  Future<OtpSendResult> resendOtpCode({
+    required String email,
+    required String type,
+  }) async {
+    final response = await _dio.post(
+      '/auth/otp/resend',
+      data: {
+        'email': email,
+        'type': type,
+      },
+    );
+
+    final data = response.data;
+    debugPrint('📱 OTP resend response: $data');
+
+    if (data is Map<String, dynamic>) {
+      final hasExpiresAt = data['expires_at'] != null;
+      final hasSuccessMessage = (data['message']?.toString() ?? '').toLowerCase().contains('succes');
+
+      if (hasExpiresAt || hasSuccessMessage || data['success'] == true || data['data'] != null) {
+        return OtpSendResult(
+          success: true,
+          message: data['message'] ?? data['data']?['message'] ?? 'Nouveau code envoyé',
+          expiresAt: data['expires_at'] ?? data['data']?['expires_at'],
+        );
+      }
+    }
+    throw Exception(data['message'] ?? 'Failed to resend OTP');
+  }
+
+  /// Get OTP status
+  /// POST /v1/auth/otp/status
+  /// Laravel returns: { "has_pending_otp": bool, "can_resend": bool, "remaining_cooldown": int, "remaining_attempts": int }
+  Future<OtpStatusResult> getOtpStatus({
+    required String email,
+    required String type,
+  }) async {
+    final response = await _dio.post(
+      '/auth/otp/status',
+      data: {
+        'email': email,
+        'type': type,
+      },
+    );
+
+    final data = response.data;
+    debugPrint('📱 OTP status response: $data');
+
+    if (data is Map<String, dynamic>) {
+      return OtpStatusResult(
+        hasPendingOtp: data['has_pending_otp'] ?? false,
+        canResend: data['can_resend'] ?? true,
+        remainingCooldown: data['remaining_cooldown'] ?? 0,
+        remainingAttempts: data['remaining_attempts'] ?? 3,
+      );
+    }
+    throw Exception(data['message'] ?? 'Failed to get OTP status');
   }
 
   /// Check if email exists
@@ -520,10 +600,31 @@ class OtpVerifyResult {
   final bool success;
   final bool verified;
   final String message;
+  /// Token for registration (received after email_verification OTP)
+  final String? verifiedEmailToken;
+  /// Token expiration in minutes
+  final int? tokenExpiresInMinutes;
 
   OtpVerifyResult({
     required this.success,
     required this.verified,
     required this.message,
+    this.verifiedEmailToken,
+    this.tokenExpiresInMinutes,
+  });
+}
+
+/// Result of OTP status check
+class OtpStatusResult {
+  final bool hasPendingOtp;
+  final bool canResend;
+  final int remainingCooldown;
+  final int remainingAttempts;
+
+  OtpStatusResult({
+    required this.hasPendingOtp,
+    required this.canResend,
+    required this.remainingCooldown,
+    required this.remainingAttempts,
   });
 }

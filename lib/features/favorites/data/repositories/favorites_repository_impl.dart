@@ -35,7 +35,8 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
       }
 
       return Event(
-        id: f.id.toString(),
+        // Use stringId (prefers uuid, falls back to id.toString())
+        id: f.stringId,
         title: f.title,
         description: '',
         shortDescription: '',
@@ -58,7 +59,8 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
         isOutdoor: false,
         tags: const [],
         organizerId: '',
-        organizerName: '',
+        organizerName: f.organizerName ?? '',
+        organizerLogo: f.organizerLogo,
         isFavorite: true,
         isFeatured: false,
         isRecommended: false,
@@ -67,6 +69,8 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         views: 0,
+        // Store internal numeric ID for API calls
+        additionalInfo: {'internal_id': f.id},
       );
     }).toList();
   }

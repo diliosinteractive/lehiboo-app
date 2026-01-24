@@ -24,19 +24,26 @@ class AlertsApiDataSource {
 
         if (response.statusCode == 200) {
           final data = response.data;
-          // Handle the wrapped response structure {success: true, data: {alerts: [...]}}
-          if (data is Map<String, dynamic> &&
-              data.containsKey('data') &&
-              data['data'] is Map<String, dynamic> &&
-              data['data'].containsKey('alerts')) {
 
-            final List<dynamic> alertsData = data['data']['alerts'];
-            return alertsData.map((e) => AlertDto.fromJson(e)).toList();
+          // Handle standard API response structure {success: true, data: [...]}
+          if (data is Map<String, dynamic> && data.containsKey('data')) {
+            final dataContent = data['data'];
+
+            // Case 1: data is directly a list (standard API response)
+            if (dataContent is List) {
+              return dataContent.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+            }
+
+            // Case 2: data is an object with alerts key {data: {alerts: [...]}}
+            if (dataContent is Map<String, dynamic> && dataContent.containsKey('alerts')) {
+              final List<dynamic> alertsData = dataContent['alerts'];
+              return alertsData.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+            }
           }
 
-          // Fallback if structure is different (e.g. direct list)
+          // Fallback if structure is different (e.g. direct list at root)
           if (data is List) {
-            return data.map((e) => AlertDto.fromJson(e)).toList();
+            return data.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
           }
 
           // Log the data to debug why it failed
