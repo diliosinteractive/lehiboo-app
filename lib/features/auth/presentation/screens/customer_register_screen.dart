@@ -259,8 +259,8 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
       if (result.authResult != null) {
         // Direct authentication (no verification needed)
         _showSuccess('Compte créé avec succès !');
-        // Trigger auth state refresh
-        ref.read(authProvider.notifier);
+        // Update auth state with the new user
+        ref.read(authProvider.notifier).setAuthenticatedUser(result.authResult!.user);
         context.go('/');
       } else if (result.pendingVerification) {
         // This shouldn't happen with the new flow, but handle it just in case
