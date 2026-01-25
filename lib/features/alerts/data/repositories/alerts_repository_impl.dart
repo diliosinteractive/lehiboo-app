@@ -22,7 +22,7 @@ class AlertsRepositoryImpl implements AlertsRepository {
 
   @override
   Future<Alert> createAlert(
-    String name, 
+    String name,
     EventFilter filter, {
     bool enablePush = true,
     bool enableEmail = false,
@@ -33,7 +33,17 @@ class AlertsRepositoryImpl implements AlertsRepository {
       enablePush: enablePush,
       enableEmail: enableEmail,
     );
-    return dto.toEntity();
+
+    // Use the original filter instead of the one parsed from API
+    // This ensures the comparison works correctly
+    return Alert(
+      id: dto.id,
+      name: dto.name,
+      filter: filter, // Use original filter
+      enablePush: dto.enablePushAlert,
+      enableEmail: dto.enableEmailAlert,
+      createdAt: DateTime.tryParse(dto.createdAt) ?? DateTime.now(),
+    );
   }
 
   @override

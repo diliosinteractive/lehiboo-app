@@ -53,13 +53,19 @@ class AlertDto {
   });
 
   factory AlertDto.fromJson(Map<String, dynamic> json) {
-    // Extract nested search criteria
-    final criteria = json['search_criteria'] as Map<String, dynamic>? ?? {};
+    // Extract nested search criteria - handle both nested and flat structures
+    Map<String, dynamic> criteria = {};
+    if (json['search_criteria'] != null) {
+      criteria = json['search_criteria'] as Map<String, dynamic>;
+    } else {
+      // Fallback: criteria might be at root level
+      criteria = json;
+    }
 
     return AlertDto(
-      id: json['id'].toString(), // Handle int or string
+      id: json['id']?.toString() ?? json['uuid']?.toString() ?? '',
       name: json['name'] as String? ?? 'Alerte sans nom',
-      createdAt: json['created_at'] as String,
+      createdAt: json['created_at'] as String? ?? DateTime.now().toIso8601String(),
       enablePushAlert: json['enable_push_alert'] as bool? ?? false,
       enableEmailAlert: json['enable_email_alert'] as bool? ?? false,
       

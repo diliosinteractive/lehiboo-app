@@ -6,8 +6,9 @@ import 'package:lehiboo/features/events/domain/repositories/event_repository.dar
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
-import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart'; // Import Alerts
+import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
+import 'package:lehiboo/features/search/presentation/widgets/save_search_sheet.dart';
 
 /// Provider for events list from real API
 final eventsListProvider = FutureProvider.family<List<Activity>, EventsListParams>((ref, params) async {
@@ -480,79 +481,34 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
 
   Future<void> _saveCurrentSearch(BuildContext context, {bool isAlert = false}) async {
     final filter = ref.read(eventFilterProvider);
-    
-    String defaultName = filter.searchQuery;
-    if (defaultName.isEmpty && filter.cityName != null) {
-      defaultName = filter.cityName!;
-    }
-    if (defaultName.isEmpty) {
-      defaultName = isAlert ? 'Mon Alerte' : 'Ma Recherche';
-    }
 
-    final nameController = TextEditingController(text: defaultName);
-
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isAlert ? 'Créer une alerte' : 'Enregistrer la recherche'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isAlert 
-                ? 'Donnez un nom à cette alerte pour la retrouver facilement :'
-                : 'Donnez un nom à cette recherche pour la retrouver facilement :'
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nom',
-                border: OutlineInputBorder(),
-                hintText: 'Ex: Concerts à Paris',
-              ),
-              autofocus: true,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.trim().isNotEmpty) {
-                Navigator.pop(context, nameController.text.trim());
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF601F),
-            ),
-            child: const Text('Enregistrer'),
-          ),
-        ],
-      ),
+    // Show the SaveSearchSheet modal
+    final result = await SaveSearchSheet.show(
+      context,
+      filter: filter,
     );
 
-    if (name == null) return;
+    if (result == null) return; // User cancelled
 
     await ref.read(alertsProvider.notifier).createAlert(
-      name: name,
+      name: result.name,
       filter: filter,
-      isAlert: isAlert,
+      enablePush: result.enablePush,
+      enableEmail: result.enableEmail,
     );
 
     if (mounted) {
+      final hasNotifications = result.enablePush || result.enableEmail;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isAlert 
-            ? 'Alerte "$name" créée avec succès !' 
-            : 'Recherche "$name" enregistrée !'
-          ),
+          content: Text(hasNotifications
+              ? 'Alerte "${result.name}" créée avec notifications !'
+              : 'Recherche "${result.name}" enregistrée !'),
           backgroundColor: const Color(0xFF1E3A8A),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 3),
         ),
       );
     }

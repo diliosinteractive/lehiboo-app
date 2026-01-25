@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
-import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
-import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart'; // Import Alerts
+import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/ai_chat/presentation/providers/chat_engagement_provider.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../widgets/airbnb_search_bar.dart';
+import '../widgets/airbnb_search_sheet.dart';
 import '../widgets/filter_bottom_sheet.dart';
-import '../widgets/active_filter_chips.dart';
+import '../widgets/save_search_sheet.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   final String? categorySlug;
@@ -87,122 +87,41 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _showSearchBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            // Handle bar
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Expanded Search Bar
-            Expanded(
-              child: ExpandedSearchBar(
-                onSearch: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    // Ouvre le composant Airbnb-style plein écran unifié
+    AirbnbSearchSheet.show(context);
   }
 
   Future<void> _saveCurrentSearch(BuildContext context, {bool isAlert = false}) async {
     final filter = ref.read(eventFilterProvider);
-    
-    // Generate default name
-    String defaultName = filter.searchQuery;
-    if (defaultName.isEmpty && filter.cityName != null) {
-      defaultName = filter.cityName!;
-    }
-    if (defaultName.isEmpty) {
-      defaultName = isAlert ? 'Mon Alerte' : 'Ma Recherche';
-    }
 
-    final nameController = TextEditingController(text: defaultName);
-
-    // Prompt user for name
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isAlert ? 'Créer une alerte' : 'Enregistrer la recherche'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isAlert 
-                ? 'Donnez un nom à cette alerte pour la retrouver facilement :'
-                : 'Donnez un nom à cette recherche pour la retrouver facilement :'
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nom',
-                border: OutlineInputBorder(),
-                hintText: 'Ex: Concerts à Paris',
-              ),
-              autofocus: true,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.trim().isNotEmpty) {
-                Navigator.pop(context, nameController.text.trim());
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF601F),
-            ),
-            child: const Text('Enregistrer'),
-          ),
-        ],
-      ),
+    // Show the new SaveSearchSheet modal
+    final result = await SaveSearchSheet.show(
+      context,
+      filter: filter,
     );
 
-    if (name == null) return; // User cancelled
+    if (result == null) return; // User cancelled
 
-    // Call API via provider
-    // We don't await the result to block UI, but ideally we show loading
-    // For now simple fire and forget with snackbar, the provider handles state update
+    // Call API via provider with explicit push/email params
     await ref.read(alertsProvider.notifier).createAlert(
-      name: name,
+      name: result.name,
       filter: filter,
-      isAlert: isAlert,
+      enablePush: result.enablePush,
+      enableEmail: result.enableEmail,
     );
 
     if (mounted) {
+      final hasNotifications = result.enablePush || result.enableEmail;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isAlert 
-            ? 'Alerte "$name" créée avec succès !' 
-            : 'Recherche "$name" enregistrée !'
-          ),
+          content: Text(hasNotifications
+              ? 'Alerte "${result.name}" créée avec notifications !'
+              : 'Recherche "${result.name}" enregistrée !'),
           backgroundColor: const Color(0xFF1E3A8A),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
@@ -216,7 +135,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredEvents = ref.watch(filteredEventsProvider);
-    final activeChips = ref.watch(activeFilterChipsProvider);
     final filter = ref.watch(eventFilterProvider);
 
     return Scaffold(
@@ -344,7 +262,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // Compact Search Bar that opens the sheet
+                      // Compact Search Bar
+                      // - onTap: ouvre Airbnb-style (3 panneaux)
+                      // - onFilterTap: ouvre bottom sheet avec TOUTES les options détaillées
                       AirbnbSearchBar(
                         onTap: _showSearchBottomSheet,
                         onFilterTap: () => showFilterBottomSheet(context),

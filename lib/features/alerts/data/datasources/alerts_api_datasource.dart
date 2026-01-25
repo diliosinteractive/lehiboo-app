@@ -31,23 +31,40 @@ class AlertsApiDataSource {
 
             // Case 1: data is directly a list (standard API response)
             if (dataContent is List) {
-              return dataContent.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+              try {
+                return dataContent.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+              } catch (parseError) {
+                print('❌ AlertDto parsing error: $parseError');
+                print('📦 Raw item data: ${dataContent.isNotEmpty ? dataContent.first : "empty"}');
+                rethrow;
+              }
             }
 
             // Case 2: data is an object with alerts key {data: {alerts: [...]}}
             if (dataContent is Map<String, dynamic> && dataContent.containsKey('alerts')) {
               final List<dynamic> alertsData = dataContent['alerts'];
-              return alertsData.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+              try {
+                return alertsData.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+              } catch (parseError) {
+                print('❌ AlertDto parsing error: $parseError');
+                print('📦 Raw item data: ${alertsData.isNotEmpty ? alertsData.first : "empty"}');
+                rethrow;
+              }
             }
           }
 
           // Fallback if structure is different (e.g. direct list at root)
           if (data is List) {
-            return data.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+            try {
+              return data.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+            } catch (parseError) {
+              print('❌ AlertDto parsing error: $parseError');
+              rethrow;
+            }
           }
 
           // Log the data to debug why it failed
-          print('❌ Parsing Failed. Response structure unexpected: $data');
+          print('❌ Alerts API: Parsing Failed. Response structure unexpected: $data');
         }
       } on DioException catch (e) {
         // Only retry on server errors (5xx) or connection timeouts

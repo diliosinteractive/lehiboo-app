@@ -11,6 +11,7 @@ import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_se
 import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
+import 'package:lehiboo/features/search/presentation/widgets/home_search_pill.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import '../../../../config/dio_client.dart';
 import '../../data/models/mobile_app_config.dart';
@@ -390,8 +391,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHeroSearchSection() {
-    final filterNotifier = ref.read(eventFilterProvider.notifier);
-    final filterState = ref.watch(eventFilterProvider);
     final configAsyncValue = ref.watch(mobileAppConfigProvider);
     final currentUser = ref.watch(currentUserProvider);
 
@@ -440,7 +439,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         ),
-        
+
         // Layer 2: Black Gradient Overlay (Middle)
         if (hasImage)
           Positioned.fill(
@@ -462,12 +461,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
         // Layer 3: Content (Top)
         Column(
-          mainAxisSize: MainAxisSize.min, // S'adapte au contenu
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Texte d'accroche - Dynamic from config
             Padding(
-              // Increased top padding to "aerated" the header as requested
-              padding: const EdgeInsets.fromLTRB(20, 180, 20, 24), 
+              padding: const EdgeInsets.fromLTRB(20, 140, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -483,7 +481,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           Shadow(
                             offset: const Offset(0, 1),
                             blurRadius: 4,
-                            color: Colors.black.withValues(alpha: 0.8),
+                            color: Colors.black.withOpacity(0.8),
                           ),
                         ],
                       ),
@@ -494,31 +492,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     heroConfig.title,
                     style: GoogleFonts.montserrat(
                       color: Colors.white,
-                      fontSize: 26,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
                       height: 1.2,
                       shadows: [
                         Shadow(
                           offset: const Offset(0, 2),
                           blurRadius: 4,
-                          color: Colors.black.withValues(alpha: 0.9),
+                          color: Colors.black.withOpacity(0.9),
                         ),
                       ],
                     ),
                   ),
                   if (heroConfig.subtitle.isNotEmpty) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(
                       heroConfig.subtitle,
                       style: GoogleFonts.montserrat(
-                        color: Colors.white.withValues(alpha: 0.95),
-                        fontSize: 17,
+                        color: Colors.white.withOpacity(0.95),
+                        fontSize: 16,
                         fontWeight: FontWeight.w500,
                         shadows: [
                           Shadow(
                             offset: const Offset(0, 1),
                             blurRadius: 3,
-                            color: Colors.black.withValues(alpha: 0.8),
+                            color: Colors.black.withOpacity(0.8),
                           ),
                         ],
                       ),
@@ -527,179 +525,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-          // Bloc de recherche
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Barre de recherche
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFF601F).withOpacity(0.3)),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      icon: const Icon(Icons.search, color: Color(0xFFFF601F), size: 22),
-                      hintText: 'Rechercher une activité...',
-                      hintStyle: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 15,
-                      ),
-                    ),
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (value) {
-                      if (value.trim().isNotEmpty) {
-                        ref.read(eventFilterProvider.notifier).setSearchQuery(value.trim());
-                        context.push('/search');
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Filtres rapides
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildQuickFilterChip(
-                        label: "Aujourd'hui",
-                        icon: Icons.today,
-                        isSelected: filterState.dateFilterType == DateFilterType.today,
-                        onTap: () {
-                          if (filterState.dateFilterType == DateFilterType.today) {
-                            filterNotifier.clearDateFilter();
-                          } else {
-                            filterNotifier.setDateFilter(DateFilterType.today);
-                          }
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickFilterChip(
-                        label: 'Demain',
-                        icon: Icons.event,
-                        isSelected: filterState.dateFilterType == DateFilterType.tomorrow,
-                        onTap: () {
-                          if (filterState.dateFilterType == DateFilterType.tomorrow) {
-                             filterNotifier.clearDateFilter();
-                          } else {
-                             filterNotifier.setDateFilter(DateFilterType.tomorrow);
-                          }
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickFilterChip(
-                        label: 'Ce week-end',
-                        icon: Icons.weekend,
-                        isSelected: filterState.dateFilterType == DateFilterType.thisWeekend,
-                        onTap: () {
-                          if (filterState.dateFilterType == DateFilterType.thisWeekend) {
-                            filterNotifier.clearDateFilter();
-                          } else {
-                            filterNotifier.setDateFilter(DateFilterType.thisWeekend);
-                          }
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickFilterChip(
-                        label: 'Gratuit',
-                        icon: Icons.local_offer,
-                        isSelected: filterState.onlyFree,
-                        onTap: () {
-                          filterNotifier.setOnlyFree(!filterState.onlyFree);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickFilterChip(
-                        label: 'Famille',
-                        icon: Icons.family_restroom,
-                        isSelected: filterState.familyFriendly,
-                        onTap: () {
-                          filterNotifier.setFamilyFriendly(!filterState.familyFriendly);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickFilterChip(
-                        label: 'En ligne',
-                        icon: Icons.computer,
-                        isSelected: filterState.onlineOnly,
-                        onTap: () {
-                          filterNotifier.setOnlineOnly(!filterState.onlineOnly);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _buildQuickFilterChip(
-                        label: 'Accessible PMR',
-                        icon: Icons.accessible,
-                        isSelected: filterState.accessiblePMR,
-                        onTap: () {
-                          filterNotifier.setAccessiblePMR(!filterState.accessiblePMR);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Bouton Rechercher - Dynamic text from config
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_searchController.text.trim().isNotEmpty) {
-                        ref.read(eventFilterProvider.notifier).setSearchQuery(_searchController.text.trim());
-                        context.push('/search');
-                      } else {
-                        context.push('/search?openFilter=true');
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF601F),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.search, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          config.texts.exploreButtonText,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ], // Close Main Column children
-      ), // Close Main Column
-      ], // Closing Stack children
-    ); // Closing Stack
+
+            // Airbnb-style search pill
+            const HomeSearchPill(),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ],
+    );
   }
 
 
@@ -963,59 +797,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildQuickFilterChip({
-    required String label,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : const Color(0xFFE5E5E5),
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFF601F).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : Colors.grey[600],
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : const Color(0xFF2D3748),
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-
   Widget _buildTopCitiesSection() {
     final citiesAsyncValue = ref.watch(homeCitiesProvider);
 
@@ -1098,57 +879,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-
-  Widget _buildCategoryCard(String title, String imageUrl, IconData icon) {
-    return GestureDetector(
-      onTap: () => context.push('/events?category=$title'),
-      child: Container(
-        height: 120,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          image: DecorationImage(
-            image: NetworkImage(imageUrl),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withOpacity(0.7),
-              ],
-            ),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                icon,
-                color: Colors.white,
-                size: 28,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-
 
 }
