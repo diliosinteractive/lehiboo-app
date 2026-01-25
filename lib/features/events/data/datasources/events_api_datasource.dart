@@ -96,17 +96,35 @@ class EventsApiDataSource {
     debugPrint('API Response success: ${data['success']}');
     debugPrint('API Response has data: ${data['data'] != null}');
 
-    // Handle both old format { success: true, data: {...} } and new Laravel paginated format
+    // Handle API response formats (old and new Laravel)
     Map<String, dynamic> eventsData;
 
     if (data['success'] == true && data['data'] != null) {
-      // Old format: { success: true, data: { events: [...], pagination: {...} } }
-      eventsData = data['data'];
+      final innerData = data['data'];
+
+      if (innerData is List) {
+        // New Laravel format: { success: true, data: [...], meta: {...} }
+        eventsData = {
+          'events': innerData,
+          'pagination': {
+            'current_page': data['meta']?['page'] ?? data['meta']?['current_page'] ?? 1,
+            'per_page': data['meta']?['per_page'] ?? perPage,
+            'total_items': data['meta']?['total'] ?? innerData.length,
+            'total_pages': data['meta']?['last_page'] ?? 1,
+            'has_next': (data['meta']?['page'] ?? 1) < (data['meta']?['last_page'] ?? 1),
+            'has_prev': (data['meta']?['page'] ?? 1) > 1,
+          },
+        };
+      } else if (innerData is Map<String, dynamic>) {
+        // Old format: { success: true, data: { events: [...], pagination: {...} } }
+        eventsData = innerData;
+      } else {
+        throw Exception('Unexpected data format in events response');
+      }
     } else if (data is Map<String, dynamic> && data['data'] != null) {
-      // New Laravel paginated format: { data: [...], meta: {...}, links: {...} }
+      // Format without 'success' key (standard Laravel pagination)
       final dataList = data['data'];
       if (dataList is List) {
-        // Convert Laravel pagination format to our expected format
         eventsData = {
           'events': dataList,
           'pagination': {
