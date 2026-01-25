@@ -3,19 +3,37 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../../../core/themes/colors.dart';
-import '../../../data/models/tool_result_dto.dart';
+import '../../../data/models/tool_schema_dto.dart';
+import 'dynamic_tool_result_card.dart';
 
-/// Card displaying profile info from getMyProfile tool
-class ProfileResultCard extends StatelessWidget {
-  final ProfileToolResult result;
+/// Card displaying user profile information
+class ProfileCard extends StatelessWidget {
+  final ToolSchemaDto schema;
+  final Map<String, dynamic> data;
 
-  const ProfileResultCard({
+  const ProfileCard({
     super.key,
-    required this.result,
+    required this.schema,
+    required this.data,
   });
 
   @override
   Widget build(BuildContext context) {
+    // User info - can be nested under 'user' key
+    final userData = data['user'] as Map<String, dynamic>? ?? data;
+    final firstName = userData['first_name'] as String?;
+    final lastName = userData['last_name'] as String?;
+    final email = userData['email'] as String? ?? '';
+    final avatarUrl = userData['avatar_url'] as String?;
+
+    // Stats - can be nested under 'stats' key
+    final statsData = data['stats'] as Map<String, dynamic>?;
+
+    // Hiboos balance
+    final hiboosBalance = data['hiboos_balance'] as int? ?? 0;
+
+    final accentColor = parseHexColor(schema.color);
+
     return GestureDetector(
       onTap: () => context.push('/profile'),
       child: Container(
@@ -40,17 +58,17 @@ class ProfileResultCard extends StatelessWidget {
                   // Avatar
                   CircleAvatar(
                     radius: 32,
-                    backgroundColor: HbColors.brandPrimary.withOpacity(0.1),
-                    backgroundImage: result.user.avatarUrl != null
-                        ? CachedNetworkImageProvider(result.user.avatarUrl!)
+                    backgroundColor: accentColor.withOpacity(0.1),
+                    backgroundImage: avatarUrl != null
+                        ? CachedNetworkImageProvider(avatarUrl)
                         : null,
-                    child: result.user.avatarUrl == null
+                    child: avatarUrl == null
                         ? Text(
-                            _getInitials(),
-                            style: const TextStyle(
+                            _getInitials(firstName, lastName),
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
-                              color: HbColors.brandPrimary,
+                              color: accentColor,
                             ),
                           )
                         : null,
@@ -63,7 +81,7 @@ class ProfileResultCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _getDisplayName(),
+                          _getDisplayName(firstName, lastName),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -72,7 +90,7 @@ class ProfileResultCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          result.user.email,
+                          email,
                           style: TextStyle(
                             fontSize: 13,
                             color: HbColors.textSecondary,
@@ -94,14 +112,14 @@ class ProfileResultCard extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Hiboos balance
-              if (result.hiboosBalance > 0)
+              if (hiboosBalance > 0)
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        HbColors.brandPrimary.withOpacity(0.1),
-                        HbColors.brandPrimary.withOpacity(0.05),
+                        accentColor.withOpacity(0.1),
+                        accentColor.withOpacity(0.05),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -115,18 +133,18 @@ class ProfileResultCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Hiboos Balance',
+                              'Solde Hiboos',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: HbColors.textSecondary,
                               ),
                             ),
                             Text(
-                              '${result.hiboosBalance} Hiboos',
-                              style: const TextStyle(
+                              '$hiboosBalance Hiboos',
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: HbColors.brandPrimary,
+                                color: accentColor,
                               ),
                             ),
                           ],
@@ -134,7 +152,7 @@ class ProfileResultCard extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () => context.push('/hibons-dashboard'),
-                        child: const Text('View'),
+                        child: const Text('Voir'),
                       ),
                     ],
                   ),
@@ -143,7 +161,8 @@ class ProfileResultCard extends StatelessWidget {
               const SizedBox(height: 16),
 
               // Stats
-              if (result.stats != null) _buildStats(),
+              if (statsData != null || schema.responseSchema?.stats != null)
+                _buildStats(statsData),
             ],
           ),
         ),
@@ -151,52 +170,66 @@ class ProfileResultCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStats() {
-    final stats = result.stats!;
+  Widget _buildStats(Map<String, dynamic>? statsData) {
+    final statSchemas = schema.responseSchema?.stats;
 
-    return Row(
-      children: [
-        _StatItem(
-          icon: Icons.confirmation_number_outlined,
-          label: 'Bookings',
-          value: stats.totalBookings.toString(),
-        ),
-        _StatItem(
-          icon: Icons.event_available,
-          label: 'Attended',
-          value: stats.totalEventsAttended.toString(),
-        ),
-        _StatItem(
-          icon: Icons.favorite_border,
-          label: 'Favorites',
-          value: stats.totalFavorites.toString(),
-        ),
-        _StatItem(
-          icon: Icons.notifications_outlined,
-          label: 'Alerts',
-          value: stats.totalAlerts.toString(),
-        ),
-      ],
-    );
-  }
-
-  String _getDisplayName() {
-    final firstName = result.user.firstName ?? '';
-    final lastName = result.user.lastName ?? '';
-
-    if (firstName.isNotEmpty || lastName.isNotEmpty) {
-      return '$firstName $lastName'.trim();
+    // Use schema-defined stats if available
+    if (statSchemas != null && statSchemas.isNotEmpty) {
+      return Row(
+        children: statSchemas.map((stat) {
+          final value = getNestedValue(data, stat.field);
+          return _StatItem(
+            icon: getIconFromName(stat.icon),
+            label: stat.label,
+            value: (value ?? 0).toString(),
+          );
+        }).toList(),
+      );
     }
-    return 'User';
+
+    // Fallback to hardcoded stats
+    if (statsData != null) {
+      return Row(
+        children: [
+          _StatItem(
+            icon: Icons.confirmation_number_outlined,
+            label: 'Réservations',
+            value: (statsData['total_bookings'] ?? 0).toString(),
+          ),
+          _StatItem(
+            icon: Icons.event_available,
+            label: 'Participations',
+            value: (statsData['total_events_attended'] ?? 0).toString(),
+          ),
+          _StatItem(
+            icon: Icons.favorite_border,
+            label: 'Favoris',
+            value: (statsData['total_favorites'] ?? 0).toString(),
+          ),
+          _StatItem(
+            icon: Icons.notifications_outlined,
+            label: 'Alertes',
+            value: (statsData['total_alerts'] ?? 0).toString(),
+          ),
+        ],
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
-  String _getInitials() {
-    final firstName = result.user.firstName ?? '';
-    final lastName = result.user.lastName ?? '';
+  String _getDisplayName(String? firstName, String? lastName) {
+    if (firstName != null || lastName != null) {
+      return '${firstName ?? ''} ${lastName ?? ''}'.trim();
+    }
+    return 'Utilisateur';
+  }
 
-    final first = firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
-    final last = lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
-
+  String _getInitials(String? firstName, String? lastName) {
+    final first =
+        firstName != null && firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
+    final last =
+        lastName != null && lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
     return '$first$last'.isNotEmpty ? '$first$last' : '?';
   }
 }
@@ -237,6 +270,7 @@ class _StatItem extends StatelessWidget {
               fontSize: 11,
               color: HbColors.textSecondary,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

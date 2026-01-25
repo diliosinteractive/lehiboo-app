@@ -1,5 +1,5 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/repositories/event_repository.dart';
 import '../datasources/events_api_datasource.dart';
@@ -81,6 +81,15 @@ class EventRepositoryImpl implements EventRepository {
     );
 
     final events = response.events.map(EventMapper.toEvent).toList();
+
+    // Debug: log transformed event coordinates
+    if (kDebugMode) {
+      debugPrint('🗺️ Repository: Transformed ${events.length} events');
+      for (var i = 0; i < events.length && i < 5; i++) {
+        final e = events[i];
+        debugPrint('🗺️ Event[$i] "${e.title}": lat=${e.latitude}, lng=${e.longitude}');
+      }
+    }
 
     return EventsResult(
       events: events,

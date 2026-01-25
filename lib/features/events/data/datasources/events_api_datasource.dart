@@ -145,10 +145,16 @@ class EventsApiDataSource {
 
     // Handle "lightweight" response structure (pins vs events)
     if (eventsData['pins'] != null) {
-      debugPrint('Handling lightweight response with ${eventsData['pins'].length} pins');
+      final pins = eventsData['pins'] as List;
+      debugPrint('📍 Handling lightweight response with ${pins.length} pins');
+
+      // Debug: log pin coordinates
+      for (var i = 0; i < pins.length && i < 5; i++) {
+        final pin = pins[i];
+        debugPrint('📍 Pin[$i] id=${pin['id']}, lat=${pin['lat']}, lng=${pin['lng']}');
+      }
 
       // Map pins to EventDto structure
-      final pins = eventsData['pins'] as List;
       final mappedEvents = pins.map<Map<String, dynamic>>((pin) {
         return <String, dynamic>{
           'id': pin['id'],

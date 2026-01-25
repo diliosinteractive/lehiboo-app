@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/conversation_dto.dart';
@@ -72,10 +73,19 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     );
 
     try {
+      if (kDebugMode) {
+        debugPrint('🦉 ConversationList: Fetching conversations...');
+      }
+
       final result = await _repository.getConversations(
         page: 1,
         perPage: 20,
       );
+
+      if (kDebugMode) {
+        debugPrint('🦉 ConversationList: Got ${result.conversations.length} conversations');
+        debugPrint('🦉 ConversationList: Page ${result.currentPage}/${result.totalPages}');
+      }
 
       state = state.copyWith(
         conversations: result.conversations,
@@ -85,6 +95,9 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         hasMore: result.hasNext,
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('🦉 ConversationList: Error fetching conversations: $e');
+      }
       state = state.copyWith(
         isLoading: false,
         error: _getErrorMessage(e),

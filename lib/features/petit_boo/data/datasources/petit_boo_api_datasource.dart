@@ -6,6 +6,7 @@ import '../../../../config/dio_client.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../models/conversation_dto.dart';
 import '../models/quota_dto.dart';
+import '../models/tool_schema_dto.dart';
 
 /// Provider for the API datasource
 final petitBooApiDataSourceProvider = Provider<PetitBooApiDataSource>((ref) {
@@ -79,6 +80,10 @@ class PetitBooApiDataSource {
     int perPage = 20,
   }) async {
     try {
+      if (kDebugMode) {
+        debugPrint('🤖 PetitBoo API: GET /api/v1/sessions?page=$page&per_page=$perPage');
+      }
+
       final response = await _dio.get(
         '/api/v1/sessions',
         queryParameters: {
@@ -86,6 +91,10 @@ class PetitBooApiDataSource {
           'per_page': perPage,
         },
       );
+
+      if (kDebugMode) {
+        debugPrint('🤖 PetitBoo API: Sessions response: ${response.data}');
+      }
 
       return ConversationsResponseDto.fromJson(response.data);
     } on DioException catch (e) {
@@ -150,6 +159,30 @@ class PetitBooApiDataSource {
       }
 
       throw PetitBooApiException('Invalid response format');
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// Get list of available tool schemas for dynamic UI rendering
+  Future<List<ToolSchemaDto>> getToolSchemas() async {
+    try {
+      if (kDebugMode) {
+        debugPrint('🤖 PetitBoo API: GET /api/v1/tools');
+      }
+
+      final response = await _dio.get('/api/v1/tools');
+
+      final data = response.data;
+      if (data['success'] == true && data['tools'] != null) {
+        final toolsList = data['tools'] as List;
+        return toolsList
+            .map((t) => ToolSchemaDto.fromJson(t as Map<String, dynamic>))
+            .toList();
+      }
+
+      // Fallback: try parsing as ToolsResponseDto
+      return ToolsResponseDto.fromJson(data).tools;
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

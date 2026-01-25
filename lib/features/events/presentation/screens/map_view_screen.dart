@@ -166,11 +166,31 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   }
 
   List<Marker> _buildMarkers(List<Event> events) {
+    // Debug: log coordinates
+    if (kDebugMode) {
+      debugPrint('🗺️ _buildMarkers: Building markers for ${events.length} events');
+      for (var i = 0; i < events.length; i++) {
+        final e = events[i];
+        debugPrint('🗺️ Event[$i] "${e.title}": lat=${e.latitude}, lng=${e.longitude}');
+      }
+    }
+
+    // Filter out events with invalid coordinates (0,0 is in the Atlantic Ocean)
+    final validEvents = events.where((e) =>
+      e.latitude != 0.0 && e.longitude != 0.0 &&
+      e.latitude >= -90 && e.latitude <= 90 &&
+      e.longitude >= -180 && e.longitude <= 180
+    ).toList();
+
+    if (kDebugMode) {
+      debugPrint('🗺️ _buildMarkers: ${validEvents.length} events with valid coordinates');
+    }
+
     // 1. Group events by location (lat,lng)
     final Map<String, List<MapEntry<int, Event>>> groups = {};
-    
-    for (var i = 0; i < events.length; i++) {
-      final event = events[i];
+
+    for (var i = 0; i < validEvents.length; i++) {
+      final event = validEvents[i];
       final key = '${event.latitude}_${event.longitude}';
       groups.putIfAbsent(key, () => []).add(MapEntry(i, event));
     }

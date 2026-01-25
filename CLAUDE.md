@@ -302,11 +302,99 @@ Widget flottant central avec reconnaissance vocale :
 
 | Outil | Description |
 |-------|-------------|
-| `search_events` | Recherche d'événements |
-| `get_event_details` | Détails d'un événement |
-| `list_bookings` | Liste des réservations |
-| `get_booking_details` | Détails d'une réservation |
-| `list_favorites` | Liste des favoris |
-| `toggle_favorite` | Ajouter/retirer favori |
-| `get_recommendations` | Recommandations personnalisées |
-| `get_user_context` | Contexte utilisateur |
+| `searchEvents` | Recherche d'événements |
+| `getEventDetails` | Détails d'un événement |
+| `getMyBookings` | Liste des réservations |
+| `getMyTickets` | Liste des billets |
+| `getMyFavorites` | Liste des favoris |
+| `getMyAlerts` | Liste des alertes |
+| `getMyProfile` | Profil utilisateur |
+| `getNotifications` | Notifications |
+
+### Architecture Tool Results (Schema-Driven)
+
+Les résultats d'outils MCP sont rendus **dynamiquement** via des schémas, sans widgets hardcodés par outil.
+
+```
+tool_result SSE event
+       ↓
+ToolResultDto (raw Map + tool name)
+       ↓
+DynamicToolResultCard
+  ├── Lit le schema du tool (defaultToolSchemas)
+  ├── Détermine le displayType (event_list, booking_list, profile, etc.)
+  └── Génère l'UI dynamiquement
+```
+
+**Fichiers clés :**
+
+```
+lib/features/petit_boo/
+├── data/models/
+│   ├── tool_result_dto.dart      # DTO simplifié (raw Map)
+│   └── tool_schema_dto.dart      # Schémas UI des tools
+└── presentation/
+    ├── providers/
+    │   └── tool_schemas_provider.dart  # Cache des schémas + defaults
+    └── widgets/
+        ├── tool_result_card.dart       # Délègue à DynamicToolResultCard
+        └── tool_cards/
+            ├── dynamic_tool_result_card.dart  # Router principal
+            ├── event_list_card.dart           # Liste events (favoris, recherche)
+            ├── booking_list_card.dart         # Réservations/tickets
+            ├── profile_card.dart              # Profil utilisateur
+            ├── generic_list_card.dart         # Fallback générique
+            └── unknown_tool_card.dart         # Tool non reconnu
+```
+
+**Ajouter un nouveau tool :**
+
+1. Ajouter le schéma dans `defaultToolSchemas` (tool_schemas_provider.dart)
+2. C'est tout ! Le widget se génère automatiquement selon le `displayType`
+
+**Note sur les formats backend :**
+
+- SSE events envoient `data` pour les résultats
+- History endpoint envoie `result` pour les résultats
+- Le DTO gère les deux via `_readDataOrResult()`
+
+---
+
+## Feature : Carte des Événements
+
+### Architecture
+
+La carte utilise `eventsProvider` qui hérite des filtres globaux de `eventFilterProvider`.
+
+**IMPORTANT:** La carte affiche 0 événements si les filtres sont trop restrictifs.
+
+### Debug des coordonnées
+
+Des logs de debug sont présents pour tracer les coordonnées à chaque étape :
+
+```
+📍 Pin[X] id=..., lat=..., lng=...     # Datasource (pins bruts API)
+🗺️ Event[X] "...": lat=..., lng=...   # Repository (après mapping)
+🗺️ _buildMarkers: X events            # MapScreen (construction markers)
+```
+
+### Filtre coordonnées invalides
+
+Le `map_view_screen.dart` filtre automatiquement les events avec coordonnées invalides :
+- `(0, 0)` = Null Island (Atlantique)
+- Hors bornes lat/lng valides
+
+```dart
+final validEvents = events.where((e) =>
+  e.latitude != 0.0 && e.longitude != 0.0 &&
+  e.latitude >= -90 && e.latitude <= 90 &&
+  e.longitude >= -180 && e.longitude <= 180
+).toList();
+```
+
+### Symptôme courant : carte vide
+
+Si la carte affiche "Oups, c'est calme par ici !" mais que les logs montrent des events :
+1. Vérifier les filtres actifs (`city`, `free_only`, `family_friendly`, etc.)
+2. Vérifier le bounding box de la requête
+3. L'API retourne probablement `data: []` car les filtres sont trop restrictifs

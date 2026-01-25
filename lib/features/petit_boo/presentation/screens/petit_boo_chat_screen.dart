@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/themes/petit_boo_theme.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../home/presentation/providers/user_location_provider.dart';
 import '../providers/petit_boo_chat_provider.dart';
 import '../widgets/chat_input_bar.dart';
 import '../widgets/limit_reached_dialog.dart';
@@ -320,18 +322,29 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
   }
 
   Widget _buildWelcomeScreen() {
+    // Get user data for personalization
+    final user = ref.watch(currentUserProvider);
+    final locationAsync = ref.watch(userLocationProvider);
+
+    final firstName = user?.firstName ?? user?.displayName?.split(' ').first;
+    final cityName = locationAsync.valueOrNull?.cityName;
+
+    // Build personalized greeting
+    final greeting = _buildPersonalizedGreeting(firstName);
+    final subtitle = _buildPersonalizedSubtitle(cityName);
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: PetitBooTheme.spacing20),
       child: Column(
         children: [
           SizedBox(height: PetitBooTheme.spacing16),
 
-          // Hero Section - Clean style with border
+          // Hero Section - Personalized
           Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(
               horizontal: PetitBooTheme.spacing24,
-              vertical: PetitBooTheme.spacing32,
+              vertical: PetitBooTheme.spacing24,
             ),
             decoration: BoxDecoration(
               color: PetitBooTheme.surface,
@@ -343,98 +356,128 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
             ),
             child: Column(
               children: [
-                // Logo
-                Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: PetitBooTheme.primaryLight,
-                    boxShadow: PetitBooTheme.shadowMd,
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      PetitBooTheme.owlLogoPath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.smart_toy_outlined,
-                        color: PetitBooTheme.primary,
-                        size: 44,
+                // Logo + Greeting Row
+                Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: PetitBooTheme.primaryLight,
+                        boxShadow: PetitBooTheme.shadowSm,
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          PetitBooTheme.owlLogoPath,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.smart_toy_outlined,
+                            color: PetitBooTheme.primary,
+                            size: 28,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    SizedBox(width: PetitBooTheme.spacing16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            greeting,
+                            style: PetitBooTheme.headingMd.copyWith(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: PetitBooTheme.spacing2),
+                          Text(
+                            subtitle,
+                            style: PetitBooTheme.bodySm.copyWith(
+                              color: PetitBooTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
 
                 SizedBox(height: PetitBooTheme.spacing20),
 
-                // Greeting
-                Text(
-                  'Bonjour !',
-                  style: PetitBooTheme.headingLg.copyWith(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
+                // Location pill if available
+                if (cityName != null)
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: PetitBooTheme.spacing12,
+                      vertical: PetitBooTheme.spacing8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: PetitBooTheme.primaryLight,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on_rounded,
+                          size: 16,
+                          color: PetitBooTheme.primary,
+                        ),
+                        SizedBox(width: PetitBooTheme.spacing6),
+                        Text(
+                          cityName,
+                          style: PetitBooTheme.bodySm.copyWith(
+                            color: PetitBooTheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                SizedBox(height: PetitBooTheme.spacing4),
-                Text(
-                  'Je suis Petit Boo',
-                  style: PetitBooTheme.headingMd.copyWith(
-                    color: PetitBooTheme.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                  ),
-                ),
-
-                SizedBox(height: PetitBooTheme.spacing8),
-
-                Text(
-                  'Votre assistant IA pour découvrir\ndes événements uniques',
-                  textAlign: TextAlign.center,
-                  style: PetitBooTheme.bodySm.copyWith(
-                    color: PetitBooTheme.textSecondary,
-                    height: 1.4,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: PetitBooTheme.spacing20),
-
-          // Features as horizontal scroll
-          SizedBox(
-            height: 100,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.zero,
-              clipBehavior: Clip.none,
-              children: [
-                _buildFeatureCard(
-                  Icons.search_rounded,
-                  'Événements',
-                  'Trouvez des sorties',
-                ),
-                _buildFeatureCard(
-                  Icons.calendar_today_rounded,
-                  'Réservations',
-                  'Gérez vos billets',
-                ),
-                _buildFeatureCard(
-                  Icons.mic_rounded,
-                  'Vocal',
-                  'Parlez-moi',
-                ),
-                _buildFeatureCard(
-                  Icons.favorite_rounded,
-                  'Favoris',
-                  'Vos coups de coeur',
-                ),
               ],
             ),
           ),
 
           SizedBox(height: PetitBooTheme.spacing24),
+
+          // Quick actions - Horizontal scroll pills
+          SizedBox(
+            height: 48,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              children: [
+                _buildQuickActionPill(
+                  Icons.calendar_today_rounded,
+                  'Ce soir',
+                  cityName != null
+                      ? 'Que faire ce soir à $cityName ?'
+                      : 'Que faire ce soir ?',
+                ),
+                _buildQuickActionPill(
+                  Icons.weekend_rounded,
+                  'Week-end',
+                  cityName != null
+                      ? 'Événements ce week-end à $cityName'
+                      : 'Événements ce week-end',
+                ),
+                _buildQuickActionPill(
+                  Icons.confirmation_number_rounded,
+                  'Mes billets',
+                  'Affiche mes réservations',
+                ),
+                _buildQuickActionPill(
+                  Icons.favorite_rounded,
+                  'Favoris',
+                  'Mes favoris',
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: PetitBooTheme.spacing32),
 
           // Suggestions Section
           Align(
@@ -452,8 +495,8 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
 
           SizedBox(height: PetitBooTheme.spacing16),
 
-          // Suggestion chips as list
-          ..._buildSuggestionItems(),
+          // Suggestion chips - Personalized with city
+          ..._buildSuggestionItems(cityName),
 
           SizedBox(height: PetitBooTheme.spacing16),
         ],
@@ -461,76 +504,118 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
     );
   }
 
-  Widget _buildFeatureCard(IconData icon, String title, String subtitle) {
-    return Container(
-      width: 100,
-      margin: EdgeInsets.only(right: PetitBooTheme.spacing10),
-      padding: EdgeInsets.all(PetitBooTheme.spacing10),
-      decoration: BoxDecoration(
-        color: PetitBooTheme.surface,
-        borderRadius: PetitBooTheme.borderRadiusLg,
-        border: Border.all(color: PetitBooTheme.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 30,
-            height: 30,
+  String _buildPersonalizedGreeting(String? firstName) {
+    final hour = DateTime.now().hour;
+    String timeGreeting;
+
+    if (hour < 12) {
+      timeGreeting = 'Bonjour';
+    } else if (hour < 18) {
+      timeGreeting = 'Bon après-midi';
+    } else {
+      timeGreeting = 'Bonsoir';
+    }
+
+    if (firstName != null && firstName.isNotEmpty) {
+      return '$timeGreeting $firstName !';
+    }
+    return '$timeGreeting !';
+  }
+
+  String _buildPersonalizedSubtitle(String? cityName) {
+    if (cityName != null) {
+      return 'Que puis-je faire pour vous à $cityName ?';
+    }
+    return 'Comment puis-je vous aider aujourd\'hui ?';
+  }
+
+  Widget _buildQuickActionPill(IconData icon, String label, String message) {
+    return Padding(
+      padding: EdgeInsets.only(right: PetitBooTheme.spacing10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            ref.read(petitBooChatProvider.notifier).sendMessage(message);
+          },
+          borderRadius: BorderRadius.circular(100),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: PetitBooTheme.spacing14,
+              vertical: PetitBooTheme.spacing10,
+            ),
             decoration: BoxDecoration(
-              color: PetitBooTheme.primaryLight,
-              borderRadius: PetitBooTheme.borderRadiusMd,
+            color: PetitBooTheme.surface,
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(
+              color: PetitBooTheme.grey200,
+              width: 1,
             ),
-            child: Icon(
-              icon,
-              color: PetitBooTheme.primary,
-              size: 15,
-            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          const Spacer(),
-          Text(
-            title,
-            style: PetitBooTheme.bodySm.copyWith(
-              fontWeight: FontWeight.w600,
-              color: PetitBooTheme.textPrimary,
-              fontSize: 12,
-              height: 1.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: PetitBooTheme.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: PetitBooTheme.primary,
+                  size: 14,
+                ),
+              ),
+              SizedBox(width: PetitBooTheme.spacing8),
+              Text(
+                label,
+                style: PetitBooTheme.bodySm.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: PetitBooTheme.textPrimary,
+                ),
+              ),
+            ],
           ),
-          Text(
-            subtitle,
-            style: PetitBooTheme.caption.copyWith(
-              fontSize: 10,
-              color: PetitBooTheme.textTertiary,
-              height: 1.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+        ),
+      ),
       ),
     );
   }
 
-  List<Widget> _buildSuggestionItems() {
+  List<Widget> _buildSuggestionItems(String? cityName) {
     final suggestions = [
       {
-        'icon': Icons.event_rounded,
-        'text': 'Quels \u00e9v\u00e9nements ce week-end ?',
-      },
-      {
-        'icon': Icons.confirmation_number_rounded,
-        'text': 'Affiche mes r\u00e9servations',
+        'icon': Icons.local_activity_rounded,
+        'text': cityName != null
+            ? 'Quels événements ce soir à $cityName ?'
+            : 'Quels événements ce soir ?',
       },
       {
         'icon': Icons.family_restroom_rounded,
-        'text': 'Activit\u00e9s pour enfants',
+        'text': cityName != null
+            ? 'Activités pour enfants à $cityName'
+            : 'Activités pour enfants ce week-end',
       },
       {
-        'icon': Icons.star_rounded,
-        'text': 'Mes favoris',
+        'icon': Icons.restaurant_rounded,
+        'text': cityName != null
+            ? 'Sorties gastronomiques à $cityName'
+            : 'Sorties gastronomiques ce week-end',
+      },
+      {
+        'icon': Icons.music_note_rounded,
+        'text': cityName != null
+            ? 'Concerts et spectacles à $cityName'
+            : 'Concerts et spectacles à venir',
       },
     ];
 

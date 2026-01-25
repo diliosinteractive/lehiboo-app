@@ -6,9 +6,14 @@
 ///
 /// ## Features
 /// - Real-time streaming chat with SSE
-/// - 8 tool integrations (bookings, tickets, events, favorites, etc.)
+/// - Dynamic tool result rendering based on API schemas
 /// - Conversation history management
 /// - User quota tracking
+///
+/// ## Architecture
+/// Tool results are rendered dynamically using schemas fetched from
+/// the `/api/v1/tools` endpoint. This allows adding new tools on the
+/// backend without modifying the mobile app.
 ///
 /// ## Usage
 /// ```dart
@@ -29,6 +34,7 @@ export 'data/models/conversation_dto.dart';
 export 'data/models/petit_boo_event_dto.dart';
 export 'data/models/quota_dto.dart';
 export 'data/models/tool_result_dto.dart';
+export 'data/models/tool_schema_dto.dart';
 
 // Data Layer - DataSources
 export 'data/datasources/petit_boo_api_datasource.dart';
@@ -45,6 +51,7 @@ export 'domain/repositories/petit_boo_repository.dart';
 export 'presentation/providers/conversation_list_provider.dart';
 export 'presentation/providers/engagement_provider.dart';
 export 'presentation/providers/petit_boo_chat_provider.dart';
+export 'presentation/providers/tool_schemas_provider.dart';
 
 // Presentation Layer - Screens
 export 'presentation/screens/conversation_list_screen.dart';
@@ -60,12 +67,5 @@ export 'presentation/widgets/streaming_text.dart';
 export 'presentation/widgets/tool_result_card.dart';
 export 'presentation/widgets/typing_indicator.dart';
 
-// Presentation Layer - Result Widgets
-export 'presentation/widgets/results/alerts_result_card.dart';
-export 'presentation/widgets/results/bookings_result_card.dart';
-export 'presentation/widgets/results/event_detail_result_card.dart';
-export 'presentation/widgets/results/event_search_result_card.dart';
-export 'presentation/widgets/results/favorites_result_card.dart';
-export 'presentation/widgets/results/notifications_result_card.dart';
-export 'presentation/widgets/results/profile_result_card.dart';
-export 'presentation/widgets/results/tickets_result_card.dart';
+// Presentation Layer - Dynamic Tool Cards
+export 'presentation/widgets/tool_cards/tool_cards.dart';

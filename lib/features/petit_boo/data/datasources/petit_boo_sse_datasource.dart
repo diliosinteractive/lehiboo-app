@@ -160,9 +160,26 @@ class PetitBooSseDataSource {
     } on TimeoutException {
       throw PetitBooSseException('Connection timeout', code: 'timeout');
     } on http.ClientException catch (e) {
+      if (kDebugMode) {
+        debugPrint('🤖 PetitBoo SSE: ClientException - ${e.message}');
+      }
       throw PetitBooSseException('Network error: ${e.message}', code: 'network');
     } catch (e) {
       if (e is PetitBooSseException) rethrow;
+      if (kDebugMode) {
+        debugPrint('🤖 PetitBoo SSE: Unexpected error - $e');
+        debugPrint('🤖 PetitBoo SSE: Error type - ${e.runtimeType}');
+      }
+      // Check for common connection errors
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('connection') ||
+          errorStr.contains('socket') ||
+          errorStr.contains('closed')) {
+        throw PetitBooSseException(
+          'Connection lost - backend may have closed the connection',
+          code: 'connection_closed',
+        );
+      }
       throw PetitBooSseException('Unexpected error: $e', code: 'unknown');
     }
   }
