@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,12 +9,12 @@ import 'favorite_list_picker_sheet.dart';
 /// A reusable animated favorite button widget
 ///
 /// Features:
-/// - Scale animation on tap (0.8 → 1.2 → 1.0)
+/// - Tap opens list picker to select folder
+/// - Scale animation on add (0.8 → 1.2 → 1.0)
 /// - Haptic feedback (light impact)
 /// - Smooth color transition
 /// - Guest guard check before toggling
 /// - Snackbar feedback on success/error
-/// - Long-press to select a favorite list
 class FavoriteButton extends ConsumerStatefulWidget {
   /// The event to favorite/unfavorite
   final Event event;
@@ -88,96 +86,6 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
   bool get _isFavorite {
     return ref.read(favoritesProvider.notifier).isFavorite(widget.event.id);
-  }
-
-  Future<void> _toggleFavorite({String? listId}) async {
-    // Check guest guard
-    final canProceed = await GuestGuard.check(
-      context: context,
-      ref: ref,
-      featureName: 'ajouter aux favoris',
-    );
-
-    if (!canProceed) return;
-
-    if (_isLoading) return;
-
-    setState(() => _isLoading = true);
-
-    // Haptic feedback
-    HapticFeedback.lightImpact();
-
-    // Start animation
-    _controller.forward(from: 0);
-
-    final wasAdding = !_isFavorite;
-
-    try {
-      final success = await ref.read(favoritesProvider.notifier).toggleFavorite(
-        widget.event,
-        internalId: widget.internalId,
-        listId: listId,
-      );
-
-      if (mounted) {
-        if (success) {
-          widget.onChanged?.call(wasAdding);
-
-          // Show success snackbar with forced auto-dismiss
-          final messenger = ScaffoldMessenger.of(context);
-          messenger.clearSnackBars();
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                wasAdding ? 'Ajouté aux favoris' : 'Retiré des favoris',
-              ),
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: 'Annuler',
-                textColor: const Color(0xFFFF601F),
-                onPressed: () {
-                  ref.read(favoritesProvider.notifier).toggleFavorite(
-                    widget.event,
-                    internalId: widget.internalId,
-                  );
-                },
-              ),
-            ),
-          );
-          // Force dismiss after 2 seconds
-          Timer(const Duration(seconds: 2), () {
-            if (mounted) messenger.hideCurrentSnackBar();
-          });
-        } else {
-          // Error feedback
-          HapticFeedback.heavyImpact();
-
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                wasAdding
-                    ? 'Impossible d\'ajouter aux favoris'
-                    : 'Impossible de retirer des favoris',
-              ),
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: Colors.red[700],
-              action: SnackBarAction(
-                label: 'Réessayer',
-                textColor: Colors.white,
-                onPressed: _toggleFavorite,
-              ),
-            ),
-          );
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 
   Future<void> _showListPicker() async {
@@ -333,8 +241,8 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     }
 
     return GestureDetector(
-      onTap: () => _toggleFavorite(),
-      onLongPress: widget.enableLongPress ? _showListPicker : null,
+      onTap: _showListPicker,
+      onLongPress: null, // Plus besoin du long press
       child: AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) {
