@@ -57,7 +57,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
                   onPressed: () => CreateListDialog.show(context),
                   tooltip: 'Nouvelle liste',
                   style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF601F).withOpacity(0.1),
+                    backgroundColor: const Color(0xFFFF601F).withValues(alpha: 0.1),
                     foregroundColor: const Color(0xFFFF601F),
                   ),
                 ),
@@ -217,7 +217,7 @@ class _SidebarListItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Material(
-        color: isSelected ? iconColor.withOpacity(0.15) : Colors.transparent,
+        color: isSelected ? iconColor.withValues(alpha: 0.15) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
@@ -231,7 +231,7 @@ class _SidebarListItem extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(isSelected ? 0.2 : 0.1),
+                    color: iconColor.withValues(alpha: isSelected ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: iconColor, size: 20),
@@ -252,7 +252,7 @@ class _SidebarListItem extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isSelected ? iconColor.withOpacity(0.2) : Colors.grey[200],
+                      color: isSelected ? iconColor.withValues(alpha: 0.2) : Colors.grey[200],
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -274,23 +274,69 @@ class _SidebarListItem extends StatelessWidget {
 }
 
 /// Chips horizontaux pour la sélection de listes (version mobile)
-class FavoriteListsChips extends ConsumerWidget {
+/// Design amélioré avec scroll fluide et indicateurs visuels
+class FavoriteListsChips extends ConsumerStatefulWidget {
   const FavoriteListsChips({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FavoriteListsChips> createState() => _FavoriteListsChipsState();
+}
+
+class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
+  final ScrollController _scrollController = ScrollController();
+  bool _showLeftFade = false;
+  bool _showRightFade = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_updateFadeState);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_updateFadeState);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateFadeState() {
+    final showLeft = _scrollController.offset > 10;
+    final showRight = _scrollController.offset <
+        _scrollController.position.maxScrollExtent - 10;
+
+    if (showLeft != _showLeftFade || showRight != _showRightFade) {
+      setState(() {
+        _showLeftFade = showLeft;
+        _showRightFade = showRight;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final listsAsync = ref.watch(favoriteListsProvider);
     final selectedListId = ref.watch(selectedFavoriteListProvider);
 
     return listsAsync.when(
-      data: (lists) => _buildChips(context, ref, lists, selectedListId),
-      loading: () => const SizedBox(
-        height: 48,
-        child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF601F)),
+      data: (lists) => _buildChips(context, lists, selectedListId),
+      loading: () => Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: List.generate(
+            3,
+            (index) => Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Container(
+                width: 80,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -300,139 +346,251 @@ class FavoriteListsChips extends ConsumerWidget {
 
   Widget _buildChips(
     BuildContext context,
-    WidgetRef ref,
     List<FavoriteList> lists,
     String? selectedListId,
   ) {
-    return SizedBox(
-      height: 48,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+    final totalCount = lists.fold(0, (sum, l) => sum + l.favoritesCount);
+
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
         children: [
-          // Tous
-          _FilterChip(
-            label: 'Tous',
-            icon: Icons.favorite,
-            color: const Color(0xFFFF601F),
-            isSelected: selectedListId == null,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              ref.read(selectedFavoriteListProvider.notifier).state = null;
-            },
-          ),
-          const SizedBox(width: 8),
-
-          // Non classés
-          _FilterChip(
-            label: 'Non classés',
-            icon: Icons.favorite_border,
-            color: Colors.grey[600]!,
-            isSelected: selectedListId == 'uncategorized',
-            onTap: () {
-              HapticFeedback.selectionClick();
-              ref.read(selectedFavoriteListProvider.notifier).state = 'uncategorized';
-            },
-          ),
-
-          // Listes personnalisées
-          ...lists.map((list) => Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: _FilterChip(
-              label: list.name,
-              icon: list.icon,
-              color: list.color,
-              count: list.favoritesCount,
-              isSelected: selectedListId == list.id,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                ref.read(selectedFavoriteListProvider.notifier).state = list.id;
-              },
-            ),
-          )),
-
-          // Bouton ajouter
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: ActionChip(
-              avatar: const Icon(Icons.add, size: 18),
-              label: const Text('Nouvelle'),
-              backgroundColor: Colors.grey[100],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+          // Liste scrollable
+          ListView(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              // Tous
+              _FolderChip(
+                label: 'Tous',
+                icon: Icons.favorite,
+                color: const Color(0xFFFF601F),
+                count: totalCount,
+                isSelected: selectedListId == null,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref.read(selectedFavoriteListProvider.notifier).state = null;
+                },
               ),
-              onPressed: () => CreateListDialog.show(context),
-            ),
+              const SizedBox(width: 10),
+
+              // Non classés
+              _FolderChip(
+                label: 'Non classés',
+                icon: Icons.folder_off_outlined,
+                color: Colors.grey[500]!,
+                isSelected: selectedListId == 'uncategorized',
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref.read(selectedFavoriteListProvider.notifier).state =
+                      'uncategorized';
+                },
+              ),
+
+              // Listes personnalisées
+              ...lists.map((list) => Padding(
+                    padding: const EdgeInsets.only(left: 10),
+                    child: _FolderChip(
+                      label: list.name,
+                      icon: list.icon,
+                      color: list.color,
+                      count: list.favoritesCount,
+                      isSelected: selectedListId == list.id,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ref.read(selectedFavoriteListProvider.notifier).state =
+                            list.id;
+                      },
+                      onLongPress: () async {
+                        HapticFeedback.mediumImpact();
+                        final result = await EditListDialog.show(context, list);
+                        if (result == null && selectedListId == list.id) {
+                          ref.read(selectedFavoriteListProvider.notifier).state =
+                              null;
+                        }
+                      },
+                    ),
+                  )),
+
+              // Bouton ajouter
+              Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: _AddFolderButton(
+                  onTap: () => CreateListDialog.show(context),
+                ),
+              ),
+            ],
           ),
+
+          // Gradient de fondu à gauche
+          if (_showLeftFade)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: IgnorePointer(
+                child: Container(
+                  width: 32,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.white,
+                        Colors.white.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // Gradient de fondu à droite
+          if (_showRightFade)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: IgnorePointer(
+                child: Container(
+                  width: 32,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        Colors.white,
+                        Colors.white.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-class _FilterChip extends StatelessWidget {
+/// Chip de dossier amélioré avec design moderne
+class _FolderChip extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color color;
   final int? count;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
-  const _FilterChip({
+  const _FolderChip({
     required this.label,
     required this.icon,
     required this.color,
     this.count,
     required this.isSelected,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? color : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? color : Colors.grey[50],
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? color : Colors.grey[300]!,
-            width: 1,
+            color: isSelected ? color : Colors.grey[200]!,
+            width: isSelected ? 1.5 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Indicateur de couleur (petit cercle)
+            if (!isSelected)
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+
+            // Icône
             Icon(
               icon,
               size: 18,
               color: isSelected ? Colors.white : color,
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.black87,
+            const SizedBox(width: 8),
+
+            // Label
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 100),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? Colors.white : Colors.grey[800],
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+
+            // Compteur
             if (count != null && count! > 0) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withOpacity(0.2) : Colors.grey[200],
-                  borderRadius: BorderRadius.circular(10),
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.25)
+                      : color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '$count',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : Colors.grey[600],
+                    color: isSelected ? Colors.white : color,
                   ),
                 ),
               ),
@@ -443,3 +601,57 @@ class _FilterChip extends StatelessWidget {
     );
   }
 }
+
+/// Bouton pour ajouter une nouvelle liste
+class _AddFolderButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddFolderButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: const Color(0xFFFF601F).withValues(alpha: 0.3),
+            width: 1.5,
+            strokeAlign: BorderSide.strokeAlignInside,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF601F).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(
+                Icons.add,
+                size: 16,
+                color: Color(0xFFFF601F),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Créer',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFFF601F),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
