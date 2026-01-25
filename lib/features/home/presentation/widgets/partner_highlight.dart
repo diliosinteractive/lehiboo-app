@@ -58,12 +58,12 @@ class PartnerHighlight extends ConsumerWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            config.brandColor.withOpacity(0.15),
-            config.brandColor.withOpacity(0.05),
+            config.brandColor.withValues(alpha:0.15),
+            config.brandColor.withValues(alpha:0.05),
           ],
         ),
         border: Border.all(
-          color: config.brandColor.withOpacity(0.2),
+          color: config.brandColor.withValues(alpha:0.2),
           width: 1,
         ),
       ),
@@ -121,7 +121,7 @@ class PartnerHighlight extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
-                    side: BorderSide(color: config.brandColor.withOpacity(0.3)),
+                    side: BorderSide(color: config.brandColor.withValues(alpha:0.3)),
                   ),
                 ),
                 child: Row(
@@ -161,7 +161,7 @@ class PartnerHighlight extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha:0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -215,7 +215,7 @@ class PartnerHighlight extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: config.brandColor.withOpacity(0.15),
+              color: config.brandColor.withValues(alpha:0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -264,7 +264,7 @@ class _PartnerEventCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha:0.06),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -377,7 +377,7 @@ class _PartnerEventCard extends StatelessWidget {
 
   Widget _buildFallback() {
     return Container(
-      color: brandColor.withOpacity(0.2),
+      color: brandColor.withValues(alpha:0.2),
       child: Center(
         child: Icon(
           Icons.event,

@@ -11,14 +11,22 @@ class EventCard extends ConsumerWidget {
   final Activity activity;
   final bool isCompact;
   final bool showTimeBadge;
-  final String? heroTagPrefix; // Added prefix
+  final String? heroTagPrefix;
+
+  /// Si true, la carte remplit son container parent (pour GridView avec childAspectRatio)
+  final bool fillContainer;
+
+  /// Hauteur d'image personnalisée (override le comportement par défaut)
+  final double? imageHeight;
 
   const EventCard({
-    super.key, 
-    required this.activity, 
-    this.isCompact = false, 
+    super.key,
+    required this.activity,
+    this.isCompact = false,
     this.showTimeBadge = false,
     this.heroTagPrefix,
+    this.fillContainer = false,
+    this.imageHeight,
   });
 
   String _formatDuration(int minutes) {
@@ -41,267 +49,283 @@ class EventCard extends ConsumerWidget {
         context.push('/event/${activity.id}', extra: activity);
       },
       child: Container(
-        // Remove fixed height to let content size naturally (removing white space)
-        width: isCompact ? 180 : double.infinity, // Fixed width for compact mode if needed
-        // Remove decoration (white background & shadow) as requested
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Wrap content tightly
-          children: [
-            // 1. IMAGE SECTION
-            Stack(
-              children: [
-                // Image - Taller (Portrait/9:16 approx) & Fully Rounded
-                Hero(
-                  tag: 'event_image_${heroTagPrefix ?? 'card'}_${activity.id}',
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16), // Rounded all corners like TripAdvisor
-                    child: SizedBox(
-                      height: isCompact ? 240 : 260, // Much taller (approx 3:4 or 9:16 feel)
-                      width: double.infinity,
-                      child: activity.imageUrl != null
-                          ? CachedNetworkImage(
-                              imageUrl: activity.imageUrl!,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                color: Colors.grey[100],
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Color(0xFFFF601F),
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              ),
-                              errorWidget: (context, url, error) => _buildFallbackImage(),
-                            )
-                          : _buildFallbackImage(),
-                    ),
+        width: isCompact ? 180 : double.infinity,
+        child: fillContainer
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image prend l'espace disponible en flex
+                  Expanded(
+                    flex: 5,
+                    child: _buildImageStack(),
                   ),
-                ),
-                
-                // Time Badge (Airbnb Style) OR Category Badge
-                if (showTimeBadge && activity.nextSlot != null)
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8F5), // Matches Scaffold Background
-                        borderRadius: BorderRadius.circular(20), // Pill shape
-                        boxShadow: [
-                           BoxShadow(
-                             color: Colors.black.withOpacity(0.1),
-                             blurRadius: 4,
-                             offset: const Offset(0, 2),
-                           )
-                        ],
-                      ),
-                      child: Builder(
-                        builder: (context) {
-                          String timeText;
-                          try {
-                            timeText = DateFormat('HH:mm').format(activity.nextSlot!.startDateTime);
-                          } catch (e) {
-                            final dt = activity.nextSlot!.startDateTime;
-                            timeText = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-                          }
-                          return Text(
-                            timeText,
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  )
-                else if (activity.category != null)
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: _getCategoryColor(activity.category!.slug).withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        activity.category!.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                  // Contenu garde le même design complet
+                  Flexible(
+                    flex: 4,
+                    child: _buildContentSection(compact: false),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildImageStack(),
+                  _buildContentSection(compact: false),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildImageStack() {
+    final double? height = imageHeight ?? (fillContainer ? null : (isCompact ? 240 : 260));
+
+    return Stack(
+      children: [
+        // Image
+        Hero(
+          tag: 'event_image_${heroTagPrefix ?? 'card'}_${activity.id}',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              height: height,
+              width: double.infinity,
+              child: activity.imageUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: activity.imageUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[100],
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFFF601F),
+                            strokeWidth: 2,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
+                      errorWidget: (context, url, error) => _buildFallbackImage(),
+                    )
+                  : _buildFallbackImage(),
+            ),
+          ),
+        ),
 
-                // Favorite Button (animated, reusable widget)
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: FavoriteButton(
-                    event: _activityToEvent(),
-                    iconSize: 18,
-                    containerSize: 32,
+        // Time Badge OR Category Badge
+        if (showTimeBadge && activity.nextSlot != null)
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8F5),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ],
+              ),
+              child: Builder(
+                builder: (context) {
+                  String timeText;
+                  try {
+                    timeText = DateFormat('HH:mm').format(activity.nextSlot!.startDateTime);
+                  } catch (e) {
+                    final dt = activity.nextSlot!.startDateTime;
+                    timeText = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                  }
+                  return Text(
+                    timeText,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                },
+              ),
+            ),
+          )
+        else if (activity.category != null)
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: _getCategoryColor(activity.category!.slug).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                activity.category!.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+
+        // Favorite Button
+        Positioned(
+          top: 12,
+          right: 12,
+          child: FavoriteButton(
+            event: _activityToEvent(),
+            iconSize: 18,
+            containerSize: 32,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContentSection({required bool compact}) {
+    return Padding(
+      padding: EdgeInsets.only(
+        top: compact ? 8 : 12,
+        left: 4,
+        right: 4,
+        bottom: 4,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Title
+          Text(
+            activity.title,
+            style: TextStyle(
+              fontSize: compact ? 13 : 15,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1A1A1A),
+              height: 1.2,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          if (!compact) ...[
+            const SizedBox(height: 2),
+
+            // Organizer
+            if (activity.partner != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  'Par ${activity.partner!.name}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 13,
+                    height: 1.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+            // Rating
+            Row(
+              children: [
+                const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF601F)),
+                const SizedBox(width: 4),
+                Text(
+                  '4.8',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[900],
+                    height: 1.1,
+                  ),
+                ),
+                Text(
+                  ' (124)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    height: 1.1,
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 2),
 
-            // 2. CONTENT SECTION
-            // Removed Expanded to eliminate the whitespace gap
-            Padding(
-              padding: const EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 4), // Reduced padding, added top offset
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title
-                  Text(
-                    activity.title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600, // Slightly less bold for modern look
-                      color: Color(0xFF1A1A1A),
-                      height: 1.1, // Compact
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2), // Tighter spacing
-
-                  // Organizer
-                  if (activity.partner != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        'Par ${activity.partner!.name}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 13, // Slightly larger for readability
-                          height: 1.1,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-
-                  // Mock Rating + Count
-                  Row(
-                    children: [
-                       const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF601F)), // Smaller icon
-                       const SizedBox(width: 4),
-                       Text(
-                         '4.8',
-                         style: TextStyle(
-                           fontSize: 13,
-                           fontWeight: FontWeight.w600,
-                           color: Colors.grey[900],
-                           height: 1.1,
-                         ),
-                       ),
-                       Text(
-                         ' (124)',
-                         style: TextStyle(
-                           fontSize: 13,
-                           color: Colors.grey[600],
-                           height: 1.1,
-                         ),
-                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  
-                  // Location + Duration
-                  Row(
-                    children: [
-                       Expanded(
-                         child: Text.rich(
-                           TextSpan(
-                             children: [
-                               TextSpan(
-                                 text: activity.city?.name ?? activity.city?.region ?? 'France',
-                                 style: TextStyle(
-                                   color: Colors.grey[600],
-                                   fontSize: 13,
-                                   height: 1.1,
-                                 ),
-                               ),
-                               if (activity.durationMinutes != null && activity.durationMinutes! > 0) ...[
-                                  const TextSpan(text: ' • '),
-                                  TextSpan(
-                                    text: _formatDuration(activity.durationMinutes!),
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 13,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                               ],
-                             ]
-                           ),
-                           maxLines: 1,
-                           overflow: TextOverflow.ellipsis,
-                         ),
-                       ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 4),
-
-                  // Price line (Bottom)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Price
-                      if (activity.priceMin == -1)
-                        const SizedBox.shrink()
-                      else
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              if (activity.priceMin == 0)
-                                const TextSpan(
-                                  text: 'Gratuit',
-                                  style: TextStyle(
-                                    color: Color(0xFFFF601F), // Keep orange for Free
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                    height: 1.1,
-                                  ),
-                                )
-                              else ...[
-                                TextSpan(
-                                  text: 'À partir de ',
-                                  style: TextStyle(
-                                    color: Colors.grey[800],
-                                    fontSize: 13,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: '${(activity.priceMin ?? 0).toStringAsFixed(0)}€',
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                    height: 1.1,
-                                  ),
-                                ),
-                              ],
-                            ],
+            // Location + Duration
+            Row(
+              children: [
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: activity.city?.name ?? activity.city?.region ?? 'France',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                            height: 1.1,
                           ),
                         ),
-                    ],
+                        if (activity.durationMinutes != null && activity.durationMinutes! > 0) ...[
+                          const TextSpan(text: ' • '),
+                          TextSpan(
+                            text: _formatDuration(activity.durationMinutes!),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+          ] else ...[
+            // Compact mode: just location
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.location_on_outlined, size: 12, color: Colors.grey[500]),
+                const SizedBox(width: 3),
+                Expanded(
+                  child: Text(
+                    activity.city?.name ?? 'France',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+          ],
+
+          // Price
+          if (activity.priceMin != null && activity.priceMin != -1)
+            Text(
+              activity.priceMin == 0
+                  ? 'Gratuit'
+                  : compact
+                      ? 'Dès ${activity.priceMin!.toStringAsFixed(0)}€'
+                      : 'À partir de ${activity.priceMin!.toStringAsFixed(0)}€',
+              style: TextStyle(
+                color: activity.priceMin == 0 ? Colors.green[700] : const Color(0xFFFF601F),
+                fontWeight: FontWeight.w600,
+                fontSize: compact ? 12 : 14,
+                height: 1.1,
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -328,7 +352,6 @@ class EventCard extends ConsumerWidget {
     );
   }
 
-  /// Convert Activity to Event for the FavoriteButton
   Event _activityToEvent() {
     return Event(
       id: activity.id,

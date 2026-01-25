@@ -236,26 +236,25 @@ class PersonalizedSection extends ConsumerWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.72,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.52, // Plus d'espace pour le contenu complet
       ),
       itemCount: gridActivities.length,
       itemBuilder: (context, index) {
         final scored = gridActivities[index];
+        // Enregistrer la catégorie quand on navigue
         return GestureDetector(
           onTap: () {
-            // Record category view for personalization
             if (scored.activity.category != null) {
               ref
                   .read(categoryHistoryProvider.notifier)
                   .recordCategoryView(scored.activity.category!.slug);
             }
-            context.push('/event/${scored.activity.id}', extra: scored.activity);
           },
           child: EventCard(
             activity: scored.activity,
-            isCompact: true,
+            fillContainer: true,
             heroTagPrefix: 'personalized',
           ),
         );
@@ -263,3 +262,4 @@ class PersonalizedSection extends ConsumerWidget {
     );
   }
 }
+
