@@ -88,6 +88,79 @@ lib/
 | `GET /v1/events/{uuid}/availability` | Disponibilité événement |
 | `POST /v1/me/favorites/{uuid}/toggle` | Toggle favori |
 | `GET /v1/me/favorites` | Liste favoris |
+| `GET /v1/me/alerts` | Liste recherches sauvegardées |
+| `POST /v1/me/alerts` | Créer une recherche sauvegardée |
+| `DELETE /v1/me/alerts/{id}` | Supprimer une recherche |
+
+---
+
+## Feature : Recherches Sauvegardées (Alerts)
+
+### Architecture
+
+```
+lib/features/alerts/
+├── data/
+│   ├── datasources/alerts_api_datasource.dart   # Appels API
+│   ├── models/alert_dto.dart                    # DTO avec search_criteria
+│   └── repositories/alerts_repository_impl.dart
+├── domain/
+│   ├── entities/alert.dart                      # Entity avec EventFilter
+│   └── repositories/alerts_repository.dart
+└── presentation/
+    ├── providers/alerts_provider.dart           # StateNotifier + isFilterSaved()
+    └── screens/alerts_list_screen.dart
+```
+
+### Création d'une alerte
+
+```dart
+// Provider accepte enablePush et enableEmail explicitement
+await ref.read(alertsProvider.notifier).createAlert(
+  name: 'Ma recherche',
+  filter: currentFilter,
+  enablePush: true,   // Notifications push
+  enableEmail: false, // Notifications email
+);
+```
+
+### Vérifier si un filtre est déjà sauvegardé
+
+```dart
+final isAlreadySaved = ref.read(alertsProvider.notifier).isFilterSaved(filter);
+```
+
+La comparaison vérifie : `searchQuery`, `citySlug`, `latitude/longitude`, `dateFilterType`, `categoriesSlugs`, `thematiquesSlugs`, et les options booléennes.
+
+---
+
+## Feature : Widgets de Recherche
+
+### Composants
+
+| Widget | Fichier | Usage |
+|--------|---------|-------|
+| `HomeSearchPill` | `home_search_pill.dart` | Pilule de recherche sur la home avec badge filtres |
+| `AirbnbSearchSheet` | `airbnb_search_sheet.dart` | Modal plein écran avec accordéons (Où/Quand/Quoi) |
+| `SaveSearchSheet` | `save_search_sheet.dart` | Modal sauvegarde avec toggles Push/Email |
+| `FilterBottomSheet` | `filter_bottom_sheet.dart` | Bottom sheet filtres avec cards |
+| `FilterSharedComponents` | `filter_shared_components.dart` | Composants UI réutilisables |
+
+### Ouvrir la recherche depuis la home
+
+```dart
+// Ouvre le modal plein écran (cache la bottom nav)
+AirbnbSearchSheet.show(context);
+```
+
+### Ouvrir le modal de sauvegarde
+
+```dart
+final result = await SaveSearchSheet.show(context, filter: currentFilter);
+if (result != null) {
+  // result.name, result.enablePush, result.enableEmail
+}
+```
 
 ---
 
