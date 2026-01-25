@@ -297,14 +297,49 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
                     child: Container(
                       margin: const EdgeInsets.all(2),
                       child: ClipOval(
-                        child: widget.activity.imageUrl != null
-                            ? CachedNetworkImage(
-                                imageUrl: widget.activity.imageUrl!,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => _buildPlaceholder(),
-                                errorWidget: (context, url, error) => _buildPlaceholder(),
-                              )
-                            : _buildPlaceholder(),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Image
+                            widget.activity.imageUrl != null
+                                ? CachedNetworkImage(
+                                    imageUrl: widget.activity.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => _buildPlaceholder(),
+                                    errorWidget: (context, url, error) => _buildPlaceholder(),
+                                  )
+                                : _buildPlaceholder(),
+                            // Overlay sombre
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            // Bouton play
+                            Center(
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.2),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.play_arrow_rounded,
+                                  color: Color(0xFFFF601F),
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
