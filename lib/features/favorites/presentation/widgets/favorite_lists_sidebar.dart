@@ -539,6 +539,7 @@ class _FolderChip extends StatelessWidget {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Indicateur de couleur (petit cercle)
             if (!isSelected)
@@ -561,34 +562,31 @@ class _FolderChip extends StatelessWidget {
             const SizedBox(width: 8),
 
             // Label
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 100),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.white : Colors.grey[800],
-                ),
-                overflow: TextOverflow.ellipsis,
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? Colors.white : Colors.grey[800],
               ),
+              overflow: TextOverflow.ellipsis,
             ),
 
             // Compteur
             if (count != null && count! > 0) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Colors.white.withValues(alpha: 0.25)
                       : color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '$count',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: isSelected ? Colors.white : color,
                   ),
