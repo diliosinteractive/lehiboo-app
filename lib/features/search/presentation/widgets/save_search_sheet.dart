@@ -53,17 +53,26 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
   late TextEditingController _nameController;
   bool _enablePush = true;
   bool _enableEmail = false;
+  String? _nameError;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: _generateDefaultName());
+    _nameController.addListener(_clearError);
   }
 
   @override
   void dispose() {
+    _nameController.removeListener(_clearError);
     _nameController.dispose();
     super.dispose();
+  }
+
+  void _clearError() {
+    if (_nameError != null) {
+      setState(() => _nameError = null);
+    }
   }
 
   String _generateDefaultName() {
@@ -111,26 +120,16 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
 
   void _save() {
     final name = _nameController.text.trim();
+
+    // Validate name
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Veuillez entrer un nom pour la recherche'),
-          backgroundColor: Colors.red[400],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      setState(() => _nameError = 'Veuillez entrer un nom pour la recherche');
       return;
     }
 
     // Check if name is already used
     if (widget.isNameAlreadyUsed != null && widget.isNameAlreadyUsed!(name)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Ce nom est déjà utilisé. Choisissez un autre nom.'),
-          backgroundColor: Colors.red[400],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      setState(() => _nameError = 'Ce nom est déjà utilisé. Choisissez un autre nom.');
       return;
     }
 
@@ -284,8 +283,15 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                           fontSize: 14,
                           color: Colors.grey.shade400,
                         ),
+                        errorText: _nameError,
+                        errorStyle: GoogleFonts.montserrat(
+                          fontSize: 12,
+                          color: Colors.red.shade600,
+                        ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: _nameError != null
+                            ? Colors.red.shade50
+                            : Colors.white,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
@@ -296,12 +302,33 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(
+                            color: _nameError != null
+                                ? Colors.red.shade400
+                                : Colors.grey.shade300,
+                            width: _nameError != null ? 2 : 1,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFFF601F),
+                          borderSide: BorderSide(
+                            color: _nameError != null
+                                ? Colors.red.shade400
+                                : const Color(0xFFFF601F),
+                            width: 2,
+                          ),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: Colors.red.shade400,
+                            width: 2,
+                          ),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: Colors.red.shade400,
                             width: 2,
                           ),
                         ),
