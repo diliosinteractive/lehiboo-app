@@ -11,6 +11,28 @@ enum BookingFilterType {
   cancelled,
 }
 
+// Sort options for bookings
+enum BookingSortOption {
+  dateAsc,
+  dateDesc,
+  statusAsc,
+}
+
+extension BookingSortOptionExtension on BookingSortOption {
+  String get label {
+    switch (this) {
+      case BookingSortOption.dateAsc:
+        return 'Date (plus proche)';
+      case BookingSortOption.dateDesc:
+        return 'Date (plus lointaine)';
+      case BookingSortOption.statusAsc:
+        return 'Statut';
+    }
+  }
+
+  String get id => name;
+}
+
 extension BookingFilterTypeExtension on BookingFilterType {
   String get label {
     switch (this) {
@@ -32,6 +54,7 @@ extension BookingFilterTypeExtension on BookingFilterType {
 class BookingsListState {
   final List<Booking> allBookings;
   final BookingFilterType currentFilter;
+  final BookingSortOption sortOption;
   final bool isLoading;
   final String? error;
   final bool isRefreshing;
@@ -41,6 +64,7 @@ class BookingsListState {
   const BookingsListState({
     this.allBookings = const [],
     this.currentFilter = BookingFilterType.all,
+    this.sortOption = BookingSortOption.dateAsc,
     this.isLoading = false,
     this.error,
     this.isRefreshing = false,
@@ -51,25 +75,54 @@ class BookingsListState {
   List<Booking> get filteredBookings {
     final now = DateTime.now();
 
+    List<Booking> filtered;
     switch (currentFilter) {
       case BookingFilterType.all:
-        return allBookings;
+        filtered = List.from(allBookings);
+        break;
       case BookingFilterType.upcoming:
-        return allBookings.where((b) {
+        filtered = allBookings.where((b) {
           if (b.status == 'cancelled' || b.status == 'refunded') return false;
           final slotDate = b.slot?.startDateTime;
           return slotDate != null && slotDate.isAfter(now);
         }).toList();
+        break;
       case BookingFilterType.past:
-        return allBookings.where((b) {
+        filtered = allBookings.where((b) {
           if (b.status == 'cancelled' || b.status == 'refunded') return false;
           final slotDate = b.slot?.startDateTime;
           return slotDate != null && slotDate.isBefore(now);
         }).toList();
+        break;
       case BookingFilterType.cancelled:
-        return allBookings.where((b) =>
+        filtered = allBookings.where((b) =>
             b.status == 'cancelled' || b.status == 'refunded').toList();
+        break;
     }
+
+    // Apply sorting
+    filtered.sort((a, b) {
+      switch (sortOption) {
+        case BookingSortOption.dateAsc:
+          final dateA = a.slot?.startDateTime;
+          final dateB = b.slot?.startDateTime;
+          if (dateA == null && dateB == null) return 0;
+          if (dateA == null) return 1;
+          if (dateB == null) return -1;
+          return dateA.compareTo(dateB);
+        case BookingSortOption.dateDesc:
+          final dateA = a.slot?.startDateTime;
+          final dateB = b.slot?.startDateTime;
+          if (dateA == null && dateB == null) return 0;
+          if (dateA == null) return 1;
+          if (dateB == null) return -1;
+          return dateB.compareTo(dateA);
+        case BookingSortOption.statusAsc:
+          return (a.status ?? '').compareTo(b.status ?? '');
+      }
+    });
+
+    return filtered;
   }
 
   // Get count for each filter tab
@@ -99,6 +152,7 @@ class BookingsListState {
   BookingsListState copyWith({
     List<Booking>? allBookings,
     BookingFilterType? currentFilter,
+    BookingSortOption? sortOption,
     bool? isLoading,
     String? error,
     bool? isRefreshing,
@@ -108,6 +162,7 @@ class BookingsListState {
     return BookingsListState(
       allBookings: allBookings ?? this.allBookings,
       currentFilter: currentFilter ?? this.currentFilter,
+      sortOption: sortOption ?? this.sortOption,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       isRefreshing: isRefreshing ?? this.isRefreshing,
@@ -178,6 +233,10 @@ class BookingListController extends StateNotifier<BookingsListState> {
       orElse: () => BookingFilterType.all,
     );
     setFilter(filter);
+  }
+
+  void setSortOption(BookingSortOption option) {
+    state = state.copyWith(sortOption: option);
   }
 
   Future<void> refresh() async {

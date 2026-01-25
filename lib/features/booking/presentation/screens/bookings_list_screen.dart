@@ -52,16 +52,124 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     );
   }
 
+  void _showSortOptions() {
+    HapticFeedback.mediumImpact();
+    final currentSort = ref.read(bookingsListControllerProvider).sortOption;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Title
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Trier par',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Sort options
+              ...BookingSortOption.values.map((option) {
+                final isSelected = option == currentSort;
+                return ListTile(
+                  leading: Icon(
+                    _getSortIcon(option),
+                    color: isSelected ? HbColors.brandPrimary : Colors.grey[600],
+                  ),
+                  title: Text(
+                    option.label,
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? HbColors.brandPrimary : HbColors.textPrimary,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: HbColors.brandPrimary)
+                      : null,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    ref.read(bookingsListControllerProvider.notifier).setSortOption(option);
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getSortIcon(BookingSortOption option) {
+    switch (option) {
+      case BookingSortOption.dateAsc:
+        return Icons.arrow_upward;
+      case BookingSortOption.dateDesc:
+        return Icons.arrow_downward;
+      case BookingSortOption.statusAsc:
+        return Icons.sort_by_alpha;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(bookingsListControllerProvider);
     final tokens = HbTheme.tokens(context);
 
-    // Build filter tabs with counts
+    // Build filter tabs with counts and icons
     final filterTabs = BookingFilterType.values.map((filter) {
+      IconData icon;
+      Color color;
+      switch (filter) {
+        case BookingFilterType.all:
+          icon = Icons.list_alt;
+          color = HbColors.brandPrimary;
+          break;
+        case BookingFilterType.upcoming:
+          icon = Icons.event_available;
+          color = Colors.green;
+          break;
+        case BookingFilterType.past:
+          icon = Icons.history;
+          color = Colors.blueGrey;
+          break;
+        case BookingFilterType.cancelled:
+          icon = Icons.cancel_outlined;
+          color = Colors.red;
+          break;
+      }
       return FilterTab(
         id: filter.id,
         label: filter.label,
+        icon: icon,
+        color: color,
         count: state.allBookings.isNotEmpty ? state.countForFilter(filter) : null,
       );
     }).toList();
@@ -91,10 +199,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list, color: HbColors.textPrimary),
-            onPressed: () {
-              // Could show a filter bottom sheet if needed
-            },
+            icon: const Icon(Icons.sort, color: HbColors.textPrimary),
+            tooltip: 'Trier',
+            onPressed: _showSortOptions,
           ),
         ],
       ),
@@ -103,12 +210,14 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
           // Filter tabs
           Container(
             color: Colors.white,
-            child: FilterTabsRow(
+            child: FilterTabsRow.withPadding(
               tabs: filterTabs,
               selectedTabId: state.currentFilter.id,
               onTabSelected: (id) {
+                HapticFeedback.selectionClick();
                 ref.read(bookingsListControllerProvider.notifier).setFilterById(id);
               },
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
           // Divider
