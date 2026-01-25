@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../../../core/themes/colors.dart';
+import '../../../../core/themes/petit_boo_theme.dart';
 import '../providers/petit_boo_chat_provider.dart';
-import 'quota_indicator.dart';
 
-/// Input bar for the Petit Boo chat with speech-to-text support
+/// Modern input bar for Petit Boo chat - Style Web 2026
+/// Inspiré du design assistant web avec ombre, disclaimer et bouton intégré
 class ChatInputBar extends ConsumerStatefulWidget {
   const ChatInputBar({super.key});
 
@@ -19,6 +19,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   bool _hasText = false;
+  bool _isFocused = false;
 
   // Speech-to-text
   late stt.SpeechToText _speech;
@@ -29,6 +30,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   void initState() {
     super.initState();
     _controller.addListener(_onTextChanged);
+    _focusNode.addListener(_onFocusChanged);
     _speech = stt.SpeechToText();
     _initSpeech();
   }
@@ -36,14 +38,17 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   @override
   void dispose() {
     _controller.removeListener(_onTextChanged);
+    _focusNode.removeListener(_onFocusChanged);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
-  /// Initialize speech recognition
+  void _onFocusChanged() {
+    setState(() => _isFocused = _focusNode.hasFocus);
+  }
+
   Future<void> _initSpeech() async {
-    // Check microphone permission
     var status = await Permission.microphone.status;
     if (!status.isGranted) {
       await Permission.microphone.request();
@@ -63,6 +68,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
               SnackBar(
                 content: Text('Erreur micro: ${errorNotification.errorMsg}'),
                 duration: const Duration(seconds: 2),
+                backgroundColor: PetitBooTheme.error,
               ),
             );
           }
@@ -70,11 +76,10 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
       );
       if (mounted) setState(() {});
     } catch (e) {
-      debugPrint("🎙️ Speech init error: $e");
+      debugPrint("Speech init error: $e");
     }
   }
 
-  /// Start listening for speech
   Future<void> _startListening() async {
     if (!_speechEnabled) {
       await _initSpeech();
@@ -89,12 +94,10 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     setState(() => _isListening = true);
     await _speech.listen(
       onResult: (result) {
-        // Guard: Ignore late results if we stopped listening
         if (!_isListening) return;
 
         setState(() {
           _controller.text = result.recognizedWords;
-          // Move cursor to end
           _controller.selection = TextSelection.fromPosition(
             TextPosition(offset: _controller.text.length),
           );
@@ -107,7 +110,6 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     );
   }
 
-  /// Stop listening
   Future<void> _stopListening() async {
     setState(() => _isListening = false);
     await _speech.stop();
@@ -121,7 +123,6 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   }
 
   void _sendMessage() {
-    // Stop listening immediately to prevent text updates
     if (_isListening) {
       _stopListening();
     }
@@ -140,107 +141,98 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     final canSend = chatState.canSendMessage && _hasText;
     final isDisabled = chatState.isStreaming || chatState.isLoading;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          PetitBooTheme.spacing16,
+          PetitBooTheme.spacing12,
+          PetitBooTheme.spacing16,
+          PetitBooTheme.spacing8,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Quota indicator
-            if (chatState.quota != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: QuotaIndicator(quota: chatState.quota!),
+            // Input container style web avec ombre et border focus
+            AnimatedContainer(
+              duration: PetitBooTheme.durationFast,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: PetitBooTheme.surface,
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(
+                  color: _isFocused || _isListening
+                      ? (_isListening ? PetitBooTheme.error : PetitBooTheme.primary)
+                      : Colors.transparent,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                    spreadRadius: 0,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                    spreadRadius: 0,
+                  ),
+                ],
               ),
-
-            // Input row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Text input with listening indicator
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(maxHeight: 120),
-                    decoration: BoxDecoration(
-                      color: _isListening
-                          ? Colors.red.shade50
-                          : HbColors.orangePastel,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: _isListening
-                            ? Colors.red.shade200
-                            : (_focusNode.hasFocus
-                                ? HbColors.brandPrimary.withOpacity(0.3)
-                                : Colors.transparent),
-                        width: 1.5,
-                      ),
-                    ),
+              child: Row(
+                children: [
+                  // Text input
+                  Expanded(
                     child: TextField(
                       controller: _controller,
                       focusNode: _focusNode,
-                      maxLines: null,
+                      maxLines: 1,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _sendMessage(),
                       enabled: !isDisabled,
+                      style: PetitBooTheme.bodyLg.copyWith(
+                        color: PetitBooTheme.textPrimary,
+                      ),
+                      cursorColor: PetitBooTheme.primary,
                       decoration: InputDecoration(
-                        hintText: _isListening
-                            ? 'Je vous écoute...'
-                            : (chatState.isStreaming
-                                ? 'Petit Boo réfléchit...'
-                                : 'Posez une question à Petit Boo...'),
-                        hintStyle: TextStyle(
+                        hintText: _getHintText(chatState.isStreaming),
+                        hintStyle: PetitBooTheme.bodyLg.copyWith(
                           color: _isListening
-                              ? Colors.red.shade400
-                              : HbColors.textSecondary.withOpacity(0.6),
-                          fontSize: 15,
+                              ? PetitBooTheme.error
+                              : PetitBooTheme.textTertiary,
                         ),
+                        filled: false,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: PetitBooTheme.spacing24,
+                          vertical: PetitBooTheme.spacing16,
                         ),
                       ),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: HbColors.textPrimary,
-                      ),
                     ),
                   ),
-                ),
-
-                const SizedBox(width: 8),
-
-                // Dynamic button: Mic or Send
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 48,
-                  height: 48,
-                  child: Material(
-                    color: _getButtonColor(canSend, isDisabled),
-                    borderRadius: BorderRadius.circular(24),
-                    child: InkWell(
-                      onTap: isDisabled ? null : _onButtonTap,
-                      borderRadius: BorderRadius.circular(24),
-                      child: Icon(
-                        _getButtonIcon(canSend),
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
+                  // Send/Mic button
+                  Padding(
+                    padding: EdgeInsets.only(right: PetitBooTheme.spacing8),
+                    child: _buildActionButton(canSend, isDisabled),
                   ),
+                ],
+              ),
+            ),
+            // Disclaimer text
+            Padding(
+              padding: EdgeInsets.only(top: PetitBooTheme.spacing10),
+              child: Text(
+                "L'IA peut commettre des erreurs. Vérifiez les informations importantes.",
+                style: PetitBooTheme.caption.copyWith(
+                  color: PetitBooTheme.textTertiary,
+                  fontSize: 11,
                 ),
-              ],
+                textAlign: TextAlign.center,
+              ),
             ),
           ],
         ),
@@ -248,22 +240,57 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     );
   }
 
-  /// Get the button color based on state
-  Color _getButtonColor(bool canSend, bool isDisabled) {
-    if (isDisabled) return Colors.grey.shade300;
-    if (_hasText) return HbColors.brandPrimary;
-    if (_isListening) return Colors.red;
-    return Colors.grey.shade400;
+  String _getHintText(bool isStreaming) {
+    if (_isListening) return 'Je vous écoute...';
+    if (isStreaming) return 'Petit Boo réfléchit...';
+    return "Posez une question à votre assistant ou tapez '/' pour les commandes...";
   }
 
-  /// Get the button icon based on state
-  IconData _getButtonIcon(bool canSend) {
-    if (_hasText) return Icons.arrow_upward_rounded;
+  Widget _buildActionButton(bool canSend, bool isDisabled) {
+    final size = 48.0;
+
+    return AnimatedContainer(
+      duration: PetitBooTheme.durationFast,
+      width: size,
+      height: size,
+      child: Material(
+        color: _getButtonColor(isDisabled),
+        shape: const CircleBorder(),
+        elevation: _hasText ? 2 : 0,
+        shadowColor: PetitBooTheme.primary.withValues(alpha: 0.3),
+        child: InkWell(
+          onTap: isDisabled ? null : _onButtonTap,
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: PetitBooTheme.durationFast,
+              child: Icon(
+                _getButtonIcon(),
+                key: ValueKey(_getButtonIcon()),
+                color: PetitBooTheme.textOnPrimary,
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getButtonColor(bool isDisabled) {
+    if (isDisabled) return PetitBooTheme.grey300;
+    if (_hasText) return PetitBooTheme.primary;
+    if (_isListening) return PetitBooTheme.error;
+    // Couleur orange pastel quand pas de texte (comme le web)
+    return PetitBooTheme.primary.withValues(alpha: 0.6);
+  }
+
+  IconData _getButtonIcon() {
+    if (_hasText) return Icons.arrow_forward_rounded;
     if (_isListening) return Icons.stop_rounded;
     return Icons.mic_rounded;
   }
 
-  /// Handle button tap (send or toggle mic)
   void _onButtonTap() {
     if (_hasText) {
       _sendMessage();

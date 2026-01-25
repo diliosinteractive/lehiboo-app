@@ -73,8 +73,8 @@ class ToolResultDto with _$ToolResultDto {
 @freezed
 class BookingsToolResult with _$BookingsToolResult {
   const factory BookingsToolResult({
-    required List<BookingResultItem> bookings,
-    required int total,
+    @Default([]) List<BookingResultItem> bookings,
+    @Default(0) int total,
     @JsonKey(name: 'pending_count') @Default(0) int pendingCount,
     @JsonKey(name: 'upcoming_count') @Default(0) int upcomingCount,
   }) = _BookingsToolResult;
@@ -107,8 +107,8 @@ class BookingResultItem with _$BookingResultItem {
 @freezed
 class TicketsToolResult with _$TicketsToolResult {
   const factory TicketsToolResult({
-    required List<TicketResultItem> tickets,
-    required int total,
+    @Default([]) List<TicketResultItem> tickets,
+    @Default(0) int total,
     @JsonKey(name: 'active_count') @Default(0) int activeCount,
   }) = _TicketsToolResult;
 
@@ -138,8 +138,8 @@ class TicketResultItem with _$TicketResultItem {
 @freezed
 class EventSearchToolResult with _$EventSearchToolResult {
   const factory EventSearchToolResult({
-    required List<EventResultItem> events,
-    required int total,
+    @Default([]) List<EventResultItem> events,
+    @Default(0) int total,
     @JsonKey(name: 'filters_applied') Map<String, dynamic>? filtersApplied,
   }) = _EventSearchToolResult;
 
@@ -236,8 +236,8 @@ class TicketTypeResult with _$TicketTypeResult {
 @freezed
 class FavoritesToolResult with _$FavoritesToolResult {
   const factory FavoritesToolResult({
-    required List<EventResultItem> favorites,
-    required int total,
+    @Default([]) List<EventResultItem> favorites,
+    @Default(0) int total,
     List<FavoriteListResult>? lists,
   }) = _FavoritesToolResult;
 
@@ -261,8 +261,8 @@ class FavoriteListResult with _$FavoriteListResult {
 @freezed
 class AlertsToolResult with _$AlertsToolResult {
   const factory AlertsToolResult({
-    required List<AlertResultItem> alerts,
-    required int total,
+    @Default([]) List<AlertResultItem> alerts,
+    @Default(0) int total,
     @JsonKey(name: 'active_count') @Default(0) int activeCount,
   }) = _AlertsToolResult;
 
@@ -331,8 +331,8 @@ class ProfileStatsResult with _$ProfileStatsResult {
 @freezed
 class NotificationsToolResult with _$NotificationsToolResult {
   const factory NotificationsToolResult({
-    required List<NotificationResultItem> notifications,
-    required int total,
+    @Default([]) List<NotificationResultItem> notifications,
+    @Default(0) int total,
     @JsonKey(name: 'unread_count') @Default(0) int unreadCount,
   }) = _NotificationsToolResult;
 

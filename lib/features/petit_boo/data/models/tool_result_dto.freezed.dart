@@ -353,8 +353,8 @@ class __$$BookingsToolResultImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$BookingsToolResultImpl implements _BookingsToolResult {
   const _$BookingsToolResultImpl(
-      {required final List<BookingResultItem> bookings,
-      required this.total,
+      {final List<BookingResultItem> bookings = const [],
+      this.total = 0,
       @JsonKey(name: 'pending_count') this.pendingCount = 0,
       @JsonKey(name: 'upcoming_count') this.upcomingCount = 0})
       : _bookings = bookings;
@@ -364,6 +364,7 @@ class _$BookingsToolResultImpl implements _BookingsToolResult {
 
   final List<BookingResultItem> _bookings;
   @override
+  @JsonKey()
   List<BookingResultItem> get bookings {
     if (_bookings is EqualUnmodifiableListView) return _bookings;
     // ignore: implicit_dynamic_type
@@ -371,6 +372,7 @@ class _$BookingsToolResultImpl implements _BookingsToolResult {
   }
 
   @override
+  @JsonKey()
   final int total;
   @override
   @JsonKey(name: 'pending_count')
@@ -423,8 +425,8 @@ class _$BookingsToolResultImpl implements _BookingsToolResult {
 
 abstract class _BookingsToolResult implements BookingsToolResult {
   const factory _BookingsToolResult(
-          {required final List<BookingResultItem> bookings,
-          required final int total,
+          {final List<BookingResultItem> bookings,
+          final int total,
           @JsonKey(name: 'pending_count') final int pendingCount,
           @JsonKey(name: 'upcoming_count') final int upcomingCount}) =
       _$BookingsToolResultImpl;
@@ -944,8 +946,8 @@ class __$$TicketsToolResultImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$TicketsToolResultImpl implements _TicketsToolResult {
   const _$TicketsToolResultImpl(
-      {required final List<TicketResultItem> tickets,
-      required this.total,
+      {final List<TicketResultItem> tickets = const [],
+      this.total = 0,
       @JsonKey(name: 'active_count') this.activeCount = 0})
       : _tickets = tickets;
 
@@ -954,6 +956,7 @@ class _$TicketsToolResultImpl implements _TicketsToolResult {
 
   final List<TicketResultItem> _tickets;
   @override
+  @JsonKey()
   List<TicketResultItem> get tickets {
     if (_tickets is EqualUnmodifiableListView) return _tickets;
     // ignore: implicit_dynamic_type
@@ -961,6 +964,7 @@ class _$TicketsToolResultImpl implements _TicketsToolResult {
   }
 
   @override
+  @JsonKey()
   final int total;
   @override
   @JsonKey(name: 'active_count')
@@ -1004,8 +1008,8 @@ class _$TicketsToolResultImpl implements _TicketsToolResult {
 
 abstract class _TicketsToolResult implements TicketsToolResult {
   const factory _TicketsToolResult(
-          {required final List<TicketResultItem> tickets,
-          required final int total,
+          {final List<TicketResultItem> tickets,
+          final int total,
           @JsonKey(name: 'active_count') final int activeCount}) =
       _$TicketsToolResultImpl;
 
@@ -1473,8 +1477,8 @@ class __$$EventSearchToolResultImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$EventSearchToolResultImpl implements _EventSearchToolResult {
   const _$EventSearchToolResultImpl(
-      {required final List<EventResultItem> events,
-      required this.total,
+      {final List<EventResultItem> events = const [],
+      this.total = 0,
       @JsonKey(name: 'filters_applied')
       final Map<String, dynamic>? filtersApplied})
       : _events = events,
@@ -1485,6 +1489,7 @@ class _$EventSearchToolResultImpl implements _EventSearchToolResult {
 
   final List<EventResultItem> _events;
   @override
+  @JsonKey()
   List<EventResultItem> get events {
     if (_events is EqualUnmodifiableListView) return _events;
     // ignore: implicit_dynamic_type
@@ -1492,6 +1497,7 @@ class _$EventSearchToolResultImpl implements _EventSearchToolResult {
   }
 
   @override
+  @JsonKey()
   final int total;
   final Map<String, dynamic>? _filtersApplied;
   @override
@@ -1545,8 +1551,8 @@ class _$EventSearchToolResultImpl implements _EventSearchToolResult {
 
 abstract class _EventSearchToolResult implements EventSearchToolResult {
   const factory _EventSearchToolResult(
-          {required final List<EventResultItem> events,
-          required final int total,
+          {final List<EventResultItem> events,
+          final int total,
           @JsonKey(name: 'filters_applied')
           final Map<String, dynamic>? filtersApplied}) =
       _$EventSearchToolResultImpl;
@@ -3225,8 +3231,8 @@ class __$$FavoritesToolResultImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$FavoritesToolResultImpl implements _FavoritesToolResult {
   const _$FavoritesToolResultImpl(
-      {required final List<EventResultItem> favorites,
-      required this.total,
+      {final List<EventResultItem> favorites = const [],
+      this.total = 0,
       final List<FavoriteListResult>? lists})
       : _favorites = favorites,
         _lists = lists;
@@ -3236,6 +3242,7 @@ class _$FavoritesToolResultImpl implements _FavoritesToolResult {
 
   final List<EventResultItem> _favorites;
   @override
+  @JsonKey()
   List<EventResultItem> get favorites {
     if (_favorites is EqualUnmodifiableListView) return _favorites;
     // ignore: implicit_dynamic_type
@@ -3243,6 +3250,7 @@ class _$FavoritesToolResultImpl implements _FavoritesToolResult {
   }
 
   @override
+  @JsonKey()
   final int total;
   final List<FavoriteListResult>? _lists;
   @override
@@ -3295,8 +3303,8 @@ class _$FavoritesToolResultImpl implements _FavoritesToolResult {
 
 abstract class _FavoritesToolResult implements FavoritesToolResult {
   const factory _FavoritesToolResult(
-      {required final List<EventResultItem> favorites,
-      required final int total,
+      {final List<EventResultItem> favorites,
+      final int total,
       final List<FavoriteListResult>? lists}) = _$FavoritesToolResultImpl;
 
   factory _FavoritesToolResult.fromJson(Map<String, dynamic> json) =
@@ -3613,8 +3621,8 @@ class __$$AlertsToolResultImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$AlertsToolResultImpl implements _AlertsToolResult {
   const _$AlertsToolResultImpl(
-      {required final List<AlertResultItem> alerts,
-      required this.total,
+      {final List<AlertResultItem> alerts = const [],
+      this.total = 0,
       @JsonKey(name: 'active_count') this.activeCount = 0})
       : _alerts = alerts;
 
@@ -3623,6 +3631,7 @@ class _$AlertsToolResultImpl implements _AlertsToolResult {
 
   final List<AlertResultItem> _alerts;
   @override
+  @JsonKey()
   List<AlertResultItem> get alerts {
     if (_alerts is EqualUnmodifiableListView) return _alerts;
     // ignore: implicit_dynamic_type
@@ -3630,6 +3639,7 @@ class _$AlertsToolResultImpl implements _AlertsToolResult {
   }
 
   @override
+  @JsonKey()
   final int total;
   @override
   @JsonKey(name: 'active_count')
@@ -3673,8 +3683,8 @@ class _$AlertsToolResultImpl implements _AlertsToolResult {
 
 abstract class _AlertsToolResult implements AlertsToolResult {
   const factory _AlertsToolResult(
-          {required final List<AlertResultItem> alerts,
-          required final int total,
+          {final List<AlertResultItem> alerts,
+          final int total,
           @JsonKey(name: 'active_count') final int activeCount}) =
       _$AlertsToolResultImpl;
 
@@ -4788,8 +4798,8 @@ class __$$NotificationsToolResultImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$NotificationsToolResultImpl implements _NotificationsToolResult {
   const _$NotificationsToolResultImpl(
-      {required final List<NotificationResultItem> notifications,
-      required this.total,
+      {final List<NotificationResultItem> notifications = const [],
+      this.total = 0,
       @JsonKey(name: 'unread_count') this.unreadCount = 0})
       : _notifications = notifications;
 
@@ -4798,6 +4808,7 @@ class _$NotificationsToolResultImpl implements _NotificationsToolResult {
 
   final List<NotificationResultItem> _notifications;
   @override
+  @JsonKey()
   List<NotificationResultItem> get notifications {
     if (_notifications is EqualUnmodifiableListView) return _notifications;
     // ignore: implicit_dynamic_type
@@ -4805,6 +4816,7 @@ class _$NotificationsToolResultImpl implements _NotificationsToolResult {
   }
 
   @override
+  @JsonKey()
   final int total;
   @override
   @JsonKey(name: 'unread_count')
@@ -4849,8 +4861,8 @@ class _$NotificationsToolResultImpl implements _NotificationsToolResult {
 
 abstract class _NotificationsToolResult implements NotificationsToolResult {
   const factory _NotificationsToolResult(
-          {required final List<NotificationResultItem> notifications,
-          required final int total,
+          {final List<NotificationResultItem> notifications,
+          final int total,
           @JsonKey(name: 'unread_count') final int unreadCount}) =
       _$NotificationsToolResultImpl;
 

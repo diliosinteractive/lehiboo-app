@@ -20,6 +20,9 @@ final petitBooContextStorageProvider = Provider<PetitBooContextStorage>((ref) {
   return PetitBooContextStorage(prefs);
 });
 
+/// Sentinel value to distinguish "not provided" from "explicitly null"
+const _notProvided = Object();
+
 /// State for the Petit Boo chat
 class PetitBooChatState {
   final List<ChatMessageDto> messages;
@@ -52,6 +55,9 @@ class PetitBooChatState {
     this.messageCount = 0,
   });
 
+  /// copyWith preserves error by default.
+  /// To explicitly clear error, pass error: null.
+  /// To preserve error, don't pass the error parameter.
   PetitBooChatState copyWith({
     List<ChatMessageDto>? messages,
     String? currentStreamingText,
@@ -59,7 +65,7 @@ class PetitBooChatState {
     bool? isStreaming,
     bool? isLoading,
     String? sessionUuid,
-    String? error,
+    Object? error = _notProvided,
     QuotaDto? quota,
     bool? isServiceAvailable,
     Map<String, dynamic>? userContext,
@@ -74,7 +80,7 @@ class PetitBooChatState {
       isStreaming: isStreaming ?? this.isStreaming,
       isLoading: isLoading ?? this.isLoading,
       sessionUuid: sessionUuid ?? this.sessionUuid,
-      error: error,
+      error: error == _notProvided ? this.error : error as String?,
       quota: quota ?? this.quota,
       isServiceAvailable: isServiceAvailable ?? this.isServiceAvailable,
       userContext: userContext ?? this.userContext,
@@ -93,8 +99,9 @@ class PetitBooChatState {
 }
 
 /// Provider for the chat state notifier
+/// Note: NOT autoDispose to preserve session across navigations
 final petitBooChatProvider =
-    StateNotifierProvider.autoDispose<PetitBooChatNotifier, PetitBooChatState>(
+    StateNotifierProvider<PetitBooChatNotifier, PetitBooChatState>(
   (ref) {
     final repository = ref.watch(petitBooRepositoryProvider);
     final contextStorage = ref.watch(petitBooContextStorageProvider);
@@ -109,9 +116,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   final Ref _ref;
   StreamSubscription? _streamSubscription;
   String? _pendingMessage; // For auto-send after limit unlock
+  bool _isInitialized = false;
 
   PetitBooChatNotifier(this._repository, this._contextStorage, this._ref)
-      : super(const PetitBooChatState()) {
+      : super(const PetitBooChatState(isLoading: true)) {
     _initialize();
   }
 
@@ -162,21 +170,31 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       isMemoryEnabled: memoryEnabled,
     );
 
-    // Load saved session UUID
+    // Load saved session UUID FIRST (critical for session continuity)
     final storage = SharedSecureStorage.instance;
     final savedSessionUuid = await storage.read(
       key: AppConstants.keyPetitBooSessionUuid,
     );
 
-    if (savedSessionUuid != null) {
+    if (kDebugMode) {
+      debugPrint('🤖 PetitBoo: Loaded session UUID from storage: $savedSessionUuid');
+    }
+
+    if (savedSessionUuid != null && savedSessionUuid.isNotEmpty) {
       state = state.copyWith(sessionUuid: savedSessionUuid);
     }
+
+    // Mark as initialized BEFORE other async calls
+    _isInitialized = true;
 
     // Check service availability
     await checkServiceAvailability();
 
     // Load quota
     await checkQuota();
+
+    // Remove loading state
+    state = state.copyWith(isLoading: false);
   }
 
   /// Check if Petit Boo service is available
@@ -204,6 +222,17 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   /// Send a message and process streaming response
   Future<void> sendMessage(String message) async {
     if (!state.canSendMessage || message.trim().isEmpty) return;
+
+    // Wait for initialization to complete (max 2 seconds)
+    int waitCount = 0;
+    while (!_isInitialized && waitCount < 20) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      waitCount++;
+    }
+
+    if (kDebugMode) {
+      debugPrint('🤖 PetitBoo: sendMessage - sessionUuid=${state.sessionUuid}');
+    }
 
     // Cancel any existing stream
     await _streamSubscription?.cancel();
@@ -247,6 +276,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       case 'session':
         // New session created, save the UUID
         if (event.sessionUuid != null) {
+          if (kDebugMode) {
+            debugPrint('🤖 PetitBoo: Received NEW session UUID=${event.sessionUuid}');
+            debugPrint('🤖 PetitBoo: Previous session UUID was=${state.sessionUuid}');
+          }
           _saveSessionUuid(event.sessionUuid!);
           state = state.copyWith(sessionUuid: event.sessionUuid);
         }

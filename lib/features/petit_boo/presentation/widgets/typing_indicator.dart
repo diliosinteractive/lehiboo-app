@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/themes/colors.dart';
+import '../../../../core/themes/petit_boo_theme.dart';
 
 /// Animated typing indicator (three bouncing dots)
 class TypingIndicator extends StatefulWidget {
@@ -11,8 +11,8 @@ class TypingIndicator extends StatefulWidget {
   const TypingIndicator({
     super.key,
     this.dotColor,
-    this.dotSize = 8,
-    this.animationDuration = const Duration(milliseconds: 300),
+    this.dotSize = 10,
+    this.animationDuration = const Duration(milliseconds: 400),
   });
 
   @override
@@ -36,14 +36,14 @@ class _TypingIndicatorState extends State<TypingIndicator>
     );
 
     _animations = _controllers.map((controller) {
-      return Tween<double>(begin: 0, end: -8).animate(
+      return Tween<double>(begin: 0, end: -6).animate(
         CurvedAnimation(parent: controller, curve: Curves.easeInOut),
       );
     }).toList();
 
     // Start animations with staggered delay
     for (int i = 0; i < _controllers.length; i++) {
-      Future.delayed(Duration(milliseconds: i * 100), () {
+      Future.delayed(Duration(milliseconds: i * 150), () {
         if (mounted) {
           _controllers[i].repeat(reverse: true);
         }
@@ -61,21 +61,14 @@ class _TypingIndicatorState extends State<TypingIndicator>
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.dotColor ?? HbColors.brandPrimary;
+    final color = widget.dotColor ?? PetitBooTheme.grey400;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      padding: EdgeInsets.symmetric(
+        horizontal: PetitBooTheme.spacing20,
+        vertical: PetitBooTheme.spacing16,
       ),
+      decoration: PetitBooTheme.typingDecoration,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(3, (index) {
@@ -88,10 +81,10 @@ class _TypingIndicatorState extends State<TypingIndicator>
                   width: widget.dotSize,
                   height: widget.dotSize,
                   margin: EdgeInsets.only(
-                    right: index < 2 ? 4 : 0,
+                    right: index < 2 ? PetitBooTheme.spacing6 : 0,
                   ),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.7),
+                    color: color,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -110,28 +103,33 @@ class PetitBooTypingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Avatar
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: HbColors.brandPrimary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Center(
-              child: Text('🦉', style: TextStyle(fontSize: 20)),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Avatar
+        Container(
+          width: PetitBooTheme.avatarMd,
+          height: PetitBooTheme.avatarMd,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: PetitBooTheme.primaryLight,
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              PetitBooTheme.owlLogoPath,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.smart_toy_outlined,
+                color: PetitBooTheme.primary,
+                size: PetitBooTheme.iconMd,
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          // Typing dots
-          const TypingIndicator(),
-        ],
-      ),
+        ),
+        SizedBox(width: PetitBooTheme.spacing12),
+        // Typing dots
+        const TypingIndicator(),
+      ],
     );
   }
 }

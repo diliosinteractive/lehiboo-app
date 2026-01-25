@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/themes/colors.dart';
+import '../../../../core/themes/petit_boo_theme.dart';
 import '../providers/petit_boo_chat_provider.dart';
 import '../widgets/chat_input_bar.dart';
 import '../widgets/limit_reached_dialog.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/quota_indicator.dart';
 import '../widgets/typing_indicator.dart';
 
 /// Main chat screen for Petit Boo AI assistant
@@ -31,14 +32,12 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Load session if provided
     if (widget.sessionUuid != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(petitBooChatProvider.notifier).loadSession(widget.sessionUuid!);
       });
     }
 
-    // Send initial voice message if provided
     if (widget.initialVoiceMessage != null &&
         widget.initialVoiceMessage!.isNotEmpty &&
         !_hasProcessedInitialMessage) {
@@ -46,8 +45,8 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
         if (!_hasProcessedInitialMessage) {
           _hasProcessedInitialMessage = true;
           ref.read(petitBooChatProvider.notifier).sendMessage(
-            widget.initialVoiceMessage!,
-          );
+                widget.initialVoiceMessage!,
+              );
         }
       });
     }
@@ -62,11 +61,10 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {
-        // Re-check after delay since widget might have been disposed
         if (mounted && _scrollController.hasClients) {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
+            duration: PetitBooTheme.durationNormal,
             curve: Curves.easeOut,
           );
         }
@@ -78,7 +76,6 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
   Widget build(BuildContext context) {
     final chatState = ref.watch(petitBooChatProvider);
 
-    // Auto-scroll when new messages arrive or streaming updates
     ref.listen<PetitBooChatState>(petitBooChatProvider, (previous, next) {
       if (previous?.messages.length != next.messages.length ||
           previous?.currentStreamingText != next.currentStreamingText) {
@@ -86,7 +83,6 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
       }
     });
 
-    // Show limit reached dialog
     ref.listen(
       petitBooChatProvider.select((s) => s.isLimitReached),
       (previous, next) {
@@ -97,73 +93,75 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
     );
 
     return Scaffold(
-      backgroundColor: HbColors.orangePastel,
+      backgroundColor: PetitBooTheme.background,
       appBar: _buildAppBar(context, chatState),
       body: Column(
         children: [
-          // Error banner
-          if (chatState.error != null)
-            _buildErrorBanner(chatState.error!),
-
-          // Service unavailable warning
-          if (!chatState.isServiceAvailable)
-            _buildServiceUnavailableBanner(),
-
-          // Chat messages
+          if (chatState.error != null) _buildErrorBanner(chatState.error!),
+          if (!chatState.isServiceAvailable) _buildServiceUnavailableBanner(),
           Expanded(
             child: chatState.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: PetitBooTheme.primary,
+                      strokeWidth: 2,
+                    ),
+                  )
                 : _buildMessageList(chatState),
           ),
-
-          // Input bar with built-in speech-to-text
           const ChatInputBar(),
         ],
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, PetitBooChatState state) {
+  PreferredSizeWidget _buildAppBar(
+      BuildContext context, PetitBooChatState state) {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: PetitBooTheme.surface,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        color: HbColors.textPrimary,
+        icon: Icon(
+          Icons.arrow_back_ios_new_rounded,
+          size: PetitBooTheme.iconMd,
+        ),
+        color: PetitBooTheme.textPrimary,
         onPressed: () => context.pop(),
       ),
       title: Row(
         children: [
+          // Logo Petit Boo
           Container(
-            width: 36,
-            height: 36,
+            width: PetitBooTheme.avatarMd,
+            height: PetitBooTheme.avatarMd,
             decoration: BoxDecoration(
-              color: HbColors.brandPrimary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(18),
+              shape: BoxShape.circle,
+              color: PetitBooTheme.primaryLight,
             ),
-            child: const Center(
-              child: Text('🦉', style: TextStyle(fontSize: 20)),
+            child: ClipOval(
+              child: Image.asset(
+                PetitBooTheme.owlLogoPath,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Icon(
+                  Icons.smart_toy_outlined,
+                  color: PetitBooTheme.primary,
+                  size: PetitBooTheme.iconLg,
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: PetitBooTheme.spacing12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Petit Boo',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: HbColors.textPrimary,
-                ),
-              ),
+              Text('Petit Boo', style: PetitBooTheme.headingSm),
               Text(
-                state.isStreaming ? 'Écrit...' : 'Assistant IA',
-                style: TextStyle(
-                  fontSize: 12,
+                state.isStreaming ? 'Répond...' : 'Assistant IA',
+                style: PetitBooTheme.caption.copyWith(
                   color: state.isStreaming
-                      ? HbColors.brandPrimary
-                      : HbColors.textSecondary,
+                      ? PetitBooTheme.primary
+                      : PetitBooTheme.textTertiary,
                 ),
               ),
             ],
@@ -171,29 +169,29 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
         ],
       ),
       actions: [
-        // Brain/Memory button
+        // Quota circulaire (compact, en haut)
+        if (state.quota != null)
+          Padding(
+            padding: EdgeInsets.only(right: PetitBooTheme.spacing4),
+            child: CircularQuotaIndicator(quota: state.quota!, size: 34),
+          ),
+        // History
         IconButton(
-          icon: const Icon(Icons.psychology_outlined),
-          color: HbColors.textSecondary,
-          onPressed: () => context.push('/petit-boo/brain'),
-          tooltip: 'Mémoire',
-        ),
-        // History button
-        IconButton(
-          icon: const Icon(Icons.history),
-          color: HbColors.textSecondary,
+          icon: Icon(Icons.history_rounded, size: PetitBooTheme.iconLg),
+          color: PetitBooTheme.grey500,
           onPressed: () => context.push('/petit-boo/history'),
           tooltip: 'Historique',
         ),
-        // New conversation button
+        // New conversation
         IconButton(
-          icon: const Icon(Icons.add_comment_outlined),
-          color: HbColors.textSecondary,
+          icon: Icon(Icons.add_rounded, size: PetitBooTheme.iconLg),
+          color: PetitBooTheme.grey500,
           onPressed: () {
             ref.read(petitBooChatProvider.notifier).createNewSession();
           },
           tooltip: 'Nouvelle conversation',
         ),
+        SizedBox(width: PetitBooTheme.spacing8),
       ],
     );
   }
@@ -201,39 +199,39 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
   Widget _buildErrorBanner(String error) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: HbColors.error.withOpacity(0.1),
+      padding: EdgeInsets.symmetric(
+        horizontal: PetitBooTheme.spacing16,
+        vertical: PetitBooTheme.spacing12,
+      ),
+      decoration: BoxDecoration(
+        color: PetitBooTheme.errorLight,
+        border: Border(
+          bottom: BorderSide(color: PetitBooTheme.error.withValues(alpha: 0.2)),
+        ),
+      ),
       child: Row(
         children: [
           Icon(
-            Icons.error_outline,
-            color: HbColors.error,
-            size: 20,
+            Icons.error_outline_rounded,
+            color: PetitBooTheme.error,
+            size: PetitBooTheme.iconMd,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: PetitBooTheme.spacing8),
           Expanded(
             child: Text(
               error,
-              style: TextStyle(
-                fontSize: 13,
-                color: HbColors.error,
-              ),
+              style: PetitBooTheme.bodySm.copyWith(color: PetitBooTheme.error),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, size: 18),
-            color: HbColors.error,
+            icon: Icon(Icons.close_rounded, size: 18),
+            color: PetitBooTheme.error,
             onPressed: () {
               ref.read(petitBooChatProvider.notifier).clearError();
             },
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(),
           ),
-          if (error.contains('error') || error.contains('failed'))
-            TextButton(
-              onPressed: () {
-                ref.read(petitBooChatProvider.notifier).retryLastMessage();
-              },
-              child: const Text('Réessayer'),
-            ),
         ],
       ),
     );
@@ -242,30 +240,41 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
   Widget _buildServiceUnavailableBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: HbColors.warning.withOpacity(0.1),
+      padding: EdgeInsets.symmetric(
+        horizontal: PetitBooTheme.spacing16,
+        vertical: PetitBooTheme.spacing12,
+      ),
+      decoration: BoxDecoration(
+        color: PetitBooTheme.warningLight,
+        border: Border(
+          bottom: BorderSide(color: PetitBooTheme.warning.withValues(alpha: 0.2)),
+        ),
+      ),
       child: Row(
         children: [
           Icon(
-            Icons.cloud_off,
-            color: HbColors.warning,
-            size: 20,
+            Icons.cloud_off_rounded,
+            color: PetitBooTheme.warning,
+            size: PetitBooTheme.iconMd,
           ),
-          const SizedBox(width: 8),
-          const Expanded(
+          SizedBox(width: PetitBooTheme.spacing8),
+          Expanded(
             child: Text(
               'Petit Boo est temporairement indisponible',
-              style: TextStyle(
-                fontSize: 13,
-                color: HbColors.warning,
-              ),
+              style: PetitBooTheme.bodySm.copyWith(color: PetitBooTheme.grey700),
             ),
           ),
           TextButton(
             onPressed: () {
-              ref.read(petitBooChatProvider.notifier).checkServiceAvailability();
+              ref
+                  .read(petitBooChatProvider.notifier)
+                  .checkServiceAvailability();
             },
-            child: const Text('Réessayer'),
+            style: TextButton.styleFrom(
+              foregroundColor: PetitBooTheme.warning,
+              padding: EdgeInsets.symmetric(horizontal: PetitBooTheme.spacing12),
+            ),
+            child: Text('Retry'),
           ),
         ],
       ),
@@ -279,237 +288,309 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.symmetric(
+        vertical: PetitBooTheme.spacing24,
+        horizontal: PetitBooTheme.spacing16,
+      ),
       itemCount: state.messages.length + (state.isStreaming ? 1 : 0),
       itemBuilder: (context, index) {
-        // Show streaming message at the end
         if (index == state.messages.length && state.isStreaming) {
-          // If we have streaming content or tool results, show them
           if (state.currentStreamingText.isNotEmpty || state.hasToolResults) {
-            return StreamingMessageBubble(
-              text: state.currentStreamingText,
-              toolResults: state.currentToolResults,
+            return Padding(
+              padding: EdgeInsets.only(bottom: PetitBooTheme.spacing24),
+              child: StreamingMessageBubble(
+                text: state.currentStreamingText,
+                toolResults: state.currentToolResults,
+              ),
             );
           }
-          // Otherwise show typing indicator
-          return const PetitBooTypingIndicator();
+          return Padding(
+            padding: EdgeInsets.only(bottom: PetitBooTheme.spacing24),
+            child: const PetitBooTypingIndicator(),
+          );
         }
 
         final message = state.messages[index];
-        return MessageBubble(message: message);
+        return Padding(
+          padding: EdgeInsets.only(bottom: PetitBooTheme.spacing24),
+          child: MessageBubble(message: message),
+        );
       },
     );
   }
 
   Widget _buildWelcomeScreen() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.symmetric(horizontal: PetitBooTheme.spacing20),
       child: Column(
         children: [
-          const SizedBox(height: 32),
+          SizedBox(height: PetitBooTheme.spacing16),
 
-          // Owl mascot with glow effect
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: HbColors.brandPrimary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: HbColors.brandPrimary.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/petit_boo_logo.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Center(
-                      child: Text('🦉', style: TextStyle(fontSize: 56)),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // Greeting
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.waving_hand, size: 28, color: Color(0xFFFFD700)),
-              const SizedBox(width: 8),
-              const Text(
-                'Bonjour !',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: HbColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          const Text(
-            'Je suis Petit Boo',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: HbColors.brandPrimary,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          Text(
-            'Votre assistant personnel pour découvrir des événements '
-            'et gérer vos réservations.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: HbColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Features list
+          // Hero Section - Clean style with border
           Container(
-            padding: const EdgeInsets.all(16),
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              horizontal: PetitBooTheme.spacing24,
+              vertical: PetitBooTheme.spacing32,
+            ),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: PetitBooTheme.surface,
+              borderRadius: PetitBooTheme.borderRadius2xl,
+              border: Border.all(
+                color: PetitBooTheme.primary.withValues(alpha: 0.3),
+                width: 1.5,
+              ),
             ),
             child: Column(
               children: [
-                _buildFeatureRow(Icons.search, 'Trouvez des événements près de vous'),
-                const SizedBox(height: 12),
-                _buildFeatureRow(Icons.calendar_today, 'Gérez vos réservations'),
-                const SizedBox(height: 12),
-                _buildFeatureRow(Icons.mic, 'Parlez-moi naturellement'),
-                const SizedBox(height: 12),
-                _buildFeatureRow(Icons.psychology, 'J\'apprends vos préférences'),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Suggestion chips
-          const Text(
-            'Essayez de me demander...',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: HbColors.textSecondary,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: _buildSuggestionChips(),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Beta notice
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.shade200),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.science_outlined, color: Colors.amber.shade800, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Version Beta - Petit Boo apprend encore !',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.amber.shade900,
-                      fontWeight: FontWeight.w500,
+                // Logo
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: PetitBooTheme.primaryLight,
+                    boxShadow: PetitBooTheme.shadowMd,
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      PetitBooTheme.owlLogoPath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.smart_toy_outlined,
+                        color: PetitBooTheme.primary,
+                        size: 44,
+                      ),
                     ),
+                  ),
+                ),
+
+                SizedBox(height: PetitBooTheme.spacing20),
+
+                // Greeting
+                Text(
+                  'Bonjour !',
+                  style: PetitBooTheme.headingLg.copyWith(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: PetitBooTheme.spacing4),
+                Text(
+                  'Je suis Petit Boo',
+                  style: PetitBooTheme.headingMd.copyWith(
+                    color: PetitBooTheme.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+                ),
+
+                SizedBox(height: PetitBooTheme.spacing8),
+
+                Text(
+                  'Votre assistant IA pour découvrir\ndes événements uniques',
+                  textAlign: TextAlign.center,
+                  style: PetitBooTheme.bodySm.copyWith(
+                    color: PetitBooTheme.textSecondary,
+                    height: 1.4,
+                    fontSize: 13,
                   ),
                 ),
               ],
             ),
+          ),
+
+          SizedBox(height: PetitBooTheme.spacing20),
+
+          // Features as horizontal scroll
+          SizedBox(
+            height: 100,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.zero,
+              clipBehavior: Clip.none,
+              children: [
+                _buildFeatureCard(
+                  Icons.search_rounded,
+                  'Événements',
+                  'Trouvez des sorties',
+                ),
+                _buildFeatureCard(
+                  Icons.calendar_today_rounded,
+                  'Réservations',
+                  'Gérez vos billets',
+                ),
+                _buildFeatureCard(
+                  Icons.mic_rounded,
+                  'Vocal',
+                  'Parlez-moi',
+                ),
+                _buildFeatureCard(
+                  Icons.favorite_rounded,
+                  'Favoris',
+                  'Vos coups de coeur',
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: PetitBooTheme.spacing24),
+
+          // Suggestions Section
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.only(left: PetitBooTheme.spacing4),
+              child: Text(
+                'Essayez de me demander...',
+                style: PetitBooTheme.headingSm.copyWith(
+                  color: PetitBooTheme.textPrimary,
+                ),
+              ),
+            ),
+          ),
+
+          SizedBox(height: PetitBooTheme.spacing16),
+
+          // Suggestion chips as list
+          ..._buildSuggestionItems(),
+
+          SizedBox(height: PetitBooTheme.spacing16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureCard(IconData icon, String title, String subtitle) {
+    return Container(
+      width: 100,
+      margin: EdgeInsets.only(right: PetitBooTheme.spacing10),
+      padding: EdgeInsets.all(PetitBooTheme.spacing10),
+      decoration: BoxDecoration(
+        color: PetitBooTheme.surface,
+        borderRadius: PetitBooTheme.borderRadiusLg,
+        border: Border.all(color: PetitBooTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: PetitBooTheme.primaryLight,
+              borderRadius: PetitBooTheme.borderRadiusMd,
+            ),
+            child: Icon(
+              icon,
+              color: PetitBooTheme.primary,
+              size: 15,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            title,
+            style: PetitBooTheme.bodySm.copyWith(
+              fontWeight: FontWeight.w600,
+              color: PetitBooTheme.textPrimary,
+              fontSize: 12,
+              height: 1.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            subtitle,
+            style: PetitBooTheme.caption.copyWith(
+              fontSize: 10,
+              color: PetitBooTheme.textTertiary,
+              height: 1.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: HbColors.brandPrimary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: HbColors.brandPrimary, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: HbColors.textPrimary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildSuggestionChips() {
+  List<Widget> _buildSuggestionItems() {
     final suggestions = [
-      'Quels événements ce week-end ?',
-      'Montre mes réservations',
-      'Activités en famille',
-      'Mes événements favoris',
+      {
+        'icon': Icons.event_rounded,
+        'text': 'Quels \u00e9v\u00e9nements ce week-end ?',
+      },
+      {
+        'icon': Icons.confirmation_number_rounded,
+        'text': 'Affiche mes r\u00e9servations',
+      },
+      {
+        'icon': Icons.family_restroom_rounded,
+        'text': 'Activit\u00e9s pour enfants',
+      },
+      {
+        'icon': Icons.star_rounded,
+        'text': 'Mes favoris',
+      },
     ];
 
     return suggestions.map((suggestion) {
-      return ActionChip(
-        label: Text(
-          suggestion,
-          style: const TextStyle(fontSize: 13),
+      return Padding(
+        padding: EdgeInsets.only(bottom: PetitBooTheme.spacing10),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              ref.read(petitBooChatProvider.notifier).sendMessage(
+                    suggestion['text'] as String,
+                  );
+            },
+            borderRadius: PetitBooTheme.borderRadiusXl,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: PetitBooTheme.spacing16,
+                vertical: PetitBooTheme.spacing12,
+              ),
+              decoration: BoxDecoration(
+                color: PetitBooTheme.surface,
+                borderRadius: PetitBooTheme.borderRadiusXl,
+                border: Border.all(color: PetitBooTheme.border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: PetitBooTheme.grey100,
+                      borderRadius: PetitBooTheme.borderRadiusMd,
+                    ),
+                    child: Icon(
+                      suggestion['icon'] as IconData,
+                      color: PetitBooTheme.grey500,
+                      size: 16,
+                    ),
+                  ),
+                  SizedBox(width: PetitBooTheme.spacing12),
+                  Expanded(
+                    child: Text(
+                      suggestion['text'] as String,
+                      style: PetitBooTheme.bodyMd.copyWith(
+                        color: PetitBooTheme.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: PetitBooTheme.grey300,
+                    size: 14,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        onPressed: () {
-          ref.read(petitBooChatProvider.notifier).sendMessage(suggestion);
-        },
-        backgroundColor: Colors.white,
-        side: BorderSide(color: HbColors.brandPrimary.withOpacity(0.3)),
       );
     }).toList();
   }

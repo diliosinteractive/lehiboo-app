@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/themes/colors.dart';
+import '../../../../core/themes/petit_boo_theme.dart';
 import '../../data/models/chat_message_dto.dart';
 import '../../data/models/tool_result_dto.dart';
 import 'streaming_text.dart';
 import 'tool_result_card.dart';
 
-/// A chat message bubble
+/// A chat message bubble with modern design
 class MessageBubble extends StatelessWidget {
   final ChatMessageDto message;
   final bool isStreaming;
@@ -29,79 +29,68 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = message.isUser;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isUser) ...[
-            _buildAvatar(),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Column(
-              crossAxisAlignment:
-                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                // Tool results (before assistant message)
-                if (!isUser && (message.hasToolResults || (toolResults?.isNotEmpty ?? false)))
-                  _buildToolResults(message.toolResults ?? toolResults ?? []),
-
-                // Message bubble
-                _buildBubble(context, isUser),
-              ],
-            ),
-          ),
-          if (isUser) ...[
-            const SizedBox(width: 8),
-            _buildUserAvatar(),
-          ],
+    return Row(
+      mainAxisAlignment:
+          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Avatar assistant (gauche)
+        if (!isUser) ...[
+          _buildAssistantAvatar(),
+          SizedBox(width: PetitBooTheme.spacing12),
         ],
-      ),
-    );
-  }
 
-  Widget _buildAvatar() {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: HbColors.brandPrimary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Center(
-        child: Text(
-          '🦉',
-          style: TextStyle(fontSize: 20),
+        // Message content
+        Flexible(
+          child: Column(
+            crossAxisAlignment:
+                isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              // Tool results (avant le message assistant)
+              if (!isUser &&
+                  (message.hasToolResults || (toolResults?.isNotEmpty ?? false)))
+                _buildToolResults(message.toolResults ?? toolResults ?? []),
+
+              // Message bubble
+              _buildBubble(context, isUser),
+            ],
+          ),
         ),
-      ),
+
+        // Pas d'avatar pour user (comme le web)
+      ],
     );
   }
 
-  Widget _buildUserAvatar() {
+  Widget _buildAssistantAvatar() {
     return Container(
-      width: 36,
-      height: 36,
+      width: PetitBooTheme.avatarMd,
+      height: PetitBooTheme.avatarMd,
       decoration: BoxDecoration(
-        color: HbColors.brandSecondary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(18),
+        shape: BoxShape.circle,
+        color: PetitBooTheme.primaryLight,
       ),
-      child: const Icon(
-        Icons.person_outline,
-        size: 20,
-        color: HbColors.brandSecondary,
+      child: ClipOval(
+        child: Image.asset(
+          PetitBooTheme.owlLogoPath,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.smart_toy_outlined,
+            color: PetitBooTheme.primary,
+            size: PetitBooTheme.iconMd,
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildToolResults(List<ToolResultDto> results) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: PetitBooTheme.spacing12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: results.map((result) => ToolResultCard(result: result)).toList(),
+        children:
+            results.map((result) => ToolResultCard(result: result)).toList(),
       ),
     );
   }
@@ -115,42 +104,23 @@ class MessageBubble extends StatelessWidget {
 
     return Container(
       constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.75,
+        maxWidth: MediaQuery.of(context).size.width * 0.78,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isUser ? HbColors.brandPrimary : Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(20),
-          topRight: const Radius.circular(20),
-          bottomLeft: Radius.circular(isUser ? 20 : 4),
-          bottomRight: Radius.circular(isUser ? 4 : 20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.all(PetitBooTheme.spacing20),
+      decoration: isUser
+          ? PetitBooTheme.bubbleUserDecoration
+          : PetitBooTheme.bubbleAssistantDecoration,
       child: isStreaming
           ? StreamingText(
               text: displayText,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.4,
-                color: HbColors.textPrimary,
-              ),
+              style: PetitBooTheme.bodyMd,
             )
           : isUser
               // User messages: simple text
               ? SelectableText(
                   displayText,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.4,
-                    color: Colors.white,
+                  style: PetitBooTheme.bodyMd.copyWith(
+                    color: PetitBooTheme.textOnPrimary,
                   ),
                 )
               // Assistant messages: Markdown formatted
@@ -159,66 +129,49 @@ class MessageBubble extends StatelessWidget {
                   selectable: true,
                   onTapLink: (text, href, title) {
                     if (href != null) {
-                      launchUrl(Uri.parse(href), mode: LaunchMode.externalApplication);
+                      launchUrl(Uri.parse(href),
+                          mode: LaunchMode.externalApplication);
                     }
                   },
-                  styleSheet: MarkdownStyleSheet(
-                    p: const TextStyle(
-                      fontSize: 15,
-                      height: 1.4,
-                      color: HbColors.textPrimary,
-                    ),
-                    strong: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textPrimary,
-                    ),
-                    em: const TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: HbColors.textPrimary,
-                    ),
-                    code: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 13,
-                      backgroundColor: Colors.grey.shade100,
-                      color: HbColors.textPrimary,
-                    ),
-                    codeblockDecoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    listBullet: const TextStyle(
-                      color: HbColors.textPrimary,
-                    ),
-                    a: const TextStyle(
-                      color: HbColors.brandPrimary,
-                      decoration: TextDecoration.underline,
-                    ),
-                    h1: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textPrimary,
-                    ),
-                    h2: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textPrimary,
-                    ),
-                    h3: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textPrimary,
-                    ),
-                    blockquoteDecoration: BoxDecoration(
-                      border: Border(
-                        left: BorderSide(
-                          color: HbColors.brandPrimary.withOpacity(0.5),
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                    blockquotePadding: const EdgeInsets.only(left: 12),
-                  ),
+                  styleSheet: _buildMarkdownStyle(),
                 ),
+    );
+  }
+
+  MarkdownStyleSheet _buildMarkdownStyle() {
+    return MarkdownStyleSheet(
+      p: PetitBooTheme.bodyMd,
+      strong: PetitBooTheme.bodyMd.copyWith(fontWeight: FontWeight.w600),
+      em: PetitBooTheme.bodyMd.copyWith(fontStyle: FontStyle.italic),
+      code: TextStyle(
+        fontFamily: 'monospace',
+        fontSize: 14,
+        backgroundColor: PetitBooTheme.grey100,
+        color: PetitBooTheme.textPrimary,
+      ),
+      codeblockDecoration: BoxDecoration(
+        color: PetitBooTheme.grey100,
+        borderRadius: PetitBooTheme.borderRadiusMd,
+      ),
+      codeblockPadding: EdgeInsets.all(PetitBooTheme.spacing12),
+      listBullet: PetitBooTheme.bodyMd,
+      a: PetitBooTheme.bodyMd.copyWith(
+        color: PetitBooTheme.primary,
+        decoration: TextDecoration.underline,
+        decorationColor: PetitBooTheme.primary,
+      ),
+      h1: PetitBooTheme.headingLg,
+      h2: PetitBooTheme.headingMd,
+      h3: PetitBooTheme.headingSm,
+      blockquoteDecoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(
+            color: PetitBooTheme.primary.withValues(alpha: 0.5),
+            width: 3,
+          ),
+        ),
+      ),
+      blockquotePadding: EdgeInsets.only(left: PetitBooTheme.spacing12),
     );
   }
 }

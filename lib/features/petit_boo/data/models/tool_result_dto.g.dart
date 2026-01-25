@@ -23,10 +23,12 @@ Map<String, dynamic> _$$ToolResultDtoImplToJson(_$ToolResultDtoImpl instance) =>
 _$BookingsToolResultImpl _$$BookingsToolResultImplFromJson(
         Map<String, dynamic> json) =>
     _$BookingsToolResultImpl(
-      bookings: (json['bookings'] as List<dynamic>)
-          .map((e) => BookingResultItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      total: (json['total'] as num).toInt(),
+      bookings: (json['bookings'] as List<dynamic>?)
+              ?.map(
+                  (e) => BookingResultItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      total: (json['total'] as num?)?.toInt() ?? 0,
       pendingCount: (json['pending_count'] as num?)?.toInt() ?? 0,
       upcomingCount: (json['upcoming_count'] as num?)?.toInt() ?? 0,
     );
@@ -75,10 +77,11 @@ Map<String, dynamic> _$$BookingResultItemImplToJson(
 _$TicketsToolResultImpl _$$TicketsToolResultImplFromJson(
         Map<String, dynamic> json) =>
     _$TicketsToolResultImpl(
-      tickets: (json['tickets'] as List<dynamic>)
-          .map((e) => TicketResultItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      total: (json['total'] as num).toInt(),
+      tickets: (json['tickets'] as List<dynamic>?)
+              ?.map((e) => TicketResultItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      total: (json['total'] as num?)?.toInt() ?? 0,
       activeCount: (json['active_count'] as num?)?.toInt() ?? 0,
     );
 
@@ -121,10 +124,11 @@ Map<String, dynamic> _$$TicketResultItemImplToJson(
 _$EventSearchToolResultImpl _$$EventSearchToolResultImplFromJson(
         Map<String, dynamic> json) =>
     _$EventSearchToolResultImpl(
-      events: (json['events'] as List<dynamic>)
-          .map((e) => EventResultItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      total: (json['total'] as num).toInt(),
+      events: (json['events'] as List<dynamic>?)
+              ?.map((e) => EventResultItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      total: (json['total'] as num?)?.toInt() ?? 0,
       filtersApplied: json['filters_applied'] as Map<String, dynamic>?,
     );
 
@@ -273,10 +277,11 @@ Map<String, dynamic> _$$TicketTypeResultImplToJson(
 _$FavoritesToolResultImpl _$$FavoritesToolResultImplFromJson(
         Map<String, dynamic> json) =>
     _$FavoritesToolResultImpl(
-      favorites: (json['favorites'] as List<dynamic>)
-          .map((e) => EventResultItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      total: (json['total'] as num).toInt(),
+      favorites: (json['favorites'] as List<dynamic>?)
+              ?.map((e) => EventResultItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      total: (json['total'] as num?)?.toInt() ?? 0,
       lists: (json['lists'] as List<dynamic>?)
           ?.map((e) => FavoriteListResult.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -309,10 +314,11 @@ Map<String, dynamic> _$$FavoriteListResultImplToJson(
 _$AlertsToolResultImpl _$$AlertsToolResultImplFromJson(
         Map<String, dynamic> json) =>
     _$AlertsToolResultImpl(
-      alerts: (json['alerts'] as List<dynamic>)
-          .map((e) => AlertResultItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      total: (json['total'] as num).toInt(),
+      alerts: (json['alerts'] as List<dynamic>?)
+              ?.map((e) => AlertResultItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      total: (json['total'] as num?)?.toInt() ?? 0,
       activeCount: (json['active_count'] as num?)?.toInt() ?? 0,
     );
 
@@ -410,11 +416,12 @@ Map<String, dynamic> _$$ProfileStatsResultImplToJson(
 _$NotificationsToolResultImpl _$$NotificationsToolResultImplFromJson(
         Map<String, dynamic> json) =>
     _$NotificationsToolResultImpl(
-      notifications: (json['notifications'] as List<dynamic>)
-          .map(
-              (e) => NotificationResultItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      total: (json['total'] as num).toInt(),
+      notifications: (json['notifications'] as List<dynamic>?)
+              ?.map((e) =>
+                  NotificationResultItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      total: (json['total'] as num?)?.toInt() ?? 0,
       unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
     );
 
