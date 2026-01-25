@@ -93,17 +93,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Future<void> _saveCurrentSearch(BuildContext context, {bool isAlert = false}) async {
     final filter = ref.read(eventFilterProvider);
+    final alertsNotifier = ref.read(alertsProvider.notifier);
 
     // Show the new SaveSearchSheet modal
     final result = await SaveSearchSheet.show(
       context,
       filter: filter,
+      isNameAlreadyUsed: alertsNotifier.isNameAlreadyUsed,
     );
 
     if (result == null) return; // User cancelled
 
     // Call API via provider with explicit push/email params
-    await ref.read(alertsProvider.notifier).createAlert(
+    await alertsNotifier.createAlert(
       name: result.name,
       filter: filter,
       enablePush: result.enablePush,

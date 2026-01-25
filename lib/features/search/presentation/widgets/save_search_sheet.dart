@@ -20,22 +20,28 @@ class SaveSearchResult {
 /// Design inspired by Airbnb/Le Hiboo web version
 class SaveSearchSheet extends StatefulWidget {
   final EventFilter filter;
+  final bool Function(String name)? isNameAlreadyUsed;
 
   const SaveSearchSheet({
     super.key,
     required this.filter,
+    this.isNameAlreadyUsed,
   });
 
   /// Show the save search modal and return the result
   static Future<SaveSearchResult?> show(
     BuildContext context, {
     required EventFilter filter,
+    bool Function(String name)? isNameAlreadyUsed,
   }) {
     return showModalBottomSheet<SaveSearchResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => SaveSearchSheet(filter: filter),
+      builder: (context) => SaveSearchSheet(
+        filter: filter,
+        isNameAlreadyUsed: isNameAlreadyUsed,
+      ),
     );
   }
 
@@ -109,6 +115,18 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Veuillez entrer un nom pour la recherche'),
+          backgroundColor: Colors.red[400],
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Check if name is already used
+    if (widget.isNameAlreadyUsed != null && widget.isNameAlreadyUsed!(name)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Ce nom est déjà utilisé. Choisissez un autre nom.'),
           backgroundColor: Colors.red[400],
           behavior: SnackBarBehavior.floating,
         ),

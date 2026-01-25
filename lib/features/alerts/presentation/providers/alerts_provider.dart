@@ -68,6 +68,15 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
     return alerts.any((alert) => _filtersMatch(alert.filter, filter));
   }
 
+  /// Check if a name is already used by an existing alert
+  bool isNameAlreadyUsed(String name) {
+    final alerts = state.valueOrNull;
+    if (alerts == null || alerts.isEmpty) return false;
+
+    final normalizedName = name.trim().toLowerCase();
+    return alerts.any((alert) => alert.name.trim().toLowerCase() == normalizedName);
+  }
+
   bool _filtersMatch(EventFilter a, EventFilter b) {
     // Compare only significant criteria (ignore default values)
 

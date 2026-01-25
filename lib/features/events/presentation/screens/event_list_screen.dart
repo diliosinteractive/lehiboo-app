@@ -481,16 +481,18 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
 
   Future<void> _saveCurrentSearch(BuildContext context, {bool isAlert = false}) async {
     final filter = ref.read(eventFilterProvider);
+    final alertsNotifier = ref.read(alertsProvider.notifier);
 
     // Show the SaveSearchSheet modal
     final result = await SaveSearchSheet.show(
       context,
       filter: filter,
+      isNameAlreadyUsed: alertsNotifier.isNameAlreadyUsed,
     );
 
     if (result == null) return; // User cancelled
 
-    await ref.read(alertsProvider.notifier).createAlert(
+    await alertsNotifier.createAlert(
       name: result.name,
       filter: filter,
       enablePush: result.enablePush,
