@@ -19,6 +19,8 @@ import 'features/favorites/data/repositories/favorites_repository_impl.dart';
 import 'features/favorites/domain/repositories/favorites_repository.dart';
 import 'features/blog/data/repositories/blog_repository_impl.dart';
 import 'features/blog/domain/repositories/blog_repository.dart';
+import 'features/petit_boo/data/repositories/petit_boo_repository_impl.dart';
+import 'features/petit_boo/domain/repositories/petit_boo_repository.dart';
 
 // Fake Repositories (for offline testing)
 import 'data/repositories/fake_activity_repository_impl.dart';
@@ -27,7 +29,7 @@ import 'features/booking/data/repositories/fake_booking_repository_impl.dart';
 
 // Providers and Storage
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:lehiboo/features/ai_chat/presentation/providers/chat_provider.dart';
+import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 
 // Push Notifications
 import 'features/notifications/presentation/providers/push_notification_provider.dart';
@@ -107,6 +109,10 @@ List<Override> _getRealApiOverrides() {
     // Blog Repository
     blogRepositoryProvider.overrideWith((ref) {
       return ref.read(blogRepositoryImplProvider);
+    }),
+    // Petit Boo AI Chat Repository
+    petitBooRepositoryProvider.overrideWith((ref) {
+      return ref.read(petitBooRepositoryImplProvider);
     }),
     // Keep activity repository for backward compatibility
     activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),

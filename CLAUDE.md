@@ -209,3 +209,104 @@ Presentation Layer (presentation/)
 ├── widgets/         # UI components
 └── providers/       # State management
 ```
+
+---
+
+## Feature : Petit Boo (Assistant IA)
+
+### Architecture
+
+```
+lib/features/petit_boo/
+├── data/
+│   ├── datasources/
+│   │   ├── petit_boo_api_datasource.dart    # REST API (quota, sessions)
+│   │   ├── petit_boo_sse_datasource.dart    # SSE streaming chat
+│   │   └── petit_boo_context_storage.dart   # Stockage contexte local
+│   └── models/
+│       ├── chat_message_dto.dart            # Messages
+│       ├── quota_dto.dart                   # Quota utilisateur
+│       ├── conversation_dto.dart            # Sessions/conversations
+│       ├── petit_boo_event_dto.dart         # Events SSE
+│       └── tool_result_dto.dart             # Résultats outils MCP
+├── domain/
+│   └── repositories/petit_boo_repository.dart
+└── presentation/
+    ├── providers/
+    │   ├── petit_boo_chat_provider.dart     # State principal
+    │   ├── conversation_list_provider.dart  # Liste conversations
+    │   └── engagement_provider.dart         # Bulles engagement
+    ├── screens/
+    │   ├── petit_boo_chat_screen.dart       # Écran chat
+    │   ├── petit_boo_brain_screen.dart      # Gestion mémoire
+    │   └── conversation_list_screen.dart    # Historique
+    └── widgets/
+        ├── chat_input_bar.dart              # Barre saisie
+        ├── message_bubble.dart              # Bulles messages
+        ├── streaming_message_bubble.dart    # Streaming en cours
+        ├── typing_indicator.dart            # Animation "écrit..."
+        ├── limit_reached_dialog.dart        # Dialog limite atteinte
+        └── tool_results/                    # 8 widgets outils MCP
+```
+
+### URLs Backend
+
+| Env | URL |
+|-----|-----|
+| Dev | http://petitboo.lehiboo.localhost |
+| Prod | https://petitboo.lehiboo.com |
+
+**Note:** Ajouter `127.0.0.1 petitboo.lehiboo.localhost` dans `/etc/hosts` pour le dev local.
+
+### Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /health/ready` | Health check |
+| `POST /api/v1/chat` | Chat SSE streaming |
+| `GET /api/v1/quota` | Quota utilisateur |
+| `GET /api/v1/sessions` | Liste conversations |
+| `GET /api/v1/sessions/{uuid}` | Détail conversation |
+| `POST /api/v1/sessions` | Créer conversation |
+| `DELETE /api/v1/sessions/{uuid}` | Supprimer conversation |
+
+### Events SSE
+
+| Event | Description |
+|-------|-------------|
+| `session` | UUID nouvelle session |
+| `token` | Token texte streaming |
+| `tool_call` | Outil MCP en cours d'appel |
+| `tool_result` | Résultat outil MCP (events, bookings, etc.) |
+| `error` | Erreur |
+| `done` | Fin du stream |
+
+### Routes Flutter
+
+| Route | Description |
+|-------|-------------|
+| `/petit-boo` | Chat principal |
+| `/petit-boo?session=xxx` | Reprendre session existante |
+| `/petit-boo?message=xxx` | Message initial (depuis VoiceFab) |
+| `/petit-boo/history` | Historique conversations |
+| `/petit-boo/brain` | Gestion mémoire utilisateur |
+
+### VoiceFab
+
+Widget flottant central avec reconnaissance vocale :
+- **Tap** = Affiche tooltip "Maintiens pour parler"
+- **Double-tap** = Ouvre le chat classique
+- **Long-press** = Active l'écoute vocale avec animations
+
+### Outils MCP disponibles
+
+| Outil | Description |
+|-------|-------------|
+| `search_events` | Recherche d'événements |
+| `get_event_details` | Détails d'un événement |
+| `list_bookings` | Liste des réservations |
+| `get_booking_details` | Détails d'une réservation |
+| `list_favorites` | Liste des favoris |
+| `toggle_favorite` | Ajouter/retirer favori |
+| `get_recommendations` | Recommandations personnalisées |
+| `get_user_context` | Contexte utilisateur |

@@ -9,8 +9,10 @@ class AppConstants {
   // API Configuration - uses EnvConfig for environment-specific values
   static String get baseUrl => EnvConfig.apiBaseUrl;
   static String get aiBaseUrl => EnvConfig.aiBaseUrl;
+  static String get petitBooBaseUrl => EnvConfig.petitBooBaseUrl;
   static String get apiKey => EnvConfig.apiKey;
   static const Duration apiTimeout = Duration(seconds: 30);
+  static const Duration petitBooStreamTimeout = Duration(seconds: 120);
   static const int maxRetries = 3;
 
   // Storage Keys
@@ -26,6 +28,7 @@ class AppConstants {
   static const String keyNotificationsEnabled = 'notifications_enabled';
   static const String keyThemeMode = 'theme_mode';
   static const String keyLanguage = 'language';
+  static const String keyPetitBooSessionUuid = 'petit_boo_session_uuid';
 
   // Default Values
   static const int defaultSearchRadius = 10; // km

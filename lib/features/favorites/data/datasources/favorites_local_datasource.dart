@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:lehiboo/features/ai_chat/presentation/providers/chat_provider.dart' show sharedPreferencesProvider;
+import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 
 /// Local cache for favorite IDs using SharedPreferences
 ///

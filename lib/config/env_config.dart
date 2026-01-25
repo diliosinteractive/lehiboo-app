@@ -12,6 +12,10 @@ class EnvConfig {
   static String get aiBaseUrl =>
       dotenv.env['AI_BASE_URL'] ?? 'https://api.lehiboo.com/api-planner';
 
+  // Petit Boo AI Assistant
+  static String get petitBooBaseUrl =>
+      dotenv.env['PETIT_BOO_BASE_URL'] ?? 'https://petitboo.lehiboo.com';
+
   static String get apiKey => dotenv.env['API_KEY'] ?? '';
 
   /// Host header for nginx reverse proxy (used when accessing API via IP)
