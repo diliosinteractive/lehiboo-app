@@ -413,8 +413,7 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
                         ref.read(selectedFavoriteListProvider.notifier).state =
                             list.id;
                       },
-                      onLongPress: () async {
-                        HapticFeedback.mediumImpact();
+                      onEdit: () async {
                         final result = await EditListDialog.show(context, list);
                         if (result == null && selectedListId == list.id) {
                           ref.read(selectedFavoriteListProvider.notifier).state =
@@ -493,7 +492,7 @@ class _FolderChip extends StatelessWidget {
   final int? count;
   final bool isSelected;
   final VoidCallback onTap;
-  final VoidCallback? onLongPress;
+  final VoidCallback? onEdit;
 
   const _FolderChip({
     required this.label,
@@ -502,18 +501,23 @@ class _FolderChip extends StatelessWidget {
     this.count,
     required this.isSelected,
     required this.onTap,
-    this.onLongPress,
+    this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      onLongPress: onLongPress,
+      onLongPress: onEdit,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.only(
+          left: 14,
+          right: onEdit != null ? 8 : 14,
+          top: 10,
+          bottom: 10,
+        ),
         decoration: BoxDecoration(
           color: isSelected ? color : Colors.grey[50],
           borderRadius: BorderRadius.circular(14),
@@ -589,6 +593,26 @@ class _FolderChip extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: isSelected ? Colors.white : color,
+                  ),
+                ),
+              ),
+            ],
+
+            // Bouton d'édition (trois points)
+            if (onEdit != null) ...[
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  onEdit!();
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Icon(
+                    Icons.more_vert,
+                    size: 16,
+                    color: isSelected ? Colors.white.withValues(alpha: 0.8) : Colors.grey[500],
                   ),
                 ),
               ),
