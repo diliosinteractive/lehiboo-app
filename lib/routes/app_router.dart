@@ -36,13 +36,15 @@ import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
 import '../features/partners/presentation/screens/partner_detail_screen.dart';
-import '../features/ai_chat/presentation/screens/ai_welcome_screen.dart';
-import '../features/ai_chat/presentation/screens/ai_chat_screen.dart';
+// Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
 import '../features/gamification/presentation/screens/hibon_shop_screen.dart';
 import '../features/gamification/presentation/screens/lucky_wheel_screen.dart';
 import '../features/gamification/presentation/screens/achievements_screen.dart';
 import '../features/gamification/presentation/screens/gamification_dashboard_screen.dart';
+import '../features/petit_boo/presentation/screens/petit_boo_chat_screen.dart';
+import '../features/petit_boo/presentation/screens/petit_boo_brain_screen.dart';
+import '../features/petit_boo/presentation/screens/conversation_list_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -387,16 +389,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'notifications',
         builder: (context, state) => const AlertsListScreen(),
       ),
-      // AI Chat
+      // AI Chat (Legacy redirects to Petit Boo)
       GoRoute(
         path: '/ai-welcome',
         name: 'ai-welcome',
-        builder: (context, state) => const AiWelcomeScreen(),
+        redirect: (_, __) => '/petit-boo',
       ),
       GoRoute(
         path: '/ai-chat',
         name: 'ai-chat',
-        builder: (context, state) => const AiChatScreen(),
+        redirect: (_, __) => '/petit-boo',
       ),
       // Gamification
       GoRoute(
@@ -418,6 +420,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/achievements',
         name: 'achievements',
         builder: (context, state) => const AchievementsScreen(),
+      ),
+      // Petit Boo AI Chat
+      GoRoute(
+        path: '/petit-boo',
+        name: 'petit-boo',
+        builder: (context, state) {
+          final sessionUuid = state.uri.queryParameters['session'];
+          final initialMessage = state.uri.queryParameters['message'];
+          return PetitBooChatScreen(
+            sessionUuid: sessionUuid,
+            initialVoiceMessage: initialMessage,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/petit-boo/history',
+        name: 'petit-boo-history',
+        builder: (context, state) => const ConversationListScreen(),
+      ),
+      GoRoute(
+        path: '/petit-boo/brain',
+        name: 'petit-boo-brain',
+        builder: (context, state) => const PetitBooBrainScreen(),
       ),
     ],
 
