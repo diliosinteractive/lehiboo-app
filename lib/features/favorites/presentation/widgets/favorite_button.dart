@@ -201,8 +201,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
               content: const Text('Retiré des favoris'),
               duration: const Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
-              showCloseIcon: true,
-              action: SnackBarAction(
+                            action: SnackBarAction(
                 label: 'Annuler',
                 textColor: const Color(0xFFFF601F),
                 onPressed: () {
@@ -234,8 +233,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
               ),
               duration: const Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
-              showCloseIcon: true,
-            ),
+                          ),
           );
         }
       } else {
@@ -260,9 +258,8 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
                     ? 'Ajouté à la liste'
                     : 'Ajouté aux favoris',
               ),
-              duration: const Duration(seconds: 2),
+              duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
-              showCloseIcon: true,
               action: SnackBarAction(
                 label: 'Annuler',
                 textColor: const Color(0xFFFF601F),
@@ -287,8 +284,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
             duration: Duration(seconds: 3),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            showCloseIcon: true,
-          ),
+                      ),
         );
       }
     } finally {
