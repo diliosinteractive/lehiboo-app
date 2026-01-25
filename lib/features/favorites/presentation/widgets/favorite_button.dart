@@ -9,8 +9,9 @@ import 'favorite_list_picker_sheet.dart';
 /// A reusable animated favorite button widget
 ///
 /// Features:
-/// - Tap opens list picker to select folder
-/// - Scale animation on add (0.8 → 1.2 → 1.0)
+/// - Tap: if not favorite → open folder picker; if favorite → remove
+/// - Long press on favorite: open picker to move to another folder
+/// - Scale animation on add/remove (0.8 → 1.2 → 1.0)
 /// - Haptic feedback (light impact)
 /// - Smooth color transition
 /// - Guest guard check before toggling
@@ -86,6 +87,73 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
   bool get _isFavorite {
     return ref.read(favoritesProvider.notifier).isFavorite(widget.event.id);
+  }
+
+  /// Handle tap: if already favorite, remove it. Otherwise open picker.
+  Future<void> _onTap() async {
+    if (_isFavorite) {
+      // Already favorite: remove directly
+      await _removeFavorite();
+    } else {
+      // Not favorite: open picker to choose folder
+      await _showListPicker();
+    }
+  }
+
+  /// Remove from favorites directly
+  Future<void> _removeFavorite() async {
+    final canProceed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'gérer les favoris',
+    );
+
+    if (!canProceed || !mounted) return;
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+    HapticFeedback.lightImpact();
+    _controller.forward(from: 0);
+
+    try {
+      final success = await ref.read(favoritesProvider.notifier).toggleFavorite(
+        widget.event,
+        internalId: widget.internalId,
+      );
+
+      if (success && mounted) {
+        widget.onChanged?.call(false);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Retiré des favoris'),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Annuler',
+              textColor: const Color(0xFFFF601F),
+              onPressed: () {
+                ref.read(favoritesProvider.notifier).toggleFavorite(
+                  widget.event,
+                  internalId: widget.internalId,
+                );
+              },
+            ),
+          ),
+        );
+      } else if (!success && mounted) {
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de retirer des favoris'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _showListPicker() async {
@@ -241,8 +309,8 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     }
 
     return GestureDetector(
-      onTap: _showListPicker,
-      onLongPress: null, // Plus besoin du long press
+      onTap: _onTap,
+      onLongPress: _isFavorite ? _showListPicker : null, // Long press to move to another folder
       child: AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) {
