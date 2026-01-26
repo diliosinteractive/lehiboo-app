@@ -574,13 +574,11 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
 
   void _onSavePlan() {
     HapticFeedback.lightImpact();
-    // Send message to save the plan via LLM
-    final planUuid = _plan['uuid'] as String?;
-    if (planUuid != null) {
-      ref.read(petitBooChatProvider.notifier).sendMessage(
-        'Sauvegarde ce plan de sortie',
-      );
-    }
+    // Le LLM a le contexte du plan qu'il vient de générer (date + event_uuids)
+    // Pas besoin de passer l'UUID - il n'existe qu'après sauvegarde
+    ref.read(petitBooChatProvider.notifier).sendMessage(
+      'Sauvegarde ce plan de sortie',
+    );
   }
 
   String _formatDate(String dateStr) {
