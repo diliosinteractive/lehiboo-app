@@ -345,6 +345,28 @@ final defaultToolSchemas = <String, ToolSchemaDto>{
     actionType: 'trip_save',
     showToast: true,
   ),
+
+  'getMyTripPlans': const ToolSchemaDto(
+    name: 'getMyTripPlans',
+    description: 'Mes plans de sortie',
+    displayType: 'trip_plans_list',
+    icon: 'route',
+    color: '#27AE60',
+    title: 'Tes sorties planifiées',
+    emptyMessage: 'Aucune sortie planifiée',
+    responseSchema: ToolResponseSchemaDto(
+      itemsKey: 'plans',
+      totalKey: 'total',
+      itemSchema: ToolItemSchemaDto(
+        titleField: 'title',
+        dateField: 'planned_date',
+        navigation: ToolNavigationDto(
+          route: '/trip-plans',
+          idField: 'uuid',
+        ),
+      ),
+    ),
+  ),
 };
 
 /// Aliases for tool names (snake_case → camelCase)
@@ -370,6 +392,11 @@ const _toolNameAliases = {
   'delete_favorite_list': 'deleteFavoriteList',
   // Trip planner
   'save_trip_plan': 'saveTripPlan',
+  'get_my_trip_plans': 'getMyTripPlans',
+  'my_trip_plans': 'getMyTripPlans',
+  'myTripPlans': 'getMyTripPlans',
+  'list_trip_plans': 'getMyTripPlans',
+  'listTripPlans': 'getMyTripPlans',
 };
 
 /// Normalize tool name to camelCase

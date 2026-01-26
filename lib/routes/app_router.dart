@@ -45,6 +45,8 @@ import '../features/gamification/presentation/screens/gamification_dashboard_scr
 import '../features/petit_boo/presentation/screens/petit_boo_chat_screen.dart';
 import '../features/petit_boo/presentation/screens/petit_boo_brain_screen.dart';
 import '../features/petit_boo/presentation/screens/conversation_list_screen.dart';
+import '../features/trip_plans/presentation/screens/trip_plans_list_screen.dart';
+import '../features/trip_plans/presentation/screens/trip_plan_edit_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -443,6 +445,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/petit-boo/brain',
         name: 'petit-boo-brain',
         builder: (context, state) => const PetitBooBrainScreen(),
+      ),
+      // Trip Plans (Mes Sorties)
+      GoRoute(
+        path: '/trip-plans',
+        name: 'trip-plans',
+        builder: (context, state) => const TripPlansListScreen(),
+      ),
+      GoRoute(
+        path: '/trip-plans/:uuid/edit',
+        name: 'trip-plan-edit',
+        builder: (context, state) {
+          final uuid = state.pathParameters['uuid']!;
+          return TripPlanEditScreen(planUuid: uuid);
+        },
       ),
     ],
 

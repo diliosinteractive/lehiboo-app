@@ -162,6 +162,13 @@ class ProfileScreen extends ConsumerWidget {
         ),
         _buildMenuItem(
           context,
+          icon: Icons.route,
+          title: 'Mes Sorties',
+          subtitle: 'Plans et itinéraires',
+          onTap: () => context.push('/trip-plans'),
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.person_outline,
           title: 'Mon Compte',
           subtitle: 'Modifier vos informations',

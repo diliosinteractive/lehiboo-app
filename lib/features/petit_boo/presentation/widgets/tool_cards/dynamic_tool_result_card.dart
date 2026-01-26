@@ -13,6 +13,7 @@ import 'favorite_lists_card.dart';
 import 'generic_list_card.dart';
 import 'profile_card.dart';
 import 'trip_plan_card.dart';
+import 'trip_plans_list_card.dart';
 import 'unknown_tool_card.dart';
 
 /// Dynamic card that renders tool results based on schema from API
@@ -55,6 +56,7 @@ class DynamicToolResultCard extends ConsumerWidget {
       // Phase 7: New display types
       'brain_memory' => BrainMemoryCard(schema: schema, data: data),
       'trip_plan' => TripPlanCard(schema: schema, data: data),
+      'trip_plans_list' => TripPlansListCard(schema: schema, data: data),
       'action_confirmation' => ActionConfirmationCard(schema: schema, data: data),
       'favorite_lists' => FavoriteListsCard(schema: schema, data: data),
       _ => GenericListCard(schema: schema, data: data),
