@@ -9,7 +9,7 @@ part of 'tool_schema_dto.dart';
 _$ToolSchemaDtoImpl _$$ToolSchemaDtoImplFromJson(Map<String, dynamic> json) =>
     _$ToolSchemaDtoImpl(
       name: json['name'] as String,
-      description: json['description'] as String,
+      description: json['description'] as String? ?? '',
       displayType: json['display_type'] as String? ?? 'list',
       icon: json['icon'] as String? ?? 'extension',
       color: json['color'] as String?,
@@ -19,6 +19,15 @@ _$ToolSchemaDtoImpl _$$ToolSchemaDtoImplFromJson(Map<String, dynamic> json) =>
           ? null
           : ToolResponseSchemaDto.fromJson(
               json['response_schema'] as Map<String, dynamic>),
+      sectionSchemas: (json['section_schemas'] as List<dynamic>?)
+          ?.map(
+              (e) => BrainSectionSchemaDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      tripSchema: json['trip_schema'] == null
+          ? null
+          : TripSchemaDto.fromJson(json['trip_schema'] as Map<String, dynamic>),
+      actionType: json['action_type'] as String?,
+      showToast: json['show_toast'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$$ToolSchemaDtoImplToJson(_$ToolSchemaDtoImpl instance) =>
@@ -31,6 +40,10 @@ Map<String, dynamic> _$$ToolSchemaDtoImplToJson(_$ToolSchemaDtoImpl instance) =>
       'title': instance.title,
       'empty_message': instance.emptyMessage,
       'response_schema': instance.responseSchema,
+      'section_schemas': instance.sectionSchemas,
+      'trip_schema': instance.tripSchema,
+      'action_type': instance.actionType,
+      'show_toast': instance.showToast,
     };
 
 _$ToolResponseSchemaDtoImpl _$$ToolResponseSchemaDtoImplFromJson(
@@ -140,4 +153,34 @@ Map<String, dynamic> _$$ToolsResponseDtoImplToJson(
     <String, dynamic>{
       'success': instance.success,
       'tools': instance.tools,
+    };
+
+_$BrainSectionSchemaDtoImpl _$$BrainSectionSchemaDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$BrainSectionSchemaDtoImpl(
+      key: json['key'] as String,
+      title: json['title'] as String,
+      icon: json['icon'] as String,
+      collapsible: json['collapsible'] as bool? ?? true,
+    );
+
+Map<String, dynamic> _$$BrainSectionSchemaDtoImplToJson(
+        _$BrainSectionSchemaDtoImpl instance) =>
+    <String, dynamic>{
+      'key': instance.key,
+      'title': instance.title,
+      'icon': instance.icon,
+      'collapsible': instance.collapsible,
+    };
+
+_$TripSchemaDtoImpl _$$TripSchemaDtoImplFromJson(Map<String, dynamic> json) =>
+    _$TripSchemaDtoImpl(
+      showMap: json['show_map'] as bool? ?? true,
+      enableReorder: json['enable_reorder'] as bool? ?? true,
+    );
+
+Map<String, dynamic> _$$TripSchemaDtoImplToJson(_$TripSchemaDtoImpl instance) =>
+    <String, dynamic>{
+      'show_map': instance.showMap,
+      'enable_reorder': instance.enableReorder,
     };

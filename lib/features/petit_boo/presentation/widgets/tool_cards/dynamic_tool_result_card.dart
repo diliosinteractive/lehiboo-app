@@ -4,11 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import '../../providers/tool_schemas_provider.dart';
-import 'event_list_card.dart';
+import 'action_confirmation_card.dart';
 import 'booking_list_card.dart';
+import 'brain_memory_card.dart';
 import 'event_detail_card.dart';
-import 'profile_card.dart';
+import 'event_list_card.dart';
+import 'favorite_lists_card.dart';
 import 'generic_list_card.dart';
+import 'profile_card.dart';
+import 'trip_plan_card.dart';
 import 'unknown_tool_card.dart';
 
 /// Dynamic card that renders tool results based on schema from API
@@ -48,6 +52,11 @@ class DynamicToolResultCard extends ConsumerWidget {
       'event_detail' => EventDetailCard(schema: schema, data: data),
       'profile' => ProfileCard(schema: schema, data: data),
       'list' || 'stats' => GenericListCard(schema: schema, data: data),
+      // Phase 7: New display types
+      'brain_memory' => BrainMemoryCard(schema: schema, data: data),
+      'trip_plan' => TripPlanCard(schema: schema, data: data),
+      'action_confirmation' => ActionConfirmationCard(schema: schema, data: data),
+      'favorite_lists' => FavoriteListsCard(schema: schema, data: data),
       _ => GenericListCard(schema: schema, data: data),
     };
   }
@@ -133,6 +142,21 @@ IconData getIconFromName(String? iconName) {
     'arrow_forward' => Icons.arrow_forward,
     'edit_outlined' => Icons.edit_outlined,
     'image' => Icons.image,
+    // Phase 7: Brain, Favorites, Trip
+    'psychology' => Icons.psychology,
+    'family_restroom' => Icons.family_restroom,
+    'thumb_up' => Icons.thumb_up,
+    'block' => Icons.block,
+    'route' => Icons.route,
+    'folder_special' => Icons.folder_special,
+    'drive_file_move' => Icons.drive_file_move,
+    'check_circle' => Icons.check_circle,
+    // List management
+    'edit' => Icons.edit,
+    'delete' => Icons.delete,
+    'folder' => Icons.folder,
+    'folder_outlined' => Icons.folder_outlined,
+    'folder_off' => Icons.folder_off_outlined,
     _ => Icons.extension,
   };
 }

@@ -11,9 +11,9 @@ class ToolSchemaDto with _$ToolSchemaDto {
     required String name,
 
     /// Human-readable description
-    required String description,
+    @Default('') String description,
 
-    /// Display type for the UI (event_list, booking_list, profile, stats, detail)
+    /// Display type for the UI (event_list, booking_list, profile, stats, detail, brain_memory, trip_plan, action_confirmation)
     @JsonKey(name: 'display_type') @Default('list') String displayType,
 
     /// Material icon name (e.g., 'favorite', 'search', 'person')
@@ -30,6 +30,18 @@ class ToolSchemaDto with _$ToolSchemaDto {
 
     /// Schema for parsing the response
     @JsonKey(name: 'response_schema') ToolResponseSchemaDto? responseSchema,
+
+    /// Brain memory section schemas (for brain_memory display type)
+    @JsonKey(name: 'section_schemas') List<BrainSectionSchemaDto>? sectionSchemas,
+
+    /// Trip planner schema (for trip_plan display type)
+    @JsonKey(name: 'trip_schema') TripSchemaDto? tripSchema,
+
+    /// Action type for confirmations (favorite_add, favorite_remove, brain_update, list_create, move_to_list)
+    @JsonKey(name: 'action_type') String? actionType,
+
+    /// Whether to show a toast notification (for action_confirmation)
+    @JsonKey(name: 'show_toast') @Default(true) bool showToast,
   }) = _ToolSchemaDto;
 
   factory ToolSchemaDto.fromJson(Map<String, dynamic> json) =>
@@ -148,4 +160,40 @@ class ToolsResponseDto with _$ToolsResponseDto {
 
   factory ToolsResponseDto.fromJson(Map<String, dynamic> json) =>
       _$ToolsResponseDtoFromJson(json);
+}
+
+/// Schema for brain memory sections (family, location, preferences, constraints)
+@freezed
+class BrainSectionSchemaDto with _$BrainSectionSchemaDto {
+  const factory BrainSectionSchemaDto({
+    /// Section key (e.g., 'family', 'location', 'preferences', 'constraints')
+    required String key,
+
+    /// Human-readable title (e.g., 'Famille')
+    required String title,
+
+    /// Material icon name (e.g., 'family_restroom')
+    required String icon,
+
+    /// Whether the section can be collapsed
+    @Default(true) bool collapsible,
+  }) = _BrainSectionSchemaDto;
+
+  factory BrainSectionSchemaDto.fromJson(Map<String, dynamic> json) =>
+      _$BrainSectionSchemaDtoFromJson(json);
+}
+
+/// Schema for trip planner configuration
+@freezed
+class TripSchemaDto with _$TripSchemaDto {
+  const factory TripSchemaDto({
+    /// Whether to show the map
+    @JsonKey(name: 'show_map') @Default(true) bool showMap,
+
+    /// Whether to enable drag & drop reordering
+    @JsonKey(name: 'enable_reorder') @Default(true) bool enableReorder,
+  }) = _TripSchemaDto;
+
+  factory TripSchemaDto.fromJson(Map<String, dynamic> json) =>
+      _$TripSchemaDtoFromJson(json);
 }

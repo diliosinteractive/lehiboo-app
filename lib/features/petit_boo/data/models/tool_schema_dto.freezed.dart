@@ -26,7 +26,7 @@ mixin _$ToolSchemaDto {
   /// Human-readable description
   String get description => throw _privateConstructorUsedError;
 
-  /// Display type for the UI (event_list, booking_list, profile, stats, detail)
+  /// Display type for the UI (event_list, booking_list, profile, stats, detail, brain_memory, trip_plan, action_confirmation)
   @JsonKey(name: 'display_type')
   String get displayType => throw _privateConstructorUsedError;
 
@@ -48,6 +48,23 @@ mixin _$ToolSchemaDto {
   ToolResponseSchemaDto? get responseSchema =>
       throw _privateConstructorUsedError;
 
+  /// Brain memory section schemas (for brain_memory display type)
+  @JsonKey(name: 'section_schemas')
+  List<BrainSectionSchemaDto>? get sectionSchemas =>
+      throw _privateConstructorUsedError;
+
+  /// Trip planner schema (for trip_plan display type)
+  @JsonKey(name: 'trip_schema')
+  TripSchemaDto? get tripSchema => throw _privateConstructorUsedError;
+
+  /// Action type for confirmations (favorite_add, favorite_remove, brain_update, list_create, move_to_list)
+  @JsonKey(name: 'action_type')
+  String? get actionType => throw _privateConstructorUsedError;
+
+  /// Whether to show a toast notification (for action_confirmation)
+  @JsonKey(name: 'show_toast')
+  bool get showToast => throw _privateConstructorUsedError;
+
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
   $ToolSchemaDtoCopyWith<ToolSchemaDto> get copyWith =>
@@ -68,9 +85,15 @@ abstract class $ToolSchemaDtoCopyWith<$Res> {
       String? color,
       String? title,
       @JsonKey(name: 'empty_message') String? emptyMessage,
-      @JsonKey(name: 'response_schema') ToolResponseSchemaDto? responseSchema});
+      @JsonKey(name: 'response_schema') ToolResponseSchemaDto? responseSchema,
+      @JsonKey(name: 'section_schemas')
+      List<BrainSectionSchemaDto>? sectionSchemas,
+      @JsonKey(name: 'trip_schema') TripSchemaDto? tripSchema,
+      @JsonKey(name: 'action_type') String? actionType,
+      @JsonKey(name: 'show_toast') bool showToast});
 
   $ToolResponseSchemaDtoCopyWith<$Res>? get responseSchema;
+  $TripSchemaDtoCopyWith<$Res>? get tripSchema;
 }
 
 /// @nodoc
@@ -94,6 +117,10 @@ class _$ToolSchemaDtoCopyWithImpl<$Res, $Val extends ToolSchemaDto>
     Object? title = freezed,
     Object? emptyMessage = freezed,
     Object? responseSchema = freezed,
+    Object? sectionSchemas = freezed,
+    Object? tripSchema = freezed,
+    Object? actionType = freezed,
+    Object? showToast = null,
   }) {
     return _then(_value.copyWith(
       name: null == name
@@ -128,6 +155,22 @@ class _$ToolSchemaDtoCopyWithImpl<$Res, $Val extends ToolSchemaDto>
           ? _value.responseSchema
           : responseSchema // ignore: cast_nullable_to_non_nullable
               as ToolResponseSchemaDto?,
+      sectionSchemas: freezed == sectionSchemas
+          ? _value.sectionSchemas
+          : sectionSchemas // ignore: cast_nullable_to_non_nullable
+              as List<BrainSectionSchemaDto>?,
+      tripSchema: freezed == tripSchema
+          ? _value.tripSchema
+          : tripSchema // ignore: cast_nullable_to_non_nullable
+              as TripSchemaDto?,
+      actionType: freezed == actionType
+          ? _value.actionType
+          : actionType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      showToast: null == showToast
+          ? _value.showToast
+          : showToast // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 
@@ -141,6 +184,18 @@ class _$ToolSchemaDtoCopyWithImpl<$Res, $Val extends ToolSchemaDto>
     return $ToolResponseSchemaDtoCopyWith<$Res>(_value.responseSchema!,
         (value) {
       return _then(_value.copyWith(responseSchema: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $TripSchemaDtoCopyWith<$Res>? get tripSchema {
+    if (_value.tripSchema == null) {
+      return null;
+    }
+
+    return $TripSchemaDtoCopyWith<$Res>(_value.tripSchema!, (value) {
+      return _then(_value.copyWith(tripSchema: value) as $Val);
     });
   }
 }
@@ -161,10 +216,17 @@ abstract class _$$ToolSchemaDtoImplCopyWith<$Res>
       String? color,
       String? title,
       @JsonKey(name: 'empty_message') String? emptyMessage,
-      @JsonKey(name: 'response_schema') ToolResponseSchemaDto? responseSchema});
+      @JsonKey(name: 'response_schema') ToolResponseSchemaDto? responseSchema,
+      @JsonKey(name: 'section_schemas')
+      List<BrainSectionSchemaDto>? sectionSchemas,
+      @JsonKey(name: 'trip_schema') TripSchemaDto? tripSchema,
+      @JsonKey(name: 'action_type') String? actionType,
+      @JsonKey(name: 'show_toast') bool showToast});
 
   @override
   $ToolResponseSchemaDtoCopyWith<$Res>? get responseSchema;
+  @override
+  $TripSchemaDtoCopyWith<$Res>? get tripSchema;
 }
 
 /// @nodoc
@@ -186,6 +248,10 @@ class __$$ToolSchemaDtoImplCopyWithImpl<$Res>
     Object? title = freezed,
     Object? emptyMessage = freezed,
     Object? responseSchema = freezed,
+    Object? sectionSchemas = freezed,
+    Object? tripSchema = freezed,
+    Object? actionType = freezed,
+    Object? showToast = null,
   }) {
     return _then(_$ToolSchemaDtoImpl(
       name: null == name
@@ -220,6 +286,22 @@ class __$$ToolSchemaDtoImplCopyWithImpl<$Res>
           ? _value.responseSchema
           : responseSchema // ignore: cast_nullable_to_non_nullable
               as ToolResponseSchemaDto?,
+      sectionSchemas: freezed == sectionSchemas
+          ? _value._sectionSchemas
+          : sectionSchemas // ignore: cast_nullable_to_non_nullable
+              as List<BrainSectionSchemaDto>?,
+      tripSchema: freezed == tripSchema
+          ? _value.tripSchema
+          : tripSchema // ignore: cast_nullable_to_non_nullable
+              as TripSchemaDto?,
+      actionType: freezed == actionType
+          ? _value.actionType
+          : actionType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      showToast: null == showToast
+          ? _value.showToast
+          : showToast // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -229,13 +311,19 @@ class __$$ToolSchemaDtoImplCopyWithImpl<$Res>
 class _$ToolSchemaDtoImpl implements _ToolSchemaDto {
   const _$ToolSchemaDtoImpl(
       {required this.name,
-      required this.description,
+      this.description = '',
       @JsonKey(name: 'display_type') this.displayType = 'list',
       this.icon = 'extension',
       this.color,
       this.title,
       @JsonKey(name: 'empty_message') this.emptyMessage,
-      @JsonKey(name: 'response_schema') this.responseSchema});
+      @JsonKey(name: 'response_schema') this.responseSchema,
+      @JsonKey(name: 'section_schemas')
+      final List<BrainSectionSchemaDto>? sectionSchemas,
+      @JsonKey(name: 'trip_schema') this.tripSchema,
+      @JsonKey(name: 'action_type') this.actionType,
+      @JsonKey(name: 'show_toast') this.showToast = true})
+      : _sectionSchemas = sectionSchemas;
 
   factory _$ToolSchemaDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$ToolSchemaDtoImplFromJson(json);
@@ -246,9 +334,10 @@ class _$ToolSchemaDtoImpl implements _ToolSchemaDto {
 
   /// Human-readable description
   @override
+  @JsonKey()
   final String description;
 
-  /// Display type for the UI (event_list, booking_list, profile, stats, detail)
+  /// Display type for the UI (event_list, booking_list, profile, stats, detail, brain_memory, trip_plan, action_confirmation)
   @override
   @JsonKey(name: 'display_type')
   final String displayType;
@@ -276,9 +365,38 @@ class _$ToolSchemaDtoImpl implements _ToolSchemaDto {
   @JsonKey(name: 'response_schema')
   final ToolResponseSchemaDto? responseSchema;
 
+  /// Brain memory section schemas (for brain_memory display type)
+  final List<BrainSectionSchemaDto>? _sectionSchemas;
+
+  /// Brain memory section schemas (for brain_memory display type)
+  @override
+  @JsonKey(name: 'section_schemas')
+  List<BrainSectionSchemaDto>? get sectionSchemas {
+    final value = _sectionSchemas;
+    if (value == null) return null;
+    if (_sectionSchemas is EqualUnmodifiableListView) return _sectionSchemas;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  /// Trip planner schema (for trip_plan display type)
+  @override
+  @JsonKey(name: 'trip_schema')
+  final TripSchemaDto? tripSchema;
+
+  /// Action type for confirmations (favorite_add, favorite_remove, brain_update, list_create, move_to_list)
+  @override
+  @JsonKey(name: 'action_type')
+  final String? actionType;
+
+  /// Whether to show a toast notification (for action_confirmation)
+  @override
+  @JsonKey(name: 'show_toast')
+  final bool showToast;
+
   @override
   String toString() {
-    return 'ToolSchemaDto(name: $name, description: $description, displayType: $displayType, icon: $icon, color: $color, title: $title, emptyMessage: $emptyMessage, responseSchema: $responseSchema)';
+    return 'ToolSchemaDto(name: $name, description: $description, displayType: $displayType, icon: $icon, color: $color, title: $title, emptyMessage: $emptyMessage, responseSchema: $responseSchema, sectionSchemas: $sectionSchemas, tripSchema: $tripSchema, actionType: $actionType, showToast: $showToast)';
   }
 
   @override
@@ -297,13 +415,33 @@ class _$ToolSchemaDtoImpl implements _ToolSchemaDto {
             (identical(other.emptyMessage, emptyMessage) ||
                 other.emptyMessage == emptyMessage) &&
             (identical(other.responseSchema, responseSchema) ||
-                other.responseSchema == responseSchema));
+                other.responseSchema == responseSchema) &&
+            const DeepCollectionEquality()
+                .equals(other._sectionSchemas, _sectionSchemas) &&
+            (identical(other.tripSchema, tripSchema) ||
+                other.tripSchema == tripSchema) &&
+            (identical(other.actionType, actionType) ||
+                other.actionType == actionType) &&
+            (identical(other.showToast, showToast) ||
+                other.showToast == showToast));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, name, description, displayType,
-      icon, color, title, emptyMessage, responseSchema);
+  int get hashCode => Object.hash(
+      runtimeType,
+      name,
+      description,
+      displayType,
+      icon,
+      color,
+      title,
+      emptyMessage,
+      responseSchema,
+      const DeepCollectionEquality().hash(_sectionSchemas),
+      tripSchema,
+      actionType,
+      showToast);
 
   @JsonKey(ignore: true)
   @override
@@ -322,14 +460,19 @@ class _$ToolSchemaDtoImpl implements _ToolSchemaDto {
 abstract class _ToolSchemaDto implements ToolSchemaDto {
   const factory _ToolSchemaDto(
       {required final String name,
-      required final String description,
+      final String description,
       @JsonKey(name: 'display_type') final String displayType,
       final String icon,
       final String? color,
       final String? title,
       @JsonKey(name: 'empty_message') final String? emptyMessage,
       @JsonKey(name: 'response_schema')
-      final ToolResponseSchemaDto? responseSchema}) = _$ToolSchemaDtoImpl;
+      final ToolResponseSchemaDto? responseSchema,
+      @JsonKey(name: 'section_schemas')
+      final List<BrainSectionSchemaDto>? sectionSchemas,
+      @JsonKey(name: 'trip_schema') final TripSchemaDto? tripSchema,
+      @JsonKey(name: 'action_type') final String? actionType,
+      @JsonKey(name: 'show_toast') final bool showToast}) = _$ToolSchemaDtoImpl;
 
   factory _ToolSchemaDto.fromJson(Map<String, dynamic> json) =
       _$ToolSchemaDtoImpl.fromJson;
@@ -344,7 +487,7 @@ abstract class _ToolSchemaDto implements ToolSchemaDto {
   String get description;
   @override
 
-  /// Display type for the UI (event_list, booking_list, profile, stats, detail)
+  /// Display type for the UI (event_list, booking_list, profile, stats, detail, brain_memory, trip_plan, action_confirmation)
   @JsonKey(name: 'display_type')
   String get displayType;
   @override
@@ -369,6 +512,26 @@ abstract class _ToolSchemaDto implements ToolSchemaDto {
   /// Schema for parsing the response
   @JsonKey(name: 'response_schema')
   ToolResponseSchemaDto? get responseSchema;
+  @override
+
+  /// Brain memory section schemas (for brain_memory display type)
+  @JsonKey(name: 'section_schemas')
+  List<BrainSectionSchemaDto>? get sectionSchemas;
+  @override
+
+  /// Trip planner schema (for trip_plan display type)
+  @JsonKey(name: 'trip_schema')
+  TripSchemaDto? get tripSchema;
+  @override
+
+  /// Action type for confirmations (favorite_add, favorite_remove, brain_update, list_create, move_to_list)
+  @JsonKey(name: 'action_type')
+  String? get actionType;
+  @override
+
+  /// Whether to show a toast notification (for action_confirmation)
+  @JsonKey(name: 'show_toast')
+  bool get showToast;
   @override
   @JsonKey(ignore: true)
   _$$ToolSchemaDtoImplCopyWith<_$ToolSchemaDtoImpl> get copyWith =>
@@ -1700,5 +1863,404 @@ abstract class _ToolsResponseDto implements ToolsResponseDto {
   @override
   @JsonKey(ignore: true)
   _$$ToolsResponseDtoImplCopyWith<_$ToolsResponseDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+BrainSectionSchemaDto _$BrainSectionSchemaDtoFromJson(
+    Map<String, dynamic> json) {
+  return _BrainSectionSchemaDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$BrainSectionSchemaDto {
+  /// Section key (e.g., 'family', 'location', 'preferences', 'constraints')
+  String get key => throw _privateConstructorUsedError;
+
+  /// Human-readable title (e.g., 'Famille')
+  String get title => throw _privateConstructorUsedError;
+
+  /// Material icon name (e.g., 'family_restroom')
+  String get icon => throw _privateConstructorUsedError;
+
+  /// Whether the section can be collapsed
+  bool get collapsible => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $BrainSectionSchemaDtoCopyWith<BrainSectionSchemaDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BrainSectionSchemaDtoCopyWith<$Res> {
+  factory $BrainSectionSchemaDtoCopyWith(BrainSectionSchemaDto value,
+          $Res Function(BrainSectionSchemaDto) then) =
+      _$BrainSectionSchemaDtoCopyWithImpl<$Res, BrainSectionSchemaDto>;
+  @useResult
+  $Res call({String key, String title, String icon, bool collapsible});
+}
+
+/// @nodoc
+class _$BrainSectionSchemaDtoCopyWithImpl<$Res,
+        $Val extends BrainSectionSchemaDto>
+    implements $BrainSectionSchemaDtoCopyWith<$Res> {
+  _$BrainSectionSchemaDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? key = null,
+    Object? title = null,
+    Object? icon = null,
+    Object? collapsible = null,
+  }) {
+    return _then(_value.copyWith(
+      key: null == key
+          ? _value.key
+          : key // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      icon: null == icon
+          ? _value.icon
+          : icon // ignore: cast_nullable_to_non_nullable
+              as String,
+      collapsible: null == collapsible
+          ? _value.collapsible
+          : collapsible // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BrainSectionSchemaDtoImplCopyWith<$Res>
+    implements $BrainSectionSchemaDtoCopyWith<$Res> {
+  factory _$$BrainSectionSchemaDtoImplCopyWith(
+          _$BrainSectionSchemaDtoImpl value,
+          $Res Function(_$BrainSectionSchemaDtoImpl) then) =
+      __$$BrainSectionSchemaDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String key, String title, String icon, bool collapsible});
+}
+
+/// @nodoc
+class __$$BrainSectionSchemaDtoImplCopyWithImpl<$Res>
+    extends _$BrainSectionSchemaDtoCopyWithImpl<$Res,
+        _$BrainSectionSchemaDtoImpl>
+    implements _$$BrainSectionSchemaDtoImplCopyWith<$Res> {
+  __$$BrainSectionSchemaDtoImplCopyWithImpl(_$BrainSectionSchemaDtoImpl _value,
+      $Res Function(_$BrainSectionSchemaDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? key = null,
+    Object? title = null,
+    Object? icon = null,
+    Object? collapsible = null,
+  }) {
+    return _then(_$BrainSectionSchemaDtoImpl(
+      key: null == key
+          ? _value.key
+          : key // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      icon: null == icon
+          ? _value.icon
+          : icon // ignore: cast_nullable_to_non_nullable
+              as String,
+      collapsible: null == collapsible
+          ? _value.collapsible
+          : collapsible // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$BrainSectionSchemaDtoImpl implements _BrainSectionSchemaDto {
+  const _$BrainSectionSchemaDtoImpl(
+      {required this.key,
+      required this.title,
+      required this.icon,
+      this.collapsible = true});
+
+  factory _$BrainSectionSchemaDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BrainSectionSchemaDtoImplFromJson(json);
+
+  /// Section key (e.g., 'family', 'location', 'preferences', 'constraints')
+  @override
+  final String key;
+
+  /// Human-readable title (e.g., 'Famille')
+  @override
+  final String title;
+
+  /// Material icon name (e.g., 'family_restroom')
+  @override
+  final String icon;
+
+  /// Whether the section can be collapsed
+  @override
+  @JsonKey()
+  final bool collapsible;
+
+  @override
+  String toString() {
+    return 'BrainSectionSchemaDto(key: $key, title: $title, icon: $icon, collapsible: $collapsible)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BrainSectionSchemaDtoImpl &&
+            (identical(other.key, key) || other.key == key) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.icon, icon) || other.icon == icon) &&
+            (identical(other.collapsible, collapsible) ||
+                other.collapsible == collapsible));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, key, title, icon, collapsible);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BrainSectionSchemaDtoImplCopyWith<_$BrainSectionSchemaDtoImpl>
+      get copyWith => __$$BrainSectionSchemaDtoImplCopyWithImpl<
+          _$BrainSectionSchemaDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$BrainSectionSchemaDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _BrainSectionSchemaDto implements BrainSectionSchemaDto {
+  const factory _BrainSectionSchemaDto(
+      {required final String key,
+      required final String title,
+      required final String icon,
+      final bool collapsible}) = _$BrainSectionSchemaDtoImpl;
+
+  factory _BrainSectionSchemaDto.fromJson(Map<String, dynamic> json) =
+      _$BrainSectionSchemaDtoImpl.fromJson;
+
+  @override
+
+  /// Section key (e.g., 'family', 'location', 'preferences', 'constraints')
+  String get key;
+  @override
+
+  /// Human-readable title (e.g., 'Famille')
+  String get title;
+  @override
+
+  /// Material icon name (e.g., 'family_restroom')
+  String get icon;
+  @override
+
+  /// Whether the section can be collapsed
+  bool get collapsible;
+  @override
+  @JsonKey(ignore: true)
+  _$$BrainSectionSchemaDtoImplCopyWith<_$BrainSectionSchemaDtoImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+TripSchemaDto _$TripSchemaDtoFromJson(Map<String, dynamic> json) {
+  return _TripSchemaDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TripSchemaDto {
+  /// Whether to show the map
+  @JsonKey(name: 'show_map')
+  bool get showMap => throw _privateConstructorUsedError;
+
+  /// Whether to enable drag & drop reordering
+  @JsonKey(name: 'enable_reorder')
+  bool get enableReorder => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $TripSchemaDtoCopyWith<TripSchemaDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TripSchemaDtoCopyWith<$Res> {
+  factory $TripSchemaDtoCopyWith(
+          TripSchemaDto value, $Res Function(TripSchemaDto) then) =
+      _$TripSchemaDtoCopyWithImpl<$Res, TripSchemaDto>;
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'show_map') bool showMap,
+      @JsonKey(name: 'enable_reorder') bool enableReorder});
+}
+
+/// @nodoc
+class _$TripSchemaDtoCopyWithImpl<$Res, $Val extends TripSchemaDto>
+    implements $TripSchemaDtoCopyWith<$Res> {
+  _$TripSchemaDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? showMap = null,
+    Object? enableReorder = null,
+  }) {
+    return _then(_value.copyWith(
+      showMap: null == showMap
+          ? _value.showMap
+          : showMap // ignore: cast_nullable_to_non_nullable
+              as bool,
+      enableReorder: null == enableReorder
+          ? _value.enableReorder
+          : enableReorder // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$TripSchemaDtoImplCopyWith<$Res>
+    implements $TripSchemaDtoCopyWith<$Res> {
+  factory _$$TripSchemaDtoImplCopyWith(
+          _$TripSchemaDtoImpl value, $Res Function(_$TripSchemaDtoImpl) then) =
+      __$$TripSchemaDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'show_map') bool showMap,
+      @JsonKey(name: 'enable_reorder') bool enableReorder});
+}
+
+/// @nodoc
+class __$$TripSchemaDtoImplCopyWithImpl<$Res>
+    extends _$TripSchemaDtoCopyWithImpl<$Res, _$TripSchemaDtoImpl>
+    implements _$$TripSchemaDtoImplCopyWith<$Res> {
+  __$$TripSchemaDtoImplCopyWithImpl(
+      _$TripSchemaDtoImpl _value, $Res Function(_$TripSchemaDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? showMap = null,
+    Object? enableReorder = null,
+  }) {
+    return _then(_$TripSchemaDtoImpl(
+      showMap: null == showMap
+          ? _value.showMap
+          : showMap // ignore: cast_nullable_to_non_nullable
+              as bool,
+      enableReorder: null == enableReorder
+          ? _value.enableReorder
+          : enableReorder // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TripSchemaDtoImpl implements _TripSchemaDto {
+  const _$TripSchemaDtoImpl(
+      {@JsonKey(name: 'show_map') this.showMap = true,
+      @JsonKey(name: 'enable_reorder') this.enableReorder = true});
+
+  factory _$TripSchemaDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TripSchemaDtoImplFromJson(json);
+
+  /// Whether to show the map
+  @override
+  @JsonKey(name: 'show_map')
+  final bool showMap;
+
+  /// Whether to enable drag & drop reordering
+  @override
+  @JsonKey(name: 'enable_reorder')
+  final bool enableReorder;
+
+  @override
+  String toString() {
+    return 'TripSchemaDto(showMap: $showMap, enableReorder: $enableReorder)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TripSchemaDtoImpl &&
+            (identical(other.showMap, showMap) || other.showMap == showMap) &&
+            (identical(other.enableReorder, enableReorder) ||
+                other.enableReorder == enableReorder));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, showMap, enableReorder);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TripSchemaDtoImplCopyWith<_$TripSchemaDtoImpl> get copyWith =>
+      __$$TripSchemaDtoImplCopyWithImpl<_$TripSchemaDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TripSchemaDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _TripSchemaDto implements TripSchemaDto {
+  const factory _TripSchemaDto(
+          {@JsonKey(name: 'show_map') final bool showMap,
+          @JsonKey(name: 'enable_reorder') final bool enableReorder}) =
+      _$TripSchemaDtoImpl;
+
+  factory _TripSchemaDto.fromJson(Map<String, dynamic> json) =
+      _$TripSchemaDtoImpl.fromJson;
+
+  @override
+
+  /// Whether to show the map
+  @JsonKey(name: 'show_map')
+  bool get showMap;
+  @override
+
+  /// Whether to enable drag & drop reordering
+  @JsonKey(name: 'enable_reorder')
+  bool get enableReorder;
+  @override
+  @JsonKey(ignore: true)
+  _$$TripSchemaDtoImplCopyWith<_$TripSchemaDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

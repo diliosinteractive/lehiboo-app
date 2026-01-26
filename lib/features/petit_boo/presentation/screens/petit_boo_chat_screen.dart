@@ -60,18 +60,22 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted && _scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: PetitBooTheme.durationNormal,
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    }
+  void _scrollToBottom({int retryCount = 0}) {
+    // Give ListView time to build and measure content
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: PetitBooTheme.durationNormal,
+          curve: Curves.easeOut,
+        );
+      } else if (retryCount < 3) {
+        // Retry up to 3 times if controller not yet attached
+        _scrollToBottom(retryCount: retryCount + 1);
+      }
+    });
   }
 
   @override
@@ -79,7 +83,17 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
     final chatState = ref.watch(petitBooChatProvider);
 
     ref.listen<PetitBooChatState>(petitBooChatProvider, (previous, next) {
-      if (previous?.messages.length != next.messages.length ||
+      // Detect when session finished loading (isLoading: true → false with messages)
+      final justFinishedLoading = previous?.isLoading == true &&
+          !next.isLoading &&
+          next.messages.isNotEmpty;
+
+      if (justFinishedLoading) {
+        // Use post-frame callback to ensure ListView is mounted
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      } else if (previous?.messages.length != next.messages.length ||
           previous?.currentStreamingText != next.currentStreamingText) {
         _scrollToBottom();
       }

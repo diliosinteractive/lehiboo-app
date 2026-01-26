@@ -312,6 +312,9 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
           state = state.copyWith(
             currentToolResults: [...state.currentToolResults, toolResult],
           );
+
+          // Sync brain memory to local storage when brain tools are called
+          _syncBrainMemoryFromToolResult(event.tool, event.result);
         }
         break;
 
@@ -514,6 +517,127 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
     await _contextStorage.mergeContext(newContext);
     state = state.copyWith(userContext: _contextStorage.getContext());
+  }
+
+  /// Sync brain memory from tool result to local storage
+  /// Called when getBrain or updateBrain tools return data
+  void _syncBrainMemoryFromToolResult(String toolName, Map<String, dynamic> result) {
+    // Normalize tool name (snake_case or camelCase)
+    final normalizedTool = toolName.toLowerCase().replaceAll('_', '');
+
+    // Only process brain-related tools
+    if (!normalizedTool.contains('brain')) return;
+
+    if (kDebugMode) {
+      debugPrint('🧠 PetitBoo: Syncing brain memory from tool $toolName');
+      debugPrint('🧠 PetitBoo: Result keys: ${result.keys.toList()}');
+    }
+
+    // Extract memory data from result
+    // The backend may return data in different formats:
+    // - { memory: { family: [...], preferences: [...] } }
+    // - { data: { memory: {...} } }
+    // - { family: [...], preferences: [...] } directly
+    Map<String, dynamic>? memoryData;
+
+    if (result['memory'] is Map<String, dynamic>) {
+      memoryData = result['memory'] as Map<String, dynamic>;
+    } else if (result['data'] is Map<String, dynamic>) {
+      final data = result['data'] as Map<String, dynamic>;
+      if (data['memory'] is Map<String, dynamic>) {
+        memoryData = data['memory'] as Map<String, dynamic>;
+      } else {
+        memoryData = data;
+      }
+    } else {
+      // Check if result directly contains brain sections
+      final knownSections = ['family', 'location', 'preferences', 'constraints'];
+      final hasKnownSections = knownSections.any((s) => result.containsKey(s));
+      if (hasKnownSections) {
+        memoryData = result;
+      }
+    }
+
+    if (memoryData == null || memoryData.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('🧠 PetitBoo: No memory data found to sync');
+      }
+      return;
+    }
+
+    // Convert brain sections to flat context keys for local storage
+    _syncBrainSectionsToContext(memoryData);
+  }
+
+  /// Convert brain sections (family, preferences, etc.) to flat context keys
+  Future<void> _syncBrainSectionsToContext(Map<String, dynamic> memoryData) async {
+    final flatContext = <String, dynamic>{};
+
+    // Family section
+    if (memoryData['family'] != null) {
+      final family = memoryData['family'];
+      if (family is List && family.isNotEmpty) {
+        flatContext['family_info'] = family;
+        // Try to extract specific info
+        for (final item in family) {
+          final itemStr = item.toString().toLowerCase();
+          if (itemStr.contains('enfant') || itemStr.contains('child')) {
+            flatContext['has_children'] = true;
+          }
+        }
+      } else if (family is Map) {
+        flatContext['family_info'] = family;
+      }
+    }
+
+    // Location section
+    if (memoryData['location'] != null) {
+      final location = memoryData['location'];
+      if (location is List && location.isNotEmpty) {
+        flatContext['location_info'] = location;
+        // Try to extract city
+        for (final item in location) {
+          final itemStr = item.toString();
+          if (itemStr.isNotEmpty && !itemStr.contains(':')) {
+            flatContext['city'] = itemStr;
+            break;
+          }
+        }
+      } else if (location is String) {
+        flatContext['city'] = location;
+      }
+    }
+
+    // Preferences section
+    if (memoryData['preferences'] != null) {
+      final prefs = memoryData['preferences'];
+      if (prefs is List && prefs.isNotEmpty) {
+        flatContext['preferences'] = prefs;
+      }
+    }
+
+    // Constraints section
+    if (memoryData['constraints'] != null) {
+      final constraints = memoryData['constraints'];
+      if (constraints is List && constraints.isNotEmpty) {
+        flatContext['constraints'] = constraints;
+        // Check for budget constraints
+        for (final item in constraints) {
+          final itemStr = item.toString().toLowerCase();
+          if (itemStr.contains('budget') || itemStr.contains('argent') || itemStr.contains('économ')) {
+            flatContext['budget_preference'] = 'low';
+          }
+        }
+      }
+    }
+
+    if (flatContext.isNotEmpty) {
+      if (kDebugMode) {
+        debugPrint('🧠 PetitBoo: Saving ${flatContext.length} context keys to local storage');
+      }
+      await _contextStorage.mergeContext(flatContext);
+      state = state.copyWith(userContext: _contextStorage.getContext());
+    }
   }
 
   @override

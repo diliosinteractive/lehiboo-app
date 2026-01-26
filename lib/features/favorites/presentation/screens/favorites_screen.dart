@@ -7,14 +7,29 @@ import 'package:lehiboo/features/favorites/presentation/providers/favorite_lists
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import '../widgets/favorite_lists_sidebar.dart';
 
-class FavoritesScreen extends ConsumerWidget {
+class FavoritesScreen extends ConsumerStatefulWidget {
   const FavoritesScreen({super.key});
 
+  @override
+  ConsumerState<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   /// Seuil de largeur pour afficher la sidebar (tablette)
   static const double _tabletBreakpoint = 600;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    // Refresh les listes ET les favoris à l'arrivée sur la page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(favoriteListsProvider.notifier).refresh();
+      ref.read(favoritesProvider.notifier).refresh();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= _tabletBreakpoint;
 
@@ -36,12 +51,12 @@ class FavoritesScreen extends ConsumerWidget {
           },
         ),
       ),
-      body: isTablet ? _buildTabletLayout(ref) : _buildMobileLayout(ref),
+      body: isTablet ? _buildTabletLayout() : _buildMobileLayout(),
     );
   }
 
   /// Layout tablette avec sidebar
-  Widget _buildTabletLayout(WidgetRef ref) {
+  Widget _buildTabletLayout() {
     return Row(
       children: [
         const FavoriteListsSidebar(),
@@ -54,7 +69,7 @@ class FavoritesScreen extends ConsumerWidget {
   }
 
   /// Layout mobile avec chips horizontaux
-  Widget _buildMobileLayout(WidgetRef ref) {
+  Widget _buildMobileLayout() {
     return Column(
       children: [
         const FavoriteListsChips(),
