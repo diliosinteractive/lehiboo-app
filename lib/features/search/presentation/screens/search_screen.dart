@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/petit_boo/presentation/providers/engagement_provider.dart';
+import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../widgets/airbnb_search_bar.dart';
@@ -114,17 +115,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     if (mounted) {
       final hasNotifications = result.enablePush || result.enableEmail;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(hasNotifications
-              ? 'Alerte "${result.name}" créée avec notifications !'
-              : 'Recherche "${result.name}" enregistrée !'),
-          backgroundColor: const Color(0xFF1E3A8A),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          duration: const Duration(seconds: 3),
-        ),
+      PetitBooToast.success(
+        context,
+        hasNotifications
+            ? 'Alerte "${result.name}" créée avec notifications !'
+            : 'Recherche "${result.name}" enregistrée !',
       );
     }
   }

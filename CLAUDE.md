@@ -310,6 +310,13 @@ Widget flottant central avec reconnaissance vocale :
 | `getMyAlerts` | Liste des alertes |
 | `getMyProfile` | Profil utilisateur |
 | `getNotifications` | Notifications |
+| `getBrain` | Mémoire utilisateur (sections) |
+| `updateBrain` | Mise à jour mémoire |
+| `addToFavorites` | Ajout favori + toast |
+| `removeFromFavorites` | Retrait favori |
+| `createFavoriteList` | Création liste |
+| `moveToList` | Déplacement vers liste |
+| `planTrip` | Itinéraire carte + timeline |
 
 ### Architecture Tool Results (Schema-Driven)
 
@@ -344,8 +351,39 @@ lib/features/petit_boo/
             ├── booking_list_card.dart         # Réservations/tickets
             ├── profile_card.dart              # Profil utilisateur
             ├── generic_list_card.dart         # Fallback générique
-            └── unknown_tool_card.dart         # Tool non reconnu
+            ├── unknown_tool_card.dart         # Tool non reconnu
+            ├── brain_memory_card.dart         # Mémoire utilisateur (Phase 7)
+            ├── trip_plan_card.dart            # Itinéraire avec carte OSM (Phase 7)
+            └── action_confirmation_card.dart  # Confirmations animées (Phase 7)
 ```
+
+**Display Types disponibles :**
+
+| displayType | Widget | Description |
+|-------------|--------|-------------|
+| `event_list` | EventListCard | Liste d'événements |
+| `booking_list` | BookingListCard | Réservations/tickets |
+| `event_detail` | EventDetailCard | Détail événement |
+| `profile` | ProfileCard | Profil utilisateur |
+| `list` / `stats` | GenericListCard | Fallback générique |
+| `brain_memory` | BrainMemoryCard | Sections collapsibles (famille, préférences...) |
+| `trip_plan` | TripPlanCard | Carte OSM + timeline drag & drop |
+| `action_confirmation` | ActionConfirmationCard | Feedback animé avec toast |
+
+### Toast System (Phase 7)
+
+```dart
+PetitBooToast.show(
+  context,
+  message: 'Ajouté aux favoris',
+  icon: Icons.favorite,
+  color: PetitBooTheme.error,
+);
+```
+
+- Slide-in depuis le bas avec animation bounce
+- Auto-dismiss après 3 secondes
+- Tap pour fermer manuellement
 
 **Ajouter un nouveau tool :**
 

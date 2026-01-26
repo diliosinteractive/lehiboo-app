@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../providers/petit_boo_chat_provider.dart';
+import 'animated_toast.dart';
 
 /// Modern input bar for Petit Boo chat - Style Web 2026
 /// Inspiré du design assistant web avec ombre, disclaimer et bouton intégré
@@ -64,13 +65,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
         onError: (errorNotification) {
           if (mounted) {
             setState(() => _isListening = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Erreur micro: ${errorNotification.errorMsg}'),
-                duration: const Duration(seconds: 2),
-                backgroundColor: PetitBooTheme.error,
-              ),
-            );
+            PetitBooToast.error(context, 'Erreur micro: ${errorNotification.errorMsg}');
           }
         },
       );

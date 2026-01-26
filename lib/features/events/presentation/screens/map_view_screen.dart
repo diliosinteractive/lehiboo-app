@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import 'package:lehiboo/features/events/presentation/providers/event_providers.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 import 'package:lehiboo/features/events/presentation/widgets/map_event_card.dart';
@@ -111,9 +112,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
       
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible de récupérer votre position')),
-        );
+        PetitBooToast.error(context, 'Impossible de récupérer votre position');
       }
     } finally {
       if (mounted) setState(() => _isLocating = false);

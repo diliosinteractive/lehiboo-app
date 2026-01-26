@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../gamification/presentation/providers/gamification_provider.dart';
 import '../providers/petit_boo_chat_provider.dart';
+import 'animated_toast.dart';
 
 /// Dialog shown when user reaches their message limit
 class LimitReachedDialog extends ConsumerWidget {
@@ -274,15 +275,11 @@ class LimitReachedDialog extends ConsumerWidget {
       ref.read(petitBooChatProvider.notifier).resetLimit();
       if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Conversation débloquée !')),
-        );
+        PetitBooToast.success(context, 'Conversation débloquée !');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
-        );
+        PetitBooToast.error(context, 'Erreur: $e');
       }
     }
   }
@@ -307,9 +304,7 @@ class LimitReachedDialog extends ConsumerWidget {
           "Publicité regardée",
         );
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Merci ! Vous avez gagné 20 Hibons.')),
-          );
+          PetitBooToast.success(context, 'Merci ! Vous avez gagné 20 Hibons.');
         }
       } catch (e) {
         // Ignore errors

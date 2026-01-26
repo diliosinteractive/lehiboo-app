@@ -7,6 +7,7 @@ import '../providers/alerts_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../../../features/search/presentation/providers/filter_provider.dart';
 import '../../../../features/booking/presentation/widgets/filter_tabs_row.dart';
+import '../../../../features/petit_boo/presentation/widgets/animated_toast.dart';
 
 /// Types de filtres pour les alertes
 enum AlertFilterType {
@@ -292,9 +293,7 @@ class _AlertItemCard extends ConsumerWidget {
       },
       onDismissed: (direction) {
         ref.read(alertsProvider.notifier).deleteAlert(alert.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Alerte "${alert.name}" supprimée')),
-        );
+        PetitBooToast.success(context, 'Alerte "${alert.name}" supprimée');
       },
       child: GestureDetector(
         onTap: () {

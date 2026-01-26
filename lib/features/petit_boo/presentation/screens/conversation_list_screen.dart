@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../../data/models/conversation_dto.dart';
 import '../providers/conversation_list_provider.dart';
+import '../widgets/animated_toast.dart';
 
 /// Screen showing list of past conversations with Petit Boo
 class ConversationListScreen extends ConsumerWidget {
@@ -345,16 +346,7 @@ class ConversationListScreen extends ConsumerWidget {
           .deleteConversation(conversation.uuid);
 
       if (context.mounted && success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Conversation supprimée'),
-            backgroundColor: PetitBooTheme.grey700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
+        PetitBooToast.success(context, 'Conversation supprimée');
       }
     }
   }

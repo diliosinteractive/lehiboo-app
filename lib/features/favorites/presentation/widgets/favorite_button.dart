@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
+import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'favorite_list_picker_sheet.dart';
 
@@ -143,13 +144,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
         );
       } else if (!success && mounted) {
         HapticFeedback.heavyImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Impossible de retirer des favoris'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        PetitBooToast.error(context, 'Impossible de retirer des favoris');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -278,14 +273,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
       if (!success && mounted) {
         HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Une erreur est survenue'),
-            duration: Duration(seconds: 3),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-                      ),
-        );
+        PetitBooToast.error(context, 'Une erreur est survenue');
       }
     } finally {
       if (mounted) {

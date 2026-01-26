@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
+import '../../../petit_boo/presentation/widgets/animated_toast.dart';
 import 'list_color_picker.dart';
 
 /// Dialog pour éditer une liste de favoris existante
@@ -88,12 +89,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
         HapticFeedback.mediumImpact();
         Navigator.of(context).pop(updatedList);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de la mise à jour'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        PetitBooToast.error(context, 'Erreur lors de la mise à jour');
       }
     }
   }
