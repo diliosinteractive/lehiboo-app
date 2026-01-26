@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/datasources/petit_boo_api_datasource.dart';
 import '../../data/models/tool_schema_dto.dart';
 
 /// Cached map of tool schemas indexed by tool name
@@ -336,6 +335,16 @@ final defaultToolSchemas = <String, ToolSchemaDto>{
     title: 'Ton itinéraire',
     tripSchema: TripSchemaDto(showMap: true, enableReorder: true),
   ),
+
+  'saveTripPlan': const ToolSchemaDto(
+    name: 'saveTripPlan',
+    description: 'Sauvegarder un plan de sortie',
+    displayType: 'action_confirmation',
+    icon: 'bookmark',
+    color: '#27AE60',
+    actionType: 'trip_save',
+    showToast: true,
+  ),
 };
 
 /// Aliases for tool names (snake_case → camelCase)
@@ -359,6 +368,8 @@ const _toolNameAliases = {
   'get_favorite_lists': 'getFavoriteLists',
   'update_favorite_list': 'updateFavoriteList',
   'delete_favorite_list': 'deleteFavoriteList',
+  // Trip planner
+  'save_trip_plan': 'saveTripPlan',
 };
 
 /// Normalize tool name to camelCase

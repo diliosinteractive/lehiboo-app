@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../../core/themes/petit_boo_theme.dart';
 import '../../../data/models/tool_schema_dto.dart';
+import '../../providers/petit_boo_chat_provider.dart';
 import 'dynamic_tool_result_card.dart';
 
-/// Card displaying a trip plan with map and timeline
-/// Features: OSM map, drag & drop reordering, expandable map
-class TripPlanCard extends StatefulWidget {
+/// Card displaying a trip plan with timeline, map, and action buttons
+/// Designed according to the planTrip tool spec from backend
+class TripPlanCard extends ConsumerStatefulWidget {
   final ToolSchemaDto schema;
   final Map<String, dynamic> data;
 
@@ -20,75 +24,102 @@ class TripPlanCard extends StatefulWidget {
   });
 
   @override
-  State<TripPlanCard> createState() => _TripPlanCardState();
+  ConsumerState<TripPlanCard> createState() => _TripPlanCardState();
 }
 
-class _TripPlanCardState extends State<TripPlanCard> {
+class _TripPlanCardState extends ConsumerState<TripPlanCard> {
   bool _mapExpanded = false;
-  late List<_TripStop> _stops;
   final MapController _mapController = MapController();
 
-  @override
-  void initState() {
-    super.initState();
-    _stops = _parseStops();
+  /// Extract plan data from nested structure
+  Map<String, dynamic> get _plan {
+    // Handle nested data structure: data.plan or data.data.plan
+    final data = widget.data;
+    if (data['plan'] is Map<String, dynamic>) {
+      return data['plan'] as Map<String, dynamic>;
+    }
+    if (data['data'] is Map<String, dynamic>) {
+      final innerData = data['data'] as Map<String, dynamic>;
+      if (innerData['plan'] is Map<String, dynamic>) {
+        return innerData['plan'] as Map<String, dynamic>;
+      }
+      return innerData;
+    }
+    return data;
   }
 
-  List<_TripStop> _parseStops() {
-    final stopsData = widget.data['stops'] as List<dynamic>? ?? [];
-    return stopsData.asMap().entries.map((entry) {
-      final index = entry.key;
-      final stop = entry.value as Map<String, dynamic>;
+  List<_TripStop> get _stops {
+    final stopsData = _plan['stops'] as List<dynamic>? ?? [];
+    return stopsData.map((stop) {
+      if (stop is! Map<String, dynamic>) {
+        return const _TripStop(order: 0, eventTitle: 'Étape');
+      }
+
+      // Extract coordinates from nested or flat structure
+      double? lat, lng;
+      if (stop['coordinates'] is Map<String, dynamic>) {
+        final coords = stop['coordinates'] as Map<String, dynamic>;
+        lat = (coords['lat'] as num?)?.toDouble();
+        lng = (coords['lng'] as num?)?.toDouble();
+      } else {
+        lat = (stop['latitude'] as num?)?.toDouble();
+        lng = (stop['longitude'] as num?)?.toDouble();
+      }
+
       return _TripStop(
-        index: index,
-        title: stop['title'] as String? ?? 'Étape ${index + 1}',
-        time: stop['time'] as String? ?? '',
-        duration: stop['duration'] as String?,
+        order: (stop['order'] as num?)?.toInt() ?? 0,
+        eventUuid: stop['event_uuid'] as String?,
+        eventTitle: stop['event_title'] as String? ??
+                    stop['title'] as String? ??
+                    'Étape',
+        venueName: stop['venue_name'] as String?,
         address: stop['address'] as String?,
-        latitude: (stop['latitude'] as num?)?.toDouble(),
-        longitude: (stop['longitude'] as num?)?.toDouble(),
-        eventSlug: stop['event_slug'] as String?,
-        transitDuration: stop['transit_duration'] as String?,
-        transitDistance: stop['transit_distance'] as String?,
+        city: stop['city'] as String?,
+        arrivalTime: stop['arrival_time'] as String?,
+        departureTime: stop['departure_time'] as String?,
+        durationMinutes: (stop['duration_minutes'] as num?)?.toInt(),
+        travelFromPreviousKm: (stop['travel_from_previous_km'] as num?)?.toDouble(),
+        travelFromPreviousMinutes: (stop['travel_from_previous_minutes'] as num?)?.toInt(),
+        latitude: lat,
+        longitude: lng,
       );
     }).toList();
   }
 
-  void _onReorder(int oldIndex, int newIndex) {
-    setState(() {
-      if (oldIndex < newIndex) {
-        newIndex -= 1;
-      }
-      final item = _stops.removeAt(oldIndex);
-      _stops.insert(newIndex, item);
-      // Update indices
-      for (var i = 0; i < _stops.length; i++) {
-        _stops[i] = _stops[i].copyWith(index: i);
-      }
-    });
+  String get _title => _plan['title'] as String? ?? 'Ton itinéraire';
+
+  String? get _plannedDate => _plan['planned_date'] as String?;
+
+  String? get _startTime => _plan['start_time'] as String?;
+
+  String? get _endTime => _plan['end_time'] as String?;
+
+  int? get _totalDurationMinutes => (_plan['total_duration_minutes'] as num?)?.toInt();
+
+  double? get _totalDistanceKm => (_plan['total_distance_km'] as num?)?.toDouble();
+
+  double? get _score => (_plan['score'] as num?)?.toDouble();
+
+  bool get _isSaved => widget.data['saved'] == true ||
+                       (widget.data['data'] is Map && (widget.data['data'] as Map)['saved'] == true);
+
+  List<String> get _recommendations {
+    final recs = _plan['recommendations'] as List<dynamic>?;
+    if (recs == null) return [];
+    return recs.map((r) => r.toString()).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final accentColor = parseHexColor(widget.schema.color);
-    final tripSchema = widget.schema.tripSchema;
-    final showMap = tripSchema?.showMap ?? true;
-    final enableReorder = tripSchema?.enableReorder ?? true;
+    final stops = _stops;
 
-    // Trip metadata
-    final date = widget.data['date'] as String?;
-    final totalDuration = widget.data['total_duration'] as String?;
-    final totalDistance = widget.data['total_distance'] as String?;
-    final recommendations = widget.data['recommendations'] as List<dynamic>?;
-
-    // Calculate map bounds
-    final validStops = _stops.where((s) => s.hasCoordinates).toList();
-    final bounds = _calculateBounds(validStops);
-
-    // Don't show the card if there are no stops (empty itinerary)
-    if (_stops.isEmpty) {
+    // Don't show the card if there are no stops
+    if (stops.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final validStops = stops.where((s) => s.hasCoordinates).toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -101,184 +132,409 @@ class _TripPlanCardState extends State<TripPlanCard> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(PetitBooTheme.spacing16),
-            child: Row(
-              children: [
-                // Icon
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.route,
-                    color: accentColor,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: PetitBooTheme.spacing12),
+          // Header with title, date, stats
+          _buildHeader(accentColor),
 
-                // Title and metadata
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.schema.title ?? 'Ton itinéraire',
-                        style: PetitBooTheme.headingSm,
+          const Divider(height: 1, color: PetitBooTheme.border),
+
+          // Map (collapsible)
+          if (validStops.isNotEmpty)
+            _buildMap(validStops, accentColor),
+
+          // Timeline
+          _buildTimeline(stops, accentColor),
+
+          // Recommendations
+          if (_recommendations.isNotEmpty) ...[
+            const Divider(height: 1, color: PetitBooTheme.border),
+            _buildRecommendations(),
+          ],
+
+          // Action buttons
+          const Divider(height: 1, color: PetitBooTheme.border),
+          _buildActionButtons(accentColor, validStops.isNotEmpty),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(Color accentColor) {
+    return Padding(
+      padding: const EdgeInsets.all(PetitBooTheme.spacing16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // First row: Icon + Title + Score
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.route,
+                  color: accentColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: PetitBooTheme.spacing12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _title,
+                      style: PetitBooTheme.headingSm.copyWith(
+                        color: PetitBooTheme.textPrimary,
                       ),
-                      if (date != null || totalDuration != null || totalDistance != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Row(
-                            children: [
-                              if (date != null) ...[
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 12,
-                                  color: PetitBooTheme.textTertiary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  date,
-                                  style: PetitBooTheme.caption,
-                                ),
-                              ],
-                              if (totalDuration != null) ...[
-                                if (date != null)
-                                  Text(' • ', style: PetitBooTheme.caption),
-                                Text(totalDuration, style: PetitBooTheme.caption),
-                              ],
-                              if (totalDistance != null) ...[
-                                Text(' • ', style: PetitBooTheme.caption),
-                                Text(totalDistance, style: PetitBooTheme.caption),
-                              ],
-                            ],
-                          ),
+                    ),
+                    if (_plannedDate != null)
+                      Text(
+                        _formatDate(_plannedDate!),
+                        style: PetitBooTheme.bodySm.copyWith(
+                          color: PetitBooTheme.textTertiary,
                         ),
+                      ),
+                  ],
+                ),
+              ),
+              // Score badge
+              if (_score != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getScoreColor(_score!).withValues(alpha: 0.1),
+                    borderRadius: PetitBooTheme.borderRadiusFull,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.star,
+                        size: 16,
+                        color: _getScoreColor(_score!),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _score!.toStringAsFixed(1),
+                        style: PetitBooTheme.label.copyWith(
+                          color: _getScoreColor(_score!),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
 
-          // Map
-          if (showMap && validStops.isNotEmpty)
-            GestureDetector(
-              onTap: () => setState(() => _mapExpanded = !_mapExpanded),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                height: _mapExpanded ? 300 : 150,
-                child: Stack(
-                  children: [
-                    FlutterMap(
-                      mapController: _mapController,
-                      options: MapOptions(
-                        initialCenter: bounds?.center ?? const LatLng(45.75, 4.85),
-                        initialZoom: 13,
-                        interactionOptions: const InteractionOptions(
-                          flags: InteractiveFlag.none,
+          const SizedBox(height: PetitBooTheme.spacing12),
+
+          // Second row: Stats chips (duration, distance, time range)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (_totalDurationMinutes != null)
+                _buildStatChip(
+                  Icons.schedule,
+                  _formatDuration(_totalDurationMinutes!),
+                  accentColor,
+                ),
+              if (_totalDistanceKm != null)
+                _buildStatChip(
+                  Icons.straighten,
+                  '${_totalDistanceKm!.toStringAsFixed(1)} km',
+                  accentColor,
+                ),
+              if (_startTime != null && _endTime != null)
+                _buildStatChip(
+                  Icons.access_time,
+                  '$_startTime - $_endTime',
+                  accentColor,
+                ),
+              _buildStatChip(
+                Icons.flag,
+                '${_stops.length} étape${_stops.length > 1 ? 's' : ''}',
+                accentColor,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatChip(IconData icon, String label, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: PetitBooTheme.grey100,
+        borderRadius: PetitBooTheme.borderRadiusFull,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: PetitBooTheme.textTertiary),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: PetitBooTheme.caption.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMap(List<_TripStop> validStops, Color accentColor) {
+    final bounds = _calculateBounds(validStops);
+
+    return GestureDetector(
+      onTap: () => setState(() => _mapExpanded = !_mapExpanded),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: _mapExpanded ? 280 : 140,
+        child: Stack(
+          children: [
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: bounds?.center ?? const LatLng(46.6, 2.3),
+                initialZoom: 12,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.lehiboo.app',
+                ),
+                // Route polyline
+                if (validStops.length > 1)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: validStops
+                            .map((s) => LatLng(s.latitude!, s.longitude!))
+                            .toList(),
+                        strokeWidth: 3,
+                        color: accentColor,
+                      ),
+                    ],
+                  ),
+                // Markers with numbers
+                MarkerLayer(
+                  markers: validStops.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final stop = entry.value;
+                    return Marker(
+                      point: LatLng(stop.latitude!, stop.longitude!),
+                      width: 28,
+                      height: 28,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: accentColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                      children: [
-                        // OSM Tile Layer
-                        TileLayer(
-                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.lehiboo.app',
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+            // Expand/collapse hint
+            Positioned(
+              bottom: 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: PetitBooTheme.borderRadiusFull,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _mapExpanded ? Icons.unfold_less : Icons.unfold_more,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _mapExpanded ? 'Réduire' : 'Agrandir la carte',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                        // Route polyline
-                        if (validStops.length > 1)
-                          PolylineLayer(
-                            polylines: [
-                              Polyline(
-                                points: validStops
-                                    .map((s) => LatLng(s.latitude!, s.longitude!))
-                                    .toList(),
-                                strokeWidth: 3,
-                                color: accentColor,
-                              ),
-                            ],
-                          ),
+  Widget _buildTimeline(List<_TripStop> stops, Color accentColor) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: PetitBooTheme.spacing8),
+      itemCount: stops.length,
+      itemBuilder: (context, index) {
+        final stop = stops[index];
+        final isLast = index == stops.length - 1;
+        final nextStop = isLast ? null : stops[index + 1];
 
-                        // Markers
-                        MarkerLayer(
-                          markers: validStops.asMap().entries.map((entry) {
-                            final stop = entry.value;
-                            return Marker(
-                              point: LatLng(stop.latitude!, stop.longitude!),
-                              width: 30,
-                              height: 30,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: accentColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.2),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '${stop.index + 1}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
+        return _TimelineStopWidget(
+          stop: stop,
+          index: index,
+          isLast: isLast,
+          accentColor: accentColor,
+          travelToNextKm: nextStop?.travelFromPreviousKm,
+          travelToNextMinutes: nextStop?.travelFromPreviousMinutes,
+          onTap: stop.eventUuid != null
+              ? () {
+                  HapticFeedback.selectionClick();
+                  context.push('/event/${stop.eventUuid}');
+                }
+              : null,
+        );
+      },
+    );
+  }
+
+  Widget _buildRecommendations() {
+    return Padding(
+      padding: const EdgeInsets.all(PetitBooTheme.spacing16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.lightbulb_outline,
+                size: 18,
+                color: Color(0xFFF39C12),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Conseils',
+                style: PetitBooTheme.label.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFF39C12),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...(_recommendations.map((rec) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '• ',
+                      style: PetitBooTheme.bodySm.copyWith(
+                        color: PetitBooTheme.textSecondary,
+                      ),
                     ),
-
-                    // Expand hint
-                    Positioned(
-                      bottom: 8,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            borderRadius: PetitBooTheme.borderRadiusFull,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _mapExpanded ? Icons.unfold_less : Icons.unfold_more,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _mapExpanded ? 'Réduire' : 'Agrandir',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
+                    Expanded(
+                      child: Text(
+                        rec,
+                        style: PetitBooTheme.bodySm.copyWith(
+                          color: PetitBooTheme.textSecondary,
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+              ))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(Color accentColor, bool hasValidStops) {
+    return Padding(
+      padding: const EdgeInsets.all(PetitBooTheme.spacing16),
+      child: Row(
+        children: [
+          // Save button
+          if (!_isSaved)
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _onSavePlan,
+                icon: const Icon(Icons.bookmark_border, size: 18),
+                label: const Text('Sauvegarder'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: accentColor,
+                  side: BorderSide(color: accentColor),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.bookmark, size: 18, color: accentColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Sauvegardé',
+                      style: PetitBooTheme.label.copyWith(
+                        color: accentColor,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -286,95 +542,75 @@ class _TripPlanCardState extends State<TripPlanCard> {
               ),
             ),
 
-          const Divider(height: 1, color: PetitBooTheme.border),
-
-          // Timeline
-          if (_stops.isNotEmpty)
-            enableReorder
-                ? ReorderableListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    buildDefaultDragHandles: false,
-                    itemCount: _stops.length,
-                    onReorder: _onReorder,
-                    proxyDecorator: (child, index, animation) {
-                      return Material(
-                        elevation: 4,
-                        color: Colors.transparent,
-                        child: child,
-                      );
-                    },
-                    itemBuilder: (context, index) {
-                      final stop = _stops[index];
-                      final isLast = index == _stops.length - 1;
-                      return _TimelineStop(
-                        key: ValueKey(stop.title + stop.time),
-                        stop: stop,
-                        isLast: isLast,
-                        accentColor: accentColor,
-                        enableReorder: enableReorder,
-                        reorderIndex: index,
-                        onTap: stop.eventSlug != null
-                            ? () => context.push('/event/${stop.eventSlug}')
-                            : null,
-                      );
-                    },
-                  )
-                : Column(
-                    children: _stops.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final stop = entry.value;
-                      final isLast = index == _stops.length - 1;
-                      return _TimelineStop(
-                        stop: stop,
-                        isLast: isLast,
-                        accentColor: accentColor,
-                        enableReorder: false,
-                        onTap: stop.eventSlug != null
-                            ? () => context.push('/event/${stop.eventSlug}')
-                            : null,
-                      );
-                    }).toList(),
+          if (hasValidStops) ...[
+            const SizedBox(width: 12),
+            // View on map button
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _mapExpanded = !_mapExpanded);
+                },
+                icon: Icon(
+                  _mapExpanded ? Icons.map : Icons.map_outlined,
+                  size: 18,
+                ),
+                label: Text(_mapExpanded ? 'Masquer carte' : 'Voir carte'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-
-          // Recommendations
-          if (recommendations != null && recommendations.isNotEmpty) ...[
-            const Divider(height: 1, color: PetitBooTheme.border),
-            Padding(
-              padding: const EdgeInsets.all(PetitBooTheme.spacing16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: recommendations.map((rec) {
-                  final text = rec is String ? rec : rec['text'] as String? ?? '';
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline,
-                          size: 18,
-                          color: const Color(0xFFF39C12),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            text,
-                            style: PetitBooTheme.bodySm.copyWith(
-                              color: PetitBooTheme.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                ),
               ),
             ),
           ],
         ],
       ),
     );
+  }
+
+  void _onSavePlan() {
+    HapticFeedback.lightImpact();
+    // Send message to save the plan via LLM
+    final planUuid = _plan['uuid'] as String?;
+    if (planUuid != null) {
+      ref.read(petitBooChatProvider.notifier).sendMessage(
+        'Sauvegarde ce plan de sortie',
+      );
+    }
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      final formatter = DateFormat('EEEE d MMMM', 'fr_FR');
+      final formatted = formatter.format(date);
+      // Capitalize first letter
+      return formatted[0].toUpperCase() + formatted.substring(1);
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  String _formatDuration(int minutes) {
+    if (minutes < 60) {
+      return '${minutes}min';
+    }
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    if (mins == 0) {
+      return '${hours}h';
+    }
+    return '${hours}h${mins.toString().padLeft(2, '0')}';
+  }
+
+  Color _getScoreColor(double score) {
+    if (score >= 8) return const Color(0xFF27AE60);
+    if (score >= 6) return const Color(0xFFF39C12);
+    return const Color(0xFFE74C3C);
   }
 
   LatLngBounds? _calculateBounds(List<_TripStop> stops) {
@@ -389,7 +625,6 @@ class _TripPlanCardState extends State<TripPlanCard> {
       if (stop.longitude! > maxLng) maxLng = stop.longitude!;
     }
 
-    // Add padding
     const padding = 0.01;
     return LatLngBounds(
       LatLng(minLat - padding, minLng - padding),
@@ -398,27 +633,31 @@ class _TripPlanCardState extends State<TripPlanCard> {
   }
 }
 
-/// Timeline stop widget
-class _TimelineStop extends StatelessWidget {
+/// Individual timeline stop widget
+class _TimelineStopWidget extends StatelessWidget {
   final _TripStop stop;
+  final int index;
   final bool isLast;
   final Color accentColor;
-  final bool enableReorder;
-  final int? reorderIndex;
+  final double? travelToNextKm;
+  final int? travelToNextMinutes;
   final VoidCallback? onTap;
 
-  const _TimelineStop({
-    super.key,
+  const _TimelineStopWidget({
     required this.stop,
+    required this.index,
     required this.isLast,
     required this.accentColor,
-    required this.enableReorder,
-    this.reorderIndex,
+    this.travelToNextKm,
+    this.travelToNextMinutes,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasTravel = !isLast &&
+        (travelToNextMinutes != null && travelToNextMinutes! > 0);
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -429,133 +668,121 @@ class _TimelineStop extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Timeline indicator
+              // Time column
               SizedBox(
-                width: 32,
+                width: 50,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Time
-                    if (stop.time.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(
-                          stop.time,
-                          style: PetitBooTheme.caption.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                    const SizedBox(height: 2),
+                    Text(
+                      stop.arrivalTime ?? '',
+                      style: PetitBooTheme.label.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: accentColor,
                       ),
+                    ),
                   ],
                 ),
               ),
 
-              // Timeline line and dot
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    // Dot
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: accentColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accentColor.withValues(alpha: 0.3),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
+              const SizedBox(width: 12),
+
+              // Timeline indicator
+              Column(
+                children: [
+                  // Circle marker
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accentColor.withValues(alpha: 0.3),
+                          blurRadius: 6,
+                        ),
+                      ],
                     ),
-                    // Line
-                    if (!isLast)
-                      Expanded(
-                        child: Container(
-                          width: 2,
-                          color: PetitBooTheme.grey200,
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                  ),
+                  // Line to next stop
+                  if (!isLast)
+                    Expanded(
+                      child: Container(
+                        width: 2,
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color: PetitBooTheme.grey200,
+                          borderRadius: BorderRadius.circular(1),
+                        ),
+                      ),
+                    ),
+                ],
               ),
+
+              const SizedBox(width: 12),
 
               // Content
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                    top: PetitBooTheme.spacing8,
-                    bottom: PetitBooTheme.spacing16,
+                  padding: EdgeInsets.only(
+                    bottom: isLast ? PetitBooTheme.spacing8 : PetitBooTheme.spacing16,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title row
+                      // Event title
                       Row(
                         children: [
                           Expanded(
                             child: Text(
-                              stop.title,
-                              style: PetitBooTheme.bodySm.copyWith(
+                              stop.eventTitle,
+                              style: PetitBooTheme.bodyMd.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: PetitBooTheme.textPrimary,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          // Drag handle
-                          if (enableReorder && reorderIndex != null)
-                            ReorderableDragStartListener(
-                              index: reorderIndex!,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: Icon(
-                                  Icons.drag_handle,
-                                  size: 20,
-                                  color: PetitBooTheme.textTertiary,
-                                ),
-                              ),
-                            ),
-                          // Navigation arrow
                           if (onTap != null)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Icon(
-                                Icons.chevron_right,
-                                size: 20,
-                                color: PetitBooTheme.textTertiary,
-                              ),
+                            const Icon(
+                              Icons.chevron_right,
+                              size: 20,
+                              color: PetitBooTheme.textTertiary,
                             ),
                         ],
                       ),
 
-                      // Duration
-                      if (stop.duration != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            stop.duration!,
-                            style: PetitBooTheme.caption,
-                          ),
-                        ),
-
-                      // Address
-                      if (stop.address != null)
+                      // Venue + City
+                      if (stop.venueName != null || stop.city != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.location_on,
-                                size: 12,
+                                size: 14,
                                 color: PetitBooTheme.textTertiary,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  stop.address!,
+                                  [stop.venueName, stop.city]
+                                      .where((s) => s != null && s.isNotEmpty)
+                                      .join(', '),
                                   style: PetitBooTheme.caption.copyWith(
                                     color: PetitBooTheme.textTertiary,
                                   ),
@@ -567,42 +794,73 @@ class _TimelineStop extends StatelessWidget {
                           ),
                         ),
 
-                      // Transit info (between stops)
-                      if (!isLast && (stop.transitDuration != null || stop.transitDistance != null))
-                        Container(
-                          margin: const EdgeInsets.only(top: 12),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: PetitBooTheme.grey50,
-                            borderRadius: PetitBooTheme.borderRadiusMd,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.directions_walk,
-                                size: 14,
-                                color: PetitBooTheme.textTertiary,
-                              ),
-                              const SizedBox(width: 4),
-                              if (stop.transitDuration != null)
+                      // Duration at stop
+                      if (stop.durationMinutes != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.1),
+                              borderRadius: PetitBooTheme.borderRadiusMd,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.schedule,
+                                  size: 12,
+                                  color: accentColor,
+                                ),
+                                const SizedBox(width: 4),
                                 Text(
-                                  stop.transitDuration!,
+                                  _formatDuration(stop.durationMinutes!),
+                                  style: PetitBooTheme.caption.copyWith(
+                                    color: accentColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      // Travel to next stop
+                      if (hasTravel)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: PetitBooTheme.grey50,
+                              borderRadius: PetitBooTheme.borderRadiusMd,
+                              border: Border.all(
+                                color: PetitBooTheme.grey200,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.directions_car,
+                                  size: 14,
+                                  color: PetitBooTheme.textTertiary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _formatTravel(travelToNextMinutes, travelToNextKm),
                                   style: PetitBooTheme.caption.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              if (stop.transitDuration != null && stop.transitDistance != null)
-                                Text(' • ', style: PetitBooTheme.caption),
-                              if (stop.transitDistance != null)
-                                Text(
-                                  stop.transitDistance!,
-                                  style: PetitBooTheme.caption,
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                     ],
@@ -615,48 +873,66 @@ class _TimelineStop extends StatelessWidget {
       ),
     );
   }
+
+  String _formatDuration(int minutes) {
+    if (minutes < 60) {
+      return '${minutes}min';
+    }
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    if (mins == 0) {
+      return '${hours}h';
+    }
+    return '${hours}h${mins.toString().padLeft(2, '0')}';
+  }
+
+  String _formatTravel(int? minutes, double? km) {
+    final parts = <String>[];
+    if (minutes != null && minutes > 0) {
+      parts.add('${minutes}min');
+    }
+    if (km != null && km > 0) {
+      parts.add('${km.toStringAsFixed(1)} km');
+    }
+    return parts.join(' • ');
+  }
 }
 
 /// Data model for a trip stop
 class _TripStop {
-  final int index;
-  final String title;
-  final String time;
-  final String? duration;
+  final int order;
+  final String? eventUuid;
+  final String eventTitle;
+  final String? venueName;
   final String? address;
+  final String? city;
+  final String? arrivalTime;
+  final String? departureTime;
+  final int? durationMinutes;
+  final double? travelFromPreviousKm;
+  final int? travelFromPreviousMinutes;
   final double? latitude;
   final double? longitude;
-  final String? eventSlug;
-  final String? transitDuration;
-  final String? transitDistance;
 
   const _TripStop({
-    required this.index,
-    required this.title,
-    required this.time,
-    this.duration,
+    required this.order,
+    this.eventUuid,
+    required this.eventTitle,
+    this.venueName,
     this.address,
+    this.city,
+    this.arrivalTime,
+    this.departureTime,
+    this.durationMinutes,
+    this.travelFromPreviousKm,
+    this.travelFromPreviousMinutes,
     this.latitude,
     this.longitude,
-    this.eventSlug,
-    this.transitDuration,
-    this.transitDistance,
   });
 
-  bool get hasCoordinates => latitude != null && longitude != null;
-
-  _TripStop copyWith({int? index}) {
-    return _TripStop(
-      index: index ?? this.index,
-      title: title,
-      time: time,
-      duration: duration,
-      address: address,
-      latitude: latitude,
-      longitude: longitude,
-      eventSlug: eventSlug,
-      transitDuration: transitDuration,
-      transitDistance: transitDistance,
-    );
-  }
+  bool get hasCoordinates =>
+      latitude != null &&
+      longitude != null &&
+      latitude != 0.0 &&
+      longitude != 0.0;
 }

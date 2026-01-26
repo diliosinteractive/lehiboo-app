@@ -157,6 +157,8 @@ IconData getIconFromName(String? iconName) {
     'folder' => Icons.folder,
     'folder_outlined' => Icons.folder_outlined,
     'folder_off' => Icons.folder_off_outlined,
+    'bookmark' => Icons.bookmark,
+    'bookmark_border' => Icons.bookmark_border,
     _ => Icons.extension,
   };
 }

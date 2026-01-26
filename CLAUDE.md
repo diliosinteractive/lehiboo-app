@@ -317,6 +317,10 @@ Widget flottant central avec reconnaissance vocale :
 | `createFavoriteList` | Création liste |
 | `moveToList` | Déplacement vers liste |
 | `planTrip` | Itinéraire carte + timeline |
+| `saveTripPlan` | Sauvegarde plan de sortie |
+| `getFavoriteLists` | Liste des listes favoris |
+| `updateFavoriteList` | Renommer une liste |
+| `deleteFavoriteList` | Supprimer une liste |
 
 ### Architecture Tool Results (Schema-Driven)
 
@@ -367,8 +371,90 @@ lib/features/petit_boo/
 | `profile` | ProfileCard | Profil utilisateur |
 | `list` / `stats` | GenericListCard | Fallback générique |
 | `brain_memory` | BrainMemoryCard | Sections collapsibles (famille, préférences...) |
-| `trip_plan` | TripPlanCard | Carte OSM + timeline drag & drop |
+| `trip_plan` | TripPlanCard | Carte OSM + timeline verticale |
 | `action_confirmation` | ActionConfirmationCard | Feedback animé avec toast |
+| `favorite_lists` | FavoriteListsCard | Liste des listes favoris |
+
+### TripPlanCard (planTrip)
+
+Widget complet pour afficher un itinéraire de sortie optimisé.
+
+**Structure backend attendue :**
+
+```json
+{
+  "type": "tool_result",
+  "tool": "planTrip",
+  "result": {
+    "type": "trip_plan",
+    "success": true,
+    "data": {
+      "saved": false,
+      "plan": {
+        "uuid": "abc-123",
+        "title": "Journée à Valenciennes",
+        "planned_date": "2026-01-29",
+        "start_time": "10:00",
+        "end_time": "14:30",
+        "total_duration_minutes": 270,
+        "total_distance_km": 5.2,
+        "score": 8.5,
+        "stops": [
+          {
+            "order": 1,
+            "event_uuid": "uuid-1",
+            "event_title": "Tournoi de Tennis",
+            "venue_name": "Stade Perrin",
+            "city": "Valenciennes",
+            "arrival_time": "10:00",
+            "departure_time": "11:30",
+            "duration_minutes": 90,
+            "travel_from_previous_km": 0,
+            "travel_from_previous_minutes": 0,
+            "coordinates": {"lat": 50.35, "lng": 3.52}
+          }
+        ],
+        "recommendations": ["Prévoir parapluie"]
+      }
+    }
+  }
+}
+```
+
+**Features du widget :**
+
+| Élément | Description |
+|---------|-------------|
+| **Header** | Titre + date formatée + badge score coloré (vert/orange/rouge) |
+| **Stats chips** | Durée totale, distance, plage horaire, nombre d'étapes |
+| **Carte OSM** | Markers numérotés + polyline + collapsible (140px → 280px) |
+| **Timeline verticale** | Heure, titre, lieu/ville, durée sur place, transit entre étapes |
+| **Recommandations** | Section "Conseils" avec icône ampoule |
+| **Actions** | Boutons "Sauvegarder" / "Voir carte" |
+
+**Navigation :** Clic sur une étape → `/event/{event_uuid}`
+
+**Sauvegarde :** Le bouton envoie "Sauvegarde ce plan de sortie" au LLM qui appelle `saveTripPlan`.
+
+### saveTripPlan
+
+Confirmation de sauvegarde d'un plan. Utilise `ActionConfirmationCard` avec toast.
+
+```json
+{
+  "tool": "saveTripPlan",
+  "result": {
+    "type": "trip_plan_save",
+    "success": true,
+    "data": {
+      "saved": true,
+      "uuid": "saved-plan-uuid",
+      "title": "Journée à Valenciennes",
+      "message": "Plan de sortie sauvegardé !"
+    }
+  }
+}
+```
 
 ### Toast System (Phase 7)
 
