@@ -6,38 +6,11 @@ part of 'booking_api_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$CreateBookingRequestDtoImpl _$$CreateBookingRequestDtoImplFromJson(
-        Map<String, dynamic> json) =>
-    _$CreateBookingRequestDtoImpl(
-      eventId: (json['event_id'] as num).toInt(),
-      tickets: (json['tickets'] as List<dynamic>)
-          .map((e) =>
-              BookingTicketRequestDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      buyerInfo:
-          BuyerInfoDto.fromJson(json['buyer_info'] as Map<String, dynamic>),
-      couponCode: json['coupon_code'] as String?,
-      notes: json['notes'] as String?,
-    );
-
-Map<String, dynamic> _$$CreateBookingRequestDtoImplToJson(
-        _$CreateBookingRequestDtoImpl instance) =>
-    <String, dynamic>{
-      'event_id': instance.eventId,
-      'tickets': instance.tickets,
-      'buyer_info': instance.buyerInfo,
-      'coupon_code': instance.couponCode,
-      'notes': instance.notes,
-    };
-
 _$BookingTicketRequestDtoImpl _$$BookingTicketRequestDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$BookingTicketRequestDtoImpl(
       ticketTypeId: json['ticket_type_id'] as String,
       quantity: (json['quantity'] as num).toInt(),
-      attendees: (json['attendees'] as List<dynamic>?)
-          ?.map((e) => AttendeeInfoDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
     );
 
 Map<String, dynamic> _$$BookingTicketRequestDtoImplToJson(
@@ -45,70 +18,48 @@ Map<String, dynamic> _$$BookingTicketRequestDtoImplToJson(
     <String, dynamic>{
       'ticket_type_id': instance.ticketTypeId,
       'quantity': instance.quantity,
-      'attendees': instance.attendees,
-    };
-
-_$BuyerInfoDtoImpl _$$BuyerInfoDtoImplFromJson(Map<String, dynamic> json) =>
-    _$BuyerInfoDtoImpl(
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
-      email: json['email'] as String,
-      phone: json['phone'] as String?,
-    );
-
-Map<String, dynamic> _$$BuyerInfoDtoImplToJson(_$BuyerInfoDtoImpl instance) =>
-    <String, dynamic>{
-      'first_name': instance.firstName,
-      'last_name': instance.lastName,
-      'email': instance.email,
-      'phone': instance.phone,
-    };
-
-_$AttendeeInfoDtoImpl _$$AttendeeInfoDtoImplFromJson(
-        Map<String, dynamic> json) =>
-    _$AttendeeInfoDtoImpl(
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
-      age: (json['age'] as num?)?.toInt(),
-    );
-
-Map<String, dynamic> _$$AttendeeInfoDtoImplToJson(
-        _$AttendeeInfoDtoImpl instance) =>
-    <String, dynamic>{
-      'first_name': instance.firstName,
-      'last_name': instance.lastName,
-      'age': instance.age,
     };
 
 _$CreateBookingResponseDtoImpl _$$CreateBookingResponseDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$CreateBookingResponseDtoImpl(
-      booking: BookingInfoDto.fromJson(json['booking'] as Map<String, dynamic>),
-      event:
-          BookingEventInfoDto.fromJson(json['event'] as Map<String, dynamic>),
-      ticketsSummary: (json['tickets_summary'] as List<dynamic>)
-          .map((e) => TicketSummaryDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      pricing:
-          BookingPricingDto.fromJson(json['pricing'] as Map<String, dynamic>),
-      payment: json['payment'] == null
-          ? null
-          : BookingPaymentDto.fromJson(json['payment'] as Map<String, dynamic>),
+      uuid: json['uuid'] as String,
+      status: json['status'] as String,
+      totalAmount: (json['total_amount'] as num).toDouble(),
+      expiresAt: json['expires_at'] as String?,
+      reference: json['reference'] as String?,
     );
 
 Map<String, dynamic> _$$CreateBookingResponseDtoImplToJson(
         _$CreateBookingResponseDtoImpl instance) =>
     <String, dynamic>{
-      'booking': instance.booking,
-      'event': instance.event,
-      'tickets_summary': instance.ticketsSummary,
-      'pricing': instance.pricing,
-      'payment': instance.payment,
+      'uuid': instance.uuid,
+      'status': instance.status,
+      'total_amount': instance.totalAmount,
+      'expires_at': instance.expiresAt,
+      'reference': instance.reference,
+    };
+
+_$PaymentIntentResponseDtoImpl _$$PaymentIntentResponseDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$PaymentIntentResponseDtoImpl(
+      clientSecret: json['clientSecret'] as String,
+      paymentIntentId: json['paymentIntentId'] as String,
+      amount: (json['amount'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$$PaymentIntentResponseDtoImplToJson(
+        _$PaymentIntentResponseDtoImpl instance) =>
+    <String, dynamic>{
+      'clientSecret': instance.clientSecret,
+      'paymentIntentId': instance.paymentIntentId,
+      'amount': instance.amount,
     };
 
 _$BookingInfoDtoImpl _$$BookingInfoDtoImplFromJson(Map<String, dynamic> json) =>
     _$BookingInfoDtoImpl(
       id: (json['id'] as num).toInt(),
+      uuid: json['uuid'] as String?,
       reference: json['reference'] as String,
       status: json['status'] as String,
       expiresAt: json['expires_at'] as String?,
@@ -118,6 +69,7 @@ Map<String, dynamic> _$$BookingInfoDtoImplToJson(
         _$BookingInfoDtoImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
+      'uuid': instance.uuid,
       'reference': instance.reference,
       'status': instance.status,
       'expires_at': instance.expiresAt,
@@ -197,42 +149,6 @@ Map<String, dynamic> _$$DiscountDtoImplToJson(_$DiscountDtoImpl instance) =>
       'amount': instance.amount,
       'type': instance.type,
       'value': instance.value,
-    };
-
-_$BookingPaymentDtoImpl _$$BookingPaymentDtoImplFromJson(
-        Map<String, dynamic> json) =>
-    _$BookingPaymentDtoImpl(
-      required: json['required'] as bool,
-      methodsAvailable: (json['methods_available'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
-      stripe: json['stripe'] == null
-          ? null
-          : StripePaymentDto.fromJson(json['stripe'] as Map<String, dynamic>),
-    );
-
-Map<String, dynamic> _$$BookingPaymentDtoImplToJson(
-        _$BookingPaymentDtoImpl instance) =>
-    <String, dynamic>{
-      'required': instance.required,
-      'methods_available': instance.methodsAvailable,
-      'stripe': instance.stripe,
-    };
-
-_$StripePaymentDtoImpl _$$StripePaymentDtoImplFromJson(
-        Map<String, dynamic> json) =>
-    _$StripePaymentDtoImpl(
-      paymentIntentId: json['payment_intent_id'] as String,
-      clientSecret: json['client_secret'] as String,
-      publishableKey: json['publishable_key'] as String,
-    );
-
-Map<String, dynamic> _$$StripePaymentDtoImplToJson(
-        _$StripePaymentDtoImpl instance) =>
-    <String, dynamic>{
-      'payment_intent_id': instance.paymentIntentId,
-      'client_secret': instance.clientSecret,
-      'publishable_key': instance.publishableKey,
     };
 
 _$BookingsListResponseDtoImpl _$$BookingsListResponseDtoImplFromJson(

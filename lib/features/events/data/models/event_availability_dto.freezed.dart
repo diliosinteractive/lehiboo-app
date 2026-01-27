@@ -21,7 +21,7 @@ EventAvailabilityResponseDto _$EventAvailabilityResponseDtoFromJson(
 
 /// @nodoc
 mixin _$EventAvailabilityResponseDto {
-  @JsonKey(name: 'event_id')
+  @JsonKey(name: 'event_id', fromJson: _parseInt)
   int get eventId => throw _privateConstructorUsedError;
   @JsonKey(name: 'calendar_type', fromJson: _parseString)
   String get calendarType => throw _privateConstructorUsedError;
@@ -46,7 +46,7 @@ abstract class $EventAvailabilityResponseDtoCopyWith<$Res> {
           EventAvailabilityResponseDto>;
   @useResult
   $Res call(
-      {@JsonKey(name: 'event_id') int eventId,
+      {@JsonKey(name: 'event_id', fromJson: _parseInt) int eventId,
       @JsonKey(name: 'calendar_type', fromJson: _parseString)
       String calendarType,
       List<AvailabilitySlotDto> slots,
@@ -142,7 +142,7 @@ abstract class _$$EventAvailabilityResponseDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: 'event_id') int eventId,
+      {@JsonKey(name: 'event_id', fromJson: _parseInt) int eventId,
       @JsonKey(name: 'calendar_type', fromJson: _parseString)
       String calendarType,
       List<AvailabilitySlotDto> slots,
@@ -210,7 +210,7 @@ class __$$EventAvailabilityResponseDtoImplCopyWithImpl<$Res>
 class _$EventAvailabilityResponseDtoImpl
     implements _EventAvailabilityResponseDto {
   const _$EventAvailabilityResponseDtoImpl(
-      {@JsonKey(name: 'event_id') required this.eventId,
+      {@JsonKey(name: 'event_id', fromJson: _parseInt) this.eventId = 0,
       @JsonKey(name: 'calendar_type', fromJson: _parseString)
       this.calendarType = 'manual',
       final List<AvailabilitySlotDto> slots = const [],
@@ -225,7 +225,7 @@ class _$EventAvailabilityResponseDtoImpl
       _$$EventAvailabilityResponseDtoImplFromJson(json);
 
   @override
-  @JsonKey(name: 'event_id')
+  @JsonKey(name: 'event_id', fromJson: _parseInt)
   final int eventId;
   @override
   @JsonKey(name: 'calendar_type', fromJson: _parseString)
@@ -305,7 +305,7 @@ class _$EventAvailabilityResponseDtoImpl
 abstract class _EventAvailabilityResponseDto
     implements EventAvailabilityResponseDto {
   const factory _EventAvailabilityResponseDto(
-          {@JsonKey(name: 'event_id') required final int eventId,
+          {@JsonKey(name: 'event_id', fromJson: _parseInt) final int eventId,
           @JsonKey(name: 'calendar_type', fromJson: _parseString)
           final String calendarType,
           final List<AvailabilitySlotDto> slots,
@@ -319,7 +319,7 @@ abstract class _EventAvailabilityResponseDto
       _$EventAvailabilityResponseDtoImpl.fromJson;
 
   @override
-  @JsonKey(name: 'event_id')
+  @JsonKey(name: 'event_id', fromJson: _parseInt)
   int get eventId;
   @override
   @JsonKey(name: 'calendar_type', fromJson: _parseString)

@@ -6,7 +6,7 @@ part 'event_availability_dto.g.dart';
 @freezed
 class EventAvailabilityResponseDto with _$EventAvailabilityResponseDto {
   const factory EventAvailabilityResponseDto({
-    @JsonKey(name: 'event_id') required int eventId,
+    @JsonKey(name: 'event_id', fromJson: _parseInt) @Default(0) int eventId,
     @JsonKey(name: 'calendar_type', fromJson: _parseString) @Default('manual') String calendarType,
     @Default([]) List<AvailabilitySlotDto> slots,
     @Default([]) List<AvailabilityTicketDto> tickets,

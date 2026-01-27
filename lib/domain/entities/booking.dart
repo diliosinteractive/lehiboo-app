@@ -6,7 +6,8 @@ part 'booking.freezed.dart';
 @freezed
 class Booking with _$Booking {
   const factory Booking({
-    required String id,
+    required String id, // UUID
+    int? numericId, // ID numérique pour les appels API (cancel, etc.)
     required String userId,
     required String slotId,
     required String activityId,

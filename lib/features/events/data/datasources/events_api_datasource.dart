@@ -308,17 +308,42 @@ class EventsApiDataSource {
     );
     final data = response.data;
 
-    if (data['success'] == true && data['data'] != null) {
+    // L'API retourne directement { "data": [ slots... ] }
+    // On doit transformer en format attendu par le DTO
+    final rawData = data['data'];
+
+    if (rawData != null) {
       debugPrint('getEventAvailability: Data received for $eventId');
       try {
-        return EventAvailabilityResponseDto.fromJson(data['data']);
+        // Si rawData est une liste (nouveau format API), transformer
+        if (rawData is List) {
+          // Transformer les slots du format API vers le format DTO
+          final transformedSlots = rawData.map((slot) => {
+            'id': slot['id']?.toString() ?? '',
+            'date': slot['slot_date'] ?? slot['date'] ?? '',
+            'start_time': slot['start_time'],
+            'end_time': slot['end_time'],
+            'spots_total': slot['total_capacity'] ?? slot['spots_total'],
+            'spots_remaining': slot['available_count'] ?? slot['spots_remaining'],
+            'is_available': slot['is_available'] ?? true,
+          }).toList();
+
+          return EventAvailabilityResponseDto.fromJson({
+            'event_id': 0, // Non fourni par l'API, utiliser default
+            'slots': transformedSlots,
+            'tickets': [], // Non fourni dans ce format
+          });
+        }
+
+        // Si rawData est un Map (ancien format), utiliser directement
+        return EventAvailabilityResponseDto.fromJson(rawData as Map<String, dynamic>);
       } catch (e, stack) {
         debugPrint('getEventAvailability Error parsing DTO: $e');
         debugPrint(stack.toString());
         rethrow;
       }
     }
-    throw Exception(data['data']?['message'] ?? 'Failed to load availability');
+    throw Exception(data['message'] ?? 'Failed to load availability');
   }
 
   Future<List<EventCategoryDto>> getCategories({

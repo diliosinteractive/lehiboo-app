@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
@@ -69,7 +70,7 @@ class BookingsListState {
     this.error,
     this.isRefreshing = false,
     this.currentPage = 1,
-    this.hasMorePages = true,
+    this.hasMorePages = false, // Pas de pagination pour l'instant
   });
 
   List<Booking> get filteredBookings {
@@ -188,6 +189,7 @@ class BookingListController extends StateNotifier<BookingsListState> {
   final BookingRepository bookingRepository;
 
   Future<void> loadBookings({bool refresh = false}) async {
+    debugPrint('📋 loadBookings called (refresh: $refresh)');
     try {
       if (refresh) {
         state = state.copyWith(isRefreshing: true, error: null);
@@ -195,7 +197,9 @@ class BookingListController extends StateNotifier<BookingsListState> {
         state = state.copyWith(isLoading: true, error: null);
       }
 
+      debugPrint('📋 Fetching bookings from API...');
       final bookings = await bookingRepository.getMyBookings();
+      debugPrint('📋 Got ${bookings.length} bookings from API');
 
       // Sort bookings: upcoming first by date, then past
       final sortedBookings = List<Booking>.from(bookings)
@@ -213,8 +217,10 @@ class BookingListController extends StateNotifier<BookingsListState> {
         isLoading: false,
         isRefreshing: false,
         error: null,
+        hasMorePages: false, // Pas de pagination pour l'instant
       );
     } catch (e) {
+      debugPrint('📋 Error loading bookings: $e');
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,

@@ -6,6 +6,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
+import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
+import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_hero_header.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/event_info_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_detail_summary_card.dart';
@@ -132,15 +134,48 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   }
 
   Future<void> _cancelBooking() async {
-    // TODO: Implement actual cancellation via repository
-    HapticFeedback.heavyImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Réservation annulée'),
-        backgroundColor: HbColors.error,
-      ),
-    );
-    context.pop();
+    final booking = _booking;
+    if (booking == null) return;
+
+    // L'API utilise l'UUID (comme pour les favoris)
+    final bookingUuid = booking.id;
+
+    debugPrint('🚫 Annulation booking: uuid=$bookingUuid, numericId=${booking.numericId}');
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repository = ref.read(bookingRepositoryProvider);
+      await repository.cancelBooking(bookingUuid);
+
+      debugPrint('🚫 Annulation réussie');
+      HapticFeedback.heavyImpact();
+
+      // Rafraîchir la liste des réservations
+      ref.read(bookingsListControllerProvider.notifier).refresh();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Réservation annulée avec succès'),
+            backgroundColor: HbColors.error,
+          ),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      debugPrint('🚫 Erreur annulation: $e');
+      setState(() => _isLoading = false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'annulation: $e'),
+            backgroundColor: HbColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _downloadAllTickets() {

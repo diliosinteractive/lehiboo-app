@@ -24,39 +24,34 @@ class ApiBookingRepositoryImpl implements BookingRepository {
     required BuyerInfo buyer,
     required List<ParticipantInfo> participants,
   }) async {
-    final ticketsRequest = [
+    // Note: Cette méthode est utilisée par le flow legacy (BookingFlowController)
+    // Le nouveau flow (CheckoutScreen) utilise directement le datasource
+    final items = [
       BookingTicketRequestDto(
         ticketTypeId: slotId,
         quantity: quantity,
-        attendees: participants.map((p) => AttendeeInfoDto(
-          firstName: p.firstName ?? '',
-          lastName: p.lastName ?? '',
-        )).toList(),
       ),
     ];
 
-    final buyerInfoDto = BuyerInfoDto(
-      firstName: buyer.firstName ?? '',
-      lastName: buyer.lastName ?? '',
-      email: buyer.email ?? '',
-      phone: buyer.phone,
-    );
-
     final response = await _apiDataSource.createBooking(
-      eventId: int.parse(activityId),
-      tickets: ticketsRequest,
-      buyerInfo: buyerInfoDto,
+      eventId: activityId,
+      slotId: slotId,
+      items: items,
+      customerEmail: buyer.email ?? '',
+      customerFirstName: buyer.firstName ?? '',
+      customerLastName: buyer.lastName ?? '',
+      customerPhone: buyer.phone,
     );
 
     return Booking(
-      id: response.booking.id.toString(),
-      userId: '', // Will be filled by backend
+      id: response.uuid,
+      userId: '',
       slotId: slotId,
       activityId: activityId,
       quantity: quantity,
-      totalPrice: response.pricing.total,
-      currency: response.pricing.currency,
-      status: response.booking.status,
+      totalPrice: response.totalAmount,
+      currency: 'EUR',
+      status: response.status,
     );
   }
 
@@ -67,9 +62,12 @@ class ApiBookingRepositoryImpl implements BookingRepository {
   }) async {
     if (paymentIntentId != null) {
       await _apiDataSource.confirmBooking(
-        bookingId: int.parse(bookingId),
+        bookingUuid: bookingId,
         paymentIntentId: paymentIntentId,
       );
+    } else {
+      // Confirmation gratuite
+      await _apiDataSource.confirmFreeBooking(bookingUuid: bookingId);
     }
 
     return Booking(
@@ -84,7 +82,7 @@ class ApiBookingRepositoryImpl implements BookingRepository {
 
   @override
   Future<void> cancelBooking(String bookingId) async {
-    await _apiDataSource.cancelBooking(bookingId: int.parse(bookingId));
+    await _apiDataSource.cancelBooking(bookingId: bookingId);
   }
 
   @override
@@ -154,6 +152,7 @@ class ApiBookingRepositoryImpl implements BookingRepository {
 
       return Booking(
         id: b.uuid ?? b.id.toString(),
+        numericId: b.id, // ID numérique pour les appels API
         userId: b.userId?.toString() ?? '',
         slotId: b.slotId?.toString() ?? '',
         activityId: b.eventId?.toString() ?? '',

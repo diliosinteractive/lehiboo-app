@@ -91,6 +91,94 @@ lib/
 | `GET /v1/me/alerts` | Liste recherches sauvegardées |
 | `POST /v1/me/alerts` | Créer une recherche sauvegardée |
 | `DELETE /v1/me/alerts/{id}` | Supprimer une recherche |
+| `GET /v1/me/bookings` | Liste des réservations |
+| `POST /v1/me/bookings/{uuid}/cancel` | Annuler une réservation |
+| `POST /v1/bookings` | Créer une réservation |
+| `POST /v1/bookings/{uuid}/payment-intent` | Obtenir PaymentIntent Stripe |
+| `POST /v1/bookings/{uuid}/confirm` | Confirmer après paiement |
+| `POST /v1/bookings/{uuid}/confirm-free` | Confirmer réservation gratuite |
+| `GET /v1/bookings/{uuid}/tickets` | Récupérer les billets |
+
+---
+
+## Feature : Réservations (Booking)
+
+### CRITIQUE - Identifiants Booking (UUID vs ID numérique)
+
+**Comme pour les Events, l'API utilise l'UUID pour les routes.**
+
+L'entité `Booking` stocke les deux identifiants :
+- `id` (String) : UUID pour les appels API
+- `numericId` (int?) : ID numérique (pour référence interne)
+
+```dart
+// ✅ CORRECT - utiliser booking.id (UUID) pour les appels API
+await repository.cancelBooking(booking.id);
+
+// ❌ FAUX - ne pas utiliser numericId pour les routes API
+await repository.cancelBooking(booking.numericId.toString());
+```
+
+### Flow de réservation
+
+```
+1. createBooking(eventId, slotId, items, customer*)
+   → Retourne CreateBookingResponseDto avec uuid, status, total_amount
+
+2. Si total_amount > 0 :
+   → getPaymentIntent(bookingUuid)
+   → Stripe.confirmPayment(clientSecret)
+   → confirmBooking(bookingUuid, paymentIntentId)
+
+3. Si total_amount == 0 (gratuit) :
+   → confirmFreeBooking(bookingUuid)
+
+4. Récupérer les billets (polling car génération async) :
+   → getBookingTickets(bookingUuid)
+```
+
+### Format de requête createBooking
+
+```dart
+{
+  'event_id': eventUuid,        // UUID de l'événement
+  'slot_id': slotUuid,          // UUID du créneau
+  'items': [                    // Liste des billets
+    {'ticket_type_id': ticketId, 'quantity': 2}
+  ],
+  'customer_email': email,
+  'customer_first_name': firstName,
+  'customer_last_name': lastName,
+  'customer_phone': phone,      // Optionnel
+  'coupon_code': code,          // Optionnel
+}
+```
+
+### Polling des billets
+
+Les billets sont générés de manière asynchrone côté backend. Utiliser un polling avec délais progressifs :
+
+```dart
+final delays = [1, 1, 2, 2, 3, 3, 4, 4]; // secondes
+for (var attempt = 0; attempt < 8; attempt++) {
+  final tickets = await getBookingTickets(bookingUuid);
+  if (tickets.isNotEmpty) return tickets;
+  await Future.delayed(Duration(seconds: delays[attempt]));
+}
+```
+
+### Annulation
+
+```dart
+// L'API utilise l'UUID
+POST /me/bookings/{uuid}/cancel
+
+// Appeler le repository avec l'UUID
+await ref.read(bookingRepositoryProvider).cancelBooking(booking.id);
+
+// Rafraîchir la liste après annulation
+ref.read(bookingsListControllerProvider.notifier).refresh();
+```
 
 ---
 

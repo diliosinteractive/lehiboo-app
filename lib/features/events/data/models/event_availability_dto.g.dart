@@ -9,7 +9,7 @@ part of 'event_availability_dto.dart';
 _$EventAvailabilityResponseDtoImpl _$$EventAvailabilityResponseDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$EventAvailabilityResponseDtoImpl(
-      eventId: (json['event_id'] as num).toInt(),
+      eventId: json['event_id'] == null ? 0 : _parseInt(json['event_id']),
       calendarType: json['calendar_type'] == null
           ? 'manual'
           : _parseString(json['calendar_type']),

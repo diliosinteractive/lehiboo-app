@@ -4,76 +4,57 @@ part 'booking_api_dto.freezed.dart';
 part 'booking_api_dto.g.dart';
 
 // Request DTOs
-@freezed
-class CreateBookingRequestDto with _$CreateBookingRequestDto {
-  const factory CreateBookingRequestDto({
-    @JsonKey(name: 'event_id') required int eventId,
-    required List<BookingTicketRequestDto> tickets,
-    @JsonKey(name: 'buyer_info') required BuyerInfoDto buyerInfo,
-    @JsonKey(name: 'coupon_code') String? couponCode,
-    String? notes,
-  }) = _CreateBookingRequestDto;
 
-  factory CreateBookingRequestDto.fromJson(Map<String, dynamic> json) =>
-      _$CreateBookingRequestDtoFromJson(json);
-}
-
+/// DTO pour un item de ticket dans une requête de booking
+/// Format API: { "ticket_type_id": "uuid", "quantity": 2 }
 @freezed
 class BookingTicketRequestDto with _$BookingTicketRequestDto {
   const factory BookingTicketRequestDto({
     @JsonKey(name: 'ticket_type_id') required String ticketTypeId,
     required int quantity,
-    List<AttendeeInfoDto>? attendees,
   }) = _BookingTicketRequestDto;
 
   factory BookingTicketRequestDto.fromJson(Map<String, dynamic> json) =>
       _$BookingTicketRequestDtoFromJson(json);
 }
 
-@freezed
-class BuyerInfoDto with _$BuyerInfoDto {
-  const factory BuyerInfoDto({
-    @JsonKey(name: 'first_name') required String firstName,
-    @JsonKey(name: 'last_name') required String lastName,
-    required String email,
-    String? phone,
-  }) = _BuyerInfoDto;
-
-  factory BuyerInfoDto.fromJson(Map<String, dynamic> json) =>
-      _$BuyerInfoDtoFromJson(json);
-}
-
-@freezed
-class AttendeeInfoDto with _$AttendeeInfoDto {
-  const factory AttendeeInfoDto({
-    @JsonKey(name: 'first_name') required String firstName,
-    @JsonKey(name: 'last_name') required String lastName,
-    int? age,
-  }) = _AttendeeInfoDto;
-
-  factory AttendeeInfoDto.fromJson(Map<String, dynamic> json) =>
-      _$AttendeeInfoDtoFromJson(json);
-}
-
 // Response DTOs
+
+/// Réponse POST /bookings
+/// Format: { "message": "...", "data": { uuid, status, total_amount, ... } }
 @freezed
 class CreateBookingResponseDto with _$CreateBookingResponseDto {
   const factory CreateBookingResponseDto({
-    required BookingInfoDto booking,
-    required BookingEventInfoDto event,
-    @JsonKey(name: 'tickets_summary') required List<TicketSummaryDto> ticketsSummary,
-    required BookingPricingDto pricing,
-    BookingPaymentDto? payment,
+    required String uuid,
+    required String status,
+    @JsonKey(name: 'total_amount') required double totalAmount,
+    @JsonKey(name: 'expires_at') String? expiresAt,
+    String? reference,
   }) = _CreateBookingResponseDto;
 
   factory CreateBookingResponseDto.fromJson(Map<String, dynamic> json) =>
       _$CreateBookingResponseDtoFromJson(json);
 }
 
+/// Réponse POST /bookings/{uuid}/payment-intent
+/// Format: { "data": { clientSecret, paymentIntentId, amount } }
+@freezed
+class PaymentIntentResponseDto with _$PaymentIntentResponseDto {
+  const factory PaymentIntentResponseDto({
+    required String clientSecret,
+    required String paymentIntentId,
+    required int amount,
+  }) = _PaymentIntentResponseDto;
+
+  factory PaymentIntentResponseDto.fromJson(Map<String, dynamic> json) =>
+      _$PaymentIntentResponseDtoFromJson(json);
+}
+
 @freezed
 class BookingInfoDto with _$BookingInfoDto {
   const factory BookingInfoDto({
     required int id,
+    String? uuid,
     required String reference,
     required String status,
     @JsonKey(name: 'expires_at') String? expiresAt,
@@ -137,29 +118,6 @@ class DiscountDto with _$DiscountDto {
       _$DiscountDtoFromJson(json);
 }
 
-@freezed
-class BookingPaymentDto with _$BookingPaymentDto {
-  const factory BookingPaymentDto({
-    required bool required,
-    @JsonKey(name: 'methods_available') required List<String> methodsAvailable,
-    StripePaymentDto? stripe,
-  }) = _BookingPaymentDto;
-
-  factory BookingPaymentDto.fromJson(Map<String, dynamic> json) =>
-      _$BookingPaymentDtoFromJson(json);
-}
-
-@freezed
-class StripePaymentDto with _$StripePaymentDto {
-  const factory StripePaymentDto({
-    @JsonKey(name: 'payment_intent_id') required String paymentIntentId,
-    @JsonKey(name: 'client_secret') required String clientSecret,
-    @JsonKey(name: 'publishable_key') required String publishableKey,
-  }) = _StripePaymentDto;
-
-  factory StripePaymentDto.fromJson(Map<String, dynamic> json) =>
-      _$StripePaymentDtoFromJson(json);
-}
 
 // List Bookings Response - Structure réelle de l'API Laravel
 @freezed

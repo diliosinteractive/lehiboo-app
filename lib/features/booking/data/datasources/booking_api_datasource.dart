@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../models/booking_api_dto.dart';
@@ -13,60 +14,114 @@ class BookingApiDataSource {
 
   BookingApiDataSource(this._dio);
 
+  /// Crée une réservation
+  ///
+  /// [eventId] - L'UUID de l'événement
+  /// [slotId] - L'UUID du créneau/date sélectionné
+  /// [items] - Liste des billets avec quantités
+  /// [customerEmail/FirstName/LastName/Phone] - Informations de l'acheteur
+  ///
+  /// Format API: POST /bookings avec event_id, slot_id, items[], customer_*
   Future<CreateBookingResponseDto> createBooking({
-    required int eventId,
-    required List<BookingTicketRequestDto> tickets,
-    required BuyerInfoDto buyerInfo,
+    required String eventId,
+    required String slotId,
+    required List<BookingTicketRequestDto> items,
+    required String customerEmail,
+    required String customerFirstName,
+    required String customerLastName,
+    String? customerPhone,
     String? couponCode,
-    String? notes,
   }) async {
     final response = await _dio.post(
       '/bookings',
       data: {
         'event_id': eventId,
-        'tickets': tickets.map((t) => {
+        'slot_id': slotId,
+        'items': items.map((t) => {
           'ticket_type_id': t.ticketTypeId,
           'quantity': t.quantity,
-          if (t.attendees != null)
-            'attendees': t.attendees!.map((a) => {
-              'first_name': a.firstName,
-              'last_name': a.lastName,
-              if (a.age != null) 'age': a.age,
-            }).toList(),
         }).toList(),
-        'buyer_info': {
-          'first_name': buyerInfo.firstName,
-          'last_name': buyerInfo.lastName,
-          'email': buyerInfo.email,
-          if (buyerInfo.phone != null) 'phone': buyerInfo.phone,
-        },
+        'customer_email': customerEmail,
+        'customer_first_name': customerFirstName,
+        'customer_last_name': customerLastName,
+        if (customerPhone != null && customerPhone.isNotEmpty)
+          'customer_phone': customerPhone,
         if (couponCode != null) 'coupon_code': couponCode,
-        if (notes != null) 'notes': notes,
       },
     );
 
     final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
+    // L'API retourne { "message": "...", "data": {...} }
+    if (data['data'] != null) {
       return CreateBookingResponseDto.fromJson(data['data']);
     }
-    throw Exception(data['data']?['message'] ?? 'Failed to create booking');
+    throw Exception(data['message'] ?? 'Failed to create booking');
   }
 
+  /// Récupère le PaymentIntent Stripe pour un booking payant
+  ///
+  /// À appeler après createBooking si total_amount > 0
+  Future<PaymentIntentResponseDto> getPaymentIntent({
+    required String bookingUuid,
+  }) async {
+    final response = await _dio.post('/bookings/$bookingUuid/payment-intent');
+
+    final data = response.data;
+    if (data['data'] != null) {
+      return PaymentIntentResponseDto.fromJson(data['data']);
+    }
+    throw Exception(data['message'] ?? 'Failed to get payment intent');
+  }
+
+  /// Confirme un booking après paiement Stripe réussi
   Future<void> confirmBooking({
-    required int bookingId,
+    required String bookingUuid,
     required String paymentIntentId,
   }) async {
     final response = await _dio.post(
-      '/bookings/$bookingId/confirm',
+      '/bookings/$bookingUuid/confirm',
       data: {
         'payment_intent_id': paymentIntentId,
       },
     );
 
     final data = response.data;
-    if (data['success'] != true) {
-      throw Exception(data['data']?['message'] ?? 'Failed to confirm booking');
+    if (data['message']?.toString().toLowerCase().contains('error') == true) {
+      throw Exception(data['message'] ?? 'Failed to confirm booking');
     }
+  }
+
+  /// Confirme un booking gratuit (sans paiement)
+  Future<void> confirmFreeBooking({
+    required String bookingUuid,
+  }) async {
+    final response = await _dio.post('/bookings/$bookingUuid/confirm-free');
+
+    final data = response.data;
+    if (data['message']?.toString().toLowerCase().contains('error') == true) {
+      throw Exception(data['message'] ?? 'Failed to confirm free booking');
+    }
+  }
+
+  /// Récupère les tickets d'un booking (avec polling si nécessaire)
+  Future<List<TicketDetailDto>> getBookingTickets({
+    required String bookingUuid,
+  }) async {
+    debugPrint('🎫 getBookingTickets: GET /bookings/$bookingUuid/tickets');
+    final response = await _dio.get('/bookings/$bookingUuid/tickets');
+
+    final data = response.data;
+    debugPrint('🎫 getBookingTickets response: $data');
+
+    if (data['data'] != null && data['data'] is List) {
+      final ticketsList = data['data'] as List;
+      debugPrint('🎫 getBookingTickets: ${ticketsList.length} tickets trouvés');
+      return ticketsList
+          .map((t) => TicketDetailDto.fromJson(t))
+          .toList();
+    }
+    debugPrint('🎫 getBookingTickets: Pas de data ou pas une liste');
+    return [];
   }
 
   Future<BookingsListResponseDto> getMyBookings({
@@ -101,10 +156,14 @@ class BookingApiDataSource {
     throw Exception(data['data']?['message'] ?? 'Failed to load booking');
   }
 
+  /// Annule une réservation
+  ///
+  /// [bookingId] peut être l'ID numérique ou l'UUID selon l'API
   Future<void> cancelBooking({
-    required int bookingId,
+    required String bookingId,
     String? reason,
   }) async {
+    debugPrint('🚫 API cancelBooking: POST /me/bookings/$bookingId/cancel');
     final response = await _dio.post(
       '/me/bookings/$bookingId/cancel',
       data: {
@@ -113,8 +172,18 @@ class BookingApiDataSource {
     );
 
     final data = response.data;
-    if (data['success'] != true) {
-      throw Exception(data['data']?['message'] ?? 'Failed to cancel booking');
+    debugPrint('🚫 API cancelBooking response: $data');
+
+    // Vérifier les différents formats de réponse
+    if (data is Map<String, dynamic>) {
+      // Format avec success boolean
+      if (data['success'] == false) {
+        throw Exception(data['data']?['message'] ?? data['message'] ?? 'Failed to cancel booking');
+      }
+      // Format avec message d'erreur explicite
+      if (data['message']?.toString().toLowerCase().contains('error') == true) {
+        throw Exception(data['message']);
+      }
     }
   }
 

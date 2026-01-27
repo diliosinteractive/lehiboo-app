@@ -16,7 +16,9 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$Booking {
-  String get id => throw _privateConstructorUsedError;
+  String get id => throw _privateConstructorUsedError; // UUID
+  int? get numericId =>
+      throw _privateConstructorUsedError; // ID numérique pour les appels API (cancel, etc.)
   String get userId => throw _privateConstructorUsedError;
   String get slotId => throw _privateConstructorUsedError;
   String get activityId => throw _privateConstructorUsedError;
@@ -52,6 +54,7 @@ abstract class $BookingCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
+      int? numericId,
       String userId,
       String slotId,
       String activityId,
@@ -89,6 +92,7 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
   @override
   $Res call({
     Object? id = null,
+    Object? numericId = freezed,
     Object? userId = null,
     Object? slotId = null,
     Object? activityId = null,
@@ -113,6 +117,10 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+      numericId: freezed == numericId
+          ? _value.numericId
+          : numericId // ignore: cast_nullable_to_non_nullable
+              as int?,
       userId: null == userId
           ? _value.userId
           : userId // ignore: cast_nullable_to_non_nullable
@@ -222,6 +230,7 @@ abstract class _$$BookingImplCopyWith<$Res> implements $BookingCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
+      int? numericId,
       String userId,
       String slotId,
       String activityId,
@@ -259,6 +268,7 @@ class __$$BookingImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? numericId = freezed,
     Object? userId = null,
     Object? slotId = null,
     Object? activityId = null,
@@ -283,6 +293,10 @@ class __$$BookingImplCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
+      numericId: freezed == numericId
+          ? _value.numericId
+          : numericId // ignore: cast_nullable_to_non_nullable
+              as int?,
       userId: null == userId
           ? _value.userId
           : userId // ignore: cast_nullable_to_non_nullable
@@ -364,6 +378,7 @@ class __$$BookingImplCopyWithImpl<$Res>
 class _$BookingImpl implements _Booking {
   const _$BookingImpl(
       {required this.id,
+      this.numericId,
       required this.userId,
       required this.slotId,
       required this.activityId,
@@ -386,6 +401,10 @@ class _$BookingImpl implements _Booking {
 
   @override
   final String id;
+// UUID
+  @override
+  final int? numericId;
+// ID numérique pour les appels API (cancel, etc.)
   @override
   final String userId;
   @override
@@ -439,7 +458,7 @@ class _$BookingImpl implements _Booking {
 
   @override
   String toString() {
-    return 'Booking(id: $id, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, reference: $reference)';
+    return 'Booking(id: $id, numericId: $numericId, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, reference: $reference)';
   }
 
   @override
@@ -448,6 +467,8 @@ class _$BookingImpl implements _Booking {
         (other.runtimeType == runtimeType &&
             other is _$BookingImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.numericId, numericId) ||
+                other.numericId == numericId) &&
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.slotId, slotId) || other.slotId == slotId) &&
             (identical(other.activityId, activityId) ||
@@ -485,6 +506,7 @@ class _$BookingImpl implements _Booking {
   int get hashCode => Object.hashAll([
         runtimeType,
         id,
+        numericId,
         userId,
         slotId,
         activityId,
@@ -515,6 +537,7 @@ class _$BookingImpl implements _Booking {
 abstract class _Booking implements Booking {
   const factory _Booking(
       {required final String id,
+      final int? numericId,
       required final String userId,
       required final String slotId,
       required final String activityId,
@@ -536,7 +559,9 @@ abstract class _Booking implements Booking {
 
   @override
   String get id;
-  @override
+  @override // UUID
+  int? get numericId;
+  @override // ID numérique pour les appels API (cancel, etc.)
   String get userId;
   @override
   String get slotId;
