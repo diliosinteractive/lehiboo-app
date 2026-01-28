@@ -54,6 +54,10 @@ pod install --repo-update
 
 echo "Build setup complete!"
 
+# Return to project root for Flutter build
+cd ..
+echo "Current directory: $(pwd)"
+
 # Prepare Flutter iOS Build
 # This step ensures that Generated.xcconfig and other Flutter build artifacts are present.
 # We use --config-only to avoid a full build here, as Xcode will handle the archiving.
