@@ -3,6 +3,9 @@
 # Fail this script if any subcommand fails.
 set -e
 
+# Enable verbose mode for debugging
+set -x
+
 # The default execution directory of this script is the ci_scripts directory.
 # Traverse up to reach the root of the repository.
 cd "$(dirname "$0")/../.."
