@@ -22,6 +22,9 @@ class AchievementsScreen extends ConsumerWidget {
       ),
       body: achievementsAsync.when(
         data: (achievements) {
+          if (achievements.isEmpty) {
+            return _buildComingSoon(context);
+          }
           return GridView.builder(
             padding: const EdgeInsets.all(20),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -37,7 +40,63 @@ class AchievementsScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Oups ! Erreur: $e')),
+        error: (e, s) => _buildComingSoon(context),
+      ),
+    );
+  }
+
+  Widget _buildComingSoon(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.construction_rounded,
+                size: 64,
+                color: Colors.orange.shade400,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Bientôt disponible !',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D3748),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Les trophées et badges arrivent très bientôt.\nContinue à explorer pour débloquer des récompenses !',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: const Text('Retour'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF601F),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

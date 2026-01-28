@@ -1,4 +1,3 @@
-
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -13,18 +12,31 @@ class LuckyWheelScreen extends ConsumerStatefulWidget {
   ConsumerState<LuckyWheelScreen> createState() => _LuckyWheelScreenState();
 }
 
-class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen> with SingleTickerProviderStateMixin {
+class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  // late Animation<double> _animation; // Dynamic
   double _currentRotation = 0.0;
   bool _isSpinning = false;
-  WheelSpinResult? _lastResult;
+
+  // Couleurs modernes pour la roue (inspirées du web)
+  static const List<Color> _wheelColors = [
+    Color(0xFFFF6B6B), // Rouge coral
+    Color(0xFF4ECDC4), // Turquoise
+    Color(0xFFFFE66D), // Jaune
+    Color(0xFF95E1D3), // Vert menthe
+    Color(0xFFDDA0DD), // Violet clair
+    Color(0xFFFFB347), // Orange
+    Color(0xFF87CEEB), // Bleu ciel
+    Color(0xFFF0E68C), // Kaki clair
+  ];
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-        vsync: this, duration: const Duration(seconds: 4));
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    );
   }
 
   @override
@@ -35,107 +47,181 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen> with Single
 
   void _spin(WheelConfig config, WidgetRef ref) async {
     if (_isSpinning) return;
-    
-    // Check cost (mock check)
-    // In real app, we check wallet balance vs cost
-    
+
     setState(() {
       _isSpinning = true;
-      _lastResult = null;
     });
 
     try {
-      final repository = ref.read(gamificationRepositoryProvider);
-      // API Call - Result is determined by backend (or mock) instantly
-      // We just need to animate to it.
-      // But for better UX, we start animation THEN call API, or call API then calculate angle. 
-      // Let's call API first to know where to stop.
-      final result = await repository.spinWheel();
-       
-      // Calculate destination angle
-      final segmentIndex = config.segments.indexOf(result.segment);
-      final segmentAngle = (2 * pi) / config.segments.length;
-      
-      // Random extra rotations (5 to 10)
-      final extraRotations = (5 + Random().nextInt(5)) * 2 * pi;
-      
-      // Target angle to center the segment at the top (indicator usually at top = -pi/2 or 0 depending on draw)
-      // Assuming 0 is Right (Standard Canvas). Segment 0 starts at 0.
-      // We want result segment to end up under the pointer.
-      // Let's say pointer is at TOP (-pi/2).
-      // Center of segment i is at: i * segmentAngle + segmentAngle/2
-      // We want: EndRotation + (i * segmentAngle + segmentAngle/2) = -pi/2 + 2k*pi
-      // ... A bit complex math for a mock. 
-      // Simplified: We spin to a random total angle that falls inside the segment arc.
-      
-      // For visual simplicity in this task, let's just spin randomly long enough and show result in dialog
-      // REAL IMPLEMENTATION needs precise math.
-      // Let's try to match:
-      
-      // Angle to stop at (random within segment)
-      final segmentStart = segmentIndex * segmentAngle;
-      final segmentEnd = (segmentIndex + 1) * segmentAngle;
-      final targetAngleInCircle = segmentStart + (Random().nextDouble() * (segmentEnd - segmentStart));
-      
-      // Standard Flutter rotation: 0 is right. We usually want pointer at top.
-      // Let's assume pointer is Top.
-      // To land 'targetAngleInCircle' at Top (-PI/2), we need to rotate the wheel such that:
-      // CurrentRotation + Delta = -PI/2 - targetAngleInCircle + K*2PI
-      
-      final targetRotation = _currentRotation + extraRotations + (2*pi); // Just spin a lot
-      
+      // Appeler l'API pour obtenir le résultat
+      final result = await ref.read(wheelSpinProvider.notifier).spin();
+
+      if (result == null) {
+        setState(() => _isSpinning = false);
+        return;
+      }
+
+      // Calcul de l'angle de destination basé sur prizeIndex
+      final prizeIndex = result.prizeIndex;
+      final numPrizes = config.prizes.length;
+      final segmentAngle = (2 * pi) / numPrizes;
+
+      // L'angle du centre du segment gagnant (depuis la position 0 = droite)
+      final prizeAngle = prizeIndex * segmentAngle + segmentAngle / 2;
+
+      // Le pointeur est en HAUT, donc à -π/2 (ou 270°)
+      // On veut que le segment gagnant soit sous le pointeur
+      // Donc on doit tourner pour que: rotation + prizeAngle = -π/2 (mod 2π)
+      // => rotation = -π/2 - prizeAngle
+
+      // Calculer l'angle de destination (en ajoutant des tours complets)
+      final extraRotations = (5 + Random().nextInt(4)) * 2 * pi; // 5-8 tours
+      final destinationAngle = -pi / 2 - prizeAngle;
+
+      // Normaliser pour avoir une rotation positive
+      var targetRotation = _currentRotation + extraRotations;
+      // Ajuster pour s'arrêter exactement sur le bon segment
+      final currentMod = targetRotation % (2 * pi);
+      final targetMod = destinationAngle % (2 * pi);
+      var adjustment = targetMod - currentMod;
+      if (adjustment < 0) adjustment += 2 * pi;
+      targetRotation += adjustment;
+
       _controller.reset();
-      final animation = Tween<double>(begin: _currentRotation, end: targetRotation).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic)
-      );
-      
+      final animation = Tween<double>(
+        begin: _currentRotation,
+        end: targetRotation,
+      ).animate(CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutCirc,
+      ));
+
       animation.addListener(() {
         setState(() {
           _currentRotation = animation.value;
         });
       });
-      
+
       await _controller.forward();
-      
-      // Refresh wallet
-      ref.invalidate(gamificationNotifierProvider);
 
       setState(() {
         _isSpinning = false;
-        _currentRotation = targetRotation % (2 * pi); // Keep it normalized
-        _lastResult = result;
+        _currentRotation = targetRotation % (2 * pi);
       });
 
       if (mounted) {
         _showResultDialog(result);
       }
-      
     } catch (e) {
       setState(() => _isSpinning = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   void _showResultDialog(WheelSpinResult result) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(result.earnedHibons > 0 ? "Félicitations !" : "Dommage !"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (result.earnedHibons > 0) 
-              const Icon(Icons.emoji_events, size: 50, color: Colors.amber),
-            const SizedBox(height: 16),
-            Text(result.message, textAlign: TextAlign.center),
-          ],
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icône animée
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: result.prize > 0
+                      ? Colors.amber.shade100
+                      : Colors.grey.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  result.prize > 0 ? Icons.celebration : Icons.sentiment_dissatisfied,
+                  size: 48,
+                  color: result.prize > 0 ? Colors.amber : Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Titre
+              Text(
+                result.prize > 0 ? 'Félicitations !' : 'Pas de chance...',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Message
+              Text(
+                result.message,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+
+              if (result.prize > 0) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.account_balance_wallet, color: Colors.green.shade700),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Nouveau solde : ${result.newBalance} Hibons',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF601F),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Super !',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Super !'),
-          )
-        ],
       ),
     );
   }
@@ -143,124 +229,288 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen> with Single
   @override
   Widget build(BuildContext context) {
     final configAsync = ref.watch(wheelConfigProvider);
+    final walletAsync = ref.watch(gamificationNotifierProvider);
+    final spinState = ref.watch(wheelSpinProvider);
+
+    // Récupérer canSpinWheel du wallet
+    final canSpinWheel = walletAsync.maybeWhen(
+      data: (wallet) => wallet.canSpinWheel,
+      orElse: () => false,
+    );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Roue de la Fortune')),
+      backgroundColor: const Color(0xFFFFF8F0), // Fond crème léger
+      appBar: AppBar(
+        title: const Text('Roue de la Fortune'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.black87,
+      ),
       body: configAsync.when(
         data: (config) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildWheel(config),
-                const SizedBox(height: 40),
-                 ElevatedButton(
-                  onPressed: _isSpinning ? null : () => _spin(config, ref),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    backgroundColor: const Color(0xFFFF601F)
-                  ),
-                  child: Text(
-                    _isSpinning ? 'Bonne chance...' : (config.isFreeSpinAvailable ? 'Tour Gratuit' : 'Lancer (100 H)'),
-                    style: const TextStyle(fontSize: 18, color: Colors.white),
-                  ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Roue avec bordure et ombre
+                    _buildWheel(config),
+
+                    const SizedBox(height: 40),
+
+                    // Bouton Lancer
+                    SizedBox(
+                      width: 200,
+                      child: ElevatedButton(
+                        onPressed: (_isSpinning || spinState.isLoading || !canSpinWheel)
+                            ? null
+                            : () => _spin(config, ref),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: canSpinWheel
+                              ? const Color(0xFFFF601F)
+                              : Colors.grey.shade400,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: canSpinWheel ? 4 : 0,
+                        ),
+                        child: _isSpinning
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                canSpinWheel ? 'Lancer' : 'Reviens demain !',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+
+                    if (!canSpinWheel)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12.0),
+                        child: Text(
+                          'Tu as déjà utilisé ta chance aujourd\'hui.',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                if (!config.isFreeSpinAvailable)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8.0),
-                    child: Text('Prochain tour gratuit dans 24h', style: TextStyle(color: Colors.grey)),
-                  )
-              ],
+              ),
             ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, s) => Center(child: Text('Erreur: $e')),
+        error: (e, s) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Erreur: $e'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => ref.invalidate(wheelConfigProvider),
+                child: const Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildWheel(WheelConfig config) {
-    return SizedBox(
-      height: 300,
-      width: 300,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Wheel
-          Transform.rotate(
-            angle: _currentRotation,
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Ombre de la roue
+        Container(
+          width: 320,
+          height: 320,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+        ),
+
+        // Bordure extérieure blanche
+        Container(
+          width: 320,
+          height: 320,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+        ),
+
+        // Roue principale
+        Transform.rotate(
+          angle: _currentRotation,
+          child: SizedBox(
+            width: 300,
+            height: 300,
             child: CustomPaint(
               size: const Size(300, 300),
-              painter: WheelPainter(config.segments),
+              painter: WheelPainter(
+                prizes: config.prizes,
+                colors: _wheelColors,
+              ),
             ),
           ),
-          // Pointer (Triangle at top)
-          Positioned(
-            top: 0,
-            child: Icon(Icons.arrow_drop_down, size: 40, color: Colors.black),
+        ),
+
+        // Pointeur (flèche en haut)
+        Positioned(
+          top: 5,
+          child: Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.arrow_drop_down,
+              size: 50,
+              color: Color(0xFF2D3748),
+            ),
           ),
-          // Center decorator
-          Container(
-            width: 40, 
-            height: 40, 
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(blurRadius: 5)]),
-            child: const Center(child: Icon(Icons.star, size: 20, color: Colors.orange)),
-          )
-        ],
-      ),
+        ),
+
+        // Centre de la roue
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+              ),
+            ],
+            border: Border.all(color: Colors.grey.shade200, width: 2),
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.star_rounded,
+              size: 30,
+              color: Color(0xFFFFB347),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
 class WheelPainter extends CustomPainter {
-  final List<WheelSegment> segments;
+  final List<WheelPrize> prizes;
+  final List<Color> colors;
 
-  WheelPainter(this.segments);
+  WheelPainter({required this.prizes, required this.colors});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
-    
+
     final paint = Paint()..style = PaintingStyle.fill;
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    final segmentAngle = (2 * pi) / prizes.length;
 
-    final segmentAngle = (2 * pi) / segments.length;
+    // Dessiner les segments
+    for (int i = 0; i < prizes.length; i++) {
+      // Utiliser les couleurs définies ou fallback
+      paint.color = colors[i % colors.length];
 
-    for (int i = 0; i < segments.length; i++) {
-      final segment = segments[i];
-      paint.color = Color(segment.colorInt); // Assuming int color is ARGB
-      
-      // Draw slice
-      // Start at i * angle.
-      // Note: Arc starts at 0 (Right).
-      canvas.drawArc(rect, i * segmentAngle, segmentAngle, true, paint);
-      
-      // Draw Text
-      // Calculate angle for text: center of wedge
-      final textAngle = (i * segmentAngle) + (segmentAngle / 2);
-      // Position: radius * 0.7 from center
-      final textRadius = radius * 0.7;
+      // Dessiner l'arc (segment)
+      // On commence à -π/2 pour que le premier segment soit en haut
+      final startAngle = -pi / 2 + i * segmentAngle;
+      canvas.drawArc(rect, startAngle, segmentAngle, true, paint);
+    }
+
+    // Dessiner les textes
+    for (int i = 0; i < prizes.length; i++) {
+      final prize = prizes[i];
+      final startAngle = -pi / 2 + i * segmentAngle;
+      final textAngle = startAngle + segmentAngle / 2;
+      final textRadius = radius * 0.65;
       final x = center.dx + textRadius * cos(textAngle);
       final y = center.dy + textRadius * sin(textAngle);
-      
+
       canvas.save();
       canvas.translate(x, y);
-      canvas.rotate(textAngle + pi/2); // Text radial
-      
-      textPainter.text = TextSpan(
-        text: segment.label,
-        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12),
+      canvas.rotate(textAngle + pi / 2);
+
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: prize.label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            shadows: [
+              Shadow(
+                color: Colors.black26,
+                offset: Offset(1, 1),
+                blurRadius: 2,
+              ),
+            ],
+          ),
+        ),
+        textDirection: TextDirection.ltr,
       );
       textPainter.layout();
-      textPainter.paint(canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
-      
+      textPainter.paint(
+        canvas,
+        Offset(-textPainter.width / 2, -textPainter.height / 2),
+      );
+
       canvas.restore();
+    }
+
+    // Dessiner les lignes de séparation
+    final linePaint = Paint()
+      ..color = Colors.white.withOpacity(0.5)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i < prizes.length; i++) {
+      final angle = -pi / 2 + i * segmentAngle;
+      final x = center.dx + radius * cos(angle);
+      final y = center.dy + radius * sin(angle);
+      canvas.drawLine(center, Offset(x, y), linePaint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant WheelPainter oldDelegate) {
+    return oldDelegate.prizes != prizes;
+  }
 }

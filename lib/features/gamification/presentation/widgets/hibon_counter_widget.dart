@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../presentation/providers/gamification_provider.dart';
 
 class HibonCounterWidget extends ConsumerWidget {
@@ -10,6 +11,14 @@ class HibonCounterWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Only load hibons if user is authenticated
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+
+    if (!isAuthenticated) {
+      // Return empty placeholder when not authenticated
+      return const SizedBox.shrink();
+    }
+
     final profileAsync = ref.watch(gamificationNotifierProvider);
 
     return profileAsync.when(
@@ -79,7 +88,44 @@ class HibonCounterWidget extends ConsumerWidget {
         height: 30,
         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
-      error: (err, stack) => const Icon(Icons.error_outline, color: Colors.red),
+      error: (err, stack) {
+        debugPrint('🎮 HibonCounterWidget ERROR: $err');
+        debugPrint('🎮 HibonCounterWidget STACK: $stack');
+        // Afficher un placeholder au lieu d'une erreur visible
+        // L'utilisateur peut toujours cliquer pour aller au dashboard
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: compact ? 6 : 8,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.stars_rounded, color: Colors.grey.shade400, size: 16),
+              ),
+              SizedBox(width: compact ? 6 : 8),
+              Text(
+                '---',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: compact ? 14 : 16,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

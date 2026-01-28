@@ -1,23 +1,44 @@
-
 import 'dart:math';
 
 import 'package:lehiboo/features/gamification/data/models/hibons_wallet.dart';
 import 'package:lehiboo/features/gamification/data/models/hibon_transaction.dart';
 import 'package:lehiboo/features/gamification/data/models/daily_reward.dart';
-import 'package:lehiboo/features/gamification/data/models/gamification_items.dart'; // Achievements & Challenges
+import 'package:lehiboo/features/gamification/data/models/gamification_items.dart';
 import 'package:lehiboo/features/gamification/data/models/wheel_models.dart';
 import 'package:lehiboo/features/gamification/domain/repositories/gamification_repository.dart';
 
 class MockGamificationRepository implements GamificationRepository {
   // --- Simulating Database State ---
   HibonsWallet _wallet = HibonsWallet(
-    userId: 'mock_user_123',
     balance: 1530,
     xp: 350,
     level: 3,
-    rank: 'Petit Boo Aventurier',
+    rank: 'explorateur',
+    rankLabel: 'Petit Boo Aventurier',
+    rankIcon: '🦉',
     currentStreak: 4,
-    lastActionDate: DateTime.now().subtract(const Duration(hours: 4)),
+    maxStreak: 7,
+    progressToNextLevel: 50,
+    canClaimDaily: true,
+    canSpinWheel: true,
+    chatQuota: ChatQuota(
+      remaining: 3,
+      limit: 5,
+      used: 2,
+      resetsAt: DateTime.now().add(const Duration(days: 1)),
+      canUnlock: true,
+      unlockCost: 30,
+      unlockMessages: 10,
+    ),
+    dailyRewards: [
+      const DailyRewardItem(day: 1, hibons: 10, claimed: true, current: false),
+      const DailyRewardItem(day: 2, hibons: 15, claimed: true, current: false),
+      const DailyRewardItem(day: 3, hibons: 20, claimed: true, current: false),
+      const DailyRewardItem(day: 4, hibons: 25, claimed: true, current: false),
+      const DailyRewardItem(day: 5, hibons: 30, claimed: false, current: true),
+      const DailyRewardItem(day: 6, hibons: 40, claimed: false, current: false),
+      const DailyRewardItem(day: 7, hibons: 50, claimed: false, current: false),
+    ],
   );
 
   final List<HibonTransaction> _transactions = [
@@ -35,14 +56,14 @@ class MockGamificationRepository implements GamificationRepository {
       description: 'Série quotidienne - Jour 1',
       timestamp: DateTime.now().subtract(const Duration(days: 4)),
     ),
-     HibonTransaction(
+    HibonTransaction(
       id: 't3',
       type: TransactionType.earn,
       amount: 15,
       description: 'Série quotidienne - Jour 2',
       timestamp: DateTime.now().subtract(const Duration(days: 3)),
     ),
-     HibonTransaction(
+    HibonTransaction(
       id: 't4',
       type: TransactionType.spend,
       amount: 100,
@@ -51,34 +72,22 @@ class MockGamificationRepository implements GamificationRepository {
     ),
   ];
 
-  // Daily Rewards Config
-  final List<DailyRewardDay> _dailyRewardConfig = [
-    const DailyRewardDay(dayNumber: 1, hibonsReward: 10, xpReward: 5, isJackpot: false),
-    const DailyRewardDay(dayNumber: 2, hibonsReward: 15, xpReward: 5, isJackpot: false),
-    const DailyRewardDay(dayNumber: 3, hibonsReward: 25, xpReward: 10, isJackpot: false),
-    const DailyRewardDay(dayNumber: 4, hibonsReward: 35, xpReward: 10, bonusDescription: "x1.2 XP (1h)", isJackpot: false),
-    const DailyRewardDay(dayNumber: 5, hibonsReward: 50, xpReward: 15, isJackpot: false),
-    const DailyRewardDay(dayNumber: 6, hibonsReward: 75, xpReward: 20, bonusDescription: "Tour Gratuit", isJackpot: false),
-    const DailyRewardDay(dayNumber: 7, hibonsReward: 100, xpReward: 30, bonusDescription: "Coffre Mystère", isJackpot: true),
-  ];
-  
   // Wheel Config
   final WheelConfig _wheelConfig = WheelConfig(
-    costPerSpin: 100,
-    isFreeSpinAvailable: true, // Mock available for testing
+    costPerSpin: 0,
+    isFreeSpinAvailable: true,
     nextFreeSpinDate: DateTime.now().add(const Duration(days: 1)),
-    segments: [
-      const WheelSegment(id: 'w1', label: '10 H', type: 'hibons', value: 10, probability: 0.25, colorInt: 0xFFE0E0E0),
-      const WheelSegment(id: 'w2', label: '25 H', type: 'hibons', value: 25, probability: 0.20, colorInt: 0xFFB3E5FC),
-      const WheelSegment(id: 'w3', label: '50 H', type: 'hibons', value: 50, probability: 0.15, colorInt: 0xFF81C784),
-      const WheelSegment(id: 'w4', label: '100 H', type: 'hibons', value: 100, probability: 0.08, colorInt: 0xFFFFF176),
-      const WheelSegment(id: 'w5', label: 'x1.5', type: 'multiplier', value: 15, probability: 0.12, colorInt: 0xFFFFCC80),
-      const WheelSegment(id: 'w6', label: 'x2.0', type: 'multiplier', value: 20, probability: 0.08, colorInt: 0xFFFFAB91),
-      const WheelSegment(id: 'w7', label: 'Badge', type: 'badge', value: 1, probability: 0.05, colorInt: 0xFFCE93D8),
-      const WheelSegment(id: 'w8', label: 'JACKPOT', type: 'jackpot', value: 500, probability: 0.02, colorInt: 0xFFFFD700), // Gold
-    ]
+    prizes: [
+      const WheelPrize(index: 0, amount: 5, label: '5 Hibons', colorInt: 0xFFE0E0E0),
+      const WheelPrize(index: 1, amount: 10, label: '10 Hibons', colorInt: 0xFFB3E5FC),
+      const WheelPrize(index: 2, amount: 25, label: '25 Hibons', colorInt: 0xFF81C784),
+      const WheelPrize(index: 3, amount: 50, label: '50 Hibons', colorInt: 0xFFFFF176),
+      const WheelPrize(index: 4, amount: 100, label: '100 Hibons', colorInt: 0xFFFFCC80),
+      const WheelPrize(index: 5, amount: 0, label: 'Pas de chance', colorInt: 0xFFFFAB91),
+      const WheelPrize(index: 6, amount: 200, label: '200 Hibons', colorInt: 0xFFCE93D8),
+      const WheelPrize(index: 7, amount: 500, label: 'JACKPOT!', colorInt: 0xFFFFD700),
+    ],
   );
-
 
   @override
   Future<HibonsWallet> getWallet() async {
@@ -95,79 +104,93 @@ class MockGamificationRepository implements GamificationRepository {
   @override
   Future<DailyRewardState> getDailyRewardState() async {
     await Future.delayed(const Duration(milliseconds: 200));
-    // Mock Logic: 
-    // Current streak is 4, so next reward is day 5.
-    // If last action was > 1 day ago, reset? 
-    // For simplicity, let's say user is on Day 5 and hasn't claimed yet.
+    final currentDayItem = _wallet.dailyRewards.firstWhere(
+      (d) => d.current,
+      orElse: () => _wallet.dailyRewards.first,
+    );
+
     return DailyRewardState(
-      currentDay: (_wallet.currentStreak % 7) + 1, 
-      isClaimedToday: false,
+      currentDay: currentDayItem.day,
+      isClaimedToday: currentDayItem.claimed,
       lastClaimDate: DateTime.now().subtract(const Duration(days: 1)),
-      days: _dailyRewardConfig,
+      days: _wallet.dailyRewards
+          .map((d) => DailyRewardDay(
+                dayNumber: d.day,
+                hibonsReward: d.hibons,
+                xpReward: 0,
+                isJackpot: d.day == 7,
+              ))
+          .toList(),
     );
   }
 
   @override
-  Future<DailyRewardState> claimDailyReward() async {
+  Future<DailyClaimResult> claimDailyReward() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    // Update Wallet
-    final currentDayIndex = (_wallet.currentStreak % 7);
-    final reward = _dailyRewardConfig[currentDayIndex];
-    
-    _wallet = _wallet.copyWith(
-      balance: _wallet.balance + reward.hibonsReward,
-      xp: _wallet.xp + reward.xpReward,
-      currentStreak: _wallet.currentStreak + 1,
-      lastActionDate: DateTime.now(),
+
+    final currentDayItem = _wallet.dailyRewards.firstWhere(
+      (d) => d.current,
+      orElse: () => _wallet.dailyRewards.first,
     );
 
-    // Add Transaction
-    _transactions.insert(0, HibonTransaction(
-      id: Random().nextInt(100000).toString(),
-      type: TransactionType.earn,
-      amount: reward.hibonsReward,
-      description: 'Daily Reward - Jour ${reward.dayNumber}',
-      timestamp: DateTime.now(),
-    ));
+    final reward = currentDayItem.hibons;
+    final newBalance = _wallet.balance + reward;
 
-    return DailyRewardState(
-      currentDay: (_wallet.currentStreak % 7) + 1,
-      isClaimedToday: true,
-      lastClaimDate: DateTime.now(),
-      days: _dailyRewardConfig,
+    _wallet = _wallet.copyWith(
+      balance: newBalance,
+      currentStreak: _wallet.currentStreak + 1,
+      canClaimDaily: false,
+    );
+
+    _transactions.insert(
+      0,
+      HibonTransaction(
+        id: Random().nextInt(100000).toString(),
+        type: TransactionType.earn,
+        amount: reward,
+        description: 'Daily Reward - Jour ${currentDayItem.day}',
+        timestamp: DateTime.now(),
+      ),
+    );
+
+    return DailyClaimResult(
+      hibonsEarned: reward,
+      newDay: currentDayItem.day,
+      newStreak: _wallet.currentStreak,
+      newBalance: newBalance,
+      message: 'Bravo ! Tu as gagné $reward Hibons !',
     );
   }
 
   @override
   Future<HibonsWallet> buyStreakShield() async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    const cost = 150;
-    if (_wallet.balance < cost) throw Exception('Solde insuffisant');
-    
-    _wallet = _wallet.copyWith(
-      balance: _wallet.balance - cost,
-      streakShieldActive: true,
-    );
-    
-    _transactions.insert(0, HibonTransaction(
-      id: Random().nextInt(100000).toString(),
-      type: TransactionType.spend,
-      amount: cost,
-      description: 'Achat Streak Shield',
-      timestamp: DateTime.now(),
-    ));
-    
-    return _wallet;
+    throw UnimplementedError('Streak shield is not available');
   }
 
   @override
   Future<List<Achievement>> getAchievements() async {
     await Future.delayed(const Duration(milliseconds: 300));
     return [
-      const Achievement(id: 'a1', title: 'Première Éclosion', description: 'Effectuer 1 recherche', iconUrl: 'assets/badges/search.png', category: 'Explorer', isUnlocked: true, progressCurrent: 1, progressTarget: 1, unlockedAt: null),
-      const Achievement(id: 'a2', title: 'Explorateur de l\'Extrême', description: 'Voir 10 événements', iconUrl: 'assets/badges/compass.png', category: 'Explorer', isUnlocked: false, progressCurrent: 4, progressTarget: 10),
-      const Achievement(id: 'a3', title: 'Star de la Bande', description: 'Partager 5 événements', iconUrl: 'assets/badges/share.png', category: 'Social', isUnlocked: false, progressCurrent: 1, progressTarget: 5),
-      const Achievement(id: 'a4', title: 'Globe-Trotter', description: 'Visiter 5 villes différentes', iconUrl: 'assets/badges/map.png', category: 'Explorer', isUnlocked: false, progressCurrent: 2, progressTarget: 5),
+      const Achievement(
+        id: 'a1',
+        title: 'Première Éclosion',
+        description: 'Effectuer 1 recherche',
+        iconUrl: 'assets/badges/search.png',
+        category: 'Explorer',
+        isUnlocked: true,
+        progressCurrent: 1,
+        progressTarget: 1,
+      ),
+      const Achievement(
+        id: 'a2',
+        title: 'Explorateur de l\'Extrême',
+        description: 'Voir 10 événements',
+        iconUrl: 'assets/badges/compass.png',
+        category: 'Explorer',
+        isUnlocked: false,
+        progressCurrent: 4,
+        progressTarget: 10,
+      ),
     ];
   }
 
@@ -175,8 +198,16 @@ class MockGamificationRepository implements GamificationRepository {
   Future<List<Challenge>> getChallenges() async {
     await Future.delayed(const Duration(milliseconds: 300));
     return [
-      const Challenge(id: 'c1', title: 'Explorateur du Dimanche', description: 'Consulter 3 événements aujourd\'hui', type: 'daily', rewardHibons: 30, rewardXp: 15, progressCurrent: 1, progressTarget: 3),
-      const Challenge(id: 'c2', title: 'La Totale', description: 'Réserver 1 activité cette semaine', type: 'weekly', rewardHibons: 200, rewardXp: 100, progressCurrent: 0, progressTarget: 1),
+      const Challenge(
+        id: 'c1',
+        title: 'Explorateur du Dimanche',
+        description: 'Consulter 3 événements aujourd\'hui',
+        type: 'daily',
+        rewardHibons: 30,
+        rewardXp: 15,
+        progressCurrent: 1,
+        progressTarget: 3,
+      ),
     ];
   }
 
@@ -188,79 +219,114 @@ class MockGamificationRepository implements GamificationRepository {
 
   @override
   Future<WheelSpinResult> spinWheel() async {
-    await Future.delayed(const Duration(milliseconds: 2000)); // Suspense
-    
-    // Simulate probability
-    final rand = Random().nextDouble();
-    double cumulativeProbability = 0.0;
-    WheelSegment? wonSegment;
-    
-    for (final segment in _wheelConfig.segments) {
-      cumulativeProbability += segment.probability;
-      if (rand <= cumulativeProbability) {
-        wonSegment = segment;
-        break;
-      }
-    }
-    // Fallback
-    wonSegment ??= _wheelConfig.segments.first;
+    await Future.delayed(const Duration(milliseconds: 2000));
 
-    // Apply Reward
-    int earnedAmount = 0;
-    String message = '';
-    
-    if (wonSegment.type == 'hibons' || wonSegment.type == 'jackpot') {
-      earnedAmount = wonSegment.value;
-      message = 'Vous avez gagné ${wonSegment.value} Hibons !';
-      _wallet = _wallet.copyWith(balance: _wallet.balance + earnedAmount);
-    } else if (wonSegment.type == 'multiplier') {
-       // Logic for multiplier (store in wallet temp effects)
-       message = 'Multiplicateur x${wonSegment.value/10} activé !';
-    } else {
-       message = 'Vous avez gagné un Badge Rare !';
-    }
+    final rand = Random();
+    final prizeIndex = rand.nextInt(_wheelConfig.prizes.length);
+    final prize = _wheelConfig.prizes[prizeIndex];
+
+    final earnedAmount = prize.amount;
+
+    _wallet = _wallet.copyWith(
+      balance: _wallet.balance + earnedAmount,
+      canSpinWheel: false,
+    );
 
     if (earnedAmount > 0) {
-      _transactions.insert(0, HibonTransaction(
-        id: Random().nextInt(100000).toString(),
-        type: TransactionType.earn,
-        amount: earnedAmount,
-        description: 'Roue de la Fortune',
-        timestamp: DateTime.now(),
-      ));
+      _transactions.insert(
+        0,
+        HibonTransaction(
+          id: Random().nextInt(100000).toString(),
+          type: TransactionType.earn,
+          amount: earnedAmount,
+          description: 'Roue de la Fortune',
+          timestamp: DateTime.now(),
+        ),
+      );
     }
-    
-    return WheelSpinResult(segment: wonSegment, earnedHibons: earnedAmount, message: message);
+
+    return WheelSpinResult(
+      prize: earnedAmount,
+      prizeIndex: prizeIndex,
+      message: earnedAmount > 0
+          ? 'Bravo ! Tu as gagné $earnedAmount Hibons !'
+          : 'Pas de chance cette fois !',
+      newBalance: _wallet.balance,
+    );
+  }
+
+  @override
+  Future<List<HibonPackage>> getPackages() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return [
+      HibonPackage(
+        id: 'pack_100',
+        name: 'Petit Nid',
+        hibons: 100,
+        priceInCents: 199,
+      ),
+      HibonPackage(
+        id: 'pack_500',
+        name: 'Nid Douillet',
+        hibons: 500,
+        priceInCents: 499,
+        bonusPercent: 10,
+        isPopular: true,
+      ),
+      HibonPackage(
+        id: 'pack_1000',
+        name: 'Grand Nid',
+        hibons: 1000,
+        priceInCents: 899,
+        bonusPercent: 20,
+      ),
+    ];
+  }
+
+  @override
+  Future<PurchaseResult> createPurchase(String packageId) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return PurchaseResult(
+      clientSecret: 'mock_client_secret_${DateTime.now().millisecondsSinceEpoch}',
+      paymentIntentId: 'mock_pi_${DateTime.now().millisecondsSinceEpoch}',
+    );
+  }
+
+  @override
+  Future<void> confirmPurchase(String paymentIntentId) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    // Mock: ajouter 500 hibons
+    _wallet = _wallet.copyWith(balance: _wallet.balance + 500);
+  }
+
+  @override
+  Future<void> unlockChatMessages() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    // Mock: débloquer les messages
+    final currentQuota = _wallet.chatQuota;
+    if (currentQuota != null) {
+      _wallet = _wallet.copyWith(
+        balance: _wallet.balance - currentQuota.unlockCost,
+        chatQuota: ChatQuota(
+          remaining: currentQuota.remaining + currentQuota.unlockMessages,
+          limit: currentQuota.limit + currentQuota.unlockMessages,
+          used: currentQuota.used,
+          resetsAt: currentQuota.resetsAt,
+          canUnlock: true,
+          unlockCost: currentQuota.unlockCost,
+          unlockMessages: currentQuota.unlockMessages,
+        ),
+      );
+    }
   }
 
   @override
   Future<HibonsWallet> buyShopItem(String itemId, int cost) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (_wallet.balance < cost) throw Exception('Solde insuffisant');
-    
-    _wallet = _wallet.copyWith(balance: _wallet.balance - cost);
-    _transactions.insert(0, HibonTransaction(
-      id: Random().nextInt(100000).toString(),
-      type: TransactionType.spend,
-      amount: cost,
-      description: 'Achat Boutique: $itemId',
-      timestamp: DateTime.now(),
-    ));
-    return _wallet;
+    throw UnimplementedError('Use createPurchase() instead');
   }
-
 
   @override
   Future<HibonsWallet> earnHibons(int amount, String description) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _wallet = _wallet.copyWith(balance: _wallet.balance + amount);
-    _transactions.insert(0, HibonTransaction(
-      id: Random().nextInt(100000).toString(),
-      type: TransactionType.earn,
-      amount: amount,
-      description: description,
-      timestamp: DateTime.now(),
-    ));
-    return _wallet;
+    throw UnimplementedError('Hibons are earned through daily rewards, wheel spins, etc.');
   }
 }

@@ -14,6 +14,617 @@ T _$identity<T>(T value) => value;
 final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
+WheelConfig _$WheelConfigFromJson(Map<String, dynamic> json) {
+  return _WheelConfig.fromJson(json);
+}
+
+/// @nodoc
+mixin _$WheelConfig {
+  List<WheelPrize> get prizes =>
+      throw _privateConstructorUsedError; // Champs legacy pour compatibilité avec l'UI existante
+  int get costPerSpin => throw _privateConstructorUsedError;
+  bool get isFreeSpinAvailable => throw _privateConstructorUsedError;
+  DateTime? get nextFreeSpinDate => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $WheelConfigCopyWith<WheelConfig> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $WheelConfigCopyWith<$Res> {
+  factory $WheelConfigCopyWith(
+          WheelConfig value, $Res Function(WheelConfig) then) =
+      _$WheelConfigCopyWithImpl<$Res, WheelConfig>;
+  @useResult
+  $Res call(
+      {List<WheelPrize> prizes,
+      int costPerSpin,
+      bool isFreeSpinAvailable,
+      DateTime? nextFreeSpinDate});
+}
+
+/// @nodoc
+class _$WheelConfigCopyWithImpl<$Res, $Val extends WheelConfig>
+    implements $WheelConfigCopyWith<$Res> {
+  _$WheelConfigCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? prizes = null,
+    Object? costPerSpin = null,
+    Object? isFreeSpinAvailable = null,
+    Object? nextFreeSpinDate = freezed,
+  }) {
+    return _then(_value.copyWith(
+      prizes: null == prizes
+          ? _value.prizes
+          : prizes // ignore: cast_nullable_to_non_nullable
+              as List<WheelPrize>,
+      costPerSpin: null == costPerSpin
+          ? _value.costPerSpin
+          : costPerSpin // ignore: cast_nullable_to_non_nullable
+              as int,
+      isFreeSpinAvailable: null == isFreeSpinAvailable
+          ? _value.isFreeSpinAvailable
+          : isFreeSpinAvailable // ignore: cast_nullable_to_non_nullable
+              as bool,
+      nextFreeSpinDate: freezed == nextFreeSpinDate
+          ? _value.nextFreeSpinDate
+          : nextFreeSpinDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$WheelConfigImplCopyWith<$Res>
+    implements $WheelConfigCopyWith<$Res> {
+  factory _$$WheelConfigImplCopyWith(
+          _$WheelConfigImpl value, $Res Function(_$WheelConfigImpl) then) =
+      __$$WheelConfigImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {List<WheelPrize> prizes,
+      int costPerSpin,
+      bool isFreeSpinAvailable,
+      DateTime? nextFreeSpinDate});
+}
+
+/// @nodoc
+class __$$WheelConfigImplCopyWithImpl<$Res>
+    extends _$WheelConfigCopyWithImpl<$Res, _$WheelConfigImpl>
+    implements _$$WheelConfigImplCopyWith<$Res> {
+  __$$WheelConfigImplCopyWithImpl(
+      _$WheelConfigImpl _value, $Res Function(_$WheelConfigImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? prizes = null,
+    Object? costPerSpin = null,
+    Object? isFreeSpinAvailable = null,
+    Object? nextFreeSpinDate = freezed,
+  }) {
+    return _then(_$WheelConfigImpl(
+      prizes: null == prizes
+          ? _value._prizes
+          : prizes // ignore: cast_nullable_to_non_nullable
+              as List<WheelPrize>,
+      costPerSpin: null == costPerSpin
+          ? _value.costPerSpin
+          : costPerSpin // ignore: cast_nullable_to_non_nullable
+              as int,
+      isFreeSpinAvailable: null == isFreeSpinAvailable
+          ? _value.isFreeSpinAvailable
+          : isFreeSpinAvailable // ignore: cast_nullable_to_non_nullable
+              as bool,
+      nextFreeSpinDate: freezed == nextFreeSpinDate
+          ? _value.nextFreeSpinDate
+          : nextFreeSpinDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$WheelConfigImpl implements _WheelConfig {
+  const _$WheelConfigImpl(
+      {required final List<WheelPrize> prizes,
+      this.costPerSpin = 0,
+      this.isFreeSpinAvailable = true,
+      this.nextFreeSpinDate})
+      : _prizes = prizes;
+
+  factory _$WheelConfigImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WheelConfigImplFromJson(json);
+
+  final List<WheelPrize> _prizes;
+  @override
+  List<WheelPrize> get prizes {
+    if (_prizes is EqualUnmodifiableListView) return _prizes;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_prizes);
+  }
+
+// Champs legacy pour compatibilité avec l'UI existante
+  @override
+  @JsonKey()
+  final int costPerSpin;
+  @override
+  @JsonKey()
+  final bool isFreeSpinAvailable;
+  @override
+  final DateTime? nextFreeSpinDate;
+
+  @override
+  String toString() {
+    return 'WheelConfig(prizes: $prizes, costPerSpin: $costPerSpin, isFreeSpinAvailable: $isFreeSpinAvailable, nextFreeSpinDate: $nextFreeSpinDate)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$WheelConfigImpl &&
+            const DeepCollectionEquality().equals(other._prizes, _prizes) &&
+            (identical(other.costPerSpin, costPerSpin) ||
+                other.costPerSpin == costPerSpin) &&
+            (identical(other.isFreeSpinAvailable, isFreeSpinAvailable) ||
+                other.isFreeSpinAvailable == isFreeSpinAvailable) &&
+            (identical(other.nextFreeSpinDate, nextFreeSpinDate) ||
+                other.nextFreeSpinDate == nextFreeSpinDate));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_prizes),
+      costPerSpin,
+      isFreeSpinAvailable,
+      nextFreeSpinDate);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$WheelConfigImplCopyWith<_$WheelConfigImpl> get copyWith =>
+      __$$WheelConfigImplCopyWithImpl<_$WheelConfigImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$WheelConfigImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _WheelConfig implements WheelConfig {
+  const factory _WheelConfig(
+      {required final List<WheelPrize> prizes,
+      final int costPerSpin,
+      final bool isFreeSpinAvailable,
+      final DateTime? nextFreeSpinDate}) = _$WheelConfigImpl;
+
+  factory _WheelConfig.fromJson(Map<String, dynamic> json) =
+      _$WheelConfigImpl.fromJson;
+
+  @override
+  List<WheelPrize> get prizes;
+  @override // Champs legacy pour compatibilité avec l'UI existante
+  int get costPerSpin;
+  @override
+  bool get isFreeSpinAvailable;
+  @override
+  DateTime? get nextFreeSpinDate;
+  @override
+  @JsonKey(ignore: true)
+  _$$WheelConfigImplCopyWith<_$WheelConfigImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+WheelPrize _$WheelPrizeFromJson(Map<String, dynamic> json) {
+  return _WheelPrize.fromJson(json);
+}
+
+/// @nodoc
+mixin _$WheelPrize {
+  int get index => throw _privateConstructorUsedError;
+  int get amount => throw _privateConstructorUsedError;
+  String get label =>
+      throw _privateConstructorUsedError; // Champs UI (non fournis par l'API, à définir côté app)
+  int get colorInt => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $WheelPrizeCopyWith<WheelPrize> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $WheelPrizeCopyWith<$Res> {
+  factory $WheelPrizeCopyWith(
+          WheelPrize value, $Res Function(WheelPrize) then) =
+      _$WheelPrizeCopyWithImpl<$Res, WheelPrize>;
+  @useResult
+  $Res call({int index, int amount, String label, int colorInt});
+}
+
+/// @nodoc
+class _$WheelPrizeCopyWithImpl<$Res, $Val extends WheelPrize>
+    implements $WheelPrizeCopyWith<$Res> {
+  _$WheelPrizeCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? index = null,
+    Object? amount = null,
+    Object? label = null,
+    Object? colorInt = null,
+  }) {
+    return _then(_value.copyWith(
+      index: null == index
+          ? _value.index
+          : index // ignore: cast_nullable_to_non_nullable
+              as int,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+      label: null == label
+          ? _value.label
+          : label // ignore: cast_nullable_to_non_nullable
+              as String,
+      colorInt: null == colorInt
+          ? _value.colorInt
+          : colorInt // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$WheelPrizeImplCopyWith<$Res>
+    implements $WheelPrizeCopyWith<$Res> {
+  factory _$$WheelPrizeImplCopyWith(
+          _$WheelPrizeImpl value, $Res Function(_$WheelPrizeImpl) then) =
+      __$$WheelPrizeImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({int index, int amount, String label, int colorInt});
+}
+
+/// @nodoc
+class __$$WheelPrizeImplCopyWithImpl<$Res>
+    extends _$WheelPrizeCopyWithImpl<$Res, _$WheelPrizeImpl>
+    implements _$$WheelPrizeImplCopyWith<$Res> {
+  __$$WheelPrizeImplCopyWithImpl(
+      _$WheelPrizeImpl _value, $Res Function(_$WheelPrizeImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? index = null,
+    Object? amount = null,
+    Object? label = null,
+    Object? colorInt = null,
+  }) {
+    return _then(_$WheelPrizeImpl(
+      index: null == index
+          ? _value.index
+          : index // ignore: cast_nullable_to_non_nullable
+              as int,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+      label: null == label
+          ? _value.label
+          : label // ignore: cast_nullable_to_non_nullable
+              as String,
+      colorInt: null == colorInt
+          ? _value.colorInt
+          : colorInt // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$WheelPrizeImpl implements _WheelPrize {
+  const _$WheelPrizeImpl(
+      {required this.index,
+      required this.amount,
+      required this.label,
+      this.colorInt = 0xFFFFFFFF});
+
+  factory _$WheelPrizeImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WheelPrizeImplFromJson(json);
+
+  @override
+  final int index;
+  @override
+  final int amount;
+  @override
+  final String label;
+// Champs UI (non fournis par l'API, à définir côté app)
+  @override
+  @JsonKey()
+  final int colorInt;
+
+  @override
+  String toString() {
+    return 'WheelPrize(index: $index, amount: $amount, label: $label, colorInt: $colorInt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$WheelPrizeImpl &&
+            (identical(other.index, index) || other.index == index) &&
+            (identical(other.amount, amount) || other.amount == amount) &&
+            (identical(other.label, label) || other.label == label) &&
+            (identical(other.colorInt, colorInt) ||
+                other.colorInt == colorInt));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, index, amount, label, colorInt);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$WheelPrizeImplCopyWith<_$WheelPrizeImpl> get copyWith =>
+      __$$WheelPrizeImplCopyWithImpl<_$WheelPrizeImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$WheelPrizeImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _WheelPrize implements WheelPrize {
+  const factory _WheelPrize(
+      {required final int index,
+      required final int amount,
+      required final String label,
+      final int colorInt}) = _$WheelPrizeImpl;
+
+  factory _WheelPrize.fromJson(Map<String, dynamic> json) =
+      _$WheelPrizeImpl.fromJson;
+
+  @override
+  int get index;
+  @override
+  int get amount;
+  @override
+  String get label;
+  @override // Champs UI (non fournis par l'API, à définir côté app)
+  int get colorInt;
+  @override
+  @JsonKey(ignore: true)
+  _$$WheelPrizeImplCopyWith<_$WheelPrizeImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+WheelSpinResult _$WheelSpinResultFromJson(Map<String, dynamic> json) {
+  return _WheelSpinResult.fromJson(json);
+}
+
+/// @nodoc
+mixin _$WheelSpinResult {
+  int get prize => throw _privateConstructorUsedError;
+  int get prizeIndex => throw _privateConstructorUsedError;
+  String get message => throw _privateConstructorUsedError;
+  int get newBalance => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $WheelSpinResultCopyWith<WheelSpinResult> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $WheelSpinResultCopyWith<$Res> {
+  factory $WheelSpinResultCopyWith(
+          WheelSpinResult value, $Res Function(WheelSpinResult) then) =
+      _$WheelSpinResultCopyWithImpl<$Res, WheelSpinResult>;
+  @useResult
+  $Res call({int prize, int prizeIndex, String message, int newBalance});
+}
+
+/// @nodoc
+class _$WheelSpinResultCopyWithImpl<$Res, $Val extends WheelSpinResult>
+    implements $WheelSpinResultCopyWith<$Res> {
+  _$WheelSpinResultCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? prize = null,
+    Object? prizeIndex = null,
+    Object? message = null,
+    Object? newBalance = null,
+  }) {
+    return _then(_value.copyWith(
+      prize: null == prize
+          ? _value.prize
+          : prize // ignore: cast_nullable_to_non_nullable
+              as int,
+      prizeIndex: null == prizeIndex
+          ? _value.prizeIndex
+          : prizeIndex // ignore: cast_nullable_to_non_nullable
+              as int,
+      message: null == message
+          ? _value.message
+          : message // ignore: cast_nullable_to_non_nullable
+              as String,
+      newBalance: null == newBalance
+          ? _value.newBalance
+          : newBalance // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$WheelSpinResultImplCopyWith<$Res>
+    implements $WheelSpinResultCopyWith<$Res> {
+  factory _$$WheelSpinResultImplCopyWith(_$WheelSpinResultImpl value,
+          $Res Function(_$WheelSpinResultImpl) then) =
+      __$$WheelSpinResultImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({int prize, int prizeIndex, String message, int newBalance});
+}
+
+/// @nodoc
+class __$$WheelSpinResultImplCopyWithImpl<$Res>
+    extends _$WheelSpinResultCopyWithImpl<$Res, _$WheelSpinResultImpl>
+    implements _$$WheelSpinResultImplCopyWith<$Res> {
+  __$$WheelSpinResultImplCopyWithImpl(
+      _$WheelSpinResultImpl _value, $Res Function(_$WheelSpinResultImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? prize = null,
+    Object? prizeIndex = null,
+    Object? message = null,
+    Object? newBalance = null,
+  }) {
+    return _then(_$WheelSpinResultImpl(
+      prize: null == prize
+          ? _value.prize
+          : prize // ignore: cast_nullable_to_non_nullable
+              as int,
+      prizeIndex: null == prizeIndex
+          ? _value.prizeIndex
+          : prizeIndex // ignore: cast_nullable_to_non_nullable
+              as int,
+      message: null == message
+          ? _value.message
+          : message // ignore: cast_nullable_to_non_nullable
+              as String,
+      newBalance: null == newBalance
+          ? _value.newBalance
+          : newBalance // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$WheelSpinResultImpl implements _WheelSpinResult {
+  const _$WheelSpinResultImpl(
+      {required this.prize,
+      required this.prizeIndex,
+      required this.message,
+      required this.newBalance});
+
+  factory _$WheelSpinResultImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WheelSpinResultImplFromJson(json);
+
+  @override
+  final int prize;
+  @override
+  final int prizeIndex;
+  @override
+  final String message;
+  @override
+  final int newBalance;
+
+  @override
+  String toString() {
+    return 'WheelSpinResult(prize: $prize, prizeIndex: $prizeIndex, message: $message, newBalance: $newBalance)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$WheelSpinResultImpl &&
+            (identical(other.prize, prize) || other.prize == prize) &&
+            (identical(other.prizeIndex, prizeIndex) ||
+                other.prizeIndex == prizeIndex) &&
+            (identical(other.message, message) || other.message == message) &&
+            (identical(other.newBalance, newBalance) ||
+                other.newBalance == newBalance));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, prize, prizeIndex, message, newBalance);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$WheelSpinResultImplCopyWith<_$WheelSpinResultImpl> get copyWith =>
+      __$$WheelSpinResultImplCopyWithImpl<_$WheelSpinResultImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$WheelSpinResultImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _WheelSpinResult implements WheelSpinResult {
+  const factory _WheelSpinResult(
+      {required final int prize,
+      required final int prizeIndex,
+      required final String message,
+      required final int newBalance}) = _$WheelSpinResultImpl;
+
+  factory _WheelSpinResult.fromJson(Map<String, dynamic> json) =
+      _$WheelSpinResultImpl.fromJson;
+
+  @override
+  int get prize;
+  @override
+  int get prizeIndex;
+  @override
+  String get message;
+  @override
+  int get newBalance;
+  @override
+  @JsonKey(ignore: true)
+  _$$WheelSpinResultImplCopyWith<_$WheelSpinResultImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 WheelSegment _$WheelSegmentFromJson(Map<String, dynamic> json) {
   return _WheelSegment.fromJson(json);
 }
@@ -24,8 +635,7 @@ mixin _$WheelSegment {
   String get label => throw _privateConstructorUsedError;
   String get type =>
       throw _privateConstructorUsedError; // hibons, multiplier, badge, jackpot
-  int get value =>
-      throw _privateConstructorUsedError; // Amount of hibons or multiplier value (e.g. 15 for 1.5x)
+  int get value => throw _privateConstructorUsedError;
   double get probability => throw _privateConstructorUsedError;
   int get colorInt => throw _privateConstructorUsedError;
 
@@ -186,7 +796,6 @@ class _$WheelSegmentImpl implements _WheelSegment {
 // hibons, multiplier, badge, jackpot
   @override
   final int value;
-// Amount of hibons or multiplier value (e.g. 15 for 1.5x)
   @override
   final double probability;
   @override
@@ -252,418 +861,12 @@ abstract class _WheelSegment implements WheelSegment {
   String get type;
   @override // hibons, multiplier, badge, jackpot
   int get value;
-  @override // Amount of hibons or multiplier value (e.g. 15 for 1.5x)
+  @override
   double get probability;
   @override
   int get colorInt;
   @override
   @JsonKey(ignore: true)
   _$$WheelSegmentImplCopyWith<_$WheelSegmentImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-WheelConfig _$WheelConfigFromJson(Map<String, dynamic> json) {
-  return _WheelConfig.fromJson(json);
-}
-
-/// @nodoc
-mixin _$WheelConfig {
-  List<WheelSegment> get segments => throw _privateConstructorUsedError;
-  int get costPerSpin => throw _privateConstructorUsedError;
-  bool get isFreeSpinAvailable => throw _privateConstructorUsedError;
-  DateTime? get nextFreeSpinDate => throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $WheelConfigCopyWith<WheelConfig> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $WheelConfigCopyWith<$Res> {
-  factory $WheelConfigCopyWith(
-          WheelConfig value, $Res Function(WheelConfig) then) =
-      _$WheelConfigCopyWithImpl<$Res, WheelConfig>;
-  @useResult
-  $Res call(
-      {List<WheelSegment> segments,
-      int costPerSpin,
-      bool isFreeSpinAvailable,
-      DateTime? nextFreeSpinDate});
-}
-
-/// @nodoc
-class _$WheelConfigCopyWithImpl<$Res, $Val extends WheelConfig>
-    implements $WheelConfigCopyWith<$Res> {
-  _$WheelConfigCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? segments = null,
-    Object? costPerSpin = null,
-    Object? isFreeSpinAvailable = null,
-    Object? nextFreeSpinDate = freezed,
-  }) {
-    return _then(_value.copyWith(
-      segments: null == segments
-          ? _value.segments
-          : segments // ignore: cast_nullable_to_non_nullable
-              as List<WheelSegment>,
-      costPerSpin: null == costPerSpin
-          ? _value.costPerSpin
-          : costPerSpin // ignore: cast_nullable_to_non_nullable
-              as int,
-      isFreeSpinAvailable: null == isFreeSpinAvailable
-          ? _value.isFreeSpinAvailable
-          : isFreeSpinAvailable // ignore: cast_nullable_to_non_nullable
-              as bool,
-      nextFreeSpinDate: freezed == nextFreeSpinDate
-          ? _value.nextFreeSpinDate
-          : nextFreeSpinDate // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$WheelConfigImplCopyWith<$Res>
-    implements $WheelConfigCopyWith<$Res> {
-  factory _$$WheelConfigImplCopyWith(
-          _$WheelConfigImpl value, $Res Function(_$WheelConfigImpl) then) =
-      __$$WheelConfigImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {List<WheelSegment> segments,
-      int costPerSpin,
-      bool isFreeSpinAvailable,
-      DateTime? nextFreeSpinDate});
-}
-
-/// @nodoc
-class __$$WheelConfigImplCopyWithImpl<$Res>
-    extends _$WheelConfigCopyWithImpl<$Res, _$WheelConfigImpl>
-    implements _$$WheelConfigImplCopyWith<$Res> {
-  __$$WheelConfigImplCopyWithImpl(
-      _$WheelConfigImpl _value, $Res Function(_$WheelConfigImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? segments = null,
-    Object? costPerSpin = null,
-    Object? isFreeSpinAvailable = null,
-    Object? nextFreeSpinDate = freezed,
-  }) {
-    return _then(_$WheelConfigImpl(
-      segments: null == segments
-          ? _value._segments
-          : segments // ignore: cast_nullable_to_non_nullable
-              as List<WheelSegment>,
-      costPerSpin: null == costPerSpin
-          ? _value.costPerSpin
-          : costPerSpin // ignore: cast_nullable_to_non_nullable
-              as int,
-      isFreeSpinAvailable: null == isFreeSpinAvailable
-          ? _value.isFreeSpinAvailable
-          : isFreeSpinAvailable // ignore: cast_nullable_to_non_nullable
-              as bool,
-      nextFreeSpinDate: freezed == nextFreeSpinDate
-          ? _value.nextFreeSpinDate
-          : nextFreeSpinDate // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$WheelConfigImpl implements _WheelConfig {
-  const _$WheelConfigImpl(
-      {required final List<WheelSegment> segments,
-      required this.costPerSpin,
-      required this.isFreeSpinAvailable,
-      this.nextFreeSpinDate})
-      : _segments = segments;
-
-  factory _$WheelConfigImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WheelConfigImplFromJson(json);
-
-  final List<WheelSegment> _segments;
-  @override
-  List<WheelSegment> get segments {
-    if (_segments is EqualUnmodifiableListView) return _segments;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_segments);
-  }
-
-  @override
-  final int costPerSpin;
-  @override
-  final bool isFreeSpinAvailable;
-  @override
-  final DateTime? nextFreeSpinDate;
-
-  @override
-  String toString() {
-    return 'WheelConfig(segments: $segments, costPerSpin: $costPerSpin, isFreeSpinAvailable: $isFreeSpinAvailable, nextFreeSpinDate: $nextFreeSpinDate)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$WheelConfigImpl &&
-            const DeepCollectionEquality().equals(other._segments, _segments) &&
-            (identical(other.costPerSpin, costPerSpin) ||
-                other.costPerSpin == costPerSpin) &&
-            (identical(other.isFreeSpinAvailable, isFreeSpinAvailable) ||
-                other.isFreeSpinAvailable == isFreeSpinAvailable) &&
-            (identical(other.nextFreeSpinDate, nextFreeSpinDate) ||
-                other.nextFreeSpinDate == nextFreeSpinDate));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      const DeepCollectionEquality().hash(_segments),
-      costPerSpin,
-      isFreeSpinAvailable,
-      nextFreeSpinDate);
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$WheelConfigImplCopyWith<_$WheelConfigImpl> get copyWith =>
-      __$$WheelConfigImplCopyWithImpl<_$WheelConfigImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WheelConfigImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _WheelConfig implements WheelConfig {
-  const factory _WheelConfig(
-      {required final List<WheelSegment> segments,
-      required final int costPerSpin,
-      required final bool isFreeSpinAvailable,
-      final DateTime? nextFreeSpinDate}) = _$WheelConfigImpl;
-
-  factory _WheelConfig.fromJson(Map<String, dynamic> json) =
-      _$WheelConfigImpl.fromJson;
-
-  @override
-  List<WheelSegment> get segments;
-  @override
-  int get costPerSpin;
-  @override
-  bool get isFreeSpinAvailable;
-  @override
-  DateTime? get nextFreeSpinDate;
-  @override
-  @JsonKey(ignore: true)
-  _$$WheelConfigImplCopyWith<_$WheelConfigImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-WheelSpinResult _$WheelSpinResultFromJson(Map<String, dynamic> json) {
-  return _WheelSpinResult.fromJson(json);
-}
-
-/// @nodoc
-mixin _$WheelSpinResult {
-  WheelSegment get segment => throw _privateConstructorUsedError;
-  int get earnedHibons =>
-      throw _privateConstructorUsedError; // Calculated value
-  String get message => throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $WheelSpinResultCopyWith<WheelSpinResult> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $WheelSpinResultCopyWith<$Res> {
-  factory $WheelSpinResultCopyWith(
-          WheelSpinResult value, $Res Function(WheelSpinResult) then) =
-      _$WheelSpinResultCopyWithImpl<$Res, WheelSpinResult>;
-  @useResult
-  $Res call({WheelSegment segment, int earnedHibons, String message});
-
-  $WheelSegmentCopyWith<$Res> get segment;
-}
-
-/// @nodoc
-class _$WheelSpinResultCopyWithImpl<$Res, $Val extends WheelSpinResult>
-    implements $WheelSpinResultCopyWith<$Res> {
-  _$WheelSpinResultCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? segment = null,
-    Object? earnedHibons = null,
-    Object? message = null,
-  }) {
-    return _then(_value.copyWith(
-      segment: null == segment
-          ? _value.segment
-          : segment // ignore: cast_nullable_to_non_nullable
-              as WheelSegment,
-      earnedHibons: null == earnedHibons
-          ? _value.earnedHibons
-          : earnedHibons // ignore: cast_nullable_to_non_nullable
-              as int,
-      message: null == message
-          ? _value.message
-          : message // ignore: cast_nullable_to_non_nullable
-              as String,
-    ) as $Val);
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  $WheelSegmentCopyWith<$Res> get segment {
-    return $WheelSegmentCopyWith<$Res>(_value.segment, (value) {
-      return _then(_value.copyWith(segment: value) as $Val);
-    });
-  }
-}
-
-/// @nodoc
-abstract class _$$WheelSpinResultImplCopyWith<$Res>
-    implements $WheelSpinResultCopyWith<$Res> {
-  factory _$$WheelSpinResultImplCopyWith(_$WheelSpinResultImpl value,
-          $Res Function(_$WheelSpinResultImpl) then) =
-      __$$WheelSpinResultImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({WheelSegment segment, int earnedHibons, String message});
-
-  @override
-  $WheelSegmentCopyWith<$Res> get segment;
-}
-
-/// @nodoc
-class __$$WheelSpinResultImplCopyWithImpl<$Res>
-    extends _$WheelSpinResultCopyWithImpl<$Res, _$WheelSpinResultImpl>
-    implements _$$WheelSpinResultImplCopyWith<$Res> {
-  __$$WheelSpinResultImplCopyWithImpl(
-      _$WheelSpinResultImpl _value, $Res Function(_$WheelSpinResultImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? segment = null,
-    Object? earnedHibons = null,
-    Object? message = null,
-  }) {
-    return _then(_$WheelSpinResultImpl(
-      segment: null == segment
-          ? _value.segment
-          : segment // ignore: cast_nullable_to_non_nullable
-              as WheelSegment,
-      earnedHibons: null == earnedHibons
-          ? _value.earnedHibons
-          : earnedHibons // ignore: cast_nullable_to_non_nullable
-              as int,
-      message: null == message
-          ? _value.message
-          : message // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$WheelSpinResultImpl implements _WheelSpinResult {
-  const _$WheelSpinResultImpl(
-      {required this.segment,
-      required this.earnedHibons,
-      required this.message});
-
-  factory _$WheelSpinResultImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WheelSpinResultImplFromJson(json);
-
-  @override
-  final WheelSegment segment;
-  @override
-  final int earnedHibons;
-// Calculated value
-  @override
-  final String message;
-
-  @override
-  String toString() {
-    return 'WheelSpinResult(segment: $segment, earnedHibons: $earnedHibons, message: $message)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$WheelSpinResultImpl &&
-            (identical(other.segment, segment) || other.segment == segment) &&
-            (identical(other.earnedHibons, earnedHibons) ||
-                other.earnedHibons == earnedHibons) &&
-            (identical(other.message, message) || other.message == message));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(runtimeType, segment, earnedHibons, message);
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$WheelSpinResultImplCopyWith<_$WheelSpinResultImpl> get copyWith =>
-      __$$WheelSpinResultImplCopyWithImpl<_$WheelSpinResultImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WheelSpinResultImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _WheelSpinResult implements WheelSpinResult {
-  const factory _WheelSpinResult(
-      {required final WheelSegment segment,
-      required final int earnedHibons,
-      required final String message}) = _$WheelSpinResultImpl;
-
-  factory _WheelSpinResult.fromJson(Map<String, dynamic> json) =
-      _$WheelSpinResultImpl.fromJson;
-
-  @override
-  WheelSegment get segment;
-  @override
-  int get earnedHibons;
-  @override // Calculated value
-  String get message;
-  @override
-  @JsonKey(ignore: true)
-  _$$WheelSpinResultImplCopyWith<_$WheelSpinResultImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

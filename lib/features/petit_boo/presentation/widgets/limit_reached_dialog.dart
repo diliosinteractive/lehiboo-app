@@ -268,14 +268,18 @@ class LimitReachedDialog extends ConsumerWidget {
 
   Future<void> _spendHibons(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(gamificationNotifierProvider.notifier).spendHibons(
-        10,
-        "Message Petit Boo",
-      );
-      ref.read(petitBooChatProvider.notifier).resetLimit();
-      if (context.mounted) {
-        Navigator.pop(context);
-        PetitBooToast.success(context, 'Conversation débloquée !');
+      // Utiliser le nouveau provider pour débloquer les messages chat
+      final success = await ref.read(chatUnlockProvider.notifier).unlock();
+      if (success) {
+        ref.read(petitBooChatProvider.notifier).resetLimit();
+        if (context.mounted) {
+          Navigator.pop(context);
+          PetitBooToast.success(context, 'Conversation débloquée !');
+        }
+      } else {
+        if (context.mounted) {
+          PetitBooToast.error(context, 'Impossible de débloquer la conversation');
+        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -292,23 +296,14 @@ class LimitReachedDialog extends ConsumerWidget {
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    // Mock ad duration
+    // Mock ad duration (fonctionnalité non supportée par l'API)
     await Future.delayed(const Duration(seconds: 2));
 
     if (context.mounted) {
       Navigator.pop(context); // Close loading
-
-      try {
-        await ref.read(gamificationNotifierProvider.notifier).earnHibons(
-          20,
-          "Publicité regardée",
-        );
-        if (context.mounted) {
-          PetitBooToast.success(context, 'Merci ! Vous avez gagné 20 Hibons.');
-        }
-      } catch (e) {
-        // Ignore errors
-      }
+      // Note: Cette fonctionnalité n'est pas supportée côté API
+      // On affiche juste un message d'information
+      PetitBooToast.success(context, 'Fonctionnalité bientôt disponible !');
     }
   }
 }

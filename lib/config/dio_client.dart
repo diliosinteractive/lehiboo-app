@@ -121,10 +121,18 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     if (err.response?.statusCode == 401 && !_isRefreshing) {
       _isRefreshing = true;
 
+      if (kDebugMode) {
+        debugPrint('🔐 JwtAuthInterceptor: 401 error on ${err.requestOptions.path}');
+      }
+
       try {
         final currentToken = await _storage.read(key: AppConstants.keyAuthToken);
 
-        if (currentToken != null) {
+        if (currentToken != null && currentToken.isNotEmpty) {
+          if (kDebugMode) {
+            debugPrint('🔐 JwtAuthInterceptor: Attempting token refresh...');
+          }
+
           // Create a new Dio instance to avoid interceptor loop
           final refreshDio = Dio(BaseOptions(
             baseUrl: AppConstants.baseUrl,
@@ -135,45 +143,57 @@ class JwtAuthInterceptor extends QueuedInterceptor {
             },
           ));
 
-          final response = await refreshDio.post('/auth/refresh');
+          try {
+            final response = await refreshDio.post('/auth/refresh');
 
-          // Laravel v2 format: { "message": "...", "token": "...", ... }
-          // or: { "data": { "token": "..." } }
-          final data = response.data;
-          final newAccessToken = data['token'] ?? data['data']?['token'];
+            // Laravel v2 format: { "message": "...", "token": "...", ... }
+            // or: { "data": { "token": "..." } }
+            final data = response.data;
+            final newAccessToken = data['token'] ?? data['data']?['token'];
 
-          if (newAccessToken != null) {
-            // Save new token (Sanctum uses same token for both)
-            await _storage.write(key: AppConstants.keyAuthToken, value: newAccessToken);
-            await _storage.write(key: AppConstants.keyRefreshToken, value: newAccessToken);
+            if (newAccessToken != null) {
+              if (kDebugMode) {
+                debugPrint('🔐 JwtAuthInterceptor: Token refreshed successfully');
+              }
+              // Save new token (Sanctum uses same token for both)
+              await _storage.write(key: AppConstants.keyAuthToken, value: newAccessToken);
+              await _storage.write(key: AppConstants.keyRefreshToken, value: newAccessToken);
 
-            // Retry the original request with new token
-            err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+              // Retry the original request with new token
+              err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
 
-            final retryResponse = await _dio.fetch(err.requestOptions);
-            _isRefreshing = false;
-            return handler.resolve(retryResponse);
+              final retryResponse = await _dio.fetch(err.requestOptions);
+              _isRefreshing = false;
+              return handler.resolve(retryResponse);
+            }
+          } catch (refreshError) {
+            // Refresh failed - this is expected with Laravel Sanctum
+            // which doesn't have a refresh endpoint
+            if (kDebugMode) {
+              debugPrint('🔐 JwtAuthInterceptor: Refresh failed (expected with Sanctum): $refreshError');
+              debugPrint('🔐 JwtAuthInterceptor: NOT clearing tokens - user may still have valid session');
+            }
+            // DON'T clear tokens here - the token might still be valid
+            // and the 401 might be for a specific resource, not auth
+          }
+        } else {
+          if (kDebugMode) {
+            debugPrint('🔐 JwtAuthInterceptor: No token found, cannot refresh');
           }
         }
 
-        // If refresh failed, clear tokens and reject
-        await _clearTokens();
         _isRefreshing = false;
         return handler.reject(err);
       } catch (e) {
-        await _clearTokens();
+        if (kDebugMode) {
+          debugPrint('🔐 JwtAuthInterceptor: Unexpected error during refresh: $e');
+        }
+        // DON'T clear tokens on unexpected errors either
         _isRefreshing = false;
         return handler.reject(err);
       }
     }
 
     super.onError(err, handler);
-  }
-
-  Future<void> _clearTokens() async {
-    await _storage.delete(key: AppConstants.keyAuthToken);
-    await _storage.delete(key: AppConstants.keyRefreshToken);
-    await _storage.delete(key: AppConstants.keyUserId);
-    await _storage.delete(key: AppConstants.keyUserRole);
   }
 }

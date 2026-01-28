@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../data/models/daily_reward.dart';
+import '../../data/models/hibons_wallet.dart';
 import '../providers/gamification_provider.dart';
 import '../widgets/daily_reward_widget.dart';
 import '../widgets/hibon_counter_widget.dart';
@@ -165,16 +167,7 @@ class GamificationDashboardScreen extends ConsumerWidget {
                 children: [
                   // Daily Reward Section
 
-                  dailyRewardAsync.when(
-                    data: (state) => DailyRewardWidget(
-                      state: state,
-                      onClaim: () {
-                         ref.read(dailyRewardProvider.notifier).claim();
-                      },
-                    ),
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, s) => Text('Erreur: $e'),
-                  ),
+                  _buildDailyRewardSection(context, ref, walletAsync, dailyRewardAsync),
                   
                   const SizedBox(height: 32),
                   
@@ -316,6 +309,73 @@ class GamificationDashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDailyRewardSection(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<HibonsWallet> walletAsync,
+    AsyncValue<DailyRewardState> dailyRewardAsync,
+  ) {
+    // Récupérer canClaimDaily du wallet
+    final canClaimDaily = walletAsync.maybeWhen(
+      data: (wallet) => wallet.canClaimDaily,
+      orElse: () => false,
+    );
+
+    return dailyRewardAsync.when(
+      data: (state) => DailyRewardWidget(
+        state: state,
+        canClaim: canClaimDaily,
+        isLoading: false,
+        onClaim: () async {
+          try {
+            final result = await ref.read(dailyRewardProvider.notifier).claim();
+            if (context.mounted && result != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.celebration, color: Colors.white),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(result.message)),
+                    ],
+                  ),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              // Extraire le message d'erreur de l'API si disponible
+              String errorMessage = 'Erreur lors de la réclamation';
+              final errorStr = e.toString();
+              if (errorStr.contains('déjà réclamé')) {
+                errorMessage = 'Tu as déjà réclamé ta récompense aujourd\'hui !';
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.white),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(errorMessage)),
+                    ],
+                  ),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            }
+          }
+        },
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Text('Erreur: $e'),
     );
   }
 }

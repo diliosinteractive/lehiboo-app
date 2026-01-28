@@ -5,11 +5,15 @@ import '../../data/models/daily_reward.dart';
 class DailyRewardWidget extends StatelessWidget {
   final DailyRewardState state;
   final VoidCallback onClaim;
+  final bool canClaim; // Utilise canClaimDaily du wallet
+  final bool isLoading;
 
   const DailyRewardWidget({
     super.key,
     required this.state,
     required this.onClaim,
+    this.canClaim = true,
+    this.isLoading = false,
   });
 
   @override
@@ -33,23 +37,31 @@ class DailyRewardWidget extends StatelessWidget {
             },
           ),
         ),
-        if (!state.isClaimedToday && state.currentDay <= 7)
-          Padding(
-            padding: const EdgeInsets.only(top: 16.0),
-            child: SizedBox(
-               width: double.infinity,
-               child: ElevatedButton(
-                 onPressed: onClaim,
-                 style: ElevatedButton.styleFrom(
-                   backgroundColor: const Color(0xFFFF601F), // Lehiboo Orange
-                   foregroundColor: Colors.white,
-                   padding: const EdgeInsets.symmetric(vertical: 12),
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                 ),
-                 child: const Text('Réclamer ma récompense', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Padding(
+          padding: const EdgeInsets.only(top: 16.0),
+          child: SizedBox(
+             width: double.infinity,
+             child: ElevatedButton(
+               onPressed: canClaim && !isLoading ? onClaim : null,
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: canClaim ? const Color(0xFFFF601F) : Colors.grey.shade400,
+                 foregroundColor: Colors.white,
+                 padding: const EdgeInsets.symmetric(vertical: 12),
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                ),
-            ),
+               child: isLoading
+                   ? const SizedBox(
+                       height: 20,
+                       width: 20,
+                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                     )
+                   : Text(
+                       canClaim ? 'Réclamer ma récompense' : 'Reviens demain !',
+                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                     ),
+             ),
           ),
+        ),
       ],
     );
   }
