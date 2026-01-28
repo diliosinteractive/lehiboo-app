@@ -109,7 +109,7 @@ final defaultToolSchemas = <String, ToolSchemaDto>{
         timeField: 'slot_time',
         statusField: 'status',
         navigation: ToolNavigationDto(
-          route: '/booking/{uuid}',
+          route: '/booking-detail/{uuid}',
           idField: 'uuid',
         ),
       ),

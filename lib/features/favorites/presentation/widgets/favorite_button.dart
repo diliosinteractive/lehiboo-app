@@ -124,24 +124,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
       if (success && mounted) {
         widget.onChanged?.call(false);
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Retiré des favoris'),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'Annuler',
-              textColor: const Color(0xFFFF601F),
-              onPressed: () {
-                ref.read(favoritesProvider.notifier).toggleFavorite(
-                  widget.event,
-                  internalId: widget.internalId,
-                );
-              },
-            ),
-          ),
-        );
+        PetitBooToast.favoriteRemoved(context);
       } else if (!success && mounted) {
         HapticFeedback.heavyImpact();
         PetitBooToast.error(context, 'Impossible de retirer des favoris');
@@ -190,24 +173,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
         if (success && mounted) {
           widget.onChanged?.call(false);
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Retiré des favoris'),
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-                            action: SnackBarAction(
-                label: 'Annuler',
-                textColor: const Color(0xFFFF601F),
-                onPressed: () {
-                  ref.read(favoritesProvider.notifier).toggleFavorite(
-                    widget.event,
-                    internalId: widget.internalId,
-                  );
-                },
-              ),
-            ),
-          );
+          PetitBooToast.favoriteRemoved(context);
         }
       } else if (_isFavorite) {
         // Déjà favori: déplacer vers une autre liste
@@ -218,17 +184,9 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
         );
 
         if (success && mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result.listId != null
-                    ? 'Déplacé vers la liste'
-                    : 'Déplacé vers "Non classés"',
-              ),
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-                          ),
+          PetitBooToast.success(
+            context,
+            result.listId != null ? 'Déplacé vers la liste' : 'Déplacé vers "Non classés"',
           );
         }
       } else {
@@ -245,34 +203,16 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
           // Animation
           _controller.forward(from: 0);
 
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result.listId != null
-                    ? 'Ajouté à la liste'
-                    : 'Ajouté aux favoris',
-              ),
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: 'Annuler',
-                textColor: const Color(0xFFFF601F),
-                onPressed: () {
-                  ref.read(favoritesProvider.notifier).toggleFavorite(
-                    widget.event,
-                    internalId: widget.internalId,
-                  );
-                },
-              ),
-            ),
-          );
+          if (result.listId != null) {
+            PetitBooToast.success(context, 'Ajouté à la liste');
+          } else {
+            PetitBooToast.favoriteAdded(context);
+          }
         }
       }
 
       if (!success && mounted) {
         HapticFeedback.heavyImpact();
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         PetitBooToast.error(context, 'Une erreur est survenue');
       }
     } finally {

@@ -28,22 +28,68 @@ class BookingDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
-  late Booking? _booking;
-  bool _isLoading = false;
+  Booking? _booking;
+  bool _isLoading = true; // Commence en loading
+  bool _notFound = false;
   List<Ticket> _tickets = [];
 
   @override
   void initState() {
     super.initState();
     _booking = widget.initialBooking;
-    _loadBookingDetails();
+
+    // Si on a déjà le booking, pas besoin de charger
+    if (_booking != null) {
+      _isLoading = false;
+      _generateMockTickets();
+    } else {
+      // Différer le chargement après le build pour éviter l'erreur Riverpod
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadBookingDetails();
+      });
+    }
   }
 
   Future<void> _loadBookingDetails() async {
+    debugPrint('📖 BookingDetailScreen: Loading details for bookingId=${widget.bookingId}');
+
     if (_booking == null) {
       setState(() => _isLoading = true);
-      // TODO: Load booking from repository by ID
-      // For now we'll use the initial booking if provided
+
+      // Charger les bookings si pas encore fait
+      final controller = ref.read(bookingsListControllerProvider.notifier);
+      final state = ref.read(bookingsListControllerProvider);
+
+      debugPrint('📖 BookingDetailScreen: Current bookings count=${state.allBookings.length}');
+
+      if (state.allBookings.isEmpty) {
+        debugPrint('📖 BookingDetailScreen: Loading bookings from API...');
+        await controller.loadBookings();
+      }
+
+      // Chercher le booking par ID (essayer plusieurs formats)
+      final updatedState = ref.read(bookingsListControllerProvider);
+      debugPrint('📖 BookingDetailScreen: Searching in ${updatedState.allBookings.length} bookings');
+
+      // Debug: afficher les IDs disponibles
+      for (final b in updatedState.allBookings) {
+        debugPrint('📖 BookingDetailScreen: Available booking id=${b.id}, numericId=${b.numericId}');
+      }
+
+      // Chercher par UUID (id) ou par ID numérique
+      final searchId = widget.bookingId;
+      final foundBooking = updatedState.allBookings.where(
+        (b) => b.id == searchId || b.numericId?.toString() == searchId,
+      ).firstOrNull;
+
+      if (foundBooking != null) {
+        debugPrint('📖 BookingDetailScreen: Found booking! id=${foundBooking.id}, activity=${foundBooking.activity?.title}');
+        _booking = foundBooking;
+      } else {
+        debugPrint('📖 BookingDetailScreen: Booking NOT FOUND for id=$searchId');
+        _notFound = true;
+      }
+
       setState(() => _isLoading = false);
     }
 
@@ -206,7 +252,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final tokens = HbTheme.tokens(context);
     final booking = _booking;
 
-    if (_isLoading || booking == null) {
+    if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
@@ -218,6 +264,69 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ),
         body: const Center(
           child: CircularProgressIndicator(color: HbColors.brandPrimary),
+        ),
+      );
+    }
+
+    if (_notFound || booking == null) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: const Text(
+            'Réservation',
+            style: TextStyle(color: HbColors.textPrimary),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: HbColors.textPrimary),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.search_off,
+                  size: 64,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Réservation introuvable',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Cette réservation n\'existe pas ou a été supprimée.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => context.go('/my-bookings'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HbColors.brandPrimary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Voir mes réservations'),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
