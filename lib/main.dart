@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'firebase_options.dart';
 import 'core/themes/app_theme.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'routes/app_router.dart';
 import 'config/dio_client.dart';
+import 'config/env_config.dart';
 
 // API Repositories
 import 'features/auth/data/repositories/auth_repository_impl.dart';
@@ -42,9 +44,13 @@ void main() async {
   await initializeDateFormatting('fr_FR', null);
 
   // Load environment variables
-  // Use dart-define to specify environment: --dart-define=ENV=production
+  // Use dart-define to specify environment: --dart-define=ENV=production or --dart-define=ENV=staging
   const String environment = String.fromEnvironment('ENV', defaultValue: 'development');
-  final String envFile = environment == 'production' ? '.env.production' : '.env.development';
+  final String envFile = switch (environment) {
+    'production' => '.env.production',
+    'staging' => '.env.staging',
+    _ => '.env.development',
+  };
   
   try {
     await dotenv.load(fileName: envFile);
@@ -69,6 +75,20 @@ void main() async {
     debugPrint('Firebase initialized successfully');
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
+  }
+
+  // Initialize Stripe
+  final stripeKey = EnvConfig.stripePublishableKey;
+  if (stripeKey.isNotEmpty) {
+    Stripe.publishableKey = stripeKey;
+    try {
+      await Stripe.instance.applySettings();
+      debugPrint('Stripe initialized successfully');
+    } catch (e) {
+      debugPrint('Stripe initialization failed: $e');
+    }
+  } else {
+    debugPrint('Warning: Stripe publishable key not configured');
   }
 
   // Initialize SharedPreferences

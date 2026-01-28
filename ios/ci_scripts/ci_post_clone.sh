@@ -56,7 +56,13 @@ echo "Build setup complete!"
 # We use --config-only to avoid a full build here, as Xcode will handle the archiving.
 # We also use --no-codesign to avoid signing issues during this preparation phase.
 echo "Preparing Flutter iOS build..."
-flutter build ios --config-only --no-codesign --release
+
+# Use FLUTTER_ENV variable from Xcode Cloud (default to production for safety)
+# Note: Xcode Cloud reserves CI_ prefix, so we use FLUTTER_ENV instead
+APP_ENV="${FLUTTER_ENV:-production}"
+echo "Building for environment: $APP_ENV"
+
+flutter build ios --config-only --no-codesign --release --dart-define=ENV=$APP_ENV
 
 # Note: Xcode Cloud will proceed to build the 'Runner' scheme after this script finishes.
 

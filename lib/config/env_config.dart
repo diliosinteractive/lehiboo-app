@@ -38,6 +38,10 @@ class EnvConfig {
   // Google Maps
   static String get googleMapsApiKey => dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
 
+  // Stripe Configuration (publishable key only - safe to expose in app)
+  static String get stripePublishableKey =>
+      dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
+
   // Feature Flags
   static bool get analyticsEnabled =>
       dotenv.env['ANALYTICS_ENABLED']?.toLowerCase() == 'true';
@@ -49,8 +53,11 @@ class EnvConfig {
   static bool get isProduction =>
       dotenv.env['ENVIRONMENT']?.toLowerCase() == 'production';
 
+  static bool get isStaging =>
+      dotenv.env['ENVIRONMENT']?.toLowerCase() == 'staging';
+
   static bool get isDevelopment =>
-      dotenv.env['ENVIRONMENT']?.toLowerCase() != 'production';
+      !isProduction && !isStaging;
 
   static String get environment => dotenv.env['ENVIRONMENT'] ?? 'development';
 
