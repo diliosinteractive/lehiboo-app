@@ -139,6 +139,7 @@ flutter:
     - .env
     - .env.development
     - .env.production
+    - .env.staging
 
   # fonts:
   #   - family: CustomFont
