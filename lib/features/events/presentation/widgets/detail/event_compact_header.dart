@@ -107,13 +107,17 @@ class EventCompactHeader extends StatelessWidget {
                 ),
               ),
             const SizedBox(width: 8),
-            // Nom
-            Text(
-              event.organizerName!,
-              style: const TextStyle(
-                color: HbColors.brandPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+            // Nom avec ellipsis si trop long
+            Flexible(
+              child: Text(
+                event.organizerName!,
+                style: const TextStyle(
+                  color: HbColors.brandPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: 4),
@@ -176,10 +180,35 @@ class EventCompactHeader extends StatelessWidget {
 
     if (tags.isEmpty) return const SizedBox.shrink();
 
+    // Limiter à 3 tags visibles max + badge "+N" si plus
+    final visibleTags = tags.take(3).toList();
+    final extraCount = tags.length - 3;
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: tags.map((tag) => _buildTag(tag)).toList(),
+      children: [
+        ...visibleTags.map((tag) => _buildTag(tag)),
+        if (extraCount > 0) _buildMoreChip(extraCount),
+      ],
+    );
+  }
+
+  Widget _buildMoreChip(int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: HbColors.grey200,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        '+$count',
+        style: TextStyle(
+          color: HbColors.grey500,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 

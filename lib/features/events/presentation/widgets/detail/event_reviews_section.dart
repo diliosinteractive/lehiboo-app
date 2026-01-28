@@ -55,6 +55,12 @@ class EventReviewsSection extends ConsumerWidget {
   }
 
   Widget _buildHeader(AsyncValue<ReviewStatsDto> statsAsync) {
+    // Déterminer si on a des avis (pour masquer le bouton header si empty state)
+    final hasReviews = statsAsync.maybeWhen(
+      data: (stats) => (stats.totalReviews > 0 || stats.totalReviewsCamel > 0),
+      orElse: () => true, // Afficher le bouton pendant le chargement
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -102,7 +108,8 @@ class EventReviewsSection extends ConsumerWidget {
               ),
             ],
           ),
-          if (onWriteReview != null)
+          // Masquer le bouton "Écrire" si empty state (le CTA est dans l'empty state)
+          if (onWriteReview != null && hasReviews)
             TextButton.icon(
               onPressed: () {
                 HapticFeedback.lightImpact();
@@ -175,55 +182,66 @@ class EventReviewsSection extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: HbColors.grey200),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.rate_review_outlined,
-              size: 48,
-              color: Colors.grey.shade400,
+            // Icône stylisée dans cercle coloré (style Petit Boo)
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.rate_review_outlined,
+                color: HbColors.brandPrimary,
+                size: 28,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             const Text(
-              'Aucun avis pour le moment',
+              'Pas encore d\'avis',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: FontWeight.w600,
                 color: HbColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
-              'Soyez le premier à donner votre avis !',
+              'Partagez votre expérience et\naidez les autres à choisir !',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
+                fontSize: 14,
+                color: HbColors.grey500,
+                height: 1.4,
               ),
             ),
             if (onWriteReview != null) ...[
-              const SizedBox(height: 16),
-              ElevatedButton(
+              const SizedBox(height: 20),
+              // CTA flat avec icône
+              FilledButton.icon(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Écrire le premier avis'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: HbColors.brandPrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   onWriteReview!();
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: HbColors.brandPrimary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text('Écrire un avis'),
               ),
             ],
           ],

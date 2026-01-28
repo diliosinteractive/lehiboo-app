@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/shared/widgets/animations/pulse_animation.dart';
 
 /// Tier de billet pour le styling visuel
 enum TicketTier {
@@ -12,31 +13,11 @@ enum TicketTier {
 }
 
 extension TicketTierExtension on TicketTier {
-  Color get color {
-    switch (this) {
-      case TicketTier.vip:
-        return const Color(0xFFD4AF37); // Or
-      case TicketTier.premium:
-        return const Color(0xFF9B59B6); // Violet
-      case TicketTier.standard:
-        return HbColors.brandPrimary;
-      case TicketTier.reduced:
-        return const Color(0xFF27AE60); // Vert
-    }
-  }
+  // Flat design : couleur unique pour tous les tiers (uniformité visuelle)
+  Color get color => HbColors.brandPrimary;
 
-  IconData get icon {
-    switch (this) {
-      case TicketTier.vip:
-        return Icons.star;
-      case TicketTier.premium:
-        return Icons.workspace_premium;
-      case TicketTier.standard:
-        return Icons.confirmation_number_outlined;
-      case TicketTier.reduced:
-        return Icons.local_offer_outlined;
-    }
-  }
+  // Icône unique pour tous
+  IconData get icon => Icons.confirmation_number_outlined;
 
   String get label {
     switch (this) {
@@ -52,14 +33,14 @@ extension TicketTierExtension on TicketTier {
   }
 }
 
-/// Card pour un type de billet
+/// Card pour un type de billet avec animations Material Expressive
 ///
 /// Features:
-/// - Sélecteur de quantité
-/// - Badge de stock coloré
-/// - Highlight quand sélectionné
-/// - Tier visuel (VIP, Premium, etc.)
-class EventTicketCard extends StatelessWidget {
+/// - Sélecteur de quantité avec haptic feedback
+/// - Badge de stock coloré avec animation pulse pour urgence
+/// - Spring bounce highlight quand sélectionné
+/// - Tier visuel (VIP, Premium, etc.) avec gradient shine
+class EventTicketCard extends StatefulWidget {
   final Ticket ticket;
   final int quantity;
   final ValueChanged<int> onQuantityChanged;
@@ -75,13 +56,18 @@ class EventTicketCard extends StatelessWidget {
     this.onToggleExpand,
   });
 
-  bool get _isSelected => quantity > 0;
-  bool get _isSoldOut => ticket.remainingPlaces != null && ticket.remainingPlaces! <= 0;
-  bool get _isLowStock => ticket.remainingPlaces != null && ticket.remainingPlaces! <= 5;
-  bool get _isFree => ticket.price == 0;
+  @override
+  State<EventTicketCard> createState() => _EventTicketCardState();
+}
+
+class _EventTicketCardState extends State<EventTicketCard> {
+  bool get _isSelected => widget.quantity > 0;
+  bool get _isSoldOut => widget.ticket.remainingPlaces != null && widget.ticket.remainingPlaces! <= 0;
+  bool get _isLowStock => widget.ticket.remainingPlaces != null && widget.ticket.remainingPlaces! <= 5;
+  bool get _isFree => widget.ticket.price == 0;
 
   TicketTier get _tier {
-    final nameLower = ticket.name.toLowerCase();
+    final nameLower = widget.ticket.name.toLowerCase();
     if (nameLower.contains('vip')) return TicketTier.vip;
     if (nameLower.contains('premium') || nameLower.contains('gold')) {
       return TicketTier.premium;
@@ -96,11 +82,11 @@ class EventTicketCard extends StatelessWidget {
   }
 
   int get _maxQuantity {
-    if (ticket.maxPerBooking != null) {
-      return ticket.maxPerBooking!;
+    if (widget.ticket.maxPerBooking != null) {
+      return widget.ticket.maxPerBooking!;
     }
-    if (ticket.remainingPlaces != null) {
-      return ticket.remainingPlaces!.clamp(0, 10);
+    if (widget.ticket.remainingPlaces != null) {
+      return widget.ticket.remainingPlaces!.clamp(0, 10);
     }
     return 10;
   }
@@ -110,156 +96,149 @@ class EventTicketCard extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: _isSelected
-            ? _tier.color.withValues(alpha: 0.05)
-            : Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isSelected ? _tier.color : Colors.grey.shade200,
+          color: _isSelected ? HbColors.brandPrimary : HbColors.grey200,
           width: _isSelected ? 2 : 1,
         ),
-        boxShadow: _isSelected
-            ? [
-                BoxShadow(
-                  color: _tier.color.withValues(alpha: 0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
-      child: Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Première ligne: Nom + Prix
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Icône tier
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _tier.color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        _tier.icon,
-                        color: _tier.color,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // Nom et description
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  ticket.name,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: HbColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                              // Prix
-                              _buildPrice(),
-                            ],
-                          ),
-                          if (ticket.description != null &&
-                              ticket.description!.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              ticket.description!,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                                height: 1.3,
-                              ),
-                              maxLines: isExpanded ? null : 2,
-                              overflow:
-                                  isExpanded ? null : TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // Deuxième ligne: Stock + Sélecteur quantité
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Badge stock
-                    _buildStockBadge(),
-
-                    // Sélecteur quantité
-                    _buildQuantitySelector(),
-                  ],
-                ),
-              ],
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
           ),
-
-          // Expand pour plus de détails (optionnel)
-          if (ticket.description != null &&
-              ticket.description!.length > 80 &&
-              onToggleExpand != null)
-            GestureDetector(
-              onTap: onToggleExpand,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(15),
-                    bottomRight: Radius.circular(15),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      isExpanded ? 'Voir moins' : 'Voir plus',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      isExpanded
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down,
-                      color: Colors.grey.shade600,
-                      size: 16,
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
+      child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Première ligne: Nom + Prix
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Icône flat (gris neutre, orange si sélectionné)
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _isSelected
+                              ? HbColors.brandPrimary.withValues(alpha: 0.1)
+                              : HbColors.grey200,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          _tier.icon,
+                          color: _isSelected ? HbColors.brandPrimary : HbColors.grey500,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Nom et description
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    widget.ticket.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: HbColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                // Prix
+                                _buildPrice(),
+                              ],
+                            ),
+                            if (widget.ticket.description != null &&
+                                widget.ticket.description!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.ticket.description!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                  height: 1.3,
+                                ),
+                                maxLines: widget.isExpanded ? null : 2,
+                                overflow:
+                                    widget.isExpanded ? null : TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Deuxième ligne: Stock + Sélecteur quantité
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Badge stock
+                      _buildStockBadge(),
+
+                      // Sélecteur quantité
+                      _buildQuantitySelector(),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Expand pour plus de détails (optionnel)
+            if (widget.ticket.description != null &&
+                widget.ticket.description!.length > 80 &&
+                widget.onToggleExpand != null)
+              GestureDetector(
+                onTap: widget.onToggleExpand,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(15),
+                      bottomRight: Radius.circular(15),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        widget.isExpanded ? 'Voir moins' : 'Voir plus',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        widget.isExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        color: Colors.grey.shade600,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
     );
   }
 
@@ -283,11 +262,11 @@ class EventTicketCard extends StatelessWidget {
     }
 
     return Text(
-      '${ticket.price.toStringAsFixed(ticket.price == ticket.price.roundToDouble() ? 0 : 2)}€',
-      style: TextStyle(
-        fontSize: 20,
+      '${widget.ticket.price.toStringAsFixed(widget.ticket.price == widget.ticket.price.roundToDouble() ? 0 : 2)}€',
+      style: const TextStyle(
+        fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: _tier.color,
+        color: HbColors.textPrimary,
       ),
     );
   }
@@ -318,19 +297,22 @@ class EventTicketCard extends StatelessWidget {
       );
     }
 
-    if (ticket.remainingPlaces != null) {
+    if (widget.ticket.remainingPlaces != null) {
       final Color color;
       final IconData icon;
+      final String text;
 
       if (_isLowStock) {
         color = Colors.orange;
-        icon = Icons.warning_amber_rounded;
+        icon = Icons.local_fire_department;
+        text = 'Plus que ${widget.ticket.remainingPlaces}!';
       } else {
         color = Colors.green;
         icon = Icons.check_circle_outline;
+        text = '${widget.ticket.remainingPlaces} disponible${widget.ticket.remainingPlaces! > 1 ? 's' : ''}';
       }
 
-      return Container(
+      final badge = Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
@@ -342,7 +324,7 @@ class EventTicketCard extends StatelessWidget {
             Icon(icon, color: color, size: 14),
             const SizedBox(width: 4),
             Text(
-              '${ticket.remainingPlaces} disponible${ticket.remainingPlaces! > 1 ? 's' : ''}',
+              text,
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w600,
@@ -352,6 +334,18 @@ class EventTicketCard extends StatelessWidget {
           ],
         ),
       );
+
+      // Pulse animation for low stock
+      if (_isLowStock) {
+        return OpacityPulse(
+          duration: const Duration(milliseconds: 1000),
+          minOpacity: 0.7,
+          maxOpacity: 1.0,
+          child: badge,
+        );
+      }
+
+      return badge;
     }
 
     return const SizedBox.shrink();
@@ -362,10 +356,16 @@ class EventTicketCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
+        color: _isSelected
+            ? HbColors.brandPrimary.withValues(alpha: 0.1)
+            : HbColors.grey200.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: _isSelected
+            ? Border.all(color: HbColors.brandPrimary.withValues(alpha: 0.3))
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -373,25 +373,29 @@ class EventTicketCard extends StatelessWidget {
           // Bouton moins
           _buildQuantityButton(
             icon: Icons.remove,
-            onPressed: quantity > 0
+            onPressed: widget.quantity > 0
                 ? () {
                     HapticFeedback.selectionClick();
-                    onQuantityChanged(quantity - 1);
+                    widget.onQuantityChanged(widget.quantity - 1);
                   }
                 : null,
           ),
 
-          // Quantité
-          Container(
-            constraints: const BoxConstraints(minWidth: 40),
+          // Quantité avec animation
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            constraints: const BoxConstraints(minWidth: 44),
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              quantity.toString(),
-              textAlign: TextAlign.center,
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: TextStyle(
-                fontSize: 16,
+                fontSize: widget.quantity > 0 ? 18 : 16,
                 fontWeight: FontWeight.bold,
-                color: quantity > 0 ? _tier.color : HbColors.textPrimary,
+                color: widget.quantity > 0 ? HbColors.brandPrimary : HbColors.textPrimary,
+              ),
+              child: Text(
+                widget.quantity.toString(),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -399,10 +403,10 @@ class EventTicketCard extends StatelessWidget {
           // Bouton plus
           _buildQuantityButton(
             icon: Icons.add,
-            onPressed: quantity < _maxQuantity
+            onPressed: widget.quantity < _maxQuantity
                 ? () {
-                    HapticFeedback.selectionClick();
-                    onQuantityChanged(quantity + 1);
+                    HapticFeedback.mediumImpact();
+                    widget.onQuantityChanged(widget.quantity + 1);
                   }
                 : null,
           ),
@@ -419,12 +423,13 @@ class EventTicketCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
+        // Flat design : sélecteur plus compact
         child: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           child: Icon(
             icon,
-            size: 20,
+            size: 18,
             color: onPressed != null ? HbColors.textPrimary : Colors.grey.shade400,
           ),
         ),

@@ -3,15 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/features/events/presentation/widgets/detail/practical_info_card.dart';
+import 'package:lehiboo/features/events/presentation/widgets/detail/practical_info_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Section informations pratiques avec accordions
+/// Section informations pratiques avec grille 2x2
 ///
-/// Sections:
-/// - Lieu et accès (avec mini map)
-/// - Stationnement
-/// - Transports
-/// - Accessibilité (PMR, Food, Drinks)
+/// Features Material Expressive:
+/// - Grille 2x2 de cards avec animations staggered
+/// - Tap card → Bottom sheet avec détails
+/// - Section parking et transports avec liens Google Maps
+/// - Chips accessibilité (PMR, Food, Drinks)
 class EventPracticalInfo extends StatefulWidget {
   final Event event;
   final LocationDetails? locationDetails;
@@ -27,19 +29,6 @@ class EventPracticalInfo extends StatefulWidget {
 }
 
 class _EventPracticalInfoState extends State<EventPracticalInfo> {
-  final Set<String> _expandedSections = {'location'}; // Lieu ouvert par défaut
-
-  void _toggleSection(String section) {
-    HapticFeedback.selectionClick();
-    setState(() {
-      if (_expandedSections.contains(section)) {
-        _expandedSections.remove(section);
-      } else {
-        _expandedSections.add(section);
-      }
-    });
-  }
-
   bool get _hasLocation =>
       (widget.event.venue != null && widget.event.venue!.isNotEmpty) ||
       (widget.event.address != null && widget.event.address!.isNotEmpty);
@@ -52,13 +41,15 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       widget.locationDetails?.transport != null &&
       widget.locationDetails!.transport!.description != null;
 
-  bool get _hasAccessibility =>
-      widget.locationDetails?.pmr?.available == true ||
-      widget.locationDetails?.food?.available == true ||
-      widget.locationDetails?.drinks?.available == true;
+  bool get _hasPmr => widget.locationDetails?.pmr?.available == true;
+  bool get _hasFood => widget.locationDetails?.food?.available == true;
+  bool get _hasDrinks => widget.locationDetails?.drinks?.available == true;
 
+  bool get _hasAccessibility => _hasPmr || _hasFood || _hasDrinks;
+
+  // _hasLocation retiré car géré par la section Localisation (carte)
   bool get _hasAnyInfo =>
-      _hasLocation || _hasParking || _hasTransport || _hasAccessibility;
+      _hasParking || _hasTransport || _hasAccessibility;
 
   @override
   Widget build(BuildContext context) {
@@ -79,370 +70,222 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
-        // Sections
+        // Grille 2x2 principale
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              children: [
-                if (_hasLocation)
-                  _buildSection(
-                    id: 'location',
-                    icon: Icons.location_on_outlined,
-                    title: 'Lieu et accès',
-                    child: _buildLocationContent(),
-                  ),
-                if (_hasParking) ...[
-                  _buildDivider(),
-                  _buildSection(
-                    id: 'parking',
-                    icon: Icons.local_parking_outlined,
-                    title: 'Stationnement',
-                    child: _buildParkingContent(),
-                  ),
-                ],
-                if (_hasTransport) ...[
-                  _buildDivider(),
-                  _buildSection(
-                    id: 'transport',
-                    icon: Icons.directions_bus_outlined,
-                    title: 'Transports',
-                    child: _buildTransportContent(),
-                  ),
-                ],
-                if (_hasAccessibility) ...[
-                  _buildDivider(),
-                  _buildSection(
-                    id: 'accessibility',
-                    icon: Icons.accessibility_new_outlined,
-                    title: 'Accessibilité et services',
-                    child: _buildAccessibilityContent(),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSection({
-    required String id,
-    required IconData icon,
-    required String title,
-    required Widget child,
-  }) {
-    final isExpanded = _expandedSections.contains(id);
-
-    return Column(
-      children: [
-        // Header cliquable
-        InkWell(
-          onTap: () => _toggleSection(id),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: HbColors.brandPrimary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: HbColors.brandPrimary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: HbColors.textPrimary,
-                    ),
-                  ),
-                ),
-                AnimatedRotation(
-                  turns: isExpanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    Icons.keyboard_arrow_down,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: _buildMainGrid(),
         ),
 
-        // Contenu expansible
-        AnimatedCrossFade(
-          firstChild: const SizedBox.shrink(),
-          secondChild: Padding(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              bottom: 16,
-            ),
-            child: child,
-          ),
-          crossFadeState:
-              isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 200),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDivider() {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      color: Colors.grey.shade100,
-      indent: 16,
-      endIndent: 16,
-    );
-  }
-
-  Widget _buildLocationContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Mini Map Preview (placeholder statique)
-        if (widget.event.latitude != null && widget.event.longitude != null)
-          Container(
-            height: 120,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Stack(
-              children: [
-                // Placeholder map
-                Center(
-                  child: Icon(
-                    Icons.map_outlined,
-                    size: 48,
-                    color: Colors.grey.shade400,
-                  ),
-                ),
-                // Overlay pour clic
-                Positioned.fill(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _openMaps,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-        // Nom du lieu
-        if (widget.event.venue != null && widget.event.venue!.isNotEmpty)
-          Text(
-            widget.event.venue!,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: HbColors.textPrimary,
-            ),
-          ),
-
-        // Adresse
-        if (widget.event.address != null || widget.event.city != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            _buildFullAddress(),
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-              height: 1.4,
-            ),
-          ),
+        // Chips accessibilité
+        if (_hasAccessibility) ...[
+          const SizedBox(height: 16),
+          _buildAccessibilityChips(),
         ],
-
-        // Bouton navigation
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: _openMaps,
-          icon: const Icon(Icons.directions, size: 18),
-          label: const Text('Se rendre sur le lieu'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: HbColors.brandPrimary,
-            side: const BorderSide(color: HbColors.brandPrimary),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        ),
       ],
     );
   }
 
-  Widget _buildParkingContent() {
+  Widget _buildMainGrid() {
+    final cards = <Widget>[];
+
+    // Card Lieu supprimée - redondante avec la section Localisation (carte)
+    // qui affiche déjà l'adresse, la carte et les boutons d'action
+
+    // Card Parking
+    if (_hasParking) {
+      cards.add(
+        PracticalInfoCard(
+          icon: Icons.local_parking_outlined,
+          title: 'Parking',
+          subtitle: 'Places disponibles',
+          color: Colors.blue,
+          onTap: () => _showParkingSheet(),
+        ),
+      );
+    }
+
+    // Card Transport
+    if (_hasTransport) {
+      cards.add(
+        PracticalInfoCard(
+          icon: Icons.directions_bus_outlined,
+          title: 'Transports',
+          subtitle: 'Bus, métro, tram',
+          color: Colors.green,
+          onTap: () => _showTransportSheet(),
+        ),
+      );
+    }
+
+    // Si on n'a pas assez de cards, on ajoute des placeholders
+    if (cards.isEmpty) return const SizedBox.shrink();
+
+    // Grille 2 colonnes
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.1,
+      ),
+      itemCount: cards.length,
+      itemBuilder: (context, index) {
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 300 + (index * 100)),
+          curve: Curves.easeOutBack,
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: value,
+              child: Opacity(
+                // Clamp pour éviter les valeurs > 1 avec easeOutBack
+                opacity: value.clamp(0.0, 1.0),
+                child: child,
+              ),
+            );
+          },
+          child: cards[index],
+        );
+      },
+    );
+  }
+
+  Widget _buildAccessibilityChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          if (_hasPmr)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CompactInfoChip(
+                icon: Icons.accessible,
+                label: 'Accessible PMR',
+                color: Colors.blue,
+                onTap: () => _showAccessibilitySheet(
+                  icon: Icons.accessible,
+                  title: 'Accessibilité PMR',
+                  note: widget.locationDetails?.pmr?.note,
+                ),
+              ),
+            ),
+          if (_hasFood)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CompactInfoChip(
+                icon: Icons.restaurant,
+                label: 'Restauration',
+                color: Colors.orange,
+                onTap: () => _showAccessibilitySheet(
+                  icon: Icons.restaurant,
+                  title: 'Restauration sur place',
+                  note: widget.locationDetails?.food?.note,
+                ),
+              ),
+            ),
+          if (_hasDrinks)
+            CompactInfoChip(
+              icon: Icons.local_bar,
+              label: 'Boissons',
+              color: Colors.purple,
+              onTap: () => _showAccessibilitySheet(
+                icon: Icons.local_bar,
+                title: 'Boissons disponibles',
+                note: widget.locationDetails?.drinks?.note,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showLocationSheet() {
+    final lat = widget.event.latitude;
+    final lng = widget.event.longitude;
+    final address = _buildFullAddress();
+
+    PracticalInfoSheet.show(
+      context,
+      icon: Icons.location_on,
+      title: widget.event.venue ?? 'Lieu',
+      description: address,
+      color: HbColors.brandPrimary,
+      actions: [
+        if (lat != null && lng != null) ...[
+          PracticalInfoActions.googleMaps(lat: lat, lng: lng),
+          PracticalInfoActions.walkingDirections(lat: lat, lng: lng),
+          PracticalInfoActions.publicTransport(lat: lat, lng: lng),
+        ],
+        if (address.isNotEmpty)
+          PracticalInfoActions.copyAddress(address: address, context: context),
+      ],
+    );
+  }
+
+  void _showParkingSheet() {
     final parking = widget.locationDetails?.parking;
-    if (parking == null) return const SizedBox.shrink();
+    if (parking == null) return;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (parking.description != null)
-          Text(
-            parking.description!,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-              height: 1.5,
-            ),
-          ),
-        if (parking.imageUrl != null && parking.imageUrl!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              parking.imageUrl!,
-              height: 100,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          ),
-        ],
-      ],
+    final lat = widget.event.latitude;
+    final lng = widget.event.longitude;
+
+    PracticalInfoSheet.show(
+      context,
+      icon: Icons.local_parking,
+      title: 'Stationnement',
+      description: parking.description,
+      imageUrl: parking.imageUrl,
+      color: Colors.blue,
+      actions: lat != null && lng != null
+          ? [
+              PracticalInfoActions.googleMaps(
+                lat: lat,
+                lng: lng,
+                label: 'Naviguer vers le parking',
+              ),
+            ]
+          : null,
     );
   }
 
-  Widget _buildTransportContent() {
+  void _showTransportSheet() {
     final transport = widget.locationDetails?.transport;
-    if (transport == null) return const SizedBox.shrink();
+    if (transport == null) return;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (transport.description != null)
-          Text(
-            transport.description!,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-              height: 1.5,
-            ),
-          ),
-        if (transport.imageUrl != null && transport.imageUrl!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              transport.imageUrl!,
-              height: 100,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          ),
-        ],
-      ],
+    final lat = widget.event.latitude;
+    final lng = widget.event.longitude;
+
+    PracticalInfoSheet.show(
+      context,
+      icon: Icons.directions_bus,
+      title: 'Transports en commun',
+      description: transport.description,
+      imageUrl: transport.imageUrl,
+      color: Colors.green,
+      actions: lat != null && lng != null
+          ? [
+              PracticalInfoActions.publicTransport(lat: lat, lng: lng),
+            ]
+          : null,
     );
   }
 
-  Widget _buildAccessibilityContent() {
-    return Column(
-      children: [
-        if (widget.locationDetails?.pmr?.available == true)
-          _buildAccessibilityItem(
-            icon: Icons.accessible,
-            title: 'Accessible PMR',
-            note: widget.locationDetails?.pmr?.note,
-            color: Colors.blue,
-          ),
-        if (widget.locationDetails?.food?.available == true)
-          _buildAccessibilityItem(
-            icon: Icons.restaurant,
-            title: 'Restauration sur place',
-            note: widget.locationDetails?.food?.note,
-            color: Colors.orange,
-          ),
-        if (widget.locationDetails?.drinks?.available == true)
-          _buildAccessibilityItem(
-            icon: Icons.local_bar,
-            title: 'Boissons disponibles',
-            note: widget.locationDetails?.drinks?.note,
-            color: Colors.purple,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildAccessibilityItem({
+  void _showAccessibilitySheet({
     required IconData icon,
     required String title,
     String? note,
-    required Color color,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: HbColors.textPrimary,
-                  ),
-                ),
-                if (note != null && note.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    note,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Icon(
-            Icons.check_circle,
-            color: Colors.green,
-            size: 20,
-          ),
-        ],
-      ),
+    PracticalInfoSheet.show(
+      context,
+      icon: icon,
+      title: title,
+      description: note ?? 'Ce service est disponible sur place.',
+      color: HbColors.brandPrimary,
     );
   }
 
@@ -458,35 +301,5 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       parts.add(widget.event.city!);
     }
     return parts.join(', ');
-  }
-
-  Future<void> _openMaps() async {
-    HapticFeedback.lightImpact();
-
-    final lat = widget.event.latitude;
-    final lng = widget.event.longitude;
-
-    if (lat == null || lng == null) {
-      // Fallback: recherche par adresse
-      final address = _buildFullAddress();
-      if (address.isNotEmpty) {
-        final encodedAddress = Uri.encodeComponent(address);
-        final url = Uri.parse(
-          'https://www.google.com/maps/search/?api=1&query=$encodedAddress',
-        );
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url, mode: LaunchMode.externalApplication);
-        }
-      }
-      return;
-    }
-
-    // Avec coordonnées
-    final url = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
-    );
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
   }
 }

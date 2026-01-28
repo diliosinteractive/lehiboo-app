@@ -47,6 +47,12 @@ class EventQASection extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, WidgetRef ref, AsyncValue<EventQuestionsResponseDto> questionsAsync) {
+    // Déterminer si on a des questions (pour masquer le bouton header si empty state)
+    final hasQuestions = questionsAsync.maybeWhen(
+      data: (response) => response.data.isNotEmpty,
+      orElse: () => true, // Afficher le bouton pendant le chargement
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -94,17 +100,19 @@ class EventQASection extends ConsumerWidget {
               ),
             ],
           ),
-          TextButton.icon(
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              _showAskQuestionDialog(context, ref);
-            },
-            icon: const Icon(Icons.add_comment_outlined, size: 18),
-            label: const Text('Poser'),
-            style: TextButton.styleFrom(
-              foregroundColor: HbColors.brandPrimary,
+          // Masquer le bouton "Poser" si empty state (le CTA est dans l'empty state)
+          if (hasQuestions)
+            TextButton.icon(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _showAskQuestionDialog(context, ref);
+              },
+              icon: const Icon(Icons.add_comment_outlined, size: 18),
+              label: const Text('Poser'),
+              style: TextButton.styleFrom(
+                foregroundColor: HbColors.brandPrimary,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -183,54 +191,65 @@ class EventQASection extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: HbColors.grey200),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.help_outline_rounded,
-              size: 48,
-              color: Colors.grey.shade400,
+            // Icône stylisée dans cercle coloré (style Petit Boo)
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.help_outline_rounded,
+                color: HbColors.brandPrimary,
+                size: 28,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             const Text(
-              'Aucune question pour le moment',
+              'Aucune question',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: FontWeight.w600,
                 color: HbColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
-              'Soyez le premier à poser une question !',
+              'Une question sur l\'événement ?\nL\'organisateur vous répondra.',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
+                fontSize: 14,
+                color: HbColors.grey500,
+                height: 1.4,
               ),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
+            const SizedBox(height: 20),
+            // CTA flat avec icône
+            FilledButton.icon(
+              icon: const Icon(Icons.add_comment_outlined, size: 18),
+              label: const Text('Poser une question'),
+              style: FilledButton.styleFrom(
+                backgroundColor: HbColors.brandPrimary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: () {
                 HapticFeedback.lightImpact();
                 _showAskQuestionDialog(context, ref);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: HbColors.brandPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text('Poser une question'),
             ),
           ],
         ),

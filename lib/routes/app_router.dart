@@ -31,6 +31,9 @@ import '../features/booking/presentation/screens/booking_confirmation_screen.dar
 import '../features/booking/presentation/screens/bookings_list_screen.dart';
 import '../features/booking/presentation/screens/booking_detail_screen.dart';
 import '../features/booking/presentation/screens/ticket_detail_screen.dart';
+import '../features/booking/presentation/screens/checkout_screen.dart';
+import '../features/booking/presentation/screens/booking_success_screen.dart';
+import '../features/booking/domain/models/checkout_params.dart';
 import '../domain/entities/booking.dart' as booking_entity;
 import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
@@ -353,8 +356,33 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      
-      
+
+      // Checkout unifié (nouveau flow)
+      GoRoute(
+        path: '/checkout',
+        name: 'checkout',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          final params = CheckoutParams.fromExtra(extra);
+          return CheckoutScreen(params: params);
+        },
+      ),
+
+      // Confirmation après checkout
+      GoRoute(
+        path: '/booking-confirmation/:id',
+        name: 'booking-confirmation-new',
+        builder: (context, state) {
+          final bookingId = state.pathParameters['id']!;
+          final extra = state.extra as Map<String, dynamic>?;
+          return BookingSuccessScreen(
+            bookingId: bookingId,
+            bookingResponse: extra?['booking'],
+            event: extra?['event'],
+            selectedSlot: extra?['selectedSlot'],
+          );
+        },
+      ),
 
       // Profile edit / Account
       GoRoute(
