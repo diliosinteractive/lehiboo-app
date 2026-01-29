@@ -9,6 +9,7 @@ part of 'business_register_dto.dart';
 _$BusinessRegisterDtoImpl _$$BusinessRegisterDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$BusinessRegisterDtoImpl(
+      verifiedEmailToken: json['verified_email_token'] as String,
       firstName: json['first_name'] as String,
       lastName: json['last_name'] as String,
       email: json['email'] as String,
@@ -34,6 +35,7 @@ _$BusinessRegisterDtoImpl _$$BusinessRegisterDtoImplFromJson(
 Map<String, dynamic> _$$BusinessRegisterDtoImplToJson(
         _$BusinessRegisterDtoImpl instance) =>
     <String, dynamic>{
+      'verified_email_token': instance.verifiedEmailToken,
       'first_name': instance.firstName,
       'last_name': instance.lastName,
       'email': instance.email,

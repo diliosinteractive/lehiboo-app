@@ -20,7 +20,10 @@ BusinessRegisterDto _$BusinessRegisterDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$BusinessRegisterDto {
-// Personal Info (Step 1)
+// Email verification token (from OTP step)
+  @JsonKey(name: 'verified_email_token')
+  String get verifiedEmailToken =>
+      throw _privateConstructorUsedError; // Personal Info (Step 1)
   @JsonKey(name: 'first_name')
   String get firstName => throw _privateConstructorUsedError;
   @JsonKey(name: 'last_name')
@@ -70,7 +73,8 @@ abstract class $BusinessRegisterDtoCopyWith<$Res> {
       _$BusinessRegisterDtoCopyWithImpl<$Res, BusinessRegisterDto>;
   @useResult
   $Res call(
-      {@JsonKey(name: 'first_name') String firstName,
+      {@JsonKey(name: 'verified_email_token') String verifiedEmailToken,
+      @JsonKey(name: 'first_name') String firstName,
       @JsonKey(name: 'last_name') String lastName,
       String email,
       String? phone,
@@ -105,6 +109,7 @@ class _$BusinessRegisterDtoCopyWithImpl<$Res, $Val extends BusinessRegisterDto>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? verifiedEmailToken = null,
     Object? firstName = null,
     Object? lastName = null,
     Object? email = null,
@@ -127,6 +132,10 @@ class _$BusinessRegisterDtoCopyWithImpl<$Res, $Val extends BusinessRegisterDto>
     Object? acceptBusinessTerms = null,
   }) {
     return _then(_value.copyWith(
+      verifiedEmailToken: null == verifiedEmailToken
+          ? _value.verifiedEmailToken
+          : verifiedEmailToken // ignore: cast_nullable_to_non_nullable
+              as String,
       firstName: null == firstName
           ? _value.firstName
           : firstName // ignore: cast_nullable_to_non_nullable
@@ -220,7 +229,8 @@ abstract class _$$BusinessRegisterDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: 'first_name') String firstName,
+      {@JsonKey(name: 'verified_email_token') String verifiedEmailToken,
+      @JsonKey(name: 'first_name') String firstName,
       @JsonKey(name: 'last_name') String lastName,
       String email,
       String? phone,
@@ -253,6 +263,7 @@ class __$$BusinessRegisterDtoImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? verifiedEmailToken = null,
     Object? firstName = null,
     Object? lastName = null,
     Object? email = null,
@@ -275,6 +286,10 @@ class __$$BusinessRegisterDtoImplCopyWithImpl<$Res>
     Object? acceptBusinessTerms = null,
   }) {
     return _then(_$BusinessRegisterDtoImpl(
+      verifiedEmailToken: null == verifiedEmailToken
+          ? _value.verifiedEmailToken
+          : verifiedEmailToken // ignore: cast_nullable_to_non_nullable
+              as String,
       firstName: null == firstName
           ? _value.firstName
           : firstName // ignore: cast_nullable_to_non_nullable
@@ -363,7 +378,8 @@ class __$$BusinessRegisterDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
   const _$BusinessRegisterDtoImpl(
-      {@JsonKey(name: 'first_name') required this.firstName,
+      {@JsonKey(name: 'verified_email_token') required this.verifiedEmailToken,
+      @JsonKey(name: 'first_name') required this.firstName,
       @JsonKey(name: 'last_name') required this.lastName,
       required this.email,
       this.phone,
@@ -389,6 +405,10 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
   factory _$BusinessRegisterDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$BusinessRegisterDtoImplFromJson(json);
 
+// Email verification token (from OTP step)
+  @override
+  @JsonKey(name: 'verified_email_token')
+  final String verifiedEmailToken;
 // Personal Info (Step 1)
   @override
   @JsonKey(name: 'first_name')
@@ -449,7 +469,7 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
 
   @override
   String toString() {
-    return 'BusinessRegisterDto(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, password: $password, passwordConfirmation: $passwordConfirmation, organizationType: $organizationType, companyName: $companyName, siret: $siret, industry: $industry, employeeCount: $employeeCount, address: $address, city: $city, postalCode: $postalCode, country: $country, usageMode: $usageMode, teamEmails: $teamEmails, defaultBudget: $defaultBudget, acceptTerms: $acceptTerms, acceptBusinessTerms: $acceptBusinessTerms)';
+    return 'BusinessRegisterDto(verifiedEmailToken: $verifiedEmailToken, firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, password: $password, passwordConfirmation: $passwordConfirmation, organizationType: $organizationType, companyName: $companyName, siret: $siret, industry: $industry, employeeCount: $employeeCount, address: $address, city: $city, postalCode: $postalCode, country: $country, usageMode: $usageMode, teamEmails: $teamEmails, defaultBudget: $defaultBudget, acceptTerms: $acceptTerms, acceptBusinessTerms: $acceptBusinessTerms)';
   }
 
   @override
@@ -457,6 +477,8 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$BusinessRegisterDtoImpl &&
+            (identical(other.verifiedEmailToken, verifiedEmailToken) ||
+                other.verifiedEmailToken == verifiedEmailToken) &&
             (identical(other.firstName, firstName) ||
                 other.firstName == firstName) &&
             (identical(other.lastName, lastName) ||
@@ -497,6 +519,7 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
   @override
   int get hashCode => Object.hashAll([
         runtimeType,
+        verifiedEmailToken,
         firstName,
         lastName,
         email,
@@ -536,7 +559,9 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
 
 abstract class _BusinessRegisterDto implements BusinessRegisterDto {
   const factory _BusinessRegisterDto(
-      {@JsonKey(name: 'first_name') required final String firstName,
+      {@JsonKey(name: 'verified_email_token')
+      required final String verifiedEmailToken,
+      @JsonKey(name: 'first_name') required final String firstName,
       @JsonKey(name: 'last_name') required final String lastName,
       required final String email,
       final String? phone,
@@ -562,6 +587,9 @@ abstract class _BusinessRegisterDto implements BusinessRegisterDto {
   factory _BusinessRegisterDto.fromJson(Map<String, dynamic> json) =
       _$BusinessRegisterDtoImpl.fromJson;
 
+  @override // Email verification token (from OTP step)
+  @JsonKey(name: 'verified_email_token')
+  String get verifiedEmailToken;
   @override // Personal Info (Step 1)
   @JsonKey(name: 'first_name')
   String get firstName;

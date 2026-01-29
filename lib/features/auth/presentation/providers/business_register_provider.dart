@@ -100,6 +100,7 @@ class BusinessRegisterState {
 
   // Step 2: OTP Verification
   final bool isOtpVerified;
+  final String? verifiedEmailToken;
   final int otpCooldownSeconds;
   final bool isResendingOtp;
 
@@ -142,6 +143,7 @@ class BusinessRegisterState {
     this.passwordConfirmation = '',
     // Step 2
     this.isOtpVerified = false,
+    this.verifiedEmailToken,
     this.otpCooldownSeconds = 0,
     this.isResendingOtp = false,
     // Step 3
@@ -181,6 +183,7 @@ class BusinessRegisterState {
     String? passwordConfirmation,
     // Step 2
     bool? isOtpVerified,
+    String? verifiedEmailToken,
     int? otpCooldownSeconds,
     bool? isResendingOtp,
     // Step 3
@@ -219,6 +222,7 @@ class BusinessRegisterState {
       passwordConfirmation: passwordConfirmation ?? this.passwordConfirmation,
       // Step 2
       isOtpVerified: isOtpVerified ?? this.isOtpVerified,
+      verifiedEmailToken: verifiedEmailToken ?? this.verifiedEmailToken,
       otpCooldownSeconds: otpCooldownSeconds ?? this.otpCooldownSeconds,
       isResendingOtp: isResendingOtp ?? this.isResendingOtp,
       // Step 3
@@ -430,6 +434,7 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
         state = state.copyWith(
           isLoading: false,
           isOtpVerified: true,
+          verifiedEmailToken: result.verifiedEmailToken,
           currentStep: BusinessRegisterStep.companyInfo,
           successMessage: 'Email vérifié avec succès',
         );
@@ -625,10 +630,18 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
       return false;
     }
 
+    if (state.verifiedEmailToken == null || state.verifiedEmailToken!.isEmpty) {
+      state = state.copyWith(
+        errorMessage: 'Le token de vérification email est manquant. Veuillez refaire la vérification OTP.',
+      );
+      return false;
+    }
+
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
       final dto = BusinessRegisterDto(
+        verifiedEmailToken: state.verifiedEmailToken!,
         // Personal
         firstName: state.firstName.trim(),
         lastName: state.lastName.trim(),

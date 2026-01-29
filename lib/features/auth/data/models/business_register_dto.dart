@@ -8,6 +8,9 @@ part 'business_register_dto.g.dart';
 @freezed
 class BusinessRegisterDto with _$BusinessRegisterDto {
   const factory BusinessRegisterDto({
+    // Email verification token (from OTP step)
+    @JsonKey(name: 'verified_email_token') required String verifiedEmailToken,
+
     // Personal Info (Step 1)
     @JsonKey(name: 'first_name') required String firstName,
     @JsonKey(name: 'last_name') required String lastName,
