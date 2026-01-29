@@ -172,12 +172,32 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
 
   /// Démarre l'écoute (appui prolongé)
   Future<void> _startListening() async {
-    // Vérifier les permissions
-    var status = await Permission.microphone.status;
-    if (!status.isGranted) {
-      status = await Permission.microphone.request();
-      if (!status.isGranted) {
+    // Vérifier la permission microphone
+    var micStatus = await Permission.microphone.status;
+    if (!micStatus.isGranted) {
+      micStatus = await Permission.microphone.request();
+      if (micStatus.isPermanentlyDenied) {
         _showError('Autorise le micro dans Réglages');
+        openAppSettings();
+        return;
+      }
+      if (!micStatus.isGranted) {
+        _showError('Autorise le micro dans Réglages');
+        return;
+      }
+    }
+
+    // Vérifier la permission reconnaissance vocale (requise par speech_to_text sur iOS)
+    var speechStatus = await Permission.speech.status;
+    if (!speechStatus.isGranted) {
+      speechStatus = await Permission.speech.request();
+      if (speechStatus.isPermanentlyDenied) {
+        _showError('Autorise la reconnaissance vocale dans Réglages');
+        openAppSettings();
+        return;
+      }
+      if (!speechStatus.isGranted) {
+        _showError('Autorise la reconnaissance vocale dans Réglages');
         return;
       }
     }
