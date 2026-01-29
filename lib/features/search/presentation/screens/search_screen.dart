@@ -425,6 +425,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             (context, index) => EventCard(
               activity: activities[index],
               isCompact: true,
+              fillContainer: true,
             ),
             childCount: activities.length,
           ),

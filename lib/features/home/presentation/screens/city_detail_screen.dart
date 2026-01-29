@@ -228,7 +228,7 @@ class CityDetailScreen extends ConsumerWidget {
                         mainAxisSpacing: 12,
                       ),
                       delegate: SliverChildBuilderDelegate(
-                        (context, index) => EventCard(activity: activities[index], isCompact: true),
+                        (context, index) => EventCard(activity: activities[index], isCompact: true, fillContainer: true),
                         childCount: activities.length,
                       ),
                     ),

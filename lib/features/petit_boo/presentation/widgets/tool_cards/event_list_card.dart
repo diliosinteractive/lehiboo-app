@@ -95,7 +95,7 @@ class EventListCard extends StatelessWidget {
 
           // Horizontal scroll of events
           SizedBox(
-            height: 240,
+            height: 250,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),

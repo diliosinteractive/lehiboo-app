@@ -50,9 +50,22 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   }
 
   Future<void> _initSpeech() async {
-    var status = await Permission.microphone.status;
-    if (!status.isGranted) {
-      await Permission.microphone.request();
+    var micStatus = await Permission.microphone.status;
+    if (!micStatus.isGranted) {
+      micStatus = await Permission.microphone.request();
+      if (micStatus.isPermanentlyDenied) {
+        openAppSettings();
+        return;
+      }
+    }
+
+    var speechStatus = await Permission.speech.status;
+    if (!speechStatus.isGranted) {
+      speechStatus = await Permission.speech.request();
+      if (speechStatus.isPermanentlyDenied) {
+        openAppSettings();
+        return;
+      }
     }
 
     try {

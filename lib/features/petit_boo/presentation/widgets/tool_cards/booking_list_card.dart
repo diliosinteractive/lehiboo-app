@@ -171,8 +171,9 @@ class BookingListCard extends StatelessWidget {
   }
 
   void _navigateToAll(BuildContext context) {
-    // Note: getMyTickets utilise aussi /my-bookings car c'est la même page
-    context.push('/my-bookings');
+    // Use go() instead of push() because /my-bookings is a ShellRoute child.
+    // push() would create a duplicate key in the Navigator.
+    context.go('/my-bookings');
   }
 
   Widget _buildEmptyState() {
