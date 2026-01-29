@@ -532,7 +532,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         decoration: BoxDecoration(
           // Toujours orange pour être visible (plus d'état gris discret)
           color: HbColors.brandPrimary,

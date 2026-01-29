@@ -238,7 +238,7 @@ class PersonalizedSection extends ConsumerWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 0.52, // Plus d'espace pour le contenu complet
+        childAspectRatio: 0.48,
       ),
       itemCount: gridActivities.length,
       itemBuilder: (context, index) {

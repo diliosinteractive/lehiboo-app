@@ -112,7 +112,7 @@ class _FavoritesContent extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 0.50,
+              childAspectRatio: 0.48,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
@@ -121,6 +121,7 @@ class _FavoritesContent extends ConsumerWidget {
               return EventCard(
                 activity: activities[index],
                 isCompact: true,
+                fillContainer: true,
               );
             },
           ),

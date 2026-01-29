@@ -223,7 +223,7 @@ class CityDetailScreen extends ConsumerWidget {
                     sliver: SliverGrid(
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        childAspectRatio: 0.50,
+                        childAspectRatio: 0.48,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
                       ),

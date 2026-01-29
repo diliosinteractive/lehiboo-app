@@ -54,14 +54,13 @@ class EventCard extends ConsumerWidget {
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Image prend l'espace disponible en flex
-                  Expanded(
-                    flex: 5,
+                  // Image portrait fixe (même hauteur pour toutes les cards)
+                  AspectRatio(
+                    aspectRatio: 4 / 5,
                     child: _buildImageStack(),
                   ),
-                  // Contenu garde le même design complet
-                  Flexible(
-                    flex: 4,
+                  // Contenu complet, Expanded pour éviter overflow
+                  Expanded(
                     child: _buildContentSection(compact: false),
                   ),
                 ],
@@ -82,6 +81,8 @@ class EventCard extends ConsumerWidget {
     final double? height = imageHeight ?? (fillContainer ? null : (isCompact ? 240 : 260));
 
     return Stack(
+      // Quand fillContainer, expand pour remplir l'Expanded parent
+      fit: fillContainer ? StackFit.expand : StackFit.loose,
       children: [
         // Image
         Hero(
