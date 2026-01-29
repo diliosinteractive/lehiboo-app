@@ -28,36 +28,32 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
+    final hasToolResults = !isUser &&
+        (message.hasToolResults || (toolResults?.isNotEmpty ?? false));
 
-    return Row(
-      mainAxisAlignment:
-          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment:
+          isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        // Avatar assistant (gauche)
-        if (!isUser) ...[
-          _buildAssistantAvatar(),
-          SizedBox(width: PetitBooTheme.spacing12),
-        ],
+        // Tool results FULL WIDTH (outside avatar row)
+        if (hasToolResults)
+          _buildToolResults(message.toolResults ?? toolResults ?? []),
 
-        // Message content
-        Flexible(
-          child: Column(
-            crossAxisAlignment:
-                isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            children: [
-              // Tool results (avant le message assistant)
-              if (!isUser &&
-                  (message.hasToolResults || (toolResults?.isNotEmpty ?? false)))
-                _buildToolResults(message.toolResults ?? toolResults ?? []),
-
-              // Message bubble
-              _buildBubble(context, isUser),
+        // Message row with avatar + bubble
+        Row(
+          mainAxisAlignment:
+              isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!isUser) ...[
+              _buildAssistantAvatar(),
+              SizedBox(width: PetitBooTheme.spacing12),
             ],
-          ),
+            Flexible(
+              child: _buildBubble(context, isUser),
+            ),
+          ],
         ),
-
-        // Pas d'avatar pour user (comme le web)
       ],
     );
   }
@@ -85,12 +81,18 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildToolResults(List<ToolResultDto> results) {
+    final cards = <Widget>[];
+    for (var i = 0; i < results.length; i++) {
+      if (i > 0) {
+        cards.add(SizedBox(height: PetitBooTheme.spacing16));
+      }
+      cards.add(ToolResultCard(result: results[i]));
+    }
     return Padding(
-      padding: EdgeInsets.only(bottom: PetitBooTheme.spacing12),
+      padding: EdgeInsets.only(bottom: PetitBooTheme.spacing16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children:
-            results.map((result) => ToolResultCard(result: result)).toList(),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: cards,
       ),
     );
   }
