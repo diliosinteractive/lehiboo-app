@@ -15,10 +15,16 @@ import 'package:lehiboo/features/events/presentation/providers/event_providers.d
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 import 'package:lehiboo/features/events/presentation/widgets/map_event_card.dart';
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart'; // Import filter sheet
-import 'package:lehiboo/domain/entities/activity.dart'; 
+import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 // Note: MapTheme is no longer needed for styling as we use a specific tile provider
+
+/// Active filter chips for the map - shows all active filters
+/// as a visual reminder below the top bar.
+final mapActiveFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
+  return ref.watch(activeFilterChipsProvider);
+});
 
 class MapViewScreen extends ConsumerStatefulWidget {
   final double? initialLat;
@@ -522,6 +528,8 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         ),
                       ],
                     ),
+                    // Active filter chips (excluding date/free/family already in top bar)
+                    _MapActiveFilters(),
                     if (isLoading)
                       Container(
                         margin: const EdgeInsets.only(top: 8),
@@ -535,8 +543,8 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SizedBox(
-                              width: 14, 
-                              height: 14, 
+                              width: 14,
+                              height: 14,
                               child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF601F))
                             ),
                             SizedBox(width: 8),
@@ -730,5 +738,105 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
         ),
       ),
     );
+  }
+}
+
+/// Horizontal active filter chips for the map top bar.
+/// Shows only filters NOT already displayed in the date/boolean chips row.
+class _MapActiveFilters extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chips = ref.watch(mapActiveFilterChipsProvider);
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      height: 32,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: chips.length + 1, // +1 for clear button
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return GestureDetector(
+              onTap: () => filterNotifier.resetAll(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.clear_all, size: 14, color: Colors.grey[700]),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Effacer',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final chip = chips[index - 1];
+          return GestureDetector(
+            onTap: () => filterNotifier.removeFilterByType(chip.type, value: chip.value),
+            child: Container(
+              padding: const EdgeInsets.only(left: 10, right: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatLabel(chip),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFFF601F),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF601F).withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, size: 10, color: Color(0xFFFF601F)),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _formatLabel(ActiveFilterChip chip) {
+    if (chip.type == FilterChipType.thematique || chip.type == FilterChipType.category) {
+      final words = chip.label.split('-').map((word) {
+        if (word.isEmpty) return word;
+        return word[0].toUpperCase() + word.substring(1);
+      });
+      return words.join(' ');
+    }
+    return chip.label;
   }
 }
