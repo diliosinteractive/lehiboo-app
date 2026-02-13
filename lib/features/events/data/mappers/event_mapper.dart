@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_submodels.dart';
 import '../models/event_dto.dart';

@@ -82,12 +82,13 @@ class EventRepositoryImpl implements EventRepository {
 
     final events = response.events.map(EventMapper.toEvent).toList();
 
-    // Debug: log transformed event coordinates
+    // Debug: log transformed event coordinates and images
     if (kDebugMode) {
       debugPrint('🗺️ Repository: Transformed ${events.length} events');
       for (var i = 0; i < events.length && i < 5; i++) {
         final e = events[i];
         debugPrint('🗺️ Event[$i] "${e.title}": lat=${e.latitude}, lng=${e.longitude}');
+        debugPrint('🖼️ Event[$i] "${e.title}": coverImage=${e.coverImage}, images=${e.images.length}');
       }
     }
 
