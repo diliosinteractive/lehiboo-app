@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/entities/event.dart';
@@ -23,6 +24,7 @@ import '../widgets/detail/event_qa_section.dart';
 import '../widgets/detail/event_similar_carousel.dart';
 import '../widgets/detail/event_share_sheet.dart';
 import '../widgets/detail/event_sticky_booking_bar.dart';
+import '../widgets/detail/write_review_sheet.dart';
 
 /// Provider to fetch event details by identifier (UUID or slug)
 final eventDetailProvider =
@@ -62,6 +64,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   String? _selectedSlotId;
   bool _isDescriptionExpanded = false;
   double _scrollOffset = 0;
+
   /// Cache des slots disponibles pour l'événement (pour obtenir le label de date)
   List<CalendarDateSlot> _availableSlots = [];
 
@@ -100,8 +103,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (slot.id != _selectedSlotId) return null;
 
     final months = [
-      'Jan', 'Fév', 'Mars', 'Avr', 'Mai', 'Juin',
-      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'
+      'Jan',
+      'Fév',
+      'Mars',
+      'Avr',
+      'Mai',
+      'Juin',
+      'Juil',
+      'Août',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Déc'
     ];
     final days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
@@ -202,8 +215,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Widget _buildContent(Event event) {
-    final similarEventsAsync =
-        ref.watch(similarEventsProvider(widget.eventId));
+    final similarEventsAsync = ref.watch(similarEventsProvider(widget.eventId));
 
     // Determine if event is free
     final isFree = event.priceType == PriceType.free ||
@@ -336,7 +348,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               // 10. Avis (connecté à l'API)
               EventReviewsSection(
-                eventSlug: event.slug ?? event.id,
+                eventSlug: event.slug,
                 onWriteReview: () => _showWriteReviewDialog(event),
                 onViewAll: () => _showAllReviews(event),
               ),
@@ -345,7 +357,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               // 11. Questions/Réponses (connecté à l'API)
               EventQASection(
-                eventSlug: event.slug ?? event.id,
+                eventSlug: event.slug,
                 eventTitle: event.title,
                 onViewAll: () => _showAllQuestions(event),
               ),
@@ -404,7 +416,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           // Bouton partage (ouvre le nouveau sheet)
           ShareButton(
             event: event,
-            shareUrl: 'https://lehiboo.com/events/${event.slug ?? event.id}',
+            shareUrl: 'https://lehiboo.com/events/${event.slug}',
             backgroundColor:
                 opacity < 0.5 ? Colors.white : Colors.grey.shade100,
             iconColor: HbColors.textPrimary,
@@ -424,9 +436,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Widget _buildDateSection(Event event) {
-    // IMPORTANT: Utiliser widget.eventId (slug/UUID de navigation) au lieu de event.id
-    // car event.id peut être un hash numérique si dto.uuid était null
-    final availabilityAsync = ref.watch(eventAvailabilityProvider(widget.eventId));
+    final availabilityId = _looksLikeUuid(event.id) ? event.id : widget.eventId;
+    final availabilityAsync =
+        ref.watch(eventAvailabilityProvider(availabilityId));
 
     return availabilityAsync.when(
       loading: () => const Padding(
@@ -677,7 +689,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       images: event.images,
       initialIndex: initialIndex,
       eventTitle: event.title,
-      shareUrl: 'https://lehiboo.com/events/${event.slug ?? event.id}',
+      shareUrl: 'https://lehiboo.com/events/${event.slug}',
     );
   }
 
@@ -691,10 +703,28 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
-  void _onBookPressed() {
+  void _onBookPressed() async {
     HapticFeedback.mediumImpact();
     final event = ref.read(eventDetailProvider(widget.eventId)).valueOrNull;
     if (event == null) return;
+
+    final externalUrl = event.externalBooking?.url;
+    if (externalUrl != null && externalUrl.isNotEmpty) {
+      final uri = Uri.tryParse(externalUrl);
+      if (uri != null) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lien de réservation invalide'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
 
     // Vérification: date obligatoire
     if (_selectedSlotId == null) {
@@ -809,10 +839,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   // --- Actions pour reviews et Q&A ---
 
   void _showWriteReviewDialog(Event event) {
-    // TODO: Ouvrir le dialog d'écriture d'avis (nécessite vérification auth)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Écrire un avis - authentification requise')),
+    WriteReviewSheet.show(
+      context,
+      eventSlug: event.slug,
+      eventTitle: event.title,
     );
   }
 
@@ -828,6 +858,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Voir toutes les questions')),
     );
+  }
+
+  bool _looksLikeUuid(String value) {
+    final uuidPattern = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    return uuidPattern.hasMatch(value);
   }
 }
 

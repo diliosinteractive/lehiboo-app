@@ -15,12 +15,14 @@ import '../widgets/save_search_sheet.dart';
 class SearchScreen extends ConsumerStatefulWidget {
   final String? categorySlug;
   final String? city;
+  final String? dateFilter;
   final bool autoOpenFilter;
 
   const SearchScreen({
     super.key,
     this.categorySlug,
     this.city,
+    this.dateFilter,
     this.autoOpenFilter = false,
   });
 
@@ -35,20 +37,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    
+
     // Initialize filters if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final filterNotifier = ref.read(eventFilterProvider.notifier);
-      if (widget.categorySlug != null || widget.city != null) {
+      if (widget.categorySlug != null ||
+          widget.city != null ||
+          widget.dateFilter != null) {
         filterNotifier.resetAll();
       }
-      
+
       if (widget.categorySlug != null) {
         filterNotifier.addCategory(widget.categorySlug!);
       }
       if (widget.city != null) {
-        final cityName = widget.city![0].toUpperCase() + widget.city!.substring(1);
+        final cityName =
+            widget.city![0].toUpperCase() + widget.city!.substring(1);
         filterNotifier.setCity(widget.city!, cityName);
+      }
+      switch (widget.dateFilter) {
+        case 'today':
+          filterNotifier.setDateFilter(DateFilterType.today);
+          break;
+        case 'tomorrow':
+          filterNotifier.setDateFilter(DateFilterType.tomorrow);
+          break;
+        case 'weekend':
+          filterNotifier.setDateFilter(DateFilterType.thisWeekend);
+          break;
       }
 
       // Auto open filter bottom sheet if requested
@@ -65,22 +81,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       final filteredEventsState = ref.read(filteredEventsProvider);
       filteredEventsState.whenData((data) {
         if (data.hasMore) {
           // Debounce/Throttle could be added here if needed, but repository can handle concurrent calls
           // or we can check a local loading flag. For now, rely on repo/provider stability.
-          // Better: Check if we are already fetching? The provider is AsyncNotifier, 
-          // but we don't have an explicit "isLoadingMore" exposed easily in the 'data' part 
-          // unless we add it to state. 
+          // Better: Check if we are already fetching? The provider is AsyncNotifier,
+          // but we don't have an explicit "isLoadingMore" exposed easily in the 'data' part
+          // unless we add it to state.
           // We'll trust the logic: if we are at bottom, request next page.
           // The provider build logic handles page increments.
-          
+
           // Wait, we need to only trigger if NOT already loading.
           // The AsyncValue.isLoading is true when fetching.
           if (!filteredEventsState.isLoading) {
-             ref.read(eventFilterProvider.notifier).nextPage();
+            ref.read(eventFilterProvider.notifier).nextPage();
           }
         }
       });
@@ -92,7 +109,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     AirbnbSearchSheet.show(context);
   }
 
-  Future<void> _saveCurrentSearch(BuildContext context, {bool isAlert = false}) async {
+  Future<void> _saveCurrentSearch(BuildContext context,
+      {bool isAlert = false}) async {
     final filter = ref.read(eventFilterProvider);
     final alertsNotifier = ref.read(alertsProvider.notifier);
 
@@ -113,15 +131,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       enableEmail: result.enableEmail,
     );
 
-    if (mounted) {
-      final hasNotifications = result.enablePush || result.enableEmail;
-      PetitBooToast.success(
-        context,
-        hasNotifications
-            ? 'Alerte "${result.name}" créée avec notifications !'
-            : 'Recherche "${result.name}" enregistrée !',
-      );
-    }
+    if (!context.mounted) return;
+
+    final hasNotifications = result.enablePush || result.enableEmail;
+    PetitBooToast.success(
+      context,
+      hasNotifications
+          ? 'Alerte "${result.name}" créée avec notifications !'
+          : 'Recherche "${result.name}" enregistrée !',
+    );
   }
 
   void _showCreateAlertDialog(BuildContext context) {
@@ -135,7 +153,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final filter = ref.watch(eventFilterProvider);
 
     return Scaffold(
-
       body: SafeArea(
         child: CustomScrollView(
           controller: _scrollController,
@@ -152,7 +169,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               collapsedHeight: 220,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -180,71 +198,48 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             const Spacer(),
                             // Save Search Button
                             if (filter.hasActiveFilters)
-                              Consumer(
-                                builder: (context, ref, child) {
-                                  final alertsAsync = ref.watch(alertsProvider);
-                                  
-                                  // Determine if saved
-                                  // We handle loading/error gracefully by just assuming false if not loaded
-                                  final isAlreadySaved = alertsAsync.maybeWhen(
-                                    data: (alerts) {
-                                      final notifier = ref.read(alertsProvider.notifier);
-                                      return notifier.isFilterSaved(filter);
-                                    },
-                                    orElse: () => false,
-                                  );
+                              Consumer(builder: (context, ref, child) {
+                                final alertsAsync = ref.watch(alertsProvider);
 
-                                  if (isAlreadySaved) {
-                                    return OutlinedButton(
-                                      onPressed: null, // Disable button if already saved
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        side: BorderSide(color: Colors.grey[400]!, width: 1),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                        backgroundColor: Colors.grey[100],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.bookmark, size: 18, color: Colors.grey[500]),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Recherche\nenregistrée',
-                                            textAlign: TextAlign.start,
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 10,
-                                              height: 1.1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }
+                                // Determine if saved
+                                // We handle loading/error gracefully by just assuming false if not loaded
+                                final isAlreadySaved = alertsAsync.maybeWhen(
+                                  data: (alerts) {
+                                    final notifier =
+                                        ref.read(alertsProvider.notifier);
+                                    return notifier.isFilterSaved(filter);
+                                  },
+                                  orElse: () => false,
+                                );
 
+                                if (isAlreadySaved) {
                                   return OutlinedButton(
-                                    onPressed: () => _saveCurrentSearch(context),
+                                    onPressed:
+                                        null, // Disable button if already saved
                                     style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                      side: const BorderSide(color: Color(0xFFFF601F), width: 1),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      backgroundColor: const Color(0xFFFF601F).withOpacity(0.05),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      side: BorderSide(
+                                          color: Colors.grey[400]!, width: 1),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
+                                      backgroundColor: Colors.grey[100],
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.bookmark_border, size: 18, color: Color(0xFFFF601F)),
+                                        Icon(Icons.bookmark,
+                                            size: 18, color: Colors.grey[500]),
                                         const SizedBox(width: 4),
-                                        const Text(
-                                          'Sauvegarder\nma recherche',
+                                        Text(
+                                          'Recherche\nenregistrée',
                                           textAlign: TextAlign.start,
                                           style: TextStyle(
-                                            color: Color(0xFFFF601F),
+                                            color: Colors.grey[600],
                                             fontWeight: FontWeight.w600,
                                             fontSize: 10,
                                             height: 1.1,
@@ -254,7 +249,42 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     ),
                                   );
                                 }
-                              ),
+
+                                return OutlinedButton(
+                                  onPressed: () => _saveCurrentSearch(context),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    side: const BorderSide(
+                                        color: Color(0xFFFF601F), width: 1),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8)),
+                                    backgroundColor: const Color(0xFFFF601F)
+                                        .withOpacity(0.05),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.bookmark_border,
+                                          size: 18, color: Color(0xFFFF601F)),
+                                      const SizedBox(width: 4),
+                                      const Text(
+                                        'Sauvegarder\nma recherche',
+                                        textAlign: TextAlign.start,
+                                        style: TextStyle(
+                                          color: Color(0xFFFF601F),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 10,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
                           ],
                         ),
                       ),
@@ -272,92 +302,98 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
             ),
-            
-            // Results section
-             filteredEvents.when(
-                data: (paginatedData) {
-                  final activities = paginatedData.activities;
-                  
-                  if (activities.isEmpty) {
-                    // Trigger Smart AI Bubble
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                       ref.read(petitBooEngagementProvider.notifier).onSearchEmpty();
-                    });
 
-                    return SliverFillRemaining(
-                      child: _EmptyResults(
-                        hasFilters: filter.hasActiveFilters,
-                        onClearFilters: () {
-                          ref.read(eventFilterProvider.notifier).resetAll();
-                        },
-                        onCreateAlert: () => _showCreateAlertDialog(context),
-                      ),
-                    );
-                  }
+            // Results section
+            filteredEvents.when(
+              data: (paginatedData) {
+                final activities = paginatedData.activities;
+
+                if (activities.isEmpty) {
+                  // Trigger Smart AI Bubble
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ref
+                        .read(petitBooEngagementProvider.notifier)
+                        .onSearchEmpty();
+                  });
+
+                  return SliverFillRemaining(
+                    child: _EmptyResults(
+                      hasFilters: filter.hasActiveFilters,
+                      onClearFilters: () {
+                        ref.read(eventFilterProvider.notifier).resetAll();
+                      },
+                      onCreateAlert: () => _showCreateAlertDialog(context),
+                    ),
+                  );
+                }
+                return SliverMainAxisGroup(
+                  slivers: _buildResultsSlivers(
+                    activities: activities,
+                    hasMore: paginatedData.hasMore,
+                    filter: filter,
+                    context: context,
+                    ref: ref,
+                  ),
+                );
+              },
+              loading: () {
+                // If we have data (previous state), show it with loading at bottom
+                // But AsyncNotifier.when default handling often shows loading immediately entirely.
+                // We need to handle 'skipLoadingOnReload: true' or check if value exists.
+
+                // Actually, if we are scrolling (pagination), we want to show the list AND the loader.
+                // AsyncValue.when(skipLoadingOnReload: true) is not available directly on the method but
+                // we can check .hasValue.
+
+                final previousData = filteredEvents.valueOrNull;
+                if (previousData != null &&
+                    previousData.activities.isNotEmpty) {
                   return SliverMainAxisGroup(
                     slivers: _buildResultsSlivers(
-                      activities: activities,
-                      hasMore: paginatedData.hasMore,
+                      activities: previousData.activities,
+                      hasMore:
+                          true, // If loading, assumption is likely true or just show spinner
+                      isLoadingMore: true,
                       filter: filter,
                       context: context,
                       ref: ref,
                     ),
                   );
-                },
-                loading: () {
-                   // If we have data (previous state), show it with loading at bottom
-                   // But AsyncNotifier.when default handling often shows loading immediately entirely.
-                   // We need to handle 'skipLoadingOnReload: true' or check if value exists.
-                   
-                   // Actually, if we are scrolling (pagination), we want to show the list AND the loader.
-                   // AsyncValue.when(skipLoadingOnReload: true) is not available directly on the method but 
-                   // we can check .hasValue.
-                   
-                   final previousData = filteredEvents.valueOrNull;
-                   if (previousData != null && previousData.activities.isNotEmpty) {
-                      return SliverMainAxisGroup(
-                        slivers: _buildResultsSlivers(
-                          activities: previousData.activities,
-                          hasMore: true, // If loading, assumption is likely true or just show spinner
-                          isLoadingMore: true,
-                          filter: filter,
-                          context: context,
-                          ref: ref,
-                        ),
-                      );
-                   }
-                
-                   return const SliverFillRemaining(
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFFF601F),
-                      ),
-                    ),
-                  );
-                },
-                error: (error, _) => SliverFillRemaining(
+                }
+
+                return const SliverFillRemaining(
                   child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                        const SizedBox(height: 16),
-                        Text('Erreur: $error'),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => ref.refresh(filteredEventsProvider),
-                          child: const Text('Réessayer'),
-                        ),
-                      ],
+                    child: CircularProgressIndicator(
+                      color: Color(0xFFFF601F),
                     ),
+                  ),
+                );
+              },
+              error: (error, _) => SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline,
+                          size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text('Erreur: $error'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => ref.refresh(filteredEventsProvider),
+                        child: const Text('Réessayer'),
+                      ),
+                    ],
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),
     );
   }
+
   List<Widget> _buildResultsSlivers({
     required List<dynamic> activities,
     required bool hasMore,
@@ -386,7 +422,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               GestureDetector(
                 onTap: () => _showSortOptions(context, ref, filter),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade300),
                     borderRadius: BorderRadius.circular(20),
@@ -431,15 +468,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
       ),
-      
+
       // Loading indicator or "Alert Me" button
-      if (hasMore || isLoadingMore) 
+      if (hasMore || isLoadingMore)
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 32),
             child: Center(
               child: CircularProgressIndicator(
-                 color: Color(0xFFFF601F),
+                color: Color(0xFFFF601F),
               ),
             ),
           ),
@@ -465,7 +502,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E3A8A),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -498,7 +536,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
-  void _showSortOptions(BuildContext context, WidgetRef ref, EventFilter filter) {
+  void _showSortOptions(
+      BuildContext context, WidgetRef ref, EventFilter filter) {
     final filterNotifier = ref.read(eventFilterProvider.notifier);
 
     showModalBottomSheet(
@@ -644,7 +683,8 @@ class _EmptyResults extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E3A8A), // Bleu foncé
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -654,7 +694,8 @@ class _EmptyResults extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFFF601F),
                   side: const BorderSide(color: Color(0xFFFF601F)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 icon: const Icon(Icons.clear),
                 label: const Text('Effacer les filtres'),
@@ -695,9 +736,8 @@ class _SortOption extends StatelessWidget {
           color: isSelected ? const Color(0xFFFF601F) : null,
         ),
       ),
-      trailing: isSelected
-          ? const Icon(Icons.check, color: Color(0xFFFF601F))
-          : null,
+      trailing:
+          isSelected ? const Icon(Icons.check, color: Color(0xFFFF601F)) : null,
       onTap: onTap,
     );
   }

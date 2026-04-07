@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_submodels.dart';
 import '../models/event_dto.dart';
@@ -69,9 +68,9 @@ class EventMapper {
     String? imageUrl;
     if (dto.featuredImage != null) {
       imageUrl = dto.featuredImage!.large ??
-                 dto.featuredImage!.full ??
-                 dto.featuredImage!.medium ??
-                 dto.featuredImage!.thumbnail;
+          dto.featuredImage!.full ??
+          dto.featuredImage!.medium ??
+          dto.featuredImage!.thumbnail;
     }
     // Fallback to thumbnail field (used by organizer events API)
     imageUrl ??= dto.thumbnail;
@@ -101,11 +100,11 @@ class EventMapper {
     // TimeSlot Parsing safely
     TimeSlotConfig? timeSlots;
     if (dto.timeSlots != null) {
-       try {
-         timeSlots = TimeSlotConfig.fromJson(dto.timeSlots!);
-       } catch (e) {
-         timeSlots = null;
-       }
+      try {
+        timeSlots = TimeSlotConfig.fromJson(dto.timeSlots!);
+      } catch (e) {
+        timeSlots = null;
+      }
     }
 
     return Event(
@@ -132,10 +131,10 @@ class EventMapper {
       price: dto.pricing?.min == dto.pricing?.max ? dto.pricing?.min : null,
       minPrice: dto.pricing?.min,
       maxPrice: dto.pricing?.max,
-      isIndoor: true, 
+      isIndoor: true,
       isOutdoor: false,
       tags: dto.tags ?? [],
-      organizerId: dto.organizer?.id.toString() ?? '',
+      organizerId: _resolveOrganizerIdentifier(dto.organizer),
       organizerName: dto.organizer?.name ?? '',
       organizerLogo: dto.organizer?.avatar,
       isFavorite: dto.isFavorite,
@@ -152,26 +151,52 @@ class EventMapper {
       totalSeats: dto.availability?.totalCapacity,
       tickets: mappedTickets,
       timeSlots: timeSlots,
-      calendar: dto.calendar != null ? CalendarConfig.fromJson(dto.calendar!) : null,
-      recurrence: dto.recurrence != null ? RecurrenceConfig.fromJson(dto.recurrence!) : null,
-      duration: dto.dates?.durationMinutes != null ? Duration(minutes: dto.dates!.durationMinutes!) : null,
-      extraServices: dto.extraServices?.whereType<Map<String, dynamic>>().map((e) => ExtraService.fromJson(e)).toList() ?? [],
-      coupons: dto.coupons?.whereType<Map<String, dynamic>>().map((e) => Coupon.fromJson(e)).toList() ?? [],
-      seatConfig: dto.seatConfig != null ? SeatConfig.fromJson(dto.seatConfig!) : null,
-      externalBooking: dto.externalBooking != null ? ExternalBooking.fromJson(dto.externalBooking!) : null,
-      eventTypeTerm: dto.eventType != null ? TaxonomyTerm.fromJson(dto.eventType!) : null,
-      targetAudienceTerms: dto.targetAudience?.whereType<Map<String, dynamic>>().map((e) => TaxonomyTerm.fromJson(e)).toList() ?? [],
-      
+      calendar:
+          dto.calendar != null ? CalendarConfig.fromJson(dto.calendar!) : null,
+      recurrence: dto.recurrence != null
+          ? RecurrenceConfig.fromJson(dto.recurrence!)
+          : null,
+      duration: dto.dates?.durationMinutes != null
+          ? Duration(minutes: dto.dates!.durationMinutes!)
+          : null,
+      extraServices: dto.extraServices
+              ?.whereType<Map<String, dynamic>>()
+              .map((e) => ExtraService.fromJson(e))
+              .toList() ??
+          [],
+      coupons: dto.coupons
+              ?.whereType<Map<String, dynamic>>()
+              .map((e) => Coupon.fromJson(e))
+              .toList() ??
+          [],
+      seatConfig:
+          dto.seatConfig != null ? SeatConfig.fromJson(dto.seatConfig!) : null,
+      externalBooking: dto.externalBooking != null
+          ? ExternalBooking.fromJson(dto.externalBooking!)
+          : null,
+      eventTypeTerm:
+          dto.eventType != null ? TaxonomyTerm.fromJson(dto.eventType!) : null,
+      targetAudienceTerms: dto.targetAudience
+              ?.whereType<Map<String, dynamic>>()
+              .map((e) => TaxonomyTerm.fromJson(e))
+              .toList() ??
+          [],
+
       // RICH CONTENT MAPPING
       locationDetails: _mapLocationDetails(dto.organizer?.practicalInfo),
-      coOrganizers: dto.coOrganizers?.map((e) => CoOrganizer(
-        id: e.id.toString(),
-        name: e.name,
-        role: e.role,
-        imageUrl: e.logo,
-        url: e.profileUrl,
-      )).toList() ?? [],
-      socialMedia: dto.socialMedia != null ? SocialMediaConfig.fromJson(dto.socialMedia!) : null,
+      coOrganizers: dto.coOrganizers
+              ?.map((e) => CoOrganizer(
+                    id: e.id.toString(),
+                    name: e.name,
+                    role: e.role,
+                    imageUrl: e.logo,
+                    url: e.profileUrl,
+                  ))
+              .toList() ??
+          [],
+      socialMedia: dto.socialMedia != null
+          ? SocialMediaConfig.fromJson(dto.socialMedia!)
+          : null,
       rawCategorySlug: dto.category?.slug,
     );
   }
@@ -218,6 +243,25 @@ class EventMapper {
     }
   }
 
+  static String _resolveOrganizerIdentifier(EventOrganizerDto? organizer) {
+    if (organizer == null) return '';
+
+    final profileUrl = organizer.profileUrl?.trim();
+    if (profileUrl != null && profileUrl.isNotEmpty) {
+      final uri = Uri.tryParse(profileUrl);
+      if (uri != null && uri.pathSegments.isNotEmpty) {
+        return uri.pathSegments.last;
+      }
+      return profileUrl;
+    }
+
+    if (organizer.id > 0) {
+      return organizer.id.toString();
+    }
+
+    return '';
+  }
+
   static EventStatus _determineStatus(DateTime startDate, DateTime endDate) {
     final now = DateTime.now();
     if (now.isBefore(startDate)) {
@@ -229,21 +273,27 @@ class EventMapper {
     }
   }
 
-  static String _truncateDescription(String description, {int maxLength = 150}) {
+  static String _truncateDescription(String description,
+      {int maxLength = 150}) {
     if (description.length <= maxLength) return description;
     return '${description.substring(0, maxLength)}...';
   }
 
-  static LocationDetails? _mapLocationDetails(OrganizerPracticalInfoDto? practicalInfo) {
+  static LocationDetails? _mapLocationDetails(
+      OrganizerPracticalInfoDto? practicalInfo) {
     if (practicalInfo == null) return null;
     return LocationDetails(
-      pmr: AccessibilityConfig(available: practicalInfo.pmr, note: practicalInfo.pmrInfos),
-      food: AccessibilityConfig(available: practicalInfo.restauration, note: practicalInfo.restaurationInfos),
-      drinks: AccessibilityConfig(available: practicalInfo.boisson, note: practicalInfo.boissonInfos),
-      parking: practicalInfo.stationnement != null 
-          ? RichInfoConfig(description: practicalInfo.stationnement!) 
+      pmr: AccessibilityConfig(
+          available: practicalInfo.pmr, note: practicalInfo.pmrInfos),
+      food: AccessibilityConfig(
+          available: practicalInfo.restauration,
+          note: practicalInfo.restaurationInfos),
+      drinks: AccessibilityConfig(
+          available: practicalInfo.boisson, note: practicalInfo.boissonInfos),
+      parking: practicalInfo.stationnement != null
+          ? RichInfoConfig(description: practicalInfo.stationnement!)
           : null,
-      transport: null, 
+      transport: null,
     );
   }
 }

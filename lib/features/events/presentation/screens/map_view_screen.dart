@@ -16,7 +16,6 @@ import 'package:lehiboo/features/search/presentation/providers/filter_provider.d
 import 'package:lehiboo/features/events/presentation/widgets/map_event_card.dart';
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart'; // Import filter sheet
 import 'package:lehiboo/domain/entities/activity.dart';
-import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 // Note: MapTheme is no longer needed for styling as we use a specific tile provider
 
@@ -31,12 +30,8 @@ class MapViewScreen extends ConsumerStatefulWidget {
   final double? initialLng;
   final double? initialZoom;
 
-  const MapViewScreen({
-    super.key, 
-    this.initialLat, 
-    this.initialLng, 
-    this.initialZoom
-  });
+  const MapViewScreen(
+      {super.key, this.initialLat, this.initialLng, this.initialZoom});
 
   @override
   ConsumerState<MapViewScreen> createState() => _MapViewScreenState();
@@ -45,7 +40,7 @@ class MapViewScreen extends ConsumerStatefulWidget {
 class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   final MapController _mapController = MapController();
   final PageController _pageController = PageController(viewportFraction: 0.33);
-  
+
   static const LatLng _kDefaultCenter = LatLng(50.4542, 3.9567);
   static const double _kDefaultZoom = 13.0;
 
@@ -58,20 +53,19 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   void initState() {
     super.initState();
     _checkLocationPermission();
-    
+
     // If initial coordinates are provided, move there after build
     if (widget.initialLat != null && widget.initialLng != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _mapController.move(
-          LatLng(widget.initialLat!, widget.initialLng!), 
-          widget.initialZoom ?? 13.0
-        );
+        _mapController.move(LatLng(widget.initialLat!, widget.initialLng!),
+            widget.initialZoom ?? 13.0);
       });
     }
   }
 
   @override
   void dispose() {
+    ref.read(eventFilterProvider.notifier).clearBoundingBox();
     _debounceTimer?.cancel();
     _pageController.dispose();
     _mapController.dispose();
@@ -79,15 +73,15 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   }
 
   Future<void> _checkLocationPermission() async {
-     await Geolocator.requestPermission();
+    await Geolocator.requestPermission();
   }
-  
+
   void _onPositionChanged(MapCamera camera, bool hasGesture) {
     if (_isMapMovingFromPage) return;
-    
+
     // Auto-refresh logic with debounce
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-    
+
     _debounceTimer = Timer(const Duration(milliseconds: 600), () {
       if (mounted) {
         _searchInArea();
@@ -97,25 +91,21 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
 
   void _searchInArea() {
     final bounds = _mapController.camera.visibleBounds;
-    
+
     ref.read(eventFilterProvider.notifier).setBoundingBox(
-      bounds.northEast.latitude,
-      bounds.northEast.longitude,
-      bounds.southWest.latitude,
-      bounds.southWest.longitude,
-    );
+          bounds.northEast.latitude,
+          bounds.northEast.longitude,
+          bounds.southWest.latitude,
+          bounds.southWest.longitude,
+        );
   }
 
   Future<void> _locateMe() async {
     setState(() => _isLocating = true);
     try {
       final position = await Geolocator.getCurrentPosition();
-      
-      _mapController.move(
-        LatLng(position.latitude, position.longitude),
-        15.0
-      );
-      
+
+      _mapController.move(LatLng(position.latitude, position.longitude), 15.0);
     } catch (e) {
       if (mounted) {
         PetitBooToast.error(context, 'Impossible de récupérer votre position');
@@ -140,32 +130,31 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   }
 
   Activity _eventToActivity(Event event) {
-     return Activity(
-       id: event.id.toString(),
-       title: event.title,
-       slug: '',
-       description: event.description,
-       imageUrl: event.coverImage,
-       isFree: event.isFree,
-       priceMin: event.minPrice,
-       city: null, 
-       category: null, 
-       tags: [],
-       nextSlot: Slot(
+    return Activity(
+        id: event.id.toString(),
+        title: event.title,
+        slug: '',
+        description: event.description,
+        imageUrl: event.coverImage,
+        isFree: event.isFree,
+        priceMin: event.minPrice,
+        city: null,
+        category: null,
+        tags: [],
+        nextSlot: Slot(
           id: 'temp_${event.id}',
           activityId: event.id.toString(),
           startDateTime: event.startDate, // Use real dates
           endDateTime: event.endDate,
-       )
-     );
+        ));
   }
 
   void _onMapReady() {
     if (widget.initialLat == null || widget.initialLng == null) {
       _locateMe();
     } else {
-       Future.delayed(const Duration(milliseconds: 500), () {
-        if(mounted) _searchInArea();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _searchInArea();
       });
     }
   }
@@ -173,22 +162,29 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   List<Marker> _buildMarkers(List<Event> events) {
     // Debug: log coordinates
     if (kDebugMode) {
-      debugPrint('🗺️ _buildMarkers: Building markers for ${events.length} events');
+      debugPrint(
+          '🗺️ _buildMarkers: Building markers for ${events.length} events');
       for (var i = 0; i < events.length; i++) {
         final e = events[i];
-        debugPrint('🗺️ Event[$i] "${e.title}": lat=${e.latitude}, lng=${e.longitude}');
+        debugPrint(
+            '🗺️ Event[$i] "${e.title}": lat=${e.latitude}, lng=${e.longitude}');
       }
     }
 
     // Filter out events with invalid coordinates (0,0 is in the Atlantic Ocean)
-    final validEvents = events.where((e) =>
-      e.latitude != 0.0 && e.longitude != 0.0 &&
-      e.latitude >= -90 && e.latitude <= 90 &&
-      e.longitude >= -180 && e.longitude <= 180
-    ).toList();
+    final validEvents = events
+        .where((e) =>
+            e.latitude != 0.0 &&
+            e.longitude != 0.0 &&
+            e.latitude >= -90 &&
+            e.latitude <= 90 &&
+            e.longitude >= -180 &&
+            e.longitude <= 180)
+        .toList();
 
     if (kDebugMode) {
-      debugPrint('🗺️ _buildMarkers: ${validEvents.length} events with valid coordinates');
+      debugPrint(
+          '🗺️ _buildMarkers: ${validEvents.length} events with valid coordinates');
     }
 
     // 1. Group events by location (lat,lng)
@@ -214,14 +210,15 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
 
     return groupEntries.map((group) {
       final firstEntry = group.first;
-      final position = LatLng(firstEntry.value.latitude, firstEntry.value.longitude);
-      
+      final position =
+          LatLng(firstEntry.value.latitude, firstEntry.value.longitude);
+
       final isSelected = group.any((e) => e.key == _selectedIndex);
-      
-      final displayEntry = isSelected 
+
+      final displayEntry = isSelected
           ? group.firstWhere((e) => e.key == _selectedIndex)
           : group.first;
-      
+
       final event = displayEntry.value;
       final count = group.length;
 
@@ -252,43 +249,51 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected ? const Color(0xFFFF601F) : Colors.white, 
-                        width: 2
-                      ),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))
-                      ]
-                    ),
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFFFF601F)
+                                : Colors.white,
+                            width: 2),
+                        boxShadow: const [
+                          BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2))
+                        ]),
                     padding: const EdgeInsets.all(4),
                     child: Image.asset(
-                       'assets/images/logo-footer.png',
-                       width: isSelected ? 40 : 28,
-                       height: isSelected ? 40 : 28,
+                      'assets/images/logo-footer.png',
+                      width: isSelected ? 40 : 28,
+                      height: isSelected ? 40 : 28,
                     ),
                   ),
-                  if (isSelected) 
+                  if (isSelected)
                     Container(
                       margin: const EdgeInsets.only(top: 2),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       constraints: const BoxConstraints(maxWidth: 100),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 2)],
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 2)
+                        ],
                       ),
                       child: Text(
-                        (event.minPrice ?? 0) == 0 ? 'Gratuit' : '${(event.minPrice ?? 0).toStringAsFixed(0)}€',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+                        (event.minPrice ?? 0) == 0
+                            ? 'Gratuit'
+                            : '${(event.minPrice ?? 0).toStringAsFixed(0)}€',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 10),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
                     ),
                 ],
               ),
-              
               if (count > 1)
                 Positioned(
                   top: 0,
@@ -317,7 +322,8 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
     }).toList();
   }
 
-  void _showMultiEventList(BuildContext context, List<MapEntry<int, Event>> group) {
+  void _showMultiEventList(
+      BuildContext context, List<MapEntry<int, Event>> group) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -356,12 +362,13 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                 child: ListView.separated(
                   itemCount: group.length,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final entry = group[index];
                     final event = entry.value;
                     final isSelected = entry.key == _selectedIndex;
-                    
+
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
@@ -374,9 +381,11 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         "${DateFormat('dd MMM HH:mm', 'fr_FR').format(event.startDate)} • ${(event.minPrice ?? 0) == 0 ? 'Gratuit' : '${(event.minPrice ?? 0).toStringAsFixed(0)}€'}",
                         style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
-                      trailing: isSelected 
-                          ? const Icon(Icons.check_circle, color: Color(0xFFFF601F))
-                          : const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                      trailing: isSelected
+                          ? const Icon(Icons.check_circle,
+                              color: Color(0xFFFF601F))
+                          : const Icon(Icons.arrow_forward_ios,
+                              size: 16, color: Colors.grey),
                       onTap: () {
                         context.pop();
                         _pageController.jumpToPage(entry.key);
@@ -399,12 +408,10 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
         _selectedIndex = index;
         _isMapMovingFromPage = true;
       });
-      
+
       final event = events[index];
       _mapController.move(
-          LatLng(event.latitude, event.longitude),
-          _mapController.camera.zoom
-      );
+          LatLng(event.latitude, event.longitude), _mapController.camera.zoom);
 
       setState(() {
         _isMapMovingFromPage = false;
@@ -430,21 +437,22 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
               onPositionChanged: _onPositionChanged,
               onMapReady: _onMapReady,
               interactionOptions: const InteractionOptions(
-                 flags: InteractiveFlag.all & ~InteractiveFlag.rotate, 
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+                urlTemplate:
+                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.dilios.lehiboo',
               ),
               Builder(
                 builder: (context) {
                   if (eventsAsync.hasValue) {
-                     return MarkerLayer(
-                       markers: _buildMarkers(eventsAsync.value!.events),
-                     );
+                    return MarkerLayer(
+                      markers: _buildMarkers(eventsAsync.value!.events),
+                    );
                   }
                   return const MarkerLayer(markers: []);
                 },
@@ -453,17 +461,19 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                 attributions: [
                   TextSourceAttribution(
                     'OpenStreetMap contributors',
-                    onTap: () => launchUrl(Uri.parse('https://openstreetmap.org/copyright')),
+                    onTap: () => launchUrl(
+                        Uri.parse('https://openstreetmap.org/copyright')),
                   ),
                   TextSourceAttribution(
-                     'CartoDB',
-                     onTap: () => launchUrl(Uri.parse('https://carto.com/attributions')),
+                    'CartoDB',
+                    onTap: () =>
+                        launchUrl(Uri.parse('https://carto.com/attributions')),
                   ),
                 ],
               ),
             ],
           ),
-          
+
           // TOP BAR
           Positioned(
             top: 0,
@@ -471,7 +481,8 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
                   children: [
                     Row(
@@ -480,7 +491,9 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                            boxShadow: [
+                              BoxShadow(color: Colors.black12, blurRadius: 4)
+                            ],
                           ),
                           child: IconButton(
                             icon: const Icon(Icons.arrow_back),
@@ -493,22 +506,33 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                             scrollDirection: Axis.horizontal,
                             child: Row(
                               children: [
-                                _buildDateChip('Aujourd\'hui', DateFilterType.today, filter),
+                                _buildDateChip('Aujourd\'hui',
+                                    DateFilterType.today, filter),
                                 const SizedBox(width: 8),
-                                _buildDateChip('Demain', DateFilterType.tomorrow, filter),
+                                _buildDateChip(
+                                    'Demain', DateFilterType.tomorrow, filter),
                                 const SizedBox(width: 8),
-                                _buildDateChip('Ce week-end', DateFilterType.thisWeekend, filter),
+                                _buildDateChip('Ce week-end',
+                                    DateFilterType.thisWeekend, filter),
                                 const SizedBox(width: 8),
-                                _buildDateChip('Cette semaine', DateFilterType.thisWeek, filter),
+                                _buildDateChip('Cette semaine',
+                                    DateFilterType.thisWeek, filter),
                                 const SizedBox(width: 8),
-                                _buildDateChip('Ce mois', DateFilterType.thisMonth, filter),
+                                _buildDateChip('Ce mois',
+                                    DateFilterType.thisMonth, filter),
                                 const SizedBox(width: 8),
-                                _buildBooleanChip('Gratuit', filter.onlyFree, (val) {
-                                  ref.read(eventFilterProvider.notifier).setOnlyFree(val);
+                                _buildBooleanChip('Gratuit', filter.onlyFree,
+                                    (val) {
+                                  ref
+                                      .read(eventFilterProvider.notifier)
+                                      .setOnlyFree(val);
                                 }),
                                 const SizedBox(width: 8),
-                                _buildBooleanChip('En famille', filter.familyFriendly, (val) {
-                                  ref.read(eventFilterProvider.notifier).setFamilyFriendly(val);
+                                _buildBooleanChip(
+                                    'En famille', filter.familyFriendly, (val) {
+                                  ref
+                                      .read(eventFilterProvider.notifier)
+                                      .setFamilyFriendly(val);
                                 }),
                               ],
                             ),
@@ -519,10 +543,13 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                            boxShadow: [
+                              BoxShadow(color: Colors.black12, blurRadius: 4)
+                            ],
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.tune, color: Color(0xFFFF601F)),
+                            icon: const Icon(Icons.tune,
+                                color: Color(0xFFFF601F)),
                             onPressed: () => showFilterBottomSheet(context),
                           ),
                         ),
@@ -533,22 +560,27 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                     if (isLoading)
                       Container(
                         margin: const EdgeInsets.only(top: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 4)
+                          ],
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF601F))
-                            ),
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Color(0xFFFF601F))),
                             SizedBox(width: 8),
-                            Text("Recherche en cours...", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                            Text("Recherche en cours...",
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.w500)),
                           ],
                         ),
                       ),
@@ -557,37 +589,40 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
               ),
             ),
           ),
-          
+
           // RIGHT SIDE CONTROLS
           Positioned(
-             right: 16,
-             bottom: 220, // Revert position
-             child: Column(
-               children: [
-                 FloatingActionButton.small(
-                   heroTag: 'zoom_in',
-                   onPressed: _zoomIn,
-                   backgroundColor: Colors.white,
-                   child: const Icon(Icons.add, color: Colors.black87),
-                 ),
-                 const SizedBox(height: 8),
-                 FloatingActionButton.small(
-                   heroTag: 'zoom_out',
-                   onPressed: _zoomOut,
-                   backgroundColor: Colors.white,
-                   child: const Icon(Icons.remove, color: Colors.black87),
-                 ),
-                 const SizedBox(height: 16),
-                 FloatingActionButton(
-                   heroTag: 'locate_me',
-                   onPressed: _locateMe,
-                   backgroundColor: Colors.white,
-                   child: _isLocating 
-                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                     : const Icon(Icons.my_location, color: Colors.black87),
-                 ),
-               ],
-             ),
+            right: 16,
+            bottom: 220, // Revert position
+            child: Column(
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'zoom_in',
+                  onPressed: _zoomIn,
+                  backgroundColor: Colors.white,
+                  child: const Icon(Icons.add, color: Colors.black87),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton.small(
+                  heroTag: 'zoom_out',
+                  onPressed: _zoomOut,
+                  backgroundColor: Colors.white,
+                  child: const Icon(Icons.remove, color: Colors.black87),
+                ),
+                const SizedBox(height: 16),
+                FloatingActionButton(
+                  heroTag: 'locate_me',
+                  onPressed: _locateMe,
+                  backgroundColor: Colors.white,
+                  child: _isLocating
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.my_location, color: Colors.black87),
+                ),
+              ],
+            ),
           ),
 
           // CAROUSEL
@@ -606,7 +641,8 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         onTap: () => context.push('/ai-chat'),
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 24),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(30),
@@ -647,41 +683,48 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                       ),
                     );
                   }
-                  
+
                   return PageView.builder(
                     controller: _pageController,
                     itemCount: result.events.length,
-                    onPageChanged: (index) => _onPageChanged(index, result.events),
+                    onPageChanged: (index) =>
+                        _onPageChanged(index, result.events),
                     padEnds: true,
                     itemBuilder: (context, index) {
                       final event = result.events[index];
                       return AnimatedBuilder(
-                         animation: _pageController,
-                         builder: (context, child) {
-                           double value = 1.0;
-                           if (_pageController.position.haveDimensions) {
-                             value = _pageController.page! - index;
-                             value = (1 - (value.abs() * 0.3)).clamp(0.85, 1.0);
-                           } else {
-                              value = (index == (_selectedIndex == -1 ? 0 : _selectedIndex)) ? 1.0 : 0.85;
-                           }
-                           return Center(
-                             child: SizedBox(
-                               height: Curves.easeOut.transform(value) * 200, // Revert height calculation
-                               width: Curves.easeOut.transform(value) * 350, // Revert width calculation
-                               child: child,
-                             ),
-                           );
-                         },
+                        animation: _pageController,
+                        builder: (context, child) {
+                          double value = 1.0;
+                          if (_pageController.position.haveDimensions) {
+                            value = _pageController.page! - index;
+                            value = (1 - (value.abs() * 0.3)).clamp(0.85, 1.0);
+                          } else {
+                            value = (index ==
+                                    (_selectedIndex == -1 ? 0 : _selectedIndex))
+                                ? 1.0
+                                : 0.85;
+                          }
+                          return Center(
+                            child: SizedBox(
+                              height: Curves.easeOut.transform(value) *
+                                  200, // Revert height calculation
+                              width: Curves.easeOut.transform(value) *
+                                  350, // Revert width calculation
+                              child: child,
+                            ),
+                          );
+                        },
                         child: Padding(
-                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                           child: MapEventCard(activity: _eventToActivity(event)),
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child:
+                              MapEventCard(activity: _eventToActivity(event)),
                         ),
                       );
                     },
                   );
                 }
-                
+
                 return const SizedBox.shrink();
               },
             ),
@@ -719,7 +762,8 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
     );
   }
 
-  Widget _buildBooleanChip(String label, bool isSelected, Function(bool) onChanged) {
+  Widget _buildBooleanChip(
+      String label, bool isSelected, Function(bool) onChanged) {
     return GestureDetector(
       onTap: () => onChanged(!isSelected),
       child: Container(
@@ -767,7 +811,9 @@ class _MapActiveFilters extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 4)
+                  ],
                 ),
                 alignment: Alignment.center,
                 child: Row(
@@ -791,13 +837,16 @@ class _MapActiveFilters extends ConsumerWidget {
 
           final chip = chips[index - 1];
           return GestureDetector(
-            onTap: () => filterNotifier.removeFilterByType(chip.type, value: chip.value),
+            onTap: () =>
+                filterNotifier.removeFilterByType(chip.type, value: chip.value),
             child: Container(
               padding: const EdgeInsets.only(left: 10, right: 4),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 4)
+                ],
               ),
               alignment: Alignment.center,
               child: Row(
@@ -818,7 +867,8 @@ class _MapActiveFilters extends ConsumerWidget {
                       color: const Color(0xFFFF601F).withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, size: 10, color: Color(0xFFFF601F)),
+                    child: const Icon(Icons.close,
+                        size: 10, color: Color(0xFFFF601F)),
                   ),
                 ],
               ),
@@ -830,7 +880,8 @@ class _MapActiveFilters extends ConsumerWidget {
   }
 
   String _formatLabel(ActiveFilterChip chip) {
-    if (chip.type == FilterChipType.thematique || chip.type == FilterChipType.category) {
+    if (chip.type == FilterChipType.thematique ||
+        chip.type == FilterChipType.category) {
       final words = chip.label.split('-').map((word) {
         if (word.isEmpty) return word;
         return word[0].toUpperCase() + word.substring(1);

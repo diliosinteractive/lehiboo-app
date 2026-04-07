@@ -18,6 +18,7 @@ import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/profile/presentation/screens/profile_edit_screen.dart';
 import '../features/profile/presentation/screens/settings_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
+import '../features/auth/presentation/screens/auth_bootstrap_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
 import '../features/auth/presentation/screens/register_type_screen.dart';
 import '../features/auth/presentation/screens/customer_register_screen.dart';
@@ -53,78 +54,103 @@ import '../features/trip_plans/presentation/screens/trip_plan_edit_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
-  
+
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/bootstrap',
     redirect: (context, state) async {
-       final prefs = await SharedPreferences.getInstance();
-       final onboardingCompleted = prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
-       final isAuthenticated = authState.isAuthenticated;
-       final isPendingOtp = authState.status == AuthStatus.pendingVerification || 
-                           authState.status == AuthStatus.pendingLoginOtp;
-       
-       debugPrint('🔀 Router redirect: ${state.matchedLocation}');
-       debugPrint('🔀 AuthStatus: ${authState.status}');
-       debugPrint('🔀 isPendingOtp: $isPendingOtp');
-       
-       // Auth-related routes
-       final isLoggingIn = state.matchedLocation == '/login';
-       final isRegistering = state.matchedLocation == '/register' ||
-                            state.matchedLocation == '/register/customer' ||
-                            state.matchedLocation == '/register/business' ||
-                            state.matchedLocation == '/register-simple';
-       final isResettingPassword = state.matchedLocation == '/forgot-password';
-       final isVerifyingOtp = state.matchedLocation == '/verify-otp';
-       final isOnboarding = state.matchedLocation == '/onboarding';
-       final isAuthRoute = isLoggingIn || isRegistering || isResettingPassword || isVerifyingOtp;
-       
-       // 1. If onboarding not completed, go to onboarding
-       if (!onboardingCompleted && !isOnboarding) {
-         debugPrint('🔀 Redirecting to /onboarding');
-         return '/onboarding';
-       }
-       
-       // 2. If onboarding completed but user on onboarding page, go to login
-       if (onboardingCompleted && isOnboarding) {
-         debugPrint('🔀 Redirecting to /login (from onboarding)');
-         return '/login';
-       }
-       
-       // 3. If pending OTP verification
-       if (isPendingOtp) {
-         // Allow navigation to other auth routes (back to register, login, etc)
-         if (isAuthRoute) {
-           debugPrint('🔀 Pending OTP - Allowing auth route: ${state.matchedLocation}');
-           return null; 
-         }
-         
-         debugPrint('🔀 Pending OTP - FORCING redirect to /verify-otp');
-         return '/verify-otp'; // Force redirect to OTP screen for non-auth routes
-       }
-       
-       // 4. If not authenticated and not on auth route, redirect to login
-       if (!isAuthenticated && !isAuthRoute && !isOnboarding) {
-         debugPrint('🔀 Redirecting to /login (not authenticated)');
-         return '/login';
-       }
-       
-       // 5. If authenticated and on auth route, redirect to home
-       if (isAuthenticated && isAuthRoute) {
-         debugPrint('🔀 Redirecting to / (authenticated)');
-         return '/';
-       }
-       
-       debugPrint('🔀 No redirect');
-       return null;
+      final prefs = await SharedPreferences.getInstance();
+      final onboardingCompleted =
+          prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
+      final isAuthenticated = authState.isAuthenticated;
+      final isPendingOtp = authState.status == AuthStatus.pendingVerification ||
+          authState.status == AuthStatus.pendingLoginOtp;
+
+      debugPrint('🔀 Router redirect: ${state.matchedLocation}');
+      debugPrint('🔀 AuthStatus: ${authState.status}');
+      debugPrint('🔀 isPendingOtp: $isPendingOtp');
+
+      // Auth-related routes
+      final isLoggingIn = state.matchedLocation == '/login';
+      final isRegistering = state.matchedLocation == '/register' ||
+          state.matchedLocation == '/register/customer' ||
+          state.matchedLocation == '/register/business' ||
+          state.matchedLocation == '/register-simple';
+      final isResettingPassword = state.matchedLocation == '/forgot-password';
+      final isVerifyingOtp = state.matchedLocation == '/verify-otp';
+      final isOnboarding = state.matchedLocation == '/onboarding';
+      final isBootstrap = state.matchedLocation == '/bootstrap';
+      final isAuthRoute =
+          isLoggingIn || isRegistering || isResettingPassword || isVerifyingOtp;
+
+      // Wait for the async auth check to finish before choosing the first real screen.
+      if (authState.status == AuthStatus.initial) {
+        if (!isBootstrap) {
+          debugPrint('🔀 Waiting auth bootstrap');
+          return '/bootstrap';
+        }
+        return null;
+      }
+
+      if (isBootstrap) {
+        if (!onboardingCompleted) return '/onboarding';
+        if (isPendingOtp) return '/verify-otp';
+        return isAuthenticated ? '/' : '/login';
+      }
+
+      // 1. If onboarding not completed, go to onboarding
+      if (!onboardingCompleted && !isOnboarding) {
+        debugPrint('🔀 Redirecting to /onboarding');
+        return '/onboarding';
+      }
+
+      // 2. If onboarding completed but user on onboarding page, go to login
+      if (onboardingCompleted && isOnboarding) {
+        debugPrint('🔀 Redirecting to /login (from onboarding)');
+        return '/login';
+      }
+
+      // 3. If pending OTP verification
+      if (isPendingOtp) {
+        // Allow navigation to other auth routes (back to register, login, etc)
+        if (isAuthRoute) {
+          debugPrint(
+              '🔀 Pending OTP - Allowing auth route: ${state.matchedLocation}');
+          return null;
+        }
+
+        debugPrint('🔀 Pending OTP - FORCING redirect to /verify-otp');
+        return '/verify-otp'; // Force redirect to OTP screen for non-auth routes
+      }
+
+      // 4. If not authenticated and not on auth route, redirect to login
+      if (!isAuthenticated && !isAuthRoute && !isOnboarding) {
+        debugPrint('🔀 Redirecting to /login (not authenticated)');
+        return '/login';
+      }
+
+      // 5. If authenticated and on auth route, redirect to home
+      if (isAuthenticated && isAuthRoute) {
+        debugPrint('🔀 Redirecting to / (authenticated)');
+        return '/';
+      }
+
+      debugPrint('🔀 No redirect');
+      return null;
     },
     routes: [
+      GoRoute(
+        path: '/bootstrap',
+        name: 'bootstrap',
+        builder: (context, state) => const AuthBootstrapScreen(),
+      ),
+
       // Onboarding
       GoRoute(
         path: '/onboarding',
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
-      
+
       // Main shell route with bottom navigation
       ShellRoute(
         builder: (context, state, child) {
@@ -148,7 +174,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               );
             },
           ),
-
           GoRoute(
             path: '/profile',
             name: 'profile',
@@ -205,7 +230,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Get from extra if available, otherwise from authState (for redirect case)
           final userId = extra?['userId'] ?? authState.pendingUserId ?? '';
           final email = extra?['email'] ?? authState.pendingEmail ?? '';
-          final type = extra?['type'] ?? (authState.status == AuthStatus.pendingLoginOtp ? 'login' : 'register');
+          final type = extra?['type'] ??
+              (authState.status == AuthStatus.pendingLoginOtp
+                  ? 'login'
+                  : 'register');
           return OtpVerificationScreen(
             userId: userId,
             email: email,
@@ -278,10 +306,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final categorySlug = state.uri.queryParameters['categorySlug'];
           final city = state.uri.queryParameters['city'];
+          final dateFilter = state.uri.queryParameters['date'];
           final openFilter = state.uri.queryParameters['openFilter'] == 'true';
           return SearchScreen(
             categorySlug: categorySlug,
             city: city,
+            dateFilter: dateFilter,
             autoOpenFilter: openFilter,
           );
         },
@@ -489,7 +519,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
     ],
-
     errorBuilder: (context, state) => const ErrorScreen(),
   );
 });

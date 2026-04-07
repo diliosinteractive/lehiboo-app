@@ -28,10 +28,12 @@ class PartnerConfig {
   static PartnerConfig mock() => const PartnerConfig(
         id: 'fnac_1',
         name: 'FNAC Spectacles',
-        logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/FNAC_Logo.svg/320px-FNAC_Logo.svg.png',
+        logoUrl:
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/FNAC_Logo.svg/320px-FNAC_Logo.svg.png',
         tagline: 'La sélection FNAC',
         brandColor: Color(0xFFE1A100), // FNAC yellow
-        backgroundImageUrl: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800',
+        backgroundImageUrl:
+            'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800',
       );
 }
 
@@ -58,12 +60,12 @@ class PartnerHighlight extends ConsumerWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            config.brandColor.withValues(alpha:0.15),
-            config.brandColor.withValues(alpha:0.05),
+            config.brandColor.withValues(alpha: 0.15),
+            config.brandColor.withValues(alpha: 0.05),
           ],
         ),
         border: Border.all(
-          color: config.brandColor.withValues(alpha:0.2),
+          color: config.brandColor.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -87,7 +89,8 @@ class PartnerHighlight extends ConsumerWidget {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: partnerEvents.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
                   itemBuilder: (context, index) {
                     final activity = partnerEvents[index];
                     return SizedBox(
@@ -115,13 +118,15 @@ class PartnerHighlight extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Center(
               child: TextButton(
-                onPressed: () => context.push('/events?partner=${config.id}'),
+                onPressed: () => context.push('/search'),
                 style: TextButton.styleFrom(
                   foregroundColor: config.brandColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
-                    side: BorderSide(color: config.brandColor.withValues(alpha:0.3)),
+                    side: BorderSide(
+                        color: config.brandColor.withValues(alpha: 0.3)),
                   ),
                 ),
                 child: Row(
@@ -135,7 +140,8 @@ class PartnerHighlight extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Icon(Icons.arrow_forward, size: 16, color: config.brandColor),
+                    Icon(Icons.arrow_forward,
+                        size: 16, color: config.brandColor),
                   ],
                 ),
               ),
@@ -161,7 +167,7 @@ class PartnerHighlight extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha:0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -215,7 +221,7 @@ class PartnerHighlight extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: config.brandColor.withValues(alpha:0.15),
+              color: config.brandColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -264,7 +270,7 @@ class _PartnerEventCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha:0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -277,7 +283,8 @@ class _PartnerEventCard extends StatelessWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(14)),
                   child: SizedBox(
                     height: 130,
                     width: double.infinity,
@@ -288,7 +295,8 @@ class _PartnerEventCard extends StatelessWidget {
                             placeholder: (context, url) => Container(
                               color: Colors.grey[200],
                             ),
-                            errorWidget: (context, url, error) => _buildFallback(),
+                            errorWidget: (context, url, error) =>
+                                _buildFallback(),
                           )
                         : _buildFallback(),
                   ),
@@ -303,7 +311,8 @@ class _PartnerEventCard extends StatelessWidget {
                     height: 3,
                     decoration: BoxDecoration(
                       color: brandColor,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(14)),
                     ),
                   ),
                 ),
@@ -335,7 +344,8 @@ class _PartnerEventCard extends StatelessWidget {
                     // Location
                     Row(
                       children: [
-                        Icon(Icons.location_on_outlined, size: 12, color: Colors.grey[500]),
+                        Icon(Icons.location_on_outlined,
+                            size: 12, color: Colors.grey[500]),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -360,7 +370,9 @@ class _PartnerEventCard extends StatelessWidget {
                             ? 'Gratuit'
                             : 'Dès ${activity.priceMin!.toStringAsFixed(0)}€',
                         style: TextStyle(
-                          color: activity.priceMin == 0 ? Colors.green[700] : brandColor,
+                          color: activity.priceMin == 0
+                              ? Colors.green[700]
+                              : brandColor,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -377,7 +389,7 @@ class _PartnerEventCard extends StatelessWidget {
 
   Widget _buildFallback() {
     return Container(
-      color: brandColor.withValues(alpha:0.2),
+      color: brandColor.withValues(alpha: 0.2),
       child: Center(
         child: Icon(
           Icons.event,

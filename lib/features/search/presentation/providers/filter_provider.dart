@@ -11,7 +11,8 @@ import 'package:lehiboo/features/home/presentation/providers/home_providers.dart
 const _filterPersistenceKey = 'event_filter_state';
 
 /// Main filter state provider
-final eventFilterProvider = StateNotifierProvider<EventFilterNotifier, EventFilter>((ref) {
+final eventFilterProvider =
+    StateNotifierProvider<EventFilterNotifier, EventFilter>((ref) {
   return EventFilterNotifier();
 });
 
@@ -67,8 +68,10 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     return EventFilter(
       citySlug: json['citySlug'] as String?,
       cityName: json['cityName'] as String?,
-      thematiquesSlugs: (json['thematiquesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
-      categoriesSlugs: (json['categoriesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
+      thematiquesSlugs:
+          (json['thematiquesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
+      categoriesSlugs:
+          (json['categoriesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
       onlyFree: json['onlyFree'] as bool? ?? false,
       priceMin: (json['priceMin'] as num?)?.toDouble() ?? 0,
       priceMax: (json['priceMax'] as num?)?.toDouble() ?? 1000,
@@ -116,7 +119,8 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
         // Find next Saturday
         int daysUntilSaturday = (DateTime.saturday - now.weekday) % 7;
         if (daysUntilSaturday == 0 && now.hour >= 18) daysUntilSaturday = 7;
-        start = DateTime(now.year, now.month, now.day).add(Duration(days: daysUntilSaturday));
+        start = DateTime(now.year, now.month, now.day)
+            .add(Duration(days: daysUntilSaturday));
         end = start.add(const Duration(days: 2));
         break;
       case DateFilterType.thisMonth:
@@ -223,6 +227,15 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       southWestLng: swLng,
       latitude: null, // Clear point search if using bounds
       longitude: null,
+    );
+  }
+
+  void clearBoundingBox() {
+    state = state.copyWith(
+      northEastLat: null,
+      northEastLng: null,
+      southWestLat: null,
+      southWestLng: null,
     );
   }
 
@@ -453,34 +466,26 @@ class PaginatedActivities {
 }
 
 /// Notifier for filtered events results with pagination support
-final filteredEventsProvider = AsyncNotifierProvider<FilteredEventsNotifier, PaginatedActivities>(() {
+final filteredEventsProvider =
+    AsyncNotifierProvider<FilteredEventsNotifier, PaginatedActivities>(() {
   return FilteredEventsNotifier();
 });
 
 class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
-  // Keep track of the *current* filter hash/signature to detect changes
-  // We can't rely just on ref.watch in build() because we manipulate state
-  // differently for page changes vs filter changes.
-  EventFilter? _lastFilter;
-
   @override
   Future<PaginatedActivities> build() async {
     final filter = ref.watch(eventFilterProvider);
     final eventRepository = ref.watch(eventRepositoryProvider);
-    
-    // Check if keys changed (excluding page)
-    final isNewSearch = _isDifferentSearch(filter);
-    _lastFilter = filter;
 
     // If it's a new search, or if we are verifying valid initial build
-    // But wait, if page > 1, it means we triggered loadMore. 
-    // BUT ref.watch(filter) will trigger rebuild every time page increments in filter. 
+    // But wait, if page > 1, it means we triggered loadMore.
+    // BUT ref.watch(filter) will trigger rebuild every time page increments in filter.
     // So we need to handle that.
-    
+
     // Actually, `EventFilterNotifier` updates state.page which triggers this build.
     // If page == 1, it's a fresh search.
     // If page > 1, it's a load more.
-    
+
     // HOWEVER, we need to access the *previous* state data to append if page > 1.
     final previousActivities = state.valueOrNull?.activities ?? [];
 
@@ -489,28 +494,38 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
       String? dateFromStr;
       String? dateToStr;
       if (filter.startDate != null) {
-        dateFromStr = '${filter.startDate!.year}-${filter.startDate!.month.toString().padLeft(2, '0')}-${filter.startDate!.day.toString().padLeft(2, '0')}';
+        dateFromStr =
+            '${filter.startDate!.year}-${filter.startDate!.month.toString().padLeft(2, '0')}-${filter.startDate!.day.toString().padLeft(2, '0')}';
       }
       if (filter.endDate != null) {
-        dateToStr = '${filter.endDate!.year}-${filter.endDate!.month.toString().padLeft(2, '0')}-${filter.endDate!.day.toString().padLeft(2, '0')}';
+        dateToStr =
+            '${filter.endDate!.year}-${filter.endDate!.month.toString().padLeft(2, '0')}-${filter.endDate!.day.toString().padLeft(2, '0')}';
       }
 
       final result = await eventRepository.getEvents(
         search: filter.searchQuery.isNotEmpty ? filter.searchQuery : null,
-        thematique: filter.thematiquesSlugs.isNotEmpty ? filter.thematiquesSlugs.first : null,
-        categorySlug: filter.categoriesSlugs.isNotEmpty ? filter.categoriesSlugs.first : null,
+        thematique: filter.thematiquesSlugs.isNotEmpty
+            ? filter.thematiquesSlugs.first
+            : null,
+        categorySlug: filter.categoriesSlugs.isNotEmpty
+            ? filter.categoriesSlugs.first
+            : null,
         location: filter.citySlug,
         dateFrom: dateFromStr,
         dateTo: dateToStr,
         lat: filter.latitude,
         lng: filter.longitude,
         radius: filter.latitude != null ? filter.radiusKm.toInt() : null,
+        northEastLat: filter.northEastLat,
+        northEastLng: filter.northEastLng,
+        southWestLat: filter.southWestLat,
+        southWestLng: filter.southWestLng,
         perPage: filter.perPage,
         page: filter.page,
       );
 
       final newActivities = EventToActivityMapper.toActivities(result.events);
-      final hasMore = result.hasNext; 
+      final hasMore = result.hasNext;
 
       if (filter.page == 1) {
         // New search: Replace everything
@@ -527,32 +542,15 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
       }
     } catch (e) {
       if (filter.page > 1) {
-         // If error during load more, keep existing list but maybe show error?
-         // For now return existing valid state but stop loading
-         return PaginatedActivities(
-           activities: previousActivities,
-           hasMore: false, // Prevent infinite error loops
-         );
+        // If error during load more, keep existing list but maybe show error?
+        // For now return existing valid state but stop loading
+        return PaginatedActivities(
+          activities: previousActivities,
+          hasMore: false, // Prevent infinite error loops
+        );
       }
       rethrow;
     }
-  }
-
-  bool _isDifferentSearch(EventFilter current) {
-    if (_lastFilter == null) return true;
-    final last = _lastFilter!;
-    // If page changed but nothing else, it is NOT a "new search" in the sense of reset
-    if (current.page != last.page) return false;
-    
-    // Otherwise check for equality of everything else (simplified check works if copyWith works well)
-    // Actually, if reference changed and it's not page, it's likely a filter change.
-    // But since `EventFilter` is immutable and we use Freezed-like pattern manually,
-    // simplistic check is:
-    return current.searchQuery != last.searchQuery ||
-           current.citySlug != last.citySlug ||
-           current.thematiquesSlugs.toString() != last.thematiquesSlugs.toString(); 
-           // ... others. 
-           // In practice, since build() is re-triggered, we mainly care about `current.page`
   }
 }
 

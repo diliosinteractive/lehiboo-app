@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,7 +15,8 @@ class PartnerDetailScreen extends ConsumerStatefulWidget {
   const PartnerDetailScreen({super.key, required this.partnerId});
 
   @override
-  ConsumerState<PartnerDetailScreen> createState() => _PartnerDetailScreenState();
+  ConsumerState<PartnerDetailScreen> createState() =>
+      _PartnerDetailScreenState();
 }
 
 class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
@@ -25,12 +25,13 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final id = int.tryParse(widget.partnerId);
-    if (id == null) {
-      return const Scaffold(body: Center(child: Text('ID Partenaire invalide')));
+    if (widget.partnerId.trim().isEmpty) {
+      return const Scaffold(
+          body: Center(child: Text('ID Partenaire invalide')));
     }
 
-    final organizerAsync = ref.watch(organizerProfileProvider(id));
+    final organizerAsync =
+        ref.watch(organizerProfileProvider(widget.partnerId));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -74,7 +75,8 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
     );
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref, EventOrganizerDto organizer) {
+  Widget _buildContent(
+      BuildContext context, WidgetRef ref, EventOrganizerDto organizer) {
     return CustomScrollView(
       slivers: [
         _buildHeader(context, organizer),
@@ -86,7 +88,8 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
               children: [
                 _buildSocialStats(organizer),
                 const SizedBox(height: 20),
-                if (organizer.description != null && organizer.description!.isNotEmpty) ...[
+                if (organizer.description != null &&
+                    organizer.description!.isNotEmpty) ...[
                   _buildExpandableDescription(organizer.description!),
                   const SizedBox(height: 24),
                 ],
@@ -96,14 +99,17 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                 const SizedBox(height: 24),
                 const Text(
                   'Événements à venir',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E)),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A2E)),
                 ),
                 const SizedBox(height: 16),
               ],
             ),
           ),
         ),
-        _buildEventsList(ref, organizer.id),
+        _buildEventsList(ref, widget.partnerId),
         const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
       ],
     );
@@ -124,7 +130,8 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
         ),
         if (isLongText)
           GestureDetector(
-            onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+            onTap: () => setState(
+                () => _isDescriptionExpanded = !_isDescriptionExpanded),
             child: Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
@@ -162,7 +169,8 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
               CachedNetworkImage(
                 imageUrl: organizer.coverImage!,
                 fit: BoxFit.cover,
-                errorWidget: (context, url, error) => Container(color: Colors.grey[200]),
+                errorWidget: (context, url, error) =>
+                    Container(color: Colors.grey[200]),
               )
             else
               Container(
@@ -202,7 +210,9 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8),
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 8),
                       ],
                     ),
                     child: ClipOval(
@@ -210,12 +220,18 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                           ? CachedNetworkImage(
                               imageUrl: organizer.logo!,
                               fit: BoxFit.cover,
-                              errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.person, color: Colors.grey),
                             )
                           : Center(
                               child: Text(
-                                organizer.name.isNotEmpty ? organizer.name[0].toUpperCase() : '?',
-                                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFFFF601F)),
+                                organizer.name.isNotEmpty
+                                    ? organizer.name[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFFF601F)),
                               ),
                             ),
                     ),
@@ -241,14 +257,16 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                             ),
                             if (organizer.verified) ...[
                               const SizedBox(width: 8),
-                              const Icon(Icons.verified, color: Colors.blue, size: 20),
+                              const Icon(Icons.verified,
+                                  color: Colors.blue, size: 20),
                             ],
                           ],
                         ),
                         if (organizer.memberSince != null)
                           Text(
                             'Membre depuis ${_formatDate(organizer.memberSince!)}',
-                            style: const TextStyle(color: Colors.white70, fontSize: 13),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 13),
                           ),
                       ],
                     ),
@@ -276,11 +294,13 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.local_activity, size: 16, color: Color(0xFFFF601F)),
+                const Icon(Icons.local_activity,
+                    size: 16, color: Color(0xFFFF601F)),
                 const SizedBox(width: 8),
                 Text(
                   '${organizer.stats!.totalEvents} événements',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF601F)),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Color(0xFFFF601F)),
                 ),
               ],
             ),
@@ -313,15 +333,19 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
   }
 
   Widget _buildContactInfo(BuildContext context, EventOrganizerDto organizer) {
-    final hasAddress = organizer.location?.city != null || organizer.location?.address != null;
-    
+    final hasAddress =
+        organizer.location?.city != null || organizer.location?.address != null;
+
     return Column(
       children: [
         if (hasAddress) ...[
           ListTile(
-            leading: const Icon(Icons.location_on_outlined, color: Color(0xFFFF601F)),
-            title: Text(organizer.location?.city ?? organizer.location?.address ?? ''),
-            subtitle: organizer.location?.city != null && organizer.location?.address != null 
+            leading: const Icon(Icons.location_on_outlined,
+                color: Color(0xFFFF601F)),
+            title: Text(
+                organizer.location?.city ?? organizer.location?.address ?? ''),
+            subtitle: organizer.location?.city != null &&
+                    organizer.location?.address != null
                 ? Text(organizer.location!.address!)
                 : null,
             contentPadding: EdgeInsets.zero,
@@ -363,7 +387,8 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
           ),
         if (organizer.contact?.website != null)
           ListTile(
-            leading: const Icon(Icons.language_outlined, color: Color(0xFFFF601F)),
+            leading:
+                const Icon(Icons.language_outlined, color: Color(0xFFFF601F)),
             title: const Text('Visiter le site web'),
             contentPadding: EdgeInsets.zero,
             onTap: () => _launchUrl(organizer.contact!.website),
@@ -375,25 +400,29 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
   Widget _buildPracticalInfo(EventOrganizerDto organizer) {
     if (organizer.practicalInfo == null) return const SizedBox();
     final info = organizer.practicalInfo!;
-    
+
     final items = <Widget>[];
 
     if (info.pmr) {
       items.add(_buildInfoChip(Icons.accessible, 'Accès PMR', info.pmrInfos));
     }
     if (info.restauration) {
-      items.add(_buildInfoChip(Icons.restaurant, 'Restauration', info.restaurationInfos));
+      items.add(_buildInfoChip(
+          Icons.restaurant, 'Restauration', info.restaurationInfos));
     }
     if (info.boisson) {
       items.add(_buildInfoChip(Icons.local_bar, 'Boissons', info.boissonInfos));
     }
     if (info.stationnement != null) {
-      items.add(_buildInfoChip(Icons.local_parking, 'Stationnement', info.stationnement));
+      items.add(_buildInfoChip(
+          Icons.local_parking, 'Stationnement', info.stationnement));
     }
     if (info.eventType != null) {
       items.add(_buildInfoChip(
         info.eventType == 'interieur' ? Icons.home : Icons.park,
-        info.eventType == 'interieur' ? 'Intérieur' : (info.eventType == 'exterieur' ? 'Extérieur' : 'Mixte'),
+        info.eventType == 'interieur'
+            ? 'Intérieur'
+            : (info.eventType == 'exterieur' ? 'Extérieur' : 'Mixte'),
         null,
       ));
     }
@@ -405,7 +434,10 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
       children: [
         const Text(
           'Infos pratiques',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E)),
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1A2E)),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -436,22 +468,25 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
               const SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A1A2E)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Color(0xFF1A1A2E)),
               ),
             ],
           ),
           if (subLabel != null && subLabel.isNotEmpty)
-             Text(
-               subLabel,
-               style: const TextStyle(fontSize: 12, color: Colors.grey),
-             ),
+            Text(
+              subLabel,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildEventsList(WidgetRef ref, int organizerId) {
-    final eventsAsync = ref.watch(organizerEventsProvider(organizerId));
+  Widget _buildEventsList(WidgetRef ref, String organizerIdentifier) {
+    final eventsAsync = ref.watch(organizerEventsProvider(organizerIdentifier));
 
     return eventsAsync.when(
       data: (response) {
@@ -460,7 +495,9 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
           return const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.all(20),
-              child: Text('Aucun événement à venir', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+              child: Text('Aucun événement à venir',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey)),
             ),
           );
         }
@@ -479,7 +516,8 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: event.coverImage != null && event.coverImage!.isNotEmpty
+                          child: event.coverImage != null &&
+                                  event.coverImage!.isNotEmpty
                               ? CachedNetworkImage(
                                   imageUrl: event.coverImage!,
                                   width: 100,
@@ -493,7 +531,9 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                                       child: SizedBox(
                                         width: 20,
                                         height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF601F)),
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Color(0xFFFF601F)),
                                       ),
                                     ),
                                   ),
@@ -501,7 +541,9 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                                     width: 100,
                                     height: 70,
                                     color: Colors.grey[200],
-                                    child: const Icon(Icons.image_not_supported_outlined, color: Colors.grey),
+                                    child: const Icon(
+                                        Icons.image_not_supported_outlined,
+                                        color: Colors.grey),
                                   ),
                                 )
                               : Container(
@@ -511,7 +553,8 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                                     color: Colors.grey[100],
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Icon(Icons.event, color: Colors.grey, size: 32),
+                                  child: const Icon(Icons.event,
+                                      color: Colors.grey, size: 32),
                                 ),
                         ),
                         const SizedBox(width: 12),
@@ -521,20 +564,24 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                             children: [
                               Text(
                                 event.title,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 4),
-                                  Text(
-                                    // Simplified date display
-                                    DateFormat('dd MMM yyyy', 'fr').format(event.startDate),
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                  ),
+                              Text(
+                                // Simplified date display
+                                DateFormat('dd MMM yyyy', 'fr')
+                                    .format(event.startDate),
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey),
+                              ),
                               const SizedBox(height: 4),
-                               Text(
+                              Text(
                                 event.city,
-                                style: const TextStyle(fontSize: 12, color: Color(0xFFFF601F)),
+                                style: const TextStyle(
+                                    fontSize: 12, color: Color(0xFFFF601F)),
                               ),
                             ],
                           ),
@@ -549,25 +596,38 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
           ),
         );
       },
-      loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
+      loading: () => const SliverToBoxAdapter(
+          child: Center(child: CircularProgressIndicator())),
       error: (e, s) => SliverToBoxAdapter(child: Text('Erreur: $e')),
     );
   }
 
   IconData _getSocialIcon(String type) {
     switch (type.toLowerCase()) {
-      case 'facebook': return FontAwesomeIcons.facebook;
-      case 'instagram': return FontAwesomeIcons.instagram;
-      case 'twitter': return FontAwesomeIcons.twitter;
-      case 'x': return FontAwesomeIcons.xTwitter;
-      case 'linkedin': return FontAwesomeIcons.linkedin;
-      case 'youtube': return FontAwesomeIcons.youtube;
-      case 'tiktok': return FontAwesomeIcons.tiktok;
-      case 'whatsapp': return FontAwesomeIcons.whatsapp;
-      case 'telegram': return FontAwesomeIcons.telegram;
-      case 'snapchat': return FontAwesomeIcons.snapchat;
-      case 'pinterest': return FontAwesomeIcons.pinterest;
-      default: return FontAwesomeIcons.link;
+      case 'facebook':
+        return FontAwesomeIcons.facebook;
+      case 'instagram':
+        return FontAwesomeIcons.instagram;
+      case 'twitter':
+        return FontAwesomeIcons.twitter;
+      case 'x':
+        return FontAwesomeIcons.xTwitter;
+      case 'linkedin':
+        return FontAwesomeIcons.linkedin;
+      case 'youtube':
+        return FontAwesomeIcons.youtube;
+      case 'tiktok':
+        return FontAwesomeIcons.tiktok;
+      case 'whatsapp':
+        return FontAwesomeIcons.whatsapp;
+      case 'telegram':
+        return FontAwesomeIcons.telegram;
+      case 'snapchat':
+        return FontAwesomeIcons.snapchat;
+      case 'pinterest':
+        return FontAwesomeIcons.pinterest;
+      default:
+        return FontAwesomeIcons.link;
     }
   }
 
@@ -581,28 +641,29 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
 
   Future<void> _openMaps(OrganizerLocationDto? location) async {
     if (location == null) return;
-    
+
     // Build address string for maps
     final parts = <String>[];
     if (location.address != null) parts.add(location.address!);
     if (location.postcode != null) parts.add(location.postcode!);
     if (location.city != null) parts.add(location.city!);
     if (location.country != null) parts.add(location.country!);
-    
+
     if (parts.isEmpty) return;
-    
+
     final address = parts.join(', ');
     final encodedAddress = Uri.encodeComponent(address);
-    
+
     // Use Google Maps URL - opens in Google Maps app if installed, otherwise browser
-    final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$encodedAddress';
+    final googleMapsUrl =
+        'https://www.google.com/maps/search/?api=1&query=$encodedAddress';
     final googleUri = Uri.parse(googleMapsUrl);
-    
+
     if (await canLaunchUrl(googleUri)) {
       await launchUrl(googleUri, mode: LaunchMode.externalApplication);
     }
   }
-  
+
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);

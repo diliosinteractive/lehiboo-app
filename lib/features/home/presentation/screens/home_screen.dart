@@ -137,7 +137,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     emptyMessage: 'Aucune activité pour demain',
                     viewAllPath: '/search?date=tomorrow',
                   ),
-                  _buildSectionTitle('Les recommandations', '/events'),
+                  _buildSectionTitle('Les recommandations', '/recommended'),
                   const SizedBox(height: 16),
                   activitiesAsyncValue.when(
                     data: (activities) {
@@ -171,7 +171,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     loading: () => _buildCarouselSkeleton(),
                     error: (err, stack) => Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text('Erreur: $err', style: const TextStyle(color: Colors.red)),
+                      child: Text('Erreur: $err',
+                          style: const TextStyle(color: Colors.red)),
                     ),
                   ),
                 ],
@@ -351,7 +352,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF2D3748)),
+                icon: const Icon(Icons.arrow_forward_ios,
+                    size: 16, color: Color(0xFF2D3748)),
                 onPressed: () => context.push(viewAllPath),
               )
             ],
@@ -378,7 +380,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       activity: activity,
                       isCompact: true,
                       showTimeBadge: true,
-                      heroTagPrefix: baseTitle.toLowerCase().contains('demain') ? 'tomorrow' : 'today',
+                      heroTagPrefix: baseTitle.toLowerCase().contains('demain')
+                          ? 'tomorrow'
+                          : 'today',
                     ),
                   );
                 },
@@ -591,5 +595,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-
 }

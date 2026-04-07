@@ -14,7 +14,8 @@ import 'package:lehiboo/features/home/presentation/providers/user_location_provi
 import 'event_card.dart';
 
 /// Provider pour l'historique de navigation des catégories
-final categoryHistoryProvider = StateNotifierProvider<CategoryHistoryNotifier, Map<String, int>>((ref) {
+final categoryHistoryProvider =
+    StateNotifierProvider<CategoryHistoryNotifier, Map<String, int>>((ref) {
   return CategoryHistoryNotifier();
 });
 
@@ -65,10 +66,12 @@ class CategoryHistoryNotifier extends StateNotifier<Map<String, int>> {
 }
 
 /// Provider pour les activités personnalisées avec scoring
-final personalizedActivitiesProvider = FutureProvider<List<ScoredActivity>>((ref) async {
+final personalizedActivitiesProvider =
+    FutureProvider<List<ScoredActivity>>((ref) async {
   final allActivities = await ref.watch(homeActivitiesProvider.future);
   final todayActivities = await ref.watch(homeTodayActivitiesProvider.future);
-  final tomorrowActivities = await ref.watch(homeTomorrowActivitiesProvider.future);
+  final tomorrowActivities =
+      await ref.watch(homeTomorrowActivitiesProvider.future);
 
   // Combine all activities
   final activities = <Activity>{
@@ -98,7 +101,8 @@ final personalizedActivitiesProvider = FutureProvider<List<ScoredActivity>>((ref
     // +2 points if within 10km (when location available)
     if (userLocation != null && activity.city != null) {
       // Simplified: just check if same city
-      if (activity.city!.name.toLowerCase() == userLocation.cityName?.toLowerCase()) {
+      if (activity.city!.name.toLowerCase() ==
+          userLocation.cityName?.toLowerCase()) {
         score += 2;
       }
     }
@@ -199,7 +203,7 @@ class PersonalizedSection extends ConsumerWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => context.push('/events'),
+                    onPressed: () => context.push('/search'),
                     child: const Text(
                       'Voir tout',
                       style: TextStyle(
@@ -227,7 +231,8 @@ class PersonalizedSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildPersonalizedGrid(List<ScoredActivity> activities, WidgetRef ref) {
+  Widget _buildPersonalizedGrid(
+      List<ScoredActivity> activities, WidgetRef ref) {
     // Take first 4 for the grid
     final gridActivities = activities.take(4).toList();
 
@@ -262,4 +267,3 @@ class PersonalizedSection extends ConsumerWidget {
     );
   }
 }
-
