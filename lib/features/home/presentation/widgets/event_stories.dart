@@ -113,7 +113,7 @@ class EventStories extends ConsumerWidget {
 
             // Stories list
             SizedBox(
-              height: 120,
+              height: 124,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -164,7 +164,7 @@ class EventStories extends ConsumerWidget {
           ),
           // Skeleton stories
           SizedBox(
-            height: 120,
+            height: 124,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),

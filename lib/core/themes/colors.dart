@@ -28,9 +28,18 @@ class HbColors {
   static const grey500 = Color(0xFF667085);          // Text secondary
   static const grey800 = Color(0xFF1D2939);          // Text primary
 
+  // Surfaces
+  static const surfaceLight = Color(0xFFF7F7F7);       // Fond gris très léger
+
+  // Brand variants
+  static const brandPrimaryDark = Color(0xFFE8491D);   // Orange foncé (gradients)
+
   // Borders
   static const borderLight = Color(0xFFE4E7EC);
   static const borderFocus = brandPrimary;
+
+  // Text
+  static const textDark = Color(0xFF222222);            // Noir quasi-pur
 
   // Text aliases
   static const textMuted = Color(0xFF667085);
