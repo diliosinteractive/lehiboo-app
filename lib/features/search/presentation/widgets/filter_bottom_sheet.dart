@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/themes/colors.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../providers/filter_provider.dart';
@@ -125,7 +126,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       builder: (context, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: Color(0xFFF7F7F7),
+            color: HbColors.surfaceLight,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -276,7 +277,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           loading: () => const Center(
                             child: Padding(
                               padding: EdgeInsets.all(20),
-                              child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                              child: CircularProgressIndicator(color: HbColors.brandPrimary),
                             ),
                           ),
                           error: (_, __) => const SizedBox(),
@@ -353,7 +354,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   Widget _buildHeader(EventFilterNotifier filterNotifier) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F7),
+        color: HbColors.surfaceLight,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -408,9 +409,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               style: GoogleFonts.montserrat(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
                 decoration: TextDecoration.underline,
-                decorationColor: const Color(0xFFFF601F),
+                decorationColor: HbColors.brandPrimary,
               ),
             ),
           ),
@@ -445,14 +446,14 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFFF601F), Color(0xFFE8491D)],
+                colors: [HbColors.brandPrimary, HbColors.brandPrimaryDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFF601F).withValues(alpha:0.3),
+                  color: HbColors.brandPrimary.withValues(alpha:0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -482,7 +483,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                     child: Text(
                       '$_activeFilterCount',
                       style: GoogleFonts.montserrat(
-                        color: const Color(0xFFFF601F),
+                        color: HbColors.brandPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -544,14 +545,14 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: const Color(0xFFFF601F)),
+        Icon(icon, size: 20, color: HbColors.brandPrimary),
         const SizedBox(width: 10),
         Text(
           title,
           style: GoogleFonts.montserrat(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF222222),
+            color: HbColors.textDark,
           ),
         ),
       ],
@@ -601,11 +602,11 @@ class _LocationFilterSection extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: hasLocation
-                  ? const Color(0xFFFF601F).withValues(alpha:0.08)
+                  ? HbColors.brandPrimary.withValues(alpha:0.08)
                   : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: hasLocation ? const Color(0xFFFF601F) : Colors.grey.shade200,
+                color: hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
                 width: hasLocation ? 2 : 1,
               ),
             ),
@@ -616,7 +617,7 @@ class _LocationFilterSection extends ConsumerWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     color: hasLocation
-                        ? const Color(0xFFFF601F).withValues(alpha:0.15)
+                        ? HbColors.brandPrimary.withValues(alpha:0.15)
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -625,13 +626,13 @@ class _LocationFilterSection extends ConsumerWidget {
                           padding: EdgeInsets.all(12),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFFFF601F),
+                            color: HbColors.brandPrimary,
                           ),
                         )
                       : Icon(
                           Icons.near_me,
                           color: hasLocation
-                              ? const Color(0xFFFF601F)
+                              ? HbColors.brandPrimary
                               : Colors.grey.shade600,
                           size: 24,
                         ),
@@ -688,17 +689,17 @@ class _LocationFilterSection extends ConsumerWidget {
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFFFF601F),
+                  color: HbColors.brandPrimary,
                 ),
               ),
             ],
           ),
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: const Color(0xFFFF601F),
+              activeTrackColor: HbColors.brandPrimary,
               inactiveTrackColor: Colors.grey.shade200,
-              thumbColor: const Color(0xFFFF601F),
-              overlayColor: const Color(0xFFFF601F).withValues(alpha:0.2),
+              thumbColor: HbColors.brandPrimary,
+              overlayColor: HbColors.brandPrimary.withValues(alpha:0.2),
               trackHeight: 4,
             ),
             child: Slider(
@@ -752,7 +753,7 @@ class _LocationFilterSection extends ConsumerWidget {
               padding: EdgeInsets.all(12),
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
           ),
@@ -896,12 +897,12 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: widget.selectedType == DateFilterType.custom
-                  ? const Color(0xFFFF601F).withValues(alpha:0.08)
+                  ? HbColors.brandPrimary.withValues(alpha:0.08)
                   : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: widget.selectedType == DateFilterType.custom
-                    ? const Color(0xFFFF601F)
+                    ? HbColors.brandPrimary
                     : Colors.grey.shade200,
                 width: widget.selectedType == DateFilterType.custom ? 2 : 1,
               ),
@@ -912,7 +913,7 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
                   Icons.date_range,
                   size: 20,
                   color: widget.selectedType == DateFilterType.custom
-                      ? const Color(0xFFFF601F)
+                      ? HbColors.brandPrimary
                       : Colors.grey.shade600,
                 ),
                 const SizedBox(width: 12),
@@ -927,7 +928,7 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
                           ? FontWeight.w600
                           : FontWeight.w500,
                       color: widget.selectedType == DateFilterType.custom
-                          ? const Color(0xFFFF601F)
+                          ? HbColors.brandPrimary
                           : Colors.grey.shade700,
                     ),
                   ),
@@ -1150,13 +1151,13 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                   margin: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFFFF601F)
+                        ? HbColors.brandPrimary
                         : isInRange
-                            ? const Color(0xFFFF601F).withValues(alpha:0.15)
+                            ? HbColors.brandPrimary.withValues(alpha:0.15)
                             : null,
                     shape: BoxShape.circle,
                     border: isToday && !isSelected
-                        ? Border.all(color: const Color(0xFFFF601F), width: 2)
+                        ? Border.all(color: HbColors.brandPrimary, width: 2)
                         : null,
                   ),
                   child: Center(
@@ -1170,7 +1171,7 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                             : isSelected
                                 ? Colors.white
                                 : isToday
-                                    ? const Color(0xFFFF601F)
+                                    ? HbColors.brandPrimary
                                     : Colors.black87,
                       ),
                     ),
@@ -1280,7 +1281,7 @@ class _PriceFilterSection extends StatelessWidget {
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFFFF601F),
+                  color: HbColors.brandPrimary,
                 ),
               ),
             ],
@@ -1288,10 +1289,10 @@ class _PriceFilterSection extends StatelessWidget {
           const SizedBox(height: 8),
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: const Color(0xFFFF601F),
+              activeTrackColor: HbColors.brandPrimary,
               inactiveTrackColor: Colors.grey.shade200,
-              thumbColor: const Color(0xFFFF601F),
-              overlayColor: const Color(0xFFFF601F).withValues(alpha:0.2),
+              thumbColor: HbColors.brandPrimary,
+              overlayColor: HbColors.brandPrimary.withValues(alpha:0.2),
               trackHeight: 4,
               rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 10),
             ),
@@ -1409,7 +1410,7 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
                 Text(
                   _isExpanded ? 'Voir moins' : 'Voir plus ($hiddenCount)',
                   style: GoogleFonts.montserrat(
-                    color: const Color(0xFFFF601F),
+                    color: HbColors.brandPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -1417,7 +1418,7 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
                 const SizedBox(width: 4),
                 Icon(
                   _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                  color: const Color(0xFFFF601F),
+                  color: HbColors.brandPrimary,
                   size: 20,
                 ),
               ],
@@ -1680,16 +1681,16 @@ class _SelectableChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
+          color: isSelected ? HbColors.brandPrimary : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+            color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFF601F).withValues(alpha:0.25),
+                    color: HbColors.brandPrimary.withValues(alpha:0.25),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1752,13 +1753,13 @@ class _ToggleRow extends StatelessWidget {
             height: 44,
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFFFF601F).withValues(alpha:0.1)
+                  ? HbColors.brandPrimary.withValues(alpha:0.1)
                   : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade600,
+              color: isSelected ? HbColors.brandPrimary : Colors.grey.shade600,
               size: 22,
             ),
           ),
@@ -1791,7 +1792,7 @@ class _ToggleRow extends StatelessWidget {
             width: 52,
             height: 32,
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+              color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
               borderRadius: BorderRadius.circular(16),
             ),
             child: AnimatedAlign(
