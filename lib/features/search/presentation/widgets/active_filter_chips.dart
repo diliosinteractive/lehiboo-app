@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/themes/colors.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 
@@ -47,7 +48,7 @@ class ActiveFilterChips extends ConsumerWidget {
                     'Tout effacer',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFFFF601F),
+                      color: HbColors.brandPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -88,10 +89,10 @@ class _ActiveChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(left: 12, right: 4, top: 6, bottom: 6),
       decoration: BoxDecoration(
-        color: _getChipColor(chip.type).withOpacity(0.1),
+        color: _getChipColor(chip.type).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _getChipColor(chip.type).withOpacity(0.3),
+          color: _getChipColor(chip.type).withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -118,7 +119,7 @@ class _ActiveChip extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: _getChipColor(chip.type).withOpacity(0.2),
+                color: _getChipColor(chip.type).withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -138,7 +139,7 @@ class _ActiveChip extends StatelessWidget {
       case FilterChipType.search:
         return const Color(0xFF6366F1);
       case FilterChipType.date:
-        return const Color(0xFFFF601F);
+        return HbColors.brandPrimary;
       case FilterChipType.price:
         return const Color(0xFF10B981);
       case FilterChipType.city:
@@ -284,10 +285,10 @@ class _CompactActiveChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(left: 10, right: 2, top: 2, bottom: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF601F).withOpacity(0.1),
+        color: HbColors.brandPrimary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFFFF601F).withOpacity(0.3),
+          color: HbColors.brandPrimary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -297,7 +298,7 @@ class _CompactActiveChip extends StatelessWidget {
             _formatLabel(chip),
             style: const TextStyle(
               fontSize: 13,
-              color: Color(0xFFFF601F),
+              color: HbColors.brandPrimary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -307,13 +308,13 @@ class _CompactActiveChip extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF601F).withOpacity(0.2),
+                color: HbColors.brandPrimary.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.close,
                 size: 12,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
           ),

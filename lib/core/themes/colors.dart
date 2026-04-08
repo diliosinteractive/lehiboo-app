@@ -30,6 +30,7 @@ class HbColors {
 
   // Surfaces
   static const surfaceLight = Color(0xFFF7F7F7);       // Fond gris très léger
+  static const surfaceInput = Color(0xFFF5F5F7);       // Fond champs de saisie
 
   // Brand variants
   static const brandPrimaryDark = Color(0xFFE8491D);   // Orange foncé (gradients)
@@ -40,6 +41,7 @@ class HbColors {
 
   // Text
   static const textDark = Color(0xFF222222);            // Noir quasi-pur
+  static const textTertiary = Color(0xFF666666);        // Gris moyen
 
   // Text aliases
   static const textMuted = Color(0xFF667085);
