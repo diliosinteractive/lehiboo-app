@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../core/constants/app_constants.dart';
+import '../core/providers/shared_preferences_provider.dart';
 import '../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 
@@ -54,11 +53,11 @@ import '../features/trip_plans/presentation/screens/trip_plan_edit_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
 
   return GoRouter(
     initialLocation: '/bootstrap',
-    redirect: (context, state) async {
-      final prefs = await SharedPreferences.getInstance();
+    redirect: (context, state) {
       final onboardingCompleted =
           prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
       final isAuthenticated = authState.isAuthenticated;
