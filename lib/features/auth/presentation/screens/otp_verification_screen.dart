@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/themes/colors.dart';
 import '../providers/auth_provider.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
@@ -195,7 +196,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF2D3748)),
+          icon: const Icon(Icons.arrow_back, color: HbColors.textSlate),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -223,13 +224,13 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF601F).withValues(alpha: 0.1),
+                    color: HbColors.brandPrimary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.mail_outline,
                     size: 40,
-                    color: Color(0xFFFF601F),
+                    color: HbColors.brandPrimary,
                   ),
                 ),
               ),
@@ -240,7 +241,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3748),
+                  color: HbColors.textSlate,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -259,7 +260,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF2D3748),
+                  color: HbColors.textSlate,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -284,7 +285,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
+                          color: HbColors.textSlate,
                         ),
                         decoration: InputDecoration(
                           counterText: '',
@@ -299,7 +300,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFFFF601F),
+                              color: HbColors.brandPrimary,
                               width: 2,
                             ),
                           ),
@@ -323,7 +324,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _verifyOtp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF601F),
+                    backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -379,13 +380,13 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Color(0xFFFF601F),
+                                color: HbColors.brandPrimary,
                               ),
                             )
                           : const Text(
                               'Renvoyer',
                               style: TextStyle(
-                                color: Color(0xFFFF601F),
+                                color: HbColors.brandPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

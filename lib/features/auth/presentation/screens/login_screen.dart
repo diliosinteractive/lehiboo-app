@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/themes/colors.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -106,7 +107,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             fit: BoxFit.cover,
                           ),
                           border: Border.all(
-                            color: const Color(0xFFFF601F).withOpacity(0.1),
+                            color: HbColors.brandPrimary.withValues(alpha: 0.1),
                             width: 1,
                           ),
                         ),
@@ -119,7 +120,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
+                        color: HbColors.textSlate,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -152,7 +153,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+                          borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
                         ),
                       ),
                       validator: (value) {
@@ -196,7 +197,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+                          borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
                         ),
                       ),
                       validator: (value) {
@@ -215,7 +216,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: const Text(
                           'Mot de passe oublié ?',
                           style: TextStyle(
-                            color: Color(0xFFFF601F),
+                            color: HbColors.brandPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -228,7 +229,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF601F),
+                          backgroundColor: HbColors.brandPrimary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -269,7 +270,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             onPressed: isLoading ? null : () => context.push('/register'),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              side: const BorderSide(color: Color(0xFFFF601F), width: 1.5),
+                              side: const BorderSide(color: HbColors.brandPrimary, width: 1.5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -279,7 +280,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold, // Increased weight for visibility
-                                color: Color(0xFFFF601F),
+                                color: HbColors.brandPrimary,
                               ),
                             ),
                           ),
@@ -294,10 +295,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             if (isLoading)
               Positioned.fill(
                 child: Container(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                   child: const Center(
                     child: CircularProgressIndicator(
-                      color: Color(0xFFFF601F),
+                      color: HbColors.brandPrimary,
                     ),
                   ),
                 ),

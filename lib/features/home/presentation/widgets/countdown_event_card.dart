@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 
@@ -118,24 +119,24 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
             end: Alignment.bottomRight,
             colors: _isUrgent
                 ? [
-                    const Color(0xFFFF4444).withOpacity(0.1),
-                    const Color(0xFFFF601F).withOpacity(0.15),
+                    const Color(0xFFFF4444).withValues(alpha: 0.1),
+                    HbColors.brandPrimary.withValues(alpha: 0.15),
                   ]
                 : [
-                    const Color(0xFFFF601F).withOpacity(0.08),
-                    const Color(0xFFFFB347).withOpacity(0.1),
+                    HbColors.brandPrimary.withValues(alpha: 0.08),
+                    const Color(0xFFFFB347).withValues(alpha: 0.1),
                   ],
           ),
           border: Border.all(
             color: _isUrgent
-                ? const Color(0xFFFF4444).withOpacity(0.3)
-                : const Color(0xFFFF601F).withOpacity(0.2),
+                ? const Color(0xFFFF4444).withValues(alpha: 0.3)
+                : HbColors.brandPrimary.withValues(alpha: 0.2),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: (_isUrgent ? const Color(0xFFFF4444) : const Color(0xFFFF601F))
-                  .withOpacity(0.15),
+              color: (_isUrgent ? const Color(0xFFFF4444) : HbColors.brandPrimary)
+                  .withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -159,7 +160,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                             placeholder: (context, url) => Container(
                               color: Colors.grey[200],
                               child: const Center(
-                                child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                                child: CircularProgressIndicator(color: HbColors.brandPrimary),
                               ),
                             ),
                             errorWidget: (context, url, error) => _buildFallbackImage(),
@@ -178,7 +179,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.6),
+                          Colors.black.withValues(alpha: 0.6),
                         ],
                         stops: const [0.5, 1.0],
                       ),
@@ -204,14 +205,14 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                           decoration: BoxDecoration(
                             color: _isUrgent
                                 ? const Color(0xFFFF4444)
-                                : const Color(0xFFFF601F),
+                                : HbColors.brandPrimary,
                             borderRadius: BorderRadius.circular(25),
                             boxShadow: [
                               BoxShadow(
                                 color: (_isUrgent
                                         ? const Color(0xFFFF4444)
-                                        : const Color(0xFFFF601F))
-                                    .withOpacity(0.4),
+                                        : HbColors.brandPrimary)
+                                    .withValues(alpha: 0.4),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -260,7 +261,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                         style: TextStyle(
                           color: widget.remainingSpots! <= 5
                               ? Colors.white
-                              : const Color(0xFF2D3748),
+                              : HbColors.textSlate,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -299,7 +300,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                         style: TextStyle(
                           color: _isUrgent
                               ? const Color(0xFFFF4444)
-                              : const Color(0xFFFF601F),
+                              : HbColors.brandPrimary,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -312,7 +313,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                     style: GoogleFonts.montserrat(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2D3748),
+                      color: HbColors.textSlate,
                       height: 1.2,
                     ),
                     maxLines: 2,
@@ -367,7 +368,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                           style: TextStyle(
                             color: widget.activity.priceMin == 0
                                 ? Colors.green[700]
-                                : const Color(0xFF2D3748),
+                                : HbColors.textSlate,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -379,7 +380,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _isUrgent
                               ? const Color(0xFFFF4444)
-                              : const Color(0xFFFF601F),
+                              : HbColors.brandPrimary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           shape: RoundedRectangleBorder(
@@ -415,7 +416,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
 
   Widget _buildFallbackImage() {
     return Container(
-      color: const Color(0xFFFF601F),
+      color: HbColors.brandPrimary,
       child: Center(
         child: Image.asset(
           'assets/images/logo_picto_lehiboo.png',
@@ -454,7 +455,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
       description: '',
       shortDescription: '',
       category: EventCategory.other,
-      targetAudiences: [],
+      targetAudiences: const [],
       startDate: widget.activity.nextSlot?.startDateTime ?? DateTime.now(),
       endDate: widget.activity.nextSlot?.endDateTime ?? DateTime.now(),
       venue: widget.activity.city?.name ?? '',
@@ -470,7 +471,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
       maxPrice: widget.activity.priceMax,
       isIndoor: false,
       isOutdoor: false,
-      tags: [],
+      tags: const [],
       organizerId: widget.activity.partner?.id ?? '',
       organizerName: widget.activity.partner?.name ?? '',
       organizerLogo: widget.activity.partner?.logoUrl,
@@ -587,7 +588,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: _isUrgent ? const Color(0xFFFF4444) : const Color(0xFFFF601F),
+                      color: _isUrgent ? const Color(0xFFFF4444) : HbColors.brandPrimary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -621,7 +622,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                       child: Text(
                         '${widget.remainingSpots}',
                         style: TextStyle(
-                          color: widget.remainingSpots! <= 5 ? const Color(0xFFFF4444) : const Color(0xFF2D3748),
+                          color: widget.remainingSpots! <= 5 ? const Color(0xFFFF4444) : HbColors.textSlate,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -679,7 +680,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   // Rating
                   Row(
                     children: [
-                      const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF601F)),
+                      const Icon(Icons.star_rounded, size: 14, color: HbColors.brandPrimary),
                       const SizedBox(width: 4),
                       Text(
                         '4.8',
@@ -729,7 +730,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                           ? 'Gratuit'
                           : 'À partir de ${widget.activity.priceMin!.toStringAsFixed(0)}€',
                       style: TextStyle(
-                        color: widget.activity.priceMin == 0 ? Colors.green[700] : const Color(0xFFFF601F),
+                        color: widget.activity.priceMin == 0 ? Colors.green[700] : HbColors.brandPrimary,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                         height: 1.1,
@@ -746,7 +747,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
 
   Widget _buildFallback() {
     return Container(
-      color: const Color(0xFFFF601F),
+      color: HbColors.brandPrimary,
       child: Center(
         child: Image.asset(
           'assets/images/logo_picto_lehiboo.png',
@@ -766,7 +767,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
       description: '',
       shortDescription: '',
       category: EventCategory.other,
-      targetAudiences: [],
+      targetAudiences: const [],
       startDate: widget.activity.nextSlot?.startDateTime ?? DateTime.now(),
       endDate: widget.activity.nextSlot?.endDateTime ?? DateTime.now(),
       venue: widget.activity.city?.name ?? '',
@@ -782,7 +783,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
       maxPrice: widget.activity.priceMax,
       isIndoor: false,
       isOutdoor: false,
-      tags: [],
+      tags: const [],
       organizerId: widget.activity.partner?.id ?? '',
       organizerName: widget.activity.partner?.name ?? '',
       organizerLogo: widget.activity.partner?.logoUrl,
@@ -902,7 +903,7 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _isUrgent ? const Color(0xFFFF4444) : const Color(0xFFFF601F),
+                        color: _isUrgent ? const Color(0xFFFF4444) : HbColors.brandPrimary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -936,7 +937,7 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                         child: Text(
                           '${widget.remainingSpots}',
                           style: TextStyle(
-                            color: widget.remainingSpots! <= 5 ? const Color(0xFFFF4444) : const Color(0xFF2D3748),
+                            color: widget.remainingSpots! <= 5 ? const Color(0xFFFF4444) : HbColors.textSlate,
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
@@ -958,7 +959,7 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D3748),
+                      color: HbColors.textSlate,
                       height: 1.2,
                     ),
                     maxLines: 2,
@@ -972,7 +973,7 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                           ? 'Gratuit'
                           : 'Dès ${widget.activity.priceMin!.toStringAsFixed(0)}€',
                       style: TextStyle(
-                        color: widget.activity.priceMin == 0 ? Colors.green[700] : const Color(0xFFFF601F),
+                        color: widget.activity.priceMin == 0 ? Colors.green[700] : HbColors.brandPrimary,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -988,7 +989,7 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
 
   Widget _buildFallback() {
     return Container(
-      color: const Color(0xFFFF601F),
+      color: HbColors.brandPrimary,
       child: Center(
         child: Image.asset(
           'assets/images/logo_picto_lehiboo.png',
@@ -1050,7 +1051,7 @@ class UrgencySection extends ConsumerWidget {
                           style: GoogleFonts.montserrat(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF2D3748),
+                            color: HbColors.textSlate,
                           ),
                         ),
                         Text(

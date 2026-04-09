@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/themes/colors.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/password_strength_indicator.dart';
@@ -330,7 +331,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF2D3748)),
+          icon: const Icon(Icons.arrow_back, color: HbColors.textSlate),
           onPressed: _goBack,
         ),
       ),
@@ -367,13 +368,13 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF601F).withValues(alpha: 0.1),
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.email_outlined,
                 size: 40,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
           ),
@@ -385,7 +386,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
+              color: HbColors.textSlate,
             ),
             textAlign: TextAlign.center,
           ),
@@ -424,7 +425,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             child: ElevatedButton(
               onPressed: _isLoading ? null : _sendOtp,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF601F),
+                backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -455,7 +456,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               child: const Text(
                 'Créer un compte professionnel',
                 style: TextStyle(
-                  color: Color(0xFFFF601F),
+                  color: HbColors.brandPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -478,7 +479,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                 child: const Text(
                   'Se connecter',
                   style: TextStyle(
-                    color: Color(0xFFFF601F),
+                    color: HbColors.brandPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -503,13 +504,13 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF601F).withValues(alpha: 0.1),
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.sms_outlined,
                 size: 40,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
           ),
@@ -521,7 +522,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
+              color: HbColors.textSlate,
             ),
             textAlign: TextAlign.center,
           ),
@@ -537,7 +538,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF2D3748),
+              color: HbColors.textSlate,
             ),
             textAlign: TextAlign.center,
           ),
@@ -567,7 +568,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
+                      color: HbColors.textSlate,
                     ),
                     decoration: InputDecoration(
                       counterText: '',
@@ -582,7 +583,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(
-                          color: Color(0xFFFF601F),
+                          color: HbColors.brandPrimary,
                           width: 2,
                         ),
                       ),
@@ -607,7 +608,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             child: ElevatedButton(
               onPressed: _isLoading ? null : _verifyOtp,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF601F),
+                backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -658,7 +659,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                   child: const Text(
                     'Renvoyer',
                     style: TextStyle(
-                      color: Color(0xFFFF601F),
+                      color: HbColors.brandPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -696,13 +697,13 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF601F).withValues(alpha: 0.1),
+                  color: HbColors.brandPrimary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.person_add,
                   size: 40,
-                  color: Color(0xFFFF601F),
+                  color: HbColors.brandPrimary,
                 ),
               ),
             ),
@@ -714,7 +715,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
+                color: HbColors.textSlate,
               ),
               textAlign: TextAlign.center,
             ),
@@ -880,7 +881,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                     onChanged: (value) {
                       setState(() => _acceptTerms = value ?? false);
                     },
-                    activeColor: const Color(0xFFFF601F),
+                    activeColor: HbColors.brandPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -896,7 +897,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                         TextSpan(
                           text: 'conditions d\'utilisation',
                           style: const TextStyle(
-                            color: Color(0xFFFF601F),
+                            color: HbColors.brandPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                           recognizer: TapGestureRecognizer()
@@ -908,7 +909,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                         TextSpan(
                           text: 'politique de confidentialité',
                           style: const TextStyle(
-                            color: Color(0xFFFF601F),
+                            color: HbColors.brandPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                           recognizer: TapGestureRecognizer()
@@ -930,7 +931,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleRegister,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF601F),
+                  backgroundColor: HbColors.brandPrimary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -979,7 +980,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFFFF601F) : Colors.grey[300],
+            color: isActive ? HbColors.brandPrimary : Colors.grey[300],
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -999,7 +1000,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
           label,
           style: TextStyle(
             fontSize: 12,
-            color: isActive ? const Color(0xFFFF601F) : Colors.grey[500],
+            color: isActive ? HbColors.brandPrimary : Colors.grey[500],
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -1012,7 +1013,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
       width: 40,
       height: 2,
       margin: const EdgeInsets.only(bottom: 20),
-      color: isActive ? const Color(0xFFFF601F) : Colors.grey[300],
+      color: isActive ? HbColors.brandPrimary : Colors.grey[300],
     );
   }
 
@@ -1036,7 +1037,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+        borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
       ),
     );
   }

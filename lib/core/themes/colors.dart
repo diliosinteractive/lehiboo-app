@@ -34,6 +34,8 @@ class HbColors {
 
   // Brand variants
   static const brandPrimaryDark = Color(0xFFE8491D);   // Orange foncé (gradients)
+  static const brandPrimaryLight = Color(0xFFFF8B5A);  // Orange clair (gradients)
+  static const accentBlue = Color(0xFF1E3A8A);         // Bleu indigo (alertes, badges)
 
   // Borders
   static const borderLight = Color(0xFFE4E7EC);
@@ -45,4 +47,5 @@ class HbColors {
 
   // Text aliases
   static const textMuted = Color(0xFF667085);
+  static const textSlate = Color(0xFF2D3748);           // Gris-bleu ardoise (titres/contenu)
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -67,7 +68,7 @@ class EventStories extends ConsumerWidget {
                     height: 32,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFFF601F), Color(0xFFFF8B5A)],
+                        colors: [HbColors.brandPrimary, HbColors.brandPrimaryLight],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -85,7 +86,7 @@ class EventStories extends ConsumerWidget {
                     style: GoogleFonts.montserrat(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2D3748),
+                      color: HbColors.textSlate,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -94,7 +95,7 @@ class EventStories extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF601F),
+                        color: HbColors.brandPrimary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Text(
@@ -268,11 +269,11 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
                         : SweepGradient(
                             startAngle: _shimmerController.value * 2 * 3.14159,
                             colors: const [
-                              Color(0xFFFF601F),
-                              Color(0xFFFF8B5A),
+                              HbColors.brandPrimary,
+                              HbColors.brandPrimaryLight,
                               Color(0xFFFFB347),
-                              Color(0xFFFF8B5A),
-                              Color(0xFFFF601F),
+                              HbColors.brandPrimaryLight,
+                              HbColors.brandPrimary,
                             ],
                           ),
                     border: widget.isViewed
@@ -282,7 +283,7 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
                         ? null
                         : [
                             BoxShadow(
-                              color: const Color(0xFFFF601F).withValues(alpha: 0.3),
+                              color: HbColors.brandPrimary.withValues(alpha: 0.3),
                               blurRadius: 8,
                               spreadRadius: 0,
                             ),
@@ -333,7 +334,7 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
                                 ),
                                 child: const Icon(
                                   Icons.play_arrow_rounded,
-                                  color: Color(0xFFFF601F),
+                                  color: HbColors.brandPrimary,
                                   size: 18,
                                 ),
                               ),
@@ -355,7 +356,7 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: widget.isViewed ? FontWeight.w400 : FontWeight.w600,
-                color: widget.isViewed ? Colors.grey[500] : const Color(0xFF2D3748),
+                color: widget.isViewed ? Colors.grey[500] : HbColors.textSlate,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -377,8 +378,8 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFFFF601F).withValues(alpha: 0.8),
-            const Color(0xFFFF8B5A).withValues(alpha: 0.8),
+            HbColors.brandPrimary.withValues(alpha: 0.8),
+            HbColors.brandPrimaryLight.withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -657,7 +658,7 @@ class _StoryContent extends StatelessWidget {
             placeholder: (context, url) => Container(
               color: Colors.grey[900],
               child: const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                child: CircularProgressIndicator(color: HbColors.brandPrimary),
               ),
             ),
             errorWidget: (context, url, error) => _buildPlaceholder(),
@@ -698,7 +699,7 @@ class _StoryContent extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF601F),
+                    color: HbColors.brandPrimary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -781,7 +782,7 @@ class _StoryContent extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     return Container(
-      color: const Color(0xFF1E3A8A),
+      color: HbColors.accentBlue,
       child: Center(
         child: Image.asset(
           'assets/images/logo_picto_lehiboo.png',

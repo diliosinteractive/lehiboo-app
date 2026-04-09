@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/domain/entities/city.dart';
@@ -80,7 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: _buildAppBar(),
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        color: const Color(0xFFFF601F),
+        color: HbColors.brandPrimary,
         edgeOffset: 100, // Account for app bar
         child: CustomScrollView(
           controller: _scrollController,
@@ -234,7 +235,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return AppBar(
       backgroundColor: Color.lerp(
         Colors.transparent,
-        const Color(0xFFFF601F),
+        HbColors.brandPrimary,
         opacity,
       ),
       elevation: 0,
@@ -297,7 +298,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             style: GoogleFonts.montserrat(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF2D3748),
+              color: HbColors.textSlate,
             ),
           ),
           if (viewAllPath != null)
@@ -306,7 +307,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: const Text(
                 'Voir plus',
                 style: TextStyle(
-                  color: Color(0xFFFF601F),
+                  color: HbColors.brandPrimary,
                   fontSize: 14,
                 ),
               ),
@@ -345,7 +346,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   style: GoogleFonts.montserrat(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF2D3748),
+                    color: HbColors.textSlate,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -353,7 +354,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.arrow_forward_ios,
-                    size: 16, color: Color(0xFF2D3748)),
+                    size: 16, color: HbColors.textSlate),
                 onPressed: () => context.push(viewAllPath),
               )
             ],
@@ -421,14 +422,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF601F), Color(0xFFFF8B5A)],
+          colors: [HbColors.brandPrimary, HbColors.brandPrimaryLight],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF601F).withOpacity(0.3),
+            color: HbColors.brandPrimary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -449,7 +450,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Text(
             'Notre site web offre une expérience complète pour découvrir et réserver vos activités locales.',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
             ),
           ),
@@ -458,7 +459,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () {},
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFFFF601F),
+              foregroundColor: HbColors.brandPrimary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -488,12 +489,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF601F).withOpacity(0.1),
+                      color: HbColors.brandPrimary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.location_city,
-                      color: Color(0xFFFF601F),
+                      color: HbColors.brandPrimary,
                       size: 24,
                     ),
                   ),
@@ -503,7 +504,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     style: GoogleFonts.montserrat(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2D3748),
+                      color: HbColors.textSlate,
                     ),
                   ),
                 ],
@@ -549,7 +550,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -563,7 +564,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                Colors.black.withOpacity(0.7),
+                Colors.black.withValues(alpha: 0.7),
               ],
             ),
           ),
@@ -585,7 +586,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Text(
                   '${city.eventCount} événements',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 11,
                   ),
                 ),

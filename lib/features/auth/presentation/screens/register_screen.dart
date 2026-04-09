@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/themes/colors.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -104,7 +105,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF2D3748)),
+          icon: const Icon(Icons.arrow_back, color: HbColors.textSlate),
           onPressed: () => context.pop(),
         ),
       ),
@@ -122,13 +123,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF601F).withOpacity(0.1),
+                      color: HbColors.brandPrimary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.person_add,
                       size: 40,
-                      color: Color(0xFFFF601F),
+                      color: HbColors.brandPrimary,
                     ),
                   ),
                 ),
@@ -139,7 +140,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
+                    color: HbColors.textSlate,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -175,7 +176,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+                            borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
                           ),
                         ),
                         validator: (value) {
@@ -204,7 +205,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+                            borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
                           ),
                         ),
                         validator: (value) {
@@ -237,7 +238,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+                      borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -282,7 +283,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+                      borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -332,7 +333,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+                      borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
                     ),
                   ),
                   validator: (value) {
@@ -361,7 +362,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             _acceptTerms = value ?? false;
                           });
                         },
-                        activeColor: const Color(0xFFFF601F),
+                        activeColor: HbColors.brandPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -380,7 +381,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             TextSpan(
                               text: 'conditions d\'utilisation',
                               style: const TextStyle(
-                                color: Color(0xFFFF601F),
+                                color: HbColors.brandPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                               recognizer: TapGestureRecognizer()
@@ -392,7 +393,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             TextSpan(
                               text: 'politique de confidentialité',
                               style: const TextStyle(
-                                color: Color(0xFFFF601F),
+                                color: HbColors.brandPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                               recognizer: TapGestureRecognizer()
@@ -414,7 +415,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: authState.isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF601F),
+                      backgroundColor: HbColors.brandPrimary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -459,7 +460,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: const Text(
                         'Se connecter',
                         style: TextStyle(
-                          color: Color(0xFFFF601F),
+                          color: HbColors.brandPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
