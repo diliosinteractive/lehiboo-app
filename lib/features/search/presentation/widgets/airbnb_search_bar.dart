@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../../../core/themes/colors.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../../../thematiques/presentation/providers/thematiques_provider.dart';
@@ -43,13 +44,13 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
               borderRadius: BorderRadius.circular(40),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
               ],
               border: Border.all(
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -60,7 +61,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                   padding: const EdgeInsets.all(14),
                   child: const Icon(
                     Icons.search,
-                    color: Color(0xFFFF601F),
+                    color: HbColors.brandPrimary,
                     size: 24,
                   ),
                 ),
@@ -75,7 +76,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF222222),
+                          color: HbColors.textDark,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -93,7 +94,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                 Container(
                   height: 24,
                   width: 1,
-                  color: Colors.grey.withOpacity(0.3),
+                  color: Colors.grey.withValues(alpha: 0.3),
                 ),
                 // Filter button
                 GestureDetector(
@@ -107,8 +108,8 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: activeChips.isNotEmpty
-                                  ? const Color(0xFFFF601F)
-                                  : Colors.grey.withOpacity(0.3),
+                                  ? HbColors.brandPrimary
+                                  : Colors.grey.withValues(alpha: 0.3),
                               width: activeChips.isNotEmpty ? 2 : 1,
                             ),
                             borderRadius: BorderRadius.circular(12),
@@ -117,7 +118,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                             Icons.tune,
                             size: 18,
                             color: activeChips.isNotEmpty
-                                ? const Color(0xFFFF601F)
+                                ? HbColors.brandPrimary
                                 : Colors.grey[700],
                           ),
                         ),
@@ -128,7 +129,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFFF601F),
+                                color: HbColors.brandPrimary,
                                 shape: BoxShape.circle,
                               ),
                               constraints: const BoxConstraints(
@@ -156,7 +157,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
         ),
         // Quick filter chips
         const SizedBox(height: 16),
-        QuickFilterChips(),
+        const QuickFilterChips(),
       ],
     );
   }
@@ -333,16 +334,16 @@ class _QuickFilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
+          color: isSelected ? HbColors.brandPrimary : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.withOpacity(0.3),
+            color: isSelected ? HbColors.brandPrimary : Colors.grey.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFF601F).withOpacity(0.3),
+                    color: HbColors.brandPrimary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -423,7 +424,7 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
         // but maybe lighter shadow?
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -439,9 +440,9 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Recherchez une ville, une activité...',
-                prefixIcon: const Icon(Icons.search, color: Color(0xFFFF601F)),
+                prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
                 filled: true,
-                fillColor: const Color(0xFFF5F5F7),
+                fillColor: HbColors.surfaceInput,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -535,14 +536,14 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
                     widget.onSearch?.call();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF601F),
+                    backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 4,
-                    shadowColor: const Color(0xFFFF601F).withOpacity(0.4),
+                    shadowColor: HbColors.brandPrimary.withValues(alpha: 0.4),
                   ),
                   icon: const Icon(Icons.search, size: 20),
                   label: const Text(
@@ -596,7 +597,7 @@ class _TabButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFF601F).withOpacity(0.1) : null,
+            color: isSelected ? HbColors.brandPrimary.withValues(alpha: 0.1) : null,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -605,7 +606,7 @@ class _TabButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: isSelected ? const Color(0xFFFF601F) : Colors.grey,
+                color: isSelected ? HbColors.brandPrimary : Colors.grey,
               ),
               const SizedBox(width: 8),
               Text(
@@ -613,7 +614,7 @@ class _TabButton extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? const Color(0xFFFF601F) : Colors.grey[700],
+                  color: isSelected ? HbColors.brandPrimary : Colors.grey[700],
                 ),
               ),
             ],
@@ -729,7 +730,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: Color(0xFF222222),
+              color: HbColors.textDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -740,10 +741,10 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: hasLocation ? const Color(0xFFFF601F) : Colors.grey[100],
+                color: hasLocation ? HbColors.brandPrimary : Colors.grey[100],
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: hasLocation ? const Color(0xFFFF601F) : Colors.grey.shade300,
+                  color: hasLocation ? HbColors.brandPrimary : Colors.grey.shade300,
                 ),
               ),
               child: Row(
@@ -762,7 +763,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
                     Icon(
                       Icons.my_location,
                       size: 18,
-                      color: hasLocation ? Colors.white : const Color(0xFFFF601F),
+                      color: hasLocation ? Colors.white : HbColors.brandPrimary,
                     ),
                   const SizedBox(width: 8),
                   Text(
@@ -798,7 +799,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
               style: TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 13,
-                color: Color(0xFF666666),
+                color: HbColors.textTertiary,
               ),
             ),
             const SizedBox(height: 8),
@@ -813,17 +814,17 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFFF601F).withOpacity(0.15) : Colors.grey[100],
+                      color: isSelected ? HbColors.brandPrimary.withValues(alpha: 0.15) : Colors.grey[100],
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+                        color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
                         width: isSelected ? 2 : 1,
                       ),
                     ),
                     child: Text(
                       '${radius.toInt()} km',
                       style: TextStyle(
-                        color: isSelected ? const Color(0xFFFF601F) : Colors.grey[700],
+                        color: isSelected ? HbColors.brandPrimary : Colors.grey[700],
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                         fontSize: 13,
                       ),
@@ -842,7 +843,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: Color(0xFF222222),
+              color: HbColors.textDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -887,10 +888,10 @@ class _CityChip extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
+          color: isSelected ? HbColors.brandPrimary : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+            color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
           ),
         ),
         child: Text(
@@ -924,7 +925,7 @@ class _WhenTab extends ConsumerWidget {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: Color(0xFF222222),
+              color: HbColors.textDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -969,8 +970,8 @@ class _WhenTab extends ConsumerWidget {
           OutlinedButton.icon(
             onPressed: () => _showDateRangePicker(context, ref),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFFF601F),
-              side: const BorderSide(color: Color(0xFFFF601F)),
+              foregroundColor: HbColors.brandPrimary,
+              side: const BorderSide(color: HbColors.brandPrimary),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -996,7 +997,7 @@ class _WhenTab extends ConsumerWidget {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFFFF601F),
+              primary: HbColors.brandPrimary,
             ),
           ),
           child: child!,
@@ -1030,10 +1031,10 @@ class _DateFilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
+          color: isSelected ? HbColors.brandPrimary : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+            color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
           ),
         ),
         child: Text(
@@ -1071,7 +1072,7 @@ class _WhatTab extends ConsumerWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: Color(0xFF222222),
+                color: HbColors.textDark,
               ),
             ),
             const SizedBox(height: 12),
@@ -1089,7 +1090,7 @@ class _WhatTab extends ConsumerWidget {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: Color(0xFF222222),
+              color: HbColors.textDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -1120,7 +1121,7 @@ class _WhatTab extends ConsumerWidget {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: Color(0xFF222222),
+              color: HbColors.textDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -1153,7 +1154,7 @@ class _WhatTab extends ConsumerWidget {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: Color(0xFF222222),
+              color: HbColors.textDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -1183,7 +1184,7 @@ class _WhatTab extends ConsumerWidget {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: Color(0xFF222222),
+              color: HbColors.textDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -1269,10 +1270,10 @@ class _CategoriesFilterState extends State<_CategoriesFilter> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
+                  color: isSelected ? HbColors.brandPrimary : Colors.grey[100],
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+                    color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
                   ),
                 ),
                 child: Row(
@@ -1314,7 +1315,7 @@ class _CategoriesFilterState extends State<_CategoriesFilter> {
                   Text(
                     _isExpanded ? 'Voir moins' : 'Voir plus ($hiddenCount)',
                     style: const TextStyle(
-                      color: Color(0xFFFF601F),
+                      color: HbColors.brandPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -1322,7 +1323,7 @@ class _CategoriesFilterState extends State<_CategoriesFilter> {
                   const SizedBox(width: 4),
                   Icon(
                     _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                    color: const Color(0xFFFF601F),
+                    color: HbColors.brandPrimary,
                     size: 20,
                   ),
                 ],
@@ -1355,10 +1356,10 @@ class _FilterToggleChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
+          color: isSelected ? HbColors.brandPrimary : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+            color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
           ),
         ),
         child: Row(
@@ -1406,10 +1407,10 @@ class _ThematiqueChip extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
+          color: isSelected ? HbColors.brandPrimary : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+            color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
           ),
         ),
         child: Row(
@@ -1453,10 +1454,10 @@ class _PriceChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.grey[100],
+          color: isSelected ? HbColors.brandPrimary : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+            color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
           ),
         ),
         child: Text(

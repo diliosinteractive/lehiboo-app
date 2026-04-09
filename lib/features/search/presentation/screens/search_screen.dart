@@ -5,6 +5,7 @@ import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/petit_boo/presentation/providers/engagement_provider.dart';
 import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
+import 'package:lehiboo/core/themes/colors.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../widgets/airbnb_search_bar.dart';
@@ -259,23 +260,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     tapTargetSize:
                                         MaterialTapTargetSize.shrinkWrap,
                                     side: const BorderSide(
-                                        color: Color(0xFFFF601F), width: 1),
+                                        color: HbColors.brandPrimary, width: 1),
                                     shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8)),
-                                    backgroundColor: const Color(0xFFFF601F)
-                                        .withOpacity(0.05),
+                                    backgroundColor: HbColors.brandPrimary
+                                        .withValues(alpha: 0.05),
                                   ),
-                                  child: Row(
+                                  child: const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.bookmark_border,
-                                          size: 18, color: Color(0xFFFF601F)),
-                                      const SizedBox(width: 4),
-                                      const Text(
+                                      Icon(Icons.bookmark_border,
+                                          size: 18, color: HbColors.brandPrimary),
+                                      SizedBox(width: 4),
+                                      Text(
                                         'Sauvegarder\nma recherche',
                                         textAlign: TextAlign.start,
                                         style: TextStyle(
-                                          color: Color(0xFFFF601F),
+                                          color: HbColors.brandPrimary,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10,
                                           height: 1.1,
@@ -364,7 +365,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 return const SliverFillRemaining(
                   child: Center(
                     child: CircularProgressIndicator(
-                      color: Color(0xFFFF601F),
+                      color: HbColors.brandPrimary,
                     ),
                   ),
                 );
@@ -415,7 +416,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF222222),
+                  color: HbColors.textDark,
                 ),
               ),
               // Sort button
@@ -476,7 +477,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             padding: EdgeInsets.symmetric(vertical: 32),
             child: Center(
               child: CircularProgressIndicator(
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
           ),
@@ -500,7 +501,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   icon: const Icon(Icons.notifications_active_outlined),
                   label: const Text('M\'alerter des nouveautés'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E3A8A),
+                    backgroundColor: HbColors.accentBlue,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
@@ -656,7 +657,7 @@ class _EmptyResults extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF222222),
+                color: HbColors.textDark,
               ),
               textAlign: TextAlign.center,
             ),
@@ -681,7 +682,7 @@ class _EmptyResults extends StatelessWidget {
                   icon: const Icon(Icons.notifications_active_outlined),
                   label: const Text('M\'alerter des nouveaux événements'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E3A8A), // Bleu foncé
+                    backgroundColor: HbColors.accentBlue, // Bleu foncé
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
@@ -692,8 +693,8 @@ class _EmptyResults extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onClearFilters,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFFF601F),
-                  side: const BorderSide(color: Color(0xFFFF601F)),
+                  foregroundColor: HbColors.brandPrimary,
+                  side: const BorderSide(color: HbColors.brandPrimary),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
@@ -727,17 +728,17 @@ class _SortOption extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: isSelected ? const Color(0xFFFF601F) : Colors.grey,
+        color: isSelected ? HbColors.brandPrimary : Colors.grey,
       ),
       title: Text(
         label,
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? const Color(0xFFFF601F) : null,
+          color: isSelected ? HbColors.brandPrimary : null,
         ),
       ),
       trailing:
-          isSelected ? const Icon(Icons.check, color: Color(0xFFFF601F)) : null,
+          isSelected ? const Icon(Icons.check, color: HbColors.brandPrimary) : null,
       onTap: onTap,
     );
   }

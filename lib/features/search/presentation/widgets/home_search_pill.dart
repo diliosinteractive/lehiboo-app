@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/themes/colors.dart';
 import '../providers/filter_provider.dart';
 import 'airbnb_search_sheet.dart';
 
@@ -46,7 +47,7 @@ class HomeSearchPill extends ConsumerWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
@@ -70,7 +71,7 @@ class HomeSearchPill extends ConsumerWidget {
                     style: GoogleFonts.montserrat(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF222222),
+                      color: HbColors.textDark,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -98,10 +99,10 @@ class HomeSearchPill extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF601F).withValues(alpha:0.1),
+                  color: HbColors.brandPrimary.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFFFF601F).withValues(alpha:0.3),
+                    color: HbColors.brandPrimary.withValues(alpha:0.3),
                   ),
                 ),
                 child: Row(
@@ -110,7 +111,7 @@ class HomeSearchPill extends ConsumerWidget {
                     const Icon(
                       Icons.tune,
                       size: 16,
-                      color: Color(0xFFFF601F),
+                      color: HbColors.brandPrimary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -118,7 +119,7 @@ class HomeSearchPill extends ConsumerWidget {
                       style: GoogleFonts.montserrat(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFFFF601F),
+                        color: HbColors.brandPrimary,
                       ),
                     ),
                   ],
@@ -198,7 +199,7 @@ class HomeSearchPillCompact extends ConsumerWidget {
           children: [
             const Icon(
               Icons.search,
-              color: Color(0xFFFF601F),
+              color: HbColors.brandPrimary,
               size: 20,
             ),
             const SizedBox(width: 12),

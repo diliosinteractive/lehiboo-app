@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/themes/colors.dart';
 import '../providers/auth_provider.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -57,7 +58,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF2D3748)),
+          icon: const Icon(Icons.arrow_back, color: HbColors.textSlate),
           onPressed: () => context.pop(),
         ),
       ),
@@ -83,13 +84,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF601F).withOpacity(0.1),
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.lock_reset,
                 size: 50,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
           ),
@@ -100,7 +101,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
+              color: HbColors.textSlate,
             ),
             textAlign: TextAlign.center,
           ),
@@ -135,7 +136,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+                borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
               ),
             ),
             validator: (value) {
@@ -156,7 +157,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             child: ElevatedButton(
               onPressed: authState.isLoading ? null : _handleResetPassword,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF601F),
+                backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -190,7 +191,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               const Icon(
                 Icons.arrow_back,
                 size: 18,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
               const SizedBox(width: 8),
               TextButton(
@@ -203,7 +204,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 child: const Text(
                   'Retour à la connexion',
                   style: TextStyle(
-                    color: Color(0xFFFF601F),
+                    color: HbColors.brandPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -226,7 +227,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: Colors.green.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -243,7 +244,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
+            color: HbColors.textSlate,
           ),
           textAlign: TextAlign.center,
         ),
@@ -262,7 +263,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF2D3748),
+            color: HbColors.textSlate,
           ),
           textAlign: TextAlign.center,
         ),
@@ -270,7 +271,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -301,7 +302,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           child: ElevatedButton(
             onPressed: () => context.go('/login'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF601F),
+              backgroundColor: HbColors.brandPrimary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -330,7 +331,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             child: const Text(
               'Renvoyer l\'email',
               style: TextStyle(
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),

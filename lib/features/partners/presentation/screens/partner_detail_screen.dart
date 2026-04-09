@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/data/models/event_dto.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../providers/organizer_provider.dart';
@@ -38,7 +39,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
       body: organizerAsync.when(
         data: (organizer) => _buildContent(context, ref, organizer),
         loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+          child: CircularProgressIndicator(color: HbColors.brandPrimary),
         ),
         error: (error, stack) => _buildErrorState(context, error),
       ),
@@ -65,7 +66,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
               icon: const Icon(Icons.arrow_back),
               label: const Text('Retour'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF601F),
+                backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -137,7 +138,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
               child: Text(
                 _isDescriptionExpanded ? 'Voir moins' : 'Lire la suite',
                 style: const TextStyle(
-                  color: Color(0xFFFF601F),
+                  color: HbColors.brandPrimary,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -176,7 +177,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFFFF601F), Color(0xFFE55A2B)],
+                    colors: [HbColors.brandPrimary, Color(0xFFE55A2B)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -189,8 +190,8 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.1),
-                    Colors.black.withOpacity(0.6),
+                    Colors.black.withValues(alpha: 0.1),
+                    Colors.black.withValues(alpha: 0.6),
                   ],
                 ),
               ),
@@ -211,7 +212,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                       border: Border.all(color: Colors.white, width: 3),
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 8),
                       ],
                     ),
@@ -231,7 +232,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                                 style: const TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFFFF601F)),
+                                    color: HbColors.brandPrimary),
                               ),
                             ),
                     ),
@@ -289,18 +290,18 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFFF601F).withOpacity(0.1),
+              color: HbColors.brandPrimary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               children: [
                 const Icon(Icons.local_activity,
-                    size: 16, color: Color(0xFFFF601F)),
+                    size: 16, color: HbColors.brandPrimary),
                 const SizedBox(width: 8),
                 Text(
                   '${organizer.stats!.totalEvents} événements',
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Color(0xFFFF601F)),
+                      fontWeight: FontWeight.bold, color: HbColors.brandPrimary),
                 ),
               ],
             ),
@@ -341,7 +342,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
         if (hasAddress) ...[
           ListTile(
             leading: const Icon(Icons.location_on_outlined,
-                color: Color(0xFFFF601F)),
+                color: HbColors.brandPrimary),
             title: Text(
                 organizer.location?.city ?? organizer.location?.address ?? ''),
             subtitle: organizer.location?.city != null &&
@@ -360,8 +361,8 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                 icon: const Icon(Icons.directions, size: 20),
                 label: const Text('Se rendre chez le partenaire'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFFF601F),
-                  side: const BorderSide(color: Color(0xFFFF601F)),
+                  foregroundColor: HbColors.brandPrimary,
+                  side: const BorderSide(color: HbColors.brandPrimary),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -373,14 +374,14 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
         ],
         if (organizer.contact?.phone != null)
           ListTile(
-            leading: const Icon(Icons.phone_outlined, color: Color(0xFFFF601F)),
+            leading: const Icon(Icons.phone_outlined, color: HbColors.brandPrimary),
             title: Text(organizer.contact!.phone!),
             contentPadding: EdgeInsets.zero,
             onTap: () => _launchUrl('tel:${organizer.contact!.phone}'),
           ),
         if (organizer.contact?.email != null)
           ListTile(
-            leading: const Icon(Icons.email_outlined, color: Color(0xFFFF601F)),
+            leading: const Icon(Icons.email_outlined, color: HbColors.brandPrimary),
             title: Text(organizer.contact!.email!),
             contentPadding: EdgeInsets.zero,
             onTap: () => _launchUrl('mailto:${organizer.contact!.email}'),
@@ -388,7 +389,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
         if (organizer.contact?.website != null)
           ListTile(
             leading:
-                const Icon(Icons.language_outlined, color: Color(0xFFFF601F)),
+                const Icon(Icons.language_outlined, color: HbColors.brandPrimary),
             title: const Text('Visiter le site web'),
             contentPadding: EdgeInsets.zero,
             onTap: () => _launchUrl(organizer.contact!.website),
@@ -464,7 +465,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 20, color: const Color(0xFFFF601F)),
+              Icon(icon, size: 20, color: HbColors.brandPrimary),
               const SizedBox(width: 8),
               Text(
                 label,
@@ -533,7 +534,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                                         height: 20,
                                         child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            color: Color(0xFFFF601F)),
+                                            color: HbColors.brandPrimary),
                                       ),
                                     ),
                                   ),
@@ -581,7 +582,7 @@ class _PartnerDetailScreenState extends ConsumerState<PartnerDetailScreen> {
                               Text(
                                 event.city,
                                 style: const TextStyle(
-                                    fontSize: 12, color: Color(0xFFFF601F)),
+                                    fontSize: 12, color: HbColors.brandPrimary),
                               ),
                             ],
                           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/themes/colors.dart';
 import '../../domain/models/event_filter.dart';
 
 /// Result returned when user saves a search
@@ -314,7 +315,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                           borderSide: BorderSide(
                             color: _nameError != null
                                 ? Colors.red.shade400
-                                : const Color(0xFFFF601F),
+                                : HbColors.brandPrimary,
                             width: 2,
                           ),
                         ),
@@ -417,7 +418,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                       child: ElevatedButton(
                         onPressed: _save,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF601F),
+                          backgroundColor: HbColors.brandPrimary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
@@ -471,7 +472,7 @@ class _NotificationToggle extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: value ? const Color(0xFFFF601F).withValues(alpha: 0.3) : Colors.grey.shade200,
+            color: value ? HbColors.brandPrimary.withValues(alpha: 0.3) : Colors.grey.shade200,
           ),
           boxShadow: [
             BoxShadow(
@@ -488,14 +489,14 @@ class _NotificationToggle extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: value
-                    ? const Color(0xFFFF601F).withValues(alpha: 0.1)
+                    ? HbColors.brandPrimary.withValues(alpha: 0.1)
                     : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
                 size: 22,
-                color: value ? const Color(0xFFFF601F) : Colors.grey.shade500,
+                color: value ? HbColors.brandPrimary : Colors.grey.shade500,
               ),
             ),
             const SizedBox(width: 14),
@@ -525,7 +526,7 @@ class _NotificationToggle extends StatelessWidget {
             Switch.adaptive(
               value: value,
               onChanged: onChanged,
-              activeTrackColor: const Color(0xFFFF601F),
+              activeTrackColor: HbColors.brandPrimary,
               thumbColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
                   return Colors.white;

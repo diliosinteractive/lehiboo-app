@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/themes/colors.dart';
 import '../providers/alerts_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../../../features/search/presentation/providers/filter_provider.dart';
@@ -88,10 +89,10 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
               icon: filter.icon,
               count: alerts.isNotEmpty ? _countForFilter(alerts, filter) : null,
               color: filter == AlertFilterType.alerts
-                  ? const Color(0xFFFF601F)
+                  ? HbColors.brandPrimary
                   : filter == AlertFilterType.searches
                       ? Colors.blueGrey
-                      : const Color(0xFFFF601F),
+                      : HbColors.brandPrimary,
             );
           }).toList();
 
@@ -129,7 +130,7 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
                         onRefresh: () async {
                           return ref.refresh(alertsProvider);
                         },
-                        color: const Color(0xFFFF601F),
+                        color: HbColors.brandPrimary,
                         child: ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: filteredAlerts.length,
@@ -145,7 +146,7 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
           );
         },
         loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+          child: CircularProgressIndicator(color: HbColors.brandPrimary),
         ),
         error: (error, stack) => Center(
           child: Column(
@@ -197,13 +198,13 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFFFF601F).withOpacity(0.1),
+              color: HbColors.brandPrimary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               size: 48,
-              color: const Color(0xFFFF601F),
+              color: HbColors.brandPrimary,
             ),
           ),
           const SizedBox(height: 24),
@@ -212,7 +213,7 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
+              color: HbColors.textSlate,
             ),
           ),
           const SizedBox(height: 12),
@@ -232,7 +233,7 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
             ElevatedButton(
               onPressed: () => context.go('/explore'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF601F),
+                backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -306,7 +307,7 @@ class _AlertItemCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -322,7 +323,7 @@ class _AlertItemCard extends ConsumerWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     color: alert.enablePush
-                        ? const Color(0xFFFF601F).withOpacity(0.1)
+                        ? HbColors.brandPrimary.withValues(alpha: 0.1)
                         : Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -331,7 +332,7 @@ class _AlertItemCard extends ConsumerWidget {
                         ? Icons.notifications_active
                         : Icons.history,
                     color: alert.enablePush
-                        ? const Color(0xFFFF601F)
+                        ? HbColors.brandPrimary
                         : Colors.grey[500],
                     size: 24,
                   ),
@@ -348,7 +349,7 @@ class _AlertItemCard extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
+                          color: HbColors.textSlate,
                         ),
                       ),
                       const SizedBox(height: 4),

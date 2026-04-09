@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/themes/colors.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../providers/filter_provider.dart';
@@ -203,7 +204,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
+      backgroundColor: HbColors.surfaceLight,
       body: Stack(
         children: [
           // Scrollable content with accordion panels
@@ -291,7 +292,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
   Widget _buildHeader(double topPadding) {
     return Container(
-      color: const Color(0xFFF7F7F7),
+      color: HbColors.surfaceLight,
       padding: EdgeInsets.fromLTRB(8, topPadding + 8, 16, 12),
       child: Row(
         children: [
@@ -424,14 +425,14 @@ class _AccordionPanel extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       color: isExpanded
-                          ? const Color(0xFFFF601F).withValues(alpha: 0.1)
+                          ? HbColors.brandPrimary.withValues(alpha: 0.1)
                           : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       icon,
                       color: isExpanded
-                          ? const Color(0xFFFF601F)
+                          ? HbColors.brandPrimary
                           : Colors.grey.shade600,
                       size: 24,
                     ),
@@ -458,7 +459,7 @@ class _AccordionPanel extends StatelessWidget {
                           style: GoogleFonts.montserrat(
                             fontSize: 13,
                             color: isExpanded
-                                ? const Color(0xFFFF601F)
+                                ? HbColors.brandPrimary
                                 : Colors.grey.shade600,
                             fontWeight: isExpanded
                                 ? FontWeight.w600
@@ -532,11 +533,11 @@ class _WhereContent extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: hasLocation
-                  ? const Color(0xFFFF601F).withValues(alpha: 0.08)
+                  ? HbColors.brandPrimary.withValues(alpha: 0.08)
                   : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: hasLocation ? const Color(0xFFFF601F) : Colors.grey.shade200,
+                color: hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
                 width: hasLocation ? 2 : 1,
               ),
             ),
@@ -547,7 +548,7 @@ class _WhereContent extends ConsumerWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: hasLocation
-                        ? const Color(0xFFFF601F).withValues(alpha: 0.15)
+                        ? HbColors.brandPrimary.withValues(alpha: 0.15)
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -556,13 +557,13 @@ class _WhereContent extends ConsumerWidget {
                           padding: EdgeInsets.all(10),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFFFF601F),
+                            color: HbColors.brandPrimary,
                           ),
                         )
                       : Icon(
                           Icons.near_me,
                           color: hasLocation
-                              ? const Color(0xFFFF601F)
+                              ? HbColors.brandPrimary
                               : Colors.grey.shade600,
                           size: 22,
                         ),
@@ -607,10 +608,10 @@ class _WhereContent extends ConsumerWidget {
           const SizedBox(height: 12),
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: const Color(0xFFFF601F),
+              activeTrackColor: HbColors.brandPrimary,
               inactiveTrackColor: Colors.grey.shade200,
-              thumbColor: const Color(0xFFFF601F),
-              overlayColor: const Color(0xFFFF601F).withValues(alpha: 0.2),
+              thumbColor: HbColors.brandPrimary,
+              overlayColor: HbColors.brandPrimary.withValues(alpha: 0.2),
               trackHeight: 4,
             ),
             child: Slider(
@@ -669,7 +670,7 @@ class _WhereContent extends ConsumerWidget {
               padding: EdgeInsets.all(12),
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
           ),
@@ -819,12 +820,12 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: widget.filter.dateFilterType == DateFilterType.custom
-                  ? const Color(0xFFFF601F).withValues(alpha: 0.08)
+                  ? HbColors.brandPrimary.withValues(alpha: 0.08)
                   : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: widget.filter.dateFilterType == DateFilterType.custom
-                    ? const Color(0xFFFF601F)
+                    ? HbColors.brandPrimary
                     : Colors.grey.shade200,
               ),
             ),
@@ -834,7 +835,7 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
                   Icons.date_range,
                   size: 18,
                   color: widget.filter.dateFilterType == DateFilterType.custom
-                      ? const Color(0xFFFF601F)
+                      ? HbColors.brandPrimary
                       : Colors.grey.shade600,
                 ),
                 const SizedBox(width: 10),
@@ -845,7 +846,7 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: widget.filter.dateFilterType == DateFilterType.custom
-                          ? const Color(0xFFFF601F)
+                          ? HbColors.brandPrimary
                           : Colors.grey.shade700,
                     ),
                   ),

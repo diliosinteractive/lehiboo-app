@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 
@@ -45,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -59,7 +60,7 @@ class ProfileScreen extends ConsumerWidget {
                 height: 80,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFFF601F).withOpacity(0.1),
+                  color: HbColors.brandPrimary.withValues(alpha: 0.1),
                 ),
                 child: avatarUrl != null && avatarUrl.isNotEmpty
                     ? ClipOval(
@@ -70,7 +71,7 @@ class ProfileScreen extends ConsumerWidget {
                           fit: BoxFit.cover,
                           placeholder: (context, url) => const Center(
                             child: CircularProgressIndicator(
-                              color: Color(0xFFFF601F),
+                              color: HbColors.brandPrimary,
                               strokeWidth: 2,
                             ),
                           ),
@@ -89,7 +90,7 @@ class ProfileScreen extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
+                        color: HbColors.textSlate,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -121,7 +122,7 @@ class ProfileScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _getRoleColor(user.role).withOpacity(0.1),
+                        color: _getRoleColor(user.role).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -207,7 +208,7 @@ class ProfileScreen extends ConsumerWidget {
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.logout, color: Colors.red, size: 20),
@@ -250,13 +251,13 @@ class ProfileScreen extends ConsumerWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF601F).withOpacity(0.1),
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.person_outline,
                 size: 60,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
             const SizedBox(height: 24),
@@ -265,7 +266,7 @@ class ProfileScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
+                color: HbColors.textSlate,
               ),
             ),
             const SizedBox(height: 12),
@@ -284,7 +285,7 @@ class ProfileScreen extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: () => context.push('/login'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF601F),
+                  backgroundColor: HbColors.brandPrimary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -307,8 +308,8 @@ class ProfileScreen extends ConsumerWidget {
               child: OutlinedButton(
                 onPressed: () => context.push('/register'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFFF601F),
-                  side: const BorderSide(color: Color(0xFFFF601F)),
+                  foregroundColor: HbColors.brandPrimary,
+                  side: const BorderSide(color: HbColors.brandPrimary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -416,7 +417,7 @@ class ProfileScreen extends ConsumerWidget {
           height: 24,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Color(0xFFFF601F),
+            color: HbColors.brandPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -447,14 +448,14 @@ class ProfileScreen extends ConsumerWidget {
   }) {
     return Column(
       children: [
-        Icon(icon, color: const Color(0xFFFF601F), size: 24),
+        Icon(icon, color: HbColors.brandPrimary, size: 24),
         const SizedBox(height: 8),
         Text(
           value,
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2D3748),
+            color: HbColors.textSlate,
           ),
         ),
         const SizedBox(height: 4),
@@ -485,16 +486,16 @@ class ProfileScreen extends ConsumerWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFFF601F).withOpacity(0.1),
+            color: HbColors.brandPrimary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: const Color(0xFFFF601F), size: 20),
+          child: Icon(icon, color: HbColors.brandPrimary, size: 20),
         ),
         title: Text(
           title,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            color: Color(0xFF2D3748),
+            color: HbColors.textSlate,
           ),
         ),
         subtitle: subtitle != null
@@ -523,7 +524,7 @@ class ProfileScreen extends ConsumerWidget {
         style: const TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: Color(0xFFFF601F),
+          color: HbColors.brandPrimary,
         ),
       ),
     );
@@ -536,7 +537,7 @@ class ProfileScreen extends ConsumerWidget {
       case 'UserRole.admin':
         return Colors.red;
       default:
-        return const Color(0xFFFF601F);
+        return HbColors.brandPrimary;
     }
   }
 

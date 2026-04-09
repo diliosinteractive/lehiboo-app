@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/profile_api_datasource.dart';
 
@@ -130,7 +131,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -144,7 +145,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
+                        color: HbColors.textSlate,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -198,7 +199,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleSave,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF601F),
+                    backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -232,7 +233,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 icon: const Icon(Icons.lock_outline, size: 20),
                 label: const Text('Changer mon mot de passe'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFFF601F),
+                  foregroundColor: HbColors.brandPrimary,
                 ),
               ),
               const SizedBox(height: 32),
@@ -260,12 +261,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFFF601F).withOpacity(0.1),
+              color: HbColors.brandPrimary.withValues(alpha: 0.1),
             ),
             child: _isUploadingAvatar
                 ? const Center(
                     child: CircularProgressIndicator(
-                      color: Color(0xFFFF601F),
+                      color: HbColors.brandPrimary,
                       strokeWidth: 2,
                     ),
                   )
@@ -287,7 +288,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                               fit: BoxFit.cover,
                               placeholder: (context, url) => const Center(
                                 child: CircularProgressIndicator(
-                                  color: Color(0xFFFF601F),
+                                  color: HbColors.brandPrimary,
                                   strokeWidth: 2,
                                 ),
                               ),
@@ -301,7 +302,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             bottom: 0,
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
               ),
@@ -325,7 +326,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         style: const TextStyle(
           fontSize: 40,
           fontWeight: FontWeight.bold,
-          color: Color(0xFFFF601F),
+          color: HbColors.brandPrimary,
         ),
       ),
     );
@@ -350,7 +351,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       decoration: InputDecoration(
         labelText: label,
         helperText: helperText,
-        prefixIcon: Icon(icon, color: const Color(0xFFFF601F)),
+        prefixIcon: Icon(icon, color: HbColors.brandPrimary),
         filled: true,
         fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
         border: OutlineInputBorder(
@@ -363,7 +364,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+          borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -564,7 +565,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       }
                     },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF601F),
+                backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
               ),
               child: isLoading

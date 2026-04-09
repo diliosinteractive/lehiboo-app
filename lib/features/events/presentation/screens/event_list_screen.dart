@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
+import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
@@ -244,7 +245,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               decoration: InputDecoration(
                 hintText: 'Rechercher une activité...',
                 hintStyle: TextStyle(color: Colors.grey[400]),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFFFF601F)),
+                prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -259,7 +260,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                     IconButton(
                       icon: Icon(
                         Icons.tune,
-                        color: filter.hasActiveFilters ? const Color(0xFFFF601F) : Colors.grey,
+                        color: filter.hasActiveFilters ? HbColors.brandPrimary : Colors.grey,
                       ),
                       onPressed: () => showFilterBottomSheet(context),
                     ),
@@ -339,21 +340,21 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: filter.hasActiveFilters ? const Color(0xFFFF601F) : Colors.white,
+                        color: filter.hasActiveFilters ? HbColors.brandPrimary : Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFFF601F), width: 2),
+                        border: Border.all(color: HbColors.brandPrimary, width: 2),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.tune, size: 16, color: filter.hasActiveFilters ? Colors.white : const Color(0xFFFF601F)),
+                          Icon(Icons.tune, size: 16, color: filter.hasActiveFilters ? Colors.white : HbColors.brandPrimary),
                           const SizedBox(width: 6),
                           Text(
                             filter.hasActiveFilters ? 'Filtres (${filter.activeFilterCount})' : 'Filtres',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: filter.hasActiveFilters ? Colors.white : const Color(0xFFFF601F),
+                              color: filter.hasActiveFilters ? Colors.white : HbColors.brandPrimary,
                             ),
                           ),
                         ],
@@ -378,7 +379,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   onRefresh: () async {
                     ref.invalidate(filteredEventsProvider);
                   },
-                  color: const Color(0xFFFF601F),
+                  color: HbColors.brandPrimary,
                   child: ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
@@ -390,7 +391,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 32),
                             child: Center(
-                              child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                              child: CircularProgressIndicator(color: HbColors.brandPrimary),
                             ),
                           );
                         } else {
@@ -408,7 +409,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                                   icon: const Icon(Icons.notifications_active_outlined),
                                   label: const Text('M\'alerter des nouveautés'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF1E3A8A),
+                                    backgroundColor: HbColors.accentBlue,
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                     shape: RoundedRectangleBorder(
@@ -455,7 +456,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                            return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 32),
                             child: Center(
-                              child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                              child: CircularProgressIndicator(color: HbColors.brandPrimary),
                             ),
                           );
                         }
@@ -468,7 +469,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                  }
               
                  return const Center(
-                   child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                   child: CircularProgressIndicator(color: HbColors.brandPrimary),
                  );
               },
               error: (error, stack) => _buildErrorState(error.toString()),
@@ -506,7 +507,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
           content: Text(hasNotifications
               ? 'Alerte "${result.name}" créée avec notifications !'
               : 'Recherche "${result.name}" enregistrée !'),
-          backgroundColor: const Color(0xFF1E3A8A),
+          backgroundColor: HbColors.accentBlue,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -527,13 +528,13 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color(0xFFFF601F).withOpacity(0.1),
+              color: HbColors.brandPrimary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.event_busy,
               size: 50,
-              color: Color(0xFFFF601F),
+              color: HbColors.brandPrimary,
             ),
           ),
           const SizedBox(height: 24),
@@ -542,7 +543,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
+              color: HbColors.textSlate,
             ),
           ),
           const SizedBox(height: 8),
@@ -564,7 +565,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                 filterNotifier.resetAll();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF601F),
+                backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -594,7 +595,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
+              color: HbColors.textSlate,
             ),
           ),
           const SizedBox(height: 8),
@@ -615,7 +616,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               ref.invalidate(filteredEventsProvider);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF601F),
+              backgroundColor: HbColors.brandPrimary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -650,10 +651,10 @@ class _QuickFilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF601F) : Colors.white,
+          color: isSelected ? HbColors.brandPrimary : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF601F) : Colors.grey.shade300,
+            color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
             width: 1.5,
           ),
         ),
