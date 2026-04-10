@@ -59,12 +59,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   /// Refresh all home screen data
   Future<void> _refreshData() async {
-    // Force loading state on all notifiers then re-fetch
+    // Refresh only independent providers in parallel.
+    // Derived providers (today, tomorrow, homeActivities) will auto-rebuild
+    // via ref.watch(homeFeedProvider.future) when homeFeed completes.
     await Future.wait([
       ref.read(homeFeedProvider.notifier).refresh(),
-      ref.read(homeActivitiesProvider.notifier).refresh(),
-      ref.read(homeTodayActivitiesProvider.notifier).refresh(),
-      ref.read(homeTomorrowActivitiesProvider.notifier).refresh(),
       ref.read(featuredActivitiesProvider.notifier).refresh(),
       ref.read(categoriesProvider.notifier).refresh(),
       ref.read(homeCitiesProvider.notifier).refresh(),

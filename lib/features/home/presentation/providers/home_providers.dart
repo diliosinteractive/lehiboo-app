@@ -28,14 +28,18 @@ class HomeFeedNotifier extends AutoDisposeAsyncNotifier<HomeFeedResponseDto> {
     final userLocationAsync = ref.watch(userLocationProvider);
     final userLocation = userLocationAsync.valueOrNull;
 
-    final result = await eventRepository.getHomeFeed(
-      lat: userLocation?.lat,
-      lng: userLocation?.lng,
-      radius: userLocation != null ? 30 : null,
-      limit: 10,
-    );
-    ref.keepAlive();
-    return result;
+    try {
+      final result = await eventRepository.getHomeFeed(
+        lat: userLocation?.lat,
+        lng: userLocation?.lng,
+        radius: userLocation != null ? 30 : null,
+        limit: 10,
+      );
+      ref.keepAlive();
+      return result;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> refresh() async {
@@ -126,7 +130,7 @@ class FeaturedActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>
       ref.keepAlive();
       return EventToActivityMapper.toActivities(result.events);
     } catch (e) {
-      return [];
+      rethrow;
     }
   }
 
@@ -162,7 +166,7 @@ class CategoriesNotifier extends AutoDisposeAsyncNotifier<List<EventCategoryInfo
               ))
           .toList();
     } catch (e) {
-      return [];
+      rethrow;
     }
   }
 
@@ -210,7 +214,7 @@ class HomeCitiesNotifier extends AutoDisposeAsyncNotifier<List<City>> {
           })
           .toList();
     } catch (e) {
-      return [];
+      rethrow;
     }
   }
 
