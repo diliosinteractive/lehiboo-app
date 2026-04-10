@@ -59,17 +59,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   /// Refresh all home screen data
   Future<void> _refreshData() async {
-    // Invalidate all providers to force refresh
-    ref.invalidate(homeActivitiesProvider);
-    ref.invalidate(featuredActivitiesProvider);
-    ref.invalidate(categoriesProvider);
-    ref.invalidate(homeCitiesProvider);
+    // Refresh only independent providers in parallel.
+    // Derived providers (today, tomorrow, homeActivities) will auto-rebuild
+    // via ref.watch(homeFeedProvider.future) when homeFeed completes.
+    await Future.wait([
+      ref.read(homeFeedProvider.notifier).refresh(),
+      ref.read(featuredActivitiesProvider.notifier).refresh(),
+      ref.read(categoriesProvider.notifier).refresh(),
+      ref.read(homeCitiesProvider.notifier).refresh(),
+      ref.read(mobileAppConfigProvider.notifier).refresh(),
+    ]);
     ref.invalidate(alertsProvider);
-    ref.invalidate(mobileAppConfigProvider);
     ref.invalidate(viewedStoriesProvider);
-
-    // Wait a bit for the providers to start refreshing
-    await Future.delayed(const Duration(milliseconds: 500));
   }
 
   @override
@@ -320,7 +321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildActivitySection(
     BuildContext context,
     WidgetRef ref, {
-    required FutureProvider<List<Activity>> provider,
+    required ProviderListenable<AsyncValue<List<Activity>>> provider,
     required String baseTitle,
     required String emptyMessage,
     required String viewAllPath,
