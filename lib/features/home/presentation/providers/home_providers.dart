@@ -13,120 +13,181 @@ import 'user_location_provider.dart';
 import '../../../../features/events/data/models/home_feed_response_dto.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 
-// Unified Home Feed Provider
-final homeFeedProvider = FutureProvider<HomeFeedResponseDto>((ref) async {
-  final eventRepository = ref.watch(eventRepositoryProvider);
-  final userLocationAsync = ref.watch(userLocationProvider);
-  
-  // Wait for location to resolve (or error/null) before fetching feed
-  // But don't block forever if location is disabled
-  final userLocation = userLocationAsync.valueOrNull;
+// ──────────────────────────────────────────────────────────────────────────────
+// Home Feed
+// ──────────────────────────────────────────────────────────────────────────────
 
-  return await eventRepository.getHomeFeed(
-    lat: userLocation?.lat,
-    lng: userLocation?.lng,
-    radius: userLocation != null ? 30 : null,
-    limit: 10,
-  );
-});
+final homeFeedProvider = AutoDisposeAsyncNotifierProvider<HomeFeedNotifier, HomeFeedResponseDto>(
+  HomeFeedNotifier.new,
+);
 
-/// Provider for TODAY's activities (derived from Feed)
-final homeTodayActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
-  // Await the feed data - this properly waits for the async result
-  final feedDto = await ref.watch(homeFeedProvider.future);
+class HomeFeedNotifier extends AutoDisposeAsyncNotifier<HomeFeedResponseDto> {
+  @override
+  Future<HomeFeedResponseDto> build() async {
+    final eventRepository = ref.watch(eventRepositoryProvider);
+    final userLocationAsync = ref.watch(userLocationProvider);
+    final userLocation = userLocationAsync.valueOrNull;
 
-  if (feedDto.data?.today == null || feedDto.data!.today.isEmpty) {
-    return [];
-  }
-
-  final events = feedDto.data!.today.map(EventMapper.toEvent).toList();
-  return EventToActivityMapper.toActivities(events);
-});
-
-/// Provider for TOMORROW's activities (derived from Feed)
-final homeTomorrowActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
-  // Await the feed data
-  final feedDto = await ref.watch(homeFeedProvider.future);
-
-  if (feedDto.data?.tomorrow == null || feedDto.data!.tomorrow.isEmpty) {
-    return [];
-  }
-
-  final events = feedDto.data!.tomorrow.map(EventMapper.toEvent).toList();
-  return EventToActivityMapper.toActivities(events);
-});
-
-/// Provider for recommended activities/events (derived from Feed)
-final homeActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
-  // Await the feed data
-  final feedDto = await ref.watch(homeFeedProvider.future);
-
-  if (feedDto.data?.recommended == null || feedDto.data!.recommended.isEmpty) {
-    return [];
-  }
-
-  final events = feedDto.data!.recommended.map(EventMapper.toEvent).toList();
-  return EventToActivityMapper.toActivities(events);
-});
-
-/// Provider for featured/promoted activities
-final featuredActivitiesProvider = FutureProvider<List<Activity>>((ref) async {
-  final eventRepository = ref.watch(eventRepositoryProvider);
-
-  try {
-    // Fetch featured events
-    final result = await eventRepository.getEvents(
-      page: 1,
-      perPage: 5,
-      orderBy: 'views', // Most popular
-      order: 'desc',
+    return await eventRepository.getHomeFeed(
+      lat: userLocation?.lat,
+      lng: userLocation?.lng,
+      radius: userLocation != null ? 30 : null,
+      limit: 10,
     );
-
-    return EventToActivityMapper.toActivities(result.events);
-  } catch (e) {
-    return [];
   }
-});
 
-/// Provider for event categories from real API
-final categoriesProvider = FutureProvider<List<EventCategoryInfo>>((ref) async {
-  final eventRepository = ref.watch(eventRepositoryProvider);
-
-  try {
-    final categories = await eventRepository.getCategories();
-    return categories
-        .map((cat) => EventCategoryInfo(
-              id: cat.id.toString(),
-              name: cat.name,
-              slug: cat.slug,
-              icon: cat.icon,
-              eventCount: cat.eventCount ?? 0,
-            ))
-        .toList();
-  } catch (e) {
-    return [];
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
   }
-});
+}
 
-/// Provider for cities from real API
-final homeCitiesProvider = FutureProvider<List<City>>((ref) async {
-  final eventRepository = ref.watch(eventRepositoryProvider);
+// ──────────────────────────────────────────────────────────────────────────────
+// Today's Activities (derived from Feed)
+// ──────────────────────────────────────────────────────────────────────────────
 
-  try {
-    final cities = await eventRepository.getCities();
-    
-    // Sort by event count
-    final sortedCities = List.of(cities)
-      ..sort((a, b) => (b.eventCount ?? 0).compareTo(a.eventCount ?? 0));
+final homeTodayActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeTodayActivitiesNotifier, List<Activity>>(
+  HomeTodayActivitiesNotifier.new,
+);
 
-    return sortedCities
-        .take(6)
-        .map((city) {
-            // Inject local image if API doesn't provide one
+class HomeTodayActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
+  @override
+  Future<List<Activity>> build() async {
+    final feedDto = await ref.watch(homeFeedProvider.future);
+
+    if (feedDto.data?.today == null || feedDto.data!.today.isEmpty) {
+      return [];
+    }
+
+    final events = feedDto.data!.today.map(EventMapper.toEvent).toList();
+    return EventToActivityMapper.toActivities(events);
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Tomorrow's Activities (derived from Feed)
+// ──────────────────────────────────────────────────────────────────────────────
+
+final homeTomorrowActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeTomorrowActivitiesNotifier, List<Activity>>(
+  HomeTomorrowActivitiesNotifier.new,
+);
+
+class HomeTomorrowActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
+  @override
+  Future<List<Activity>> build() async {
+    final feedDto = await ref.watch(homeFeedProvider.future);
+
+    if (feedDto.data?.tomorrow == null || feedDto.data!.tomorrow.isEmpty) {
+      return [];
+    }
+
+    final events = feedDto.data!.tomorrow.map(EventMapper.toEvent).toList();
+    return EventToActivityMapper.toActivities(events);
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Featured / Promoted Activities
+// ──────────────────────────────────────────────────────────────────────────────
+
+final featuredActivitiesProvider = AutoDisposeAsyncNotifierProvider<FeaturedActivitiesNotifier, List<Activity>>(
+  FeaturedActivitiesNotifier.new,
+);
+
+class FeaturedActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
+  @override
+  Future<List<Activity>> build() async {
+    final eventRepository = ref.watch(eventRepositoryProvider);
+
+    try {
+      final result = await eventRepository.getEvents(
+        page: 1,
+        perPage: 5,
+        orderBy: 'views',
+        order: 'desc',
+      );
+
+      return EventToActivityMapper.toActivities(result.events);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Event Categories
+// ──────────────────────────────────────────────────────────────────────────────
+
+final categoriesProvider = AutoDisposeAsyncNotifierProvider<CategoriesNotifier, List<EventCategoryInfo>>(
+  CategoriesNotifier.new,
+);
+
+class CategoriesNotifier extends AutoDisposeAsyncNotifier<List<EventCategoryInfo>> {
+  @override
+  Future<List<EventCategoryInfo>> build() async {
+    final eventRepository = ref.watch(eventRepositoryProvider);
+
+    try {
+      final categories = await eventRepository.getCategories();
+      return categories
+          .map((cat) => EventCategoryInfo(
+                id: cat.id.toString(),
+                name: cat.name,
+                slug: cat.slug,
+                icon: cat.icon,
+                eventCount: cat.eventCount ?? 0,
+              ))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Cities
+// ──────────────────────────────────────────────────────────────────────────────
+
+final homeCitiesProvider = AutoDisposeAsyncNotifierProvider<HomeCitiesNotifier, List<City>>(
+  HomeCitiesNotifier.new,
+);
+
+class HomeCitiesNotifier extends AutoDisposeAsyncNotifier<List<City>> {
+  @override
+  Future<List<City>> build() async {
+    final eventRepository = ref.watch(eventRepositoryProvider);
+
+    try {
+      final cities = await eventRepository.getCities();
+
+      final sortedCities = List.of(cities)
+        ..sort((a, b) => (b.eventCount ?? 0).compareTo(a.eventCount ?? 0));
+
+      return sortedCities
+          .take(6)
+          .map((city) {
             final imageUrl = city.imageUrl ?? _getCityImageUrl(city.name);
-            // Freezed copyWith is not easily available if generated file is not updated.
-            // But we can return new City since we have the factory.
-             return City(
+            return City(
               id: city.id,
               name: city.name,
               slug: city.slug,
@@ -137,12 +198,18 @@ final homeCitiesProvider = FutureProvider<List<City>>((ref) async {
               eventCount: city.eventCount,
               imageUrl: imageUrl,
             );
-        })
-        .toList();
-  } catch (e) {
-    return [];
+          })
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
-});
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
 
 /// Get a placeholder image URL for a city
 String _getCityImageUrl(String cityName) {
@@ -181,14 +248,26 @@ class EventCategoryInfo {
   });
 }
 
-/// Provider for mobile app configuration from Laravel v2 API.
-///
-/// Returns hero section, banners/ads configuration, and customizable texts.
-/// Falls back to default config if API is unavailable.
-final mobileAppConfigProvider = FutureProvider<MobileAppConfig>((ref) async {
-  final dataSource = ref.watch(mobileConfigDataSourceProvider);
-  return await dataSource.getConfig();
-});
+// ──────────────────────────────────────────────────────────────────────────────
+// Mobile App Config
+// ──────────────────────────────────────────────────────────────────────────────
+
+final mobileAppConfigProvider = AutoDisposeAsyncNotifierProvider<MobileAppConfigNotifier, MobileAppConfig>(
+  MobileAppConfigNotifier.new,
+);
+
+class MobileAppConfigNotifier extends AutoDisposeAsyncNotifier<MobileAppConfig> {
+  @override
+  Future<MobileAppConfig> build() async {
+    final dataSource = ref.watch(mobileConfigDataSourceProvider);
+    return await dataSource.getConfig();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
 
 /// Model for a saved/recent search
 class SavedSearch {
@@ -311,3 +390,30 @@ class SavedSearchesNotifier extends StateNotifier<List<SavedSearch>> {
 final savedSearchesProvider = StateNotifierProvider<SavedSearchesNotifier, List<SavedSearch>>((ref) {
   return SavedSearchesNotifier();
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Recommended Activities (derived from Feed)
+// ──────────────────────────────────────────────────────────────────────────────
+
+final homeActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeActivitiesNotifier, List<Activity>>(
+  HomeActivitiesNotifier.new,
+);
+
+class HomeActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
+  @override
+  Future<List<Activity>> build() async {
+    final feedDto = await ref.watch(homeFeedProvider.future);
+
+    if (feedDto.data?.recommended == null || feedDto.data!.recommended.isEmpty) {
+      return [];
+    }
+
+    final events = feedDto.data!.recommended.map(EventMapper.toEvent).toList();
+    return EventToActivityMapper.toActivities(events);
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}

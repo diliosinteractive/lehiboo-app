@@ -67,73 +67,78 @@ class CategoryHistoryNotifier extends StateNotifier<Map<String, int>> {
 
 /// Provider pour les activités personnalisées avec scoring
 final personalizedActivitiesProvider =
-    FutureProvider<List<ScoredActivity>>((ref) async {
-  final allActivities = await ref.watch(homeActivitiesProvider.future);
-  final todayActivities = await ref.watch(homeTodayActivitiesProvider.future);
-  final tomorrowActivities =
-      await ref.watch(homeTomorrowActivitiesProvider.future);
+    AutoDisposeAsyncNotifierProvider<PersonalizedActivitiesNotifier, List<ScoredActivity>>(
+  PersonalizedActivitiesNotifier.new,
+);
 
-  // Combine all activities
-  final activities = <Activity>{
-    ...allActivities,
-    ...todayActivities,
-    ...tomorrowActivities,
-  }.toList();
+class PersonalizedActivitiesNotifier extends AutoDisposeAsyncNotifier<List<ScoredActivity>> {
+  @override
+  Future<List<ScoredActivity>> build() async {
+    final allActivities = await ref.watch(homeActivitiesProvider.future);
+    final todayActivities = await ref.watch(homeTodayActivitiesProvider.future);
+    final tomorrowActivities =
+        await ref.watch(homeTomorrowActivitiesProvider.future);
 
-  if (activities.isEmpty) return [];
+    // Combine all activities
+    final activities = <Activity>{
+      ...allActivities,
+      ...todayActivities,
+      ...tomorrowActivities,
+    }.toList();
 
-  // Get scoring factors
-  final categoryHistory = ref.watch(categoryHistoryProvider);
-  final userLocation = ref.watch(userLocationProvider).valueOrNull;
-  // Note: favorites pourrait être utilisé pour scorer les partenaires favoris
-  // final favorites = ref.watch(favoritesProvider);
+    if (activities.isEmpty) return [];
 
-  // Score each activity
-  final scored = activities.map((activity) {
-    double score = 0;
+    // Get scoring factors
+    final categoryHistory = ref.watch(categoryHistoryProvider);
+    final userLocation = ref.watch(userLocationProvider).valueOrNull;
 
-    // +3 points if category was previously viewed
-    if (activity.category != null) {
-      final categoryScore = categoryHistory[activity.category!.slug] ?? 0;
-      score += (categoryScore * 0.3).clamp(0, 3);
-    }
+    // Score each activity
+    final scored = activities.map((activity) {
+      double score = 0;
 
-    // +2 points if within 10km (when location available)
-    if (userLocation != null && activity.city != null) {
-      // Simplified: just check if same city
-      if (activity.city!.name.toLowerCase() ==
-          userLocation.cityName?.toLowerCase()) {
-        score += 2;
+      // +3 points if category was previously viewed
+      if (activity.category != null) {
+        final categoryScore = categoryHistory[activity.category!.slug] ?? 0;
+        score += (categoryScore * 0.3).clamp(0, 3);
       }
-    }
 
-    // +1 point if partner is in favorites
-    // (simplified: check if any favorite matches this activity's partner)
-    // This would need actual partner favorite tracking
-
-    // +0.5 point for free activities (user preference for deals)
-    if (activity.priceMin == 0) {
-      score += 0.5;
-    }
-
-    // +1 point if activity is today or tomorrow
-    if (activity.nextSlot != null) {
-      final now = DateTime.now();
-      final diff = activity.nextSlot!.startDateTime.difference(now);
-      if (diff.inDays <= 1 && diff.inHours > 0) {
-        score += 1;
+      // +2 points if within 10km (when location available)
+      if (userLocation != null && activity.city != null) {
+        if (activity.city!.name.toLowerCase() ==
+            userLocation.cityName?.toLowerCase()) {
+          score += 2;
+        }
       }
-    }
 
-    return ScoredActivity(activity: activity, score: score);
-  }).toList();
+      // +0.5 point for free activities (user preference for deals)
+      if (activity.priceMin == 0) {
+        score += 0.5;
+      }
 
-  // Sort by score descending
-  scored.sort((a, b) => b.score.compareTo(a.score));
+      // +1 point if activity is today or tomorrow
+      if (activity.nextSlot != null) {
+        final now = DateTime.now();
+        final diff = activity.nextSlot!.startDateTime.difference(now);
+        if (diff.inDays <= 1 && diff.inHours > 0) {
+          score += 1;
+        }
+      }
 
-  // Return top 10
-  return scored.take(10).toList();
-});
+      return ScoredActivity(activity: activity, score: score);
+    }).toList();
+
+    // Sort by score descending
+    scored.sort((a, b) => b.score.compareTo(a.score));
+
+    // Return top 10
+    return scored.take(10).toList();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
 
 /// Activity with a personalization score
 class ScoredActivity {
