@@ -131,6 +131,7 @@ class PersonalizedActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Score
     scored.sort((a, b) => b.score.compareTo(a.score));
 
     // Return top 10
+    ref.keepAlive();
     return scored.take(10).toList();
   }
 

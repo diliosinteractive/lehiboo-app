@@ -28,12 +28,14 @@ class HomeFeedNotifier extends AutoDisposeAsyncNotifier<HomeFeedResponseDto> {
     final userLocationAsync = ref.watch(userLocationProvider);
     final userLocation = userLocationAsync.valueOrNull;
 
-    return await eventRepository.getHomeFeed(
+    final result = await eventRepository.getHomeFeed(
       lat: userLocation?.lat,
       lng: userLocation?.lng,
       radius: userLocation != null ? 30 : null,
       limit: 10,
     );
+    ref.keepAlive();
+    return result;
   }
 
   Future<void> refresh() async {
@@ -56,10 +58,12 @@ class HomeTodayActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity
     final feedDto = await ref.watch(homeFeedProvider.future);
 
     if (feedDto.data?.today == null || feedDto.data!.today.isEmpty) {
+      ref.keepAlive();
       return [];
     }
 
     final events = feedDto.data!.today.map(EventMapper.toEvent).toList();
+    ref.keepAlive();
     return EventToActivityMapper.toActivities(events);
   }
 
@@ -83,10 +87,12 @@ class HomeTomorrowActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activ
     final feedDto = await ref.watch(homeFeedProvider.future);
 
     if (feedDto.data?.tomorrow == null || feedDto.data!.tomorrow.isEmpty) {
+      ref.keepAlive();
       return [];
     }
 
     final events = feedDto.data!.tomorrow.map(EventMapper.toEvent).toList();
+    ref.keepAlive();
     return EventToActivityMapper.toActivities(events);
   }
 
@@ -117,6 +123,7 @@ class FeaturedActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>
         order: 'desc',
       );
 
+      ref.keepAlive();
       return EventToActivityMapper.toActivities(result.events);
     } catch (e) {
       return [];
@@ -144,6 +151,7 @@ class CategoriesNotifier extends AutoDisposeAsyncNotifier<List<EventCategoryInfo
 
     try {
       final categories = await eventRepository.getCategories();
+      ref.keepAlive();
       return categories
           .map((cat) => EventCategoryInfo(
                 id: cat.id.toString(),
@@ -183,6 +191,7 @@ class HomeCitiesNotifier extends AutoDisposeAsyncNotifier<List<City>> {
       final sortedCities = List.of(cities)
         ..sort((a, b) => (b.eventCount ?? 0).compareTo(a.eventCount ?? 0));
 
+      ref.keepAlive();
       return sortedCities
           .take(6)
           .map((city) {
@@ -260,7 +269,9 @@ class MobileAppConfigNotifier extends AutoDisposeAsyncNotifier<MobileAppConfig> 
   @override
   Future<MobileAppConfig> build() async {
     final dataSource = ref.watch(mobileConfigDataSourceProvider);
-    return await dataSource.getConfig();
+    final result = await dataSource.getConfig();
+    ref.keepAlive();
+    return result;
   }
 
   Future<void> refresh() async {
@@ -405,10 +416,12 @@ class HomeActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
     final feedDto = await ref.watch(homeFeedProvider.future);
 
     if (feedDto.data?.recommended == null || feedDto.data!.recommended.isEmpty) {
+      ref.keepAlive();
       return [];
     }
 
     final events = feedDto.data!.recommended.map(EventMapper.toEvent).toList();
+    ref.keepAlive();
     return EventToActivityMapper.toActivities(events);
   }
 
