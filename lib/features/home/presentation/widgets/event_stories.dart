@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lehiboo/core/themes/colors.dart';
-import 'package:lehiboo/domain/entities/activity.dart';
-import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/stories/domain/entities/story.dart';
+import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider pour suivre les stories vues
@@ -43,16 +43,12 @@ class EventStories extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Utiliser les activités "featured" comme stories pour le mock
-    final activitiesAsync = ref.watch(featuredActivitiesProvider);
+    final storiesAsync = ref.watch(activeStoriesProvider);
     final viewedStories = ref.watch(viewedStoriesProvider);
 
-    return activitiesAsync.when(
-      data: (activities) {
-        if (activities.isEmpty) return const SizedBox.shrink();
-
-        // Limiter à 8 stories max
-        final stories = activities.take(8).toList();
+    return storiesAsync.when(
+      data: (stories) {
+        if (stories.isEmpty) return const SizedBox.shrink();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +87,7 @@ class EventStories extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   // Badge "NEW" si des stories non vues
-                  if (stories.any((s) => !viewedStories.contains(s.id)))
+                  if (stories.any((s) => !viewedStories.contains(s.uuid)))
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
@@ -122,10 +118,10 @@ class EventStories extends ConsumerWidget {
                 separatorBuilder: (context, index) => const SizedBox(width: 16),
                 itemBuilder: (context, index) {
                   final story = stories[index];
-                  final isViewed = viewedStories.contains(story.id);
+                  final isViewed = viewedStories.contains(story.uuid);
 
                   return _StoryCircle(
-                    activity: story,
+                    story: story,
                     isViewed: isViewed,
                     onTap: () => _openStoryViewer(context, ref, stories, index),
                   );
@@ -180,7 +176,7 @@ class EventStories extends ConsumerWidget {
     );
   }
 
-  void _openStoryViewer(BuildContext context, WidgetRef ref, List<Activity> stories, int initialIndex) {
+  void _openStoryViewer(BuildContext context, WidgetRef ref, List<Story> stories, int initialIndex) {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
@@ -200,12 +196,12 @@ class EventStories extends ConsumerWidget {
 
 /// Cercle d'une story avec bordure gradient animée
 class _StoryCircle extends StatefulWidget {
-  final Activity activity;
+  final Story story;
   final bool isViewed;
   final VoidCallback onTap;
 
   const _StoryCircle({
-    required this.activity,
+    required this.story,
     required this.isViewed,
     required this.onTap,
   });
@@ -302,14 +298,12 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
                           fit: StackFit.expand,
                           children: [
                             // Image
-                            widget.activity.imageUrl != null
-                                ? CachedNetworkImage(
-                                    imageUrl: widget.activity.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => _buildPlaceholder(),
-                                    errorWidget: (context, url, error) => _buildPlaceholder(),
-                                  )
-                                : _buildPlaceholder(),
+                            CachedNetworkImage(
+                              imageUrl: widget.story.mediaUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => _buildPlaceholder(),
+                              errorWidget: (context, url, error) => _buildPlaceholder(),
+                            ),
                             // Overlay sombre
                             Container(
                               decoration: BoxDecoration(
@@ -370,8 +364,8 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
 
   Widget _buildPlaceholder() {
     // Placeholder coloré avec initiale ou icône
-    final firstLetter = widget.activity.title.isNotEmpty
-        ? widget.activity.title[0].toUpperCase()
+    final firstLetter = widget.story.title.isNotEmpty
+        ? widget.story.title[0].toUpperCase()
         : '?';
 
     return Container(
@@ -400,9 +394,9 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
 
   String _getShortLabel() {
     // Afficher les 2 premiers mots du titre
-    final words = widget.activity.title.split(' ');
+    final words = widget.story.title.split(' ');
     if (words.length <= 2) {
-      return widget.activity.title;
+      return widget.story.title;
     }
     return '${words[0]} ${words[1]}';
   }
@@ -453,7 +447,7 @@ class _StoryCircleSkeleton extends StatelessWidget {
 
 /// Overlay plein écran pour visualiser les stories
 class _StoryViewerOverlay extends ConsumerStatefulWidget {
-  final List<Activity> stories;
+  final List<Story> stories;
   final int initialIndex;
 
   const _StoryViewerOverlay({
@@ -488,8 +482,9 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
         }
       });
 
-    // Mark initial story as viewed and start progress
+    // Mark initial story as viewed, record impression, and start progress
     _markCurrentAsViewed();
+    _recordCurrentImpression();
     _progressController.forward();
   }
 
@@ -502,7 +497,12 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
   void _markCurrentAsViewed() {
     final currentStory = widget.stories[_currentIndex];
-    ref.read(viewedStoriesProvider.notifier).markAsViewed(currentStory.id);
+    ref.read(viewedStoriesProvider.notifier).markAsViewed(currentStory.uuid);
+  }
+
+  void _recordCurrentImpression() {
+    final currentStory = widget.stories[_currentIndex];
+    ref.read(activeStoriesProvider.notifier).recordImpression(currentStory.uuid);
   }
 
   void _goToNextStory() {
@@ -512,7 +512,11 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
         curve: Curves.easeInOut,
       );
     } else {
-      Navigator.of(context).pop();
+      _pageController.animateToPage(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -530,6 +534,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
       _currentIndex = index;
     });
     _markCurrentAsViewed();
+    _recordCurrentImpression();
     _progressController.reset();
     _progressController.forward();
   }
@@ -556,7 +561,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
     if (details.velocity.pixelsPerSecond.dy < -500) {
       final currentStory = widget.stories[_currentIndex];
       Navigator.of(context).pop();
-      context.push('/event/${currentStory.id}', extra: currentStory);
+      context.push('/event/${currentStory.eventUuid}');
     }
     // Swipe down = close
     else if (details.velocity.pixelsPerSecond.dy > 500) {
@@ -583,7 +588,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
               onPageChanged: _onPageChanged,
               itemCount: widget.stories.length,
               itemBuilder: (context, index) {
-                return _StoryContent(activity: widget.stories[index]);
+                return _StoryContent(story: widget.stories[index]);
               },
             ),
 
@@ -641,9 +646,9 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
 /// Contenu d'une story
 class _StoryContent extends StatelessWidget {
-  final Activity activity;
+  final Story story;
 
-  const _StoryContent({required this.activity});
+  const _StoryContent({required this.story});
 
   @override
   Widget build(BuildContext context) {
@@ -651,20 +656,17 @@ class _StoryContent extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         // Background image
-        if (activity.imageUrl != null)
-          CachedNetworkImage(
-            imageUrl: activity.imageUrl!,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              color: Colors.grey[900],
-              child: const Center(
-                child: CircularProgressIndicator(color: HbColors.brandPrimary),
-              ),
+        CachedNetworkImage(
+          imageUrl: story.mediaUrl,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            color: Colors.grey[900],
+            child: const Center(
+              child: CircularProgressIndicator(color: HbColors.brandPrimary),
             ),
-            errorWidget: (context, url, error) => _buildPlaceholder(),
-          )
-        else
-          _buildPlaceholder(),
+          ),
+          errorWidget: (context, url, error) => _buildPlaceholder(),
+        ),
 
         // Gradient overlay at bottom
         Positioned(
@@ -695,7 +697,7 @@ class _StoryContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Category badge
-              if (activity.category != null)
+              if (story.categoryName != null)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
@@ -703,7 +705,7 @@ class _StoryContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    activity.category!.name,
+                    _buildCategoryLabel(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -716,7 +718,7 @@ class _StoryContent extends StatelessWidget {
 
               // Title
               Text(
-                activity.title,
+                story.title,
                 style: GoogleFonts.montserrat(
                   color: Colors.white,
                   fontSize: 24,
@@ -735,24 +737,22 @@ class _StoryContent extends StatelessWidget {
                   const Icon(Icons.location_on_outlined, color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    activity.city?.name ?? 'France',
+                    story.eventCity ?? 'France',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
                     ),
                   ),
-                  if (activity.nextSlot != null) ...[
-                    const SizedBox(width: 12),
-                    const Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatDate(activity.nextSlot!.startDateTime),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatDate(story.startDate),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
                     ),
-                  ],
+                  ),
                 ],
               ),
 
@@ -778,6 +778,13 @@ class _StoryContent extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _buildCategoryLabel() {
+    final category = story.categoryName ?? '';
+    final mode = story.eventBookingMode == 'booking' ? 'Billetterie' : 'Découverte';
+    if (category.isEmpty) return mode;
+    return '$category \u00b7 $mode';
   }
 
   Widget _buildPlaceholder() {
