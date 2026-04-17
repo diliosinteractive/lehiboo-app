@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/petit_boo/presentation/providers/engagement_provider.dart';
@@ -112,6 +113,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Future<void> _saveCurrentSearch(BuildContext context,
       {bool isAlert = false}) async {
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'sauvegarder une recherche',
+    );
+    if (!allowed) return;
+    if (!mounted) return;
+
     final filter = ref.read(eventFilterProvider);
     final alertsNotifier = ref.read(alertsProvider.notifier);
 

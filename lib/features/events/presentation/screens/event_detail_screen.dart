@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_submodels.dart';
@@ -704,6 +705,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   void _onBookPressed() async {
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'réserver une activité',
+    );
+    if (!allowed) return;
+    if (!mounted) return;
+
     HapticFeedback.mediumImpact();
     final event = ref.read(eventDetailProvider(widget.eventId)).valueOrNull;
     if (event == null) return;
