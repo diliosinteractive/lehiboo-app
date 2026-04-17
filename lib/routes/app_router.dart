@@ -93,7 +93,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isBootstrap) {
         if (!onboardingCompleted) return '/onboarding';
         if (isPendingOtp) return '/verify-otp';
-        return isAuthenticated ? '/' : '/login';
+        return '/';
       }
 
       // 1. If onboarding not completed, go to onboarding
@@ -104,8 +104,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 2. If onboarding completed but user on onboarding page, go to login
       if (onboardingCompleted && isOnboarding) {
-        debugPrint('🔀 Redirecting to /login (from onboarding)');
-        return '/login';
+        debugPrint('🔀 Redirecting to / (from onboarding)');
+        return '/';
       }
 
       // 3. If pending OTP verification
@@ -121,13 +121,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-otp'; // Force redirect to OTP screen for non-auth routes
       }
 
-      // 4. If not authenticated and not on auth route, redirect to login
-      if (!isAuthenticated && !isAuthRoute && !isOnboarding) {
-        debugPrint('🔀 Redirecting to /login (not authenticated)');
-        return '/login';
-      }
-
-      // 5. If authenticated and on auth route, redirect to home
+      // 4. If authenticated and on auth route, redirect to home
       if (isAuthenticated && isAuthRoute) {
         debugPrint('🔀 Redirecting to / (authenticated)');
         return '/';
