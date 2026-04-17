@@ -93,6 +93,7 @@ class JwtAuthInterceptor extends QueuedInterceptor {
       '/home-feed',
       '/mobile/config',
       '/posts',
+      '/stories',
     ];
 
     final isPublic = publicEndpoints.any((e) => options.path.startsWith(e));
