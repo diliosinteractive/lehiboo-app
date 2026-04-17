@@ -127,6 +127,12 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> clearLocalAuthData() async {
+    await _secureStorage.clearAuthData();
+    _cachedUser = null;
+  }
+
+  @override
   Future<void> forgotPassword(String email) async {
     await _apiDataSource.forgotPassword(email);
   }

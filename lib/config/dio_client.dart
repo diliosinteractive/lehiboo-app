@@ -11,6 +11,9 @@ final dioProvider = Provider<Dio>((ref) {
   return DioClient.instance;
 });
 
+/// Callback type for force logout triggered by 401 interceptor.
+typedef ForceLogoutCallback = Future<void> Function();
+
 /// Singleton storage instance shared across the app
 /// This ensures consistency between token writes (auth) and reads (interceptor)
 class SharedSecureStorage {
@@ -22,6 +25,7 @@ class SharedSecureStorage {
 
 class DioClient {
   static late Dio _dio;
+  static ForceLogoutCallback? onForceLogout;
 
   static Dio get instance => _dio;
   static FlutterSecureStorage get storage => SharedSecureStorage.instance;
@@ -49,7 +53,7 @@ class DioClient {
 
     // Add interceptors
     _dio.interceptors.addAll([
-      JwtAuthInterceptor(_dio, SharedSecureStorage.instance),
+      JwtAuthInterceptor(SharedSecureStorage.instance),
       if (kDebugMode)
         PrettyDioLogger(
           requestHeader: true,
@@ -65,11 +69,10 @@ class DioClient {
 }
 
 class JwtAuthInterceptor extends QueuedInterceptor {
-  final Dio _dio;
   final FlutterSecureStorage _storage;
   bool _isRefreshing = false;
 
-  JwtAuthInterceptor(this._dio, this._storage);
+  JwtAuthInterceptor(this._storage);
 
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
@@ -122,76 +125,31 @@ class JwtAuthInterceptor extends QueuedInterceptor {
       _isRefreshing = true;
 
       if (kDebugMode) {
-        debugPrint('🔐 JwtAuthInterceptor: 401 error on ${err.requestOptions.path}');
+        debugPrint('🔐 JwtAuthInterceptor: 401 on ${err.requestOptions.path}');
       }
 
-      try {
-        final currentToken = await _storage.read(key: AppConstants.keyAuthToken);
+      final currentToken = await _storage.read(key: AppConstants.keyAuthToken);
 
-        if (currentToken != null && currentToken.isNotEmpty) {
-          if (kDebugMode) {
-            debugPrint('🔐 JwtAuthInterceptor: Attempting token refresh...');
-          }
-
-          // Create a new Dio instance to avoid interceptor loop
-          final refreshDio = Dio(BaseOptions(
-            baseUrl: AppConstants.baseUrl,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': 'Bearer $currentToken',
-            },
-          ));
-
-          try {
-            final response = await refreshDio.post('/auth/refresh');
-
-            // Laravel v2 format: { "message": "...", "token": "...", ... }
-            // or: { "data": { "token": "..." } }
-            final data = response.data;
-            final newAccessToken = data['token'] ?? data['data']?['token'];
-
-            if (newAccessToken != null) {
-              if (kDebugMode) {
-                debugPrint('🔐 JwtAuthInterceptor: Token refreshed successfully');
-              }
-              // Save new token (Sanctum uses same token for both)
-              await _storage.write(key: AppConstants.keyAuthToken, value: newAccessToken);
-              await _storage.write(key: AppConstants.keyRefreshToken, value: newAccessToken);
-
-              // Retry the original request with new token
-              err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
-
-              final retryResponse = await _dio.fetch(err.requestOptions);
-              _isRefreshing = false;
-              return handler.resolve(retryResponse);
-            }
-          } catch (refreshError) {
-            // Refresh failed - this is expected with Laravel Sanctum
-            // which doesn't have a refresh endpoint
-            if (kDebugMode) {
-              debugPrint('🔐 JwtAuthInterceptor: Refresh failed (expected with Sanctum): $refreshError');
-              debugPrint('🔐 JwtAuthInterceptor: NOT clearing tokens - user may still have valid session');
-            }
-            // DON'T clear tokens here - the token might still be valid
-            // and the 401 might be for a specific resource, not auth
-          }
-        } else {
-          if (kDebugMode) {
-            debugPrint('🔐 JwtAuthInterceptor: No token found, cannot refresh');
-          }
-        }
-
-        _isRefreshing = false;
-        return handler.reject(err);
-      } catch (e) {
+      if (currentToken != null && currentToken.isNotEmpty) {
+        // Token exists but server rejected it → session expired.
+        // Clear local tokens and trigger force logout so the router
+        // redirects to the login screen.
         if (kDebugMode) {
-          debugPrint('🔐 JwtAuthInterceptor: Unexpected error during refresh: $e');
+          debugPrint('🔐 JwtAuthInterceptor: Token expired → force logout');
         }
-        // DON'T clear tokens on unexpected errors either
-        _isRefreshing = false;
-        return handler.reject(err);
+        await _storage.delete(key: AppConstants.keyAuthToken);
+        await _storage.delete(key: AppConstants.keyRefreshToken);
+
+        // Notify the auth layer (if wired up) so GoRouter redirects to login.
+        await DioClient.onForceLogout?.call();
+      } else {
+        if (kDebugMode) {
+          debugPrint('🔐 JwtAuthInterceptor: No token found, nothing to clear');
+        }
       }
+
+      _isRefreshing = false;
+      return handler.reject(err);
     }
 
     super.onError(err, handler);

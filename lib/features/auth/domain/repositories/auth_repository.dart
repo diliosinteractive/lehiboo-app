@@ -73,6 +73,9 @@ abstract class AuthRepository {
 
   Future<void> logout();
 
+  /// Clear local auth data without calling the API (for force logout on 401).
+  Future<void> clearLocalAuthData();
+
   Future<void> forgotPassword(String email);
 
   Future<void> resetPassword({

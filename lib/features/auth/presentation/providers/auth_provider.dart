@@ -255,6 +255,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
+  /// Force logout without calling the API (used by 401 interceptor).
+  /// Skips the API call to avoid triggering another 401 loop.
+  Future<void> forceLogout() async {
+    await _authRepository.clearLocalAuthData();
+    state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
   void clearError() {
     state = state.copyWith(errorMessage: null);
   }
