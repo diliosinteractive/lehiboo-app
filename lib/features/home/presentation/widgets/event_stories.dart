@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/home/presentation/widgets/story_video_player.dart';
 import 'package:lehiboo/features/stories/domain/entities/story.dart';
 import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -464,6 +465,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
   late PageController _pageController;
   late AnimationController _progressController;
   int _currentIndex = 0;
+  final ValueNotifier<bool> _isPaused = ValueNotifier(false);
 
   static const _storyDuration = Duration(seconds: 5);
 
@@ -490,6 +492,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
   @override
   void dispose() {
+    _isPaused.dispose();
     _pageController.dispose();
     _progressController.dispose();
     super.dispose();
@@ -530,6 +533,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
   }
 
   void _onPageChanged(int index) {
+    _isPaused.value = false;
     setState(() {
       _currentIndex = index;
     });
@@ -549,10 +553,12 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
   }
 
   void _onLongPressStart(LongPressStartDetails details) {
+    _isPaused.value = true;
     _progressController.stop();
   }
 
   void _onLongPressEnd(LongPressEndDetails details) {
+    _isPaused.value = false;
     _progressController.forward();
   }
 
@@ -588,7 +594,10 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
               onPageChanged: _onPageChanged,
               itemCount: widget.stories.length,
               itemBuilder: (context, index) {
-                return _StoryContent(story: widget.stories[index]);
+                return _StoryContent(
+                  story: widget.stories[index],
+                  isPaused: _isPaused,
+                );
               },
             ),
 
@@ -647,26 +656,36 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 /// Contenu d'une story
 class _StoryContent extends StatelessWidget {
   final Story story;
+  final ValueNotifier<bool> isPaused;
 
-  const _StoryContent({required this.story});
+  const _StoryContent({
+    required this.story,
+    required this.isPaused,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Background image
-        CachedNetworkImage(
-          imageUrl: story.mediaUrl,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: Colors.grey[900],
-            child: const Center(
-              child: CircularProgressIndicator(color: HbColors.brandPrimary),
+        // Background media: video or image
+        if (story.mediaType == StoryMediaType.video)
+          StoryVideoPlayer(
+            videoUrl: story.mediaUrl,
+            isPaused: isPaused,
+          )
+        else
+          CachedNetworkImage(
+            imageUrl: story.mediaUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(
+              color: Colors.grey[900],
+              child: const Center(
+                child: CircularProgressIndicator(color: HbColors.brandPrimary),
+              ),
             ),
+            errorWidget: (context, url, error) => _buildPlaceholder(),
           ),
-          errorWidget: (context, url, error) => _buildPlaceholder(),
-        ),
 
         // Gradient overlay at bottom
         Positioned(
