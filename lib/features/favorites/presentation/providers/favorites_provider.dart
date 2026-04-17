@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/repositories/favorites_repository.dart';
 import '../../data/repositories/favorites_repository_impl.dart';
 import 'favorite_lists_provider.dart';
@@ -27,6 +28,13 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   }
 
   Future<void> loadFavorites({String? listId}) async {
+    // Anonymous users have no favorites — skip the API call
+    final isAuthenticated = _ref.read(isAuthenticatedProvider);
+    if (!isAuthenticated) {
+      state = const AsyncValue.data([]);
+      return;
+    }
+
     try {
       _currentListId = listId;
       state = const AsyncValue.loading();
