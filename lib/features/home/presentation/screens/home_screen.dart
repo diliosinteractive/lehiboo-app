@@ -11,6 +11,7 @@ import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_se
 import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
+import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
 
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
@@ -64,7 +65,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // via ref.watch(homeFeedProvider.future) when homeFeed completes.
     await Future.wait([
       ref.read(homeFeedProvider.notifier).refresh(),
-      ref.read(featuredActivitiesProvider.notifier).refresh(),
+      ref.read(activeStoriesProvider.notifier).refresh(),
       ref.read(categoriesProvider.notifier).refresh(),
       ref.read(homeCitiesProvider.notifier).refresh(),
       ref.read(mobileAppConfigProvider.notifier).refresh(),

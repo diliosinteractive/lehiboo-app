@@ -107,40 +107,6 @@ class HomeTomorrowActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activ
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Featured / Promoted Activities
-// ──────────────────────────────────────────────────────────────────────────────
-
-final featuredActivitiesProvider = AutoDisposeAsyncNotifierProvider<FeaturedActivitiesNotifier, List<Activity>>(
-  FeaturedActivitiesNotifier.new,
-);
-
-class FeaturedActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
-  @override
-  Future<List<Activity>> build() async {
-    final eventRepository = ref.watch(eventRepositoryProvider);
-
-    try {
-      final result = await eventRepository.getEvents(
-        page: 1,
-        perPage: 5,
-        orderBy: 'views',
-        order: 'desc',
-      );
-
-      ref.keepAlive();
-      return EventToActivityMapper.toActivities(result.events);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 // Event Categories
 // ──────────────────────────────────────────────────────────────────────────────
 
