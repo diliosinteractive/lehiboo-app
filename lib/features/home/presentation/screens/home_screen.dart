@@ -18,6 +18,7 @@ import '../../../../core/widgets/feedback/skeleton_event_card.dart';
 import '../widgets/home_cities_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
+import 'package:lehiboo/core/utils/guest_guard.dart';
 
 // New components
 import '../widgets/contextual_hero.dart';
@@ -262,7 +263,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Icons.favorite_border,
             color: opacity > 0.5 ? Colors.white : Colors.white,
           ),
-          onPressed: () => context.push('/favorites'),
+          onPressed: () async {
+            final allowed = await GuestGuard.check(
+              context: context,
+              ref: ref,
+              featureName: 'voir vos favoris',
+            );
+            if (allowed && mounted) {
+              context.push('/favorites');
+            }
+          },
         ),
         IconButton(
           icon: Icon(
@@ -276,7 +286,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Icons.person_outline,
             color: opacity > 0.5 ? Colors.white : Colors.white,
           ),
-          onPressed: () => context.push('/profile'),
+          onPressed: () async {
+            final allowed = await GuestGuard.check(
+              context: context,
+              ref: ref,
+              featureName: 'accéder à votre profil',
+            );
+            if (allowed && mounted) {
+              context.push('/profile');
+            }
+          },
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
