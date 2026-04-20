@@ -8,6 +8,7 @@ import 'package:lehiboo/features/home/presentation/widgets/story_video_player.da
 import 'package:lehiboo/features/stories/domain/entities/story.dart';
 import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player/video_player.dart';
 
 /// Provider pour suivre les stories vues
 final viewedStoriesProvider = StateNotifierProvider<ViewedStoriesNotifier, Set<String>>((ref) {
@@ -298,13 +299,8 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            // Image
-                            CachedNetworkImage(
-                              imageUrl: widget.story.mediaUrl,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => _buildPlaceholder(),
-                              errorWidget: (context, url, error) => _buildPlaceholder(),
-                            ),
+                            // Thumbnail: image→mediaUrl, video+poster→posterUrl, video→first frame
+                            _buildThumbnail(),
                             // Overlay sombre
                             Container(
                               decoration: BoxDecoration(
@@ -363,6 +359,34 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
     );
   }
 
+  Widget _buildThumbnail() {
+    // Image story → use mediaUrl directly
+    if (widget.story.mediaType == StoryMediaType.image) {
+      return CachedNetworkImage(
+        imageUrl: widget.story.mediaUrl,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildPlaceholder(),
+      );
+    }
+
+    // Video story with posterUrl → use poster image
+    if (widget.story.posterUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: widget.story.posterUrl!,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildPlaceholder(),
+      );
+    }
+
+    // Video story without posterUrl → extract first frame
+    return _VideoThumbnail(
+      videoUrl: widget.story.mediaUrl,
+      placeholder: _buildPlaceholder(),
+    );
+  }
+
   Widget _buildPlaceholder() {
     // Placeholder coloré avec initiale ou icône
     final firstLetter = widget.story.title.isNotEmpty
@@ -400,6 +424,56 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
       return widget.story.title;
     }
     return '${words[0]} ${words[1]}';
+  }
+}
+
+/// Extracts the first frame of a video for use as a thumbnail.
+/// Used when posterUrl is null (async generation pending or failed).
+class _VideoThumbnail extends StatefulWidget {
+  final String videoUrl;
+  final Widget placeholder;
+
+  const _VideoThumbnail({
+    required this.videoUrl,
+    required this.placeholder,
+  });
+
+  @override
+  State<_VideoThumbnail> createState() => _VideoThumbnailState();
+}
+
+class _VideoThumbnailState extends State<_VideoThumbnail> {
+  VideoPlayerController? _controller;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+      ..setVolume(0)
+      ..initialize().then((_) {
+        if (mounted) setState(() => _initialized = true);
+      }).catchError((_) {});
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized || _controller == null) return widget.placeholder;
+
+    return FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: _controller!.value.size.width,
+        height: _controller!.value.size.height,
+        child: VideoPlayer(_controller!),
+      ),
+    );
   }
 }
 
@@ -567,7 +641,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
     if (details.velocity.pixelsPerSecond.dy < -500) {
       final currentStory = widget.stories[_currentIndex];
       Navigator.of(context).pop();
-      context.push('/event/${currentStory.eventUuid}');
+      context.push('/event/${currentStory.eventSlug}');
     }
     // Swipe down = close
     else if (details.velocity.pixelsPerSecond.dy > 500) {
@@ -775,21 +849,32 @@ class _StoryContent extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Swipe up indicator
-              Center(
-                child: Column(
-                  children: [
-                    const Icon(Icons.keyboard_arrow_up, color: Colors.white70, size: 28),
-                    Text(
-                      'Swipe pour voir',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 12,
-                      ),
+              // CTA button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.push('/event/${story.eventSlug}');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HbColors.brandPrimary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Voir l\'activité',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -800,10 +885,15 @@ class _StoryContent extends StatelessWidget {
   }
 
   String _buildCategoryLabel() {
-    final category = story.categoryName ?? '';
-    final mode = story.eventBookingMode == 'booking' ? 'Billetterie' : 'Découverte';
-    if (category.isEmpty) return mode;
-    return '$category \u00b7 $mode';
+    final parts = <String>[];
+    if (story.categoryName != null && story.categoryName!.isNotEmpty) {
+      parts.add(story.categoryName!);
+    }
+    if (story.eventTagName != null && story.eventTagName!.isNotEmpty) {
+      parts.add(story.eventTagName!);
+    }
+    parts.add(story.eventBookingMode == 'booking' ? 'Billetterie' : 'Découverte');
+    return parts.join(' \u00b7 ');
   }
 
   Widget _buildPlaceholder() {

@@ -71,8 +71,9 @@ Accept: application/json
       "type": "optional",
       "status": "active",
       "title": "Brico-Conte: Le jardin de laine",
-      "mediaUrl": "https://storage.lehiboo.com/.../image.jpg",
-      "mediaType": "image",
+      "mediaUrl": "https://storage.lehiboo.com/.../video.mp4",
+      "mediaType": "video",
+      "posterUrl": "https://storage.lehiboo.com/stories/posters/019d9183-....jpg",
       "startDate": "2026-04-20",
       "endDate": "2026-04-25",
       "slotPosition": 1,
@@ -92,6 +93,10 @@ Accept: application/json
         "primaryCategory": {
           "id": 5,
           "name": "Théâtre & Humour"
+        },
+        "eventTag": {
+          "id": 12,
+          "name": "Spectacle"
         }
       }
     }
@@ -141,6 +146,7 @@ L'ancien endpoint retournait des `EventResource`. Le nouveau retourne des `Story
 | `title` | `title` | Titre de la story (peut différer du titre de l'event) |
 | `cover_image` | `mediaUrl` | Image/vidéo 9:16 de la story |
 | *(pas de champ)* | `mediaType` | `"image"` ou `"video"` — **nouveau**, permet le support vidéo |
+| *(pas de champ)* | `posterUrl` | **Nouveau** — JPG extrait à `t=1s` d'une story vidéo (par ffmpeg côté serveur). Utiliser comme thumbnail dans la bande horizontale. Peut être `null` pendant la génération async ou si l'extraction échoue ; dans ce cas utiliser le premier frame de la vidéo. Toujours `null` pour `mediaType === "image"`. |
 | `category.name` | `event.primaryCategory.name` | Catégorie principale |
 | `category.icon` | *(non disponible)* | L'icône catégorie n'est pas sur StoryResource |
 | `location.city` | `event.city` | Ville |
@@ -148,6 +154,7 @@ L'ancien endpoint retournait des `EventResource`. Le nouveau retourne des `Story
 | `next_slot.slot_date` | `startDate` | Date de début de la story (pas du créneau) |
 | *(pas de champ)* | `impressionsCount` | **Nouveau** — nombre de vues de la story |
 | *(pas de champ)* | `organization.organizationName` | **Nouveau** — nom de l'organisateur |
+| *(pas de champ)* | `event.eventTag.name` | **Nouveau** — type d'activité saisi par le vendor (ex: "Concert", "Fête", "Spectacle"). Localisé selon `Accept-Language`. Peut être `null` si non renseigné. |
 
 ---
 
@@ -157,6 +164,10 @@ L'ancien endpoint retournait des `EventResource`. Le nouveau retourne des `Story
 - Stories affichées côte à côte dans des cercles
 - Scroll horizontal tactile
 - Titre de l'activité sous chaque cercle
+- Thumbnail (résolution en cascade) :
+    - `mediaType === "image"` → `mediaUrl`
+    - `mediaType === "video"` + `posterUrl !== null` → `posterUrl` (JPG optimisé)
+    - `mediaType === "video"` + `posterUrl === null` → extraire le 1er frame de `mediaUrl` côté client (ex: `VideoPlayer(autoPlay: false)` Flutter). Ne **jamais** afficher une image générique type placeholder event — trompeur pour l'utilisateur.
 
 ### Vue plein écran (au tap)
 - Auto-advance toutes les 5 secondes
@@ -169,7 +180,7 @@ L'ancien endpoint retournait des `EventResource`. Le nouveau retourne des `Story
 ### Contenu affiché en plein écran
 - Image ou vidéo en plein écran (`mediaUrl` + `mediaType`)
 - Titre de la story en bas
-- Catégorie + type d'activité (`event.primaryCategory.name` · Billetterie/Découverte)
+- Catégorie · Event Type · Mode (`event.primaryCategory.name` · `event.eventTag.name` · Billetterie/Découverte)
 - Ville (`event.city`)
 - Bouton CTA vers `/{locale}/events/{event.slug}`
 
@@ -180,8 +191,9 @@ L'ancien endpoint retournait des `EventResource`. Le nouveau retourne des `Story
 - [ ] Remplacer l'appel `GET /v1/stories` par `GET /v1/stories/active`
 - [ ] Adapter le parsing du JSON (StoryResource au lieu de EventResource)
 - [ ] Gérer le champ `mediaType` pour supporter les stories vidéo
+- [ ] Thumbnail vidéo : utiliser `posterUrl` si présent, sinon 1er frame de `mediaUrl` (jamais le featured_image event)
 - [ ] Appeler `POST /v1/stories/{uuid}/impression` à chaque story affichée
 - [ ] Construire l'URL CTA avec `event.slug` au lieu de `slug`
-- [ ] Afficher catégorie + type (Billetterie/Découverte) dans l'overlay
+- [ ] Afficher catégorie · event tag · mode (Billetterie/Découverte) dans l'overlay
 - [ ] Tester avec 0 stories (section masquée), 1 story, et 8 stories
 - [ ] Supprimer les références à l'ancien endpoint avant le 1er juillet 2026

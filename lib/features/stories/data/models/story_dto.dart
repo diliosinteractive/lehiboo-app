@@ -32,6 +32,20 @@ class StoryOrganizationDto {
   }
 }
 
+class StoryEventTagDto {
+  final int id;
+  final String name;
+
+  StoryEventTagDto({required this.id, required this.name});
+
+  factory StoryEventTagDto.fromJson(Map<String, dynamic> json) {
+    return StoryEventTagDto(
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+    );
+  }
+}
+
 class StoryEventDto {
   final String uuid;
   final String slug;
@@ -40,6 +54,7 @@ class StoryEventDto {
   final String? city;
   final String? bookingMode;
   final StoryCategoryDto? primaryCategory;
+  final StoryEventTagDto? eventTag;
 
   StoryEventDto({
     required this.uuid,
@@ -49,6 +64,7 @@ class StoryEventDto {
     this.city,
     this.bookingMode,
     this.primaryCategory,
+    this.eventTag,
   });
 
   factory StoryEventDto.fromJson(Map<String, dynamic> json) {
@@ -62,6 +78,9 @@ class StoryEventDto {
       primaryCategory: json['primaryCategory'] != null
           ? StoryCategoryDto.fromJson(json['primaryCategory'] as Map<String, dynamic>)
           : null,
+      eventTag: json['eventTag'] != null
+          ? StoryEventTagDto.fromJson(json['eventTag'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
@@ -73,6 +92,7 @@ class StoryDto {
   final String title;
   final String mediaUrl;
   final String mediaType;
+  final String? posterUrl;
   final String startDate;
   final String endDate;
   final int slotPosition;
@@ -87,6 +107,7 @@ class StoryDto {
     required this.title,
     required this.mediaUrl,
     required this.mediaType,
+    this.posterUrl,
     required this.startDate,
     required this.endDate,
     required this.slotPosition,
@@ -103,6 +124,7 @@ class StoryDto {
       title: json['title'] as String? ?? '',
       mediaUrl: json['mediaUrl'] as String? ?? '',
       mediaType: json['mediaType'] as String? ?? 'image',
+      posterUrl: json['posterUrl'] as String?,
       startDate: json['startDate'] as String? ?? '',
       endDate: json['endDate'] as String? ?? '',
       slotPosition: json['slotPosition'] as int? ?? 0,

@@ -19,7 +19,12 @@
 ///
 /// **Pagination**
 ///  – `meta` extracted from root or `data.pagination` when present.
+///
+/// **Errors**
+///  – [extractError] turns any exception into a user-facing French string.
 library;
+
+import 'package:dio/dio.dart';
 
 class ApiResponseHandler {
   ApiResponseHandler._();
@@ -142,6 +147,85 @@ class ApiResponseHandler {
       return PaginationMeta.fromJson(
         data['pagination'] as Map<String, dynamic>,
       );
+    }
+
+    return null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Error extraction
+  // ---------------------------------------------------------------------------
+
+  /// Turns any exception into a user-facing message.
+  ///
+  /// Resolution order for [DioException] response bodies:
+  ///  1. `{ "error": { "details": { "<field>": ["msg", …] } } }` — first validation error
+  ///  2. `{ "error": { "message": "…" } }`
+  ///  3. `{ "error": "…" }`                                      — simple string
+  ///  4. `{ "message": "…" }`                                    — top-level message
+  ///  5. `{ "data": { "message": "…" } }`                        — nested message
+  ///
+  /// Network / timeout errors return a generic French connectivity message.
+  /// [ApiFormatException] and unrecognised errors return [fallback].
+  static String extractError(
+    dynamic error, {
+    String fallback = 'Une erreur est survenue. Veuillez réessayer.',
+  }) {
+    if (error is DioException) {
+      switch (error.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.connectionError:
+          return 'Erreur de connexion. Vérifiez votre connexion internet.';
+        case DioExceptionType.badResponse:
+          final data = error.response?.data;
+          if (data is Map<String, dynamic>) {
+            return _extractMessageFromBody(data) ?? fallback;
+          }
+          return fallback;
+        default:
+          return fallback;
+      }
+    }
+
+    if (error is ApiFormatException) return fallback;
+
+    // Generic Exception — strip prefix if present
+    final str = error.toString();
+    final cleaned =
+        str.startsWith('Exception: ') ? str.substring(11) : str;
+    if (cleaned.isNotEmpty &&
+        !cleaned.startsWith('http') &&
+        !cleaned.contains('DioException')) {
+      return cleaned;
+    }
+
+    return fallback;
+  }
+
+  /// Extracts a human-readable message from a Laravel error response body.
+  static String? _extractMessageFromBody(Map<String, dynamic> body) {
+    // Validation: { "error": { "details": { "field": ["msg"] } } }
+    final error = body['error'];
+    if (error is Map<String, dynamic>) {
+      final details = error['details'];
+      if (details is Map<String, dynamic> && details.isNotEmpty) {
+        final first = details.values.first;
+        if (first is List && first.isNotEmpty) return first.first.toString();
+        return first.toString();
+      }
+      if (error['message'] is String) return error['message'] as String;
+    }
+    if (error is String) return error;
+
+    // Top-level message
+    if (body['message'] is String) return body['message'] as String;
+
+    // Nested data.message
+    final data = body['data'];
+    if (data is Map<String, dynamic> && data['message'] is String) {
+      return data['message'] as String;
     }
 
     return null;

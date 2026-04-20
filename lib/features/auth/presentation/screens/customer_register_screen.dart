@@ -8,6 +8,7 @@ import '../../../../core/themes/colors.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/password_strength_indicator.dart';
+import '../../../../core/utils/api_response_handler.dart';
 
 /// Customer (simple) registration screen with 3 steps:
 /// 1. Email input + OTP send
@@ -111,7 +112,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
       }
     } catch (e) {
       if (mounted) {
-        _showError(e.toString().replaceAll('Exception: ', ''));
+        _showError(ApiResponseHandler.extractError(e));
       }
     } finally {
       if (mounted) {
@@ -141,7 +142,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
       }
     } catch (e) {
       if (mounted) {
-        _showError(e.toString().replaceAll('Exception: ', ''));
+        _showError(ApiResponseHandler.extractError(e));
       }
     } finally {
       if (mounted) {
@@ -178,7 +179,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
       }
     } catch (e) {
       if (mounted) {
-        _showError(e.toString().replaceAll('Exception: ', ''));
+        _showError(ApiResponseHandler.extractError(e));
         _clearOtpFields();
       }
     } finally {
@@ -277,7 +278,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
       }
     } catch (e) {
       if (mounted) {
-        final errorMessage = e.toString().replaceAll('Exception: ', '');
+        final errorMessage = ApiResponseHandler.extractError(e);
         _showError(errorMessage);
 
         // If token expired, go back to email step
