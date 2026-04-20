@@ -10,6 +10,7 @@ class StoryMapper {
       mediaType: dto.mediaType == 'video'
           ? StoryMediaType.video
           : StoryMediaType.image,
+      posterUrl: dto.posterUrl,
       type: dto.type,
       startDate: DateTime.tryParse(dto.startDate) ?? DateTime.now(),
       endDate: DateTime.tryParse(dto.endDate) ?? DateTime.now(),
@@ -21,6 +22,7 @@ class StoryMapper {
       eventFeaturedImage: dto.event?.featuredImage,
       eventCity: dto.event?.city,
       eventBookingMode: dto.event?.bookingMode,
+      eventTagName: dto.event?.eventTag?.name,
       organizationName: dto.organization?.organizationName ??
           dto.organization?.displayName,
       categoryName: dto.event?.primaryCategory?.name,

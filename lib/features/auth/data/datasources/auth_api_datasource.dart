@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../models/auth_response_dto.dart';
 import '../models/business_register_dto.dart';
+import '../../../../core/utils/api_response_handler.dart';
 
 final authApiDataSourceProvider = Provider<AuthApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -83,11 +84,8 @@ class AuthApiDataSource {
       },
     );
 
-    final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return RegisterResult.fromJson(data['data']);
-    }
-    throw Exception(data['data']?['message'] ?? 'Registration failed');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return RegisterResult.fromJson(payload);
   }
 
   /// Verify OTP code and complete registration
@@ -126,14 +124,8 @@ class AuthApiDataSource {
       },
     );
 
-    final data = response.data;
-    // New API returns success differently
-    final hasExpiresAt = data['expires_at'] != null;
-    final hasSuccessMessage = (data['message']?.toString() ?? '').toLowerCase().contains('succes');
-
-    if (!hasExpiresAt && !hasSuccessMessage && data['success'] != true) {
-      throw Exception(data['message'] ?? 'Failed to resend OTP');
-    }
+    // HTTP 4xx/5xx handled by Dio — a 200 means success
+    ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
   }
 
   /// Login - may require OTP verification (2FA) or direct auth (Laravel v2)
@@ -149,45 +141,29 @@ class AuthApiDataSource {
       },
     );
 
-    final data = response.data;
-    debugPrint('🔐 Login response received: ${data.runtimeType}');
+    debugPrint('🔐 Login response received: ${response.data.runtimeType}');
 
-    // Laravel v2 format: { "message": "...", "data": { "user": {...}, "token": "..." } }
-    // Check if we have a successful response with user and token
-    if (data['data'] != null) {
-      final responseData = data['data'];
-      debugPrint('🔐 Response data found: user=${responseData['user'] != null}, token=${responseData['token'] != null}');
+    final responseData = ApiResponseHandler.extractObject(response.data);
+    debugPrint('🔐 Response data found: user=${responseData['user'] != null}, token=${responseData['token'] != null}');
 
-      // Check if OTP is required (2FA)
-      if (responseData['requires_otp'] == true) {
-        debugPrint('🔐 OTP required');
-        return LoginResult.fromJson(responseData);
-      }
-
-      // Check if we have direct auth data (Laravel v2 - no OTP required)
-      if (responseData['user'] != null && responseData['token'] != null) {
-        try {
-          debugPrint('🔐 Parsing Laravel auth response...');
-          final authResponse = _parseLaravelAuthResponse(responseData);
-          debugPrint('🔐 Auth response parsed successfully');
-          return LoginResult(
-            requiresOtp: false,
-            authResponse: authResponse,
-          );
-        } catch (e, stackTrace) {
-          debugPrint('🔐 Error parsing auth response: $e');
-          debugPrint('🔐 Stack trace: $stackTrace');
-          rethrow;
-        }
-      }
-
-      // Fallback: no OTP required but no auth data (shouldn't happen)
-      debugPrint('🔐 Fallback: no auth data in response');
-      return LoginResult(requiresOtp: false);
+    // Check if OTP is required (2FA)
+    if (responseData['requires_otp'] == true) {
+      debugPrint('🔐 OTP required');
+      return LoginResult.fromJson(responseData);
     }
 
-    debugPrint('🔐 No data in response, throwing exception');
-    throw Exception(data['message'] ?? 'Login failed');
+    // Direct auth data (Laravel v2 - no OTP required)
+    if (responseData['user'] != null && responseData['token'] != null) {
+      debugPrint('🔐 Parsing Laravel auth response...');
+      final authResponse = _parseLaravelAuthResponse(responseData);
+      debugPrint('🔐 Auth response parsed successfully');
+      return LoginResult(
+        requiresOtp: false,
+        authResponse: authResponse,
+      );
+    }
+
+    return LoginResult(requiresOtp: false);
   }
 
   /// Parse Laravel v2 auth response format
@@ -249,43 +225,30 @@ class AuthApiDataSource {
       },
     );
 
-    final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return TokensDto.fromJson(data['data']['tokens'] ?? data['data']);
-    }
-    throw Exception(data['data']?['message'] ?? 'Failed to refresh token');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return TokensDto.fromJson(payload['tokens'] ?? payload);
   }
 
   Future<void> forgotPassword(String email) async {
-    final response = await _dio.post(
+    // HTTP 4xx/5xx handled by Dio — a 200 means success
+    await _dio.post(
       '/auth/forgot-password',
-      data: {
-        'email': email,
-      },
+      data: {'email': email},
     );
-
-    final data = response.data;
-    if (data['success'] != true) {
-      throw Exception(data['data']?['message'] ?? 'Failed to send reset email');
-    }
   }
 
   Future<void> resetPassword({
     required String token,
     required String newPassword,
   }) async {
-    final response = await _dio.post(
+    // HTTP 4xx/5xx handled by Dio — a 200 means success
+    await _dio.post(
       '/auth/reset-password',
       data: {
         'token': token,
         'new_password': newPassword,
       },
     );
-
-    final data = response.data;
-    if (data['success'] != true) {
-      throw Exception(data['data']?['message'] ?? 'Failed to reset password');
-    }
   }
 
   Future<void> logout() async {
@@ -293,14 +256,11 @@ class AuthApiDataSource {
   }
 
   AuthResponseDto _parseAuthResponse(Map<String, dynamic> data) {
-    if (data['success'] == true && data['data'] != null) {
-      final responseData = data['data'];
-      return AuthResponseDto(
-        user: UserDto.fromJson(responseData['user']),
-        tokens: TokensDto.fromJson(responseData['tokens']),
-      );
-    }
-    throw Exception(data['data']?['message'] ?? 'Authentication failed');
+    final responseData = ApiResponseHandler.extractObject(data);
+    return AuthResponseDto(
+      user: UserDto.fromJson(responseData['user']),
+      tokens: TokensDto.fromJson(responseData['tokens']),
+    );
   }
 
   // ============================================================
@@ -334,22 +294,18 @@ class AuthApiDataSource {
       },
     );
 
-    final data = response.data;
-    debugPrint('📱 Customer register response: $data');
+    debugPrint('📱 Customer register response: ${response.data}');
 
-    if (data['data'] != null) {
-      final responseData = data['data'];
-      return CustomerRegisterResult(
-        user: responseData['user'] != null ? UserDto.fromJson(responseData['user']) : null,
-        token: responseData['token']?.toString(),
-        emailVerificationRequired: responseData['email_verification_required'] ?? true,
-        pendingVerification: responseData['pending_verification'] ?? true,
-        userId: responseData['user_id']?.toString() ?? responseData['user']?['id']?.toString(),
-        email: responseData['email'] ?? email,
-        message: responseData['message'] ?? data['message'] ?? 'Un code de vérification a été envoyé',
-      );
-    }
-    throw Exception(data['message'] ?? 'Registration failed');
+    final responseData = ApiResponseHandler.extractObject(response.data);
+    return CustomerRegisterResult(
+      user: responseData['user'] != null ? UserDto.fromJson(responseData['user']) : null,
+      token: responseData['token']?.toString(),
+      emailVerificationRequired: responseData['email_verification_required'] ?? true,
+      pendingVerification: responseData['pending_verification'] ?? true,
+      userId: responseData['user_id']?.toString() ?? responseData['user']?['id']?.toString(),
+      email: responseData['email'] ?? email,
+      message: responseData['message'] ?? 'Un code de vérification a été envoyé',
+    );
   }
 
   /// Register a business account (multi-step registration)
@@ -362,24 +318,20 @@ class AuthApiDataSource {
       data: dto.toJson(),
     );
 
-    final data = response.data;
-    debugPrint('📱 Business register response: $data');
+    debugPrint('📱 Business register response: ${response.data}');
 
-    if (data['data'] != null) {
-      final responseData = data['data'];
-      return BusinessRegisterResult(
-        user: UserDto.fromJson(responseData['user']),
-        organization: responseData['organization'] != null
-            ? OrganizationDto.fromJson(responseData['organization'])
-            : null,
-        token: responseData['token']?.toString() ?? '',
-        invitationsSent: responseData['invitations_sent'] ?? 0,
-        invitedEmails: responseData['invited_emails'] != null
-            ? List<String>.from(responseData['invited_emails'])
-            : null,
-      );
-    }
-    throw Exception(data['message'] ?? 'Business registration failed');
+    final responseData = ApiResponseHandler.extractObject(response.data);
+    return BusinessRegisterResult(
+      user: UserDto.fromJson(responseData['user']),
+      organization: responseData['organization'] != null
+          ? OrganizationDto.fromJson(responseData['organization'])
+          : null,
+      token: responseData['token']?.toString() ?? '',
+      invitationsSent: responseData['invitations_sent'] ?? 0,
+      invitedEmails: responseData['invited_emails'] != null
+          ? List<String>.from(responseData['invited_emails'])
+          : null,
+    );
   }
 
   /// Send OTP code via the new API endpoint
@@ -397,26 +349,14 @@ class AuthApiDataSource {
       },
     );
 
-    final data = response.data;
-    debugPrint('📱 OTP send response: $data');
+    debugPrint('📱 OTP send response: ${response.data}');
 
-    // Laravel returns the response directly at root level on success (HTTP 200)
-    // Format: { "message": "...", "expires_at": "...", "validity_minutes": 10 }
-    // On error (4xx), Dio throws an exception that is handled by the caller
-    if (data is Map<String, dynamic>) {
-      // Check for success indicators: expires_at field or message containing "succes"
-      final hasExpiresAt = data['expires_at'] != null;
-      final hasSuccessMessage = (data['message']?.toString() ?? '').toLowerCase().contains('succes');
-
-      if (hasExpiresAt || hasSuccessMessage || data['success'] == true || data['data'] != null) {
-        return OtpSendResult(
-          success: true,
-          message: data['message'] ?? data['data']?['message'] ?? 'Code envoyé',
-          expiresAt: data['expires_at'] ?? data['data']?['expires_at'],
-        );
-      }
-    }
-    throw Exception(data['message'] ?? 'Failed to send OTP');
+    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    return OtpSendResult(
+      success: true,
+      message: payload['message'] ?? 'Code envoyé',
+      expiresAt: payload['expires_at'],
+    );
   }
 
   /// Verify OTP code via the new API endpoint
@@ -436,33 +376,20 @@ class AuthApiDataSource {
       },
     );
 
-    final data = response.data;
-    debugPrint('📱 OTP verify response: $data');
+    debugPrint('📱 OTP verify response: ${response.data}');
 
-    // Laravel returns the response directly at root level on success (HTTP 200)
-    // Format: { "message": "...", "verified": true, "verified_email_token": "...", "token_expires_in_minutes": 30 }
-    // On error (4xx), Dio throws an exception that is handled by the caller
-    if (data is Map<String, dynamic>) {
-      // Check for verified field at root level (Laravel format) or in data (legacy format)
-      final verified = data['verified'] ?? data['data']?['verified'] ?? false;
+    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    debugPrint('📱 OTP verified, token received: ${payload['verified_email_token'] != null}');
 
-      if (verified == true || data['success'] == true) {
-        // Extract verified_email_token for registration flow
-        final verifiedEmailToken = data['verified_email_token'] ?? data['data']?['verified_email_token'];
-        final tokenExpiresInMinutes = data['token_expires_in_minutes'] ?? data['data']?['token_expires_in_minutes'];
-
-        debugPrint('📱 OTP verified, token received: ${verifiedEmailToken != null}');
-
-        return OtpVerifyResult(
-          success: true,
-          verified: true,
-          message: data['message'] ?? 'Code vérifié',
-          verifiedEmailToken: verifiedEmailToken?.toString(),
-          tokenExpiresInMinutes: tokenExpiresInMinutes is int ? tokenExpiresInMinutes : null,
-        );
-      }
-    }
-    throw Exception(data['message'] ?? 'Invalid OTP code');
+    return OtpVerifyResult(
+      success: true,
+      verified: payload['verified'] ?? true,
+      message: payload['message'] ?? 'Code vérifié',
+      verifiedEmailToken: payload['verified_email_token']?.toString(),
+      tokenExpiresInMinutes: payload['token_expires_in_minutes'] is int
+          ? payload['token_expires_in_minutes']
+          : null,
+    );
   }
 
   /// Resend OTP code via the new API endpoint
@@ -480,22 +407,14 @@ class AuthApiDataSource {
       },
     );
 
-    final data = response.data;
-    debugPrint('📱 OTP resend response: $data');
+    debugPrint('📱 OTP resend response: ${response.data}');
 
-    if (data is Map<String, dynamic>) {
-      final hasExpiresAt = data['expires_at'] != null;
-      final hasSuccessMessage = (data['message']?.toString() ?? '').toLowerCase().contains('succes');
-
-      if (hasExpiresAt || hasSuccessMessage || data['success'] == true || data['data'] != null) {
-        return OtpSendResult(
-          success: true,
-          message: data['message'] ?? data['data']?['message'] ?? 'Nouveau code envoyé',
-          expiresAt: data['expires_at'] ?? data['data']?['expires_at'],
-        );
-      }
-    }
-    throw Exception(data['message'] ?? 'Failed to resend OTP');
+    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    return OtpSendResult(
+      success: true,
+      message: payload['message'] ?? 'Nouveau code envoyé',
+      expiresAt: payload['expires_at'],
+    );
   }
 
   /// Get OTP status
@@ -513,18 +432,15 @@ class AuthApiDataSource {
       },
     );
 
-    final data = response.data;
-    debugPrint('📱 OTP status response: $data');
+    debugPrint('📱 OTP status response: ${response.data}');
 
-    if (data is Map<String, dynamic>) {
-      return OtpStatusResult(
-        hasPendingOtp: data['has_pending_otp'] ?? false,
-        canResend: data['can_resend'] ?? true,
-        remainingCooldown: data['remaining_cooldown'] ?? 0,
-        remainingAttempts: data['remaining_attempts'] ?? 3,
-      );
-    }
-    throw Exception(data['message'] ?? 'Failed to get OTP status');
+    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    return OtpStatusResult(
+      hasPendingOtp: payload['has_pending_otp'] ?? false,
+      canResend: payload['can_resend'] ?? true,
+      remainingCooldown: payload['remaining_cooldown'] ?? 0,
+      remainingAttempts: payload['remaining_attempts'] ?? 3,
+    );
   }
 
   /// Check if email exists
@@ -535,8 +451,8 @@ class AuthApiDataSource {
         '/auth/check-email',
         data: {'email': email},
       );
-      final data = response.data;
-      return data['data']?['exists'] ?? false;
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return payload['exists'] ?? false;
     } catch (e) {
       debugPrint('📱 Check email error: $e');
       return false;

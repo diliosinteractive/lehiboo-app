@@ -7,6 +7,7 @@ class Story extends Equatable {
   final String title;
   final String mediaUrl;
   final StoryMediaType mediaType;
+  final String? posterUrl;
   final String type; // "reserved" or "optional"
   final DateTime startDate;
   final DateTime endDate;
@@ -20,6 +21,7 @@ class Story extends Equatable {
   final String? eventFeaturedImage;
   final String? eventCity;
   final String? eventBookingMode;
+  final String? eventTagName;
 
   // Flattened from nested organization object
   final String? organizationName;
@@ -32,6 +34,7 @@ class Story extends Equatable {
     required this.title,
     required this.mediaUrl,
     required this.mediaType,
+    this.posterUrl,
     required this.type,
     required this.startDate,
     required this.endDate,
@@ -43,6 +46,7 @@ class Story extends Equatable {
     this.eventFeaturedImage,
     this.eventCity,
     this.eventBookingMode,
+    this.eventTagName,
     this.organizationName,
     this.categoryName,
   });
