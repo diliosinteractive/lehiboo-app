@@ -30,6 +30,10 @@ mixin _$BusinessRegisterDto {
   String get lastName => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
   String? get phone => throw _privateConstructorUsedError;
+  @JsonKey(name: 'birth_date')
+  String? get birthDate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'membership_city')
+  String? get membershipCity => throw _privateConstructorUsedError;
   String get password => throw _privateConstructorUsedError;
   @JsonKey(name: 'password_confirmation')
   String get passwordConfirmation =>
@@ -78,6 +82,8 @@ abstract class $BusinessRegisterDtoCopyWith<$Res> {
       @JsonKey(name: 'last_name') String lastName,
       String email,
       String? phone,
+      @JsonKey(name: 'birth_date') String? birthDate,
+      @JsonKey(name: 'membership_city') String? membershipCity,
       String password,
       @JsonKey(name: 'password_confirmation') String passwordConfirmation,
       @JsonKey(name: 'organization_type') String organizationType,
@@ -114,6 +120,8 @@ class _$BusinessRegisterDtoCopyWithImpl<$Res, $Val extends BusinessRegisterDto>
     Object? lastName = null,
     Object? email = null,
     Object? phone = freezed,
+    Object? birthDate = freezed,
+    Object? membershipCity = freezed,
     Object? password = null,
     Object? passwordConfirmation = null,
     Object? organizationType = null,
@@ -151,6 +159,14 @@ class _$BusinessRegisterDtoCopyWithImpl<$Res, $Val extends BusinessRegisterDto>
       phone: freezed == phone
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
               as String?,
       password: null == password
           ? _value.password
@@ -234,6 +250,8 @@ abstract class _$$BusinessRegisterDtoImplCopyWith<$Res>
       @JsonKey(name: 'last_name') String lastName,
       String email,
       String? phone,
+      @JsonKey(name: 'birth_date') String? birthDate,
+      @JsonKey(name: 'membership_city') String? membershipCity,
       String password,
       @JsonKey(name: 'password_confirmation') String passwordConfirmation,
       @JsonKey(name: 'organization_type') String organizationType,
@@ -268,6 +286,8 @@ class __$$BusinessRegisterDtoImplCopyWithImpl<$Res>
     Object? lastName = null,
     Object? email = null,
     Object? phone = freezed,
+    Object? birthDate = freezed,
+    Object? membershipCity = freezed,
     Object? password = null,
     Object? passwordConfirmation = null,
     Object? organizationType = null,
@@ -305,6 +325,14 @@ class __$$BusinessRegisterDtoImplCopyWithImpl<$Res>
       phone: freezed == phone
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
               as String?,
       password: null == password
           ? _value.password
@@ -383,6 +411,8 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
       @JsonKey(name: 'last_name') required this.lastName,
       required this.email,
       this.phone,
+      @JsonKey(name: 'birth_date') this.birthDate,
+      @JsonKey(name: 'membership_city') this.membershipCity,
       required this.password,
       @JsonKey(name: 'password_confirmation')
       required this.passwordConfirmation,
@@ -420,6 +450,12 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
   final String email;
   @override
   final String? phone;
+  @override
+  @JsonKey(name: 'birth_date')
+  final String? birthDate;
+  @override
+  @JsonKey(name: 'membership_city')
+  final String? membershipCity;
   @override
   final String password;
   @override
@@ -469,7 +505,7 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
 
   @override
   String toString() {
-    return 'BusinessRegisterDto(verifiedEmailToken: $verifiedEmailToken, firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, password: $password, passwordConfirmation: $passwordConfirmation, organizationType: $organizationType, companyName: $companyName, siret: $siret, industry: $industry, employeeCount: $employeeCount, address: $address, city: $city, postalCode: $postalCode, country: $country, usageMode: $usageMode, teamEmails: $teamEmails, defaultBudget: $defaultBudget, acceptTerms: $acceptTerms, acceptBusinessTerms: $acceptBusinessTerms)';
+    return 'BusinessRegisterDto(verifiedEmailToken: $verifiedEmailToken, firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, birthDate: $birthDate, membershipCity: $membershipCity, password: $password, passwordConfirmation: $passwordConfirmation, organizationType: $organizationType, companyName: $companyName, siret: $siret, industry: $industry, employeeCount: $employeeCount, address: $address, city: $city, postalCode: $postalCode, country: $country, usageMode: $usageMode, teamEmails: $teamEmails, defaultBudget: $defaultBudget, acceptTerms: $acceptTerms, acceptBusinessTerms: $acceptBusinessTerms)';
   }
 
   @override
@@ -485,6 +521,10 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
                 other.lastName == lastName) &&
             (identical(other.email, email) || other.email == email) &&
             (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.birthDate, birthDate) ||
+                other.birthDate == birthDate) &&
+            (identical(other.membershipCity, membershipCity) ||
+                other.membershipCity == membershipCity) &&
             (identical(other.password, password) ||
                 other.password == password) &&
             (identical(other.passwordConfirmation, passwordConfirmation) ||
@@ -524,6 +564,8 @@ class _$BusinessRegisterDtoImpl implements _BusinessRegisterDto {
         lastName,
         email,
         phone,
+        birthDate,
+        membershipCity,
         password,
         passwordConfirmation,
         organizationType,
@@ -565,6 +607,8 @@ abstract class _BusinessRegisterDto implements BusinessRegisterDto {
       @JsonKey(name: 'last_name') required final String lastName,
       required final String email,
       final String? phone,
+      @JsonKey(name: 'birth_date') final String? birthDate,
+      @JsonKey(name: 'membership_city') final String? membershipCity,
       required final String password,
       @JsonKey(name: 'password_confirmation')
       required final String passwordConfirmation,
@@ -600,6 +644,12 @@ abstract class _BusinessRegisterDto implements BusinessRegisterDto {
   String get email;
   @override
   String? get phone;
+  @override
+  @JsonKey(name: 'birth_date')
+  String? get birthDate;
+  @override
+  @JsonKey(name: 'membership_city')
+  String? get membershipCity;
   @override
   String get password;
   @override

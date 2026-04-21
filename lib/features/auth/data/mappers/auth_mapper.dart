@@ -15,6 +15,7 @@ class AuthMapper {
       city: dto.city,
       bio: dto.bio,
       birthDate: dto.birthDate != null ? DateTime.tryParse(dto.birthDate!) : null,
+      membershipCity: dto.membershipCity,
       role: _parseRole(dto.role),
       registeredAt: dto.registeredAt != null ? DateTime.tryParse(dto.registeredAt!) : null,
       isVerified: dto.isVerified,

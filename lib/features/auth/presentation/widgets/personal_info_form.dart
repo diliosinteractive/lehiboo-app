@@ -22,9 +22,11 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _membershipCityController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  DateTime? _birthDate;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -37,6 +39,10 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
     _lastNameController.text = state.lastName;
     _emailController.text = state.email;
     _phoneController.text = state.phone;
+    _membershipCityController.text = state.membershipCity ?? '';
+    if (state.birthDate != null) {
+      _birthDate = DateTime.tryParse(state.birthDate!);
+    }
     _passwordController.text = state.password;
     _confirmPasswordController.text = state.passwordConfirmation;
   }
@@ -47,6 +53,7 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _membershipCityController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -58,6 +65,12 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
       lastName: _lastNameController.text,
       email: _emailController.text,
       phone: _phoneController.text,
+      birthDate: _birthDate != null
+          ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
+          : null,
+      membershipCity: _membershipCityController.text.trim().isNotEmpty
+          ? _membershipCityController.text.trim()
+          : null,
       password: _passwordController.text,
       passwordConfirmation: _confirmPasswordController.text,
     );
@@ -187,6 +200,59 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
                 }
                 return null;
               },
+            ),
+            const SizedBox(height: 16),
+
+            // Birth date picker (optional)
+            GestureDetector(
+              onTap: () async {
+                final maxDate = DateTime.now().subtract(const Duration(days: 15 * 365));
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _birthDate ?? maxDate,
+                  firstDate: DateTime(1920),
+                  lastDate: maxDate,
+                  helpText: 'Date de naissance',
+                  // locale: const Locale('fr'),
+                );
+                if (picked != null) {
+                  setState(() => _birthDate = picked);
+                }
+              },
+              child: AbsorbPointer(
+                child: TextFormField(
+                  decoration: _inputDecoration(
+                    label: 'Date de naissance (optionnel)',
+                    hint: 'JJ/MM/AAAA',
+                    icon: Icons.cake_outlined,
+                    suffixIcon: _birthDate != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () => setState(() => _birthDate = null),
+                          )
+                        : null,
+                  ),
+                  controller: TextEditingController(
+                    text: _birthDate != null
+                        ? '${_birthDate!.day.toString().padLeft(2, '0')}/${_birthDate!.month.toString().padLeft(2, '0')}/${_birthDate!.year}'
+                        : '',
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Membership city (optional)
+            TextFormField(
+              controller: _membershipCityController,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
+              maxLength: 120,
+              decoration: _inputDecoration(
+                label: 'Ville (optionnel)',
+                hint: 'Lyon, Paris...',
+                icon: Icons.location_city_outlined,
+              ),
             ),
             const SizedBox(height: 16),
 

@@ -26,6 +26,7 @@ mixin _$HbUser {
   String? get city => throw _privateConstructorUsedError;
   String? get bio => throw _privateConstructorUsedError;
   DateTime? get birthDate => throw _privateConstructorUsedError;
+  String? get membershipCity => throw _privateConstructorUsedError;
   UserRole get role => throw _privateConstructorUsedError;
   DateTime? get registeredAt => throw _privateConstructorUsedError;
   bool get isVerified => throw _privateConstructorUsedError;
@@ -53,6 +54,7 @@ abstract class $HbUserCopyWith<$Res> {
       String? city,
       String? bio,
       DateTime? birthDate,
+      String? membershipCity,
       UserRole role,
       DateTime? registeredAt,
       bool isVerified,
@@ -85,6 +87,7 @@ class _$HbUserCopyWithImpl<$Res, $Val extends HbUser>
     Object? city = freezed,
     Object? bio = freezed,
     Object? birthDate = freezed,
+    Object? membershipCity = freezed,
     Object? role = null,
     Object? registeredAt = freezed,
     Object? isVerified = null,
@@ -132,6 +135,10 @@ class _$HbUserCopyWithImpl<$Res, $Val extends HbUser>
           ? _value.birthDate
           : birthDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
+              as String?,
       role: null == role
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
@@ -182,6 +189,7 @@ abstract class _$$HbUserImplCopyWith<$Res> implements $HbUserCopyWith<$Res> {
       String? city,
       String? bio,
       DateTime? birthDate,
+      String? membershipCity,
       UserRole role,
       DateTime? registeredAt,
       bool isVerified,
@@ -213,6 +221,7 @@ class __$$HbUserImplCopyWithImpl<$Res>
     Object? city = freezed,
     Object? bio = freezed,
     Object? birthDate = freezed,
+    Object? membershipCity = freezed,
     Object? role = null,
     Object? registeredAt = freezed,
     Object? isVerified = null,
@@ -260,6 +269,10 @@ class __$$HbUserImplCopyWithImpl<$Res>
           ? _value.birthDate
           : birthDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
+              as String?,
       role: null == role
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
@@ -298,6 +311,7 @@ class _$HbUserImpl implements _HbUser {
       this.city,
       this.bio,
       this.birthDate,
+      this.membershipCity,
       this.role = UserRole.subscriber,
       this.registeredAt,
       this.isVerified = false,
@@ -326,6 +340,8 @@ class _$HbUserImpl implements _HbUser {
   @override
   final DateTime? birthDate;
   @override
+  final String? membershipCity;
+  @override
   @JsonKey()
   final UserRole role;
   @override
@@ -351,7 +367,7 @@ class _$HbUserImpl implements _HbUser {
 
   @override
   String toString() {
-    return 'HbUser(id: $id, email: $email, displayName: $displayName, firstName: $firstName, lastName: $lastName, phone: $phone, avatarUrl: $avatarUrl, city: $city, bio: $bio, birthDate: $birthDate, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, capabilities: $capabilities, interestsCategoryIds: $interestsCategoryIds)';
+    return 'HbUser(id: $id, email: $email, displayName: $displayName, firstName: $firstName, lastName: $lastName, phone: $phone, avatarUrl: $avatarUrl, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, capabilities: $capabilities, interestsCategoryIds: $interestsCategoryIds)';
   }
 
   @override
@@ -374,6 +390,8 @@ class _$HbUserImpl implements _HbUser {
             (identical(other.bio, bio) || other.bio == bio) &&
             (identical(other.birthDate, birthDate) ||
                 other.birthDate == birthDate) &&
+            (identical(other.membershipCity, membershipCity) ||
+                other.membershipCity == membershipCity) &&
             (identical(other.role, role) || other.role == role) &&
             (identical(other.registeredAt, registeredAt) ||
                 other.registeredAt == registeredAt) &&
@@ -398,6 +416,7 @@ class _$HbUserImpl implements _HbUser {
       city,
       bio,
       birthDate,
+      membershipCity,
       role,
       registeredAt,
       isVerified,
@@ -423,6 +442,7 @@ abstract class _HbUser implements HbUser {
       final String? city,
       final String? bio,
       final DateTime? birthDate,
+      final String? membershipCity,
       final UserRole role,
       final DateTime? registeredAt,
       final bool isVerified,
@@ -449,6 +469,8 @@ abstract class _HbUser implements HbUser {
   String? get bio;
   @override
   DateTime? get birthDate;
+  @override
+  String? get membershipCity;
   @override
   UserRole get role;
   @override

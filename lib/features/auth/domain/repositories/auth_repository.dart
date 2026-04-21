@@ -103,6 +103,8 @@ abstract class AuthRepository {
     required String password,
     required String passwordConfirmation,
     String? phone,
+    String? birthDate,
+    String? membershipCity,
     required bool acceptTerms,
   });
 
