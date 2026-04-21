@@ -254,6 +254,8 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String passwordConfirmation,
     String? phone,
+    String? birthDate,
+    String? membershipCity,
     required bool acceptTerms,
   }) async {
     final response = await _apiDataSource.registerCustomer(
@@ -264,6 +266,8 @@ class AuthRepositoryImpl implements AuthRepository {
       password: password,
       passwordConfirmation: passwordConfirmation,
       phone: phone,
+      birthDate: birthDate,
+      membershipCity: membershipCity,
       acceptTerms: acceptTerms,
     );
 
