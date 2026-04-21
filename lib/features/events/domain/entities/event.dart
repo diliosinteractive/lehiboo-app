@@ -83,6 +83,7 @@ class Event extends Equatable {
   final String organizerName;
   final String? organizerLogo;
   final String? organizerDescription;
+  final bool organizerIsPlatform;
   final bool isFavorite;
   final bool isFeatured;
   final bool isRecommended;
@@ -161,6 +162,7 @@ class Event extends Equatable {
     required this.organizerName,
     this.organizerLogo,
     this.organizerDescription,
+    this.organizerIsPlatform = false,
     required this.isFavorite,
     required this.isFeatured,
     required this.isRecommended,
@@ -371,6 +373,7 @@ class Event extends Equatable {
     String? organizerName,
     String? organizerLogo,
     String? organizerDescription,
+    bool? organizerIsPlatform,
     bool? isFavorite,
     bool? isFeatured,
     bool? isRecommended,
@@ -443,6 +446,7 @@ class Event extends Equatable {
       organizerName: organizerName ?? this.organizerName,
       organizerLogo: organizerLogo ?? this.organizerLogo,
       organizerDescription: organizerDescription ?? this.organizerDescription,
+      organizerIsPlatform: organizerIsPlatform ?? this.organizerIsPlatform,
       isFavorite: isFavorite ?? this.isFavorite,
       isFeatured: isFeatured ?? this.isFeatured,
       isRecommended: isRecommended ?? this.isRecommended,
@@ -518,6 +522,7 @@ class Event extends Equatable {
         organizerName,
         organizerLogo,
         organizerDescription,
+        organizerIsPlatform,
         isFavorite,
         isFeatured,
         isRecommended,

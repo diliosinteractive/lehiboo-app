@@ -3026,6 +3026,8 @@ mixin _$EventOrganizerDto {
   String? get memberSince => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseBool)
   bool get verified => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_platform', fromJson: _parseBool)
+  bool get isPlatform => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -3066,7 +3068,8 @@ abstract class $EventOrganizerDtoCopyWith<$Res> {
       String? profileUrl,
       @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
       String? memberSince,
-      @JsonKey(fromJson: _parseBool) bool verified});
+      @JsonKey(fromJson: _parseBool) bool verified,
+      @JsonKey(name: 'is_platform', fromJson: _parseBool) bool isPlatform});
 
   $OrganizerContactDtoCopyWith<$Res>? get contact;
   $OrganizerLocationDtoCopyWith<$Res>? get location;
@@ -3107,6 +3110,7 @@ class _$EventOrganizerDtoCopyWithImpl<$Res, $Val extends EventOrganizerDto>
     Object? profileUrl = freezed,
     Object? memberSince = freezed,
     Object? verified = null,
+    Object? isPlatform = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -3188,6 +3192,10 @@ class _$EventOrganizerDtoCopyWithImpl<$Res, $Val extends EventOrganizerDto>
       verified: null == verified
           ? _value.verified
           : verified // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isPlatform: null == isPlatform
+          ? _value.isPlatform
+          : isPlatform // ignore: cast_nullable_to_non_nullable
               as bool,
     ) as $Val);
   }
@@ -3277,7 +3285,8 @@ abstract class _$$EventOrganizerDtoImplCopyWith<$Res>
       String? profileUrl,
       @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
       String? memberSince,
-      @JsonKey(fromJson: _parseBool) bool verified});
+      @JsonKey(fromJson: _parseBool) bool verified,
+      @JsonKey(name: 'is_platform', fromJson: _parseBool) bool isPlatform});
 
   @override
   $OrganizerContactDtoCopyWith<$Res>? get contact;
@@ -3320,6 +3329,7 @@ class __$$EventOrganizerDtoImplCopyWithImpl<$Res>
     Object? profileUrl = freezed,
     Object? memberSince = freezed,
     Object? verified = null,
+    Object? isPlatform = null,
   }) {
     return _then(_$EventOrganizerDtoImpl(
       id: null == id
@@ -3402,6 +3412,10 @@ class __$$EventOrganizerDtoImplCopyWithImpl<$Res>
           ? _value.verified
           : verified // ignore: cast_nullable_to_non_nullable
               as bool,
+      isPlatform: null == isPlatform
+          ? _value.isPlatform
+          : isPlatform // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -3436,7 +3450,9 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
       this.profileUrl,
       @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
       this.memberSince,
-      @JsonKey(fromJson: _parseBool) this.verified = false})
+      @JsonKey(fromJson: _parseBool) this.verified = false,
+      @JsonKey(name: 'is_platform', fromJson: _parseBool)
+      this.isPlatform = false})
       : _logoSizes = logoSizes,
         _socialLinks = socialLinks,
         _categories = categories,
@@ -3535,10 +3551,13 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
   @override
   @JsonKey(fromJson: _parseBool)
   final bool verified;
+  @override
+  @JsonKey(name: 'is_platform', fromJson: _parseBool)
+  final bool isPlatform;
 
   @override
   String toString() {
-    return 'EventOrganizerDto(id: $id, name: $name, avatar: $avatar, description: $description, logo: $logo, logoSizes: $logoSizes, website: $website, phone: $phone, email: $email, coverImage: $coverImage, contact: $contact, location: $location, practicalInfo: $practicalInfo, socialLinks: $socialLinks, stats: $stats, categories: $categories, partnerships: $partnerships, profileUrl: $profileUrl, memberSince: $memberSince, verified: $verified)';
+    return 'EventOrganizerDto(id: $id, name: $name, avatar: $avatar, description: $description, logo: $logo, logoSizes: $logoSizes, website: $website, phone: $phone, email: $email, coverImage: $coverImage, contact: $contact, location: $location, practicalInfo: $practicalInfo, socialLinks: $socialLinks, stats: $stats, categories: $categories, partnerships: $partnerships, profileUrl: $profileUrl, memberSince: $memberSince, verified: $verified, isPlatform: $isPlatform)';
   }
 
   @override
@@ -3576,7 +3595,9 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
             (identical(other.memberSince, memberSince) ||
                 other.memberSince == memberSince) &&
             (identical(other.verified, verified) ||
-                other.verified == verified));
+                other.verified == verified) &&
+            (identical(other.isPlatform, isPlatform) ||
+                other.isPlatform == isPlatform));
   }
 
   @JsonKey(ignore: true)
@@ -3602,7 +3623,8 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
         const DeepCollectionEquality().hash(_partnerships),
         profileUrl,
         memberSince,
-        verified
+        verified,
+        isPlatform
       ]);
 
   @JsonKey(ignore: true)
@@ -3622,35 +3644,36 @@ class _$EventOrganizerDtoImpl implements _EventOrganizerDto {
 
 abstract class _EventOrganizerDto implements EventOrganizerDto {
   const factory _EventOrganizerDto(
-          {@JsonKey(fromJson: _parseInt) final int id,
-          @JsonKey(fromJson: _parseHtmlString) final String name,
-          @JsonKey(fromJson: _parseStringOrNull) final String? avatar,
-          @JsonKey(fromJson: _parseHtmlString) final String? description,
-          @JsonKey(fromJson: _parseStringOrNull) final String? logo,
-          @JsonKey(name: 'logo_sizes', fromJson: _parseMapOrNull)
-          final Map<String, dynamic>? logoSizes,
-          @JsonKey(fromJson: _parseStringOrNull) final String? website,
-          @JsonKey(fromJson: _parseStringOrNull) final String? phone,
-          @JsonKey(fromJson: _parseStringOrNull) final String? email,
-          @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
-          final String? coverImage,
-          final OrganizerContactDto? contact,
-          final OrganizerLocationDto? location,
-          @JsonKey(name: 'practical_info')
-          final OrganizerPracticalInfoDto? practicalInfo,
-          @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
-          final List<OrganizerSocialLinkDto>? socialLinks,
-          @JsonKey(name: 'stats') final OrganizerStatsDto? stats,
-          @JsonKey(name: 'categories', fromJson: _parseCategories)
-          final List<EventCategoryDto>? categories,
-          @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
-          final List<CoOrganizerDto>? partnerships,
-          @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
-          final String? profileUrl,
-          @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
-          final String? memberSince,
-          @JsonKey(fromJson: _parseBool) final bool verified}) =
-      _$EventOrganizerDtoImpl;
+      {@JsonKey(fromJson: _parseInt) final int id,
+      @JsonKey(fromJson: _parseHtmlString) final String name,
+      @JsonKey(fromJson: _parseStringOrNull) final String? avatar,
+      @JsonKey(fromJson: _parseHtmlString) final String? description,
+      @JsonKey(fromJson: _parseStringOrNull) final String? logo,
+      @JsonKey(name: 'logo_sizes', fromJson: _parseMapOrNull)
+      final Map<String, dynamic>? logoSizes,
+      @JsonKey(fromJson: _parseStringOrNull) final String? website,
+      @JsonKey(fromJson: _parseStringOrNull) final String? phone,
+      @JsonKey(fromJson: _parseStringOrNull) final String? email,
+      @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+      final String? coverImage,
+      final OrganizerContactDto? contact,
+      final OrganizerLocationDto? location,
+      @JsonKey(name: 'practical_info')
+      final OrganizerPracticalInfoDto? practicalInfo,
+      @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
+      final List<OrganizerSocialLinkDto>? socialLinks,
+      @JsonKey(name: 'stats') final OrganizerStatsDto? stats,
+      @JsonKey(name: 'categories', fromJson: _parseCategories)
+      final List<EventCategoryDto>? categories,
+      @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
+      final List<CoOrganizerDto>? partnerships,
+      @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
+      final String? profileUrl,
+      @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
+      final String? memberSince,
+      @JsonKey(fromJson: _parseBool) final bool verified,
+      @JsonKey(name: 'is_platform', fromJson: _parseBool)
+      final bool isPlatform}) = _$EventOrganizerDtoImpl;
 
   factory _EventOrganizerDto.fromJson(Map<String, dynamic> json) =
       _$EventOrganizerDtoImpl.fromJson;
@@ -3713,6 +3736,9 @@ abstract class _EventOrganizerDto implements EventOrganizerDto {
   @override
   @JsonKey(fromJson: _parseBool)
   bool get verified;
+  @override
+  @JsonKey(name: 'is_platform', fromJson: _parseBool)
+  bool get isPlatform;
   @override
   @JsonKey(ignore: true)
   _$$EventOrganizerDtoImplCopyWith<_$EventOrganizerDtoImpl> get copyWith =>
