@@ -182,6 +182,8 @@ class AuthApiDataSource {
       lastName: userData['last_name']?.toString(),
       phone: userData['phone']?.toString(),
       avatarUrl: userData['avatar_url']?.toString(),
+      birthDate: userData['birthDate']?.toString() ?? userData['birth_date']?.toString(),
+      membershipCity: userData['membershipCity']?.toString() ?? userData['membership_city']?.toString(),
       role: userData['role']?.toString() ?? 'customer',
       registeredAt: userData['created_at']?.toString(),
       isVerified: userData['is_email_verified'] == true,
@@ -278,6 +280,8 @@ class AuthApiDataSource {
     required String password,
     required String passwordConfirmation,
     String? phone,
+    String? birthDate,
+    String? membershipCity,
     required bool acceptTerms,
   }) async {
     final response = await _dio.post(
@@ -290,6 +294,8 @@ class AuthApiDataSource {
         'password': password,
         'password_confirmation': passwordConfirmation,
         if (phone != null) 'phone': phone,
+        if (birthDate != null) 'birth_date': birthDate,
+        if (membershipCity != null) 'membership_city': membershipCity,
         'accept_terms': acceptTerms,
       },
     );

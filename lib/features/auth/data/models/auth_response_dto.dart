@@ -28,6 +28,7 @@ class UserDto with _$UserDto {
     String? city,
     String? bio,
     @JsonKey(name: 'birth_date') String? birthDate,
+    @JsonKey(name: 'membership_city') String? membershipCity,
     @JsonKey(name: 'avatar_url') String? avatarUrl,
     required String role,
     @JsonKey(name: 'registered_at') String? registeredAt,
