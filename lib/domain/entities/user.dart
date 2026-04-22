@@ -17,6 +17,7 @@ class HbUser with _$HbUser {
     String? city,
     String? bio,
     DateTime? birthDate,
+    String? membershipCity,
     @Default(UserRole.subscriber) UserRole role,
     DateTime? registeredAt,
     @Default(false) bool isVerified,

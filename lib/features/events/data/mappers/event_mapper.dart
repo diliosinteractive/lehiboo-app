@@ -137,6 +137,7 @@ class EventMapper {
       organizerId: _resolveOrganizerIdentifier(dto.organizer),
       organizerName: dto.organizer?.name ?? '',
       organizerLogo: dto.organizer?.avatar,
+      organizerIsPlatform: dto.organizer?.isPlatform ?? false,
       isFavorite: dto.isFavorite,
       isFeatured: false,
       isRecommended: false,

@@ -16,6 +16,8 @@ class BusinessRegisterDto with _$BusinessRegisterDto {
     @JsonKey(name: 'last_name') required String lastName,
     required String email,
     String? phone,
+    @JsonKey(name: 'birth_date') String? birthDate,
+    @JsonKey(name: 'membership_city') String? membershipCity,
     required String password,
     @JsonKey(name: 'password_confirmation') required String passwordConfirmation,
 

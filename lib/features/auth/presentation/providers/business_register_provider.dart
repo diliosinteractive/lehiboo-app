@@ -95,6 +95,8 @@ class BusinessRegisterState {
   final String lastName;
   final String email;
   final String phone;
+  final String? birthDate;
+  final String? membershipCity;
   final String password;
   final String passwordConfirmation;
 
@@ -139,6 +141,8 @@ class BusinessRegisterState {
     this.lastName = '',
     this.email = '',
     this.phone = '',
+    this.birthDate,
+    this.membershipCity,
     this.password = '',
     this.passwordConfirmation = '',
     // Step 2
@@ -179,6 +183,8 @@ class BusinessRegisterState {
     String? lastName,
     String? email,
     String? phone,
+    String? birthDate,
+    String? membershipCity,
     String? password,
     String? passwordConfirmation,
     // Step 2
@@ -218,6 +224,8 @@ class BusinessRegisterState {
       lastName: lastName ?? this.lastName,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      birthDate: birthDate ?? this.birthDate,
+      membershipCity: membershipCity ?? this.membershipCity,
       password: password ?? this.password,
       passwordConfirmation: passwordConfirmation ?? this.passwordConfirmation,
       // Step 2
@@ -318,6 +326,8 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
     String? lastName,
     String? email,
     String? phone,
+    String? birthDate,
+    String? membershipCity,
     String? password,
     String? passwordConfirmation,
   }) {
@@ -326,6 +336,8 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
       lastName: lastName,
       email: email,
       phone: phone,
+      birthDate: birthDate,
+      membershipCity: membershipCity,
       password: password,
       passwordConfirmation: passwordConfirmation,
       errorMessage: null,
@@ -647,6 +659,8 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
         lastName: state.lastName.trim(),
         email: state.email.trim(),
         phone: state.phone.trim().isNotEmpty ? state.phone.trim() : null,
+        birthDate: state.birthDate,
+        membershipCity: state.membershipCity,
         password: state.password,
         passwordConfirmation: state.passwordConfirmation,
         // Company

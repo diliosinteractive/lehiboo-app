@@ -214,6 +214,8 @@ mixin _$UserDto {
   String? get bio => throw _privateConstructorUsedError;
   @JsonKey(name: 'birth_date')
   String? get birthDate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'membership_city')
+  String? get membershipCity => throw _privateConstructorUsedError;
   @JsonKey(name: 'avatar_url')
   String? get avatarUrl => throw _privateConstructorUsedError;
   String get role => throw _privateConstructorUsedError;
@@ -244,6 +246,7 @@ abstract class $UserDtoCopyWith<$Res> {
       String? city,
       String? bio,
       @JsonKey(name: 'birth_date') String? birthDate,
+      @JsonKey(name: 'membership_city') String? membershipCity,
       @JsonKey(name: 'avatar_url') String? avatarUrl,
       String role,
       @JsonKey(name: 'registered_at') String? registeredAt,
@@ -276,6 +279,7 @@ class _$UserDtoCopyWithImpl<$Res, $Val extends UserDto>
     Object? city = freezed,
     Object? bio = freezed,
     Object? birthDate = freezed,
+    Object? membershipCity = freezed,
     Object? avatarUrl = freezed,
     Object? role = null,
     Object? registeredAt = freezed,
@@ -322,6 +326,10 @@ class _$UserDtoCopyWithImpl<$Res, $Val extends UserDto>
       birthDate: freezed == birthDate
           ? _value.birthDate
           : birthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
               as String?,
       avatarUrl: freezed == avatarUrl
           ? _value.avatarUrl
@@ -377,6 +385,7 @@ abstract class _$$UserDtoImplCopyWith<$Res> implements $UserDtoCopyWith<$Res> {
       String? city,
       String? bio,
       @JsonKey(name: 'birth_date') String? birthDate,
+      @JsonKey(name: 'membership_city') String? membershipCity,
       @JsonKey(name: 'avatar_url') String? avatarUrl,
       String role,
       @JsonKey(name: 'registered_at') String? registeredAt,
@@ -408,6 +417,7 @@ class __$$UserDtoImplCopyWithImpl<$Res>
     Object? city = freezed,
     Object? bio = freezed,
     Object? birthDate = freezed,
+    Object? membershipCity = freezed,
     Object? avatarUrl = freezed,
     Object? role = null,
     Object? registeredAt = freezed,
@@ -455,6 +465,10 @@ class __$$UserDtoImplCopyWithImpl<$Res>
           ? _value.birthDate
           : birthDate // ignore: cast_nullable_to_non_nullable
               as String?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
+              as String?,
       avatarUrl: freezed == avatarUrl
           ? _value.avatarUrl
           : avatarUrl // ignore: cast_nullable_to_non_nullable
@@ -493,6 +507,7 @@ class _$UserDtoImpl implements _UserDto {
       this.city,
       this.bio,
       @JsonKey(name: 'birth_date') this.birthDate,
+      @JsonKey(name: 'membership_city') this.membershipCity,
       @JsonKey(name: 'avatar_url') this.avatarUrl,
       required this.role,
       @JsonKey(name: 'registered_at') this.registeredAt,
@@ -528,6 +543,9 @@ class _$UserDtoImpl implements _UserDto {
   @JsonKey(name: 'birth_date')
   final String? birthDate;
   @override
+  @JsonKey(name: 'membership_city')
+  final String? membershipCity;
+  @override
   @JsonKey(name: 'avatar_url')
   final String? avatarUrl;
   @override
@@ -543,7 +561,7 @@ class _$UserDtoImpl implements _UserDto {
 
   @override
   String toString() {
-    return 'UserDto(id: $id, email: $email, displayName: $displayName, name: $name, firstName: $firstName, lastName: $lastName, phone: $phone, city: $city, bio: $bio, birthDate: $birthDate, avatarUrl: $avatarUrl, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, capabilities: $capabilities)';
+    return 'UserDto(id: $id, email: $email, displayName: $displayName, name: $name, firstName: $firstName, lastName: $lastName, phone: $phone, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, avatarUrl: $avatarUrl, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, capabilities: $capabilities)';
   }
 
   @override
@@ -565,6 +583,8 @@ class _$UserDtoImpl implements _UserDto {
             (identical(other.bio, bio) || other.bio == bio) &&
             (identical(other.birthDate, birthDate) ||
                 other.birthDate == birthDate) &&
+            (identical(other.membershipCity, membershipCity) ||
+                other.membershipCity == membershipCity) &&
             (identical(other.avatarUrl, avatarUrl) ||
                 other.avatarUrl == avatarUrl) &&
             (identical(other.role, role) || other.role == role) &&
@@ -590,6 +610,7 @@ class _$UserDtoImpl implements _UserDto {
       city,
       bio,
       birthDate,
+      membershipCity,
       avatarUrl,
       role,
       registeredAt,
@@ -622,6 +643,7 @@ abstract class _UserDto implements UserDto {
       final String? city,
       final String? bio,
       @JsonKey(name: 'birth_date') final String? birthDate,
+      @JsonKey(name: 'membership_city') final String? membershipCity,
       @JsonKey(name: 'avatar_url') final String? avatarUrl,
       required final String role,
       @JsonKey(name: 'registered_at') final String? registeredAt,
@@ -654,6 +676,9 @@ abstract class _UserDto implements UserDto {
   @override
   @JsonKey(name: 'birth_date')
   String? get birthDate;
+  @override
+  @JsonKey(name: 'membership_city')
+  String? get membershipCity;
   @override
   @JsonKey(name: 'avatar_url')
   String? get avatarUrl;

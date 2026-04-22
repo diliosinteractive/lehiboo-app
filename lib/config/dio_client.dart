@@ -74,42 +74,53 @@ class JwtAuthInterceptor extends QueuedInterceptor {
 
   JwtAuthInterceptor(this._storage);
 
+  /// Endpoints pour lesquels l'absence de token est attendue (juste pour le log).
+  /// On envoie **toujours** le token si on en a un — même sur ces routes — car
+  /// certaines sont user-aware (ex: `/events/{slug}/questions` renvoie
+  /// `userVoted` si authentifié) ou cachent des sous-routes authentifiées
+  /// derrière un même préfixe (ex: `/events/{slug}/my-question`).
+  static const _publicPrefixes = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/refresh',
+    '/auth/otp',
+    '/auth/check-email',
+    '/events',
+    '/categories',
+    '/thematiques',
+    '/cities',
+    '/filters',
+    '/home-feed',
+    '/mobile/config',
+    '/posts',
+    '/stories',
+  ];
+
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    // Skip auth for public endpoints
-    final publicEndpoints = [
-      '/auth/login',
-      '/auth/register',
-      '/auth/forgot-password',
-      '/auth/reset-password',
-      '/auth/refresh',
-      '/auth/otp',  // OTP endpoints: /auth/otp/send, /auth/otp/verify, /auth/otp/resend
-      '/auth/check-email',
-      '/events',
-      '/categories',
-      '/thematiques',
-      '/cities',
-      '/filters',
-      '/home-feed',
-      '/mobile/config',
-      '/posts',
-      '/stories',
-    ];
+    final token = await _storage.read(key: AppConstants.keyAuthToken);
 
-    final isPublic = publicEndpoints.any((e) => options.path.startsWith(e));
+    // Toujours attacher le token si disponible. Le serveur l'ignore sur les
+    // routes vraiment publiques, et en a besoin sur les sous-routes
+    // authentifiées ou user-aware.
+    if (token != null && token.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $token';
+    } else if (kDebugMode) {
+      final isPublic =
+          _publicPrefixes.any((e) => options.path.startsWith(e));
+      if (!isPublic) {
+        debugPrint(
+          '⚠️ JwtAuthInterceptor: No token found for protected endpoint ${options.path}',
+        );
+      }
+    }
 
-    if (!isPublic) {
-      final token = await _storage.read(key: AppConstants.keyAuthToken);
-      if (kDebugMode) {
-        debugPrint('🔐 JwtAuthInterceptor: path=${options.path}, isPublic=$isPublic, hasToken=${token != null && token.isNotEmpty}');
-      }
-      if (token != null && token.isNotEmpty) {
-        options.headers['Authorization'] = 'Bearer $token';
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️ JwtAuthInterceptor: No token found for protected endpoint ${options.path}');
-        }
-      }
+    if (kDebugMode) {
+      debugPrint(
+        '🔐 JwtAuthInterceptor: path=${options.path}, hasToken=${token != null && token.isNotEmpty}',
+      );
     }
 
     // Add API key if configured
@@ -125,27 +136,38 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     if (err.response?.statusCode == 401 && !_isRefreshing) {
       _isRefreshing = true;
 
+      final path = err.requestOptions.path;
+      final isPublic = _publicPrefixes.any((e) => path.startsWith(e));
+
       if (kDebugMode) {
-        debugPrint('🔐 JwtAuthInterceptor: 401 on ${err.requestOptions.path}');
+        debugPrint(
+          '🔐 JwtAuthInterceptor: 401 on $path (isPublic=$isPublic)',
+        );
       }
 
-      final currentToken = await _storage.read(key: AppConstants.keyAuthToken);
-
-      if (currentToken != null && currentToken.isNotEmpty) {
-        // Token exists but server rejected it → session expired.
-        // Clear local tokens and trigger force logout so the router
-        // redirects to the login screen.
-        if (kDebugMode) {
-          debugPrint('🔐 JwtAuthInterceptor: Token expired → force logout');
-        }
-        await _storage.delete(key: AppConstants.keyAuthToken);
-        await _storage.delete(key: AppConstants.keyRefreshToken);
-
-        // Notify the auth layer (if wired up) so GoRouter redirects to login.
-        await DioClient.onForceLogout?.call();
-      } else {
-        if (kDebugMode) {
-          debugPrint('🔐 JwtAuthInterceptor: No token found, nothing to clear');
+      // Ne force-logout que pour les routes *réellement* authentifiées.
+      // Un 401 sur une route publique signifie que le backend a rejeté un
+      // token invalide sans que la ressource ne nécessite l'auth — inutile
+      // et destructif de déconnecter l'user pour ça.
+      if (!isPublic) {
+        final currentToken = await _storage.read(
+          key: AppConstants.keyAuthToken,
+        );
+        if (currentToken != null && currentToken.isNotEmpty) {
+          if (kDebugMode) {
+            debugPrint(
+              '🔐 JwtAuthInterceptor: Token expired on protected route → force logout',
+            );
+          }
+          await _storage.delete(key: AppConstants.keyAuthToken);
+          await _storage.delete(key: AppConstants.keyRefreshToken);
+          await DioClient.onForceLogout?.call();
+        } else {
+          if (kDebugMode) {
+            debugPrint(
+              '🔐 JwtAuthInterceptor: No token found, nothing to clear',
+            );
+          }
         }
       }
 

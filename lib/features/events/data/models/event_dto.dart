@@ -376,6 +376,7 @@ class EventOrganizerDto with _$EventOrganizerDto {
     @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull) String? profileUrl,
     @JsonKey(name: 'member_since', fromJson: _parseStringOrNull) String? memberSince,
     @JsonKey(fromJson: _parseBool) @Default(false) bool verified,
+    @JsonKey(name: 'is_platform', fromJson: _parseBool) @Default(false) bool isPlatform,
   }) = _EventOrganizerDto;
 
   factory EventOrganizerDto.fromJson(Map<String, dynamic> json) =>

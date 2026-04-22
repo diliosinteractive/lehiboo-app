@@ -203,23 +203,39 @@ class EventSocialApiDataSource {
       data: requestData,
     );
 
-    final data = response.data;
-    final questionData = data['data'] ?? data;
-    return EventQuestionDto.fromJson(questionData as Map<String, dynamic>);
+    // Spec §2.1 : la réponse est `{ message, question: {...} }`.
+    // Fallback sur `data` ou la racine pour robustesse si le backend change.
+    final data = response.data as Map<String, dynamic>;
+    final questionData = (data['question'] ?? data['data'] ?? data)
+        as Map<String, dynamic>;
+    return EventQuestionDto.fromJson(questionData);
   }
 
-  /// Marque une question comme utile
-  Future<void> markQuestionHelpful(String questionUuid) async {
+  /// Marque une question comme utile.
+  /// Retourne le `helpful_count` renvoyé par le serveur (source de vérité).
+  Future<int> markQuestionHelpful(String questionUuid) async {
     debugPrint('=== EventSocialApiDataSource.markQuestionHelpful ===');
 
-    await _dio.post('/questions/$questionUuid/helpful');
+    final response = await _dio.post('/questions/$questionUuid/helpful');
+    return _parseHelpfulCount(response.data);
   }
 
-  /// Retire le vote utile d'une question
-  Future<void> unmarkQuestionHelpful(String questionUuid) async {
+  /// Retire le vote utile d'une question.
+  /// Retourne le `helpful_count` renvoyé par le serveur.
+  Future<int> unmarkQuestionHelpful(String questionUuid) async {
     debugPrint('=== EventSocialApiDataSource.unmarkQuestionHelpful ===');
 
-    await _dio.delete('/questions/$questionUuid/helpful');
+    final response = await _dio.delete('/questions/$questionUuid/helpful');
+    return _parseHelpfulCount(response.data);
+  }
+
+  static int _parseHelpfulCount(dynamic data) {
+    if (data is! Map) return 0;
+    final raw = data['helpful_count'] ?? data['helpfulCount'];
+    if (raw is int) return raw;
+    if (raw is String) return int.tryParse(raw) ?? 0;
+    if (raw is double) return raw.toInt();
+    return 0;
   }
 
   /// Récupère la question de l'utilisateur connecté pour un événement

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../../domain/entities/user.dart';
+import '../../data/mappers/auth_mapper.dart';
+import '../../data/models/auth_response_dto.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 
@@ -286,20 +288,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void updateUser(dynamic updatedUser) {
     if (state.user == null) return;
 
-    // Handle UserDto from profile API
-    if (updatedUser is! HbUser) {
-      // Convert UserDto to HbUser
+    if (updatedUser is UserDto) {
+      final mapped = AuthMapper.toUser(updatedUser);
       final currentUser = state.user!;
-      final updated = currentUser.copyWith(
-        displayName: updatedUser.displayName ?? currentUser.displayName,
-        firstName: updatedUser.firstName ?? currentUser.firstName,
-        lastName: updatedUser.lastName ?? currentUser.lastName,
-        phone: updatedUser.phone ?? currentUser.phone,
-        avatarUrl: updatedUser.avatarUrl ?? currentUser.avatarUrl,
-        isVerified: updatedUser.isVerified ?? currentUser.isVerified,
+      // AuthMapper may default role to subscriber if the profile endpoint
+      // doesn't return it — preserve the current role in that case.
+      state = state.copyWith(
+        user: mapped.copyWith(
+          role: mapped.role != UserRole.subscriber ? mapped.role : currentUser.role,
+        ),
       );
-      state = state.copyWith(user: updated);
-    } else {
+    } else if (updatedUser is HbUser) {
       state = state.copyWith(user: updatedUser);
     }
   }

@@ -38,8 +38,10 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _membershipCityController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  DateTime? _birthDate;
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -65,6 +67,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
+    _membershipCityController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _cooldownTimer?.cancel();
@@ -253,6 +256,10 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
         password: _passwordController.text,
         passwordConfirmation: _confirmPasswordController.text,
         phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+        birthDate: _birthDate != null
+            ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
+            : null,
+        membershipCity: _membershipCityController.text.trim().isNotEmpty ? _membershipCityController.text.trim() : null,
         acceptTerms: _acceptTerms,
       );
 
@@ -794,6 +801,58 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                 label: 'Téléphone (optionnel)',
                 hint: '06 12 34 56 78',
                 icon: Icons.phone_outlined,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Birth date picker (optional)
+            GestureDetector(
+              onTap: () async {
+                final maxDate = DateTime.now().subtract(const Duration(days: 15 * 365));
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _birthDate ?? maxDate,
+                  firstDate: DateTime(1920),
+                  lastDate: maxDate,
+                  helpText: 'Date de naissance',
+                );
+                if (picked != null) {
+                  setState(() => _birthDate = picked);
+                }
+              },
+              child: AbsorbPointer(
+                child: TextFormField(
+                  decoration: _inputDecoration(
+                    label: 'Date de naissance (optionnel)',
+                    hint: 'JJ/MM/AAAA',
+                    icon: Icons.cake_outlined,
+                    suffixIcon: _birthDate != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () => setState(() => _birthDate = null),
+                          )
+                        : null,
+                  ),
+                  controller: TextEditingController(
+                    text: _birthDate != null
+                        ? '${_birthDate!.day.toString().padLeft(2, '0')}/${_birthDate!.month.toString().padLeft(2, '0')}/${_birthDate!.year}'
+                        : '',
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Membership city (optional)
+            TextFormField(
+              controller: _membershipCityController,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
+              maxLength: 120,
+              decoration: _inputDecoration(
+                label: 'Ville (optionnel)',
+                hint: 'Lyon, Paris...',
+                icon: Icons.location_city_outlined,
               ),
             ),
             const SizedBox(height: 16),
