@@ -10,6 +10,7 @@ import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/city_detail_screen.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart'; // Corrected import
 import 'package:lehiboo/features/events/presentation/screens/event_list_screen.dart'; // Re-added for /recommended route
+import 'package:lehiboo/features/events/presentation/screens/event_questions_screen.dart';
 import 'package:lehiboo/features/search/presentation/screens/search_screen.dart';
 import '../features/search/presentation/screens/filter_screen.dart';
 import '../features/favorites/presentation/screens/favorites_screen.dart';
@@ -250,6 +251,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final eventId = state.pathParameters['id']!;
           return EventDetailScreen(eventId: eventId);
+        },
+      ),
+      // Full Q&A screen for an event
+      GoRoute(
+        path: '/event/:id/questions',
+        name: 'event-questions',
+        builder: (context, state) {
+          final eventId = state.pathParameters['id']!;
+          final extra = state.extra;
+          final title = extra is Map<String, dynamic>
+              ? (extra['title']?.toString() ?? 'Événement')
+              : 'Événement';
+          return EventQuestionsScreen(
+            eventSlug: eventId,
+            eventTitle: title,
+          );
         },
       ),
       // Partner route

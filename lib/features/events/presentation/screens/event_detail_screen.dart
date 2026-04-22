@@ -356,14 +356,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               const SizedBox(height: 24),
 
-              // 11. Questions/Réponses (connecté à l'API)
-              EventQASection(
-                eventSlug: event.slug,
-                eventTitle: event.title,
-                onViewAll: () => _showAllQuestions(event),
-              ),
-
-              const SizedBox(height: 24),
+              // 11. Questions/Réponses — masqué pour les events dont
+              // l'organisation est une plateforme (pas d'organisateur humain
+              // pour répondre aux questions).
+              if (!event.organizerIsPlatform) ...[
+                EventQASection(
+                  eventSlug: event.slug,
+                  eventTitle: event.title,
+                ),
+                const SizedBox(height: 24),
+              ],
 
               // 12. Événements similaires
               similarEventsAsync.when(
@@ -859,13 +861,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     // TODO: Naviguer vers la page de tous les avis
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Voir tous les avis')),
-    );
-  }
-
-  void _showAllQuestions(Event event) {
-    // TODO: Naviguer vers la page de toutes les questions
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Voir toutes les questions')),
     );
   }
 

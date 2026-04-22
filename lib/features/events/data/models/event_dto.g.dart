@@ -270,6 +270,8 @@ _$EventOrganizerDtoImpl _$$EventOrganizerDtoImplFromJson(
       profileUrl: _parseStringOrNull(json['profile_url']),
       memberSince: _parseStringOrNull(json['member_since']),
       verified: json['verified'] == null ? false : _parseBool(json['verified']),
+      isPlatform:
+          json['is_platform'] == null ? false : _parseBool(json['is_platform']),
     );
 
 Map<String, dynamic> _$$EventOrganizerDtoImplToJson(
@@ -295,6 +297,7 @@ Map<String, dynamic> _$$EventOrganizerDtoImplToJson(
       'profile_url': instance.profileUrl,
       'member_since': instance.memberSince,
       'verified': instance.verified,
+      'is_platform': instance.isPlatform,
     };
 
 _$OrganizerSocialLinkDtoImpl _$$OrganizerSocialLinkDtoImplFromJson(
