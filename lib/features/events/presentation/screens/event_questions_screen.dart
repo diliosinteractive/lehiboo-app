@@ -44,6 +44,42 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
     super.dispose();
   }
 
+  Future<void> _onAskQuestion() async {
+    HapticFeedback.lightImpact();
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'poser une question',
+    );
+    if (!allowed || !mounted) return;
+
+    final outcome = await AskQuestionSheet.show(
+      context,
+      eventSlug: widget.eventSlug,
+      eventTitle: widget.eventTitle,
+    );
+    if (outcome == null || !mounted) return;
+
+    ref
+        .read(eventQuestionsActionsProvider.notifier)
+        .refreshAll(widget.eventSlug);
+
+    final message = switch (outcome) {
+      AskQuestionOutcome.created => 'Votre question a été envoyée !',
+      AskQuestionOutcome.alreadyExists =>
+        'Vous avez déjà posé une question sur cet événement.',
+    };
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: outcome == AskQuestionOutcome.created
+            ? HbColors.success
+            : HbColors.textSecondary,
+      ),
+    );
+  }
+
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
@@ -62,6 +98,14 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
         ref.watch(eventQuestionsListControllerProvider(widget.eventSlug));
     final myQuestionAsync = ref.watch(myQuestionProvider(widget.eventSlug));
     final myQuestion = myQuestionAsync.valueOrNull;
+
+    // Si la question de l'user est déjà dans la liste publique
+    // (status approved/answered), on la laisse dans la liste (avec ses
+    // interactions) et on cache le bloc "Votre question" en tête de page.
+    final publicItems = listAsync.valueOrNull?.items ?? const [];
+    final myQuestionInPublicList = myQuestion != null &&
+        publicItems.any((q) => q.uuid == myQuestion.uuid);
+    final myQuestionToDisplay = myQuestionInPublicList ? null : myQuestion;
 
     return Scaffold(
       backgroundColor: HbColors.orangePastel,
@@ -100,38 +144,40 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
               eventQuestionsListControllerProvider(widget.eventSlug).notifier,
             )
             .refresh(),
-        child: listAsync.when(
-          loading: () => const _LoadingList(),
-          error: (err, _) => _ErrorList(
-            onRetry: () => ref.invalidate(
-              eventQuestionsListControllerProvider(widget.eventSlug),
-            ),
-          ),
-          data: (page) => _QuestionsList(
-            scrollController: _scrollController,
-            page: page,
-            myQuestion: myQuestion,
-            eventSlug: widget.eventSlug,
-            eventTitle: widget.eventTitle,
-          ),
+        child: Builder(
+          builder: (_) {
+            // Afficher le loader dès qu'une des deux sources est en cours de
+            // chargement (initial OU refresh après soumission).
+            final isLoading =
+                listAsync.isLoading || myQuestionAsync.isLoading;
+            if (isLoading) return const _LoadingList();
+            if (listAsync.hasError) {
+              return _ErrorList(
+                onRetry: () => ref.invalidate(
+                  eventQuestionsListControllerProvider(widget.eventSlug),
+                ),
+              );
+            }
+            final page = listAsync.valueOrNull;
+            if (page == null) return const _LoadingList();
+            return _QuestionsList(
+              scrollController: _scrollController,
+              page: page,
+              // Passer null ici quand myQuestion est déjà dans la liste publique
+              // → aucun dedupe, la question reste affichée avec ses boutons
+              // (Utile, etc.) et pas de bloc "Votre question" en double au top.
+              myQuestion: myQuestionToDisplay,
+              eventSlug: widget.eventSlug,
+              eventTitle: widget.eventTitle,
+            );
+          },
         ),
       ),
+      // Le FAB reste caché dès que l'user a déjà posé une question
+      // (peu importe si elle est publique ou non — il ne peut pas en reposer).
       floatingActionButton: (myQuestion == null && listAsync.hasValue)
           ? FloatingActionButton.extended(
-              onPressed: () async {
-                HapticFeedback.lightImpact();
-                final allowed = await GuestGuard.check(
-                  context: context,
-                  ref: ref,
-                  featureName: 'poser une question',
-                );
-                if (!allowed || !context.mounted) return;
-                await AskQuestionSheet.show(
-                  context,
-                  eventSlug: widget.eventSlug,
-                  eventTitle: widget.eventTitle,
-                );
-              },
+              onPressed: () => _onAskQuestion(),
               backgroundColor: HbColors.brandPrimary,
               foregroundColor: HbColors.white,
               icon: const Icon(Icons.add_comment_outlined),

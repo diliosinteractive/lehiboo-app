@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../providers/event_questions_providers.dart';
 
+/// Résultat renvoyé par le bottom sheet à la fermeture — le parent s'en sert
+/// pour déclencher le refresh et le toast approprié.
+enum AskQuestionOutcome { created, alreadyExists }
+
 /// Bottom sheet pour poser une question sur un événement.
 ///
 /// Gère la validation 10-1000 caractères (spec §2.1) et les erreurs 422.
@@ -17,13 +21,15 @@ class AskQuestionSheet extends ConsumerStatefulWidget {
     required this.eventTitle,
   });
 
-  /// Renvoie `true` si la question a été créée avec succès.
-  static Future<bool?> show(
+  /// Renvoie `AskQuestionOutcome.created` si création OK,
+  /// `AskQuestionOutcome.alreadyExists` si l'user avait déjà posé,
+  /// `null` si l'user a fermé/annulé.
+  static Future<AskQuestionOutcome?> show(
     BuildContext context, {
     required String eventSlug,
     required String eventTitle,
   }) {
-    return showModalBottomSheet<bool>(
+    return showModalBottomSheet<AskQuestionOutcome>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -65,30 +71,13 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
 
     if (!mounted) return;
 
-    // Capturer Navigator et ScaffoldMessenger AVANT le pop pour pouvoir
-    // afficher le snackbar même après fermeture du sheet (le context du sheet
-    // devient invalide après Navigator.pop).
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-
     switch (result) {
       case CreateQuestionSuccess():
-        navigator.pop(true);
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Votre question a été envoyée !'),
-            backgroundColor: HbColors.success,
-          ),
-        );
+        // Ferme le sheet → le parent gère le refresh + toast
+        // (meilleur découplage + la section Q&A peut afficher son loader).
+        Navigator.of(context).pop(AskQuestionOutcome.created);
       case CreateQuestionAlreadyExists():
-        navigator.pop(false);
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Vous avez déjà posé une question sur cet événement.',
-            ),
-          ),
-        );
+        Navigator.of(context).pop(AskQuestionOutcome.alreadyExists);
       case CreateQuestionValidationFailure(errorMessage: final msg):
         setState(() {
           _submitting = false;
@@ -97,7 +86,7 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
         _formKey.currentState?.validate();
       case CreateQuestionFailure(errorMessage: final msg):
         setState(() => _submitting = false);
-        messenger.showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(msg),
             backgroundColor: HbColors.error,

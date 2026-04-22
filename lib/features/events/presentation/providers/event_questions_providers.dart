@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/event_social_api_datasource.dart';
 import '../../data/repositories/event_questions_repository_impl.dart';
 import '../../domain/entities/event_question.dart';
@@ -34,6 +36,10 @@ final eventQuestionsPreviewProvider = FutureProvider.autoDispose
 
 final myQuestionProvider = FutureProvider.autoDispose
     .family<EventQuestion?, String>((ref, eventSlug) async {
+  // Endpoint authentifié: skip l'appel si l'user n'est pas connecté.
+  // Évite un 401 inutile (et un éventuel cascade force-logout).
+  final isAuthenticated = ref.watch(isAuthenticatedProvider);
+  if (!isAuthenticated) return null;
   final repo = ref.watch(eventQuestionsRepositoryProvider);
   return repo.getMyQuestion(eventSlug);
 });
@@ -69,6 +75,10 @@ class EventQuestionsListController
   }
 
   Future<void> refresh() async {
+    // Set explicit loading state so the UI shows a spinner during refresh
+    // (et pas les anciennes data) — utile notamment après la soumission
+    // d'une question pour donner un retour visuel clair.
+    state = const AsyncValue.loading();
     try {
       final page = await _repo.getQuestions(
         _eventSlug,
@@ -193,29 +203,41 @@ class EventQuestionsActionsController extends StateNotifier<AsyncValue<void>> {
     try {
       final question = await _repo.createQuestion(eventSlug, trimmed);
       state = const AsyncValue.data(null);
-
-      // Refresh toutes les vues Q&A de cet événement (detail section + écran
-      // dédié + bloc "Votre question"). La nouvelle question est `pending`,
-      // donc elle n'apparaîtra pas dans la liste publique — mais `myQuestion`
-      // la renverra et le CTA "Poser" sera masqué.
-      _ref.invalidate(myQuestionProvider(eventSlug));
-      _ref.invalidate(eventQuestionsPreviewProvider(eventSlug));
-      _ref.invalidate(eventQuestionsListControllerProvider(eventSlug));
-
+      debugPrint('[QA] createQuestion OK → uuid=${question.uuid}');
+      // On n'invalide PAS ici — c'est le parent qui déclenche le refresh
+      // APRÈS la fermeture du sheet, pour que le loader soit bien visible
+      // dans la section Q&A.
       return CreateQuestionSuccess(question);
     } on DuplicateQuestionException {
       state = const AsyncValue.data(null);
-      _ref.invalidate(myQuestionProvider(eventSlug));
+      debugPrint('[QA] createQuestion → already exists');
       return const CreateQuestionAlreadyExists();
     } on QuestionValidationException catch (e) {
       state = const AsyncValue.data(null);
+      debugPrint('[QA] createQuestion validation: ${e.firstError}');
       return CreateQuestionValidationFailure(e.firstError);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      debugPrint('[QA] createQuestion FAILED: $e');
       return const CreateQuestionFailure(
         'Une erreur est survenue lors de l\'envoi de la question.',
       );
     }
+  }
+
+  /// Refresh de toutes les vues Q&A d'un event. À appeler après une
+  /// soumission réussie, ou manuellement via un pull-to-refresh.
+  ///
+  /// Utilise `invalidate` partout : pour les FutureProviders ça déclenche
+  /// un refetch, pour le list controller (StateNotifierProvider.autoDispose)
+  /// ça marque le provider pour re-création → un nouveau notifier est créé
+  /// qui démarre en AsyncLoading puis charge la page 1. Ça évite d'accéder
+  /// à un notifier qui aurait déjà été disposé (cas où l'écran dédié n'est
+  /// pas monté).
+  void refreshAll(String eventSlug) {
+    _ref.invalidate(myQuestionProvider(eventSlug));
+    _ref.invalidate(eventQuestionsPreviewProvider(eventSlug));
+    _ref.invalidate(eventQuestionsListControllerProvider(eventSlug));
   }
 
   /// Toggle optimiste (spec §5.3).

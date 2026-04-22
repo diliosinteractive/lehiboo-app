@@ -31,6 +31,21 @@ class EventQASection extends ConsumerWidget {
     // capturées obsolètes (ex: auth state async qui se résout après le build).
     ref.watch(isAuthenticatedProvider);
     final myQuestionAsync = ref.watch(myQuestionProvider(eventSlug));
+    final myQuestion = myQuestionAsync.valueOrNull;
+
+    // Si la question de l'user est déjà présente dans la liste publique
+    // (status approved/answered), on la laisse dans la liste (avec toutes
+    // ses interactions) et on cache le bloc "Votre question". Le bloc ne
+    // s'affiche que pour les status pending/rejected non visibles publiquement.
+    final publicItems = previewAsync.valueOrNull?.items ?? const [];
+    final myQuestionInPublicList = myQuestion != null &&
+        publicItems.any((q) => q.uuid == myQuestion.uuid);
+    final myQuestionToDisplay = myQuestionInPublicList ? null : myQuestion;
+
+    // Afficher le loader dès qu'une des deux sources est en cours de chargement
+    // (initial OU refresh après soumission d'une question). Évite de montrer
+    // les anciennes data pendant que la liste se met à jour.
+    final isLoading = previewAsync.isLoading || myQuestionAsync.isLoading;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -42,28 +57,41 @@ class EventQASection extends ConsumerWidget {
               data: (page) => page.total,
               orElse: () => null,
             ),
-            showAsk: myQuestionAsync.maybeWhen(
-              data: (q) => q == null,
-              orElse: () => false,
-            ),
+            // Le CTA "Poser" reste caché dès que l'user a déjà une question
+            // (peu importe son status) — il ne peut pas en poser une autre.
+            // Pendant le chargement, on masque aussi le bouton pour éviter
+            // qu'il flashe entre deux états.
+            showAsk: !isLoading &&
+                myQuestionAsync.maybeWhen(
+                  data: (q) => q == null,
+                  orElse: () => false,
+                ),
             onAsk: () => _handleAsk(context, ref),
           ),
           const SizedBox(height: 12),
-          _MyQuestionBlock(myQuestion: myQuestionAsync.valueOrNull),
-          previewAsync.when(
-            loading: () => const _LoadingPlaceholder(),
-            error: (_, __) => _ErrorBlock(
-              onRetry: () =>
-                  ref.invalidate(eventQuestionsPreviewProvider(eventSlug)),
+          if (isLoading)
+            const _LoadingPlaceholder()
+          else ...[
+            _MyQuestionBlock(myQuestion: myQuestionToDisplay),
+            previewAsync.when(
+              // isLoading est déjà traité au-dessus
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => _ErrorBlock(
+                onRetry: () =>
+                    ref.invalidate(eventQuestionsPreviewProvider(eventSlug)),
+              ),
+              data: (page) => _Content(
+                eventSlug: eventSlug,
+                eventTitle: eventTitle,
+                page: page,
+                // Passer null ici quand myQuestion est dans la liste publique,
+                // comme ça le dedupe ne retire rien → la question reste visible
+                // avec ses boutons (Utile, etc.) dans la liste.
+                myQuestion: myQuestionToDisplay,
+                onAsk: () => _handleAsk(context, ref),
+              ),
             ),
-            data: (page) => _Content(
-              eventSlug: eventSlug,
-              eventTitle: eventTitle,
-              page: page,
-              myQuestion: myQuestionAsync.valueOrNull,
-              onAsk: () => _handleAsk(context, ref),
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -77,10 +105,32 @@ class EventQASection extends ConsumerWidget {
       featureName: 'poser une question',
     );
     if (!allowed || !context.mounted) return;
-    await AskQuestionSheet.show(
+
+    final outcome = await AskQuestionSheet.show(
       context,
       eventSlug: eventSlug,
       eventTitle: eventTitle,
+    );
+    if (outcome == null || !context.mounted) return;
+
+    // Refresh les vues Q&A maintenant que le sheet est fermé — le loader
+    // de la section s'affiche pendant le refetch.
+    ref
+        .read(eventQuestionsActionsProvider.notifier)
+        .refreshAll(eventSlug);
+
+    final message = switch (outcome) {
+      AskQuestionOutcome.created => 'Votre question a été envoyée !',
+      AskQuestionOutcome.alreadyExists =>
+        'Vous avez déjà posé une question sur cet événement.',
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: outcome == AskQuestionOutcome.created
+            ? HbColors.success
+            : HbColors.textSecondary,
+      ),
     );
   }
 }

@@ -188,8 +188,9 @@ class _AnswerBlock extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: BoxDecoration(
-        color: HbColors.surfaceLight,
+        color: HbColors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: HbColors.grey200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,9 +199,8 @@ class _AnswerBlock extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: HbColors.white,
+                color: HbColors.surfaceLight,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: HbColors.grey200),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,

@@ -203,9 +203,12 @@ class EventSocialApiDataSource {
       data: requestData,
     );
 
-    final data = response.data;
-    final questionData = data['data'] ?? data;
-    return EventQuestionDto.fromJson(questionData as Map<String, dynamic>);
+    // Spec §2.1 : la réponse est `{ message, question: {...} }`.
+    // Fallback sur `data` ou la racine pour robustesse si le backend change.
+    final data = response.data as Map<String, dynamic>;
+    final questionData = (data['question'] ?? data['data'] ?? data)
+        as Map<String, dynamic>;
+    return EventQuestionDto.fromJson(questionData);
   }
 
   /// Marque une question comme utile.
