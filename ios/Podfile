@@ -1,3 +1,6 @@
+# Use Git-based spec repo instead of CDN (cdn.jsdelivr.net is unreliable in Xcode Cloud)
+source 'https://github.com/CocoaPods/Specs.git'
+
 # Uncomment this line to define a global platform for your project
 platform :ios, '14.0'
 
