@@ -41,15 +41,18 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       widget.locationDetails?.transport != null &&
       widget.locationDetails!.transport!.description != null;
 
-  bool get _hasPmr => widget.locationDetails?.pmr?.available == true;
   bool get _hasFood => widget.locationDetails?.food?.available == true;
   bool get _hasDrinks => widget.locationDetails?.drinks?.available == true;
+  bool get _hasWifi => widget.locationDetails?.wifi?.available == true;
 
-  bool get _hasAccessibility => _hasPmr || _hasFood || _hasDrinks;
+  bool get _hasOtherServices =>
+      widget.locationDetails?.otherServices.isNotEmpty == true;
 
-  // _hasLocation retiré car géré par la section Localisation (carte)
+  bool get _hasServices =>
+      _hasFood || _hasDrinks || _hasWifi || _hasOtherServices;
+
   bool get _hasAnyInfo =>
-      _hasParking || _hasTransport || _hasAccessibility;
+      _hasParking || _hasTransport || _hasServices;
 
   @override
   Widget build(BuildContext context) {
@@ -78,10 +81,10 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
           child: _buildMainGrid(),
         ),
 
-        // Chips accessibilité
-        if (_hasAccessibility) ...[
+        // Service chips
+        if (_hasServices) ...[
           const SizedBox(height: 16),
-          _buildAccessibilityChips(),
+          _buildServiceChips(),
         ],
       ],
     );
@@ -154,26 +157,12 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
     );
   }
 
-  Widget _buildAccessibilityChips() {
+  Widget _buildServiceChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          if (_hasPmr)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: CompactInfoChip(
-                icon: Icons.accessible,
-                label: 'Accessible PMR',
-                color: Colors.blue,
-                onTap: () => _showAccessibilitySheet(
-                  icon: Icons.accessible,
-                  title: 'Accessibilité PMR',
-                  note: widget.locationDetails?.pmr?.note,
-                ),
-              ),
-            ),
           if (_hasFood)
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -189,16 +178,51 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
               ),
             ),
           if (_hasDrinks)
-            CompactInfoChip(
-              icon: Icons.local_bar,
-              label: 'Boissons',
-              color: Colors.purple,
-              onTap: () => _showAccessibilitySheet(
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CompactInfoChip(
                 icon: Icons.local_bar,
-                title: 'Boissons disponibles',
-                note: widget.locationDetails?.drinks?.note,
+                label: 'Boissons',
+                color: Colors.purple,
+                onTap: () => _showAccessibilitySheet(
+                  icon: Icons.local_bar,
+                  title: 'Boissons disponibles',
+                  note: widget.locationDetails?.drinks?.note,
+                ),
               ),
             ),
+          if (_hasWifi)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CompactInfoChip(
+                icon: Icons.wifi,
+                label: 'Wi-Fi',
+                color: Colors.teal,
+                onTap: () => _showAccessibilitySheet(
+                  icon: Icons.wifi,
+                  title: 'Wi-Fi disponible',
+                  note: widget.locationDetails?.wifi?.note,
+                ),
+              ),
+            ),
+          // Dynamic chips for all remaining services from the API
+          if (_hasOtherServices)
+            ...widget.locationDetails!.otherServices.map((key) {
+              final info = _serviceInfo(key);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: CompactInfoChip(
+                  icon: info.icon,
+                  label: info.label,
+                  color: info.color,
+                  onTap: () => _showAccessibilitySheet(
+                    icon: info.icon,
+                    title: info.label,
+                    note: null,
+                  ),
+                ),
+              );
+            }),
         ],
       ),
     );
@@ -289,6 +313,35 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
     );
   }
 
+  _ServiceDisplay _serviceInfo(String key) {
+    switch (key) {
+      case 'materiel':
+        return _ServiceDisplay('Matériel fourni', Icons.handyman_outlined, Colors.brown);
+      case 'animateur':
+        return _ServiceDisplay('Animateur', Icons.person_outline, Colors.indigo);
+      case 'hebergement':
+        return _ServiceDisplay('Hébergement', Icons.hotel_outlined, Colors.deepPurple);
+      case 'vestiaire':
+        return _ServiceDisplay('Vestiaire', Icons.checkroom_outlined, Colors.blueGrey);
+      case 'securite':
+        return _ServiceDisplay('Sécurité', Icons.security_outlined, Colors.red);
+      case 'premiers_secours':
+        return _ServiceDisplay('Premiers secours', Icons.medical_services_outlined, Colors.redAccent);
+      case 'garderie':
+        return _ServiceDisplay('Garderie', Icons.child_care_outlined, Colors.pink);
+      case 'photobooth':
+        return _ServiceDisplay('Photobooth', Icons.camera_alt_outlined, Colors.amber);
+      default:
+        // Capitalize first letter for unknown keys
+        final label = key.replaceAll('_', ' ');
+        return _ServiceDisplay(
+          label[0].toUpperCase() + label.substring(1),
+          Icons.check_circle_outline,
+          Colors.grey,
+        );
+    }
+  }
+
   String _buildFullAddress() {
     final parts = <String>[];
     if (widget.event.address != null && widget.event.address!.isNotEmpty) {
@@ -302,4 +355,12 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
     }
     return parts.join(', ');
   }
+}
+
+class _ServiceDisplay {
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const _ServiceDisplay(this.label, this.icon, this.color);
 }

@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 
-/// Header compact avec titre, organisateur, tags et rating
+/// Header compact avec titre, type, adresse, tags et rating
 ///
 /// Layout:
 /// ┌────────────────────────────────────┐
-/// │  [ORGANISATEUR]                    │
 /// │  Titre Événement                   │
-/// │  [Cat] [Public] [Durée]            │
-/// │  ★ 4.8 (120) • Paris               │
+/// │  [Billetterie] ou [Découverte]     │
+/// │  📍 Adresse                         │
+/// │  [Cat] [Gratuit/Payant] [Durée] …  │
+/// │  ★ 4.8 (120)                       │
 /// └────────────────────────────────────┘
 class EventCompactHeader extends StatelessWidget {
   final Event event;
-  final VoidCallback? onOrganizerTap;
 
   const EventCompactHeader({
     super.key,
     required this.event,
-    this.onOrganizerTap,
   });
 
   @override
@@ -30,10 +27,6 @@ class EventCompactHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Chip organisateur
-          _buildOrganizerChip(context),
-          const SizedBox(height: 12),
-
           // Titre
           Text(
             event.title,
@@ -47,87 +40,55 @@ class EventCompactHeader extends StatelessWidget {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
+          const SizedBox(height: 8),
+
+          // Type chip: Billetterie / Découverte
+          _buildEventTypeChip(),
+          const SizedBox(height: 10),
+
+          // Adresse
+          _buildLocation(),
           const SizedBox(height: 12),
 
           // Tags
           _buildTags(),
           const SizedBox(height: 12),
 
-          // Rating + Lieu
-          _buildRatingAndLocation(context),
+          // Rating
+          _buildRating(),
         ],
       ),
     );
   }
 
-  Widget _buildOrganizerChip(BuildContext context) {
-    if (event.organizerName == null || event.organizerName!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        if (onOrganizerTap != null) {
-          onOrganizerTap!();
-        } else if (event.organizerId != null) {
-          context.push('/partner/${event.organizerId}');
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: HbColors.brandPrimary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: HbColors.brandPrimary.withValues(alpha: 0.3),
+  Widget _buildEventTypeChip() {
+    final isBilletterie = event.hasDirectBooking;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isBilletterie
+            ? HbColors.brandPrimary.withValues(alpha: 0.1)
+            : Colors.teal.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isBilletterie ? Icons.confirmation_number_outlined : Icons.explore_outlined,
+            size: 14,
+            color: isBilletterie ? HbColors.brandPrimary : Colors.teal,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Avatar organisateur
-            if (event.organizerLogo != null && event.organizerLogo!.isNotEmpty)
-              CircleAvatar(
-                radius: 10,
-                backgroundImage: NetworkImage(event.organizerLogo!),
-                backgroundColor: Colors.grey.shade200,
-              )
-            else
-              CircleAvatar(
-                radius: 10,
-                backgroundColor: HbColors.brandPrimary,
-                child: Text(
-                  event.organizerName![0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            const SizedBox(width: 8),
-            // Nom avec ellipsis si trop long
-            Flexible(
-              child: Text(
-                event.organizerName!,
-                style: const TextStyle(
-                  color: HbColors.brandPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+          const SizedBox(width: 4),
+          Text(
+            isBilletterie ? 'Billetterie' : 'Découverte',
+            style: TextStyle(
+              color: isBilletterie ? HbColors.brandPrimary : Colors.teal,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.chevron_right,
-              color: HbColors.brandPrimary,
-              size: 16,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -135,26 +96,14 @@ class EventCompactHeader extends StatelessWidget {
   Widget _buildTags() {
     final tags = <_TagData>[];
 
-    // Catégorie
-    if (event.category != null) {
-      tags.add(_TagData(
-        label: _getCategoryLabel(event.category!),
-        icon: _getCategoryIcon(event.category!),
-        color: HbColors.brandPrimary,
-      ));
-    }
+    // 1. Primary category
+    tags.add(_TagData(
+      label: _getCategoryLabel(event.category),
+      icon: _getCategoryIcon(event.category),
+      color: HbColors.brandPrimary,
+    ));
 
-    // Public cible
-    if (event.targetAudiences != null && event.targetAudiences!.isNotEmpty) {
-      final audience = event.targetAudiences!.first;
-      tags.add(_TagData(
-        label: _getAudienceLabel(audience),
-        icon: Icons.people_outline,
-        color: Colors.blue,
-      ));
-    }
-
-    // Durée
+    // 2. Duration
     if (event.duration != null && event.duration!.inMinutes > 0) {
       tags.add(_TagData(
         label: _formatDuration(event.duration!),
@@ -163,52 +112,32 @@ class EventCompactHeader extends StatelessWidget {
       ));
     }
 
-    // Indoor/Outdoor
-    if (event.isIndoor == true) {
-      tags.add(_TagData(
-        label: 'Intérieur',
-        icon: Icons.home_outlined,
-        color: Colors.teal,
-      ));
-    } else if (event.isOutdoor == true) {
-      tags.add(_TagData(
-        label: 'Extérieur',
-        icon: Icons.park_outlined,
-        color: Colors.green,
-      ));
+    // 4. Public-facing tags: audience (prefer API terms, fallback to enum)
+    if (event.targetAudienceTerms.isNotEmpty) {
+      for (final term in event.targetAudienceTerms) {
+        tags.add(_TagData(
+          label: term.name,
+          icon: Icons.people_outline,
+          color: Colors.blue,
+        ));
+      }
+    } else if (event.targetAudiences.isNotEmpty) {
+      for (final audience in event.targetAudiences) {
+        tags.add(_TagData(
+          label: _getAudienceLabel(audience),
+          icon: Icons.people_outline,
+          color: Colors.blue,
+        ));
+      }
     }
 
-    if (tags.isEmpty) return const SizedBox.shrink();
-
-    // Limiter à 3 tags visibles max + badge "+N" si plus
-    final visibleTags = tags.take(3).toList();
-    final extraCount = tags.length - 3;
+    // 5. Indoor/Outdoor — skipped: currently hardcoded in mapper,
+    // will add back when the API provides real data
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: [
-        ...visibleTags.map((tag) => _buildTag(tag)),
-        if (extraCount > 0) _buildMoreChip(extraCount),
-      ],
-    );
-  }
-
-  Widget _buildMoreChip(int count) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: HbColors.grey200,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        '+$count',
-        style: TextStyle(
-          color: HbColors.grey500,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+      children: tags.map((tag) => _buildTag(tag)).toList(),
     );
   }
 
@@ -241,87 +170,65 @@ class EventCompactHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildRatingAndLocation(BuildContext context) {
+  Widget _buildLocation() {
     return Row(
       children: [
-        // Rating
-        if (event.rating != null && event.rating! > 0) ...[
-          const Icon(
-            Icons.star,
-            color: Colors.amber,
-            size: 18,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            event.rating!.toStringAsFixed(1),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: HbColors.textPrimary,
-            ),
-          ),
-          if (event.reviewsCount != null && event.reviewsCount! > 0) ...[
-            const SizedBox(width: 4),
-            Text(
-              '(${event.reviewsCount})',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-              ),
-            ),
-          ],
-          _buildDot(),
-        ],
-
-        // Lieu
+        Icon(
+          Icons.location_on_outlined,
+          size: 16,
+          color: Colors.grey.shade600,
+        ),
+        const SizedBox(width: 4),
         Expanded(
-          child: Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: Colors.grey.shade600,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  _getLocationText(),
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          child: Text(
+            _getLocationText(),
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 14,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDot() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Text(
-        '•',
-        style: TextStyle(
-          color: Colors.grey.shade400,
-          fontSize: 14,
+  Widget _buildRating() {
+    if (event.rating == null || event.rating! <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      children: [
+        const Icon(Icons.star, color: Colors.amber, size: 18),
+        const SizedBox(width: 4),
+        Text(
+          event.rating!.toStringAsFixed(1),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: HbColors.textPrimary,
+          ),
         ),
-      ),
+        if (event.reviewsCount != null && event.reviewsCount! > 0) ...[
+          const SizedBox(width: 4),
+          Text(
+            '(${event.reviewsCount})',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
   String _getLocationText() {
     final parts = <String>[];
-    if (event.venue != null && event.venue!.isNotEmpty) {
-      parts.add(event.venue!);
-    }
-    if (event.city != null && event.city!.isNotEmpty) {
-      parts.add(event.city!);
-    }
+    if (event.venue.isNotEmpty) parts.add(event.venue);
+    if (event.city.isNotEmpty) parts.add(event.city);
     if (parts.isEmpty) return 'Lieu non précisé';
     return parts.join(', ');
   }

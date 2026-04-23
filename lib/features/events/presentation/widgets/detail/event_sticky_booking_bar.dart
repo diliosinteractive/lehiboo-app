@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/shared/widgets/animations/spring_button.dart';
 
 /// Barre de réservation sticky en bas de l'écran
 ///
 /// États:
 /// 1. Aucune date: "À partir de X€" + "Choisir une date"
-/// 2. Date sélectionnée sans billet: "Date + Heure" + "Choisir"
+/// 2. Date sélectionnée sans billet: "Date + Heure" + "Choisir" / "Rappel"
 /// 3. Billets sélectionnés: "Total X€" + "X billets • Date" + "Réserver"
 /// 4. External booking: "Voir le site"
 /// 5. Complet: Bouton désactivé + shake on tap
@@ -28,6 +29,8 @@ class EventStickyBookingBar extends StatefulWidget {
   final String? selectedSlotId;
   /// Label formaté de la date sélectionnée (ex: "Sam 15 Mars à 14:00")
   final String? selectedDateLabel;
+  /// The full selected slot object (for spots remaining, time range)
+  final CalendarDateSlot? selectedSlot;
 
   const EventStickyBookingBar({
     super.key,
@@ -39,6 +42,7 @@ class EventStickyBookingBar extends StatefulWidget {
     this.isLoading = false,
     this.selectedSlotId,
     this.selectedDateLabel,
+    this.selectedSlot,
   });
 
   @override
@@ -73,6 +77,42 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
   bool get _isFreeEvent {
     return widget.event.priceType == PriceType.free ||
         (widget.event.minPrice == 0 && widget.event.maxPrice == 0);
+  }
+
+  bool get _isDiscovery => !widget.event.hasDirectBooking;
+
+  /// Formats the selected slot as "Sam 9 Mai 2026 de 14:00 à 16:00"
+  String? get _formattedSlotDate {
+    final slot = widget.selectedSlot;
+    if (slot == null) return null;
+
+    const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    const months = [
+      'Jan', 'Fév', 'Mars', 'Avr', 'Mai', 'Juin',
+      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc',
+    ];
+
+    final dayName = days[slot.date.weekday - 1];
+    final monthName = months[slot.date.month - 1];
+    var result = '$dayName ${slot.date.day} $monthName ${slot.date.year}';
+
+    final start = _stripSeconds(slot.startTime);
+    final end = _stripSeconds(slot.endTime);
+    if (start != null && end != null) {
+      result += ' de $start à $end';
+    } else if (start != null) {
+      result += ' à $start';
+    }
+
+    return result;
+  }
+
+  /// "14:00:00" → "14:00"
+  static String? _stripSeconds(String? time) {
+    if (time == null) return null;
+    final parts = time.split(':');
+    if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
+    return time;
   }
 
   @override
@@ -162,6 +202,50 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
   }
 
   Widget _buildPriceContent() {
+    // Discovery events: show price info only, skip sold-out / booking states
+    if (_isDiscovery) {
+      return Column(
+        key: const ValueKey('discovery'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_isFreeEvent)
+            const Text(
+              'Gratuit',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: HbColors.success,
+              ),
+            )
+          else if (widget.event.minPrice != null)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                const Text(
+                  'À partir de ',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                Text(
+                  _formatPrice(widget.event.minPrice ?? widget.event.price ?? 0),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: 2),
+          Text(
+            'Activité à découvrir',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ],
+      );
+    }
+
     if (_isSoldOut) {
       return Column(
         key: const ValueKey('sold_out'),
@@ -211,6 +295,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
 
     if (_hasTicketSelection) {
       // Affichage avec billets sélectionnés (+ date si disponible)
+      final dateLabel = _formattedSlotDate ?? widget.selectedDateLabel;
       return Column(
         key: ValueKey('selection_$_totalTickets'),
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,8 +334,8 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
           const SizedBox(height: 2),
           // Info billets + date
           Text(
-            _hasDateSelection && widget.selectedDateLabel != null
-                ? '$_totalTickets billet${_totalTickets > 1 ? 's' : ''} • ${widget.selectedDateLabel}'
+            _hasDateSelection && dateLabel != null
+                ? '$_totalTickets billet${_totalTickets > 1 ? 's' : ''} • $dateLabel'
                 : '$_totalTickets billet${_totalTickets > 1 ? 's' : ''} sélectionné${_totalTickets > 1 ? 's' : ''}',
             style: TextStyle(
               fontSize: 12,
@@ -261,103 +346,73 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
       );
     }
 
-    // Date sélectionnée mais pas de billets encore
-    if (_hasDateSelection && widget.selectedDateLabel != null) {
+    // Date sélectionnée but no tickets yet
+    if (_hasDateSelection) {
+      final dateLabel = _formattedSlotDate ?? widget.selectedDateLabel;
+      final spots = widget.selectedSlot?.spotsRemaining;
+
       return Column(
         key: ValueKey('date_selected_${widget.selectedSlotId}'),
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              if (_isFreeEvent)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Gratuit',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                )
-              else ...[
-                const Text(
-                  'À partir de ',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
+          // Price (only if not free)
+          if (!_isFreeEvent) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
                 Text(
                   _formatPrice(widget.event.minPrice ?? widget.event.price ?? 0),
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: HbColors.textPrimary,
                   ),
                 ),
               ],
-            ],
-          ),
-          const SizedBox(height: 4),
-          // Badge date sélectionnée
-          Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                size: 14,
-                color: Colors.green.shade600,
+            ),
+            const SizedBox(height: 2),
+          ],
+          // Date label
+          if (dateLabel != null)
+            Text(
+              dateLabel,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(width: 4),
-              Text(
-                widget.selectedDateLabel!,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w500,
-                ),
+            ),
+          // Spots remaining
+          if (spots != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              spots > 0
+                  ? '$spots place${spots > 1 ? 's' : ''} restante${spots > 1 ? 's' : ''}'
+                  : 'Complet',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: spots > 0 ? HbColors.success : Colors.red,
               ),
-            ],
-          ),
+            ),
+          ],
         ],
       );
     }
 
-    // Affichage sans sélection
+    // No selection yet
     return Column(
       key: const ValueKey('no_selection'),
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            if (_isFreeEvent)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Gratuit',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-              )
-            else ...[
+        if (!_isFreeEvent) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
               const Text(
                 'À partir de ',
                 style: TextStyle(
@@ -374,10 +429,10 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
                 ),
               ),
             ],
-          ],
-        ),
-        const SizedBox(height: 6),
-        // Chip "Voir les dates" au lieu d'un lien souligné
+          ),
+          const SizedBox(height: 6),
+        ],
+        // Chip "Voir les dates"
         GestureDetector(
           onTap: widget.onViewDatesPressed,
           child: Container(
@@ -386,7 +441,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
               color: HbColors.brandPrimary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
@@ -394,7 +449,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
                   size: 14,
                   color: HbColors.brandPrimary,
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text(
                   'Voir les dates',
                   style: TextStyle(
@@ -412,6 +467,47 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
   }
 
   Widget _buildActionButton(BuildContext context) {
+    // Discovery events: always show "Rappel" — they don't follow the
+    // date→tickets→book flow and shouldn't show "Complet" either.
+    if (_isDiscovery) {
+      return SpringButton(
+        enabled: true,
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          widget.onBookPressed?.call();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          decoration: BoxDecoration(
+            color: HbColors.brandPrimary,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: HbColors.brandPrimary.withValues(alpha: 0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.notifications_outlined, size: 18, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
+                'Rappel',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (_isSoldOut) {
       return AnimatedBuilder(
         animation: _shakeAnimation,
@@ -431,12 +527,12 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
             ),
             elevation: 0,
           ),
-          child: Row(
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.block, size: 18, color: Colors.white),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.block, size: 18, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
                 'Complet',
                 style: TextStyle(
                   color: Colors.white,
@@ -514,8 +610,8 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
       buttonText = 'Réserver';
       buttonIcon = Icons.shopping_cart_checkout;
     } else {
-      // Date sélectionnée mais pas de billets
-      buttonText = _isFreeEvent ? "S'inscrire" : 'Choisir';
+      // Billetterie: date sélectionnée mais pas de billets
+      buttonText = 'Choisir';
       buttonIcon = null;
     }
 

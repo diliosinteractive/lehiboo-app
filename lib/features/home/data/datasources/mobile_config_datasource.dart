@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/mobile_app_config.dart';
 
 final mobileConfigDataSourceProvider = Provider<MobileConfigDataSource>((ref) {
@@ -18,26 +19,14 @@ class MobileConfigDataSource {
   /// Get mobile app configuration.
   ///
   /// Returns hero section, banners, and customizable texts.
+  /// Falls back to [MobileAppConfig.defaultConfig] on any error.
   Future<MobileAppConfig> getConfig() async {
-    debugPrint('=== MobileConfigDataSource.getConfig ===');
-
     try {
       final response = await _dio.get('/mobile/config');
-      final data = response.data;
-
-      debugPrint('API Response: ${data.toString().substring(0, 100)}...');
-
-      if (data['data'] != null) {
-        return MobileAppConfig.fromJson(data['data']);
-      }
-
-      // Fallback to default config
-      debugPrint('No data in response, using default config');
-      return MobileAppConfig.defaultConfig();
-    } catch (e, stack) {
-      debugPrint('Error fetching mobile config: $e');
-      debugPrint('Stack: $stack');
-      // Return default config on error
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return MobileAppConfig.fromJson(payload);
+    } catch (e) {
+      debugPrint('MobileConfig error: ${ApiResponseHandler.extractError(e)}');
       return MobileAppConfig.defaultConfig();
     }
   }

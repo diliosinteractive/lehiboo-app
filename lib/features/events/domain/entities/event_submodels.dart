@@ -25,13 +25,13 @@ class Ticket extends Equatable {
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
     return Ticket(
-      id: json['id']?.toString() ?? '',
+      id: json['uuid']?.toString() ?? json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       description: json['description'],
       quantity: json['quantity'],
-      minPerBooking: json['min_per_booking'],
-      maxPerBooking: json['max_per_booking'],
+      minPerBooking: json['min_per_order'] ?? json['min_per_booking'],
+      maxPerBooking: json['max_per_order'] ?? json['max_per_booking'],
       remainingPlaces: json['places'],
     );
   }
@@ -232,10 +232,10 @@ class ExtraService extends Equatable {
 
   factory ExtraService.fromJson(Map<String, dynamic> json) {
     return ExtraService(
-      id: json['id']?.toString() ?? '',
+      id: json['uuid']?.toString() ?? json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      quantity: json['quantity'],
+      quantity: json['max_quantity'] ?? json['quantity'],
       icon: json['icon'],
     );
   }
@@ -384,6 +384,12 @@ class LocationDetails extends Equatable {
   final AccessibilityConfig? pmr;
   final AccessibilityConfig? food;
   final AccessibilityConfig? drinks;
+  final AccessibilityConfig? wifi;
+  /// All active service keys from the API (e.g. "vestiaire", "hebergement")
+  /// that don't have a dedicated field above.
+  final List<String> otherServices;
+  /// Accessibility features from the API (e.g. "stationnement_handicap", "places_handicap")
+  final List<String> accessibilityFeatures;
 
   const LocationDetails({
     this.parking,
@@ -391,6 +397,9 @@ class LocationDetails extends Equatable {
     this.pmr,
     this.food,
     this.drinks,
+    this.wifi,
+    this.otherServices = const [],
+    this.accessibilityFeatures = const [],
   });
 
   factory LocationDetails.fromJson(Map<String, dynamic> json) {
@@ -404,7 +413,7 @@ class LocationDetails extends Equatable {
   }
 
   @override
-  List<Object?> get props => [parking, transport, pmr, food, drinks];
+  List<Object?> get props => [parking, transport, pmr, food, drinks, wifi, otherServices, accessibilityFeatures];
 }
 
 class CoOrganizer extends Equatable {
@@ -463,4 +472,72 @@ class SocialMediaConfig extends Equatable {
 
   @override
   List<Object?> get props => [videoUrl, linkedin, facebook, instagram, youtube];
+}
+
+class IndicativePrice extends Equatable {
+  final String uuid;
+  final String label;
+  final double price;
+  final String currency;
+  final int sortOrder;
+
+  const IndicativePrice({
+    required this.uuid,
+    required this.label,
+    required this.price,
+    required this.currency,
+    required this.sortOrder,
+  });
+
+  factory IndicativePrice.fromJson(Map<String, dynamic> json) {
+    return IndicativePrice(
+      uuid: json['uuid']?.toString() ?? '',
+      label: json['label']?.toString() ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      currency: json['currency']?.toString() ?? 'EUR',
+      sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  String get formattedPrice {
+    if (price == 0) return 'Gratuit';
+    final symbol = currency == 'EUR' ? '€' : currency;
+    return '${price.toStringAsFixed(2)} $symbol';
+  }
+
+  @override
+  List<Object?> get props => [uuid, label, price, currency, sortOrder];
+}
+
+class EventVenue extends Equatable {
+  final String uuid;
+  final String name;
+  final String slug;
+  final Map<String, dynamic> services;
+  final Map<String, dynamic> accessibility;
+
+  const EventVenue({
+    required this.uuid,
+    required this.name,
+    required this.slug,
+    this.services = const {},
+    this.accessibility = const {},
+  });
+
+  factory EventVenue.fromJson(Map<String, dynamic> json) {
+    return EventVenue(
+      uuid: json['uuid']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      slug: json['slug']?.toString() ?? '',
+      services: json['services'] is Map
+          ? Map<String, dynamic>.from(json['services'] as Map)
+          : const {},
+      accessibility: json['accessibility'] is Map
+          ? Map<String, dynamic>.from(json['accessibility'] as Map)
+          : const {},
+    );
+  }
+
+  @override
+  List<Object?> get props => [uuid, name, slug, services, accessibility];
 }

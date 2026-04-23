@@ -84,6 +84,10 @@ class Event extends Equatable {
   final String? organizerLogo;
   final String? organizerDescription;
   final bool organizerIsPlatform;
+  final bool organizerVerified;
+  final int? organizerEventsCount;
+  final List<String> organizerVenueTypes;
+  final bool organizerAllowPublicContact;
   final bool isFavorite;
   final bool isFeatured;
   final bool isRecommended;
@@ -107,11 +111,14 @@ class Event extends Equatable {
   final CalendarConfig? calendar;
   final RecurrenceConfig? recurrence;
   final List<ExtraService> extraServices;
+  final List<IndicativePrice> indicativePrices;
   final List<Coupon> coupons;
   final SeatConfig? seatConfig;
   final ExternalBooking? externalBooking;
   final TaxonomyTerm? eventTypeTerm; // Maps to 'event_type' from API
   final List<TaxonomyTerm> targetAudienceTerms; // Maps to 'target_audience' from API
+  final List<String> allCategoryNames; // All category names from API (including primary)
+  final String? thematiqueName; // Main thematique name from API
 
   // --- RICH CONTENT V2 ---
   final LocationDetails? locationDetails;
@@ -121,6 +128,11 @@ class Event extends Equatable {
 
   // Added field for raw category slug (fallback image logic)
   final String? rawCategorySlug;
+
+  // Mobile API v2 fields
+  final EventVenue? venueDetails;
+  final String? creationSource;
+  final String? originalOrganizerName;
 
   const Event({
     required this.id,
@@ -163,6 +175,10 @@ class Event extends Equatable {
     this.organizerLogo,
     this.organizerDescription,
     this.organizerIsPlatform = false,
+    this.organizerVerified = false,
+    this.organizerEventsCount,
+    this.organizerVenueTypes = const [],
+    this.organizerAllowPublicContact = false,
     required this.isFavorite,
     required this.isFeatured,
     required this.isRecommended,
@@ -185,16 +201,22 @@ class Event extends Equatable {
     this.calendar,
     this.recurrence,
     this.extraServices = const [],
+    this.indicativePrices = const [],
     this.coupons = const [],
     this.seatConfig,
     this.externalBooking,
     this.eventTypeTerm,
     this.targetAudienceTerms = const [],
+    this.allCategoryNames = const [],
+    this.thematiqueName,
     this.locationDetails,
     this.coOrganizers = const [],
 
     this.socialMedia,
     this.rawCategorySlug,
+    this.venueDetails,
+    this.creationSource,
+    this.originalOrganizerName,
   });
 
   bool get isFree => priceType == PriceType.free;
@@ -374,6 +396,10 @@ class Event extends Equatable {
     String? organizerLogo,
     String? organizerDescription,
     bool? organizerIsPlatform,
+    bool? organizerVerified,
+    int? organizerEventsCount,
+    List<String>? organizerVenueTypes,
+    bool? organizerAllowPublicContact,
     bool? isFavorite,
     bool? isFeatured,
     bool? isRecommended,
@@ -395,16 +421,22 @@ class Event extends Equatable {
     CalendarConfig? calendar,
     RecurrenceConfig? recurrence,
     List<ExtraService>? extraServices,
+    List<IndicativePrice>? indicativePrices,
     List<Coupon>? coupons,
     SeatConfig? seatConfig,
     ExternalBooking? externalBooking,
     TaxonomyTerm? eventTypeTerm,
     List<TaxonomyTerm>? targetAudienceTerms,
+    List<String>? allCategoryNames,
+    String? thematiqueName,
     LocationDetails? locationDetails,
     List<CoOrganizer>? coOrganizers,
 
     SocialMediaConfig? socialMedia,
     String? rawCategorySlug,
+    EventVenue? venueDetails,
+    String? creationSource,
+    String? originalOrganizerName,
   }) {
     return Event(
       id: id ?? this.id,
@@ -447,6 +479,10 @@ class Event extends Equatable {
       organizerLogo: organizerLogo ?? this.organizerLogo,
       organizerDescription: organizerDescription ?? this.organizerDescription,
       organizerIsPlatform: organizerIsPlatform ?? this.organizerIsPlatform,
+      organizerVerified: organizerVerified ?? this.organizerVerified,
+      organizerEventsCount: organizerEventsCount ?? this.organizerEventsCount,
+      organizerVenueTypes: organizerVenueTypes ?? this.organizerVenueTypes,
+      organizerAllowPublicContact: organizerAllowPublicContact ?? this.organizerAllowPublicContact,
       isFavorite: isFavorite ?? this.isFavorite,
       isFeatured: isFeatured ?? this.isFeatured,
       isRecommended: isRecommended ?? this.isRecommended,
@@ -468,16 +504,22 @@ class Event extends Equatable {
       calendar: calendar ?? this.calendar,
       recurrence: recurrence ?? this.recurrence,
       extraServices: extraServices ?? this.extraServices,
+      indicativePrices: indicativePrices ?? this.indicativePrices,
       coupons: coupons ?? this.coupons,
       seatConfig: seatConfig ?? this.seatConfig,
       externalBooking: externalBooking ?? this.externalBooking,
       eventTypeTerm: eventTypeTerm ?? this.eventTypeTerm,
       targetAudienceTerms: targetAudienceTerms ?? this.targetAudienceTerms,
+      allCategoryNames: allCategoryNames ?? this.allCategoryNames,
+      thematiqueName: thematiqueName ?? this.thematiqueName,
       locationDetails: locationDetails ?? this.locationDetails,
       coOrganizers: coOrganizers ?? this.coOrganizers,
 
       socialMedia: socialMedia ?? this.socialMedia,
       rawCategorySlug: rawCategorySlug ?? this.rawCategorySlug,
+      venueDetails: venueDetails ?? this.venueDetails,
+      creationSource: creationSource ?? this.creationSource,
+      originalOrganizerName: originalOrganizerName ?? this.originalOrganizerName,
     );
   }
 
@@ -523,6 +565,10 @@ class Event extends Equatable {
         organizerLogo,
         organizerDescription,
         organizerIsPlatform,
+        organizerVerified,
+        organizerEventsCount,
+        organizerVenueTypes,
+        organizerAllowPublicContact,
         isFavorite,
         isFeatured,
         isRecommended,
@@ -544,14 +590,20 @@ class Event extends Equatable {
         calendar,
         recurrence,
         extraServices,
+        indicativePrices,
         coupons,
         seatConfig,
         externalBooking,
         eventTypeTerm,
         targetAudienceTerms,
+        allCategoryNames,
+        thematiqueName,
         locationDetails,
         coOrganizers,
         socialMedia,
-        rawCategorySlug, // Add to props
+        rawCategorySlug,
+        venueDetails,
+        creationSource,
+        originalOrganizerName,
       ];
 }
