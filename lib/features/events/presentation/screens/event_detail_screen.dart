@@ -29,6 +29,8 @@ import '../widgets/detail/event_similar_carousel.dart';
 import '../widgets/detail/event_share_sheet.dart';
 import '../widgets/detail/event_sticky_booking_bar.dart';
 import '../widgets/detail/write_review_sheet.dart';
+import '../../../reminders/presentation/providers/reminders_provider.dart';
+import '../../../reminders/data/datasources/reminders_api_datasource.dart';
 
 /// Provider to fetch event details by identifier (UUID or slug)
 final eventDetailProvider =
@@ -203,17 +205,34 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       ),
       bottomNavigationBar: eventAsync.valueOrNull != null &&
               !_shouldHideBookingBar(eventAsync.value!)
-          ? EventStickyBookingBar(
-              event: eventAsync.value!,
-              ticketQuantities: _ticketQuantities,
-              totalPrice: _totalPrice,
-              selectedSlotId: _selectedSlotId,
-              selectedDateLabel: _getSelectedDateLabel(),
-              selectedSlot: _selectedSlot,
-              onBookPressed: _onBookPressed,
-              onViewDatesPressed: _scrollToDateSection,
-            )
+          ? _buildStickyBar(eventAsync.value!)
           : null,
+    );
+  }
+
+  Widget _buildStickyBar(Event event) {
+    int reminderCount = 0;
+    if (!event.hasDirectBooking) {
+      final eventUuid = _looksLikeUuid(event.id) ? event.id : widget.eventId;
+      final remindersAsync = ref.watch(eventRemindersProvider(eventUuid));
+      reminderCount = remindersAsync.maybeWhen(
+        data: (ids) => ids.length,
+        orElse: () => 0,
+      );
+    }
+
+    return EventStickyBookingBar(
+      event: event,
+      ticketQuantities: _ticketQuantities,
+      totalPrice: _totalPrice,
+      selectedSlotId: _selectedSlotId,
+      selectedDateLabel: _getSelectedDateLabel(),
+      selectedSlot: _selectedSlot,
+      onBookPressed: !event.hasDirectBooking && reminderCount > 0
+          ? () => context.push('/my-reminders')
+          : _onBookPressed,
+      onViewDatesPressed: _scrollToDateSection,
+      reminderCount: reminderCount,
     );
   }
 
@@ -577,15 +596,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           return const SizedBox.shrink();
         }
 
-        return EventDateSelector(
-          slots: slots,
-          selectedSlotId: _selectedSlotId,
-          onSlotSelected: (slot) {
-            HapticFeedback.selectionClick();
-            setState(() => _selectedSlotId = slot.id);
-          },
-          onViewAllDates: () => _showAllDatesModal(slots),
-        );
+        return _buildDateSelectorWidget(event, slots);
       },
     );
   }
@@ -638,6 +649,33 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       });
     }
 
+    return _buildDateSelectorWidget(event, slots);
+  }
+
+  Widget _buildDateSelectorWidget(Event event, List<CalendarDateSlot> slots) {
+    final isDiscovery = !event.hasDirectBooking;
+
+    if (isDiscovery) {
+      final eventUuid = _looksLikeUuid(event.id) ? event.id : widget.eventId;
+      final remindersAsync = ref.watch(eventRemindersProvider(eventUuid));
+      final remindedIds = remindersAsync.maybeWhen(
+        data: (ids) => ids,
+        orElse: () => <String>{},
+      );
+
+      return EventDateSelector(
+        slots: slots,
+        selectedSlotId: _selectedSlotId,
+        onSlotSelected: (slot) {
+          HapticFeedback.selectionClick();
+          setState(() => _selectedSlotId = slot.id);
+        },
+        onViewAllDates: () => _showAllDatesModal(slots),
+        remindedSlotIds: remindedIds,
+        onReminderToggled: (slot) => _toggleReminder(event, slot),
+      );
+    }
+
     return EventDateSelector(
       slots: slots,
       selectedSlotId: _selectedSlotId,
@@ -647,6 +685,50 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       },
       onViewAllDates: () => _showAllDatesModal(slots),
     );
+  }
+
+  Future<void> _toggleReminder(Event event, CalendarDateSlot slot) async {
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'activer un rappel',
+    );
+    if (!allowed || !mounted) return;
+
+    final eventUuid = _looksLikeUuid(event.id) ? event.id : widget.eventId;
+    final dataSource = ref.read(remindersApiDataSourceProvider);
+
+    final remindersAsync = ref.read(eventRemindersProvider(eventUuid));
+    final currentIds = remindersAsync.maybeWhen(
+      data: (ids) => ids,
+      orElse: () => <String>{},
+    );
+    final isCurrentlyReminded = currentIds.contains(slot.id);
+
+    try {
+      if (isCurrentlyReminded) {
+        await dataSource.deleteReminder(
+          eventUuid: eventUuid,
+          slotUuid: slot.id,
+        );
+      } else {
+        await dataSource.createReminder(
+          eventUuid: eventUuid,
+          slotUuid: slot.id,
+        );
+      }
+      // Refresh the provider to reflect the change
+      ref.invalidate(eventRemindersProvider(eventUuid));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ApiResponseHandler.extractError(e)),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildDescriptionSection(Event event) {

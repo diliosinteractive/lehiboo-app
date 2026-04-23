@@ -14,13 +14,24 @@ class EventDateSelector extends StatelessWidget {
   final ValueChanged<CalendarDateSlot> onSlotSelected;
   final VoidCallback? onViewAllDates;
 
+  /// Reminder mode: set of slot UUIDs the user has reminders for.
+  /// When non-null, chips show a bell toggle instead of selection state.
+  final Set<String>? remindedSlotIds;
+
+  /// Called when the user toggles a reminder on a slot.
+  final ValueChanged<CalendarDateSlot>? onReminderToggled;
+
   const EventDateSelector({
     super.key,
     required this.slots,
     this.selectedSlotId,
     required this.onSlotSelected,
     this.onViewAllDates,
+    this.remindedSlotIds,
+    this.onReminderToggled,
   });
+
+  bool get _isReminderMode => remindedSlotIds != null;
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +48,9 @@ class EventDateSelector extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Choisissez une date',
-                style: TextStyle(
+              Text(
+                _isReminderMode ? 'Dates disponibles' : 'Choisissez une date',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: HbColors.textPrimary,
@@ -90,9 +101,15 @@ class EventDateSelector extends StatelessWidget {
                       key: ValueKey('chip_${slot.id}'),
                       slot: slot,
                       isSelected: slot.id == selectedSlotId,
+                      isReminded: remindedSlotIds?.contains(slot.id) ?? false,
+                      isReminderMode: _isReminderMode,
                       onTap: () {
                         HapticFeedback.selectionClick();
-                        onSlotSelected(slot);
+                        if (_isReminderMode) {
+                          onReminderToggled?.call(slot);
+                        } else {
+                          onSlotSelected(slot);
+                        }
                       },
                     );
                   },
@@ -161,12 +178,16 @@ class EventDateSelector extends StatelessWidget {
 class _DateChip extends StatefulWidget {
   final CalendarDateSlot slot;
   final bool isSelected;
+  final bool isReminded;
+  final bool isReminderMode;
   final VoidCallback onTap;
 
   const _DateChip({
     super.key,
     required this.slot,
     required this.isSelected,
+    this.isReminded = false,
+    this.isReminderMode = false,
     required this.onTap,
   });
 
@@ -201,7 +222,9 @@ class _DateChipState extends State<_DateChip>
   @override
   void didUpdateWidget(_DateChip oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isSelected && !oldWidget.isSelected) {
+    final becameHighlighted = (widget.isSelected && !oldWidget.isSelected) ||
+        (widget.isReminded && !oldWidget.isReminded);
+    if (becameHighlighted) {
       _bounceController.forward(from: 0).then((_) {
         if (mounted) _bounceController.reverse();
       });
@@ -214,6 +237,9 @@ class _DateChipState extends State<_DateChip>
     super.dispose();
   }
 
+  bool get _isHighlighted =>
+      widget.isReminderMode ? widget.isReminded : widget.isSelected;
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -221,27 +247,27 @@ class _DateChipState extends State<_DateChip>
       builder: (context, child) =>
           Transform.scale(scale: _bounceAnimation.value, child: child),
       child: GestureDetector(
-        onTap: _isFull ? null : widget.onTap,
+        onTap: _isFull && !widget.isReminderMode ? null : widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: 108,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           decoration: BoxDecoration(
-            color: _isFull
+            color: _isFull && !widget.isReminderMode
                 ? Colors.grey.shade100
-                : widget.isSelected
+                : _isHighlighted
                     ? HbColors.brandPrimary
                     : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: _isFull
+              color: _isFull && !widget.isReminderMode
                   ? Colors.grey.shade200
-                  : widget.isSelected
+                  : _isHighlighted
                       ? HbColors.brandPrimary
                       : Colors.grey.shade200,
-              width: widget.isSelected ? 2 : 1,
+              width: _isHighlighted ? 2 : 1,
             ),
-            boxShadow: widget.isSelected
+            boxShadow: _isHighlighted
                 ? [
                     BoxShadow(
                       color: HbColors.brandPrimary.withValues(alpha: 0.25),
@@ -259,8 +285,19 @@ class _DateChipState extends State<_DateChip>
               const SizedBox(height: 6),
               // Time range
               _buildTimeRange(),
-              // Spots remaining
-              if (widget.slot.spotsRemaining != null) ...[
+              // Reminder bell or spots remaining
+              if (widget.isReminderMode) ...[
+                const SizedBox(height: 4),
+                Icon(
+                  widget.isReminded
+                      ? Icons.notifications_active
+                      : Icons.notifications_none,
+                  size: 18,
+                  color: _isHighlighted
+                      ? Colors.white
+                      : HbColors.brandPrimary,
+                ),
+              ] else if (widget.slot.spotsRemaining != null) ...[
                 const SizedBox(height: 4),
                 _buildSpots(),
               ],
@@ -276,9 +313,9 @@ class _DateChipState extends State<_DateChip>
     final dayAbbrev =
         '${DateFormat('E', 'fr_FR').format(widget.slot.date)}.';
 
-    final color = _isFull
+    final color = _isFull && !widget.isReminderMode
         ? Colors.grey
-        : widget.isSelected
+        : _isHighlighted
             ? Colors.white
             : HbColors.textPrimary;
 
@@ -320,9 +357,9 @@ class _DateChipState extends State<_DateChip>
       style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w600,
-        color: _isFull
+        color: _isFull && !widget.isReminderMode
             ? Colors.grey
-            : widget.isSelected
+            : _isHighlighted
                 ? Colors.white.withValues(alpha: 0.9)
                 : HbColors.brandPrimary,
       ),
@@ -347,7 +384,7 @@ class _DateChipState extends State<_DateChip>
       '$spots place${spots > 1 ? 's' : ''} restante${spots > 1 ? 's' : ''}',
       style: TextStyle(
         fontSize: 11,
-        color: widget.isSelected
+        color: _isHighlighted
             ? Colors.white.withValues(alpha: 0.85)
             : spots <= 5
                 ? Colors.orange.shade700

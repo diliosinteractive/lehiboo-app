@@ -269,24 +269,46 @@ class _VendorOrganizerCard extends StatelessWidget {
   }
 
   Widget _buildContactButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          context.push('/partner/${event.organizerId}');
-        },
-        icon: const Icon(Icons.mail_outline, size: 18),
-        label: const Text('Nous contacter'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: HbColors.brandPrimary,
-          side: const BorderSide(color: HbColors.brandPrimary),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/partner/${event.organizerId}');
+            },
+            icon: const Icon(Icons.storefront_outlined, size: 18),
+            label: const Text('Voir le profil'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: HbColors.textPrimary,
+              side: BorderSide(color: Colors.grey.shade300),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
-      ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/partner/${event.organizerId}');
+            },
+            icon: const Icon(Icons.mail_outline, size: 18),
+            label: const Text('Nous contacter'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: HbColors.brandPrimary,
+              side: const BorderSide(color: HbColors.brandPrimary),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

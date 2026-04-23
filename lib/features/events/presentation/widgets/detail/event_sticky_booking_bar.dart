@@ -31,6 +31,8 @@ class EventStickyBookingBar extends StatefulWidget {
   final String? selectedDateLabel;
   /// The full selected slot object (for spots remaining, time range)
   final CalendarDateSlot? selectedSlot;
+  /// Number of active reminders for discovery events
+  final int reminderCount;
 
   const EventStickyBookingBar({
     super.key,
@@ -43,6 +45,7 @@ class EventStickyBookingBar extends StatefulWidget {
     this.selectedSlotId,
     this.selectedDateLabel,
     this.selectedSlot,
+    this.reminderCount = 0,
   });
 
   @override
@@ -428,11 +431,16 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
     // Discovery events: always show "Rappel" — they don't follow the
     // date→tickets→book flow and shouldn't show "Complet" either.
     if (_isDiscovery) {
+      final hasReminders = widget.reminderCount > 0;
       return SpringButton(
         enabled: true,
         onTap: () {
           HapticFeedback.mediumImpact();
-          widget.onBookPressed?.call();
+          if (hasReminders) {
+            widget.onBookPressed?.call();
+          } else {
+            widget.onViewDatesPressed?.call();
+          }
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -447,14 +455,22 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.notifications_outlined, size: 18, color: Colors.white),
-              SizedBox(width: 8),
+              Icon(
+                hasReminders
+                    ? Icons.notifications_active
+                    : Icons.notifications_outlined,
+                size: 18,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'Rappel',
-                style: TextStyle(
+                hasReminders
+                    ? '${widget.reminderCount} rappel${widget.reminderCount > 1 ? 's' : ''}'
+                    : 'Me rappeler',
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: Colors.white,

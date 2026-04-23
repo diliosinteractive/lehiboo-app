@@ -166,7 +166,7 @@ class EventMapper {
       isFeatured: dto.isFeatured,
       isRecommended: false,
       status: _determineStatus(startDate, endDate),
-      hasDirectBooking: !(dto.organizer?.isPlatform ?? false),
+      hasDirectBooking: dto.bookingMode != 'discovery',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       views: 0,

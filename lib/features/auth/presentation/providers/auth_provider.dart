@@ -98,7 +98,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return result;
     } catch (e) {
       state = state.copyWith(
-        status: AuthStatus.error,
+        status: AuthStatus.unauthenticated,
         errorMessage: _parseError(e),
       );
       return null;
@@ -132,7 +132,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return result;
     } catch (e) {
       state = state.copyWith(
-        status: AuthStatus.error,
+        status: AuthStatus.unauthenticated,
         errorMessage: _parseError(e),
       );
       return null;
@@ -244,7 +244,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return true;
     } catch (e) {
       state = state.copyWith(
-        status: AuthStatus.error,
+        status: AuthStatus.unauthenticated,
         errorMessage: _parseError(e),
       );
       return false;
