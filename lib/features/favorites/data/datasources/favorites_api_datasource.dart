@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../../../events/data/models/event_dto.dart';
 import '../models/favorite_list_dto.dart';
+import '../models/toggle_favorite_result.dart';
 
 final favoritesApiDataSourceProvider = Provider<FavoritesApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -50,16 +51,17 @@ class FavoritesApiDataSource {
   /// Ajouter un événement aux favoris (utilise toggle)
   /// [eventUuid] - UUID de l'événement (pas l'ID numérique)
   /// [listId] - UUID de la liste (optionnel)
-  Future<void> addToFavorites(String eventUuid, {String? listId}) async {
+  ///
+  /// Retourne le [ToggleFavoriteResult] qui peut contenir `hibonsAwarded` /
+  /// `newHibonsBalance` si le backend a crédité une récompense (voir
+  /// `HibonsService::awardFavoriteReward()` côté Laravel).
+  Future<ToggleFavoriteResult> addToFavorites(String eventUuid, {String? listId}) async {
     final response = await _dio.post(
       '/me/favorites/$eventUuid/toggle',
       data: listId != null ? {'list_id': listId} : null,
     );
 
-    final data = response.data;
-    if (data['success'] != true && data['data']?['is_favorite'] != true) {
-      throw Exception(data['message'] ?? data['data']?['message'] ?? 'Failed to add to favorites');
-    }
+    return _parseToggleResponse(response.data, fallbackError: 'Failed to add to favorites');
   }
 
   /// Retirer un événement des favoris
@@ -91,20 +93,37 @@ class FavoritesApiDataSource {
   /// Toggle le statut favori d'un événement
   /// [eventUuid] - UUID de l'événement (pas l'ID numérique)
   /// [listId] - UUID de la liste (optionnel)
-  Future<bool> toggleFavorite(String eventUuid, {String? listId}) async {
+  ///
+  /// Retourne le [ToggleFavoriteResult] qui inclut `hibonsAwarded` /
+  /// `newHibonsBalance` si le backend a crédité une récompense.
+  Future<ToggleFavoriteResult> toggleFavorite(String eventUuid, {String? listId}) async {
     final response = await _dio.post(
       '/me/favorites/$eventUuid/toggle',
       data: listId != null ? {'list_id': listId} : null,
     );
 
-    final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return data['data']['is_favorite'] == true;
+    return _parseToggleResponse(response.data, fallbackError: 'Failed to toggle favorite');
+  }
+
+  /// Parse la réponse du endpoint toggle en [ToggleFavoriteResult].
+  ///
+  /// Formats tolérés :
+  /// - `{ "data": { "is_favorite": ..., "hibons_awarded": ..., "new_hibons_balance": ... } }`
+  /// - `{ "success": true, "data": { "is_favorite": ... } }`
+  ToggleFavoriteResult _parseToggleResponse(
+    dynamic data, {
+    required String fallbackError,
+  }) {
+    if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
+      final inner = data['data'] as Map<String, dynamic>;
+      if (inner['is_favorite'] != null) {
+        return ToggleFavoriteResult.fromJson(inner);
+      }
     }
-    if (data['data'] != null && data['data']['is_favorite'] != null) {
-      return data['data']['is_favorite'] == true;
-    }
-    throw Exception(data['message'] ?? data['data']?['message'] ?? 'Failed to toggle favorite');
+    final message = (data is Map<String, dynamic>)
+        ? (data['message'] ?? data['data']?['message'] ?? fallbackError)
+        : fallbackError;
+    throw Exception(message);
   }
 
   /// Déplacer un favori vers une autre liste
