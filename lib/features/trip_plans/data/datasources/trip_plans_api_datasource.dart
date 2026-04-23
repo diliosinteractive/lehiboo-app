@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/trip_plan_dto.dart';
 
 final tripPlansApiDataSourceProvider = Provider<TripPlansApiDataSource>((ref) {
@@ -23,69 +24,22 @@ class TripPlansApiDataSource {
       try {
         final response = await _dio.get('/trip-plans');
 
-        if (response.statusCode == 200) {
-          final data = response.data;
-
-          // Handle standard API response structure {success: true, data: {...}}
-          if (data is Map<String, dynamic> && data.containsKey('data')) {
-            final dataContent = data['data'];
-
-            // Case 1: data.plans is a list
-            if (dataContent is Map<String, dynamic> && dataContent.containsKey('plans')) {
-              final List<dynamic> plansData = dataContent['plans'];
-              try {
-                return plansData.map((e) => TripPlanDto.fromJson(e as Map<String, dynamic>)).toList();
-              } catch (parseError) {
-                if (kDebugMode) {
-                  debugPrint('TripPlanDto parsing error: $parseError');
-                  debugPrint('Raw item data: ${plansData.isNotEmpty ? plansData.first : "empty"}');
-                }
-                rethrow;
-              }
-            }
-
-            // Case 2: data is directly a list
-            if (dataContent is List) {
-              try {
-                return dataContent.map((e) => TripPlanDto.fromJson(e as Map<String, dynamic>)).toList();
-              } catch (parseError) {
-                if (kDebugMode) {
-                  debugPrint('TripPlanDto parsing error: $parseError');
-                }
-                rethrow;
-              }
-            }
-          }
-
-          // Fallback if structure is different (e.g. direct list at root)
-          if (data is List) {
-            try {
-              return data.map((e) => TripPlanDto.fromJson(e as Map<String, dynamic>)).toList();
-            } catch (parseError) {
-              if (kDebugMode) {
-                debugPrint('TripPlanDto parsing error: $parseError');
-              }
-              rethrow;
-            }
-          }
-
-          if (kDebugMode) {
-            debugPrint('TripPlans API: Parsing Failed. Response structure unexpected: $data');
-          }
+        // Try nested key 'plans' first, then fall back to flat list
+        try {
+          final list = ApiResponseHandler.extractList(response.data, key: 'plans');
+          return list.map((e) => TripPlanDto.fromJson(e as Map<String, dynamic>)).toList();
+        } on ApiFormatException {
+          final list = ApiResponseHandler.extractList(response.data);
+          return list.map((e) => TripPlanDto.fromJson(e as Map<String, dynamic>)).toList();
         }
       } on DioException catch (e) {
-        // Only retry on server errors (5xx) or connection timeouts
-        if (e.response != null && e.response!.statusCode != null && e.response!.statusCode! >= 500) {
+        if (e.response?.statusCode != null && e.response!.statusCode! >= 500) {
           if (attempt < maxRetries) {
-            if (kDebugMode) {
-              debugPrint('5xx Error fetching trip plans. Retrying... ($attempt/$maxRetries)');
-            }
+            debugPrint('5xx Error fetching trip plans. Retrying... ($attempt/$maxRetries)');
             await Future.delayed(retryDelay * attempt);
             continue;
           }
         }
-        rethrow;
-      } catch (e) {
         rethrow;
       }
     }
@@ -105,22 +59,9 @@ class TripPlansApiDataSource {
     if (plannedDate != null) payload['planned_date'] = plannedDate;
     if (stopsOrder != null) payload['stops_order'] = stopsOrder;
 
-    final response = await _dio.put(
-      '/trip-plans/$uuid',
-      data: payload,
-    );
-
-    if (response.statusCode == 200) {
-      final data = response.data;
-      if (data is Map<String, dynamic>) {
-        // Handle {success: true, data: {...}}
-        if (data.containsKey('data') && data['data'] is Map<String, dynamic>) {
-          return TripPlanDto.fromJson(data['data'] as Map<String, dynamic>);
-        }
-        return TripPlanDto.fromJson(data);
-      }
-    }
-    throw Exception('Failed to update trip plan');
+    final response = await _dio.put('/trip-plans/$uuid', data: payload);
+    final data = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    return TripPlanDto.fromJson(data);
   }
 
   /// DELETE /api/v1/trip-plans/{uuid} - Supprimer un plan

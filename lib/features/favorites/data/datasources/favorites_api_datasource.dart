@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../events/data/models/event_dto.dart';
 import '../models/favorite_list_dto.dart';
 import '../models/toggle_favorite_result.dart';
@@ -28,24 +29,8 @@ class FavoritesApiDataSource {
       queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
 
-    final data = response.data;
-
-    // Handle paginated response from Laravel Resource Collection
-    // Format: { "data": [...], "links": {...}, "meta": {...} }
-    if (data is Map<String, dynamic> && data['data'] != null) {
-      final favoritesData = data['data'];
-      if (favoritesData is List) {
-        return favoritesData.map((f) => FavoriteEventDto.fromJson(f as Map<String, dynamic>)).toList();
-      }
-    }
-
-    // Legacy format: { "success": true, "data": [...] }
-    if (data['success'] == true && data['data'] != null) {
-      final favoritesJson = data['data'] as List;
-      return favoritesJson.map((f) => FavoriteEventDto.fromJson(f as Map<String, dynamic>)).toList();
-    }
-
-    throw Exception(data['message'] ?? 'Failed to load favorites');
+    final list = ApiResponseHandler.extractList(response.data);
+    return list.map((f) => FavoriteEventDto.fromJson(f as Map<String, dynamic>)).toList();
   }
 
   /// Ajouter un événement aux favoris (utilise toggle)
@@ -61,33 +46,21 @@ class FavoritesApiDataSource {
       data: listId != null ? {'list_id': listId} : null,
     );
 
-    return _parseToggleResponse(response.data, fallbackError: 'Failed to add to favorites');
+    return _parseToggleResponse(response.data);
   }
 
   /// Retirer un événement des favoris
   /// [eventUuid] - UUID de l'événement (pas l'ID numérique)
   Future<void> removeFromFavorites(String eventUuid) async {
-    final response = await _dio.delete('/me/favorites/$eventUuid');
-
-    final data = response.data;
-    if (data['success'] != true) {
-      throw Exception(data['message'] ?? data['data']?['message'] ?? 'Failed to remove from favorites');
-    }
+    await _dio.delete('/me/favorites/$eventUuid');
   }
 
   /// Vérifier si un événement est dans les favoris
   /// [eventUuid] - UUID de l'événement (pas l'ID numérique)
   Future<bool> isFavorite(String eventUuid) async {
     final response = await _dio.get('/me/favorites/$eventUuid/check');
-
-    final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return data['data']['is_favorite'] == true;
-    }
-    if (data['data'] != null) {
-      return data['data']['is_favorite'] == true;
-    }
-    return false;
+    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    return payload['is_favorite'] == true;
   }
 
   /// Toggle le statut favori d'un événement
@@ -102,71 +75,30 @@ class FavoritesApiDataSource {
       data: listId != null ? {'list_id': listId} : null,
     );
 
-    return _parseToggleResponse(response.data, fallbackError: 'Failed to toggle favorite');
+    return _parseToggleResponse(response.data);
   }
 
-  /// Parse la réponse du endpoint toggle en [ToggleFavoriteResult].
-  ///
-  /// Formats tolérés :
-  /// - `{ "data": { "is_favorite": ..., "hibons_awarded": ..., "new_hibons_balance": ... } }`
-  /// - `{ "success": true, "data": { "is_favorite": ... } }`
-  ToggleFavoriteResult _parseToggleResponse(
-    dynamic data, {
-    required String fallbackError,
-  }) {
-    if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
-      final inner = data['data'] as Map<String, dynamic>;
-      if (inner['is_favorite'] != null) {
-        return ToggleFavoriteResult.fromJson(inner);
-      }
-    }
-    final message = (data is Map<String, dynamic>)
-        ? (data['message'] ?? data['data']?['message'] ?? fallbackError)
-        : fallbackError;
-    throw Exception(message);
+  ToggleFavoriteResult _parseToggleResponse(dynamic data) {
+    final payload = ApiResponseHandler.extractObject(data);
+    return ToggleFavoriteResult.fromJson(payload);
   }
 
   /// Déplacer un favori vers une autre liste
   /// [eventUuid] - UUID de l'événement (pas l'ID numérique)
   /// [listId] - UUID de la nouvelle liste (null pour "non classé")
   Future<void> moveFavoriteToList(String eventUuid, String? listId) async {
-    final response = await _dio.post(
+    await _dio.post(
       '/favorites/$eventUuid/move',
       data: {'list_id': listId},
     );
-
-    final data = response.data;
-    if (data['success'] != true) {
-      throw Exception(data['message'] ?? 'Failed to move favorite');
-    }
   }
 
   // ==================== LISTES ====================
 
   Future<List<FavoriteListDto>> getLists() async {
     final response = await _dio.get('/favorites/lists');
-
-    final data = response.data;
-
-    // Handle standard API response
-    if (data is Map<String, dynamic> && data['data'] != null) {
-      final listsData = data['data'];
-      if (listsData is List) {
-        return listsData
-            .map((l) => FavoriteListDto.fromJson(l as Map<String, dynamic>))
-            .toList();
-      }
-    }
-
-    // Handle success format
-    if (data['success'] == true && data['data'] != null) {
-      final listsJson = data['data'] as List;
-      return listsJson
-          .map((l) => FavoriteListDto.fromJson(l as Map<String, dynamic>))
-          .toList();
-    }
-
-    throw Exception(data['message'] ?? 'Failed to load favorite lists');
+    final list = ApiResponseHandler.extractList(response.data);
+    return list.map((l) => FavoriteListDto.fromJson(l as Map<String, dynamic>)).toList();
   }
 
   Future<FavoriteListDto> createList({
@@ -185,33 +117,14 @@ class FavoritesApiDataSource {
       ).toJson(),
     );
 
-    final data = response.data;
-
-    if (data['success'] == true && data['data'] != null) {
-      return FavoriteListDto.fromJson(data['data'] as Map<String, dynamic>);
-    }
-
-    if (data is Map<String, dynamic> && data['data'] != null) {
-      return FavoriteListDto.fromJson(data['data'] as Map<String, dynamic>);
-    }
-
-    throw Exception(data['message'] ?? 'Failed to create list');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return FavoriteListDto.fromJson(payload);
   }
 
   Future<FavoriteListDto> getListDetails(String uuid) async {
     final response = await _dio.get('/favorites/lists/$uuid');
-
-    final data = response.data;
-
-    if (data['success'] == true && data['data'] != null) {
-      return FavoriteListDto.fromJson(data['data'] as Map<String, dynamic>);
-    }
-
-    if (data is Map<String, dynamic> && data['data'] != null) {
-      return FavoriteListDto.fromJson(data['data'] as Map<String, dynamic>);
-    }
-
-    throw Exception(data['message'] ?? 'Failed to load list details');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return FavoriteListDto.fromJson(payload);
   }
 
   Future<FavoriteListDto> updateList(
@@ -227,43 +140,20 @@ class FavoritesApiDataSource {
     if (color != null) updateData['color'] = color;
     if (icon != null) updateData['icon'] = icon;
 
-    final response = await _dio.put(
-      '/favorites/lists/$uuid',
-      data: updateData,
-    );
-
-    final data = response.data;
-
-    if (data['success'] == true && data['data'] != null) {
-      return FavoriteListDto.fromJson(data['data'] as Map<String, dynamic>);
-    }
-
-    if (data is Map<String, dynamic> && data['data'] != null) {
-      return FavoriteListDto.fromJson(data['data'] as Map<String, dynamic>);
-    }
-
-    throw Exception(data['message'] ?? 'Failed to update list');
+    final response = await _dio.put('/favorites/lists/$uuid', data: updateData);
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return FavoriteListDto.fromJson(payload);
   }
 
   Future<void> deleteList(String uuid) async {
-    final response = await _dio.delete('/favorites/lists/$uuid');
-
-    final data = response.data;
-    if (data['success'] != true) {
-      throw Exception(data['message'] ?? 'Failed to delete list');
-    }
+    await _dio.delete('/favorites/lists/$uuid');
   }
 
   Future<void> reorderLists(List<String> orderedUuids) async {
-    final response = await _dio.post(
+    await _dio.post(
       '/favorites/lists/reorder',
       data: {'ordered_ids': orderedUuids},
     );
-
-    final data = response.data;
-    if (data['success'] != true) {
-      throw Exception(data['message'] ?? 'Failed to reorder lists');
-    }
   }
 }
 

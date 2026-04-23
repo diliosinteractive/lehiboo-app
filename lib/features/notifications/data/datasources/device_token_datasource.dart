@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 
 final deviceTokenDataSourceProvider = Provider<DeviceTokenDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -90,42 +91,27 @@ class DeviceTokenDataSource {
     String? deviceName,
     String? appVersion,
   }) async {
-    try {
-      final response = await _dio.post(
-        '/auth/device-tokens',
-        data: {
-          'token': token,
-          'platform': platform,
-          if (deviceId != null) 'device_id': deviceId,
-          if (deviceName != null) 'device_name': deviceName,
-          if (appVersion != null) 'app_version': appVersion,
-        },
-      );
+    final response = await _dio.post(
+      '/auth/device-tokens',
+      data: {
+        'token': token,
+        'platform': platform,
+        if (deviceId != null) 'device_id': deviceId,
+        if (deviceName != null) 'device_name': deviceName,
+        if (appVersion != null) 'app_version': appVersion,
+      },
+    );
 
-      final data = response.data;
-      if (data['success'] == true && data['data'] != null) {
-        debugPrint('Device token registered successfully');
-        return DeviceTokenResult.fromJson(data['data']);
-      }
-
-      throw Exception(data['message'] ?? 'Failed to register device token');
-    } catch (e) {
-      debugPrint('Failed to register device token: $e');
-      rethrow;
-    }
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return DeviceTokenResult.fromJson(payload);
   }
 
-  /// Unregister a device token by its value
-  ///
-  /// Call this when user logs out to stop receiving notifications
+  /// Unregister a device token by its value.
+  /// Call this when user logs out to stop receiving notifications.
   Future<bool> unregisterToken(String token) async {
     try {
-      final response = await _dio.delete(
-        '/auth/device-tokens',
-        data: {'token': token},
-      );
-
-      return response.data['success'] == true;
+      await _dio.delete('/auth/device-tokens', data: {'token': token});
+      return true;
     } catch (e) {
       debugPrint('Failed to unregister device token: $e');
       return false;
@@ -135,8 +121,8 @@ class DeviceTokenDataSource {
   /// Unregister a device token by UUID
   Future<bool> unregisterTokenByUuid(String uuid) async {
     try {
-      final response = await _dio.delete('/auth/device-tokens/$uuid');
-      return response.data['success'] == true;
+      await _dio.delete('/auth/device-tokens/$uuid');
+      return true;
     } catch (e) {
       debugPrint('Failed to unregister device token: $e');
       return false;
@@ -147,28 +133,20 @@ class DeviceTokenDataSource {
   Future<List<DeviceTokenData>> listTokens() async {
     try {
       final response = await _dio.get('/auth/device-tokens');
-
-      final data = response.data;
-      if (data['success'] == true && data['data'] != null) {
-        return (data['data'] as List)
-            .map((item) => DeviceTokenData.fromJson(item))
-            .toList();
-      }
-
-      return [];
+      final list = ApiResponseHandler.extractList(response.data);
+      return list.map((item) => DeviceTokenData.fromJson(item as Map<String, dynamic>)).toList();
     } catch (e) {
       debugPrint('Failed to list device tokens: $e');
       return [];
     }
   }
 
-  /// Unregister all device tokens for the current user
-  ///
-  /// Call this when user wants to log out from all devices
+  /// Unregister all device tokens for the current user.
+  /// Call this when user wants to log out from all devices.
   Future<bool> unregisterAllTokens() async {
     try {
-      final response = await _dio.delete('/auth/device-tokens/all');
-      return response.data['success'] == true;
+      await _dio.delete('/auth/device-tokens/all');
+      return true;
     } catch (e) {
       debugPrint('Failed to unregister all device tokens: $e');
       return false;

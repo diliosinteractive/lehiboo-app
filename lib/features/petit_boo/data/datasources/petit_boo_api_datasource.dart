@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/conversation_dto.dart';
 import '../models/quota_dto.dart';
 import '../models/tool_schema_dto.dart';
@@ -98,7 +99,10 @@ class PetitBooApiDataSource {
 
       return ConversationsResponseDto.fromJson(response.data);
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw PetitBooApiException(
+        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        statusCode: e.response?.statusCode,
+      );
     }
   }
 
@@ -106,15 +110,13 @@ class PetitBooApiDataSource {
   Future<ConversationDto> getConversation(String uuid) async {
     try {
       final response = await _dio.get('/api/v1/sessions/$uuid');
-
-      final data = response.data;
-      if (data['success'] == true && data['data'] != null) {
-        return ConversationDto.fromJson(data['data']);
-      }
-
-      throw PetitBooApiException('Invalid response format');
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return ConversationDto.fromJson(payload);
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw PetitBooApiException(
+        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        statusCode: e.response?.statusCode,
+      );
     }
   }
 
@@ -127,15 +129,13 @@ class PetitBooApiDataSource {
           if (title != null) 'title': title,
         },
       );
-
-      final data = response.data;
-      if (data['success'] == true && data['data'] != null) {
-        return ConversationDto.fromJson(data['data']);
-      }
-
-      throw PetitBooApiException('Invalid response format');
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return ConversationDto.fromJson(payload);
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw PetitBooApiException(
+        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        statusCode: e.response?.statusCode,
+      );
     }
   }
 
@@ -144,7 +144,10 @@ class PetitBooApiDataSource {
     try {
       await _dio.delete('/api/v1/sessions/$uuid');
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw PetitBooApiException(
+        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        statusCode: e.response?.statusCode,
+      );
     }
   }
 
@@ -152,15 +155,13 @@ class PetitBooApiDataSource {
   Future<QuotaDto> getQuota() async {
     try {
       final response = await _dio.get('/api/v1/quota');
-
-      final data = response.data;
-      if (data['success'] == true && data['data'] != null) {
-        return QuotaDto.fromJson(data['data']);
-      }
-
-      throw PetitBooApiException('Invalid response format');
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return QuotaDto.fromJson(payload);
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw PetitBooApiException(
+        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        statusCode: e.response?.statusCode,
+      );
     }
   }
 
@@ -174,86 +175,20 @@ class PetitBooApiDataSource {
       final response = await _dio.get('/api/v1/tools');
 
       final data = response.data;
-      if (data['success'] == true && data['tools'] != null) {
+      // Tools endpoint returns { "tools": [...] } at root
+      if (data is Map<String, dynamic> && data['tools'] is List) {
         final toolsList = data['tools'] as List;
         return toolsList
             .map((t) => ToolSchemaDto.fromJson(t as Map<String, dynamic>))
             .toList();
       }
 
-      // Fallback: try parsing as ToolsResponseDto
       return ToolsResponseDto.fromJson(data).tools;
     } on DioException catch (e) {
-      throw _handleDioError(e);
+      throw PetitBooApiException(
+        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        statusCode: e.response?.statusCode,
+      );
     }
-  }
-
-  /// Handle Dio errors and convert to PetitBooApiException
-  PetitBooApiException _handleDioError(DioException e) {
-    if (kDebugMode) {
-      debugPrint('🤖 PetitBoo API Error: ${e.message}');
-      debugPrint('🤖 PetitBoo API Response: ${e.response?.data}');
-    }
-
-    final statusCode = e.response?.statusCode;
-
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return PetitBooApiException('Connection timeout', statusCode: statusCode);
-
-      case DioExceptionType.connectionError:
-        return PetitBooApiException('Network error', statusCode: statusCode);
-
-      case DioExceptionType.badResponse:
-        final message = _extractErrorMessage(e.response?.data);
-
-        if (statusCode == 401) {
-          return PetitBooApiException('Session expired', statusCode: statusCode);
-        }
-        if (statusCode == 403) {
-          return PetitBooApiException('Access denied', statusCode: statusCode);
-        }
-        if (statusCode == 404) {
-          return PetitBooApiException('Not found', statusCode: statusCode);
-        }
-        if (statusCode == 429) {
-          return PetitBooApiException('Rate limit exceeded', statusCode: statusCode);
-        }
-
-        return PetitBooApiException(message, statusCode: statusCode);
-
-      default:
-        return PetitBooApiException(
-          e.message ?? 'Unknown error',
-          statusCode: statusCode,
-        );
-    }
-  }
-
-  /// Extract error message from response data
-  String _extractErrorMessage(dynamic data) {
-    if (data == null) return 'Unknown error';
-
-    if (data is Map<String, dynamic>) {
-      // Check for direct message field
-      if (data['message'] is String) {
-        return data['message'] as String;
-      }
-
-      // Check for nested error object
-      final error = data['error'];
-      if (error is Map<String, dynamic>) {
-        return error['message'] as String? ?? 'Unknown error';
-      }
-      if (error is String) {
-        return error;
-      }
-
-      return 'Unknown error';
-    }
-
-    return data.toString();
   }
 }

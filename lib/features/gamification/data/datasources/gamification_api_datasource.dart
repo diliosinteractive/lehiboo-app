@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/hibons_api_dto.dart';
 
 final gamificationApiDataSourceProvider = Provider<GamificationApiDataSource>((ref) {
@@ -15,65 +16,40 @@ class GamificationApiDataSource {
 
   GamificationApiDataSource(this._dio);
 
-  /// GET /mobile/hibons/wallet
-  /// Récupère le portefeuille complet de l'utilisateur
   Future<WalletResponseDto> getWallet() async {
     debugPrint('🎮 GamificationAPI: GET /mobile/hibons/wallet');
     final response = await _dio.get('/mobile/hibons/wallet');
-
-    final data = response.data;
-    if (data['data'] != null) {
-      return WalletResponseDto.fromJson(data['data']);
-    }
-    throw Exception(data['message'] ?? 'Failed to load wallet');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return WalletResponseDto.fromJson(payload);
   }
 
-  /// POST /mobile/hibons/daily
-  /// Réclame la récompense quotidienne
   Future<DailyClaimResponseDto> claimDailyReward() async {
     debugPrint('🎮 GamificationAPI: POST /mobile/hibons/daily');
     final response = await _dio.post('/mobile/hibons/daily');
-
-    final data = response.data;
-    if (data['data'] != null) {
-      return DailyClaimResponseDto.fromJson({
-        'message': data['message'] ?? '',
-        ...data['data'],
-      });
-    }
-    throw Exception(data['message'] ?? 'Failed to claim daily reward');
+    final raw = response.data;
+    final payload = ApiResponseHandler.extractObject(raw);
+    return DailyClaimResponseDto.fromJson({
+      'message': (raw is Map<String, dynamic> ? raw['message'] : null) ?? '',
+      ...payload,
+    });
   }
 
-  /// GET /mobile/hibons/wheel/config
-  /// Récupère la configuration de la roue
   Future<WheelConfigResponseDto> getWheelConfig() async {
     debugPrint('🎮 GamificationAPI: GET /mobile/hibons/wheel/config');
     final response = await _dio.get('/mobile/hibons/wheel/config');
-
-    final data = response.data;
-    if (data['data'] != null) {
-      return WheelConfigResponseDto.fromJson(data['data']);
-    }
-    throw Exception(data['message'] ?? 'Failed to load wheel config');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return WheelConfigResponseDto.fromJson(payload);
   }
 
-  /// POST /mobile/hibons/wheel
-  /// Tourne la roue de la fortune
   Future<WheelSpinResponseDto> spinWheel() async {
     debugPrint('🎮 GamificationAPI: POST /mobile/hibons/wheel');
     final response = await _dio.post('/mobile/hibons/wheel');
-
-    final data = response.data;
-    if (data['data'] != null) {
-      return WheelSpinResponseDto.fromJson(data['data']);
-    }
-    throw Exception(data['message'] ?? 'Failed to spin wheel');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return WheelSpinResponseDto.fromJson(payload);
   }
 
-  /// GET /mobile/hibons/transactions
-  /// Récupère l'historique des transactions
   Future<List<TransactionDto>> getTransactions({
-    String? type, // earn, spend, purchase, refund
+    String? type,
     int? page,
     int? perPage,
   }) async {
@@ -89,104 +65,62 @@ class GamificationApiDataSource {
       queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
 
-    final data = response.data;
-    if (data['data'] != null && data['data'] is List) {
-      return (data['data'] as List)
-          .map((item) => TransactionDto.fromJson(item))
-          .toList();
-    }
-    throw Exception(data['message'] ?? 'Failed to load transactions');
+    final list = ApiResponseHandler.extractList(response.data);
+    return list.map((item) => TransactionDto.fromJson(item as Map<String, dynamic>)).toList();
   }
 
-  /// GET /mobile/hibons/packages
-  /// Récupère les packs d'achat disponibles
   Future<List<HibonPackageDto>> getPackages() async {
     debugPrint('🎮 GamificationAPI: GET /mobile/hibons/packages');
     final response = await _dio.get('/mobile/hibons/packages');
 
-    final data = response.data;
-    if (data['data'] != null && data['data'] is List) {
-      return (data['data'] as List)
-          .map((item) => HibonPackageDto.fromJson(item))
-          .toList();
-    }
-    throw Exception(data['message'] ?? 'Failed to load packages');
+    final list = ApiResponseHandler.extractList(response.data);
+    return list.map((item) => HibonPackageDto.fromJson(item as Map<String, dynamic>)).toList();
   }
 
-  /// POST /mobile/hibons/purchase
-  /// Crée un PaymentIntent pour acheter des hibons
-  Future<PurchaseResponseDto> createPurchase({
-    required String packageId,
-  }) async {
-    debugPrint('🎮 GamificationAPI: POST /mobile/hibons/purchase (packageId=$packageId)');
+  Future<PurchaseResponseDto> createPurchase({required String packageId}) async {
+    debugPrint('🎮 GamificationAPI: POST /mobile/hibons/purchase');
     final response = await _dio.post(
       '/mobile/hibons/purchase',
       data: {'package_id': packageId},
     );
-
-    final data = response.data;
-    if (data['data'] != null) {
-      return PurchaseResponseDto.fromJson(data['data']);
-    }
-    throw Exception(data['message'] ?? 'Failed to create purchase');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return PurchaseResponseDto.fromJson(payload);
   }
 
-  /// POST /mobile/hibons/purchase/confirm
-  /// Confirme un achat après paiement Stripe
-  Future<void> confirmPurchase({
-    required String paymentIntentId,
-  }) async {
+  Future<void> confirmPurchase({required String paymentIntentId}) async {
     debugPrint('🎮 GamificationAPI: POST /mobile/hibons/purchase/confirm');
-    final response = await _dio.post(
+    await _dio.post(
       '/mobile/hibons/purchase/confirm',
       data: {'payment_intent_id': paymentIntentId},
     );
-
-    final data = response.data;
-    if (data['message']?.toString().toLowerCase().contains('error') == true) {
-      throw Exception(data['message'] ?? 'Failed to confirm purchase');
-    }
   }
 
-  /// POST /mobile/chat/unlock
-  /// Débloque des messages supplémentaires pour Petit Boo
   Future<void> unlockChatMessages() async {
     debugPrint('🎮 GamificationAPI: POST /mobile/chat/unlock');
-    final response = await _dio.post('/mobile/chat/unlock');
-
-    final data = response.data;
-    if (data['message']?.toString().toLowerCase().contains('error') == true) {
-      throw Exception(data['message'] ?? 'Failed to unlock chat messages');
-    }
+    await _dio.post('/mobile/chat/unlock');
   }
 
-  /// GET /mobile/hibons/achievements
-  /// Récupère les achievements/badges de l'utilisateur
   Future<List<AchievementDto>> getAchievements() async {
     debugPrint('🎮 GamificationAPI: GET /mobile/hibons/achievements');
     final response = await _dio.get('/mobile/hibons/achievements');
 
-    final data = response.data;
-    if (data['data'] != null && data['data'] is List) {
-      return (data['data'] as List)
-          .map((item) => AchievementDto.fromJson(item))
-          .toList();
+    try {
+      final list = ApiResponseHandler.extractList(response.data);
+      return list.map((item) => AchievementDto.fromJson(item as Map<String, dynamic>)).toList();
+    } on ApiFormatException {
+      return [];
     }
-    return [];
   }
 
-  /// GET /mobile/hibons/challenges
-  /// Récupère les challenges actifs de l'utilisateur
   Future<List<ChallengeDto>> getChallenges() async {
     debugPrint('🎮 GamificationAPI: GET /mobile/hibons/challenges');
     final response = await _dio.get('/mobile/hibons/challenges');
 
-    final data = response.data;
-    if (data['data'] != null && data['data'] is List) {
-      return (data['data'] as List)
-          .map((item) => ChallengeDto.fromJson(item))
-          .toList();
+    try {
+      final list = ApiResponseHandler.extractList(response.data);
+      return list.map((item) => ChallengeDto.fromJson(item as Map<String, dynamic>)).toList();
+    } on ApiFormatException {
+      return [];
     }
-    return [];
   }
 }
