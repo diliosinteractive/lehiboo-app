@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/gamification/presentation/providers/gamification_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../data/models/toggle_favorite_result.dart';
 import '../../domain/repositories/favorites_repository.dart';
 import '../../data/repositories/favorites_repository_impl.dart';
 import 'favorite_lists_provider.dart';
@@ -63,14 +65,17 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   /// [event] - The event to toggle
   /// [internalId] - DEPRECATED: UUID is now extracted from event.id
   /// [listId] - Optional list ID to add the favorite to
-  Future<bool> toggleFavorite(Event event, {int? internalId, String? listId}) async {
+  ///
+  /// Retourne `null` en cas d'échec, sinon un [ToggleFavoriteResult] qui
+  /// peut contenir la récompense hibons créditée par le backend.
+  Future<ToggleFavoriteResult?> toggleFavorite(Event event, {int? internalId, String? listId}) async {
     // event.id contient l'UUID (voir FavoritesRepositoryImpl qui utilise stringId)
     final eventUuid = event.id;
 
     if (eventUuid.isEmpty) {
       debugPrint('Cannot toggle favorite: no valid UUID found for event');
       onFavoriteError?.call('Impossible de modifier le favori', false);
-      return false;
+      return null;
     }
 
     // Optimistic update
@@ -89,7 +94,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     state = AsyncValue.data(newList);
 
     try {
-      await _repository.toggleFavorite(eventUuid, listId: listId);
+      final result = await _repository.toggleFavorite(eventUuid, listId: listId);
 
       // Update list counter if adding to a specific list
       if (wasAdding && listId != null) {
@@ -102,10 +107,13 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         }
       }
 
+      // Sync du wallet si le backend a crédité une récompense
+      _syncWalletFromReward(result);
+
       // Reload to ensure sync with server and get complete data
       await loadFavorites(listId: _currentListId);
 
-      return true;
+      return result;
     } catch (e) {
       debugPrint('Error toggling favorite: $e');
 
@@ -123,42 +131,61 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         wasAdding,
       );
 
-      return false;
+      return null;
     }
   }
 
-  /// Ajouter à une liste spécifique (pour les événements déjà favoris)
-  Future<bool> addToList(Event event, String listId, {int? internalId}) async {
+  /// Met à jour le solde hibons local à partir de la réponse backend.
+  /// No-op si pas de récompense créditée (quota atteint / event déjà récompensé).
+  void _syncWalletFromReward(ToggleFavoriteResult result) {
+    if (!result.hasReward) return;
+    final newBalance = result.newHibonsBalance;
+    if (newBalance == null) return;
+    _ref.read(gamificationNotifierProvider.notifier).setBalance(newBalance);
+  }
+
+  /// Ajouter à une liste spécifique (pour les événements déjà favoris).
+  ///
+  /// Retourne `null` en cas d'échec, sinon un [ToggleFavoriteResult] dont
+  /// `hasReward` indique si une récompense hibons a été créditée (seulement
+  /// possible sur la branche "ajout aux favoris", jamais sur un simple
+  /// déplacement entre listes).
+  Future<ToggleFavoriteResult?> addToList(Event event, String listId, {int? internalId}) async {
     // event.id contient l'UUID
     final eventUuid = event.id;
 
     if (eventUuid.isEmpty) {
       debugPrint('Cannot add to list: no valid UUID found for event');
-      return false;
+      return null;
     }
 
     final isFav = isFavorite(event.id);
 
     try {
+      ToggleFavoriteResult result;
       if (isFav) {
-        // Si déjà favori, déplacer vers la nouvelle liste
+        // Si déjà favori, déplacer vers la nouvelle liste (pas de reward possible)
         await _repository.moveFavoriteToList(eventUuid, listId);
+        result = const ToggleFavoriteResult(isFavorite: true);
       } else {
         // Sinon, ajouter aux favoris avec la liste
-        await _repository.addToFavorites(eventUuid, listId: listId);
+        result = await _repository.addToFavorites(eventUuid, listId: listId);
         _favoriteIds.add(event.id);
       }
 
       // Mettre à jour les compteurs
       _ref.read(favoriteListsProvider.notifier).incrementListCount(listId);
 
+      // Sync du wallet si le backend a crédité une récompense
+      _syncWalletFromReward(result);
+
       // Recharger
       await loadFavorites(listId: _currentListId);
 
-      return true;
+      return result;
     } catch (e) {
       debugPrint('Error adding to list: $e');
-      return false;
+      return null;
     }
   }
 
