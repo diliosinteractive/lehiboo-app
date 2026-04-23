@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/event_review_dto.dart';
 import '../models/event_question_dto.dart';
 
@@ -127,14 +128,12 @@ class EventSocialApiDataSource {
 
   /// Vérifie si l'utilisateur peut laisser un avis
   Future<bool> canReview(String eventSlug) async {
-    try {
-      final response = await _dio.get('/events/$eventSlug/reviews/can-review');
-      final data = response.data;
-      return data['data']?['can_review'] ?? data['can_review'] ?? false;
-    } catch (e) {
-      debugPrint('Error checking canReview: $e');
-      return false;
-    }
+    final response = await _dio.get('/events/$eventSlug/reviews/can-review');
+    final payload = ApiResponseHandler.extractObject(
+      response.data,
+      unwrapRoot: true,
+    );
+    return payload['can_review'] == true;
   }
 
   // ============ QUESTIONS ============

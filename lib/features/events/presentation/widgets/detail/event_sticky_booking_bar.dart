@@ -202,51 +202,9 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
   }
 
   Widget _buildPriceContent() {
-    // Discovery events: show price info only, skip sold-out / booking states
-    if (_isDiscovery) {
-      return Column(
-        key: const ValueKey('discovery'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_isFreeEvent)
-            const Text(
-              'Gratuit',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: HbColors.success,
-              ),
-            )
-          else if (widget.event.minPrice != null)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                const Text(
-                  'À partir de ',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                Text(
-                  _formatPrice(widget.event.minPrice ?? widget.event.price ?? 0),
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: HbColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          const SizedBox(height: 2),
-          Text(
-            'Activité à découvrir',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ],
-      );
-    }
-
-    if (_isSoldOut) {
+    // Sold-out and ticket-selection only apply to bookable events,
+    // not discovery events (they don't manage inventory / tickets).
+    if (!_isDiscovery && _isSoldOut) {
       return Column(
         key: const ValueKey('sold_out'),
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,7 +251,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
       );
     }
 
-    if (_hasTicketSelection) {
+    if (!_isDiscovery && _hasTicketSelection) {
       // Affichage avec billets sélectionnés (+ date si disponible)
       final dateLabel = _formattedSlotDate ?? widget.selectedDateLabel;
       return Column(

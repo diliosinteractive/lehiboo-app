@@ -64,6 +64,7 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _dateSectionKey = GlobalKey();
   final Map<String, int> _ticketQuantities = {};
   String? _selectedSlotId;
   bool _isDescriptionExpanded = false;
@@ -378,7 +379,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               const SizedBox(height: 24),
 
               // 6. Sélection de dates
-              _buildDateSection(event),
+              KeyedSubtree(
+                key: _dateSectionKey,
+                child: _buildDateSection(event),
+              ),
 
               const SizedBox(height: 24),
 
@@ -1091,12 +1095,22 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   void _scrollToDateSection() {
     HapticFeedback.lightImpact();
-    // Scroll vers la section dates (approximatif après le hero)
-    _scrollController.animateTo(
-      400,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
+
+    final keyContext = _dateSectionKey.currentContext;
+    if (keyContext != null) {
+      final box = keyContext.findRenderObject() as RenderBox;
+      final scrollableBox =
+          _scrollController.position.context.storageContext
+              .findRenderObject() as RenderBox;
+      final offset = box.localToGlobal(Offset.zero, ancestor: scrollableBox);
+      final target = _scrollController.offset + offset.dy - 16;
+
+      _scrollController.animateTo(
+        target.clamp(0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void _onBookPressed() async {
