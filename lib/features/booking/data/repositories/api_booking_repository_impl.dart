@@ -119,10 +119,11 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       }
 
       // Mapper l'activity depuis l'event chargé ou les convenience fields
+      // Mobile format: `id` and `internal_id` are removed, use `uuid`
       Activity? activity;
       if (b.event != null) {
         activity = Activity(
-          id: b.event!.internalId?.toString() ?? b.event!.id ?? b.eventId?.toString() ?? '',
+          id: b.event!.uuid ?? b.event!.id ?? b.eventId?.toString() ?? '',
           title: b.event!.title,
           slug: b.event!.slug ?? '',
           description: '',

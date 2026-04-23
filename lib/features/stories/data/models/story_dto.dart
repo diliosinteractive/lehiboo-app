@@ -26,8 +26,10 @@ class StoryOrganizationDto {
   factory StoryOrganizationDto.fromJson(Map<String, dynamic> json) {
     return StoryOrganizationDto(
       uuid: json['uuid'] as String? ?? '',
-      organizationName: json['organizationName'] as String?,
-      displayName: json['displayName'] as String?,
+      organizationName: json['organization_name'] as String?
+          ?? json['organizationName'] as String?,
+      displayName: json['display_name'] as String?
+          ?? json['displayName'] as String?,
     );
   }
 }
@@ -67,19 +69,33 @@ class StoryEventDto {
     this.eventTag,
   });
 
+  /// Parses both camelCase (old format) and snake_case (MobileEventResource).
   factory StoryEventDto.fromJson(Map<String, dynamic> json) {
+    // featured_image may be a string URL or an object with size variants
+    String? image = json['featured_image'] as String?
+        ?? json['featuredImage'] as String?;
+    if (image == null && json['featured_image'] is Map) {
+      final map = json['featured_image'] as Map;
+      image = map['large'] as String? ?? map['full'] as String?
+          ?? map['medium'] as String? ?? map['thumbnail'] as String?;
+    }
+
+    final categoryRaw = json['primary_category'] ?? json['primaryCategory'];
+    final tagRaw = json['event_tag'] ?? json['eventTag'];
+
     return StoryEventDto(
       uuid: json['uuid'] as String? ?? '',
       slug: json['slug'] as String? ?? '',
       title: json['title'] as String? ?? '',
-      featuredImage: json['featuredImage'] as String?,
+      featuredImage: image,
       city: json['city'] as String?,
-      bookingMode: json['bookingMode'] as String?,
-      primaryCategory: json['primaryCategory'] != null
-          ? StoryCategoryDto.fromJson(json['primaryCategory'] as Map<String, dynamic>)
+      bookingMode: json['booking_mode'] as String?
+          ?? json['bookingMode'] as String?,
+      primaryCategory: categoryRaw is Map<String, dynamic>
+          ? StoryCategoryDto.fromJson(categoryRaw)
           : null,
-      eventTag: json['eventTag'] != null
-          ? StoryEventTagDto.fromJson(json['eventTag'] as Map<String, dynamic>)
+      eventTag: tagRaw is Map<String, dynamic>
+          ? StoryEventTagDto.fromJson(tagRaw)
           : null,
     );
   }
@@ -116,24 +132,35 @@ class StoryDto {
     this.event,
   });
 
+  /// Parses both camelCase (old format) and snake_case (mobile format).
   factory StoryDto.fromJson(Map<String, dynamic> json) {
+    final orgRaw = json['organization'] ?? json['organizer'];
+    final eventRaw = json['event'];
+
     return StoryDto(
       uuid: json['uuid'] as String? ?? '',
       type: json['type'] as String? ?? 'optional',
       status: json['status'] as String? ?? 'active',
       title: json['title'] as String? ?? '',
-      mediaUrl: json['mediaUrl'] as String? ?? '',
-      mediaType: json['mediaType'] as String? ?? 'image',
-      posterUrl: json['posterUrl'] as String?,
-      startDate: json['startDate'] as String? ?? '',
-      endDate: json['endDate'] as String? ?? '',
-      slotPosition: json['slotPosition'] as int? ?? 0,
-      impressionsCount: json['impressionsCount'] as int? ?? 0,
-      organization: json['organization'] != null
-          ? StoryOrganizationDto.fromJson(json['organization'] as Map<String, dynamic>)
+      mediaUrl: json['media_url'] as String?
+          ?? json['mediaUrl'] as String? ?? '',
+      mediaType: json['media_type'] as String?
+          ?? json['mediaType'] as String? ?? 'image',
+      posterUrl: json['poster_url'] as String?
+          ?? json['posterUrl'] as String?,
+      startDate: json['start_date'] as String?
+          ?? json['startDate'] as String? ?? '',
+      endDate: json['end_date'] as String?
+          ?? json['endDate'] as String? ?? '',
+      slotPosition: json['slot_position'] as int?
+          ?? json['slotPosition'] as int? ?? 0,
+      impressionsCount: json['impressions_count'] as int?
+          ?? json['impressionsCount'] as int? ?? 0,
+      organization: orgRaw is Map<String, dynamic>
+          ? StoryOrganizationDto.fromJson(orgRaw)
           : null,
-      event: json['event'] != null
-          ? StoryEventDto.fromJson(json['event'] as Map<String, dynamic>)
+      event: eventRaw is Map<String, dynamic>
+          ? StoryEventDto.fromJson(eventRaw)
           : null,
     );
   }

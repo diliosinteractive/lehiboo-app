@@ -39,6 +39,7 @@ class DioClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'X-Platform': 'mobile',
         },
       ),
     );

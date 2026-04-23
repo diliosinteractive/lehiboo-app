@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
@@ -682,22 +683,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = _parseError(e);
+        _errorMessage = ApiResponseHandler.extractError(e);
       });
     }
-  }
-
-  String _parseError(dynamic error) {
-    if (error.toString().contains('SocketException')) {
-      return 'Erreur de connexion. Vérifiez votre connexion internet.';
-    }
-    if (error.toString().contains('timeout')) {
-      return 'Le serveur met trop de temps à répondre. Réessayez.';
-    }
-    if (error.toString().contains('401')) {
-      return 'Session expirée. Veuillez vous reconnecter.';
-    }
-    return error.toString().replaceAll('Exception: ', '');
   }
 
   String _formatPrice(double price) {

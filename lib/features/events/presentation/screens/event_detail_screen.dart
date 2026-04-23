@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/entities/event.dart';
@@ -18,7 +19,9 @@ import '../widgets/detail/event_social_proof.dart';
 import '../widgets/detail/event_organizer_card.dart';
 import '../widgets/detail/event_date_selector.dart';
 import '../widgets/detail/event_ticket_card.dart';
+import '../widgets/detail/event_indicative_prices.dart';
 import '../widgets/detail/event_practical_info.dart';
+import '../widgets/detail/event_accessibility_section.dart';
 import '../widgets/detail/event_location_map.dart';
 import '../widgets/detail/event_reviews_section.dart';
 import '../widgets/detail/event_qa_section.dart';
@@ -61,6 +64,7 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _dateSectionKey = GlobalKey();
   final Map<String, int> _ticketQuantities = {};
   String? _selectedSlotId;
   bool _isDescriptionExpanded = false;
@@ -129,6 +133,32 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     return dateStr;
   }
 
+  /// Whether the booking bar should be hidden entirely
+  bool _shouldHideBookingBar(Event event) {
+    // Sold-out check only applies to vendor events with real inventory.
+    // Platform events report spots_remaining: 0 because they don't
+    // manage bookable inventory — the bar should still show for them.
+    if (!event.organizerIsPlatform &&
+        event.availableSeats != null &&
+        event.availableSeats! <= 0) {
+      return true;
+    }
+
+    // Hide if all slots are in the past
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    if (_availableSlots.isNotEmpty) {
+      final allPassed = _availableSlots.every((slot) => slot.date.isBefore(today));
+      if (allPassed) return true;
+    } else if (event.endDate.isBefore(today)) {
+      // No slots loaded yet, fall back to event end date
+      return true;
+    }
+
+    return false;
+  }
+
   /// Retourne le slot sélectionné
   CalendarDateSlot? get _selectedSlot {
     if (_selectedSlotId == null || _availableSlots.isEmpty) return null;
@@ -171,13 +201,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         ),
         error: (error, stack) => _buildErrorState(error),
       ),
-      bottomNavigationBar: eventAsync.valueOrNull != null
+      bottomNavigationBar: eventAsync.valueOrNull != null &&
+              !_shouldHideBookingBar(eventAsync.value!)
           ? EventStickyBookingBar(
               event: eventAsync.value!,
               ticketQuantities: _ticketQuantities,
               totalPrice: _totalPrice,
               selectedSlotId: _selectedSlotId,
               selectedDateLabel: _getSelectedDateLabel(),
+              selectedSlot: _selectedSlot,
               onBookPressed: _onBookPressed,
               onViewDatesPressed: _scrollToDateSection,
             )
@@ -186,6 +218,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Widget _buildErrorState(Object error) {
+    final message = ApiResponseHandler.extractError(
+      error,
+      fallback: 'Impossible de charger l\'activité.',
+    );
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -195,19 +232,41 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
-              'Impossible de charger l\'activité',
-              style: TextStyle(fontSize: 18, color: Colors.grey.shade700),
+              message,
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => context.pop(),
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Retour'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: HbColors.brandPrimary,
-                foregroundColor: Colors.white,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.arrow_back, size: 18),
+                  label: const Text('Retour'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey.shade700,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () =>
+                      ref.invalidate(eventDetailProvider(widget.eventId)),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Réessayer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HbColors.brandPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -217,10 +276,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Widget _buildContent(Event event) {
     final similarEventsAsync = ref.watch(similarEventsProvider(widget.eventId));
-
-    // Determine if event is free
-    final isFree = event.priceType == PriceType.free ||
-        (event.minPrice == 0 && event.maxPrice == 0);
 
     return CustomScrollView(
       controller: _scrollController,
@@ -245,14 +300,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 child: _buildOverlayAppBar(event),
               ),
 
-              // Social proof en bas de l'image
-              Positioned(
-                bottom: 16,
-                left: 16,
-                child: EventSocialProof(
-                  viewersCount: 12 + (event.id.hashCode % 20),
-                ),
-              ),
             ],
           ),
         ),
@@ -277,32 +324,69 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               if (event.isFeatured || event.isRecommended)
                 const SizedBox(height: 12),
 
-              // 3. Header Compact (titre, lieu, date)
-              EventCompactHeader(
+              // 3. Header Compact (titre, adresse, tags, rating)
+              EventCompactHeader(event: event),
+
+              // Excerpt
+              if (event.description.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(
+                    event.description,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: Colors.grey.shade600,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+
+              // 4. Organisateur (below excerpt)
+              EventOrganizerCard(
                 event: event,
                 onOrganizerTap: () =>
                     context.push('/partner/${event.organizerId}'),
               ),
 
-              // 4. Prix sous le titre (format grand et lisible)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: EventPriceDisplay(
-                  minPrice: event.minPrice,
-                  maxPrice: event.maxPrice,
-                  isFree: isFree,
-                  large: true,
-                ),
+              const SizedBox(height: 24),
+
+              // 5. Description (À propos)
+              _buildDescriptionSection(event),
+
+              const SizedBox(height: 24),
+
+              // 5b. Tarifs
+              _buildPricingSection(event),
+
+              const SizedBox(height: 24),
+
+              // 5c. Tags & caractéristiques
+              _buildTagsSection(event),
+
+              const SizedBox(height: 24),
+
+              // 5d. Carte localisation
+              EventLocationMap(
+                event: event,
+                userLatitude: null, // TODO: get from location provider
+                userLongitude: null,
               ),
 
               const SizedBox(height: 24),
 
-              // 4. Sélection de dates
-              _buildDateSection(event),
+              // 6. Sélection de dates
+              KeyedSubtree(
+                key: _dateSectionKey,
+                child: _buildDateSection(event),
+              ),
 
               const SizedBox(height: 24),
 
-              // 5. Billets
+              // 7. Billets
               if (event.tickets.isNotEmpty) ...[
                 EventTicketsSection(
                   tickets: event.tickets,
@@ -316,19 +400,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 const SizedBox(height: 24),
               ],
 
-              // 6. Description
-              _buildDescriptionSection(event),
-
-              const SizedBox(height: 24),
-
-              // 7. Organisateur (nouveau widget compact + expand)
-              EventOrganizerCard(
-                event: event,
-                onOrganizerTap: () =>
-                    context.push('/partner/${event.organizerId}'),
-              ),
-
-              const SizedBox(height: 24),
+              // 7b. Indicative prices
+              EventIndicativePrices(prices: event.indicativePrices),
+              if (event.indicativePrices.isNotEmpty)
+                const SizedBox(height: 24),
 
               // 8. Infos pratiques (grille 2x2)
               EventPracticalInfo(
@@ -338,11 +413,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               const SizedBox(height: 24),
 
-              // 9. Carte localisation
-              EventLocationMap(
-                event: event,
-                userLatitude: null, // TODO: get from location provider
-                userLongitude: null,
+              // 9b. Accessibilité
+              EventAccessibilitySection(
+                locationDetails: event.locationDetails,
               ),
 
               const SizedBox(height: 24),
@@ -451,8 +524,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         ),
       ),
       error: (error, stack) {
-        // Log l'erreur pour debug (401 = endpoint nécessite auth côté backend)
-        debugPrint('⚠️ eventAvailabilityProvider error: $error');
+        debugPrint(
+          '⚠️ eventAvailabilityProvider error: '
+          '${ApiResponseHandler.extractError(error)}',
+        );
         return _buildDateSelectorFromEvent(event);
       },
       data: (availability) {
@@ -575,7 +650,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Widget _buildDescriptionSection(Event event) {
-    final description = event.description;
+    final description = event.fullDescription ?? event.description;
     final isLongText = description.length > _maxDescriptionLength;
 
     return Padding(
@@ -584,7 +659,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'À propos',
+            'À propos de l\'événement',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -652,6 +727,328 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
+  Widget _buildPricingSection(Event event) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tarifs',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: HbColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: _buildPriceContent(event),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceContent(Event event) {
+    switch (event.priceType) {
+      case PriceType.free:
+        return Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: HbColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Gratuit',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: HbColors.success,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Aucun frais d\'entrée',
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            ),
+          ],
+        );
+
+      case PriceType.donation:
+        return Row(
+          children: [
+            const Icon(Icons.favorite_outline, size: 18, color: HbColors.brandPrimary),
+            const SizedBox(width: 8),
+            const Text(
+              'Participation libre',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: HbColors.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '— montant au choix',
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            ),
+          ],
+        );
+
+      case PriceType.paid:
+      case PriceType.variable:
+        // Effective price is zero → display as free
+        final effectivePrice = event.price ?? event.minPrice ?? 0;
+        if (effectivePrice == 0 && (event.maxPrice ?? 0) == 0) {
+          return Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: HbColors.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Gratuit',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: HbColors.success,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Aucun frais d\'entrée',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            ],
+          );
+        }
+
+        final hasRange = event.minPrice != null &&
+            event.maxPrice != null &&
+            event.minPrice != event.maxPrice;
+
+        if (hasRange) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'À partir de',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    '${event.minPrice!.toStringAsFixed(0)} €',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: HbColors.textPrimary,
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Container(
+                        height: 1,
+                        color: Colors.grey.shade200,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${event.maxPrice!.toStringAsFixed(0)} €',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Min',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  ),
+                  Text(
+                    'Max',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }
+
+        // Single price or fallback
+        final priceText = event.price != null
+            ? '${event.price!.toStringAsFixed(2)} €'
+            : event.formattedPrice;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              priceText,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: HbColors.textPrimary,
+              ),
+            ),
+            if (event.price != null) ...[
+              const SizedBox(width: 6),
+              Text(
+                'par personne',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            ],
+          ],
+        );
+    }
+  }
+
+  Widget _buildTagsSection(Event event) {
+    final chips = <_ChipEntry>[];
+
+    // Primary category
+    chips.add(_ChipEntry(
+      label: event.categoryLabel,
+      icon: Icons.category_outlined,
+      color: HbColors.brandPrimary,
+    ));
+
+    // Other categories (skip if same name as primary label)
+    for (final name in event.allCategoryNames) {
+      if (name.toLowerCase() != event.categoryLabel.toLowerCase() &&
+          !chips.any((c) => c.label.toLowerCase() == name.toLowerCase())) {
+        chips.add(_ChipEntry(
+          label: name,
+          icon: Icons.label_outlined,
+          color: HbColors.brandSecondary,
+        ));
+      }
+    }
+
+    // Event type
+    if (event.eventTypeTerm != null &&
+        !chips.any((c) => c.label.toLowerCase() == event.eventTypeTerm!.name.toLowerCase())) {
+      chips.add(_ChipEntry(
+        label: event.eventTypeTerm!.name,
+        icon: Icons.style_outlined,
+        color: Colors.deepPurple,
+      ));
+    }
+
+    // Place type
+    final placeLabel = event.locationTypeLabel;
+    if (placeLabel.isNotEmpty) {
+      chips.add(_ChipEntry(
+        label: placeLabel,
+        icon: event.isOutdoor && !event.isIndoor
+            ? Icons.park_outlined
+            : Icons.home_outlined,
+        color: Colors.teal,
+      ));
+    }
+
+    // Theme
+    if (event.thematiqueName != null) {
+      chips.add(_ChipEntry(
+        label: event.thematiqueName!,
+        icon: Icons.palette_outlined,
+        color: Colors.indigo,
+      ));
+    }
+
+    // Audience
+    for (final term in event.targetAudienceTerms) {
+      chips.add(_ChipEntry(
+        label: term.name,
+        icon: Icons.people_outline,
+        color: Colors.blue,
+      ));
+    }
+
+    // Free-form tags
+    for (final tag in event.tags) {
+      if (!chips.any((c) => c.label.toLowerCase() == tag.toLowerCase())) {
+        chips.add(_ChipEntry(
+          label: tag,
+          icon: Icons.tag,
+          color: Colors.grey.shade600,
+        ));
+      }
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Caractéristiques',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: HbColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: chips.map((chip) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: chip.color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: chip.color.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(chip.icon, size: 14, color: chip.color),
+                  const SizedBox(width: 5),
+                  Text(
+                    chip.label,
+                    style: TextStyle(
+                      color: chip.color,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            )).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCircularButton({
     required IconData icon,
     required VoidCallback onTap,
@@ -698,12 +1095,22 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   void _scrollToDateSection() {
     HapticFeedback.lightImpact();
-    // Scroll vers la section dates (approximatif après le hero)
-    _scrollController.animateTo(
-      400,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
+
+    final keyContext = _dateSectionKey.currentContext;
+    if (keyContext != null) {
+      final box = keyContext.findRenderObject() as RenderBox;
+      final scrollableBox =
+          _scrollController.position.context.storageContext
+              .findRenderObject() as RenderBox;
+      final offset = box.localToGlobal(Offset.zero, ancestor: scrollableBox);
+      final target = _scrollController.offset + offset.dy - 16;
+
+      _scrollController.animateTo(
+        target.clamp(0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void _onBookPressed() async {
@@ -1011,9 +1418,29 @@ class _DateSlotModalCard extends StatelessWidget {
 
   String _formatTimeRange() {
     if (slot.startTime == null) return '';
+    final start = _stripSeconds(slot.startTime!);
     if (slot.endTime != null) {
-      return '${slot.startTime} – ${slot.endTime}';
+      return '$start – ${_stripSeconds(slot.endTime!)}';
     }
-    return slot.startTime!;
+    return start;
   }
+
+  /// "14:00:00" → "14:00"
+  static String _stripSeconds(String time) {
+    final parts = time.split(':');
+    if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
+    return time;
+  }
+}
+
+class _ChipEntry {
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const _ChipEntry({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
 }

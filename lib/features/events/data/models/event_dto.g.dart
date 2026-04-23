@@ -15,6 +15,7 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       slug: _parseHtmlString(json['slug']),
       excerpt: _parseHtmlString(json['excerpt']),
       content: _parseHtmlString(json['content']),
+      fullDescription: _parseHtmlString(json['description']),
       featuredImage: _parseImage(json['featured_image']),
       thumbnail: _parseStringOrNull(json['thumbnail']),
       gallery: _parseGallery(json['gallery']),
@@ -49,14 +50,27 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       calendar: _parseMapOrNull(json['calendar']),
       recurrence: _parseMapOrNull(json['recurrence']),
       extraServices: _parseListOrNull(json['extra_services']),
+      indicativePrices: _parseListOrNull(json['indicative_prices']),
+      services: _parseMapOrNull(json['services']),
+      venueType: _parseStringOrNull(json['venue_type']),
+      isFeatured:
+          json['is_featured'] == null ? false : _parseBool(json['is_featured']),
       coupons: _parseListOrNull(json['coupons']),
       seatConfig: _parseMapOrNull(json['seat_config']),
       externalBooking: _parseMapOrNull(json['external_booking']),
       eventType: _parseMapOrNull(json['event_type']),
       targetAudience: _parseListOrNull(json['target_audience']),
+      targetAudiences: _parseListOrNull(json['target_audiences']),
       locationDetails: _parseMapOrNull(json['location_details']),
       coOrganizers: _parseCoOrganizers(json['coorganizers']),
       socialMedia: _parseMapOrNull(json['social_media']),
+      primaryCategory: _parseCategoryOrNull(json['primary_category']),
+      categories: _parseCategoriesList(json['categories']),
+      slots: _parseListOrNull(json['slots']),
+      venueData: _parseMapOrNull(json['venue']),
+      creationSource: _parseStringOrNull(json['creation_source']),
+      originalOrganizerName:
+          _parseStringOrNull(json['original_organizer_name']),
       isFavorite: json['is_favorite'] as bool? ?? false,
     );
 
@@ -69,6 +83,7 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'slug': instance.slug,
       'excerpt': instance.excerpt,
       'content': instance.content,
+      'description': instance.fullDescription,
       'featured_image': instance.featuredImage,
       'thumbnail': instance.thumbnail,
       'gallery': instance.gallery,
@@ -87,14 +102,25 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'calendar': instance.calendar,
       'recurrence': instance.recurrence,
       'extra_services': instance.extraServices,
+      'indicative_prices': instance.indicativePrices,
+      'services': instance.services,
+      'venue_type': instance.venueType,
+      'is_featured': instance.isFeatured,
       'coupons': instance.coupons,
       'seat_config': instance.seatConfig,
       'external_booking': instance.externalBooking,
       'event_type': instance.eventType,
       'target_audience': instance.targetAudience,
+      'target_audiences': instance.targetAudiences,
       'location_details': instance.locationDetails,
       'coorganizers': instance.coOrganizers,
       'social_media': instance.socialMedia,
+      'primary_category': instance.primaryCategory,
+      'categories': instance.categories,
+      'slots': instance.slots,
+      'venue': instance.venueData,
+      'creation_source': instance.creationSource,
+      'original_organizer_name': instance.originalOrganizerName,
       'is_favorite': instance.isFavorite,
     };
 
@@ -184,7 +210,11 @@ _$EventCategoryDtoImpl _$$EventCategoryDtoImplFromJson(
       slug: json['slug'] == null ? '' : _parseHtmlString(json['slug']),
       description: _parseHtmlString(json['description']),
       icon: _parseStringOrNull(json['icon']),
+      color: _parseStringOrNull(json['color']),
       eventCount: _parseIntOrNull(json['event_count']),
+      isPrimary:
+          json['is_primary'] == null ? false : _parseBool(json['is_primary']),
+      parent: _parseCategoryOrNull(json['parent']),
     );
 
 Map<String, dynamic> _$$EventCategoryDtoImplToJson(
@@ -195,7 +225,10 @@ Map<String, dynamic> _$$EventCategoryDtoImplToJson(
       'slug': instance.slug,
       'description': instance.description,
       'icon': instance.icon,
+      'color': instance.color,
       'event_count': instance.eventCount,
+      'is_primary': instance.isPrimary,
+      'parent': instance.parent,
     };
 
 _$EventPriceDtoImpl _$$EventPriceDtoImplFromJson(Map<String, dynamic> json) =>
@@ -220,6 +253,7 @@ _$EventLocationDtoImpl _$$EventLocationDtoImplFromJson(
       venueName: _parseStringOrNull(json['venue_name']),
       address: _parseStringOrNull(json['address']),
       city: _parseStringOrNull(json['city']),
+      postalCode: _parseStringOrNull(json['postal_code']),
       lat: _parseDoubleOrNull(json['lat']),
       lng: _parseDoubleOrNull(json['lng']),
       distanceKm: _parseDoubleOrNull(json['distance_km']),
@@ -231,6 +265,7 @@ Map<String, dynamic> _$$EventLocationDtoImplToJson(
       'venue_name': instance.venueName,
       'address': instance.address,
       'city': instance.city,
+      'postal_code': instance.postalCode,
       'lat': instance.lat,
       'lng': instance.lng,
       'distance_km': instance.distanceKm,
@@ -272,6 +307,14 @@ _$EventOrganizerDtoImpl _$$EventOrganizerDtoImplFromJson(
       verified: json['verified'] == null ? false : _parseBool(json['verified']),
       isPlatform:
           json['is_platform'] == null ? false : _parseBool(json['is_platform']),
+      uuid: _parseStringOrNull(json['uuid']),
+      slug: _parseStringOrNull(json['slug']),
+      eventsCount: _parseIntOrNull(json['events_count']),
+      venueTypes: _parseStringList(json['venue_types']),
+      followersCount: _parseIntOrNull(json['followers_count']),
+      allowPublicContact: json['allow_public_contact'] == null
+          ? false
+          : _parseBool(json['allow_public_contact']),
     );
 
 Map<String, dynamic> _$$EventOrganizerDtoImplToJson(
@@ -298,6 +341,12 @@ Map<String, dynamic> _$$EventOrganizerDtoImplToJson(
       'member_since': instance.memberSince,
       'verified': instance.verified,
       'is_platform': instance.isPlatform,
+      'uuid': instance.uuid,
+      'slug': instance.slug,
+      'events_count': instance.eventsCount,
+      'venue_types': instance.venueTypes,
+      'followers_count': instance.followersCount,
+      'allow_public_contact': instance.allowPublicContact,
     };
 
 _$OrganizerSocialLinkDtoImpl _$$OrganizerSocialLinkDtoImplFromJson(

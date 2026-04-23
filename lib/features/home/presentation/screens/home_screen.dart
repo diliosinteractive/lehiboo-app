@@ -19,6 +19,7 @@ import '../widgets/home_cities_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 
 // New components
 import '../widgets/contextual_hero.dart';
@@ -175,8 +176,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     loading: () => _buildCarouselSkeleton(),
                     error: (err, stack) => Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text('Erreur: $err',
-                          style: const TextStyle(color: Colors.red)),
+                      child: Text(
+                        ApiResponseHandler.extractError(err),
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ),
                   ),
                 ],
