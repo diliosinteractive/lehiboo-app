@@ -20,7 +20,7 @@ MessageSenderDto _$MessageSenderDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$MessageSenderDto {
-  int get id => throw _privateConstructorUsedError;
+  int? get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   @JsonKey(name: 'avatar_url')
   String? get avatarUrl => throw _privateConstructorUsedError;
@@ -38,7 +38,7 @@ abstract class $MessageSenderDtoCopyWith<$Res> {
       _$MessageSenderDtoCopyWithImpl<$Res, MessageSenderDto>;
   @useResult
   $Res call(
-      {int id, String name, @JsonKey(name: 'avatar_url') String? avatarUrl});
+      {int? id, String name, @JsonKey(name: 'avatar_url') String? avatarUrl});
 }
 
 /// @nodoc
@@ -54,15 +54,15 @@ class _$MessageSenderDtoCopyWithImpl<$Res, $Val extends MessageSenderDto>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? id = null,
+    Object? id = freezed,
     Object? name = null,
     Object? avatarUrl = freezed,
   }) {
     return _then(_value.copyWith(
-      id: null == id
+      id: freezed == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
-              as int,
+              as int?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -84,7 +84,7 @@ abstract class _$$MessageSenderDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {int id, String name, @JsonKey(name: 'avatar_url') String? avatarUrl});
+      {int? id, String name, @JsonKey(name: 'avatar_url') String? avatarUrl});
 }
 
 /// @nodoc
@@ -98,15 +98,15 @@ class __$$MessageSenderDtoImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? id = null,
+    Object? id = freezed,
     Object? name = null,
     Object? avatarUrl = freezed,
   }) {
     return _then(_$MessageSenderDtoImpl(
-      id: null == id
+      id: freezed == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
-              as int,
+              as int?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -123,7 +123,7 @@ class __$$MessageSenderDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$MessageSenderDtoImpl implements _MessageSenderDto {
   const _$MessageSenderDtoImpl(
-      {required this.id,
+      {this.id,
       required this.name,
       @JsonKey(name: 'avatar_url') this.avatarUrl});
 
@@ -131,7 +131,7 @@ class _$MessageSenderDtoImpl implements _MessageSenderDto {
       _$$MessageSenderDtoImplFromJson(json);
 
   @override
-  final int id;
+  final int? id;
   @override
   final String name;
   @override
@@ -175,7 +175,7 @@ class _$MessageSenderDtoImpl implements _MessageSenderDto {
 
 abstract class _MessageSenderDto implements MessageSenderDto {
   const factory _MessageSenderDto(
-          {required final int id,
+          {final int? id,
           required final String name,
           @JsonKey(name: 'avatar_url') final String? avatarUrl}) =
       _$MessageSenderDtoImpl;
@@ -184,7 +184,7 @@ abstract class _MessageSenderDto implements MessageSenderDto {
       _$MessageSenderDtoImpl.fromJson;
 
   @override
-  int get id;
+  int? get id;
   @override
   String get name;
   @override

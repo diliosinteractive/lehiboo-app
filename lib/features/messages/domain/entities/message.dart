@@ -24,12 +24,12 @@ class MessageAttachment extends Equatable {
 }
 
 class MessageSender extends Equatable {
-  final int id;
+  final int? id;
   final String name;
   final String? avatarUrl;
 
   const MessageSender({
-    required this.id,
+    this.id,
     required this.name,
     this.avatarUrl,
   });

@@ -217,61 +217,49 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/messages',
             name: 'messages',
             builder: (_, __) => const ConversationsListScreen(),
-            routes: [
-              GoRoute(
-                path: 'new',
-                name: 'messages-new',
-                builder: (_, __) => const NewConversationScreen(),
-              ),
-              GoRoute(
-                path: 'new/from-booking/:bookingUuid',
-                name: 'messages-from-booking',
-                builder: (_, state) => NewConversationScreen(
-                  fromBookingUuid:
-                      state.pathParameters['bookingUuid']!,
-                ),
-              ),
-              GoRoute(
-                path: 'new/from-organizer/:organizationUuid',
-                name: 'messages-from-organizer',
-                builder: (_, state) => NewConversationScreen(
-                  fromOrganizationUuid:
-                      state.pathParameters['organizationUuid']!,
-                ),
-              ),
-              GoRoute(
-                path: 'support',
-                name: 'messages-support',
-                redirect: (_, __) => '/messages',
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    name: 'messages-support-new',
-                    builder: (_, __) =>
-                        const SupportDetailScreen(isNew: true),
-                  ),
-                  GoRoute(
-                    path: ':conversationUuid',
-                    name: 'messages-support-detail',
-                    builder: (_, state) => SupportDetailScreen(
-                      conversationUuid:
-                          state.pathParameters['conversationUuid']!,
-                    ),
-                  ),
-                ],
-              ),
-              // IMPORTANT: 'support' must be declared before this wildcard
-              GoRoute(
-                path: ':conversationUuid',
-                name: 'messages-detail',
-                builder: (_, state) => ConversationDetailScreen(
-                  conversationUuid:
-                      state.pathParameters['conversationUuid']!,
-                ),
-              ),
-            ],
           ),
         ],
+      ),
+
+      // Messages detail routes — outside ShellRoute so navbar is hidden
+      GoRoute(
+        path: '/messages/new',
+        name: 'messages-new',
+        builder: (_, __) => const NewConversationScreen(),
+      ),
+      GoRoute(
+        path: '/messages/new/from-booking/:bookingUuid',
+        name: 'messages-from-booking',
+        builder: (_, state) => NewConversationScreen(
+          fromBookingUuid: state.pathParameters['bookingUuid']!,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/new/from-organizer/:organizationUuid',
+        name: 'messages-from-organizer',
+        builder: (_, state) => NewConversationScreen(
+          fromOrganizationUuid: state.pathParameters['organizationUuid']!,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/support/new',
+        name: 'messages-support-new',
+        builder: (_, __) => const SupportDetailScreen(isNew: true),
+      ),
+      GoRoute(
+        path: '/messages/support/:conversationUuid',
+        name: 'messages-support-detail',
+        builder: (_, state) => SupportDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+        ),
+      ),
+      // IMPORTANT: static sub-paths (new, support) must be declared before this wildcard
+      GoRoute(
+        path: '/messages/:conversationUuid',
+        name: 'messages-detail',
+        builder: (_, state) => ConversationDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+        ),
       ),
 
       // Auth routes

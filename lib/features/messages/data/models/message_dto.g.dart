@@ -9,7 +9,7 @@ part of 'message_dto.dart';
 _$MessageSenderDtoImpl _$$MessageSenderDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$MessageSenderDtoImpl(
-      id: (json['id'] as num).toInt(),
+      id: (json['id'] as num?)?.toInt(),
       name: json['name'] as String,
       avatarUrl: json['avatar_url'] as String?,
     );

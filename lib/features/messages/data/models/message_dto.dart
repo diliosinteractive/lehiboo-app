@@ -7,7 +7,7 @@ part 'message_dto.g.dart';
 @freezed
 class MessageSenderDto with _$MessageSenderDto {
   const factory MessageSenderDto({
-    required int id,
+    int? id,
     required String name,
     @JsonKey(name: 'avatar_url') String? avatarUrl,
   }) = _MessageSenderDto;
