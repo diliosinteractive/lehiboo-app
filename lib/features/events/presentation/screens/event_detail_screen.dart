@@ -383,6 +383,27 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               const SizedBox(height: 24),
 
+              // For booking events: dates + tickets right after pricing
+              if (event.hasDirectBooking) ...[
+                KeyedSubtree(
+                  key: _dateSectionKey,
+                  child: _buildDateSection(event),
+                ),
+                const SizedBox(height: 24),
+                if (event.tickets.isNotEmpty) ...[
+                  EventTicketsSection(
+                    tickets: event.tickets,
+                    quantities: _ticketQuantities,
+                    onQuantityChanged: (entry) {
+                      setState(() {
+                        _ticketQuantities[entry.key] = entry.value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ],
+
               // 5c. Tags & caractéristiques
               _buildTagsSection(event),
 
@@ -397,16 +418,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               const SizedBox(height: 24),
 
-              // 6. Sélection de dates
-              KeyedSubtree(
-                key: _dateSectionKey,
-                child: _buildDateSection(event),
-              ),
+              // For discovery events: dates + tickets in original position
+              if (!event.hasDirectBooking) ...[
+                KeyedSubtree(
+                  key: _dateSectionKey,
+                  child: _buildDateSection(event),
+                ),
+                const SizedBox(height: 24),
+              ],
 
-              const SizedBox(height: 24),
-
-              // 7. Billets
-              if (event.tickets.isNotEmpty) ...[
+              // 7. Billets (only for discovery — booking already rendered above)
+              if (!event.hasDirectBooking && event.tickets.isNotEmpty) ...[
                 EventTicketsSection(
                   tickets: event.tickets,
                   quantities: _ticketQuantities,

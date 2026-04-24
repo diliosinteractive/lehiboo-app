@@ -27,6 +27,8 @@ class BuyerInfo with _$BuyerInfo {
     String? lastName,
     String? email,
     String? phone,
+    String? birthDate, // "YYYY-MM-DD"
+    String? town,
   }) = _BuyerInfo;
 }
 

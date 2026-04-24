@@ -686,6 +686,8 @@ mixin _$BuyerInfo {
   String? get lastName => throw _privateConstructorUsedError;
   String? get email => throw _privateConstructorUsedError;
   String? get phone => throw _privateConstructorUsedError;
+  String? get birthDate => throw _privateConstructorUsedError; // "YYYY-MM-DD"
+  String? get town => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $BuyerInfoCopyWith<BuyerInfo> get copyWith =>
@@ -698,7 +700,12 @@ abstract class $BuyerInfoCopyWith<$Res> {
       _$BuyerInfoCopyWithImpl<$Res, BuyerInfo>;
   @useResult
   $Res call(
-      {String? firstName, String? lastName, String? email, String? phone});
+      {String? firstName,
+      String? lastName,
+      String? email,
+      String? phone,
+      String? birthDate,
+      String? town});
 }
 
 /// @nodoc
@@ -718,6 +725,8 @@ class _$BuyerInfoCopyWithImpl<$Res, $Val extends BuyerInfo>
     Object? lastName = freezed,
     Object? email = freezed,
     Object? phone = freezed,
+    Object? birthDate = freezed,
+    Object? town = freezed,
   }) {
     return _then(_value.copyWith(
       firstName: freezed == firstName
@@ -736,6 +745,14 @@ class _$BuyerInfoCopyWithImpl<$Res, $Val extends BuyerInfo>
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
               as String?,
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      town: freezed == town
+          ? _value.town
+          : town // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -749,7 +766,12 @@ abstract class _$$BuyerInfoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String? firstName, String? lastName, String? email, String? phone});
+      {String? firstName,
+      String? lastName,
+      String? email,
+      String? phone,
+      String? birthDate,
+      String? town});
 }
 
 /// @nodoc
@@ -767,6 +789,8 @@ class __$$BuyerInfoImplCopyWithImpl<$Res>
     Object? lastName = freezed,
     Object? email = freezed,
     Object? phone = freezed,
+    Object? birthDate = freezed,
+    Object? town = freezed,
   }) {
     return _then(_$BuyerInfoImpl(
       firstName: freezed == firstName
@@ -785,6 +809,14 @@ class __$$BuyerInfoImplCopyWithImpl<$Res>
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
               as String?,
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      town: freezed == town
+          ? _value.town
+          : town // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -793,7 +825,12 @@ class __$$BuyerInfoImplCopyWithImpl<$Res>
 
 class _$BuyerInfoImpl implements _BuyerInfo {
   const _$BuyerInfoImpl(
-      {this.firstName, this.lastName, this.email, this.phone});
+      {this.firstName,
+      this.lastName,
+      this.email,
+      this.phone,
+      this.birthDate,
+      this.town});
 
   @override
   final String? firstName;
@@ -803,10 +840,15 @@ class _$BuyerInfoImpl implements _BuyerInfo {
   final String? email;
   @override
   final String? phone;
+  @override
+  final String? birthDate;
+// "YYYY-MM-DD"
+  @override
+  final String? town;
 
   @override
   String toString() {
-    return 'BuyerInfo(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone)';
+    return 'BuyerInfo(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, birthDate: $birthDate, town: $town)';
   }
 
   @override
@@ -819,12 +861,15 @@ class _$BuyerInfoImpl implements _BuyerInfo {
             (identical(other.lastName, lastName) ||
                 other.lastName == lastName) &&
             (identical(other.email, email) || other.email == email) &&
-            (identical(other.phone, phone) || other.phone == phone));
+            (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.birthDate, birthDate) ||
+                other.birthDate == birthDate) &&
+            (identical(other.town, town) || other.town == town));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, firstName, lastName, email, phone);
+  int get hashCode => Object.hash(
+      runtimeType, firstName, lastName, email, phone, birthDate, town);
 
   @JsonKey(ignore: true)
   @override
@@ -838,7 +883,9 @@ abstract class _BuyerInfo implements BuyerInfo {
       {final String? firstName,
       final String? lastName,
       final String? email,
-      final String? phone}) = _$BuyerInfoImpl;
+      final String? phone,
+      final String? birthDate,
+      final String? town}) = _$BuyerInfoImpl;
 
   @override
   String? get firstName;
@@ -848,6 +895,10 @@ abstract class _BuyerInfo implements BuyerInfo {
   String? get email;
   @override
   String? get phone;
+  @override
+  String? get birthDate;
+  @override // "YYYY-MM-DD"
+  String? get town;
   @override
   @JsonKey(ignore: true)
   _$$BuyerInfoImplCopyWith<_$BuyerInfoImpl> get copyWith =>

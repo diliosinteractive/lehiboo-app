@@ -165,6 +165,8 @@ class BookingListItemDto with _$BookingListItemDto {
     @JsonKey(name: 'customer_email') String? customerEmail,
     @JsonKey(name: 'customer_first_name') String? customerFirstName,
     @JsonKey(name: 'customer_last_name') String? customerLastName,
+    @JsonKey(name: 'customer_birth_date') String? customerBirthDate,
+    @JsonKey(name: 'customer_town') String? customerTown,
     @JsonKey(name: 'can_cancel') bool? canCancel,
     @JsonKey(name: 'created_at') String? createdAt,
     String? createdAt2,

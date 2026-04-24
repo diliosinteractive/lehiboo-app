@@ -360,7 +360,7 @@ class _PlatformOrganizerCard extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     child: Image.asset(
                       'assets/images/logo_picto_lehiboo_old.png',
-                      color: Colors.grey.shade500,
+                      // color: Colors.grey.shade500,
                       colorBlendMode: BlendMode.srcATop,
                     ),
                   ),

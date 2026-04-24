@@ -41,6 +41,8 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       customerFirstName: buyer.firstName ?? '',
       customerLastName: buyer.lastName ?? '',
       customerPhone: buyer.phone,
+      customerBirthDate: buyer.birthDate,
+      customerTown: buyer.town,
     );
 
     return Booking(
@@ -164,6 +166,8 @@ class ApiBookingRepositoryImpl implements BookingRepository {
         createdAt: b.createdAt != null ? DateTime.tryParse(b.createdAt!) : null,
         activity: activity,
         slot: slot,
+        customerBirthDate: b.customerBirthDate,
+        customerTown: b.customerTown,
       );
     }).toList();
   }

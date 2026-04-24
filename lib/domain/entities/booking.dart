@@ -28,6 +28,9 @@ class Booking with _$Booking {
     String? customerFirstName,
     String? customerLastName,
     String? customerPhone,
+    // Birth date & town (optional, from booking form)
+    String? customerBirthDate, // "YYYY-MM-DD"
+    String? customerTown,
     // Reference (short code for display)
     String? reference,
   }) = _Booking;

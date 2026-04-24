@@ -307,17 +307,45 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                       ),
                     ),
 
-                  // Title
-                  Text(
-                    widget.activity.title,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textSlate,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  // Title + Category chip
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.activity.title,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: HbColors.textSlate,
+                            height: 1.2,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (widget.activity.category != null) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => context.push('/search?categorySlug=${widget.activity.category!.slug}'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _getCategoryColor(widget.activity.category!.slug).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              widget.activity.category!.name,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: _getCategoryColor(widget.activity.category!.slug),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
 
                   const SizedBox(height: 8),
@@ -361,18 +389,31 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                     children: [
                       // Price
                       if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
-                        Text(
-                          widget.activity.priceMin == 0
-                              ? 'Gratuit'
-                              : 'À partir de ${widget.activity.priceMin!.toStringAsFixed(0)}€',
-                          style: TextStyle(
-                            color: widget.activity.priceMin == 0
-                                ? Colors.green[700]
-                                : HbColors.textSlate,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        Builder(builder: (context) {
+                          final isTrulyFree = widget.activity.priceMin == 0 &&
+                              (widget.activity.priceMax == null || widget.activity.priceMax == 0);
+                          if (isTrulyFree) {
+                            return Text(
+                              'Gratuit',
+                              style: TextStyle(
+                                color: Colors.green[700],
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          }
+                          final price = (widget.activity.priceMin! > 0)
+                              ? widget.activity.priceMin!
+                              : widget.activity.priceMax!;
+                          return Text(
+                            'À partir de ${price.toStringAsFixed(0)}€',
+                            style: const TextStyle(
+                              color: HbColors.textSlate,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        }),
 
                       // CTA Button
                       ElevatedButton(
@@ -412,6 +453,18 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
         ),
       ),
     );
+  }
+
+  Color _getCategoryColor(String slug) {
+    switch (slug.toLowerCase()) {
+      case 'atelier': return Colors.purple;
+      case 'concert': return Colors.blue;
+      case 'spectacle': return Colors.red;
+      case 'sport': return Colors.green;
+      case 'marche': return Colors.orange;
+      case 'culture': return Colors.indigo;
+      default: return HbColors.brandPrimary;
+    }
   }
 
   Widget _buildFallbackImage() {
@@ -544,12 +597,16 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
     }
   }
 
-  String _formatDuration(int minutes) {
-    if (minutes < 60) return '${minutes}min';
-    final hours = minutes ~/ 60;
-    final remainingMinutes = minutes % 60;
-    if (remainingMinutes == 0) return '${hours}h';
-    return '${hours}h${remainingMinutes.toString().padLeft(2, '0')}';
+  String _formatSlotDateTime(DateTime dt) {
+    const days = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+    const months = [
+      'jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin',
+      'juil.', 'août', 'sep.', 'oct.', 'nov.', 'déc.',
+    ];
+    final dayName = days[dt.weekday - 1];
+    final monthName = months[dt.month - 1];
+    final time = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return '$dayName ${dt.day} $monthName à $time';
   }
 
   bool get _isUrgent => _remaining.inHours < 6;
@@ -651,17 +708,45 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Titre
-                  Text(
-                    widget.activity.title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
-                      height: 1.1,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  // Titre + Category chip
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.activity.title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A1A1A),
+                            height: 1.1,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (widget.activity.category != null) ...[
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: () => context.push('/search?categorySlug=${widget.activity.category!.slug}'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _getCategoryColor(widget.activity.category!.slug).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              widget.activity.category!.name,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: _getCategoryColor(widget.activity.category!.slug),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   // Organisateur
@@ -676,33 +761,36 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  const SizedBox(height: 2),
-                  // Rating
-                  Row(
-                    children: [
-                      const Icon(Icons.star_rounded, size: 14, color: HbColors.brandPrimary),
-                      const SizedBox(width: 4),
-                      Text(
-                        '4.8',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[900],
-                          height: 1.1,
+                  // Rating (only if real data exists)
+                  if (widget.activity.rating != null && widget.activity.rating! > 0 &&
+                      widget.activity.reviewsCount != null && widget.activity.reviewsCount! > 0) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded, size: 14, color: HbColors.brandPrimary),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.activity.rating!.toStringAsFixed(1),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[900],
+                            height: 1.1,
+                          ),
                         ),
-                      ),
-                      Text(
-                        ' (124)',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                          height: 1.1,
+                        Text(
+                          ' (${widget.activity.reviewsCount})',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                            height: 1.1,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 2),
-                  // Location + Duration
+                  // Location + Date/Time
                   Text.rich(
                     TextSpan(
                       children: [
@@ -710,32 +798,46 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                           text: widget.activity.city?.name ?? 'France',
                           style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
                         ),
-                        if (widget.activity.durationMinutes != null && widget.activity.durationMinutes! > 0) ...[
+                        if (widget.activity.nextSlot != null) ...[
                           const TextSpan(text: ' • '),
                           TextSpan(
-                            text: _formatDuration(widget.activity.durationMinutes!),
+                            text: _formatSlotDateTime(widget.activity.nextSlot!.startDateTime),
                             style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
                           ),
                         ],
                       ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   // Prix
                   if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
-                    Text(
-                      widget.activity.priceMin == 0
-                          ? 'Gratuit'
-                          : 'À partir de ${widget.activity.priceMin!.toStringAsFixed(0)}€',
-                      style: TextStyle(
-                        color: widget.activity.priceMin == 0 ? Colors.green[700] : HbColors.brandPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        height: 1.1,
-                      ),
-                    ),
+                    Builder(builder: (context) {
+                      final isTrulyFree = widget.activity.priceMin == 0 &&
+                          (widget.activity.priceMax == null || widget.activity.priceMax == 0);
+                      if (isTrulyFree) {
+                        return Text(
+                          'Gratuit',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            height: 1.1,
+                          ),
+                        );
+                      }
+                      final price = (widget.activity.priceMin! > 0)
+                          ? widget.activity.priceMin!
+                          : widget.activity.priceMax!;
+                      return Text(
+                        'À partir de ${price.toStringAsFixed(0)}€',
+                        style: const TextStyle(
+                          color: HbColors.brandPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          height: 1.1,
+                        ),
+                      );
+                    }),
                 ],
               ),
             ),
@@ -743,6 +845,18 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
         ],
       ),
     );
+  }
+
+  Color _getCategoryColor(String slug) {
+    switch (slug.toLowerCase()) {
+      case 'atelier': return Colors.purple;
+      case 'concert': return Colors.blue;
+      case 'spectacle': return Colors.red;
+      case 'sport': return Colors.green;
+      case 'marche': return Colors.orange;
+      case 'culture': return Colors.indigo;
+      default: return HbColors.brandPrimary;
+    }
   }
 
   Widget _buildFallback() {
@@ -968,16 +1082,31 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                   const SizedBox(height: 4),
                   // Prix
                   if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
-                    Text(
-                      widget.activity.priceMin == 0
-                          ? 'Gratuit'
-                          : 'Dès ${widget.activity.priceMin!.toStringAsFixed(0)}€',
-                      style: TextStyle(
-                        color: widget.activity.priceMin == 0 ? Colors.green[700] : HbColors.brandPrimary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Builder(builder: (context) {
+                      final isTrulyFree = widget.activity.priceMin == 0 &&
+                          (widget.activity.priceMax == null || widget.activity.priceMax == 0);
+                      if (isTrulyFree) {
+                        return Text(
+                          'Gratuit',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      }
+                      final price = (widget.activity.priceMin! > 0)
+                          ? widget.activity.priceMin!
+                          : widget.activity.priceMax!;
+                      return Text(
+                        'Dès ${price.toStringAsFixed(0)}€',
+                        style: const TextStyle(
+                          color: HbColors.brandPrimary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    }),
                 ],
               ),
             ),

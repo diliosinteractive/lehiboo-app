@@ -89,6 +89,22 @@ class SecureStorageService {
     return await _storage.read(key: 'user_last_name');
   }
 
+  Future<void> saveUserBirthDate(String birthDate) async {
+    await _storage.write(key: 'user_birth_date', value: birthDate);
+  }
+
+  Future<String?> getUserBirthDate() async {
+    return await _storage.read(key: 'user_birth_date');
+  }
+
+  Future<void> saveUserMembershipCity(String city) async {
+    await _storage.write(key: 'user_membership_city', value: city);
+  }
+
+  Future<String?> getUserMembershipCity() async {
+    return await _storage.read(key: 'user_membership_city');
+  }
+
   // Clear all auth data
   Future<void> clearAuthData() async {
     await _storage.delete(key: AppConstants.keyAuthToken);
@@ -99,6 +115,8 @@ class SecureStorageService {
     await _storage.delete(key: 'user_display_name');
     await _storage.delete(key: 'user_first_name');
     await _storage.delete(key: 'user_last_name');
+    await _storage.delete(key: 'user_birth_date');
+    await _storage.delete(key: 'user_membership_city');
   }
 
   // Check if user is authenticated

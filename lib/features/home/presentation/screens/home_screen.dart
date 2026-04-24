@@ -245,21 +245,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         opacity,
       ),
       elevation: 0,
+      centerTitle: false,
       toolbarHeight: 60,
-      title: AnimatedOpacity(
-        opacity: opacity,
-        duration: const Duration(milliseconds: 150),
-        child: Image.asset(
-          'assets/images/logo_lehiboo_blanc_x3_2.png',
-          width: 120,
-          height: 32,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => const Text(
-            'Le Hiboo',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
+      title: Image.asset(
+        'assets/images/logo_lehiboo_experience.png',
+        width: 140,
+        height: 40,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const Text(
+          'Le Hiboo',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
+      titleSpacing: 8,
       actions: [
         IconButton(
           icon: Icon(

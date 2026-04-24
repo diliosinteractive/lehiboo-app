@@ -28,6 +28,8 @@ class BookingDto with _$BookingDto {
     @JsonKey(name: 'customer_first_name') String? customerFirstName,
     @JsonKey(name: 'customer_last_name') String? customerLastName,
     @JsonKey(name: 'customer_phone') String? customerPhone,
+    @JsonKey(name: 'customer_birth_date') String? customerBirthDate,
+    @JsonKey(name: 'customer_town') String? customerTown,
     // Reference
     String? reference,
   }) = _BookingDto;

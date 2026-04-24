@@ -31,6 +31,8 @@ class BookingApiDataSource {
     required String customerFirstName,
     required String customerLastName,
     String? customerPhone,
+    String? customerBirthDate,
+    String? customerTown,
     String? couponCode,
   }) async {
     final response = await _dio.post(
@@ -47,6 +49,10 @@ class BookingApiDataSource {
         'customer_last_name': customerLastName,
         if (customerPhone != null && customerPhone.isNotEmpty)
           'customer_phone': customerPhone,
+        if (customerBirthDate != null && customerBirthDate.isNotEmpty)
+          'customer_birth_date': customerBirthDate,
+        if (customerTown != null && customerTown.isNotEmpty)
+          'customer_town': customerTown,
         if (couponCode != null) 'coupon_code': couponCode,
       },
     );
