@@ -611,6 +611,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           return TripPlanEditScreen(planUuid: uuid);
         },
       ),
+      // Reminders (Mes Rappels)
+      GoRoute(
+        path: '/my-reminders',
+        name: 'my-reminders',
+        builder: (context, state) => const RemindersListScreen(),
+      ),
     ],
     errorBuilder: (context, state) => const ErrorScreen(),
   );
