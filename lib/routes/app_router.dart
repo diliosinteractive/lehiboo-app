@@ -239,6 +239,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'messages-from-organizer',
         builder: (_, state) => NewConversationScreen(
           fromOrganizationUuid: state.pathParameters['organizationUuid']!,
+          fromOrganizationName: state.uri.queryParameters['name'],
         ),
       ),
       GoRoute(

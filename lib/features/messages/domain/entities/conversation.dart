@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'message.dart';
 
 class ConversationOrganization extends Equatable {
+  final int id;
   final String uuid;
   final String companyName;
   final String organizationName;
@@ -9,6 +10,7 @@ class ConversationOrganization extends Equatable {
   final String? avatarUrl;
 
   const ConversationOrganization({
+    required this.id,
     required this.uuid,
     required this.companyName,
     required this.organizationName,
@@ -17,7 +19,7 @@ class ConversationOrganization extends Equatable {
   });
 
   @override
-  List<Object?> get props => [uuid, companyName, organizationName, logoUrl, avatarUrl];
+  List<Object?> get props => [id, uuid, companyName, organizationName, logoUrl, avatarUrl];
 }
 
 class ConversationParticipant extends Equatable {

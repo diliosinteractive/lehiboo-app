@@ -87,8 +87,21 @@ class ConversationsListResponseDto {
   });
 
   factory ConversationsListResponseDto.fromJson(Map<String, dynamic> json) {
-    final dataList = json['data'] as List? ?? [];
-    final meta = json['meta'] as Map<String, dynamic>?;
+    // Handle both { "data": [...] } and { "data": { "data": [...], "meta": {...} } }
+    final rawData = json['data'];
+    final List dataList;
+    final Map<String, dynamic>? meta;
+    if (rawData is List) {
+      dataList = rawData;
+      meta = json['meta'] as Map<String, dynamic>?;
+    } else if (rawData is Map<String, dynamic>) {
+      dataList = rawData['data'] as List? ?? [];
+      meta = rawData['meta'] as Map<String, dynamic>?
+          ?? json['meta'] as Map<String, dynamic>?;
+    } else {
+      dataList = [];
+      meta = json['meta'] as Map<String, dynamic>?;
+    }
     return ConversationsListResponseDto(
       data: dataList
           .map((e) => ConversationDto.fromJson(e as Map<String, dynamic>))

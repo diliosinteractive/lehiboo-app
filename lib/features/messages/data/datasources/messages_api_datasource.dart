@@ -132,8 +132,9 @@ class MessagesApiDataSource {
         data: {'content': content},
       );
     }
-    // Response is a direct MessageResource (no wrapper)
-    return MessageDto.fromJson(r.data as Map<String, dynamic>);
+    final raw = r.data as Map<String, dynamic>;
+    final payload = raw.containsKey('data') ? raw['data'] as Map<String, dynamic> : raw;
+    return MessageDto.fromJson(payload);
   }
 
   // 10. PATCH /user/conversations/{uuid}/messages/{msgUuid}
@@ -230,7 +231,9 @@ class MessagesApiDataSource {
       '/user/support-conversations/$conversationUuid/messages',
       data: {'content': content},
     );
-    return MessageDto.fromJson(r.data as Map<String, dynamic>);
+    final raw = r.data as Map<String, dynamic>;
+    final payload = raw.containsKey('data') ? raw['data'] as Map<String, dynamic> : raw;
+    return MessageDto.fromJson(payload);
   }
 }
 

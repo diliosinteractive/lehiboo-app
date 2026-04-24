@@ -31,7 +31,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
   }
 
   Message _mapMessage(MessageDto dto) => Message(
-        uuid: dto.uuid,
+        uuid: dto.uuid ?? '',
         senderType: dto.senderType,
         isSystem: dto.isSystem,
         sender: _mapSender(dto.sender),
@@ -52,6 +52,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
   ConversationOrganization? _mapOrganization(ConversationOrganizationDto? dto) {
     if (dto == null) return null;
     return ConversationOrganization(
+      id: dto.id,
       uuid: dto.uuid,
       companyName: dto.companyName,
       organizationName: dto.organizationName,

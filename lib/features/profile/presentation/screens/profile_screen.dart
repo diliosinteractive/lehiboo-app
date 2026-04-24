@@ -164,7 +164,7 @@ class ProfileScreen extends ConsumerWidget {
         ),
         _buildMenuItem(
           context,
-          icon: Icons.chat_bubble_outline,
+          icon: Icons.mail_outline,
           title: 'Mes Messages',
           subtitle: 'Conversations avec les organisateurs',
           badge: ref.watch(unreadCountProvider),

@@ -24,9 +24,9 @@ Map<String, dynamic> _$$MessageSenderDtoImplToJson(
 
 _$MessageDtoImpl _$$MessageDtoImplFromJson(Map<String, dynamic> json) =>
     _$MessageDtoImpl(
-      id: (json['id'] as num).toInt(),
-      uuid: json['uuid'] as String,
-      conversationId: (json['conversation_id'] as num).toInt(),
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      uuid: json['uuid'] as String?,
+      conversationId: (json['conversation_id'] as num?)?.toInt() ?? 0,
       senderType: json['sender_type'] as String,
       senderTypeLabel: json['sender_type_label'] as String?,
       isSystem: json['is_system'] as bool? ?? false,

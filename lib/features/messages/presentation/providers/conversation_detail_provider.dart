@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../domain/entities/conversation.dart';
@@ -150,7 +151,8 @@ class ConversationDetailNotifier
       );
       // Refresh list to update latest_message preview
       _ref.read(conversationsProvider.notifier).refresh();
-    } catch (e) {
+    } catch (e, s) {
+      log(e.toString(), stackTrace: s);
       if (!mounted) return;
       // Mark optimistic message as failed — remove it and show error
       final reverted = optimisticMessages

@@ -8,11 +8,13 @@ import '../../data/repositories/messages_repository_impl.dart';
 class NewConversationScreen extends ConsumerStatefulWidget {
   final String? fromBookingUuid;
   final String? fromOrganizationUuid;
+  final String? fromOrganizationName;
 
   const NewConversationScreen({
     super.key,
     this.fromBookingUuid,
     this.fromOrganizationUuid,
+    this.fromOrganizationName,
   });
 
   @override
@@ -61,7 +63,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       final repo = ref.read(messagesRepositoryProvider);
       final result = await repo.createFromBooking(widget.fromBookingUuid!);
       if (!mounted) return;
-      context.go('/messages/${result.conversation.uuid}');
+      context.pushReplacement('/messages/${result.conversation.uuid}');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -71,16 +73,32 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     }
   }
 
-  Future<void> _loadOrgForUuid(String orgUuid) async {
+  Future<void> _loadOrgForUuid(String orgIdentifier) async {
     try {
       final repo = ref.read(messagesRepositoryProvider);
       final orgs = await repo.getContactableOrganizations();
-      final match = orgs.where((o) => o.uuid == orgUuid).firstOrNull;
+      // Match by uuid first, then numeric id
+      final match = orgs
+              .where((o) => o.uuid == orgIdentifier)
+              .firstOrNull ??
+          orgs
+              .where((o) => o.id.toString() == orgIdentifier)
+              .firstOrNull;
       if (mounted && match != null) {
         setState(() => _selectedOrg = match);
+        return;
       }
     } catch (_) {
-      // Non-critical: form still usable without pre-fill
+      // Contactable list failed — fall through to placeholder
+    }
+    // Org not in contactable list (first-time contact) — create placeholder
+    if (mounted) {
+      setState(() => _selectedOrg = ConversationOrganization(
+        id: 0,
+        uuid: orgIdentifier,
+        companyName: widget.fromOrganizationName ?? 'Organisateur',
+        organizationName: '',
+      ));
     }
   }
 
@@ -181,7 +199,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         message: _messageController.text.trim(),
       );
       if (!mounted) return;
-      context.go('/messages/${conversation.uuid}');
+      context.pushReplacement('/messages/${conversation.uuid}');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -196,7 +214,13 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     // fromBookingUuid mode: show loading/error only
     if (widget.fromBookingUuid != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Nouveau message')),
+        appBar: AppBar(
+          title: const Text('Nouveau message'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+          ),
+        ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : Center(
@@ -229,7 +253,13 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouveau message')),
+      appBar: AppBar(
+        title: const Text('Nouveau message'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

@@ -250,8 +250,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       toolbarHeight: 60,
       title: Image.asset(
         'assets/images/logo_lehiboo_experience.png',
-        width: 140,
-        height: 40,
+        width: 160,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => const Text(
           'Le Hiboo',
@@ -260,20 +259,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       titleSpacing: 8,
       actions: [
-        Builder(
-          builder: (context) {
-            final unread = ref.watch(unreadCountProvider);
-            return IconButton(
-              icon: Badge(
-                isLabelVisible: unread > 0,
-                label: Text('$unread'),
-                child: const Icon(Icons.chat_bubble_outline,
-                    color: Colors.white),
-              ),
-              onPressed: () => context.push('/messages'),
-            );
-          },
-        ),
         IconButton(
           icon: Icon(
             Icons.favorite_border,
@@ -288,6 +273,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (allowed && mounted) {
               context.push('/favorites');
             }
+          },
+        ),
+        Builder(
+          builder: (context) {
+            final unread = ref.watch(unreadCountProvider);
+            return IconButton(
+              icon: Badge(
+                isLabelVisible: unread > 0,
+                label: Text('$unread'),
+                child: const Icon(Icons.mail_outline,
+                    color: Colors.white),
+              ),
+              onPressed: () => context.push('/messages'),
+            );
           },
         ),
         IconButton(

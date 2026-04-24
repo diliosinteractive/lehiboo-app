@@ -294,7 +294,10 @@ class _VendorOrganizerCard extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: () {
               HapticFeedback.lightImpact();
-              context.push('/partner/${event.organizerId}');
+              context.push(Uri(
+                path: '/messages/new/from-organizer/${event.organizerId}',
+                queryParameters: {'name': event.organizerName},
+              ).toString());
             },
             icon: const Icon(Icons.mail_outline, size: 18),
             label: const Text('Nous contacter'),

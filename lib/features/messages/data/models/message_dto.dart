@@ -19,9 +19,9 @@ class MessageSenderDto with _$MessageSenderDto {
 @freezed
 class MessageDto with _$MessageDto {
   const factory MessageDto({
-    required int id,
-    required String uuid,
-    @JsonKey(name: 'conversation_id') required int conversationId,
+    @Default(0) int id,
+    String? uuid,
+    @JsonKey(name: 'conversation_id') @Default(0) int conversationId,
     @JsonKey(name: 'sender_type') required String senderType,
     @JsonKey(name: 'sender_type_label') String? senderTypeLabel,
     @JsonKey(name: 'is_system') @Default(false) bool isSystem,

@@ -203,7 +203,7 @@ MessageDto _$MessageDtoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$MessageDto {
   int get id => throw _privateConstructorUsedError;
-  String get uuid => throw _privateConstructorUsedError;
+  String? get uuid => throw _privateConstructorUsedError;
   @JsonKey(name: 'conversation_id')
   int get conversationId => throw _privateConstructorUsedError;
   @JsonKey(name: 'sender_type')
@@ -248,7 +248,7 @@ abstract class $MessageDtoCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
-      String uuid,
+      String? uuid,
       @JsonKey(name: 'conversation_id') int conversationId,
       @JsonKey(name: 'sender_type') String senderType,
       @JsonKey(name: 'sender_type_label') String? senderTypeLabel,
@@ -283,7 +283,7 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
   @override
   $Res call({
     Object? id = null,
-    Object? uuid = null,
+    Object? uuid = freezed,
     Object? conversationId = null,
     Object? senderType = null,
     Object? senderTypeLabel = freezed,
@@ -306,10 +306,10 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
-      uuid: null == uuid
+      uuid: freezed == uuid
           ? _value.uuid
           : uuid // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       conversationId: null == conversationId
           ? _value.conversationId
           : conversationId // ignore: cast_nullable_to_non_nullable
@@ -400,7 +400,7 @@ abstract class _$$MessageDtoImplCopyWith<$Res>
   @useResult
   $Res call(
       {int id,
-      String uuid,
+      String? uuid,
       @JsonKey(name: 'conversation_id') int conversationId,
       @JsonKey(name: 'sender_type') String senderType,
       @JsonKey(name: 'sender_type_label') String? senderTypeLabel,
@@ -434,7 +434,7 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? uuid = null,
+    Object? uuid = freezed,
     Object? conversationId = null,
     Object? senderType = null,
     Object? senderTypeLabel = freezed,
@@ -457,10 +457,10 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
-      uuid: null == uuid
+      uuid: freezed == uuid
           ? _value.uuid
           : uuid // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       conversationId: null == conversationId
           ? _value.conversationId
           : conversationId // ignore: cast_nullable_to_non_nullable
@@ -533,9 +533,9 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$MessageDtoImpl implements _MessageDto {
   const _$MessageDtoImpl(
-      {required this.id,
-      required this.uuid,
-      @JsonKey(name: 'conversation_id') required this.conversationId,
+      {this.id = 0,
+      this.uuid,
+      @JsonKey(name: 'conversation_id') this.conversationId = 0,
       @JsonKey(name: 'sender_type') required this.senderType,
       @JsonKey(name: 'sender_type_label') this.senderTypeLabel,
       @JsonKey(name: 'is_system') this.isSystem = false,
@@ -557,9 +557,10 @@ class _$MessageDtoImpl implements _MessageDto {
       _$$MessageDtoImplFromJson(json);
 
   @override
+  @JsonKey()
   final int id;
   @override
-  final String uuid;
+  final String? uuid;
   @override
   @JsonKey(name: 'conversation_id')
   final int conversationId;
@@ -693,9 +694,9 @@ class _$MessageDtoImpl implements _MessageDto {
 
 abstract class _MessageDto implements MessageDto {
   const factory _MessageDto(
-          {required final int id,
-          required final String uuid,
-          @JsonKey(name: 'conversation_id') required final int conversationId,
+          {final int id,
+          final String? uuid,
+          @JsonKey(name: 'conversation_id') final int conversationId,
           @JsonKey(name: 'sender_type') required final String senderType,
           @JsonKey(name: 'sender_type_label') final String? senderTypeLabel,
           @JsonKey(name: 'is_system') final bool isSystem,
@@ -719,7 +720,7 @@ abstract class _MessageDto implements MessageDto {
   @override
   int get id;
   @override
-  String get uuid;
+  String? get uuid;
   @override
   @JsonKey(name: 'conversation_id')
   int get conversationId;
