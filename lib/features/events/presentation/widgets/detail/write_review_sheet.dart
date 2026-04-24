@@ -181,7 +181,7 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
-                        'Cet avis nécessite une participation ou une réservation valide.',
+                        'Pour laisser un avis, l\'événement doit avoir au moins une date passée et vous devez avoir une participation ou une réservation valide.',
                         style: TextStyle(color: Colors.orange),
                       ),
                     ),

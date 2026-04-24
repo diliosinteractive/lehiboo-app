@@ -41,6 +41,8 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       customerFirstName: buyer.firstName ?? '',
       customerLastName: buyer.lastName ?? '',
       customerPhone: buyer.phone,
+      customerBirthDate: buyer.birthDate,
+      customerTown: buyer.town,
     );
 
     return Booking(
@@ -119,10 +121,11 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       }
 
       // Mapper l'activity depuis l'event chargé ou les convenience fields
+      // Mobile format: `id` and `internal_id` are removed, use `uuid`
       Activity? activity;
       if (b.event != null) {
         activity = Activity(
-          id: b.event!.internalId?.toString() ?? b.event!.id ?? b.eventId?.toString() ?? '',
+          id: b.event!.uuid ?? b.event!.id ?? b.eventId?.toString() ?? '',
           title: b.event!.title,
           slug: b.event!.slug ?? '',
           description: '',
@@ -163,6 +166,8 @@ class ApiBookingRepositoryImpl implements BookingRepository {
         createdAt: b.createdAt != null ? DateTime.tryParse(b.createdAt!) : null,
         activity: activity,
         slot: slot,
+        customerBirthDate: b.customerBirthDate,
+        customerTown: b.customerTown,
       );
     }).toList();
   }

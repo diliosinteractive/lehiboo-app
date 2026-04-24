@@ -41,6 +41,8 @@ class Activity with _$Activity {
     String? bookingPhone,
     String? bookingEmail,
     Slot? nextSlot,
+    double? rating,
+    int? reviewsCount,
   }) = _Activity;
 }
 

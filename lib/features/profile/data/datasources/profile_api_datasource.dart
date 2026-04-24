@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/data/models/auth_response_dto.dart';
 
 final profileApiDataSourceProvider = Provider<ProfileApiDataSource>((ref) {
@@ -41,12 +42,10 @@ class ProfileApiDataSource {
   /// Get current user profile
   Future<UserDto> getProfile() async {
     final response = await _dio.get('/auth/me');
-
-    final data = response.data;
-    if (data['user'] != null) {
-      return _parseUserDto(data['user']);
-    }
-    throw Exception(data['message'] ?? 'Failed to get profile');
+    // /auth/me returns { "user": {...} } at root level
+    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    final userData = payload['user'] ?? payload;
+    return _parseUserDto(userData is Map<String, dynamic> ? userData : payload);
   }
 
   /// Update user profile
@@ -74,11 +73,8 @@ class ProfileApiDataSource {
       },
     );
 
-    final data = response.data;
-    if (data['data'] != null) {
-      return _parseUserDto(data['data']);
-    }
-    throw Exception(data['message'] ?? 'Failed to update profile');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return _parseUserDto(payload);
   }
 
   /// Upload avatar
@@ -98,22 +94,15 @@ class ProfileApiDataSource {
       ),
     );
 
-    final data = response.data;
-    if (data['data'] != null) {
-      return _parseUserDto(data['data']);
-    }
-    throw Exception(data['message'] ?? 'Failed to upload avatar');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return _parseUserDto(payload);
   }
 
   /// Get user stats
   Future<UserStatsDto> getStats() async {
     final response = await _dio.get('/auth/me/stats');
-
-    final data = response.data;
-    if (data['data'] != null) {
-      return UserStatsDto.fromJson(data['data']);
-    }
-    throw Exception(data['message'] ?? 'Failed to get stats');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return UserStatsDto.fromJson(payload);
   }
 
   /// Update password
@@ -122,7 +111,7 @@ class ProfileApiDataSource {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    final response = await _dio.post(
+    await _dio.post(
       '/account/password',
       data: {
         'current_password': currentPassword,
@@ -130,11 +119,6 @@ class ProfileApiDataSource {
         'password_confirmation': confirmPassword,
       },
     );
-
-    final data = response.data;
-    if (data['success'] != true && data['message'] != null) {
-      throw Exception(data['message']);
-    }
   }
 
   UserDto _parseUserDto(Map<String, dynamic> userData) {

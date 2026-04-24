@@ -144,11 +144,15 @@ class DeepLinkService {
 
     // Reminder notifications
     if (type.contains('reminder')) {
-      final bookingId = data['booking_id'];
-      if (bookingId != null) {
-        return '/my-bookings';
+      final eventSlug = data['event_slug'];
+      if (eventSlug != null) {
+        return '/event/$eventSlug';
       }
-      return '/';
+      final action = data['action'];
+      if (action is String && action.startsWith('/events/')) {
+        return '/event/${action.replaceFirst('/events/', '')}';
+      }
+      return '/my-reminders';
     }
 
     // Alert/saved search notifications
@@ -163,6 +167,15 @@ class DeepLinkService {
     // Payout notifications (vendor)
     if (type.contains('payout')) {
       return '/profile'; // Or vendor dashboard when available
+    }
+
+    // Message notifications
+    if (type == 'new_message' || type.contains('message')) {
+      final conversationUuid = data['conversation_uuid'] ?? data['uuid'];
+      if (conversationUuid != null) {
+        return '/messages/$conversationUuid';
+      }
+      return '/messages';
     }
 
     // Default to notifications screen

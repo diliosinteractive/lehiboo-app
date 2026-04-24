@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/booking_api_dto.dart';
 
 final bookingApiDataSourceProvider = Provider<BookingApiDataSource>((ref) {
@@ -30,6 +31,8 @@ class BookingApiDataSource {
     required String customerFirstName,
     required String customerLastName,
     String? customerPhone,
+    String? customerBirthDate,
+    String? customerTown,
     String? couponCode,
   }) async {
     final response = await _dio.post(
@@ -46,16 +49,16 @@ class BookingApiDataSource {
         'customer_last_name': customerLastName,
         if (customerPhone != null && customerPhone.isNotEmpty)
           'customer_phone': customerPhone,
+        if (customerBirthDate != null && customerBirthDate.isNotEmpty)
+          'customer_birth_date': customerBirthDate,
+        if (customerTown != null && customerTown.isNotEmpty)
+          'customer_town': customerTown,
         if (couponCode != null) 'coupon_code': couponCode,
       },
     );
 
-    final data = response.data;
-    // L'API retourne { "message": "...", "data": {...} }
-    if (data['data'] != null) {
-      return CreateBookingResponseDto.fromJson(data['data']);
-    }
-    throw Exception(data['message'] ?? 'Failed to create booking');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return CreateBookingResponseDto.fromJson(payload);
   }
 
   /// Récupère le PaymentIntent Stripe pour un booking payant
@@ -66,11 +69,8 @@ class BookingApiDataSource {
   }) async {
     final response = await _dio.post('/bookings/$bookingUuid/payment-intent');
 
-    final data = response.data;
-    if (data['data'] != null) {
-      return PaymentIntentResponseDto.fromJson(data['data']);
-    }
-    throw Exception(data['message'] ?? 'Failed to get payment intent');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return PaymentIntentResponseDto.fromJson(payload);
   }
 
   /// Confirme un booking après paiement Stripe réussi
@@ -78,29 +78,19 @@ class BookingApiDataSource {
     required String bookingUuid,
     required String paymentIntentId,
   }) async {
-    final response = await _dio.post(
+    await _dio.post(
       '/bookings/$bookingUuid/confirm',
       data: {
         'payment_intent_id': paymentIntentId,
       },
     );
-
-    final data = response.data;
-    if (data['message']?.toString().toLowerCase().contains('error') == true) {
-      throw Exception(data['message'] ?? 'Failed to confirm booking');
-    }
   }
 
   /// Confirme un booking gratuit (sans paiement)
   Future<void> confirmFreeBooking({
     required String bookingUuid,
   }) async {
-    final response = await _dio.post('/bookings/$bookingUuid/confirm-free');
-
-    final data = response.data;
-    if (data['message']?.toString().toLowerCase().contains('error') == true) {
-      throw Exception(data['message'] ?? 'Failed to confirm free booking');
-    }
+    await _dio.post('/bookings/$bookingUuid/confirm-free');
   }
 
   /// Récupère les tickets d'un booking (avec polling si nécessaire)
@@ -113,15 +103,16 @@ class BookingApiDataSource {
     final data = response.data;
     debugPrint('🎫 getBookingTickets response: $data');
 
-    if (data['data'] != null && data['data'] is List) {
-      final ticketsList = data['data'] as List;
+    try {
+      final ticketsList = ApiResponseHandler.extractList(data);
       debugPrint('🎫 getBookingTickets: ${ticketsList.length} tickets trouvés');
       return ticketsList
-          .map((t) => TicketDetailDto.fromJson(t))
+          .map((t) => TicketDetailDto.fromJson(t as Map<String, dynamic>))
           .toList();
+    } on ApiFormatException {
+      debugPrint('🎫 getBookingTickets: Pas de data ou pas une liste');
+      return [];
     }
-    debugPrint('🎫 getBookingTickets: Pas de data ou pas une liste');
-    return [];
   }
 
   Future<BookingsListResponseDto> getMyBookings({
@@ -138,22 +129,17 @@ class BookingApiDataSource {
     final response = await _dio.get('/me/bookings', queryParameters: queryParams);
 
     final data = response.data;
-    // L'API Laravel retourne directement { "data": [...], "meta": {...} }
-    // Pas de wrapper "success"
-    if (data is Map<String, dynamic> && data['data'] != null) {
+    if (data is Map<String, dynamic>) {
       return BookingsListResponseDto.fromJson(data);
     }
-    throw Exception('Failed to load bookings');
+    throw ApiFormatException('Expected Map response for bookings list', data);
   }
 
   Future<BookingListItemDto> getBookingById(int bookingId) async {
     final response = await _dio.get('/me/bookings/$bookingId');
 
-    final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return BookingListItemDto.fromJson(data['data']);
-    }
-    throw Exception(data['data']?['message'] ?? 'Failed to load booking');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return BookingListItemDto.fromJson(payload);
   }
 
   /// Annule une réservation
@@ -174,16 +160,12 @@ class BookingApiDataSource {
     final data = response.data;
     debugPrint('🚫 API cancelBooking response: $data');
 
-    // Vérifier les différents formats de réponse
-    if (data is Map<String, dynamic>) {
-      // Format avec success boolean
-      if (data['success'] == false) {
-        throw Exception(data['data']?['message'] ?? data['message'] ?? 'Failed to cancel booking');
-      }
-      // Format avec message d'erreur explicite
-      if (data['message']?.toString().toLowerCase().contains('error') == true) {
-        throw Exception(data['message']);
-      }
+    if (data is Map<String, dynamic> && data['success'] == false) {
+      final message = ApiResponseHandler.extractError(
+        Exception(data['message']),
+        fallback: 'Impossible d\'annuler la réservation.',
+      );
+      throw Exception(message);
     }
   }
 
@@ -197,30 +179,21 @@ class BookingApiDataSource {
 
     final response = await _dio.get('/me/tickets', queryParameters: queryParams);
 
-    final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return TicketsListResponseDto.fromJson(data['data']);
-    }
-    throw Exception(data['data']?['message'] ?? 'Failed to load tickets');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return TicketsListResponseDto.fromJson(payload);
   }
 
   Future<TicketDetailDto> getTicketById(int ticketId) async {
     final response = await _dio.get('/me/tickets/$ticketId');
 
-    final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return TicketDetailDto.fromJson(data['data']);
-    }
-    throw Exception(data['data']?['message'] ?? 'Failed to load ticket');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return TicketDetailDto.fromJson(payload);
   }
 
   Future<String> downloadTicketPdf(int ticketId) async {
     final response = await _dio.get('/me/tickets/$ticketId/download');
 
-    final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return data['data']['pdf_url'] as String;
-    }
-    throw Exception(data['data']?['message'] ?? 'Failed to download ticket');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return payload['pdf_url'] as String;
   }
 }

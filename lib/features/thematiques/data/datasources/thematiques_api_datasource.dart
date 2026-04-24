@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/config/dio_client.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import '../models/thematique_dto.dart';
 
 final thematiquesApiDatasourceProvider = Provider<ThematiquesApiDatasource>((ref) {
@@ -21,15 +22,9 @@ class ThematiquesApiDatasource {
       },
     );
 
-    if (response.statusCode == 200) {
-      final data = response.data['data'] as Map<String, dynamic>;
-      final thematiquesJson = data['thematiques'] as List<dynamic>;
-
-      return thematiquesJson
-          .map((json) => ThematiqueDto.fromJson(json as Map<String, dynamic>))
-          .toList();
-    }
-
-    throw Exception('Failed to load thematiques');
+    final list = ApiResponseHandler.extractList(response.data, key: 'thematiques');
+    return list
+        .map((json) => ThematiqueDto.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 }

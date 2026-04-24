@@ -58,10 +58,20 @@ class EventMapper {
       priceType = PriceType.variable;
     }
 
-    // Parse category
+    // Resolve primary category: prefer primaryCategory (mobile v2),
+    // then categories[] with is_primary flag, then legacy category field.
+    EventCategoryDto? resolvedCategory = dto.primaryCategory;
+    if (resolvedCategory == null && dto.categories != null && dto.categories!.isNotEmpty) {
+      resolvedCategory = dto.categories!.cast<EventCategoryDto?>().firstWhere(
+        (c) => c?.isPrimary == true,
+        orElse: () => dto.categories!.first,
+      );
+    }
+    resolvedCategory ??= dto.category;
+
     EventCategory category = EventCategory.other;
-    if (dto.category != null) {
-      category = _parseCategorySlug(dto.category!.slug);
+    if (resolvedCategory != null) {
+      category = _parseCategorySlug(resolvedCategory.slug);
     }
 
     // Get featured image URL (prefer large or full from featuredImage, fallback to thumbnail)
@@ -107,21 +117,30 @@ class EventMapper {
       }
     }
 
+    // Parse mobile v2 top-level slots[] into CalendarDateSlot list
+    List<CalendarDateSlot> mobileSlots = [];
+    if (dto.slots != null && dto.slots!.isNotEmpty) {
+      mobileSlots = dto.slots!
+          .whereType<Map>()
+          .map((e) => _parseSlotFromMobileFormat(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
     return Event(
       id: dto.uuid ?? dto.id.toString(),
       slug: dto.slug,
       title: dto.title,
       description: dto.excerpt ?? '',
-      fullDescription: dto.content,
+      fullDescription: dto.fullDescription ?? dto.content,
       shortDescription: _truncateDescription(dto.excerpt ?? ''),
       category: category,
-      targetAudiences: const [EventAudience.all],
+      targetAudiences: _resolveTargetAudiences(dto),
       startDate: startDate,
       endDate: endDate,
       venue: dto.location?.venueName ?? '',
       address: dto.location?.address ?? '',
       city: dto.location?.city ?? '',
-      postalCode: '',
+      postalCode: dto.location?.postalCode ?? '',
       latitude: dto.location?.lat ?? 0.0,
       longitude: dto.location?.lng ?? 0.0,
       distance: null,
@@ -131,18 +150,23 @@ class EventMapper {
       price: dto.pricing?.min == dto.pricing?.max ? dto.pricing?.min : null,
       minPrice: dto.pricing?.min,
       maxPrice: dto.pricing?.max,
-      isIndoor: true,
-      isOutdoor: false,
+      isIndoor: dto.venueType?.toLowerCase() != 'outdoor',
+      isOutdoor: dto.venueType?.toLowerCase() != 'indoor',
       tags: dto.tags ?? [],
       organizerId: _resolveOrganizerIdentifier(dto.organizer),
       organizerName: dto.organizer?.name ?? '',
-      organizerLogo: dto.organizer?.avatar,
+      organizerLogo: dto.organizer?.logo ?? dto.organizer?.avatar,
+      organizerDescription: dto.organizer?.description,
       organizerIsPlatform: dto.organizer?.isPlatform ?? false,
+      organizerVerified: dto.organizer?.verified ?? false,
+      organizerEventsCount: dto.organizer?.eventsCount,
+      organizerVenueTypes: dto.organizer?.venueTypes ?? const [],
+      organizerAllowPublicContact: dto.organizer?.allowPublicContact ?? false,
       isFavorite: dto.isFavorite,
-      isFeatured: false,
+      isFeatured: dto.isFeatured,
       isRecommended: false,
       status: _determineStatus(startDate, endDate),
-      hasDirectBooking: true,
+      hasDirectBooking: dto.bookingMode != 'discovery',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       views: 0,
@@ -152,8 +176,7 @@ class EventMapper {
       totalSeats: dto.availability?.totalCapacity,
       tickets: mappedTickets,
       timeSlots: timeSlots,
-      calendar:
-          dto.calendar != null ? CalendarConfig.fromJson(dto.calendar!) : null,
+      calendar: _resolveCalendar(dto.calendar, mobileSlots),
       recurrence: dto.recurrence != null
           ? RecurrenceConfig.fromJson(dto.recurrence!)
           : null,
@@ -163,6 +186,11 @@ class EventMapper {
       extraServices: dto.extraServices
               ?.whereType<Map<String, dynamic>>()
               .map((e) => ExtraService.fromJson(e))
+              .toList() ??
+          [],
+      indicativePrices: dto.indicativePrices
+              ?.whereType<Map<String, dynamic>>()
+              .map((e) => IndicativePrice.fromJson(e))
               .toList() ??
           [],
       coupons: dto.coupons
@@ -177,14 +205,12 @@ class EventMapper {
           : null,
       eventTypeTerm:
           dto.eventType != null ? TaxonomyTerm.fromJson(dto.eventType!) : null,
-      targetAudienceTerms: dto.targetAudience
-              ?.whereType<Map<String, dynamic>>()
-              .map((e) => TaxonomyTerm.fromJson(e))
-              .toList() ??
-          [],
+      targetAudienceTerms: _resolveTargetAudienceTerms(dto),
+      allCategoryNames: _resolveAllCategoryNames(dto),
+      thematiqueName: dto.thematique?.name.isNotEmpty == true ? dto.thematique!.name : null,
 
       // RICH CONTENT MAPPING
-      locationDetails: _mapLocationDetails(dto.organizer?.practicalInfo),
+      locationDetails: _resolveLocationDetails(dto),
       coOrganizers: dto.coOrganizers
               ?.map((e) => CoOrganizer(
                     id: e.id.toString(),
@@ -198,7 +224,12 @@ class EventMapper {
       socialMedia: dto.socialMedia != null
           ? SocialMediaConfig.fromJson(dto.socialMedia!)
           : null,
-      rawCategorySlug: dto.category?.slug,
+      rawCategorySlug: resolvedCategory?.slug,
+      venueDetails: dto.venueData != null
+          ? EventVenue.fromJson(dto.venueData!)
+          : null,
+      creationSource: dto.creationSource,
+      originalOrganizerName: dto.originalOrganizerName,
     );
   }
 
@@ -247,6 +278,15 @@ class EventMapper {
   static String _resolveOrganizerIdentifier(EventOrganizerDto? organizer) {
     if (organizer == null) return '';
 
+    // Mobile v2: prefer uuid, then slug
+    if (organizer.uuid != null && organizer.uuid!.isNotEmpty) {
+      return organizer.uuid!;
+    }
+    if (organizer.slug != null && organizer.slug!.isNotEmpty) {
+      return organizer.slug!;
+    }
+
+    // Legacy: extract from profile_url path, then fall back to int id
     final profileUrl = organizer.profileUrl?.trim();
     if (profileUrl != null && profileUrl.isNotEmpty) {
       final uri = Uri.tryParse(profileUrl);
@@ -280,21 +320,187 @@ class EventMapper {
     return '${description.substring(0, maxLength)}...';
   }
 
-  static LocationDetails? _mapLocationDetails(
-      OrganizerPracticalInfoDto? practicalInfo) {
-    if (practicalInfo == null) return null;
+  /// Merges three sources of service data into LocationDetails:
+  /// 1. Root-level `services` map (new mobile format — highest priority)
+  /// 2. `venue.services` map (venue infrastructure)
+  /// 3. Legacy `organizer.practicalInfo` (old format fallback)
+  static LocationDetails? _resolveLocationDetails(EventDto dto) {
+    final practicalInfo = dto.organizer?.practicalInfo;
+
+    // Parse root-level services — API sends either:
+    //   nested: { "services": {...}, "accessibility": {...} }
+    //   flat:   { "restauration": true, "parking": true, ... }
+    Map<String, dynamic>? flatServices;
+    Map<String, dynamic>? accessibilityMap;
+    if (dto.services != null) {
+      if (dto.services!['services'] is Map) {
+        flatServices = Map<String, dynamic>.from(dto.services!['services'] as Map);
+        if (dto.services!['accessibility'] is Map) {
+          accessibilityMap = Map<String, dynamic>.from(dto.services!['accessibility'] as Map);
+        }
+      } else {
+        flatServices = dto.services;
+      }
+    }
+
+    // Venue services (from the venue object)
+    final venueServicesRaw = dto.venueData?['services'];
+    final venueServices = venueServicesRaw is Map
+        ? Map<String, dynamic>.from(venueServicesRaw as Map)
+        : null;
+
+    // Merge: event services override venue services
+    final allServices = <String, dynamic>{
+      ...?venueServices,
+      ...?flatServices,
+    };
+
+    bool _isTrue(dynamic v) => v == true || v == 1 || v == '1';
+
+    final hasParking = _isTrue(allServices['parking'])
+        || practicalInfo?.stationnement != null;
+    final hasFood = _isTrue(allServices['restauration'])
+        || practicalInfo?.restauration == true;
+    final hasDrinks = _isTrue(allServices['bar'])
+        || _isTrue(allServices['boisson'])
+        || practicalInfo?.boisson == true;
+    final hasWifi = _isTrue(allServices['wifi']);
+    final hasTransport = _isTrue(allServices['transport']);
+    final hasPmr = (accessibilityMap?.values.any(_isTrue) == true)
+        || practicalInfo?.pmr == true;
+
+    // Collect remaining services not handled by dedicated fields
+    const handledKeys = {'parking', 'restauration', 'bar', 'boisson', 'wifi', 'transport'};
+    final otherServices = allServices.entries
+        .where((e) => !handledKeys.contains(e.key) && _isTrue(e.value))
+        .map((e) => e.key)
+        .toList();
+
+    // Collect individual accessibility features
+    final accessibilityFeatures = accessibilityMap?.entries
+        .where((e) => _isTrue(e.value))
+        .map((e) => e.key)
+        .toList() ?? <String>[];
+
+    final parking = hasParking
+        ? RichInfoConfig(
+            description: practicalInfo?.stationnement ?? 'Parking disponible')
+        : null;
+    final food = hasFood
+        ? AccessibilityConfig(available: true, note: practicalInfo?.restaurationInfos)
+        : null;
+    final drinks = hasDrinks
+        ? AccessibilityConfig(available: true, note: practicalInfo?.boissonInfos)
+        : null;
+    final pmr = hasPmr
+        ? AccessibilityConfig(available: true, note: practicalInfo?.pmrInfos)
+        : null;
+    final wifi = hasWifi
+        ? const AccessibilityConfig(available: true)
+        : null;
+    final transport = hasTransport
+        ? const RichInfoConfig(description: 'Transport disponible')
+        : null;
+
+    if (parking == null && food == null && drinks == null && pmr == null
+        && wifi == null && transport == null
+        && otherServices.isEmpty && accessibilityFeatures.isEmpty) {
+      return null;
+    }
+
     return LocationDetails(
-      pmr: AccessibilityConfig(
-          available: practicalInfo.pmr, note: practicalInfo.pmrInfos),
-      food: AccessibilityConfig(
-          available: practicalInfo.restauration,
-          note: practicalInfo.restaurationInfos),
-      drinks: AccessibilityConfig(
-          available: practicalInfo.boisson, note: practicalInfo.boissonInfos),
-      parking: practicalInfo.stationnement != null
-          ? RichInfoConfig(description: practicalInfo.stationnement!)
-          : null,
-      transport: null,
+      parking: parking,
+      transport: transport,
+      pmr: pmr,
+      food: food,
+      drinks: drinks,
+      wifi: wifi,
+      otherServices: otherServices,
+      accessibilityFeatures: accessibilityFeatures,
     );
+  }
+
+  /// Collect all category names from the DTO (mobile v2 categories list, then legacy)
+  static List<String> _resolveAllCategoryNames(EventDto dto) {
+    if (dto.categories != null && dto.categories!.isNotEmpty) {
+      return dto.categories!
+          .where((c) => c.name.isNotEmpty)
+          .map((c) => c.name)
+          .toList();
+    }
+    if (dto.primaryCategory != null && dto.primaryCategory!.name.isNotEmpty) {
+      return [dto.primaryCategory!.name];
+    }
+    if (dto.category != null && dto.category!.name.isNotEmpty) {
+      return [dto.category!.name];
+    }
+    return [];
+  }
+
+  /// Resolve target audience terms from API data (prefer plural, fallback singular)
+  static List<TaxonomyTerm> _resolveTargetAudienceTerms(EventDto dto) {
+    final source = dto.targetAudiences ?? dto.targetAudience;
+    if (source == null || source.isEmpty) return [];
+    return source
+        .whereType<Map<String, dynamic>>()
+        .map((e) => TaxonomyTerm.fromJson(e))
+        .toList();
+  }
+
+  /// Derive EventAudience enum list from API target audience data
+  static List<EventAudience> _resolveTargetAudiences(EventDto dto) {
+    final terms = _resolveTargetAudienceTerms(dto);
+    if (terms.isEmpty) return const [EventAudience.all];
+
+    final audiences = terms.map((t) {
+      switch (t.slug.toLowerCase()) {
+        case 'familles':
+        case 'famille':
+        case 'families':
+          return EventAudience.family;
+        case 'enfants':
+        case 'children':
+          return EventAudience.children;
+        case 'adolescents':
+        case 'ados':
+        case 'teenagers':
+          return EventAudience.teenagers;
+        case 'adultes':
+        case 'adults':
+          return EventAudience.adults;
+        case 'seniors':
+          return EventAudience.seniors;
+        default:
+          return EventAudience.all;
+      }
+    }).toSet().toList();
+
+    return audiences.isNotEmpty ? audiences : const [EventAudience.all];
+  }
+
+  /// Parse a slot from the mobile v2 format into CalendarDateSlot
+  static CalendarDateSlot _parseSlotFromMobileFormat(Map<String, dynamic> json) {
+    return CalendarDateSlot.fromJson(<String, dynamic>{
+      'id': json['uuid']?.toString() ?? json['id']?.toString() ?? '',
+      'date': json['date']?.toString() ?? '',
+      'start_time': json['start_time'],
+      'end_time': json['end_time'],
+      'spots_remaining': json['available_capacity'] ?? json['spots_remaining'],
+      'total_capacity': json['capacity'] ?? json['total_capacity'],
+    });
+  }
+
+  /// Resolve calendar config: prefer legacy calendar map, fallback to mobile slots
+  static CalendarConfig? _resolveCalendar(
+    Map<String, dynamic>? legacyCalendarMap,
+    List<CalendarDateSlot> mobileSlots,
+  ) {
+    if (legacyCalendarMap != null) {
+      return CalendarConfig.fromJson(legacyCalendarMap);
+    }
+    if (mobileSlots.isNotEmpty) {
+      return CalendarConfig(type: 'manual', dateSlots: mobileSlots);
+    }
+    return null;
   }
 }

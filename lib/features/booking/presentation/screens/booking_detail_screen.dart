@@ -12,6 +12,7 @@ import 'package:lehiboo/features/booking/presentation/widgets/booking_hero_heade
 import 'package:lehiboo/features/booking/presentation/widgets/event_info_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_detail_summary_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/ticket_preview_card.dart';
+import 'package:lehiboo/core/utils/age_utils.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -396,6 +397,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 SizedBox(height: tokens.spacing.m),
                 // Summary card
                 BookingDetailSummaryCard.fromBooking(booking),
+                // Customer additional info (age / town)
+                if (booking.customerBirthDate != null ||
+                    booking.customerTown != null) ...[
+                  SizedBox(height: tokens.spacing.m),
+                  _buildCustomerInfoCard(booking),
+                ],
                 SizedBox(height: tokens.spacing.m),
                 // Tickets section
                 if (_tickets.isNotEmpty)
@@ -408,6 +415,26 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                     onDownloadAll: _downloadAllTickets,
                   ),
                 SizedBox(height: tokens.spacing.m),
+                // Contact organizer button
+                if (_booking != null)
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push(
+                        '/messages/new/from-booking/${_booking!.id}',
+                      ),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      label: const Text("Contacter l'organisateur"),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                SizedBox(height: tokens.spacing.xs),
                 // Cancel button (if applicable)
                 if (canCancel)
                   Container(
@@ -432,6 +459,65 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ]),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerInfoCard(Booking booking) {
+    final age = computeAge(booking.customerBirthDate);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Informations complémentaires',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: HbColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (age != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.person_outline, size: 16, color: Colors.grey.shade600),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$age ans',
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  ),
+                ],
+              ),
+            ),
+          if (booking.customerTown != null)
+            Row(
+              children: [
+                Icon(Icons.location_on_outlined, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 8),
+                Text(
+                  booking.customerTown!,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
+              ],
+            ),
         ],
       ),
     );

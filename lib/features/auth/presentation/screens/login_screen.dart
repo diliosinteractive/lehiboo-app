@@ -45,11 +45,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       password: _passwordController.text,
     );
 
-    // Navigation is handled by ref.listen or listener
-    if (result != null && result.requiresOtp && mounted) {
-       // Explicit navigation for OTP flow as it might not be fully state-driven in all cases
-       setState(() => _isLocalLoading = false);
-       context.push(
+    if (!mounted) return;
+    setState(() => _isLocalLoading = false);
+
+    if (result == null) {
+      // Login failed - error is already set in auth state and displayed via ref.listen
+      return;
+    }
+
+    if (result.requiresOtp) {
+      context.push(
         '/verify-otp',
         extra: {
           'userId': result.userId ?? '',
@@ -57,18 +62,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           'type': 'login',
         },
       );
-    } else if (mounted) {
-      setState(() {
-        _isLocalLoading = false;
-      });
+      return;
     }
+
+    // Login successful with direct auth. Defer to the next frame so any
+    // in-flight rebuild (spinner overlay dismissal, listeners, etc.) settles
+    // first, then navigate explicitly to home.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      debugPrint('🔐 Login success - go(/)');
+      context.go('/');
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    // Show loading if state is loading OR if we are authenticated (transitioning) OR local loading
-    final isLoading = authState.isLoading || authState.isAuthenticated || _isLocalLoading;
+    final isLoading = authState.isLoading || _isLocalLoading;
 
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.errorMessage != null) {

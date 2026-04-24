@@ -11,6 +11,7 @@ import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_se
 import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
+import 'package:lehiboo/features/messages/presentation/providers/unread_count_provider.dart';
 import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
 
 import '../widgets/ads_banners_section.dart';
@@ -19,6 +20,7 @@ import '../widgets/home_cities_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 
 // New components
 import '../widgets/contextual_hero.dart';
@@ -175,8 +177,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     loading: () => _buildCarouselSkeleton(),
                     error: (err, stack) => Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text('Erreur: $err',
-                          style: const TextStyle(color: Colors.red)),
+                      child: Text(
+                        ApiResponseHandler.extractError(err),
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ),
                   ),
                 ],
@@ -242,21 +246,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         opacity,
       ),
       elevation: 0,
+      centerTitle: false,
       toolbarHeight: 60,
-      title: AnimatedOpacity(
-        opacity: opacity,
-        duration: const Duration(milliseconds: 150),
-        child: Image.asset(
-          'assets/images/logo_lehiboo_blanc_x3_2.png',
-          width: 120,
-          height: 32,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => const Text(
-            'Le Hiboo',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
+      title: Image.asset(
+        'assets/images/logo_lehiboo_experience.png',
+        width: 160,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const Text(
+          'Le Hiboo',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
+      titleSpacing: 8,
       actions: [
         IconButton(
           icon: Icon(
@@ -272,6 +273,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (allowed && mounted) {
               context.push('/favorites');
             }
+          },
+        ),
+        Builder(
+          builder: (context) {
+            final unread = ref.watch(unreadCountProvider);
+            return IconButton(
+              icon: Badge(
+                isLabelVisible: unread > 0,
+                label: Text('$unread'),
+                child: const Icon(Icons.mail_outline,
+                    color: Colors.white),
+              ),
+              onPressed: () => context.push('/messages'),
+            );
           },
         ),
         IconButton(

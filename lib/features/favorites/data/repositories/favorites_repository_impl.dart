@@ -3,6 +3,7 @@ import '../../../events/domain/entities/event.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../../domain/repositories/favorites_repository.dart';
 import '../datasources/favorites_api_datasource.dart';
+import '../models/toggle_favorite_result.dart';
 
 final favoritesRepositoryImplProvider = Provider<FavoritesRepository>((ref) {
   final apiDataSource = ref.read(favoritesApiDataSourceProvider);
@@ -86,8 +87,8 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   }
 
   @override
-  Future<void> addToFavorites(String eventUuid, {String? listId}) async {
-    await _apiDataSource.addToFavorites(eventUuid, listId: listId);
+  Future<ToggleFavoriteResult> addToFavorites(String eventUuid, {String? listId}) async {
+    return await _apiDataSource.addToFavorites(eventUuid, listId: listId);
   }
 
   @override
@@ -101,7 +102,7 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   }
 
   @override
-  Future<bool> toggleFavorite(String eventUuid, {String? listId}) async {
+  Future<ToggleFavoriteResult> toggleFavorite(String eventUuid, {String? listId}) async {
     return await _apiDataSource.toggleFavorite(eventUuid, listId: listId);
   }
 

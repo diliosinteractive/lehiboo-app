@@ -2,9 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/event_dto.dart';
 import '../models/event_availability_dto.dart';
-import '../models/home_feed_response_dto.dart';
+import '../models/home_feed_response_dto.dart' show HomeFeedDataDto;
 import '../../../../domain/entities/city.dart';
 import '../models/city_with_coordinates_dto.dart';
 
@@ -209,30 +210,12 @@ class EventsApiDataSource {
   /// Fetch event by identifier (UUID or slug)
   Future<EventDto> getEvent(String identifier) async {
     final response = await _dio.get('/events/$identifier');
-    final data = response.data;
 
-    // Handle both old format { success: true, data: {...} } and new Laravel format { data: {...} }
-    Map<String, dynamic>? eventData;
-    if (data['success'] == true && data['data'] != null) {
-      eventData = data['data'];
-    } else if (data['data'] != null) {
-      eventData = data['data'];
-    }
-
-    if (eventData != null) {
-      debugPrint('getEvent: Raw data received for $identifier');
-      try {
-        return EventDto.fromJson(eventData);
-      } catch (e, stack) {
-        debugPrint('getEvent Error parsing DTO: $e');
-        debugPrint(stack.toString());
-        rethrow;
-      }
-    }
-    throw Exception(data['message'] ?? 'Failed to load event');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return EventDto.fromJson(payload);
   }
 
-  Future<HomeFeedResponseDto> getHomeFeed({
+  Future<HomeFeedDataDto> getHomeFeed({
     double? lat,
     double? lng,
     int? radius,
@@ -245,56 +228,19 @@ class EventsApiDataSource {
     if (limit != null) queryParams['limit'] = limit;
 
     final response = await _dio.get('/home-feed', queryParameters: queryParams);
-    final data = response.data;
 
-    debugPrint('=== EventsApiDataSource.getHomeFeed ===');
-    debugPrint('API Response success: ${data['success']}');
-    debugPrint('API Response has data: ${data['data'] != null}');
+    // ApiResponseHandler handles all response shapes:
+    // { success: true, data: {...} }, { data: {...} }, or raw {...}
+    final payload = ApiResponseHandler.extractObject(
+      response.data,
+      unwrapRoot: true,
+    );
 
-    // Handle both old format { success: true, data: {...} } and new Laravel format
-    Map<String, dynamic> responseData;
-
-    if (data['success'] == true && data['data'] != null) {
-      // Old format: { success: true, data: { today: [...], tomorrow: [...], recommended: [...] } }
-      debugPrint('getHomeFeed: Using old format');
-      responseData = data;
-    } else if (data is Map<String, dynamic> && data['data'] != null) {
-      // New Laravel format: { data: { today: [...], tomorrow: [...], recommended: [...] }, meta: {...} }
-      // Or direct format: { today: [...], tomorrow: [...], recommended: [...] }
-      debugPrint('getHomeFeed: Using new Laravel format');
-      final innerData = data['data'];
-      if (innerData is Map<String, dynamic>) {
-        // Wrap in expected format for HomeFeedResponseDto
-        responseData = {
-          'success': true,
-          'data': innerData,
-        };
-      } else {
-        throw Exception('Unexpected data format in home feed response');
-      }
-    } else if (data is Map<String, dynamic> &&
-               (data['today'] != null || data['tomorrow'] != null || data['recommended'] != null)) {
-      // Direct format without wrapper: { today: [...], tomorrow: [...], recommended: [...] }
-      debugPrint('getHomeFeed: Using direct format');
-      responseData = {
-        'success': true,
-        'data': data,
-      };
-    } else {
-      debugPrint('getHomeFeed: No valid format found');
-      debugPrint('Response keys: ${data.keys.toList()}');
-      throw Exception(data['message'] ?? 'Failed to load home feed');
-    }
-
-    try {
-      final result = HomeFeedResponseDto.fromJson(responseData);
-      debugPrint('getHomeFeed: Successfully parsed with today=${result.data?.today.length ?? 0}, tomorrow=${result.data?.tomorrow.length ?? 0}, recommended=${result.data?.recommended.length ?? 0}');
-      return result;
-    } catch (e, stack) {
-      debugPrint('getHomeFeed Error parsing DTO: $e');
-      debugPrint(stack.toString());
-      rethrow;
-    }
+    final result = HomeFeedDataDto.fromJson(payload);
+    debugPrint('getHomeFeed: today=${result.today.length}, '
+        'tomorrow=${result.tomorrow.length}, '
+        'recommended=${result.recommended.length}');
+    return result;
   }
 
   /// Fetch availability (slots & tickets) for an event
@@ -306,44 +252,33 @@ class EventsApiDataSource {
       '/events/$eventId/availability',
       queryParameters: queryParams.isNotEmpty ? queryParams : null,
     );
-    final data = response.data;
 
-    // L'API retourne directement { "data": [ slots... ] }
-    // On doit transformer en format attendu par le DTO
-    final rawData = data['data'];
+    // Try list format first: { "data": [ slots... ] }
+    try {
+      final rawSlots = ApiResponseHandler.extractList(response.data);
+      debugPrint('getEventAvailability: ${rawSlots.length} slots for $eventId');
 
-    if (rawData != null) {
-      debugPrint('getEventAvailability: Data received for $eventId');
-      try {
-        // Si rawData est une liste (nouveau format API), transformer
-        if (rawData is List) {
-          // Transformer les slots du format API vers le format DTO
-          final transformedSlots = rawData.map((slot) => {
-            'id': slot['id']?.toString() ?? '',
-            'date': slot['slot_date'] ?? slot['date'] ?? '',
-            'start_time': slot['start_time'],
-            'end_time': slot['end_time'],
-            'spots_total': slot['total_capacity'] ?? slot['spots_total'],
-            'spots_remaining': slot['available_count'] ?? slot['spots_remaining'],
-            'is_available': slot['is_available'] ?? true,
-          }).toList();
+      final transformedSlots = rawSlots.map((slot) => {
+        'id': slot['id']?.toString() ?? '',
+        'date': slot['slot_date'] ?? slot['date'] ?? '',
+        'start_time': slot['start_time'],
+        'end_time': slot['end_time'],
+        'spots_total': slot['total_capacity'] ?? slot['spots_total'],
+        'spots_remaining': slot['available_count'] ?? slot['spots_remaining'],
+        'is_available': slot['is_available'] ?? true,
+      }).toList();
 
-          return EventAvailabilityResponseDto.fromJson({
-            'event_id': 0, // Non fourni par l'API, utiliser default
-            'slots': transformedSlots,
-            'tickets': [], // Non fourni dans ce format
-          });
-        }
-
-        // Si rawData est un Map (ancien format), utiliser directement
-        return EventAvailabilityResponseDto.fromJson(rawData as Map<String, dynamic>);
-      } catch (e, stack) {
-        debugPrint('getEventAvailability Error parsing DTO: $e');
-        debugPrint(stack.toString());
-        rethrow;
-      }
+      return EventAvailabilityResponseDto.fromJson({
+        'event_id': 0,
+        'slots': transformedSlots,
+        'tickets': [],
+      });
+    } on ApiFormatException {
+      // Not a list — try object format: { "data": { "slots": [...] } }
     }
-    throw Exception(data['message'] ?? 'Failed to load availability');
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return EventAvailabilityResponseDto.fromJson(payload);
   }
 
   Future<List<EventCategoryDto>> getCategories({
@@ -356,63 +291,57 @@ class EventsApiDataSource {
     if (parentOnly) queryParams['parent_only'] = true;
 
     final response = await _dio.get('/categories', queryParameters: queryParams);
-    final data = response.data;
 
-    if (data['success'] == true && data['data'] != null) {
-      final categoriesJson = data['data']['categories'] as List;
-      return categoriesJson.map((c) => EventCategoryDto.fromJson(c)).toList();
-    }
-    throw Exception(data['data']?['message'] ?? 'Failed to load categories');
+    final categoriesJson = ApiResponseHandler.extractList(
+      response.data,
+      key: 'categories',
+    );
+    return categoriesJson
+        .cast<Map<String, dynamic>>()
+        .map(EventCategoryDto.fromJson)
+        .toList();
   }
 
   Future<List<ThematiqueDto>> getThematiques() async {
     final response = await _dio.get('/thematiques');
-    final data = response.data;
 
-    if (data['success'] == true && data['data'] != null) {
-      final thematiquesJson = data['data']['thematiques'] as List;
-      return thematiquesJson.map((t) => ThematiqueDto.fromJson(t)).toList();
-    }
-    throw Exception(data['data']?['message'] ?? 'Failed to load thematiques');
+    final thematiquesJson = ApiResponseHandler.extractList(
+      response.data,
+      key: 'thematiques',
+    );
+    return thematiquesJson
+        .cast<Map<String, dynamic>>()
+        .map(ThematiqueDto.fromJson)
+        .toList();
   }
 
   Future<List<City>> getCities() async {
-    try {
-      final response = await _dio.get('/cities');
-      
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        final data = response.data['data'];
-        final citiesList = data['cities'] as List<dynamic>;
-        
-        return citiesList.map((json) {
-           final dto = CityWithCoordinatesDto.fromJson(json);
-           return City(
-             id: dto.name, 
-             name: dto.name,
-             slug: dto.name.toLowerCase().replaceAll(' ', '-'),
-             lat: dto.lat,
-             lng: dto.lng,
-             region: dto.region,
-             eventCount: dto.eventCount,
-             imageUrl: dto.imageUrl,
-           );
-        }).toList();
-      } else {
-        throw Exception('Failed to load cities');
-      }
-    } catch (e) {
-      debugPrint('Error fetching cities: $e');
-      return [];
-    }
+    final response = await _dio.get('/cities');
+
+    final citiesJson = ApiResponseHandler.extractList(
+      response.data,
+      key: 'cities',
+    );
+
+    return citiesJson.cast<Map<String, dynamic>>().map((json) {
+      final dto = CityWithCoordinatesDto.fromJson(json);
+      return City(
+        id: dto.name,
+        name: dto.name,
+        slug: dto.name.toLowerCase().replaceAll(' ', '-'),
+        lat: dto.lat,
+        lng: dto.lng,
+        region: dto.region,
+        eventCount: dto.eventCount,
+        imageUrl: dto.imageUrl,
+      );
+    }).toList();
   }
 
   Future<FiltersResponseDto> getFilters() async {
     final response = await _dio.get('/filters');
-    final data = response.data;
 
-    if (data['success'] == true && data['data'] != null) {
-      return FiltersResponseDto.fromJson(data['data']);
-    }
-    throw Exception(data['data']?['message'] ?? 'Failed to load filters');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return FiltersResponseDto.fromJson(payload);
   }
 }

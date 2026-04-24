@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../messages/presentation/providers/unread_count_provider.dart';
 import '../providers/profile_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -163,10 +164,25 @@ class ProfileScreen extends ConsumerWidget {
         ),
         _buildMenuItem(
           context,
+          icon: Icons.mail_outline,
+          title: 'Mes Messages',
+          subtitle: 'Conversations avec les organisateurs',
+          badge: ref.watch(unreadCountProvider),
+          onTap: () => context.push('/messages'),
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.route,
           title: 'Mes Sorties',
           subtitle: 'Plans et itinéraires',
           onTap: () => context.push('/trip-plans'),
+        ),
+        _buildMenuItem(
+          context,
+          icon: Icons.notifications_active_outlined,
+          title: 'Mes Rappels',
+          subtitle: 'Rappels d\'activités à venir',
+          onTap: () => context.push('/my-reminders'),
         ),
         _buildMenuItem(
           context,
@@ -475,6 +491,7 @@ class ProfileScreen extends ConsumerWidget {
     required IconData icon,
     required String title,
     String? subtitle,
+    int? badge,
     required VoidCallback onTap,
   }) {
     return Card(
@@ -507,7 +524,29 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               )
             : null,
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (badge != null && badge > 0)
+              Container(
+                margin: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: HbColors.brandPrimary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$badge',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       ),

@@ -113,6 +113,23 @@ class PetitBooToast extends StatefulWidget {
     );
   }
 
+  /// Toast récompense hibons gagnée (pièce dorée).
+  ///
+  /// À afficher après une action gratifiante (ex: ajout en favori). Cette
+  /// méthode ne sait pas combien le backend a crédité — c'est à l'appelant
+  /// de ne l'invoquer que quand `hibonsAwarded > 0` et d'y passer le montant.
+  static void hibonsEarned(BuildContext context, {required int amount}) {
+    show(
+      context,
+      // TODO(i18n): remplacer par `l10n.favorites_hibonsEarned(amount)` quand
+      // un framework i18n sera en place dans l'app (fr/en/es/de/nl/ar).
+      message: '+$amount hibons 🪙 gagnés !',
+      icon: Icons.monetization_on,
+      color: const Color(0xFFFFB300), // or doré
+      duration: const Duration(seconds: 3),
+    );
+  }
+
   @override
   State<PetitBooToast> createState() => _PetitBooToastState();
 }

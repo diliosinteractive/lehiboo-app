@@ -2114,6 +2114,10 @@ mixin _$BookingListItemDto {
   String? get customerFirstName => throw _privateConstructorUsedError;
   @JsonKey(name: 'customer_last_name')
   String? get customerLastName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'customer_birth_date')
+  String? get customerBirthDate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'customer_town')
+  String? get customerTown => throw _privateConstructorUsedError;
   @JsonKey(name: 'can_cancel')
   bool? get canCancel => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
@@ -2153,6 +2157,8 @@ abstract class $BookingListItemDtoCopyWith<$Res> {
       @JsonKey(name: 'customer_email') String? customerEmail,
       @JsonKey(name: 'customer_first_name') String? customerFirstName,
       @JsonKey(name: 'customer_last_name') String? customerLastName,
+      @JsonKey(name: 'customer_birth_date') String? customerBirthDate,
+      @JsonKey(name: 'customer_town') String? customerTown,
       @JsonKey(name: 'can_cancel') bool? canCancel,
       @JsonKey(name: 'created_at') String? createdAt,
       String? createdAt2,
@@ -2193,6 +2199,8 @@ class _$BookingListItemDtoCopyWithImpl<$Res, $Val extends BookingListItemDto>
     Object? customerEmail = freezed,
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
+    Object? customerBirthDate = freezed,
+    Object? customerTown = freezed,
     Object? canCancel = freezed,
     Object? createdAt = freezed,
     Object? createdAt2 = freezed,
@@ -2268,6 +2276,14 @@ class _$BookingListItemDtoCopyWithImpl<$Res, $Val extends BookingListItemDto>
           ? _value.customerLastName
           : customerLastName // ignore: cast_nullable_to_non_nullable
               as String?,
+      customerBirthDate: freezed == customerBirthDate
+          ? _value.customerBirthDate
+          : customerBirthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerTown: freezed == customerTown
+          ? _value.customerTown
+          : customerTown // ignore: cast_nullable_to_non_nullable
+              as String?,
       canCancel: freezed == canCancel
           ? _value.canCancel
           : canCancel // ignore: cast_nullable_to_non_nullable
@@ -2342,6 +2358,8 @@ abstract class _$$BookingListItemDtoImplCopyWith<$Res>
       @JsonKey(name: 'customer_email') String? customerEmail,
       @JsonKey(name: 'customer_first_name') String? customerFirstName,
       @JsonKey(name: 'customer_last_name') String? customerLastName,
+      @JsonKey(name: 'customer_birth_date') String? customerBirthDate,
+      @JsonKey(name: 'customer_town') String? customerTown,
       @JsonKey(name: 'can_cancel') bool? canCancel,
       @JsonKey(name: 'created_at') String? createdAt,
       String? createdAt2,
@@ -2382,6 +2400,8 @@ class __$$BookingListItemDtoImplCopyWithImpl<$Res>
     Object? customerEmail = freezed,
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
+    Object? customerBirthDate = freezed,
+    Object? customerTown = freezed,
     Object? canCancel = freezed,
     Object? createdAt = freezed,
     Object? createdAt2 = freezed,
@@ -2457,6 +2477,14 @@ class __$$BookingListItemDtoImplCopyWithImpl<$Res>
           ? _value.customerLastName
           : customerLastName // ignore: cast_nullable_to_non_nullable
               as String?,
+      customerBirthDate: freezed == customerBirthDate
+          ? _value.customerBirthDate
+          : customerBirthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerTown: freezed == customerTown
+          ? _value.customerTown
+          : customerTown // ignore: cast_nullable_to_non_nullable
+              as String?,
       canCancel: freezed == canCancel
           ? _value.canCancel
           : canCancel // ignore: cast_nullable_to_non_nullable
@@ -2502,6 +2530,8 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
       @JsonKey(name: 'customer_email') this.customerEmail,
       @JsonKey(name: 'customer_first_name') this.customerFirstName,
       @JsonKey(name: 'customer_last_name') this.customerLastName,
+      @JsonKey(name: 'customer_birth_date') this.customerBirthDate,
+      @JsonKey(name: 'customer_town') this.customerTown,
       @JsonKey(name: 'can_cancel') this.canCancel,
       @JsonKey(name: 'created_at') this.createdAt,
       this.createdAt2,
@@ -2553,6 +2583,12 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
   @JsonKey(name: 'customer_last_name')
   final String? customerLastName;
   @override
+  @JsonKey(name: 'customer_birth_date')
+  final String? customerBirthDate;
+  @override
+  @JsonKey(name: 'customer_town')
+  final String? customerTown;
+  @override
   @JsonKey(name: 'can_cancel')
   final bool? canCancel;
   @override
@@ -2568,7 +2604,7 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
 
   @override
   String toString() {
-    return 'BookingListItemDto(id: $id, uuid: $uuid, reference: $reference, status: $status, eventId: $eventId, slotId: $slotId, userId: $userId, eventTitle: $eventTitle, eventSlug: $eventSlug, eventImage: $eventImage, slotDate: $slotDate, grandTotal: $grandTotal, totalAmount: $totalAmount, ticketCount: $ticketCount, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, canCancel: $canCancel, createdAt: $createdAt, createdAt2: $createdAt2, event: $event, slot: $slot)';
+    return 'BookingListItemDto(id: $id, uuid: $uuid, reference: $reference, status: $status, eventId: $eventId, slotId: $slotId, userId: $userId, eventTitle: $eventTitle, eventSlug: $eventSlug, eventImage: $eventImage, slotDate: $slotDate, grandTotal: $grandTotal, totalAmount: $totalAmount, ticketCount: $ticketCount, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerBirthDate: $customerBirthDate, customerTown: $customerTown, canCancel: $canCancel, createdAt: $createdAt, createdAt2: $createdAt2, event: $event, slot: $slot)';
   }
 
   @override
@@ -2604,6 +2640,10 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
                 other.customerFirstName == customerFirstName) &&
             (identical(other.customerLastName, customerLastName) ||
                 other.customerLastName == customerLastName) &&
+            (identical(other.customerBirthDate, customerBirthDate) ||
+                other.customerBirthDate == customerBirthDate) &&
+            (identical(other.customerTown, customerTown) ||
+                other.customerTown == customerTown) &&
             (identical(other.canCancel, canCancel) ||
                 other.canCancel == canCancel) &&
             (identical(other.createdAt, createdAt) ||
@@ -2635,6 +2675,8 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
         customerEmail,
         customerFirstName,
         customerLastName,
+        customerBirthDate,
+        customerTown,
         canCancel,
         createdAt,
         createdAt2,
@@ -2676,6 +2718,8 @@ abstract class _BookingListItemDto implements BookingListItemDto {
       @JsonKey(name: 'customer_email') final String? customerEmail,
       @JsonKey(name: 'customer_first_name') final String? customerFirstName,
       @JsonKey(name: 'customer_last_name') final String? customerLastName,
+      @JsonKey(name: 'customer_birth_date') final String? customerBirthDate,
+      @JsonKey(name: 'customer_town') final String? customerTown,
       @JsonKey(name: 'can_cancel') final bool? canCancel,
       @JsonKey(name: 'created_at') final String? createdAt,
       final String? createdAt2,
@@ -2725,6 +2769,12 @@ abstract class _BookingListItemDto implements BookingListItemDto {
   @override
   @JsonKey(name: 'customer_last_name')
   String? get customerLastName;
+  @override
+  @JsonKey(name: 'customer_birth_date')
+  String? get customerBirthDate;
+  @override
+  @JsonKey(name: 'customer_town')
+  String? get customerTown;
   @override
   @JsonKey(name: 'can_cancel')
   bool? get canCancel;

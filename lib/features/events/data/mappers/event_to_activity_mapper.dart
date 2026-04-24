@@ -94,6 +94,8 @@ class EventToActivityMapper {
         website: event.website,
       ),
       nextSlot: nextSlot,
+      rating: event.rating,
+      reviewsCount: event.reviewsCount,
     );
   }
 

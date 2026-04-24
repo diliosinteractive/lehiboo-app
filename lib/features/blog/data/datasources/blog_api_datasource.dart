@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/blog_post_dto.dart';
 
 final blogApiDataSourceProvider = Provider<BlogApiDataSource>((ref) {
@@ -29,42 +29,19 @@ class BlogApiDataSource {
       queryParams['category'] = category;
     }
 
-    debugPrint('=== BlogApiDataSource.getPosts ===');
-    debugPrint('Query params: $queryParams');
-
     final response = await _dio.get('/posts', queryParameters: queryParams);
-    final data = response.data;
-
-    debugPrint('API Response success: ${data['success']}');
-
-    if (data['success'] == true && data['data'] != null) {
-      final postsData = data['data'];
-      debugPrint('Posts count in response: ${(postsData['posts'] as List?)?.length ?? 0}');
-
-      try {
-        final result = BlogPostsResponseDto.fromJson(data['data']);
-        debugPrint('Successfully parsed BlogPostsResponseDto with ${result.posts.length} posts');
-        return result;
-      } catch (parseError, parseStack) {
-        debugPrint('Error parsing BlogPostsResponseDto: $parseError');
-        debugPrint('Parse stack: $parseStack');
-        rethrow;
-      }
-    }
-    throw Exception(data['error']?['message'] ?? 'Failed to load posts');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return BlogPostsResponseDto.fromJson(payload);
   }
 
   /// Get single blog post by ID
   Future<BlogPostDto> getPostById(int id) async {
-    debugPrint('=== BlogApiDataSource.getPostById ===');
-    debugPrint('Post ID: $id');
-
     final response = await _dio.get('/posts/$id');
-    final data = response.data;
-
-    if (data['success'] == true && data['data'] != null) {
-      return BlogPostDto.fromJson(data['data']['post']);
+    final payload = ApiResponseHandler.extractObject(response.data);
+    final postData = payload['post'];
+    if (postData is Map<String, dynamic>) {
+      return BlogPostDto.fromJson(postData);
     }
-    throw Exception(data['error']?['message'] ?? 'Post not found');
+    return BlogPostDto.fromJson(payload);
   }
 }

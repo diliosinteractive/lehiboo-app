@@ -25,6 +25,7 @@ import '../features/auth/presentation/screens/customer_register_screen.dart';
 import '../features/auth/presentation/screens/business_register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/otp_verification_screen.dart';
+import '../features/reminders/presentation/screens/reminders_list_screen.dart';
 import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
 import '../features/booking/presentation/screens/booking_participant_screen.dart';
 import '../features/booking/presentation/screens/booking_payment_screen.dart';
@@ -51,17 +52,51 @@ import '../features/petit_boo/presentation/screens/petit_boo_brain_screen.dart';
 import '../features/petit_boo/presentation/screens/conversation_list_screen.dart';
 import '../features/trip_plans/presentation/screens/trip_plans_list_screen.dart';
 import '../features/trip_plans/presentation/screens/trip_plan_edit_screen.dart';
+import '../features/messages/presentation/screens/conversations_list_screen.dart';
+import '../features/messages/presentation/screens/conversation_detail_screen.dart';
+import '../features/messages/presentation/screens/new_conversation_screen.dart';
+import '../features/messages/presentation/screens/support_detail_screen.dart';
+/// ChangeNotifier that drives GoRouter.refreshListenable so redirect logic
+/// re-runs on auth state changes WITHOUT rebuilding the GoRouter instance
+/// (which would reset the navigation stack).
+class _AuthRouterRefresh extends ChangeNotifier {
+  _AuthRouterRefresh(Ref ref) {
+    _sub = ref.listen<AuthState>(
+      authProvider,
+      (previous, next) {
+        // Only refresh when meaningful routing state changes. Ignore pure
+        // errorMessage toggles — those must not reset the navigation stack.
+        if (previous?.status != next.status) {
+          debugPrint('🔀 AuthRouterRefresh: ${previous?.status} → ${next.status}');
+          notifyListeners();
+        }
+      },
+      fireImmediately: false,
+    );
+  }
+
+  late final ProviderSubscription<AuthState> _sub;
+
+  @override
+  void dispose() {
+    _sub.close();
+    super.dispose();
+  }
+}
+
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-  final prefs = ref.watch(sharedPreferencesProvider);
+  final prefs = ref.read(sharedPreferencesProvider);
+  final refresh = _AuthRouterRefresh(ref);
+  ref.onDispose(refresh.dispose);
 
   return GoRouter(
     initialLocation: '/bootstrap',
+    refreshListenable: refresh,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final onboardingCompleted =
           prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
-      final isAuthenticated = authState.isAuthenticated;
       final isPendingOtp = authState.status == AuthStatus.pendingVerification ||
           authState.status == AuthStatus.pendingLoginOtp;
 
@@ -122,11 +157,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-otp'; // Force redirect to OTP screen for non-auth routes
       }
 
-      // 4. If authenticated and on auth route, redirect to home
-      if (isAuthenticated && isAuthRoute) {
-        debugPrint('🔀 Redirecting to / (authenticated)');
-        return '/';
-      }
+      // NOTE: no auto-redirect for "authenticated on auth route". Screens that
+      // perform auth (login, register, verify-otp, ...) navigate explicitly on
+      // success — an auto-redirect here would race with those calls and clear
+      // the navigation stack (losing e.g. the EventDetail a guest guard was
+      // invoked from).
 
       debugPrint('🔀 No redirect');
       return null;
@@ -178,7 +213,54 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'my-bookings',
             builder: (context, state) => const BookingsListScreen(),
           ),
+          GoRoute(
+            path: '/messages',
+            name: 'messages',
+            builder: (_, __) => const ConversationsListScreen(),
+          ),
         ],
+      ),
+
+      // Messages detail routes — outside ShellRoute so navbar is hidden
+      GoRoute(
+        path: '/messages/new',
+        name: 'messages-new',
+        builder: (_, __) => const NewConversationScreen(),
+      ),
+      GoRoute(
+        path: '/messages/new/from-booking/:bookingUuid',
+        name: 'messages-from-booking',
+        builder: (_, state) => NewConversationScreen(
+          fromBookingUuid: state.pathParameters['bookingUuid']!,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/new/from-organizer/:organizationUuid',
+        name: 'messages-from-organizer',
+        builder: (_, state) => NewConversationScreen(
+          fromOrganizationUuid: state.pathParameters['organizationUuid']!,
+          fromOrganizationName: state.uri.queryParameters['name'],
+        ),
+      ),
+      GoRoute(
+        path: '/messages/support/new',
+        name: 'messages-support-new',
+        builder: (_, __) => const SupportDetailScreen(isNew: true),
+      ),
+      GoRoute(
+        path: '/messages/support/:conversationUuid',
+        name: 'messages-support-detail',
+        builder: (_, state) => SupportDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+        ),
+      ),
+      // IMPORTANT: static sub-paths (new, support) must be declared before this wildcard
+      GoRoute(
+        path: '/messages/:conversationUuid',
+        name: 'messages-detail',
+        builder: (_, state) => ConversationDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+        ),
       ),
 
       // Auth routes
@@ -222,6 +304,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           // Get from extra if available, otherwise from authState (for redirect case)
+          final authState = ref.read(authProvider);
           final userId = extra?['userId'] ?? authState.pendingUserId ?? '';
           final email = extra?['email'] ?? authState.pendingEmail ?? '';
           final type = extra?['type'] ??

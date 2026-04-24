@@ -118,11 +118,10 @@ class _EventTicketCardState extends State<EventTicketCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Première ligne: Nom + Prix
+                  // Row 1: Icon + Name + Price
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Icône flat (gris neutre, orange si sélectionné)
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.all(8),
@@ -139,31 +138,40 @@ class _EventTicketCardState extends State<EventTicketCard> {
                         ),
                       ),
                       const SizedBox(width: 12),
-
-                      // Nom et description
                       Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.ticket.name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: HbColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            _buildPrice(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Row 2: Description + Quantity selector
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Description + stock badge
+                      Expanded(
+                        flex: 3,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    widget.ticket.name,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: HbColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                // Prix
-                                _buildPrice(),
-                              ],
-                            ),
                             if (widget.ticket.description != null &&
-                                widget.ticket.description!.isNotEmpty) ...[
-                              const SizedBox(height: 4),
+                                widget.ticket.description!.isNotEmpty)
                               Text(
                                 widget.ticket.description!,
                                 style: TextStyle(
@@ -175,24 +183,17 @@ class _EventTicketCardState extends State<EventTicketCard> {
                                 overflow:
                                     widget.isExpanded ? null : TextOverflow.ellipsis,
                               ),
-                            ],
+                            const SizedBox(height: 6),
+                            _buildStockBadge(),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Deuxième ligne: Stock + Sélecteur quantité
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Badge stock
-                      _buildStockBadge(),
-
-                      // Sélecteur quantité
-                      _buildQuantitySelector(),
+                      const SizedBox(width: 12),
+                      // Quantity selector
+                      Flexible(
+                        flex: 2,
+                        child: _buildQuantitySelector(),
+                      ),
                     ],
                   ),
                 ],

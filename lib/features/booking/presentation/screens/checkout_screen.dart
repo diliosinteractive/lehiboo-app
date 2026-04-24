@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/domain/models/checkout_params.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/core/utils/age_utils.dart';
 
 /// Écran de checkout unifié
 /// Combine: Récapitulatif + Formulaire acheteur + Paiement Stripe
@@ -31,6 +33,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _townController = TextEditingController();
+
+  // Birth date backing value for API (computed from age)
+  String? _customerBirthDate;
 
   // État
   bool _isLoading = false;
@@ -53,6 +60,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _ageController.dispose();
+    _townController.dispose();
     super.dispose();
   }
 
@@ -83,6 +92,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _lastNameController.text = lastName;
       _emailController.text = user.email;
       _phoneController.text = user.phone ?? '';
+
+      // Birth date -> age
+      if (user.birthDate != null) {
+        final birthDateStr =
+            user.birthDate!.toIso8601String().substring(0, 10);
+        _customerBirthDate = birthDateStr;
+        final age = computeAge(birthDateStr);
+        if (age != null) {
+          _ageController.text = age.toString();
+        }
+      }
+      // Town
+      if (user.membershipCity != null && user.membershipCity!.isNotEmpty) {
+        _townController.text = user.membershipCity!;
+      }
     }
   }
 
@@ -403,6 +427,48 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               decoration: _inputDecoration('Téléphone'),
               keyboardType: TextInputType.phone,
             ),
+
+            const SizedBox(height: 24),
+
+            // Informations complémentaires (optionnel)
+            Text(
+              'Informations complémentaires (optionnel)',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Age
+            TextFormField(
+              controller: _ageController,
+              decoration: _inputDecoration('Age'),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                final age = int.tryParse(value);
+                if (age != null && age >= 1 && age < 150) {
+                  _customerBirthDate = ageToBirthDate(age);
+                } else if (value.isEmpty) {
+                  _customerBirthDate = null;
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Ville
+            TextFormField(
+              controller: _townController,
+              decoration: _inputDecoration('Ville'),
+              textCapitalization: TextCapitalization.words,
+              validator: (value) {
+                if (value != null && value.length > 255) {
+                  return 'La ville ne doit pas dépasser 255 caractères';
+                }
+                return null;
+              },
+            ),
           ],
         ),
       ),
@@ -621,6 +687,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         customerFirstName: _firstNameController.text.trim(),
         customerLastName: _lastNameController.text.trim(),
         customerPhone: _phoneController.text.trim(),
+        customerBirthDate: _customerBirthDate,
+        customerTown: _townController.text.trim().isNotEmpty
+            ? _townController.text.trim()
+            : null,
       );
 
       _bookingResponse = bookingResponse;
@@ -682,22 +752,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = _parseError(e);
+        _errorMessage = ApiResponseHandler.extractError(e);
       });
     }
-  }
-
-  String _parseError(dynamic error) {
-    if (error.toString().contains('SocketException')) {
-      return 'Erreur de connexion. Vérifiez votre connexion internet.';
-    }
-    if (error.toString().contains('timeout')) {
-      return 'Le serveur met trop de temps à répondre. Réessayez.';
-    }
-    if (error.toString().contains('401')) {
-      return 'Session expirée. Veuillez vous reconnecter.';
-    }
-    return error.toString().replaceAll('Exception: ', '');
   }
 
   String _formatPrice(double price) {
