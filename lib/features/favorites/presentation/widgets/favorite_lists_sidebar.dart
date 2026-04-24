@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/themes/colors.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
 import 'create_list_dialog.dart';
@@ -41,7 +42,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.folder_special, color: Color(0xFFFF601F)),
+                const Icon(Icons.folder_special, color: HbColors.brandPrimary),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
@@ -57,8 +58,8 @@ class FavoriteListsSidebar extends ConsumerWidget {
                   onPressed: () => CreateListDialog.show(context),
                   tooltip: 'Nouvelle liste',
                   style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF601F).withValues(alpha: 0.1),
-                    foregroundColor: const Color(0xFFFF601F),
+                    backgroundColor: HbColors.brandPrimary.withValues(alpha: 0.1),
+                    foregroundColor: HbColors.brandPrimary,
                   ),
                 ),
               ],
@@ -70,7 +71,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
             child: listsAsync.when(
               data: (lists) => _buildListView(context, ref, lists, selectedListId),
               loading: () => const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                child: CircularProgressIndicator(color: HbColors.brandPrimary),
               ),
               error: (error, _) => Center(
                 child: Column(
@@ -111,7 +112,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
         // Tous les favoris
         _SidebarListItem(
           icon: Icons.favorite,
-          iconColor: const Color(0xFFFF601F),
+          iconColor: HbColors.brandPrimary,
           title: 'Tous les favoris',
           count: totalCount,
           isSelected: selectedListId == null,
@@ -180,7 +181,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
             icon: const Icon(Icons.add, size: 20),
             label: const Text('Nouvelle liste'),
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFFF601F),
+              foregroundColor: HbColors.brandPrimary,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -376,7 +377,7 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
               _FolderChip(
                 label: 'Tous',
                 icon: Icons.favorite,
-                color: const Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
                 count: totalCount,
                 isSelected: selectedListId == null,
                 onTap: () {
@@ -640,7 +641,7 @@ class _AddFolderButton extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: const Color(0xFFFF601F).withValues(alpha: 0.3),
+            color: HbColors.brandPrimary.withValues(alpha: 0.3),
             width: 1.5,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
@@ -652,13 +653,13 @@ class _AddFolderButton extends StatelessWidget {
               width: 22,
               height: 22,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF601F).withValues(alpha: 0.1),
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: const Icon(
                 Icons.add,
                 size: 16,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
             const SizedBox(width: 8),
@@ -667,7 +668,7 @@ class _AddFolderButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFFFF601F),
+                color: HbColors.brandPrimary,
               ),
             ),
           ],

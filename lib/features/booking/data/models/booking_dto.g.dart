@@ -34,6 +34,8 @@ _$BookingDtoImpl _$$BookingDtoImplFromJson(Map<String, dynamic> json) =>
       customerFirstName: json['customer_first_name'] as String?,
       customerLastName: json['customer_last_name'] as String?,
       customerPhone: json['customer_phone'] as String?,
+      customerBirthDate: json['customer_birth_date'] as String?,
+      customerTown: json['customer_town'] as String?,
       reference: json['reference'] as String?,
     );
 
@@ -57,6 +59,8 @@ Map<String, dynamic> _$$BookingDtoImplToJson(_$BookingDtoImpl instance) =>
       'customer_first_name': instance.customerFirstName,
       'customer_last_name': instance.customerLastName,
       'customer_phone': instance.customerPhone,
+      'customer_birth_date': instance.customerBirthDate,
+      'customer_town': instance.customerTown,
       'reference': instance.reference,
     };
 

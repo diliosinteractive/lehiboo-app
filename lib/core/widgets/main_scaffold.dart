@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/petit_boo/presentation/providers/engagement_provider.dart';
+import '../utils/guest_guard.dart';
 import 'voice_fab/voice_fab.dart';
 
 class MainScaffold extends ConsumerStatefulWidget {
@@ -46,7 +47,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       context.push('/map');
       return;
     }
-    
+
+    if (index == 3) {
+      _navigateToBookings();
+      return;
+    }
+
     // Track navigation
     ref.read(petitBooEngagementProvider.notifier).onNavigation();
 
@@ -61,9 +67,26 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       case 1:
         context.go('/explore');
         break;
-      case 3:
-        context.go('/my-bookings');
-        break;
+    }
+  }
+
+  Future<void> _navigateToBookings() async {
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'mes réservations',
+    );
+    if (!allowed) return;
+
+    // Track navigation
+    ref.read(petitBooEngagementProvider.notifier).onNavigation();
+
+    setState(() {
+      _selectedIndex = 3;
+    });
+
+    if (mounted) {
+      context.go('/my-bookings');
     }
   }
 

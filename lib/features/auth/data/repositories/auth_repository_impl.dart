@@ -127,6 +127,12 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> clearLocalAuthData() async {
+    await _secureStorage.clearAuthData();
+    _cachedUser = null;
+  }
+
+  @override
   Future<void> forgotPassword(String email) async {
     await _apiDataSource.forgotPassword(email);
   }
@@ -179,6 +185,8 @@ class AuthRepositoryImpl implements AuthRepository {
     final name = await _secureStorage.getUserDisplayName();
     final firstName = await _secureStorage.getUserFirstName();
     final lastName = await _secureStorage.getUserLastName();
+    final birthDateStr = await _secureStorage.getUserBirthDate();
+    final membershipCity = await _secureStorage.getUserMembershipCity();
 
     if (userId != null) {
       _cachedUser = HbUser(
@@ -188,6 +196,8 @@ class AuthRepositoryImpl implements AuthRepository {
         firstName: firstName,
         lastName: lastName,
         role: _parseRole(role),
+        birthDate: birthDateStr != null ? DateTime.tryParse(birthDateStr) : null,
+        membershipCity: membershipCity,
       );
       return _cachedUser;
     }
@@ -212,6 +222,8 @@ class AuthRepositoryImpl implements AuthRepository {
     await _secureStorage.saveUserDisplayName(user.displayName ?? '');
     if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
     if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
+    if (user.birthDate != null) await _secureStorage.saveUserBirthDate(user.birthDate!.toIso8601String().substring(0, 10));
+    if (user.membershipCity != null) await _secureStorage.saveUserMembershipCity(user.membershipCity!);
 
     _cachedUser = user;
 
@@ -248,6 +260,8 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     required String passwordConfirmation,
     String? phone,
+    String? birthDate,
+    String? membershipCity,
     required bool acceptTerms,
   }) async {
     final response = await _apiDataSource.registerCustomer(
@@ -258,6 +272,8 @@ class AuthRepositoryImpl implements AuthRepository {
       password: password,
       passwordConfirmation: passwordConfirmation,
       phone: phone,
+      birthDate: birthDate,
+      membershipCity: membershipCity,
       acceptTerms: acceptTerms,
     );
 
@@ -278,6 +294,8 @@ class AuthRepositoryImpl implements AuthRepository {
       await _secureStorage.saveUserDisplayName(user.displayName ?? '');
       if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
       if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
+      if (user.birthDate != null) await _secureStorage.saveUserBirthDate(user.birthDate!.toIso8601String().substring(0, 10));
+      if (user.membershipCity != null) await _secureStorage.saveUserMembershipCity(user.membershipCity!);
 
       _cachedUser = user;
 

@@ -20,6 +20,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _membershipCityController = TextEditingController();
+  DateTime? _birthDate;
 
   bool _isLoading = false;
   bool _isUploadingAvatar = false;
@@ -53,6 +55,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       _firstNameController.text = firstName;
       _lastNameController.text = lastName;
       _phoneController.text = user.phone ?? '';
+      _membershipCityController.text = user.membershipCity ?? '';
+      _birthDate = user.birthDate;
     }
   }
 
@@ -61,6 +65,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
+    _membershipCityController.dispose();
     super.dispose();
   }
 
@@ -178,6 +183,65 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       label: 'Téléphone',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 16),
+                    // Birth date
+                    GestureDetector(
+                      onTap: () async {
+                        final maxDate = DateTime.now().subtract(const Duration(days: 15 * 365));
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _birthDate ?? maxDate,
+                          firstDate: DateTime(1920),
+                          lastDate: maxDate,
+                          helpText: 'Date de naissance',
+                          // locale: const Locale('fr'),
+                        );
+                        if (picked != null) {
+                          setState(() => _birthDate = picked);
+                        }
+                      },
+                      child: AbsorbPointer(
+                        child: TextFormField(
+                          controller: TextEditingController(
+                            text: _birthDate != null
+                                ? '${_birthDate!.day.toString().padLeft(2, '0')}/${_birthDate!.month.toString().padLeft(2, '0')}/${_birthDate!.year}'
+                                : '',
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'Date de naissance',
+                            hintText: 'Non renseigné',
+                            prefixIcon: const Icon(Icons.cake_outlined, color: HbColors.brandPrimary),
+                            suffixIcon: _birthDate != null
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 20),
+                                    onPressed: () => setState(() => _birthDate = null),
+                                  )
+                                : null,
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade200),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Membership city
+                    _buildTextField(
+                      controller: _membershipCityController,
+                      label: 'Ville',
+                      icon: Icons.location_city_outlined,
                     ),
                     const SizedBox(height: 16),
                     // Email (read-only)
@@ -437,10 +501,19 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     try {
       final profileDataSource = ref.read(profileApiDataSourceProvider);
+      final user = ref.read(authProvider).user;
       final updatedUser = await profileDataSource.updateProfile(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+        birthDate: _birthDate != null
+            ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
+            : null,
+        clearBirthDate: _birthDate == null && user?.birthDate != null,
+        membershipCity: _membershipCityController.text.trim().isNotEmpty
+            ? _membershipCityController.text.trim()
+            : null,
+        clearMembershipCity: _membershipCityController.text.trim().isEmpty && (user?.membershipCity ?? '').isNotEmpty,
       );
 
       // Update auth state with new user data

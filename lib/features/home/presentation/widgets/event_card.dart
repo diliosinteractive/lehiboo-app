@@ -29,16 +29,16 @@ class EventCard extends ConsumerWidget {
     this.imageHeight,
   });
 
-  String _formatDuration(int minutes) {
-    if (minutes < 60) {
-      return '${minutes}min';
-    }
-    final hours = minutes ~/ 60;
-    final remainingMinutes = minutes % 60;
-    if (remainingMinutes == 0) {
-      return '${hours}h';
-    }
-    return '${hours}h${remainingMinutes.toString().padLeft(2, '0')}';
+  String _formatSlotDateTime(DateTime dt) {
+    const days = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+    const months = [
+      'jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin',
+      'juil.', 'août', 'sep.', 'oct.', 'nov.', 'déc.',
+    ];
+    final dayName = days[dt.weekday - 1];
+    final monthName = months[dt.month - 1];
+    final time = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return '$dayName ${dt.day} $monthName à $time';
   }
 
   @override
@@ -61,7 +61,7 @@ class EventCard extends ConsumerWidget {
                   ),
                   // Contenu complet, Expanded pour éviter overflow
                   Expanded(
-                    child: _buildContentSection(compact: false),
+                    child: _buildContentSection(compact: false, ctx: context),
                   ),
                 ],
               )
@@ -70,7 +70,7 @@ class EventCard extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildImageStack(),
-                  _buildContentSection(compact: false),
+                  _buildContentSection(compact: false, ctx: context),
                 ],
               ),
       ),
@@ -186,7 +186,7 @@ class EventCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildContentSection({required bool compact}) {
+  Widget _buildContentSection({required bool compact, BuildContext? ctx}) {
     return Padding(
       padding: EdgeInsets.only(
         top: compact ? 8 : 12,
@@ -198,17 +198,45 @@ class EventCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Title
-          Text(
-            activity.title,
-            style: TextStyle(
-              fontSize: compact ? 13 : 15,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF1A1A1A),
-              height: 1.2,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          // Title + Category chip
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  activity.title,
+                  style: TextStyle(
+                    fontSize: compact ? 13 : 15,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1A1A1A),
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (activity.category != null) ...[
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: ctx != null ? () => ctx.push('/search?categorySlug=${activity.category!.slug}') : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _getCategoryColor(activity.category!.slug).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      activity.category!.name,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: _getCategoryColor(activity.category!.slug),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
 
           if (!compact) ...[
@@ -230,65 +258,60 @@ class EventCard extends ConsumerWidget {
                 ),
               ),
 
-            // Rating
-            Row(
-              children: [
-                const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF601F)),
-                const SizedBox(width: 4),
-                Text(
-                  '4.8',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[900],
-                    height: 1.1,
-                  ),
-                ),
-                Text(
-                  ' (124)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-
-            // Location + Duration
-            Row(
-              children: [
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: activity.city?.name ?? activity.city?.region ?? 'France',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 13,
-                            height: 1.1,
-                          ),
-                        ),
-                        if (activity.durationMinutes != null && activity.durationMinutes! > 0) ...[
-                          const TextSpan(text: ' • '),
-                          TextSpan(
-                            text: _formatDuration(activity.durationMinutes!),
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 13,
-                              height: 1.1,
-                            ),
-                          ),
-                        ],
-                      ],
+            // Rating (only if real data exists)
+            if (activity.rating != null && activity.rating! > 0 && activity.reviewsCount != null && activity.reviewsCount! > 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF601F)),
+                    const SizedBox(width: 4),
+                    Text(
+                      activity.rating!.toStringAsFixed(1),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[900],
+                        height: 1.1,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    Text(
+                      ' (${activity.reviewsCount})',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
+
+            // Location + Date/Time
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: activity.city?.name ?? activity.city?.region ?? 'France',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 13,
+                      height: 1.1,
+                    ),
+                  ),
+                  if (activity.nextSlot != null) ...[
+                    const TextSpan(text: ' • '),
+                    TextSpan(
+                      text: _formatSlotDateTime(activity.nextSlot!.startDateTime),
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 13,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
             const SizedBox(height: 4),
           ] else ...[
@@ -313,19 +336,35 @@ class EventCard extends ConsumerWidget {
 
           // Price
           if (activity.priceMin != null && activity.priceMin != -1)
-            Text(
-              activity.priceMin == 0
-                  ? 'Gratuit'
-                  : compact
-                      ? 'Dès ${activity.priceMin!.toStringAsFixed(0)}€'
-                      : 'À partir de ${activity.priceMin!.toStringAsFixed(0)}€',
-              style: TextStyle(
-                color: activity.priceMin == 0 ? Colors.green[700] : const Color(0xFFFF601F),
-                fontWeight: FontWeight.w600,
-                fontSize: compact ? 12 : 14,
-                height: 1.1,
-              ),
-            ),
+            Builder(builder: (context) {
+              final isTrulyFree = activity.priceMin == 0 &&
+                  (activity.priceMax == null || activity.priceMax == 0);
+              if (isTrulyFree) {
+                return Text(
+                  'Gratuit',
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontWeight: FontWeight.w600,
+                    fontSize: compact ? 12 : 14,
+                    height: 1.1,
+                  ),
+                );
+              }
+              final price = (activity.priceMin! > 0)
+                  ? activity.priceMin!
+                  : activity.priceMax!;
+              return Text(
+                compact
+                    ? 'Dès ${price.toStringAsFixed(0)}€'
+                    : 'À partir de ${price.toStringAsFixed(0)}€',
+                style: const TextStyle(
+                  color: Color(0xFFFF601F),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  height: 1.1,
+                ),
+              );
+            }),
         ],
       ),
     );

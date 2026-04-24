@@ -144,11 +144,15 @@ class DeepLinkService {
 
     // Reminder notifications
     if (type.contains('reminder')) {
-      final bookingId = data['booking_id'];
-      if (bookingId != null) {
-        return '/my-bookings';
+      final eventSlug = data['event_slug'];
+      if (eventSlug != null) {
+        return '/event/$eventSlug';
       }
-      return '/';
+      final action = data['action'];
+      if (action is String && action.startsWith('/events/')) {
+        return '/event/${action.replaceFirst('/events/', '')}';
+      }
+      return '/my-reminders';
     }
 
     // Alert/saved search notifications

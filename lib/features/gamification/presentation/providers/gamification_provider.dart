@@ -41,6 +41,18 @@ class GamificationNotifier extends AsyncNotifier<HibonsWallet> {
   Future<void> invalidateAndRefresh() async {
     ref.invalidateSelf();
   }
+
+  /// Met à jour le solde localement à partir d'une valeur autoritaire renvoyée
+  /// par le backend (ex: `new_hibons_balance` lors d'un ajout en favori).
+  ///
+  /// Pas de round-trip réseau : l'UI se met à jour instantanément. Si le
+  /// wallet n'a jamais été chargé, no-op (le prochain `build()` récupérera
+  /// la valeur fraîche côté serveur de toute façon).
+  void setBalance(int newBalance) {
+    final current = state.value;
+    if (current == null) return;
+    state = AsyncValue.data(current.copyWith(balance: newBalance));
+  }
 }
 
 // ==== Daily Reward Provider ====

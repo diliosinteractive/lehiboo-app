@@ -9,6 +9,7 @@ import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
+import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/search/presentation/widgets/save_search_sheet.dart';
 
 /// Provider for events list from real API
@@ -481,6 +482,14 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
   }
 
   Future<void> _saveCurrentSearch(BuildContext context, {bool isAlert = false}) async {
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'sauvegarder une recherche',
+    );
+    if (!allowed) return;
+    if (!mounted) return;
+
     final filter = ref.read(eventFilterProvider);
     final alertsNotifier = ref.read(alertsProvider.notifier);
 

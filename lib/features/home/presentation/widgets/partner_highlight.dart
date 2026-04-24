@@ -50,7 +50,7 @@ class PartnerHighlight extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // In real app, fetch partner events from API
     // For now, use featured activities as mock
-    final activitiesAsync = ref.watch(featuredActivitiesProvider);
+    final activitiesAsync = ref.watch(homeActivitiesProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

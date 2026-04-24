@@ -170,6 +170,13 @@ class ProfileScreen extends ConsumerWidget {
         ),
         _buildMenuItem(
           context,
+          icon: Icons.notifications_active_outlined,
+          title: 'Mes Rappels',
+          subtitle: 'Rappels d\'activités à venir',
+          onTap: () => context.push('/my-reminders'),
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.person_outline,
           title: 'Mon Compte',
           subtitle: 'Modifier vos informations',

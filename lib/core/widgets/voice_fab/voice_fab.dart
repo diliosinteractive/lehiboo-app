@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../../features/petit_boo/presentation/providers/engagement_provider.dart';
+import '../../utils/guest_guard.dart';
 import 'animated_ring.dart';
 import 'pulse_waves.dart';
 import 'voice_fab_sounds.dart';
@@ -165,9 +166,17 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
   }
 
   /// Ouvre le chat classique
-  void _openChat() {
+  Future<void> _openChat() async {
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'discuter avec Petit Boo',
+    );
+    if (!allowed) return;
     ref.read(petitBooEngagementProvider.notifier).onUserClickChat();
-    context.push('/petit-boo');
+    if (mounted) {
+      context.push('/petit-boo');
+    }
   }
 
   /// Démarre l'écoute (appui prolongé)
@@ -267,9 +276,16 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
       if (transcriptionText.isEmpty) {
         _showError('Je n\'ai rien entendu');
       } else {
+        // Vérifier l'authentification avant de naviguer
+        final allowed = await GuestGuard.check(
+          context: context,
+          ref: ref,
+          featureName: 'discuter avec Petit Boo',
+        );
+        if (!allowed) return;
         // Naviguer vers le chat avec le message
         ref.read(petitBooEngagementProvider.notifier).onUserClickChat();
-        if (context.mounted) {
+        if (mounted) {
           context.push('/petit-boo?message=${Uri.encodeComponent(transcriptionText)}');
         }
       }

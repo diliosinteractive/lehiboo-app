@@ -10,36 +10,33 @@ import '../../../events/data/mappers/event_to_activity_mapper.dart';
 import '../../data/models/mobile_app_config.dart';
 import '../../data/datasources/mobile_config_datasource.dart';
 import 'user_location_provider.dart';
-import '../../../../features/events/data/models/home_feed_response_dto.dart';
+import '../../../../features/events/data/models/home_feed_response_dto.dart'
+    show HomeFeedDataDto;
 import '../../../events/data/mappers/event_mapper.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Home Feed
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeFeedProvider = AutoDisposeAsyncNotifierProvider<HomeFeedNotifier, HomeFeedResponseDto>(
+final homeFeedProvider = AutoDisposeAsyncNotifierProvider<HomeFeedNotifier, HomeFeedDataDto>(
   HomeFeedNotifier.new,
 );
 
-class HomeFeedNotifier extends AutoDisposeAsyncNotifier<HomeFeedResponseDto> {
+class HomeFeedNotifier extends AutoDisposeAsyncNotifier<HomeFeedDataDto> {
   @override
-  Future<HomeFeedResponseDto> build() async {
+  Future<HomeFeedDataDto> build() async {
     final eventRepository = ref.watch(eventRepositoryProvider);
     final userLocationAsync = ref.watch(userLocationProvider);
     final userLocation = userLocationAsync.valueOrNull;
 
-    try {
-      final result = await eventRepository.getHomeFeed(
-        lat: userLocation?.lat,
-        lng: userLocation?.lng,
-        radius: userLocation != null ? 30 : null,
-        limit: 10,
-      );
-      ref.keepAlive();
-      return result;
-    } catch (e) {
-      rethrow;
-    }
+    final result = await eventRepository.getHomeFeed(
+      lat: userLocation?.lat,
+      lng: userLocation?.lng,
+      radius: userLocation != null ? 30 : null,
+      limit: 10,
+    );
+    ref.keepAlive();
+    return result;
   }
 
   Future<void> refresh() async {
@@ -59,14 +56,14 @@ final homeTodayActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeTodayAc
 class HomeTodayActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
   @override
   Future<List<Activity>> build() async {
-    final feedDto = await ref.watch(homeFeedProvider.future);
+    final feed = await ref.watch(homeFeedProvider.future);
 
-    if (feedDto.data?.today == null || feedDto.data!.today.isEmpty) {
+    if (feed.today.isEmpty) {
       ref.keepAlive();
       return [];
     }
 
-    final events = feedDto.data!.today.map(EventMapper.toEvent).toList();
+    final events = feed.today.map(EventMapper.toEvent).toList();
     ref.keepAlive();
     return EventToActivityMapper.toActivities(events);
   }
@@ -88,50 +85,16 @@ final homeTomorrowActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeTomo
 class HomeTomorrowActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
   @override
   Future<List<Activity>> build() async {
-    final feedDto = await ref.watch(homeFeedProvider.future);
+    final feed = await ref.watch(homeFeedProvider.future);
 
-    if (feedDto.data?.tomorrow == null || feedDto.data!.tomorrow.isEmpty) {
+    if (feed.tomorrow.isEmpty) {
       ref.keepAlive();
       return [];
     }
 
-    final events = feedDto.data!.tomorrow.map(EventMapper.toEvent).toList();
+    final events = feed.tomorrow.map(EventMapper.toEvent).toList();
     ref.keepAlive();
     return EventToActivityMapper.toActivities(events);
-  }
-
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Featured / Promoted Activities
-// ──────────────────────────────────────────────────────────────────────────────
-
-final featuredActivitiesProvider = AutoDisposeAsyncNotifierProvider<FeaturedActivitiesNotifier, List<Activity>>(
-  FeaturedActivitiesNotifier.new,
-);
-
-class FeaturedActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
-  @override
-  Future<List<Activity>> build() async {
-    final eventRepository = ref.watch(eventRepositoryProvider);
-
-    try {
-      final result = await eventRepository.getEvents(
-        page: 1,
-        perPage: 5,
-        orderBy: 'views',
-        order: 'desc',
-      );
-
-      ref.keepAlive();
-      return EventToActivityMapper.toActivities(result.events);
-    } catch (e) {
-      rethrow;
-    }
   }
 
   Future<void> refresh() async {
@@ -153,21 +116,17 @@ class CategoriesNotifier extends AutoDisposeAsyncNotifier<List<EventCategoryInfo
   Future<List<EventCategoryInfo>> build() async {
     final eventRepository = ref.watch(eventRepositoryProvider);
 
-    try {
-      final categories = await eventRepository.getCategories();
-      ref.keepAlive();
-      return categories
-          .map((cat) => EventCategoryInfo(
-                id: cat.id.toString(),
-                name: cat.name,
-                slug: cat.slug,
-                icon: cat.icon,
-                eventCount: cat.eventCount ?? 0,
-              ))
-          .toList();
-    } catch (e) {
-      rethrow;
-    }
+    final categories = await eventRepository.getCategories();
+    ref.keepAlive();
+    return categories
+        .map((cat) => EventCategoryInfo(
+              id: cat.id.toString(),
+              name: cat.name,
+              slug: cat.slug,
+              icon: cat.icon,
+              eventCount: cat.eventCount ?? 0,
+            ))
+        .toList();
   }
 
   Future<void> refresh() async {
@@ -189,33 +148,29 @@ class HomeCitiesNotifier extends AutoDisposeAsyncNotifier<List<City>> {
   Future<List<City>> build() async {
     final eventRepository = ref.watch(eventRepositoryProvider);
 
-    try {
-      final cities = await eventRepository.getCities();
+    final cities = await eventRepository.getCities();
 
-      final sortedCities = List.of(cities)
-        ..sort((a, b) => (b.eventCount ?? 0).compareTo(a.eventCount ?? 0));
+    final sortedCities = List.of(cities)
+      ..sort((a, b) => (b.eventCount ?? 0).compareTo(a.eventCount ?? 0));
 
-      ref.keepAlive();
-      return sortedCities
-          .take(6)
-          .map((city) {
-            final imageUrl = city.imageUrl ?? _getCityImageUrl(city.name);
-            return City(
-              id: city.id,
-              name: city.name,
-              slug: city.slug,
-              lat: city.lat,
-              lng: city.lng,
-              region: city.region,
-              description: city.description,
-              eventCount: city.eventCount,
-              imageUrl: imageUrl,
-            );
-          })
-          .toList();
-    } catch (e) {
-      rethrow;
-    }
+    ref.keepAlive();
+    return sortedCities
+        .take(6)
+        .map((city) {
+          final imageUrl = city.imageUrl ?? _getCityImageUrl(city.name);
+          return City(
+            id: city.id,
+            name: city.name,
+            slug: city.slug,
+            lat: city.lat,
+            lng: city.lng,
+            region: city.region,
+            description: city.description,
+            eventCount: city.eventCount,
+            imageUrl: imageUrl,
+          );
+        })
+        .toList();
   }
 
   Future<void> refresh() async {
@@ -417,14 +372,14 @@ final homeActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeActivitiesNo
 class HomeActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
   @override
   Future<List<Activity>> build() async {
-    final feedDto = await ref.watch(homeFeedProvider.future);
+    final feed = await ref.watch(homeFeedProvider.future);
 
-    if (feedDto.data?.recommended == null || feedDto.data!.recommended.isEmpty) {
+    if (feed.recommended.isEmpty) {
       ref.keepAlive();
       return [];
     }
 
-    final events = feedDto.data!.recommended.map(EventMapper.toEvent).toList();
+    final events = feed.recommended.map(EventMapper.toEvent).toList();
     ref.keepAlive();
     return EventToActivityMapper.toActivities(events);
   }

@@ -9,6 +9,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'routes/app_router.dart';
 import 'config/dio_client.dart';
 import 'config/env_config.dart';
+import 'features/auth/presentation/providers/auth_provider.dart';
 
 // API Repositories
 import 'features/auth/data/repositories/auth_repository_impl.dart';
@@ -158,6 +159,9 @@ class LeHibooApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+
+    // Wire force logout so the 401 interceptor can trigger auth state change.
+    DioClient.onForceLogout = () => ref.read(authProvider.notifier).forceLogout();
 
     // Watch push notification provider to initialize on auth state changes
     // The provider will auto-initialize when user logs in and unregister on logout

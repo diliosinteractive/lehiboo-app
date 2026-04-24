@@ -300,74 +300,23 @@ class _EventLocationMapState extends State<EventLocationMap> {
   }
 
   Widget _buildActionButtons() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _buildActionButton(
-            icon: Icons.directions_car,
-            label: 'Voiture',
-            color: HbColors.brandPrimary,
-            onTap: () => _openMaps('driving'),
-          ),
-          const SizedBox(width: 8),
-          _buildActionButton(
-            icon: Icons.directions_walk,
-            label: 'À pied',
-            color: Colors.green,
-            onTap: () => _openMaps('walking'),
-          ),
-          const SizedBox(width: 8),
-          _buildActionButton(
-            icon: Icons.directions_transit,
-            label: 'Transports',
-            color: Colors.blue,
-            onTap: () => _openMaps('transit'),
-          ),
-          const SizedBox(width: 8),
-          _buildActionButton(
-            icon: Icons.copy,
-            label: 'Copier',
-            color: Colors.grey,
-            onTap: _copyAddress,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: color.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: () {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () {
           HapticFeedback.lightImpact();
-          onTap();
+          _openMaps();
         },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ],
+        icon: const Icon(Icons.directions, size: 20),
+        label: const Text('Ouvrir dans Google Maps'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: HbColors.brandPrimary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
+          elevation: 0,
         ),
       ),
     );
@@ -409,30 +358,14 @@ class _EventLocationMapState extends State<EventLocationMap> {
     });
   }
 
-  Future<void> _openMaps(String mode) async {
+  Future<void> _openMaps() async {
     if (!_hasCoordinates) return;
 
     final url = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&destination=$_lat,$_lng&travelmode=$mode',
+      'https://www.google.com/maps/search/?api=1&query=$_lat,$_lng',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  void _copyAddress() {
-    final venue = widget.event.venue ?? '';
-    final address = _buildFullAddress();
-    final fullText = [venue, address].where((s) => s.isNotEmpty).join('\n');
-
-    if (fullText.isNotEmpty) {
-      Clipboard.setData(ClipboardData(text: fullText));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Adresse copiée'),
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 }

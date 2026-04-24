@@ -5,7 +5,7 @@ import '../../domain/repositories/event_repository.dart';
 import '../datasources/events_api_datasource.dart';
 import '../mappers/event_mapper.dart';
 import '../models/event_dto.dart';
-import '../models/home_feed_response_dto.dart';
+import '../models/home_feed_response_dto.dart' show HomeFeedDataDto;
 import '../../../../domain/entities/city.dart';
 
 final eventRepositoryImplProvider = Provider<EventRepository>((ref) {
@@ -134,28 +134,17 @@ class EventRepositoryImpl implements EventRepository {
     return await _apiDataSource.getFilters();
   }
   @override
-  Future<HomeFeedResponseDto> getHomeFeed({
+  Future<HomeFeedDataDto> getHomeFeed({
     double? lat,
     double? lng,
     int? radius,
     int? limit,
   }) async {
-    try {
-      if (kDebugMode) {
-        print('EventRepositoryImpl: Fetching Home Feed');
-      }
-      return await _apiDataSource.getHomeFeed(
-        lat: lat,
-        lng: lng,
-        radius: radius,
-        limit: limit,
-      );
-    } catch (e, stack) {
-      if (kDebugMode) {
-        print('EventRepositoryImpl: Error fetching home feed: $e');
-        print(stack);
-      }
-      rethrow;
-    }
+    return _apiDataSource.getHomeFeed(
+      lat: lat,
+      lng: lng,
+      radius: radius,
+      limit: limit,
+    );
   }
 }

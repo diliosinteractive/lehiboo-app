@@ -11,6 +11,9 @@ final dioProvider = Provider<Dio>((ref) {
   return DioClient.instance;
 });
 
+/// Callback type for force logout triggered by 401 interceptor.
+typedef ForceLogoutCallback = Future<void> Function();
+
 /// Singleton storage instance shared across the app
 /// This ensures consistency between token writes (auth) and reads (interceptor)
 class SharedSecureStorage {
@@ -22,6 +25,7 @@ class SharedSecureStorage {
 
 class DioClient {
   static late Dio _dio;
+  static ForceLogoutCallback? onForceLogout;
 
   static Dio get instance => _dio;
   static FlutterSecureStorage get storage => SharedSecureStorage.instance;
@@ -35,6 +39,7 @@ class DioClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'X-Platform': 'mobile',
         },
       ),
     );
@@ -49,7 +54,7 @@ class DioClient {
 
     // Add interceptors
     _dio.interceptors.addAll([
-      JwtAuthInterceptor(_dio, SharedSecureStorage.instance),
+      JwtAuthInterceptor(SharedSecureStorage.instance),
       if (kDebugMode)
         PrettyDioLogger(
           requestHeader: true,
@@ -65,47 +70,58 @@ class DioClient {
 }
 
 class JwtAuthInterceptor extends QueuedInterceptor {
-  final Dio _dio;
   final FlutterSecureStorage _storage;
   bool _isRefreshing = false;
 
-  JwtAuthInterceptor(this._dio, this._storage);
+  JwtAuthInterceptor(this._storage);
+
+  /// Endpoints pour lesquels l'absence de token est attendue (juste pour le log).
+  /// On envoie **toujours** le token si on en a un — même sur ces routes — car
+  /// certaines sont user-aware (ex: `/events/{slug}/questions` renvoie
+  /// `userVoted` si authentifié) ou cachent des sous-routes authentifiées
+  /// derrière un même préfixe (ex: `/events/{slug}/my-question`).
+  static const _publicPrefixes = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/refresh',
+    '/auth/otp',
+    '/auth/check-email',
+    '/events',
+    '/categories',
+    '/thematiques',
+    '/cities',
+    '/filters',
+    '/home-feed',
+    '/mobile/config',
+    '/posts',
+    '/stories',
+  ];
 
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    // Skip auth for public endpoints
-    final publicEndpoints = [
-      '/auth/login',
-      '/auth/register',
-      '/auth/forgot-password',
-      '/auth/reset-password',
-      '/auth/refresh',
-      '/auth/otp',  // OTP endpoints: /auth/otp/send, /auth/otp/verify, /auth/otp/resend
-      '/auth/check-email',
-      '/events',
-      '/categories',
-      '/thematiques',
-      '/cities',
-      '/filters',
-      '/home-feed',
-      '/mobile/config',
-      '/posts',
-    ];
+    final token = await _storage.read(key: AppConstants.keyAuthToken);
 
-    final isPublic = publicEndpoints.any((e) => options.path.startsWith(e));
+    // Toujours attacher le token si disponible. Le serveur l'ignore sur les
+    // routes vraiment publiques, et en a besoin sur les sous-routes
+    // authentifiées ou user-aware.
+    if (token != null && token.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $token';
+    } else if (kDebugMode) {
+      final isPublic =
+          _publicPrefixes.any((e) => options.path.startsWith(e));
+      if (!isPublic) {
+        debugPrint(
+          '⚠️ JwtAuthInterceptor: No token found for protected endpoint ${options.path}',
+        );
+      }
+    }
 
-    if (!isPublic) {
-      final token = await _storage.read(key: AppConstants.keyAuthToken);
-      if (kDebugMode) {
-        debugPrint('🔐 JwtAuthInterceptor: path=${options.path}, isPublic=$isPublic, hasToken=${token != null && token.isNotEmpty}');
-      }
-      if (token != null && token.isNotEmpty) {
-        options.headers['Authorization'] = 'Bearer $token';
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️ JwtAuthInterceptor: No token found for protected endpoint ${options.path}');
-        }
-      }
+    if (kDebugMode) {
+      debugPrint(
+        '🔐 JwtAuthInterceptor: path=${options.path}, hasToken=${token != null && token.isNotEmpty}',
+      );
     }
 
     // Add API key if configured
@@ -121,77 +137,43 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     if (err.response?.statusCode == 401 && !_isRefreshing) {
       _isRefreshing = true;
 
+      final path = err.requestOptions.path;
+      final isPublic = _publicPrefixes.any((e) => path.startsWith(e));
+
       if (kDebugMode) {
-        debugPrint('🔐 JwtAuthInterceptor: 401 error on ${err.requestOptions.path}');
+        debugPrint(
+          '🔐 JwtAuthInterceptor: 401 on $path (isPublic=$isPublic)',
+        );
       }
 
-      try {
-        final currentToken = await _storage.read(key: AppConstants.keyAuthToken);
-
+      // Ne force-logout que pour les routes *réellement* authentifiées.
+      // Un 401 sur une route publique signifie que le backend a rejeté un
+      // token invalide sans que la ressource ne nécessite l'auth — inutile
+      // et destructif de déconnecter l'user pour ça.
+      if (!isPublic) {
+        final currentToken = await _storage.read(
+          key: AppConstants.keyAuthToken,
+        );
         if (currentToken != null && currentToken.isNotEmpty) {
           if (kDebugMode) {
-            debugPrint('🔐 JwtAuthInterceptor: Attempting token refresh...');
+            debugPrint(
+              '🔐 JwtAuthInterceptor: Token expired on protected route → force logout',
+            );
           }
-
-          // Create a new Dio instance to avoid interceptor loop
-          final refreshDio = Dio(BaseOptions(
-            baseUrl: AppConstants.baseUrl,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': 'Bearer $currentToken',
-            },
-          ));
-
-          try {
-            final response = await refreshDio.post('/auth/refresh');
-
-            // Laravel v2 format: { "message": "...", "token": "...", ... }
-            // or: { "data": { "token": "..." } }
-            final data = response.data;
-            final newAccessToken = data['token'] ?? data['data']?['token'];
-
-            if (newAccessToken != null) {
-              if (kDebugMode) {
-                debugPrint('🔐 JwtAuthInterceptor: Token refreshed successfully');
-              }
-              // Save new token (Sanctum uses same token for both)
-              await _storage.write(key: AppConstants.keyAuthToken, value: newAccessToken);
-              await _storage.write(key: AppConstants.keyRefreshToken, value: newAccessToken);
-
-              // Retry the original request with new token
-              err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
-
-              final retryResponse = await _dio.fetch(err.requestOptions);
-              _isRefreshing = false;
-              return handler.resolve(retryResponse);
-            }
-          } catch (refreshError) {
-            // Refresh failed - this is expected with Laravel Sanctum
-            // which doesn't have a refresh endpoint
-            if (kDebugMode) {
-              debugPrint('🔐 JwtAuthInterceptor: Refresh failed (expected with Sanctum): $refreshError');
-              debugPrint('🔐 JwtAuthInterceptor: NOT clearing tokens - user may still have valid session');
-            }
-            // DON'T clear tokens here - the token might still be valid
-            // and the 401 might be for a specific resource, not auth
-          }
+          await _storage.delete(key: AppConstants.keyAuthToken);
+          await _storage.delete(key: AppConstants.keyRefreshToken);
+          await DioClient.onForceLogout?.call();
         } else {
           if (kDebugMode) {
-            debugPrint('🔐 JwtAuthInterceptor: No token found, cannot refresh');
+            debugPrint(
+              '🔐 JwtAuthInterceptor: No token found, nothing to clear',
+            );
           }
         }
-
-        _isRefreshing = false;
-        return handler.reject(err);
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('🔐 JwtAuthInterceptor: Unexpected error during refresh: $e');
-        }
-        // DON'T clear tokens on unexpected errors either
-        _isRefreshing = false;
-        return handler.reject(err);
       }
+
+      _isRefreshing = false;
+      return handler.reject(err);
     }
 
     super.onError(err, handler);

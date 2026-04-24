@@ -40,6 +40,10 @@ mixin _$Booking {
   String? get customerFirstName => throw _privateConstructorUsedError;
   String? get customerLastName => throw _privateConstructorUsedError;
   String? get customerPhone =>
+      throw _privateConstructorUsedError; // Birth date & town (optional, from booking form)
+  String? get customerBirthDate =>
+      throw _privateConstructorUsedError; // "YYYY-MM-DD"
+  String? get customerTown =>
       throw _privateConstructorUsedError; // Reference (short code for display)
   String? get reference => throw _privateConstructorUsedError;
 
@@ -72,6 +76,8 @@ abstract class $BookingCopyWith<$Res> {
       String? customerFirstName,
       String? customerLastName,
       String? customerPhone,
+      String? customerBirthDate,
+      String? customerTown,
       String? reference});
 
   $ActivityCopyWith<$Res>? get activity;
@@ -110,6 +116,8 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
     Object? customerPhone = freezed,
+    Object? customerBirthDate = freezed,
+    Object? customerTown = freezed,
     Object? reference = freezed,
   }) {
     return _then(_value.copyWith(
@@ -189,6 +197,14 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
           ? _value.customerPhone
           : customerPhone // ignore: cast_nullable_to_non_nullable
               as String?,
+      customerBirthDate: freezed == customerBirthDate
+          ? _value.customerBirthDate
+          : customerBirthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerTown: freezed == customerTown
+          ? _value.customerTown
+          : customerTown // ignore: cast_nullable_to_non_nullable
+              as String?,
       reference: freezed == reference
           ? _value.reference
           : reference // ignore: cast_nullable_to_non_nullable
@@ -248,6 +264,8 @@ abstract class _$$BookingImplCopyWith<$Res> implements $BookingCopyWith<$Res> {
       String? customerFirstName,
       String? customerLastName,
       String? customerPhone,
+      String? customerBirthDate,
+      String? customerTown,
       String? reference});
 
   @override
@@ -286,6 +304,8 @@ class __$$BookingImplCopyWithImpl<$Res>
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
     Object? customerPhone = freezed,
+    Object? customerBirthDate = freezed,
+    Object? customerTown = freezed,
     Object? reference = freezed,
   }) {
     return _then(_$BookingImpl(
@@ -365,6 +385,14 @@ class __$$BookingImplCopyWithImpl<$Res>
           ? _value.customerPhone
           : customerPhone // ignore: cast_nullable_to_non_nullable
               as String?,
+      customerBirthDate: freezed == customerBirthDate
+          ? _value.customerBirthDate
+          : customerBirthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerTown: freezed == customerTown
+          ? _value.customerTown
+          : customerTown // ignore: cast_nullable_to_non_nullable
+              as String?,
       reference: freezed == reference
           ? _value.reference
           : reference // ignore: cast_nullable_to_non_nullable
@@ -396,6 +424,8 @@ class _$BookingImpl implements _Booking {
       this.customerFirstName,
       this.customerLastName,
       this.customerPhone,
+      this.customerBirthDate,
+      this.customerTown,
       this.reference})
       : _tickets = tickets;
 
@@ -452,13 +482,19 @@ class _$BookingImpl implements _Booking {
   final String? customerLastName;
   @override
   final String? customerPhone;
+// Birth date & town (optional, from booking form)
+  @override
+  final String? customerBirthDate;
+// "YYYY-MM-DD"
+  @override
+  final String? customerTown;
 // Reference (short code for display)
   @override
   final String? reference;
 
   @override
   String toString() {
-    return 'Booking(id: $id, numericId: $numericId, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, reference: $reference)';
+    return 'Booking(id: $id, numericId: $numericId, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, customerBirthDate: $customerBirthDate, customerTown: $customerTown, reference: $reference)';
   }
 
   @override
@@ -498,6 +534,10 @@ class _$BookingImpl implements _Booking {
                 other.customerLastName == customerLastName) &&
             (identical(other.customerPhone, customerPhone) ||
                 other.customerPhone == customerPhone) &&
+            (identical(other.customerBirthDate, customerBirthDate) ||
+                other.customerBirthDate == customerBirthDate) &&
+            (identical(other.customerTown, customerTown) ||
+                other.customerTown == customerTown) &&
             (identical(other.reference, reference) ||
                 other.reference == reference));
   }
@@ -524,6 +564,8 @@ class _$BookingImpl implements _Booking {
         customerFirstName,
         customerLastName,
         customerPhone,
+        customerBirthDate,
+        customerTown,
         reference
       ]);
 
@@ -555,6 +597,8 @@ abstract class _Booking implements Booking {
       final String? customerFirstName,
       final String? customerLastName,
       final String? customerPhone,
+      final String? customerBirthDate,
+      final String? customerTown,
       final String? reference}) = _$BookingImpl;
 
   @override
@@ -595,6 +639,10 @@ abstract class _Booking implements Booking {
   String? get customerLastName;
   @override
   String? get customerPhone;
+  @override // Birth date & town (optional, from booking form)
+  String? get customerBirthDate;
+  @override // "YYYY-MM-DD"
+  String? get customerTown;
   @override // Reference (short code for display)
   String? get reference;
   @override

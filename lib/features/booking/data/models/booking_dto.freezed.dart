@@ -50,7 +50,11 @@ mixin _$BookingDto {
   @JsonKey(name: 'customer_last_name')
   String? get customerLastName => throw _privateConstructorUsedError;
   @JsonKey(name: 'customer_phone')
-  String? get customerPhone => throw _privateConstructorUsedError; // Reference
+  String? get customerPhone => throw _privateConstructorUsedError;
+  @JsonKey(name: 'customer_birth_date')
+  String? get customerBirthDate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'customer_town')
+  String? get customerTown => throw _privateConstructorUsedError; // Reference
   String? get reference => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -84,6 +88,8 @@ abstract class $BookingDtoCopyWith<$Res> {
       @JsonKey(name: 'customer_first_name') String? customerFirstName,
       @JsonKey(name: 'customer_last_name') String? customerLastName,
       @JsonKey(name: 'customer_phone') String? customerPhone,
+      @JsonKey(name: 'customer_birth_date') String? customerBirthDate,
+      @JsonKey(name: 'customer_town') String? customerTown,
       String? reference});
 
   $ActivityDtoCopyWith<$Res>? get activity;
@@ -121,6 +127,8 @@ class _$BookingDtoCopyWithImpl<$Res, $Val extends BookingDto>
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
     Object? customerPhone = freezed,
+    Object? customerBirthDate = freezed,
+    Object? customerTown = freezed,
     Object? reference = freezed,
   }) {
     return _then(_value.copyWith(
@@ -196,6 +204,14 @@ class _$BookingDtoCopyWithImpl<$Res, $Val extends BookingDto>
           ? _value.customerPhone
           : customerPhone // ignore: cast_nullable_to_non_nullable
               as String?,
+      customerBirthDate: freezed == customerBirthDate
+          ? _value.customerBirthDate
+          : customerBirthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerTown: freezed == customerTown
+          ? _value.customerTown
+          : customerTown // ignore: cast_nullable_to_non_nullable
+              as String?,
       reference: freezed == reference
           ? _value.reference
           : reference // ignore: cast_nullable_to_non_nullable
@@ -255,6 +271,8 @@ abstract class _$$BookingDtoImplCopyWith<$Res>
       @JsonKey(name: 'customer_first_name') String? customerFirstName,
       @JsonKey(name: 'customer_last_name') String? customerLastName,
       @JsonKey(name: 'customer_phone') String? customerPhone,
+      @JsonKey(name: 'customer_birth_date') String? customerBirthDate,
+      @JsonKey(name: 'customer_town') String? customerTown,
       String? reference});
 
   @override
@@ -292,6 +310,8 @@ class __$$BookingDtoImplCopyWithImpl<$Res>
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
     Object? customerPhone = freezed,
+    Object? customerBirthDate = freezed,
+    Object? customerTown = freezed,
     Object? reference = freezed,
   }) {
     return _then(_$BookingDtoImpl(
@@ -367,6 +387,14 @@ class __$$BookingDtoImplCopyWithImpl<$Res>
           ? _value.customerPhone
           : customerPhone // ignore: cast_nullable_to_non_nullable
               as String?,
+      customerBirthDate: freezed == customerBirthDate
+          ? _value.customerBirthDate
+          : customerBirthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customerTown: freezed == customerTown
+          ? _value.customerTown
+          : customerTown // ignore: cast_nullable_to_non_nullable
+              as String?,
       reference: freezed == reference
           ? _value.reference
           : reference // ignore: cast_nullable_to_non_nullable
@@ -397,6 +425,8 @@ class _$BookingDtoImpl implements _BookingDto {
       @JsonKey(name: 'customer_first_name') this.customerFirstName,
       @JsonKey(name: 'customer_last_name') this.customerLastName,
       @JsonKey(name: 'customer_phone') this.customerPhone,
+      @JsonKey(name: 'customer_birth_date') this.customerBirthDate,
+      @JsonKey(name: 'customer_town') this.customerTown,
       this.reference})
       : _tickets = tickets;
 
@@ -460,13 +490,19 @@ class _$BookingDtoImpl implements _BookingDto {
   @override
   @JsonKey(name: 'customer_phone')
   final String? customerPhone;
+  @override
+  @JsonKey(name: 'customer_birth_date')
+  final String? customerBirthDate;
+  @override
+  @JsonKey(name: 'customer_town')
+  final String? customerTown;
 // Reference
   @override
   final String? reference;
 
   @override
   String toString() {
-    return 'BookingDto(id: $id, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, reference: $reference)';
+    return 'BookingDto(id: $id, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, customerBirthDate: $customerBirthDate, customerTown: $customerTown, reference: $reference)';
   }
 
   @override
@@ -504,6 +540,10 @@ class _$BookingDtoImpl implements _BookingDto {
                 other.customerLastName == customerLastName) &&
             (identical(other.customerPhone, customerPhone) ||
                 other.customerPhone == customerPhone) &&
+            (identical(other.customerBirthDate, customerBirthDate) ||
+                other.customerBirthDate == customerBirthDate) &&
+            (identical(other.customerTown, customerTown) ||
+                other.customerTown == customerTown) &&
             (identical(other.reference, reference) ||
                 other.reference == reference));
   }
@@ -530,6 +570,8 @@ class _$BookingDtoImpl implements _BookingDto {
         customerFirstName,
         customerLastName,
         customerPhone,
+        customerBirthDate,
+        customerTown,
         reference
       ]);
 
@@ -567,6 +609,8 @@ abstract class _BookingDto implements BookingDto {
       @JsonKey(name: 'customer_first_name') final String? customerFirstName,
       @JsonKey(name: 'customer_last_name') final String? customerLastName,
       @JsonKey(name: 'customer_phone') final String? customerPhone,
+      @JsonKey(name: 'customer_birth_date') final String? customerBirthDate,
+      @JsonKey(name: 'customer_town') final String? customerTown,
       final String? reference}) = _$BookingDtoImpl;
 
   factory _BookingDto.fromJson(Map<String, dynamic> json) =
@@ -619,6 +663,12 @@ abstract class _BookingDto implements BookingDto {
   @override
   @JsonKey(name: 'customer_phone')
   String? get customerPhone;
+  @override
+  @JsonKey(name: 'customer_birth_date')
+  String? get customerBirthDate;
+  @override
+  @JsonKey(name: 'customer_town')
+  String? get customerTown;
   @override // Reference
   String? get reference;
   @override

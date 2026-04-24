@@ -1,26 +1,20 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
-import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
-import 'package:lehiboo/shared/widgets/animations/staggered_animation.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-/// Card organisateur compact avec expansion
+/// Organizer section that displays differently based on the event source:
 ///
-/// Compact (par défaut):
-/// - Logo + Nom + Badge vérifié
-/// - Note + Nombre d'events
-/// - 3 icônes réseaux sociaux
+/// **Vendor** (organizer is NOT platform):
+/// Logo + Name + Le Hiboo badge, verified status, venue type tags,
+/// events count, and a "Nous contacter" button.
 ///
-/// Expanded:
-/// - Description complète
-/// - Contact (téléphone, email)
-/// - Co-organisateurs
-class EventOrganizerCard extends StatefulWidget {
+/// **Platform** (organizer IS platform — crawled or admin-created events):
+/// Le Hiboo owl icon, "Rédigé par LEHIBOO EXPÉRIENCES",
+/// and "Source infos : {originalOrganizerName}" when available.
+class EventOrganizerCard extends StatelessWidget {
   final Event event;
   final VoidCallback? onOrganizerTap;
 
@@ -29,30 +23,6 @@ class EventOrganizerCard extends StatefulWidget {
     required this.event,
     this.onOrganizerTap,
   });
-
-  @override
-  State<EventOrganizerCard> createState() => _EventOrganizerCardState();
-}
-
-class _EventOrganizerCardState extends State<EventOrganizerCard> {
-  bool _isExpanded = false;
-
-  bool get _hasDescription =>
-      widget.event.organizerDescription != null &&
-      widget.event.organizerDescription!.isNotEmpty;
-
-  bool get _hasContact =>
-      (widget.event.contactPhone != null &&
-          widget.event.contactPhone!.isNotEmpty) ||
-      (widget.event.contactEmail != null &&
-          widget.event.contactEmail!.isNotEmpty);
-
-  bool get _hasSocialLinks => widget.event.socialMedia != null;
-
-  bool get _hasCoOrganizers => widget.event.coOrganizers.isNotEmpty;
-
-  bool get _canExpand =>
-      _hasDescription || _hasContact || _hasCoOrganizers;
 
   @override
   Widget build(BuildContext context) {
@@ -69,109 +39,125 @@ class _EventOrganizerCardState extends State<EventOrganizerCard> {
               color: HbColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          const SizedBox(height: 12),
+          event.organizerIsPlatform
+              ? _PlatformOrganizerCard(event: event)
+              : _VendorOrganizerCard(
+                  event: event,
+                  onOrganizerTap: onOrganizerTap,
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Header compact (toujours visible)
-                _buildCompactHeader(),
-
-                // Contenu expandable
-                AnimatedCrossFade(
-                  firstChild: const SizedBox.shrink(),
-                  secondChild: _buildExpandedContent(),
-                  crossFadeState: _isExpanded
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-                  duration: const Duration(milliseconds: 300),
-                ),
-
-                // Bouton expand/collapse
-                if (_canExpand) _buildExpandButton(),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildCompactHeader() {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        if (widget.onOrganizerTap != null) {
-          widget.onOrganizerTap!();
-        } else {
-          context.push('/partner/${widget.event.organizerId}');
-        }
-      },
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Avatar
-            _buildAvatar(),
-            const SizedBox(width: 16),
+// ─────────────────────────────────────────────────────────────────────────────
+// Vendor card
+// ─────────────────────────────────────────────────────────────────────────────
 
-            // Infos
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+class _VendorOrganizerCard extends StatelessWidget {
+  final Event event;
+  final VoidCallback? onOrganizerTap;
+
+  const _VendorOrganizerCard({required this.event, this.onOrganizerTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          if (onOrganizerTap != null) {
+            onOrganizerTap!();
+          } else {
+            context.push('/partner/${event.organizerId}');
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Row 1: Avatar + Name + Le Hiboo badge + chevron
+              Row(
                 children: [
-                  // Nom + Badge vérifié
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          widget.event.organizerName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: HbColors.textPrimary,
+                  _buildAvatar(),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            event.organizerName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: HbColors.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildVerifiedBadge(),
-                    ],
+                        const SizedBox(width: 6),
+                        // Le Hiboo vendor badge
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.asset(
+                            'assets/images/lehiboo_vendor_badge.png',
+                            width: 22,
+                            height: 22,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
-
-                  // Stats (rating + events count)
-                  _buildStats(),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.chevron_right,
+                    color: Colors.grey.shade400,
+                    size: 22,
+                  ),
                 ],
               ),
-            ),
 
-            // Icônes réseaux sociaux
-            if (_hasSocialLinks) ...[
-              const SizedBox(width: 8),
-              _buildSocialIcons(),
+              const SizedBox(height: 10),
+
+              // Row 2: Verified status
+              _buildVerifiedStatus(),
+
+              // Row 3: Venue type tags
+              if (event.organizerVenueTypes.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _buildVenueTypeTags(),
+              ],
+
+              // Row 4: Events count
+              if (event.organizerEventsCount != null &&
+                  event.organizerEventsCount! > 0) ...[
+                const SizedBox(height: 10),
+                _buildEventsCount(),
+              ],
+
+              // Row 5: Contact button
+              if (event.organizerAllowPublicContact) ...[
+                const SizedBox(height: 14),
+                _buildContactButton(context),
+              ],
             ],
-
-            // Chevron
-            const SizedBox(width: 8),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey.shade400,
-              size: 24,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -179,165 +165,85 @@ class _EventOrganizerCardState extends State<EventOrganizerCard> {
 
   Widget _buildAvatar() {
     return Container(
-      width: 56,
-      height: 56,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: HbColors.brandPrimary.withValues(alpha: 0.3),
+          color: HbColors.brandPrimary.withValues(alpha: 0.2),
           width: 2,
         ),
       ),
       child: ClipOval(
-        child: widget.event.organizerLogo != null
+        child: event.organizerLogo != null
             ? CachedNetworkImage(
-                imageUrl: widget.event.organizerLogo!,
+                imageUrl: event.organizerLogo!,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => _buildAvatarPlaceholder(),
-                errorWidget: (_, __, ___) => _buildAvatarPlaceholder(),
+                placeholder: (_, __) => _avatarPlaceholder(),
+                errorWidget: (_, __, ___) => _avatarPlaceholder(),
               )
-            : _buildAvatarPlaceholder(),
+            : _avatarPlaceholder(),
       ),
     );
   }
 
-  Widget _buildAvatarPlaceholder() {
+  Widget _avatarPlaceholder() {
     return Container(
       color: HbColors.brandPrimary.withValues(alpha: 0.1),
       child: Center(
         child: Text(
-          widget.event.organizerName.isNotEmpty
-              ? widget.event.organizerName[0].toUpperCase()
+          event.organizerName.isNotEmpty
+              ? event.organizerName[0].toUpperCase()
               : '?',
           style: const TextStyle(
             color: HbColors.brandPrimary,
             fontWeight: FontWeight.bold,
-            fontSize: 24,
+            fontSize: 20,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildVerifiedBadge() {
-    return ShineAnimation(
-      duration: const Duration(milliseconds: 2000),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: Colors.blue.shade50,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          Icons.verified,
-          size: 16,
-          color: Colors.blue.shade600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStats() {
+  Widget _buildVerifiedStatus() {
+    final isVerified = event.organizerVerified;
     return Row(
       children: [
-        // Rating
-        if (widget.event.rating != null && widget.event.rating! > 0) ...[
-          const Icon(Icons.star, color: Colors.amber, size: 14),
-          const SizedBox(width: 2),
-          Text(
-            widget.event.rating!.toStringAsFixed(1),
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: HbColors.textPrimary,
-            ),
-          ),
-          if (widget.event.reviewsCount != null) ...[
-            Text(
-              ' (${widget.event.reviewsCount})',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-          _buildDot(),
-        ],
-
-        // Nombre d'événements (simulé pour l'instant)
+        Icon(
+          isVerified ? Icons.verified : Icons.info_outline,
+          size: 15,
+          color: isVerified ? Colors.blue.shade600 : Colors.grey.shade500,
+        ),
+        const SizedBox(width: 5),
         Text(
-          'Organisateur vérifié',
+          isVerified ? 'Organisateur vérifié' : 'Organisateur non vérifié',
           style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
+            fontSize: 13,
+            color: isVerified ? Colors.blue.shade600 : Colors.grey.shade500,
+            fontWeight: isVerified ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDot() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Container(
-        width: 3,
-        height: 3,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade400,
-          shape: BoxShape.circle,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialIcons() {
-    final socialMedia = widget.event.socialMedia;
-    if (socialMedia == null) return const SizedBox.shrink();
-
-    final links = <_SocialLink>[];
-
-    if (socialMedia.facebook != null && socialMedia.facebook!.isNotEmpty) {
-      links.add(_SocialLink(
-        icon: FontAwesomeIcons.facebook,
-        url: socialMedia.facebook!,
-        color: const Color(0xFF1877F2),
-      ));
-    }
-
-    if (socialMedia.instagram != null && socialMedia.instagram!.isNotEmpty) {
-      links.add(_SocialLink(
-        icon: FontAwesomeIcons.instagram,
-        url: socialMedia.instagram!,
-        color: const Color(0xFFE4405F),
-      ));
-    }
-
-    if (socialMedia.linkedin != null && socialMedia.linkedin!.isNotEmpty) {
-      links.add(_SocialLink(
-        icon: FontAwesomeIcons.linkedin,
-        url: socialMedia.linkedin!,
-        color: const Color(0xFF0A66C2),
-      ));
-    }
-
-    if (links.isEmpty) return const SizedBox.shrink();
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: links.take(3).map((link) {
-        return GestureDetector(
-          onTap: () => _openUrl(link.url),
-          child: Container(
-            margin: const EdgeInsets.only(left: 8),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: link.color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: FaIcon(
-              link.icon,
-              size: 14,
-              color: link.color,
+  Widget _buildVenueTypeTags() {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: event.organizerVenueTypes.map((type) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: HbColors.brandSecondary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            type,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: HbColors.brandSecondary,
             ),
           ),
         );
@@ -345,281 +251,171 @@ class _EventOrganizerCardState extends State<EventOrganizerCard> {
     );
   }
 
-  Widget _buildExpandedContent() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+  Widget _buildEventsCount() {
+    final count = event.organizerEventsCount!;
+    return Row(
+      children: [
+        Icon(Icons.event_outlined, size: 15, color: Colors.grey.shade500),
+        const SizedBox(width: 5),
+        Text(
+          '$count événement${count > 1 ? 's' : ''} publiés',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactButton(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/partner/${event.organizerId}');
+            },
+            icon: const Icon(Icons.storefront_outlined, size: 18),
+            label: const Text('Voir le profil'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: HbColors.textPrimary,
+              side: BorderSide(color: Colors.grey.shade300),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/partner/${event.organizerId}');
+            },
+            icon: const Icon(Icons.mail_outline, size: 18),
+            label: const Text('Nous contacter'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: HbColors.brandPrimary,
+              side: const BorderSide(color: HbColors.brandPrimary),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Platform card (crawled / admin events)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PlatformOrganizerCard extends StatelessWidget {
+  final Event event;
+
+  const _PlatformOrganizerCard({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final sourceName = event.originalOrganizerName;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Divider(height: 24),
+          // Row: Owl icon + "Rédigé par" / "LEHIBOO EXPÉRIENCES"
+          Row(
+            children: [
+              // Le Hiboo owl — grey-tinted for platform attribution
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  shape: BoxShape.circle,
+                ),
+                child: ClipOval(
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Image.asset(
+                      'assets/images/logo_picto_lehiboo_old.png',
+                      // color: Colors.grey.shade500,
+                      colorBlendMode: BlendMode.srcATop,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Rédigé par',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: HbColors.brandPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'LEHIBOO EXPÉRIENCES',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: HbColors.textPrimary,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
 
-          // Description
-          if (_hasDescription) ...[
-            Text(
-              widget.event.organizerDescription!,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                height: 1.5,
+          // Source info (for crawled events)
+          if (sourceName != null && sourceName.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            RichText(
+              text: TextSpan(
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                children: [
+                  const TextSpan(text: 'Source infos : '),
+                  TextSpan(
+                    text: sourceName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: HbColors.textPrimary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
           ],
-
-          // Contact
-          if (_hasContact) ...[
-            _buildContactSection(),
-            const SizedBox(height: 16),
-          ],
-
-          // Co-organisateurs
-          if (_hasCoOrganizers) _buildCoOrganizers(),
         ],
       ),
     );
   }
-
-  Widget _buildContactSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Contact',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (widget.event.contactPhone != null &&
-                widget.event.contactPhone!.isNotEmpty)
-              _buildContactChip(
-                icon: Icons.phone_outlined,
-                label: widget.event.contactPhone!,
-                onTap: () => _openUrl('tel:${widget.event.contactPhone}'),
-              ),
-            if (widget.event.contactEmail != null &&
-                widget.event.contactEmail!.isNotEmpty)
-              _buildContactChip(
-                icon: Icons.email_outlined,
-                label: widget.event.contactEmail!,
-                onTap: () => _openUrl('mailto:${widget.event.contactEmail}'),
-              ),
-            if (widget.event.website != null &&
-                widget.event.website!.isNotEmpty)
-              _buildContactChip(
-                icon: Icons.language,
-                label: 'Site web',
-                onTap: () => _openUrl(widget.event.website!),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContactChip({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: HbColors.brandPrimary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: HbColors.brandPrimary),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                color: HbColors.brandPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCoOrganizers() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Partenaires',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: widget.event.coOrganizers.map((coOrg) {
-            return _buildCoOrganizerChip(coOrg);
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCoOrganizerChip(CoOrganizer coOrg) {
-    return GestureDetector(
-      onTap: coOrg.url != null ? () => _openUrl(coOrg.url!) : null,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Logo
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey.shade200,
-              ),
-              child: coOrg.imageUrl != null
-                  ? ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: coOrg.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => Center(
-                          child: Text(
-                            coOrg.name.isNotEmpty
-                                ? coOrg.name[0].toUpperCase()
-                                : '?',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  : Center(
-                      child: Text(
-                        coOrg.name.isNotEmpty
-                            ? coOrg.name[0].toUpperCase()
-                            : '?',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  coOrg.name,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: HbColors.textPrimary,
-                  ),
-                ),
-                if (coOrg.role != null && coOrg.role!.isNotEmpty)
-                  Text(
-                    coOrg.role!,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpandButton() {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() => _isExpanded = !_isExpanded);
-      },
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius:
-              const BorderRadius.vertical(bottom: Radius.circular(15)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _isExpanded ? 'Voir moins' : 'En savoir plus',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 4),
-            AnimatedRotation(
-              turns: _isExpanded ? 0.5 : 0,
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                Icons.keyboard_arrow_down,
-                color: Colors.grey.shade600,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openUrl(String url) async {
-    HapticFeedback.lightImpact();
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-}
-
-class _SocialLink {
-  final IconData icon;
-  final String url;
-  final Color color;
-
-  _SocialLink({
-    required this.icon,
-    required this.url,
-    required this.color,
-  });
 }

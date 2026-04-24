@@ -37,12 +37,12 @@ class HibonCounterWidget extends ConsumerWidget {
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: Colors.orange.withOpacity(0.3),
+                color: Colors.orange.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -64,7 +64,7 @@ class HibonCounterWidget extends ConsumerWidget {
                   fontSize: compact ? 14 : 16,
                   color: Colors.white,
                   shadows: [
-                    Shadow(color: Colors.black.withOpacity(0.2), offset: const Offset(0, 1), blurRadius: 2),
+                    Shadow(color: Colors.black.withValues(alpha: 0.2), offset: const Offset(0, 1), blurRadius: 2),
                   ],
                 ),
               ),
@@ -74,7 +74,7 @@ class HibonCounterWidget extends ConsumerWidget {
                   'Hibons',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

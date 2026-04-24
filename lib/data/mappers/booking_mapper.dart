@@ -23,6 +23,8 @@ extension BookingDtoX on BookingDto {
       customerFirstName: customerFirstName,
       customerLastName: customerLastName,
       customerPhone: customerPhone,
+      customerBirthDate: customerBirthDate,
+      customerTown: customerTown,
       reference: reference,
     );
   }

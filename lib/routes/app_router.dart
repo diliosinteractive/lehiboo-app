@@ -10,6 +10,7 @@ import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/city_detail_screen.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart'; // Corrected import
 import 'package:lehiboo/features/events/presentation/screens/event_list_screen.dart'; // Re-added for /recommended route
+import 'package:lehiboo/features/events/presentation/screens/event_questions_screen.dart';
 import 'package:lehiboo/features/search/presentation/screens/search_screen.dart';
 import '../features/search/presentation/screens/filter_screen.dart';
 import '../features/favorites/presentation/screens/favorites_screen.dart';
@@ -24,6 +25,7 @@ import '../features/auth/presentation/screens/customer_register_screen.dart';
 import '../features/auth/presentation/screens/business_register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/otp_verification_screen.dart';
+import '../features/reminders/presentation/screens/reminders_list_screen.dart';
 import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
 import '../features/booking/presentation/screens/booking_participant_screen.dart';
 import '../features/booking/presentation/screens/booking_payment_screen.dart';
@@ -54,17 +56,47 @@ import '../features/messages/presentation/screens/conversations_list_screen.dart
 import '../features/messages/presentation/screens/conversation_detail_screen.dart';
 import '../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../features/messages/presentation/screens/support_detail_screen.dart';
+/// ChangeNotifier that drives GoRouter.refreshListenable so redirect logic
+/// re-runs on auth state changes WITHOUT rebuilding the GoRouter instance
+/// (which would reset the navigation stack).
+class _AuthRouterRefresh extends ChangeNotifier {
+  _AuthRouterRefresh(Ref ref) {
+    _sub = ref.listen<AuthState>(
+      authProvider,
+      (previous, next) {
+        // Only refresh when meaningful routing state changes. Ignore pure
+        // errorMessage toggles — those must not reset the navigation stack.
+        if (previous?.status != next.status) {
+          debugPrint('🔀 AuthRouterRefresh: ${previous?.status} → ${next.status}');
+          notifyListeners();
+        }
+      },
+      fireImmediately: false,
+    );
+  }
+
+  late final ProviderSubscription<AuthState> _sub;
+
+  @override
+  void dispose() {
+    _sub.close();
+    super.dispose();
+  }
+}
+
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-  final prefs = ref.watch(sharedPreferencesProvider);
+  final prefs = ref.read(sharedPreferencesProvider);
+  final refresh = _AuthRouterRefresh(ref);
+  ref.onDispose(refresh.dispose);
 
   return GoRouter(
     initialLocation: '/bootstrap',
+    refreshListenable: refresh,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final onboardingCompleted =
           prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
-      final isAuthenticated = authState.isAuthenticated;
       final isPendingOtp = authState.status == AuthStatus.pendingVerification ||
           authState.status == AuthStatus.pendingLoginOtp;
 
@@ -97,7 +129,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isBootstrap) {
         if (!onboardingCompleted) return '/onboarding';
         if (isPendingOtp) return '/verify-otp';
-        return isAuthenticated ? '/' : '/login';
+        return '/';
       }
 
       // 1. If onboarding not completed, go to onboarding
@@ -108,8 +140,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 2. If onboarding completed but user on onboarding page, go to login
       if (onboardingCompleted && isOnboarding) {
-        debugPrint('🔀 Redirecting to /login (from onboarding)');
-        return '/login';
+        debugPrint('🔀 Redirecting to / (from onboarding)');
+        return '/';
       }
 
       // 3. If pending OTP verification
@@ -125,17 +157,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-otp'; // Force redirect to OTP screen for non-auth routes
       }
 
-      // 4. If not authenticated and not on auth route, redirect to login
-      if (!isAuthenticated && !isAuthRoute && !isOnboarding) {
-        debugPrint('🔀 Redirecting to /login (not authenticated)');
-        return '/login';
-      }
-
-      // 5. If authenticated and on auth route, redirect to home
-      if (isAuthenticated && isAuthRoute) {
-        debugPrint('🔀 Redirecting to / (authenticated)');
-        return '/';
-      }
+      // NOTE: no auto-redirect for "authenticated on auth route". Screens that
+      // perform auth (login, register, verify-otp, ...) navigate explicitly on
+      // success — an auto-redirect here would race with those calls and clear
+      // the navigation stack (losing e.g. the EventDetail a guest guard was
+      // invoked from).
 
       debugPrint('🔀 No redirect');
       return null;
@@ -289,6 +315,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           // Get from extra if available, otherwise from authState (for redirect case)
+          final authState = ref.read(authProvider);
           final userId = extra?['userId'] ?? authState.pendingUserId ?? '';
           final email = extra?['email'] ?? authState.pendingEmail ?? '';
           final type = extra?['type'] ??
@@ -318,6 +345,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final eventId = state.pathParameters['id']!;
           return EventDetailScreen(eventId: eventId);
+        },
+      ),
+      // Full Q&A screen for an event
+      GoRoute(
+        path: '/event/:id/questions',
+        name: 'event-questions',
+        builder: (context, state) {
+          final eventId = state.pathParameters['id']!;
+          final extra = state.extra;
+          final title = extra is Map<String, dynamic>
+              ? (extra['title']?.toString() ?? 'Événement')
+              : 'Événement';
+          return EventQuestionsScreen(
+            eventSlug: eventId,
+            eventTitle: title,
+          );
         },
       ),
       // Partner route
@@ -577,49 +620,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final uuid = state.pathParameters['uuid']!;
           return TripPlanEditScreen(planUuid: uuid);
-        },
-      ),
-
-      // Messages routes
-      GoRoute(
-        path: '/messages',
-        name: 'messages',
-        builder: (context, state) => const ConversationsListScreen(),
-      ),
-      GoRoute(
-        path: '/messages/new',
-        name: 'messages-new',
-        builder: (context, state) {
-          final bookingUuid = state.uri.queryParameters['booking'];
-          final orgUuid = state.uri.queryParameters['org'];
-          return NewConversationScreen(
-            fromBookingUuid: bookingUuid,
-            fromOrganizationUuid: orgUuid,
-          );
-        },
-      ),
-      GoRoute(
-        path: '/messages/support/new',
-        name: 'messages-support-new',
-        builder: (context, state) => const SupportDetailScreen(),
-      ),
-      GoRoute(
-        path: '/messages/support/:uuid',
-        name: 'messages-support-detail',
-        builder: (context, state) {
-          final uuid = state.pathParameters['uuid']!;
-          return ConversationDetailScreen(
-            conversationUuid: uuid,
-            isSupport: true,
-          );
-        },
-      ),
-      GoRoute(
-        path: '/messages/:uuid',
-        name: 'messages-detail',
-        builder: (context, state) {
-          final uuid = state.pathParameters['uuid']!;
-          return ConversationDetailScreen(conversationUuid: uuid);
         },
       ),
     ],

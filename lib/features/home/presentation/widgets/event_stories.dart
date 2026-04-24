@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lehiboo/core/themes/colors.dart';
-import 'package:lehiboo/domain/entities/activity.dart';
-import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/home/presentation/widgets/story_video_player.dart';
+import 'package:lehiboo/features/stories/domain/entities/story.dart';
+import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player/video_player.dart';
 
 /// Provider pour suivre les stories vues
 final viewedStoriesProvider = StateNotifierProvider<ViewedStoriesNotifier, Set<String>>((ref) {
@@ -43,16 +45,12 @@ class EventStories extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Utiliser les activités "featured" comme stories pour le mock
-    final activitiesAsync = ref.watch(featuredActivitiesProvider);
+    final storiesAsync = ref.watch(activeStoriesProvider);
     final viewedStories = ref.watch(viewedStoriesProvider);
 
-    return activitiesAsync.when(
-      data: (activities) {
-        if (activities.isEmpty) return const SizedBox.shrink();
-
-        // Limiter à 8 stories max
-        final stories = activities.take(8).toList();
+    return storiesAsync.when(
+      data: (stories) {
+        if (stories.isEmpty) return const SizedBox.shrink();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +89,7 @@ class EventStories extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   // Badge "NEW" si des stories non vues
-                  if (stories.any((s) => !viewedStories.contains(s.id)))
+                  if (stories.any((s) => !viewedStories.contains(s.uuid)))
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
@@ -122,10 +120,10 @@ class EventStories extends ConsumerWidget {
                 separatorBuilder: (context, index) => const SizedBox(width: 16),
                 itemBuilder: (context, index) {
                   final story = stories[index];
-                  final isViewed = viewedStories.contains(story.id);
+                  final isViewed = viewedStories.contains(story.uuid);
 
                   return _StoryCircle(
-                    activity: story,
+                    story: story,
                     isViewed: isViewed,
                     onTap: () => _openStoryViewer(context, ref, stories, index),
                   );
@@ -180,7 +178,7 @@ class EventStories extends ConsumerWidget {
     );
   }
 
-  void _openStoryViewer(BuildContext context, WidgetRef ref, List<Activity> stories, int initialIndex) {
+  void _openStoryViewer(BuildContext context, WidgetRef ref, List<Story> stories, int initialIndex) {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
@@ -200,12 +198,12 @@ class EventStories extends ConsumerWidget {
 
 /// Cercle d'une story avec bordure gradient animée
 class _StoryCircle extends StatefulWidget {
-  final Activity activity;
+  final Story story;
   final bool isViewed;
   final VoidCallback onTap;
 
   const _StoryCircle({
-    required this.activity,
+    required this.story,
     required this.isViewed,
     required this.onTap,
   });
@@ -301,15 +299,8 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            // Image
-                            widget.activity.imageUrl != null
-                                ? CachedNetworkImage(
-                                    imageUrl: widget.activity.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => _buildPlaceholder(),
-                                    errorWidget: (context, url, error) => _buildPlaceholder(),
-                                  )
-                                : _buildPlaceholder(),
+                            // Thumbnail: image→mediaUrl, video+poster→posterUrl, video→first frame
+                            _buildThumbnail(),
                             // Overlay sombre
                             Container(
                               decoration: BoxDecoration(
@@ -368,10 +359,38 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
     );
   }
 
+  Widget _buildThumbnail() {
+    // Image story → use mediaUrl directly
+    if (widget.story.mediaType == StoryMediaType.image) {
+      return CachedNetworkImage(
+        imageUrl: widget.story.mediaUrl,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildPlaceholder(),
+      );
+    }
+
+    // Video story with posterUrl → use poster image
+    if (widget.story.posterUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: widget.story.posterUrl!,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildPlaceholder(),
+      );
+    }
+
+    // Video story without posterUrl → extract first frame
+    return _VideoThumbnail(
+      videoUrl: widget.story.mediaUrl,
+      placeholder: _buildPlaceholder(),
+    );
+  }
+
   Widget _buildPlaceholder() {
     // Placeholder coloré avec initiale ou icône
-    final firstLetter = widget.activity.title.isNotEmpty
-        ? widget.activity.title[0].toUpperCase()
+    final firstLetter = widget.story.title.isNotEmpty
+        ? widget.story.title[0].toUpperCase()
         : '?';
 
     return Container(
@@ -400,11 +419,61 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
 
   String _getShortLabel() {
     // Afficher les 2 premiers mots du titre
-    final words = widget.activity.title.split(' ');
+    final words = widget.story.title.split(' ');
     if (words.length <= 2) {
-      return widget.activity.title;
+      return widget.story.title;
     }
     return '${words[0]} ${words[1]}';
+  }
+}
+
+/// Extracts the first frame of a video for use as a thumbnail.
+/// Used when posterUrl is null (async generation pending or failed).
+class _VideoThumbnail extends StatefulWidget {
+  final String videoUrl;
+  final Widget placeholder;
+
+  const _VideoThumbnail({
+    required this.videoUrl,
+    required this.placeholder,
+  });
+
+  @override
+  State<_VideoThumbnail> createState() => _VideoThumbnailState();
+}
+
+class _VideoThumbnailState extends State<_VideoThumbnail> {
+  VideoPlayerController? _controller;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+      ..setVolume(0)
+      ..initialize().then((_) {
+        if (mounted) setState(() => _initialized = true);
+      }).catchError((_) {});
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized || _controller == null) return widget.placeholder;
+
+    return FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: _controller!.value.size.width,
+        height: _controller!.value.size.height,
+        child: VideoPlayer(_controller!),
+      ),
+    );
   }
 }
 
@@ -453,7 +522,7 @@ class _StoryCircleSkeleton extends StatelessWidget {
 
 /// Overlay plein écran pour visualiser les stories
 class _StoryViewerOverlay extends ConsumerStatefulWidget {
-  final List<Activity> stories;
+  final List<Story> stories;
   final int initialIndex;
 
   const _StoryViewerOverlay({
@@ -470,6 +539,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
   late PageController _pageController;
   late AnimationController _progressController;
   int _currentIndex = 0;
+  final ValueNotifier<bool> _isPaused = ValueNotifier(false);
 
   static const _storyDuration = Duration(seconds: 5);
 
@@ -488,13 +558,15 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
         }
       });
 
-    // Mark initial story as viewed and start progress
+    // Mark initial story as viewed, record impression, and start progress
     _markCurrentAsViewed();
+    _recordCurrentImpression();
     _progressController.forward();
   }
 
   @override
   void dispose() {
+    _isPaused.dispose();
     _pageController.dispose();
     _progressController.dispose();
     super.dispose();
@@ -502,7 +574,12 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
   void _markCurrentAsViewed() {
     final currentStory = widget.stories[_currentIndex];
-    ref.read(viewedStoriesProvider.notifier).markAsViewed(currentStory.id);
+    ref.read(viewedStoriesProvider.notifier).markAsViewed(currentStory.uuid);
+  }
+
+  void _recordCurrentImpression() {
+    final currentStory = widget.stories[_currentIndex];
+    ref.read(activeStoriesProvider.notifier).recordImpression(currentStory.uuid);
   }
 
   void _goToNextStory() {
@@ -512,7 +589,11 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
         curve: Curves.easeInOut,
       );
     } else {
-      Navigator.of(context).pop();
+      _pageController.animateToPage(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -526,10 +607,12 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
   }
 
   void _onPageChanged(int index) {
+    _isPaused.value = false;
     setState(() {
       _currentIndex = index;
     });
     _markCurrentAsViewed();
+    _recordCurrentImpression();
     _progressController.reset();
     _progressController.forward();
   }
@@ -544,10 +627,12 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
   }
 
   void _onLongPressStart(LongPressStartDetails details) {
+    _isPaused.value = true;
     _progressController.stop();
   }
 
   void _onLongPressEnd(LongPressEndDetails details) {
+    _isPaused.value = false;
     _progressController.forward();
   }
 
@@ -556,7 +641,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
     if (details.velocity.pixelsPerSecond.dy < -500) {
       final currentStory = widget.stories[_currentIndex];
       Navigator.of(context).pop();
-      context.push('/event/${currentStory.id}', extra: currentStory);
+      context.push('/event/${currentStory.eventSlug}');
     }
     // Swipe down = close
     else if (details.velocity.pixelsPerSecond.dy > 500) {
@@ -583,7 +668,10 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
               onPageChanged: _onPageChanged,
               itemCount: widget.stories.length,
               itemBuilder: (context, index) {
-                return _StoryContent(activity: widget.stories[index]);
+                return _StoryContent(
+                  story: widget.stories[index],
+                  isPaused: _isPaused,
+                );
               },
             ),
 
@@ -641,19 +729,28 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
 /// Contenu d'une story
 class _StoryContent extends StatelessWidget {
-  final Activity activity;
+  final Story story;
+  final ValueNotifier<bool> isPaused;
 
-  const _StoryContent({required this.activity});
+  const _StoryContent({
+    required this.story,
+    required this.isPaused,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Background image
-        if (activity.imageUrl != null)
+        // Background media: video or image
+        if (story.mediaType == StoryMediaType.video)
+          StoryVideoPlayer(
+            videoUrl: story.mediaUrl,
+            isPaused: isPaused,
+          )
+        else
           CachedNetworkImage(
-            imageUrl: activity.imageUrl!,
+            imageUrl: story.mediaUrl,
             fit: BoxFit.cover,
             placeholder: (context, url) => Container(
               color: Colors.grey[900],
@@ -662,9 +759,7 @@ class _StoryContent extends StatelessWidget {
               ),
             ),
             errorWidget: (context, url, error) => _buildPlaceholder(),
-          )
-        else
-          _buildPlaceholder(),
+          ),
 
         // Gradient overlay at bottom
         Positioned(
@@ -695,7 +790,7 @@ class _StoryContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Category badge
-              if (activity.category != null)
+              if (story.categoryName != null)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
@@ -703,7 +798,7 @@ class _StoryContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    activity.category!.name,
+                    _buildCategoryLabel(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -716,7 +811,7 @@ class _StoryContent extends StatelessWidget {
 
               // Title
               Text(
-                activity.title,
+                story.title,
                 style: GoogleFonts.montserrat(
                   color: Colors.white,
                   fontSize: 24,
@@ -735,42 +830,51 @@ class _StoryContent extends StatelessWidget {
                   const Icon(Icons.location_on_outlined, color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    activity.city?.name ?? 'France',
+                    story.eventCity ?? 'France',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
                     ),
                   ),
-                  if (activity.nextSlot != null) ...[
-                    const SizedBox(width: 12),
-                    const Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatDate(activity.nextSlot!.startDateTime),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatDate(story.startDate),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
                     ),
-                  ],
+                  ),
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Swipe up indicator
-              Center(
-                child: Column(
-                  children: [
-                    const Icon(Icons.keyboard_arrow_up, color: Colors.white70, size: 28),
-                    Text(
-                      'Swipe pour voir',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 12,
-                      ),
+              // CTA button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.push('/event/${story.eventSlug}');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HbColors.brandPrimary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Voir l\'activité',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -778,6 +882,18 @@ class _StoryContent extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _buildCategoryLabel() {
+    final parts = <String>[];
+    if (story.categoryName != null && story.categoryName!.isNotEmpty) {
+      parts.add(story.categoryName!);
+    }
+    if (story.eventTagName != null && story.eventTagName!.isNotEmpty) {
+      parts.add(story.eventTagName!);
+    }
+    parts.add(story.eventBookingMode == 'booking' ? 'Billetterie' : 'Découverte');
+    return parts.join(' \u00b7 ');
   }
 
   Widget _buildPlaceholder() {

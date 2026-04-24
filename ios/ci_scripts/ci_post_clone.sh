@@ -49,8 +49,7 @@ else
 fi
 
 # Run pod install
-# Using --repo-update to ensure we get the latest specs
-pod install --repo-update
+pod install
 
 echo "Build setup complete!"
 
