@@ -53,16 +53,46 @@ import '../features/petit_boo/presentation/screens/conversation_list_screen.dart
 import '../features/trip_plans/presentation/screens/trip_plans_list_screen.dart';
 import '../features/trip_plans/presentation/screens/trip_plan_edit_screen.dart';
 
+/// ChangeNotifier that drives GoRouter.refreshListenable so redirect logic
+/// re-runs on auth state changes WITHOUT rebuilding the GoRouter instance
+/// (which would reset the navigation stack).
+class _AuthRouterRefresh extends ChangeNotifier {
+  _AuthRouterRefresh(Ref ref) {
+    _sub = ref.listen<AuthState>(
+      authProvider,
+      (previous, next) {
+        // Only refresh when meaningful routing state changes. Ignore pure
+        // errorMessage toggles — those must not reset the navigation stack.
+        if (previous?.status != next.status) {
+          debugPrint('🔀 AuthRouterRefresh: ${previous?.status} → ${next.status}');
+          notifyListeners();
+        }
+      },
+      fireImmediately: false,
+    );
+  }
+
+  late final ProviderSubscription<AuthState> _sub;
+
+  @override
+  void dispose() {
+    _sub.close();
+    super.dispose();
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-  final prefs = ref.watch(sharedPreferencesProvider);
+  final prefs = ref.read(sharedPreferencesProvider);
+  final refresh = _AuthRouterRefresh(ref);
+  ref.onDispose(refresh.dispose);
 
   return GoRouter(
     initialLocation: '/bootstrap',
+    refreshListenable: refresh,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final onboardingCompleted =
           prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
-      final isAuthenticated = authState.isAuthenticated;
       final isPendingOtp = authState.status == AuthStatus.pendingVerification ||
           authState.status == AuthStatus.pendingLoginOtp;
 
@@ -123,11 +153,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/verify-otp'; // Force redirect to OTP screen for non-auth routes
       }
 
-      // 4. If authenticated and on auth route, redirect to home
-      if (isAuthenticated && isAuthRoute) {
-        debugPrint('🔀 Redirecting to / (authenticated)');
-        return '/';
-      }
+      // NOTE: no auto-redirect for "authenticated on auth route". Screens that
+      // perform auth (login, register, verify-otp, ...) navigate explicitly on
+      // success — an auto-redirect here would race with those calls and clear
+      // the navigation stack (losing e.g. the EventDetail a guest guard was
+      // invoked from).
 
       debugPrint('🔀 No redirect');
       return null;
@@ -223,6 +253,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           // Get from extra if available, otherwise from authState (for redirect case)
+          final authState = ref.read(authProvider);
           final userId = extra?['userId'] ?? authState.pendingUserId ?? '';
           final email = extra?['email'] ?? authState.pendingEmail ?? '';
           final type = extra?['type'] ??
