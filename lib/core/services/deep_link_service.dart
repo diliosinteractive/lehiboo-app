@@ -165,6 +165,15 @@ class DeepLinkService {
       return '/profile'; // Or vendor dashboard when available
     }
 
+    // Message notifications
+    if (type == 'new_message' || type.contains('message')) {
+      final conversationUuid = data['conversation_uuid'] ?? data['uuid'];
+      if (conversationUuid != null) {
+        return '/messages/$conversationUuid';
+      }
+      return '/messages';
+    }
+
     // Default to notifications screen
     debugPrint('DeepLinkService: Unknown type "$type", using default route');
     return '/notifications';

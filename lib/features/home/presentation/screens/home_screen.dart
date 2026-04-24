@@ -11,6 +11,7 @@ import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_se
 import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
+import 'package:lehiboo/features/messages/presentation/providers/unread_count_provider.dart';
 
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
@@ -256,6 +257,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
       actions: [
+        Builder(
+          builder: (context) {
+            final unread = ref.watch(unreadCountProvider);
+            return IconButton(
+              icon: Badge(
+                isLabelVisible: unread > 0,
+                label: Text('$unread'),
+                child: const Icon(Icons.chat_bubble_outline,
+                    color: Colors.white),
+              ),
+              onPressed: () => context.push('/messages'),
+            );
+          },
+        ),
         IconButton(
           icon: Icon(
             Icons.favorite_border,

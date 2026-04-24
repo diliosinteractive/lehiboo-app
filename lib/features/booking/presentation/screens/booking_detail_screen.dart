@@ -408,6 +408,26 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                     onDownloadAll: _downloadAllTickets,
                   ),
                 SizedBox(height: tokens.spacing.m),
+                // Contact organizer button
+                if (_booking != null)
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push(
+                        '/messages/new/from-booking/${_booking!.id}',
+                      ),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      label: const Text("Contacter l'organisateur"),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                SizedBox(height: tokens.spacing.xs),
                 // Cancel button (if applicable)
                 if (canCancel)
                   Container(

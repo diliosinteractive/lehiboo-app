@@ -50,6 +50,10 @@ import '../features/petit_boo/presentation/screens/petit_boo_brain_screen.dart';
 import '../features/petit_boo/presentation/screens/conversation_list_screen.dart';
 import '../features/trip_plans/presentation/screens/trip_plans_list_screen.dart';
 import '../features/trip_plans/presentation/screens/trip_plan_edit_screen.dart';
+import '../features/messages/presentation/screens/conversations_list_screen.dart';
+import '../features/messages/presentation/screens/conversation_detail_screen.dart';
+import '../features/messages/presentation/screens/new_conversation_screen.dart';
+import '../features/messages/presentation/screens/support_detail_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -182,6 +186,64 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/my-bookings',
             name: 'my-bookings',
             builder: (context, state) => const BookingsListScreen(),
+          ),
+          GoRoute(
+            path: '/messages',
+            name: 'messages',
+            builder: (_, __) => const ConversationsListScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                name: 'messages-new',
+                builder: (_, __) => const NewConversationScreen(),
+              ),
+              GoRoute(
+                path: 'new/from-booking/:bookingUuid',
+                name: 'messages-from-booking',
+                builder: (_, state) => NewConversationScreen(
+                  fromBookingUuid:
+                      state.pathParameters['bookingUuid']!,
+                ),
+              ),
+              GoRoute(
+                path: 'new/from-organizer/:organizationUuid',
+                name: 'messages-from-organizer',
+                builder: (_, state) => NewConversationScreen(
+                  fromOrganizationUuid:
+                      state.pathParameters['organizationUuid']!,
+                ),
+              ),
+              GoRoute(
+                path: 'support',
+                name: 'messages-support',
+                redirect: (_, __) => '/messages',
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    name: 'messages-support-new',
+                    builder: (_, __) =>
+                        const SupportDetailScreen(isNew: true),
+                  ),
+                  GoRoute(
+                    path: ':conversationUuid',
+                    name: 'messages-support-detail',
+                    builder: (_, state) => SupportDetailScreen(
+                      conversationUuid:
+                          state.pathParameters['conversationUuid']!,
+                    ),
+                  ),
+                ],
+              ),
+              // IMPORTANT: 'support' must be declared before this wildcard
+              GoRoute(
+                path: ':conversationUuid',
+                name: 'messages-detail',
+                builder: (_, state) => ConversationDetailScreen(
+                  conversationUuid:
+                      state.pathParameters['conversationUuid']!,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -515,6 +577,49 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final uuid = state.pathParameters['uuid']!;
           return TripPlanEditScreen(planUuid: uuid);
+        },
+      ),
+
+      // Messages routes
+      GoRoute(
+        path: '/messages',
+        name: 'messages',
+        builder: (context, state) => const ConversationsListScreen(),
+      ),
+      GoRoute(
+        path: '/messages/new',
+        name: 'messages-new',
+        builder: (context, state) {
+          final bookingUuid = state.uri.queryParameters['booking'];
+          final orgUuid = state.uri.queryParameters['org'];
+          return NewConversationScreen(
+            fromBookingUuid: bookingUuid,
+            fromOrganizationUuid: orgUuid,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/messages/support/new',
+        name: 'messages-support-new',
+        builder: (context, state) => const SupportDetailScreen(),
+      ),
+      GoRoute(
+        path: '/messages/support/:uuid',
+        name: 'messages-support-detail',
+        builder: (context, state) {
+          final uuid = state.pathParameters['uuid']!;
+          return ConversationDetailScreen(
+            conversationUuid: uuid,
+            isSupport: true,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/messages/:uuid',
+        name: 'messages-detail',
+        builder: (context, state) {
+          final uuid = state.pathParameters['uuid']!;
+          return ConversationDetailScreen(conversationUuid: uuid);
         },
       ),
     ],
