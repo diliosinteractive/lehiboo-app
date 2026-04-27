@@ -161,11 +161,14 @@ class FavoriteListPickerSheet extends ConsumerWidget {
       children: [
         // Option "Non classé" / Tous les favoris
         _ListOptionTile(
-          icon: Icons.favorite_border,
-          iconColor: Colors.grey[600]!,
+          icon: Icons.favorite,
+          iconColor: const Color(0xFF10B981), // emerald 500 — actif, pas désactivé
           title: 'Non classé',
           subtitle: 'Favoris sans liste',
-          isSelected: currentListId == null && !isAlreadyFavorite,
+          // On highlight uniquement quand le favori est déjà dans "Non classé"
+          // (cas du déplacement). Sur un ajout neuf, pas d'auto-sélection : ça
+          // évitait de simuler un état désactivé / déjà coché.
+          isSelected: isAlreadyFavorite && currentListId == null,
           onTap: () {
             HapticFeedback.selectionClick();
             Navigator.of(context).pop(const FavoriteListPickerResult(listId: null));

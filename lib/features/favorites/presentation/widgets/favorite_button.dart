@@ -163,8 +163,12 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
     HapticFeedback.mediumImpact();
 
-    // Obtenir l'ID de liste actuel de l'événement
-    final currentListId = widget.event.additionalInfo?['list_id'] as String?;
+    // Obtenir l'ID de liste actuel via le notifier (autoritaire). Lire depuis
+    // `widget.event.additionalInfo` ne marche que quand l'event vient de
+    // l'endpoint `/me/favorites` ; depuis la home ou le détail, ce champ est
+    // absent → la liste actuelle ne serait pas highlight dans le picker.
+    final currentListId =
+        ref.read(favoritesProvider.notifier).getEventListId(widget.event.id);
 
     if (!mounted) return;
 
