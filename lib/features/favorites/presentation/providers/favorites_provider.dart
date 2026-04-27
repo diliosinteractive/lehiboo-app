@@ -237,13 +237,22 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
            state.value?.any((e) => e.additionalInfo?['internal_id'] == eventId) == true;
   }
 
-  /// Obtenir l'ID de liste actuel d'un événement
+  /// Obtenir l'ID de liste actuel d'un événement.
+  ///
+  /// Lookup dans l'état des favoris (autoritaire), pas dans `additionalInfo`
+  /// de l'event passé en paramètre — ce dernier peut venir d'un endpoint qui
+  /// n'expose pas la liste (events list, event detail).
+  ///
+  /// Retourne `null` si l'event n'est pas favori OU est dans "Non classé".
   String? getEventListId(String eventId) {
-    final event = state.value?.firstWhere(
-      (e) => e.id == eventId,
-      orElse: () => throw Exception('Event not found'),
-    );
-    return event?.additionalInfo?['list_id'] as String?;
+    final events = state.value;
+    if (events == null) return null;
+    for (final event in events) {
+      if (event.id == eventId) {
+        return event.additionalInfo?['list_id'] as String?;
+      }
+    }
+    return null;
   }
 }
 
