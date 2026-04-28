@@ -285,7 +285,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: Badge(
                 isLabelVisible: unread > 0,
                 label: Text('$unread'),
-                child: const Icon(Icons.mail_outline,
+                child: const Icon(Icons.forum_outlined,
                     color: Colors.white),
               ),
               onPressed: () => context.push('/messages'),

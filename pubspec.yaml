@@ -95,6 +95,7 @@ dependencies:
   font_awesome_flutter: ^10.12.0
   package_info_plus: ^8.1.1
   confetti: ^0.8.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
