@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Widget d'affichage d'étoiles de notation
-///
-/// Modes:
-/// - Display: Affiche la note avec étoiles remplies partiellement
-/// - Interactive: Permet de sélectionner une note
+/// Affichage non-interactif d'une note (avec support des étoiles partielles).
 class RatingStars extends StatelessWidget {
   final double rating;
   final double size;
@@ -31,9 +27,7 @@ class RatingStars extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: alignment,
       children: List.generate(maxStars, (index) {
-        final starValue = index + 1;
         final fillAmount = (rating - index).clamp(0.0, 1.0);
-
         return Padding(
           padding: EdgeInsets.only(right: index < maxStars - 1 ? spacing : 0),
           child: _buildStar(fillAmount),
@@ -44,38 +38,21 @@ class RatingStars extends StatelessWidget {
 
   Widget _buildStar(double fillAmount) {
     if (fillAmount >= 1) {
-      // Étoile pleine
-      return Icon(
-        Icons.star,
-        size: size,
-        color: activeColor,
-      );
+      return Icon(Icons.star, size: size, color: activeColor);
     } else if (fillAmount > 0) {
-      // Étoile partielle
       return Stack(
         children: [
-          Icon(
-            Icons.star,
-            size: size,
-            color: inactiveColor.withValues(alpha: 0.3),
-          ),
+          Icon(Icons.star,
+              size: size, color: inactiveColor.withValues(alpha: 0.3)),
           ClipRect(
             clipper: _StarClipper(fillAmount),
-            child: Icon(
-              Icons.star,
-              size: size,
-              color: activeColor,
-            ),
+            child: Icon(Icons.star, size: size, color: activeColor),
           ),
         ],
       );
     } else {
-      // Étoile vide
-      return Icon(
-        Icons.star,
-        size: size,
-        color: inactiveColor.withValues(alpha: 0.3),
-      );
+      return Icon(Icons.star,
+          size: size, color: inactiveColor.withValues(alpha: 0.3));
     }
   }
 }
@@ -86,15 +63,15 @@ class _StarClipper extends CustomClipper<Rect> {
   _StarClipper(this.fillAmount);
 
   @override
-  Rect getClip(Size size) {
-    return Rect.fromLTWH(0, 0, size.width * fillAmount, size.height);
-  }
+  Rect getClip(Size size) =>
+      Rect.fromLTWH(0, 0, size.width * fillAmount, size.height);
 
   @override
-  bool shouldReclip(_StarClipper oldClipper) => fillAmount != oldClipper.fillAmount;
+  bool shouldReclip(_StarClipper oldClipper) =>
+      fillAmount != oldClipper.fillAmount;
 }
 
-/// Widget interactif pour sélectionner une note
+/// Sélection interactive d'une note (1-5).
 class InteractiveRatingStars extends StatefulWidget {
   final double rating;
   final ValueChanged<double> onRatingChanged;
@@ -131,8 +108,9 @@ class _InteractiveRatingStarsState extends State<InteractiveRatingStars> {
       children: List.generate(widget.maxStars, (index) {
         final starValue = index + 1;
         final isFilled = displayRating >= starValue;
-        final isHalfFilled =
-            widget.allowHalf && displayRating >= starValue - 0.5 && displayRating < starValue;
+        final isHalfFilled = widget.allowHalf &&
+            displayRating >= starValue - 0.5 &&
+            displayRating < starValue;
 
         return MouseRegion(
           onEnter: (_) => setState(() => _hoverRating = starValue.toDouble()),
@@ -162,7 +140,7 @@ class _InteractiveRatingStarsState extends State<InteractiveRatingStars> {
   }
 }
 
-/// Barre de progression pour la distribution des notes
+/// Barre de distribution pour une étoile donnée.
 class RatingDistributionBar extends StatelessWidget {
   final int starCount;
   final int count;
@@ -185,7 +163,6 @@ class RatingDistributionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Label étoile
         SizedBox(
           width: 20,
           child: Text(
@@ -199,12 +176,9 @@ class RatingDistributionBar extends StatelessWidget {
         ),
         const Icon(Icons.star, size: 12, color: Colors.amber),
         const SizedBox(width: 8),
-
-        // Barre de progression
         Expanded(
           child: Stack(
             children: [
-              // Fond
               Container(
                 height: height,
                 decoration: BoxDecoration(
@@ -212,7 +186,6 @@ class RatingDistributionBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(height / 2),
                 ),
               ),
-              // Remplissage
               FractionallySizedBox(
                 widthFactor: _percentage,
                 child: Container(
@@ -226,17 +199,12 @@ class RatingDistributionBar extends StatelessWidget {
             ],
           ),
         ),
-
-        // Compteur
         const SizedBox(width: 8),
         SizedBox(
           width: 30,
           child: Text(
             '$count',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             textAlign: TextAlign.right,
           ),
         ),

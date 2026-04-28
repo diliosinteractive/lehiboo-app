@@ -25,6 +25,8 @@ import 'features/blog/domain/repositories/blog_repository.dart';
 import 'features/petit_boo/data/repositories/petit_boo_repository_impl.dart';
 import 'features/petit_boo/domain/repositories/petit_boo_repository.dart';
 import 'features/messages/data/repositories/messages_repository_impl.dart';
+import 'features/reviews/data/repositories/reviews_repository_impl.dart';
+import 'features/reviews/domain/repositories/reviews_repository.dart';
 
 // Fake Repositories (for offline testing)
 import 'data/repositories/fake_activity_repository_impl.dart';
@@ -139,6 +141,10 @@ List<Override> _getRealApiOverrides() {
     // Messages Repository
     messagesRepositoryProvider.overrideWith((ref) {
       return ref.read(messagesRepositoryImplProvider);
+    }),
+    // Reviews Repository
+    reviewsRepositoryProvider.overrideWith((ref) {
+      return ref.read(reviewsRepositoryImplProvider);
     }),
     // Keep activity repository for backward compatibility
     activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),

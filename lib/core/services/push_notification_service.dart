@@ -212,6 +212,17 @@ class PushNotificationService {
           importance: Importance.high,
         ),
       );
+
+      // Reviews channel
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'reviews',
+          'Avis',
+          description:
+              'Notifications sur la modération de vos avis (publié, refusé)',
+          importance: Importance.high,
+        ),
+      );
     }
   }
 

@@ -178,6 +178,15 @@ class DeepLinkService {
       return '/messages';
     }
 
+    // Review notifications (ReviewSubmitted/Approved/Rejected)
+    if (type.contains('review')) {
+      final reviewUuid = data['review_uuid'] ?? data['uuid'];
+      if (reviewUuid != null) {
+        return '/my-reviews?reviewUuid=$reviewUuid';
+      }
+      return '/my-reviews';
+    }
+
     // Default to notifications screen
     debugPrint('DeepLinkService: Unknown type "$type", using default route');
     return '/notifications';
@@ -190,6 +199,7 @@ class DeepLinkService {
       '/event/',
       '/events/',
       '/my-bookings',
+      '/my-reviews',
       '/bookings/',
       '/profile',
       '/settings',
