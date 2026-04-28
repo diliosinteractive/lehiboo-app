@@ -5,6 +5,7 @@ import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/core/widgets/buttons/hb_button.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
+import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_stepper_header.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -67,7 +68,10 @@ class BookingConfirmationScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: HbButton.secondary(
                   label: 'Retour à l\'accueil',
-              onTap: () => context.go('/'),
+              onTap: () {
+                ref.invalidate(homeFeedProvider);
+                context.go('/');
+              },
             ),
           ),
         ],

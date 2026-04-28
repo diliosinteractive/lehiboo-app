@@ -11,6 +11,7 @@ import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 
 /// Écran de succès après une réservation avec confettis
 class BookingSuccessScreen extends ConsumerStatefulWidget {
@@ -559,7 +560,10 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => context.go('/'),
+            onPressed: () {
+              ref.invalidate(homeFeedProvider);
+              context.go('/');
+            },
             icon: const Icon(Icons.home_outlined),
             label: const Text('Retour à l\'accueil'),
             style: OutlinedButton.styleFrom(

@@ -484,7 +484,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Ville
             TextFormField(
               controller: _townController,
-              decoration: _inputDecoration('Ville'),
+              decoration: _inputDecoration('Ville d\'appartenance'),
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value != null && value.length > 255) {

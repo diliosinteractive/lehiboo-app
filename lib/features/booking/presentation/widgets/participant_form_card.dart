@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 
 /// A single participant form collecting attendee details for one ticket.
@@ -84,7 +85,8 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
       _emailCtrl.text = buyer.email ?? '';
       _phoneCtrl.text = buyer.phone ?? '';
       _cityCtrl.text = buyer.town ?? '';
-      _ageCtrl.text = '';
+      final age = computeAge(buyer.birthDate);
+      _ageCtrl.text = age != null ? age.toString() : '';
     } else {
       _firstNameCtrl.clear();
       _lastNameCtrl.clear();
@@ -204,7 +206,7 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
           // City (optional)
           TextFormField(
             controller: _cityCtrl,
-            decoration: _inputDecoration('Ville'),
+            decoration: _inputDecoration('Ville d\'appartenance'),
             textCapitalization: TextCapitalization.words,
             readOnly: _sameAsBuyer,
             onChanged: (_) => _emitChange(),
