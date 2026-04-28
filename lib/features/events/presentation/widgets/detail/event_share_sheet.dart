@@ -318,33 +318,35 @@ class ShareButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(
-          Icons.share_outlined,
-          size: 20,
-          color: iconColor ?? HbColors.textPrimary,
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        EventShareSheet.show(
+          context,
+          event: event,
+          shareUrl: shareUrl,
+        );
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: backgroundColor ?? Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 8,
+            ),
+          ],
         ),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          EventShareSheet.show(
-            context,
-            event: event,
-            shareUrl: shareUrl,
-          );
-        },
-        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        style: IconButton.styleFrom(padding: EdgeInsets.zero),
+        child: Center(
+          child: Icon(
+            Icons.share_outlined,
+            size: 20,
+            color: iconColor ?? HbColors.textPrimary,
+          ),
+        ),
       ),
     );
   }

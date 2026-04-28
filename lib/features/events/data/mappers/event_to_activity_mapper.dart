@@ -8,12 +8,22 @@ import '../../domain/entities/event.dart';
 class EventToActivityMapper {
   static Activity toActivity(Event event) {
     // Map EventCategory to Category
+    // Use raw API data for unrecognized slugs so the badge still shows
     Category? category;
     if (event.category != EventCategory.other) {
       category = Category(
         id: event.category.index.toString(),
         slug: event.rawCategorySlug ?? _categoryToSlug(event.category),
         name: event.categoryLabel,
+      );
+    } else if (event.rawCategorySlug != null && event.rawCategorySlug!.isNotEmpty) {
+      final name = event.allCategoryNames.isNotEmpty
+          ? event.allCategoryNames.first
+          : _slugToDisplayName(event.rawCategorySlug!);
+      category = Category(
+        id: 'other',
+        slug: event.rawCategorySlug!,
+        name: name,
       );
     }
 
@@ -134,6 +144,16 @@ class EventToActivityMapper {
       case EventCategory.other:
         return 'autre';
     }
+  }
+
+  /// Convert a slug like "bien-etre" to a display name "Bien etre"
+  static String _slugToDisplayName(String slug) {
+    return slug
+        .replaceAll('-', ' ')
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
   }
 
   static String _eventStatusToSlotStatus(EventStatus status) {

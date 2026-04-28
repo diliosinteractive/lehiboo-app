@@ -19,7 +19,6 @@ import '../widgets/detail/event_social_proof.dart';
 import '../widgets/detail/event_organizer_card.dart';
 import '../widgets/detail/event_date_selector.dart';
 import '../widgets/detail/event_ticket_card.dart';
-import '../widgets/detail/event_indicative_prices.dart';
 import '../widgets/detail/event_practical_info.dart';
 import '../widgets/detail/event_accessibility_section.dart';
 import '../widgets/detail/event_location_map.dart';
@@ -212,13 +211,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Widget _buildStickyBar(Event event) {
     int reminderCount = 0;
+    bool isSelectedSlotReminded = false;
     if (!event.hasDirectBooking) {
       final eventUuid = _looksLikeUuid(event.id) ? event.id : widget.eventId;
       final remindersAsync = ref.watch(eventRemindersProvider(eventUuid));
-      reminderCount = remindersAsync.maybeWhen(
-        data: (ids) => ids.length,
-        orElse: () => 0,
+      final remindedIds = remindersAsync.maybeWhen(
+        data: (ids) => ids,
+        orElse: () => <String>{},
       );
+      reminderCount = remindedIds.length;
+      if (_selectedSlotId != null) {
+        isSelectedSlotReminded = remindedIds.contains(_selectedSlotId);
+      }
     }
 
     return EventStickyBookingBar(
@@ -228,11 +232,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       selectedSlotId: _selectedSlotId,
       selectedDateLabel: _getSelectedDateLabel(),
       selectedSlot: _selectedSlot,
-      onBookPressed: !event.hasDirectBooking && reminderCount > 0
-          ? () => context.push('/my-reminders')
-          : _onBookPressed,
+      onBookPressed: _onBookPressed,
       onViewDatesPressed: _scrollToDateSection,
       reminderCount: reminderCount,
+      isSelectedSlotReminded: isSelectedSlotReminded,
+      onReminderToggled: _selectedSlot != null
+          ? () => _toggleReminder(event, _selectedSlot!)
+          : null,
     );
   }
 
@@ -378,10 +384,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               const SizedBox(height: 24),
 
-              // 5b. Tarifs
-              _buildPricingSection(event),
-
-              const SizedBox(height: 24),
+              // 5b. Tarification (discovery events only)
+              if (!event.hasDirectBooking) ...[
+                _buildPricingSection(event),
+                const SizedBox(height: 24),
+              ],
 
               // For booking events: dates + tickets right after pricing
               if (event.hasDirectBooking) ...[
@@ -441,10 +448,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 const SizedBox(height: 24),
               ],
 
-              // 7b. Indicative prices
-              EventIndicativePrices(prices: event.indicativePrices),
-              if (event.indicativePrices.isNotEmpty)
-                const SizedBox(height: 24),
 
               // 8. Infos pratiques (grille 2x2)
               EventPracticalInfo(
@@ -677,27 +680,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget _buildDateSelectorWidget(Event event, List<CalendarDateSlot> slots) {
     final isDiscovery = !event.hasDirectBooking;
 
-    if (isDiscovery) {
-      final eventUuid = _looksLikeUuid(event.id) ? event.id : widget.eventId;
-      final remindersAsync = ref.watch(eventRemindersProvider(eventUuid));
-      final remindedIds = remindersAsync.maybeWhen(
-        data: (ids) => ids,
-        orElse: () => <String>{},
-      );
-
-      return EventDateSelector(
-        slots: slots,
-        selectedSlotId: _selectedSlotId,
-        onSlotSelected: (slot) {
-          HapticFeedback.selectionClick();
-          setState(() => _selectedSlotId = slot.id);
-        },
-        onViewAllDates: () => _showAllDatesModal(slots),
-        remindedSlotIds: remindedIds,
-        onReminderToggled: (slot) => _toggleReminder(event, slot),
-      );
-    }
-
     return EventDateSelector(
       slots: slots,
       selectedSlotId: _selectedSlotId,
@@ -838,7 +820,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Tarifs',
+            'Tarification',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -862,172 +844,109 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Widget _buildPriceContent(Event event) {
-    switch (event.priceType) {
-      case PriceType.free:
-        return Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: HbColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Gratuit',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: HbColors.success,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Aucun frais d\'entrée',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-            ),
-          ],
-        );
+    final pricingType = event.discoveryPricingType;
 
-      case PriceType.donation:
-        return Row(
-          children: [
-            const Icon(Icons.favorite_outline, size: 18, color: HbColors.brandPrimary),
-            const SizedBox(width: 8),
-            const Text(
-              'Participation libre',
+    // Null → undefined pricing
+    if (pricingType == null) {
+      return Row(
+        children: [
+          Icon(Icons.info_outline, size: 16, color: Colors.grey.shade400),
+          const SizedBox(width: 8),
+          Text(
+            'Non définie',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Free
+    if (pricingType == 'free') {
+      return Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: HbColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'Gratuit',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: HbColors.textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: HbColors.success,
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              '— montant au choix',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-            ),
-          ],
-        );
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Aucun frais d\'entrée',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+          ),
+        ],
+      );
+    }
 
-      case PriceType.paid:
-      case PriceType.variable:
-        // Effective price is zero → display as free
-        final effectivePrice = event.price ?? event.minPrice ?? 0;
-        if (effectivePrice == 0 && (event.maxPrice ?? 0) == 0) {
-          return Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: HbColors.success.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Gratuit',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: HbColors.success,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Aucun frais d\'entrée',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-              ),
-            ],
-          );
-        }
+    // Paid → display indicative prices if available
+    if (event.indicativePrices.isNotEmpty) {
+      final sorted = List.of(event.indicativePrices)
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-        final hasRange = event.minPrice != null &&
-            event.maxPrice != null &&
-            event.minPrice != event.maxPrice;
-
-        if (hasRange) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'À partir de',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    '${event.minPrice!.toStringAsFixed(0)} €',
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Prix indicatifs communiqués par l\'organisateur',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < sorted.length; i++) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    sorted[i].label,
                     style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                       color: HbColors.textPrimary,
                     ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Container(
-                        height: 1,
-                        color: Colors.grey.shade200,
-                      ),
-                    ),
+                ),
+                Text(
+                  sorted[i].formattedPrice,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: HbColors.textPrimary,
                   ),
-                  Text(
-                    '${event.maxPrice!.toStringAsFixed(0)} €',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Min',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                  ),
-                  Text(
-                    'Max',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                  ),
-                ],
-              ),
-            ],
-          );
-        }
-
-        // Single price or fallback
-        final priceText = event.price != null
-            ? '${event.price!.toStringAsFixed(2)} €'
-            : event.formattedPrice;
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              priceText,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: HbColors.textPrimary,
-              ),
+                ),
+              ],
             ),
-            if (event.price != null) ...[
-              const SizedBox(width: 6),
-              Text(
-                'par personne',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-              ),
-            ],
+            if (i < sorted.length - 1)
+              Divider(height: 20, color: Colors.grey.shade200),
           ],
-        );
+        ],
+      );
     }
+
+    // Paid but no indicative prices
+    return Row(
+      children: [
+        Icon(Icons.info_outline, size: 16, color: Colors.grey.shade400),
+        const SizedBox(width: 8),
+        Text(
+          'Non définie',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildTagsSection(Event event) {

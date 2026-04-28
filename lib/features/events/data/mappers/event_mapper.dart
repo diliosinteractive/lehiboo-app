@@ -160,6 +160,7 @@ class EventMapper {
       organizerIsPlatform: dto.organizer?.isPlatform ?? false,
       organizerVerified: dto.organizer?.verified ?? false,
       organizerEventsCount: dto.organizer?.eventsCount,
+      organizerFollowersCount: dto.organizer?.followersCount,
       organizerVenueTypes: dto.organizer?.venueTypes ?? const [],
       organizerAllowPublicContact: dto.organizer?.allowPublicContact ?? false,
       isFavorite: dto.isFavorite,
@@ -167,6 +168,7 @@ class EventMapper {
       isRecommended: false,
       status: _determineStatus(startDate, endDate),
       hasDirectBooking: dto.bookingMode != 'discovery',
+      discoveryPricingType: dto.discoveryPricingType,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       views: 0,
@@ -203,8 +205,11 @@ class EventMapper {
       externalBooking: dto.externalBooking != null
           ? ExternalBooking.fromJson(dto.externalBooking!)
           : null,
-      eventTypeTerm:
-          dto.eventType != null ? TaxonomyTerm.fromJson(dto.eventType!) : null,
+      eventTypeTerm: dto.eventTag != null
+          ? TaxonomyTerm.fromJson(dto.eventTag!)
+          : dto.eventType != null
+              ? TaxonomyTerm.fromJson(dto.eventType!)
+              : null,
       targetAudienceTerms: _resolveTargetAudienceTerms(dto),
       allCategoryNames: _resolveAllCategoryNames(dto),
       thematiqueName: dto.thematique?.name.isNotEmpty == true ? dto.thematique!.name : null,

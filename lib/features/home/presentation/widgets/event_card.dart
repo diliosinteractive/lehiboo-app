@@ -5,12 +5,12 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
-import 'package:intl/intl.dart';
 
 class EventCard extends ConsumerWidget {
   final Activity activity;
   final bool isCompact;
-  final bool showTimeBadge;
+  final bool isToday;
+  final bool isTomorrow;
   final String? heroTagPrefix;
 
   /// Si true, la carte remplit son container parent (pour GridView avec childAspectRatio)
@@ -23,7 +23,8 @@ class EventCard extends ConsumerWidget {
     super.key,
     required this.activity,
     this.isCompact = false,
-    this.showTimeBadge = false,
+    this.isToday = false,
+    this.isTomorrow = false,
     this.heroTagPrefix,
     this.fillContainer = false,
     this.imageHeight,
@@ -38,7 +39,8 @@ class EventCard extends ConsumerWidget {
     final dayName = days[dt.weekday - 1];
     final monthName = months[dt.month - 1];
     final time = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    return '$dayName ${dt.day} $monthName à $time';
+    final year = (dt.year % 100).toString().padLeft(2, '0');
+    return '$dayName ${dt.day} $monthName $year à $time';
   }
 
   @override
@@ -57,11 +59,11 @@ class EventCard extends ConsumerWidget {
                   // Image portrait fixe (même hauteur pour toutes les cards)
                   AspectRatio(
                     aspectRatio: 4 / 5,
-                    child: _buildImageStack(),
+                    child: _buildImageStack(context),
                   ),
                   // Contenu complet, Expanded pour éviter overflow
                   Expanded(
-                    child: _buildContentSection(compact: false, ctx: context),
+                    child: _buildContentSection(compact: false),
                   ),
                 ],
               )
@@ -69,15 +71,15 @@ class EventCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildImageStack(),
-                  _buildContentSection(compact: false, ctx: context),
+                  _buildImageStack(context),
+                  _buildContentSection(compact: false),
                 ],
               ),
       ),
     );
   }
 
-  Widget _buildImageStack() {
+  Widget _buildImageStack(BuildContext context) {
     final double? height = imageHeight ?? (fillContainer ? null : (isCompact ? 240 : 260));
 
     return Stack(
@@ -112,81 +114,81 @@ class EventCard extends ConsumerWidget {
           ),
         ),
 
-        // Time Badge OR Category Badge
-        if (showTimeBadge && activity.nextSlot != null)
-          Positioned(
-            top: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8F5),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  )
-                ],
-              ),
-              child: Builder(
-                builder: (context) {
-                  String timeText;
-                  try {
-                    timeText = DateFormat('HH:mm').format(activity.nextSlot!.startDateTime);
-                  } catch (e) {
-                    final dt = activity.nextSlot!.startDateTime;
-                    timeText = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-                  }
-                  return Text(
-                    timeText,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+        // Top row: Date/Time Badge + Favorite Button
+        Positioned(
+          top: 12,
+          left: 12,
+          right: 12,
+          child: Row(
+            children: [
+              if (activity.nextSlot != null)
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  );
-                },
+                    child: Text(
+                      _formatDateBadge(activity.nextSlot!.startDateTime),
+                      style: TextStyle(
+                        color: (isToday || isTomorrow)
+                            ? const Color(0xFFFF601F)
+                            : Colors.black,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                const Expanded(flex: 4, child: SizedBox.shrink()),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 1,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FavoriteButton(
+                    event: _activityToEvent(),
+                    iconSize: 18,
+                    containerSize: 32,
+                  ),
+                ),
               ),
-            ),
-          )
-        else if (activity.category != null)
+            ],
+          ),
+        ),
+
+        // Bottom-left: Category Badge
+        if (activity.category != null)
           Positioned(
-            top: 12,
+            bottom: 12,
             left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: _getCategoryColor(activity.category!.slug).withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                activity.category!.name,
-                style: const TextStyle(
+            child: GestureDetector(
+              onTap: () => context.push('/search?categorySlug=${activity.category!.slug}'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  activity.category!.name,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
           ),
-
-        // Favorite Button
-        Positioned(
-          top: 12,
-          right: 12,
-          child: FavoriteButton(
-            event: _activityToEvent(),
-            iconSize: 18,
-            containerSize: 32,
-          ),
-        ),
       ],
     );
   }
 
-  Widget _buildContentSection({required bool compact, BuildContext? ctx}) {
+  Widget _buildContentSection({required bool compact}) {
     return Padding(
       padding: EdgeInsets.only(
         top: compact ? 8 : 12,
@@ -198,45 +200,17 @@ class EventCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Title + Category chip
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  activity.title,
-                  style: TextStyle(
-                    fontSize: compact ? 13 : 15,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1A1A1A),
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (activity.category != null) ...[
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: ctx != null ? () => ctx.push('/search?categorySlug=${activity.category!.slug}') : null,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _getCategoryColor(activity.category!.slug).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      activity.category!.name,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: _getCategoryColor(activity.category!.slug),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
+          // Title
+          Text(
+            activity.title,
+            style: TextStyle(
+              fontSize: compact ? 13 : 15,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1A1A1A),
+              height: 1.2,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
 
           if (!compact) ...[
@@ -287,30 +261,13 @@ class EventCard extends ConsumerWidget {
                 ),
               ),
 
-            // Location + Date/Time
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: activity.city?.name ?? activity.city?.region ?? 'France',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 13,
-                      height: 1.1,
-                    ),
-                  ),
-                  if (activity.nextSlot != null) ...[
-                    const TextSpan(text: ' • '),
-                    TextSpan(
-                      text: _formatSlotDateTime(activity.nextSlot!.startDateTime),
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 13,
-                        height: 1.1,
-                      ),
-                    ),
-                  ],
-                ],
+            // Location
+            Text(
+              activity.city?.name ?? activity.city?.region ?? 'France',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13,
+                height: 1.1,
               ),
             ),
             const SizedBox(height: 4),
@@ -431,22 +388,16 @@ class EventCard extends ConsumerWidget {
     );
   }
 
-  Color _getCategoryColor(String slug) {
-    switch (slug.toLowerCase()) {
-      case 'atelier':
-        return Colors.purple;
-      case 'concert':
-        return Colors.blue;
-      case 'spectacle':
-        return Colors.red;
-      case 'sport':
-        return Colors.green;
-      case 'marche':
-        return Colors.orange;
-      case 'culture':
-        return Colors.indigo;
-      default:
-        return const Color(0xFFFF601F);
+  String _formatDateBadge(DateTime dt) {
+    final time =
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    if (isToday) {
+      return 'Aujourd\'hui à $time';
     }
+    if (isTomorrow) {
+      return 'Demain à $time';
+    }
+    return _formatSlotDateTime(dt);
   }
+
 }

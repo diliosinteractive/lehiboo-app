@@ -21,24 +21,26 @@ class FakeBookingRepositoryImpl implements BookingRepository {
   Future<Booking> createBooking({
     required String activityId,
     required String slotId,
-    required int quantity,
+    required List<TicketSelection> ticketSelections,
     required BuyerInfo buyer,
-    required List<ParticipantInfo> participants,
+    bool acceptTerms = false,
+    bool acceptNewsletter = false,
+    String? promoCode,
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
+    final totalQuantity = ticketSelections.fold<int>(0, (sum, ts) => sum + ts.quantity);
+
     final newBooking = Booking(
       id: 'fake_booking_${DateTime.now().millisecondsSinceEpoch}',
       userId: 'user_1',
-      slotId: slotId.toString(), // Ensure String
-      activityId: activityId.toString(), // Ensure String
-      quantity: quantity,
+      slotId: slotId,
+      activityId: activityId,
+      quantity: totalQuantity,
       status: 'pending',
-      // Mock prices/etc would be needed here normally
       totalPrice: 0.0,
     );
-    
-    // In a real fake repo, we'd store this temporarily to confirm later
+
     return newBooking;
   }
 

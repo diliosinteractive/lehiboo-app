@@ -86,6 +86,7 @@ class Event extends Equatable {
   final bool organizerIsPlatform;
   final bool organizerVerified;
   final int? organizerEventsCount;
+  final int? organizerFollowersCount;
   final List<String> organizerVenueTypes;
   final bool organizerAllowPublicContact;
   final bool isFavorite;
@@ -94,6 +95,7 @@ class Event extends Equatable {
   final EventStatus status;
   final String? bookingUrl;
   final bool hasDirectBooking;
+  final String? discoveryPricingType;
   final DateTime createdAt;
   final DateTime updatedAt;
   final int views;
@@ -177,6 +179,7 @@ class Event extends Equatable {
     this.organizerIsPlatform = false,
     this.organizerVerified = false,
     this.organizerEventsCount,
+    this.organizerFollowersCount,
     this.organizerVenueTypes = const [],
     this.organizerAllowPublicContact = false,
     required this.isFavorite,
@@ -185,6 +188,7 @@ class Event extends Equatable {
     required this.status,
     this.bookingUrl,
     required this.hasDirectBooking,
+    this.discoveryPricingType,
     required this.createdAt,
     required this.updatedAt,
     required this.views,
@@ -398,6 +402,7 @@ class Event extends Equatable {
     bool? organizerIsPlatform,
     bool? organizerVerified,
     int? organizerEventsCount,
+    int? organizerFollowersCount,
     List<String>? organizerVenueTypes,
     bool? organizerAllowPublicContact,
     bool? isFavorite,
@@ -406,6 +411,7 @@ class Event extends Equatable {
     EventStatus? status,
     String? bookingUrl,
     bool? hasDirectBooking,
+    String? discoveryPricingType,
     DateTime? createdAt,
     DateTime? updatedAt,
     int? views,
@@ -481,6 +487,7 @@ class Event extends Equatable {
       organizerIsPlatform: organizerIsPlatform ?? this.organizerIsPlatform,
       organizerVerified: organizerVerified ?? this.organizerVerified,
       organizerEventsCount: organizerEventsCount ?? this.organizerEventsCount,
+      organizerFollowersCount: organizerFollowersCount ?? this.organizerFollowersCount,
       organizerVenueTypes: organizerVenueTypes ?? this.organizerVenueTypes,
       organizerAllowPublicContact: organizerAllowPublicContact ?? this.organizerAllowPublicContact,
       isFavorite: isFavorite ?? this.isFavorite,
@@ -489,6 +496,7 @@ class Event extends Equatable {
       status: status ?? this.status,
       bookingUrl: bookingUrl ?? this.bookingUrl,
       hasDirectBooking: hasDirectBooking ?? this.hasDirectBooking,
+      discoveryPricingType: discoveryPricingType ?? this.discoveryPricingType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       views: views ?? this.views,
@@ -567,6 +575,7 @@ class Event extends Equatable {
         organizerIsPlatform,
         organizerVerified,
         organizerEventsCount,
+        organizerFollowersCount,
         organizerVenueTypes,
         organizerAllowPublicContact,
         isFavorite,
@@ -575,6 +584,7 @@ class Event extends Equatable {
         status,
         bookingUrl,
         hasDirectBooking,
+        discoveryPricingType,
         createdAt,
         updatedAt,
         views,

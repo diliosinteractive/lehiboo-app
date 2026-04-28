@@ -12,6 +12,8 @@ import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/domain/models/checkout_params.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
+import 'package:lehiboo/features/booking/presentation/widgets/participant_forms_section.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 
 /// Écran de checkout unifié
@@ -39,9 +41,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // Birth date backing value for API (computed from age)
   String? _customerBirthDate;
 
+  // Attendees per ticket type
+  late Map<String, List<ParticipantInfo>> _attendeesMap;
+
   // État
   bool _isLoading = false;
   bool _acceptedTerms = false;
+  bool _acceptNewsletter = false;
   String? _errorMessage;
 
   // Booking créé (pour le paiement - utilisé pour la navigation)
@@ -51,7 +57,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
+    _initAttendeesMap();
     _prefillForm();
+  }
+
+  void _initAttendeesMap() {
+    _attendeesMap = {};
+    for (final entry in widget.params.ticketQuantities.entries) {
+      if (entry.value > 0) {
+        _attendeesMap[entry.key] = List.generate(
+          entry.value,
+          (_) => const ParticipantInfo(),
+        );
+      }
+    }
   }
 
   @override
@@ -135,6 +154,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
             // Formulaire acheteur
             _buildBuyerForm(),
+
+            const SizedBox(height: 16),
+
+            // Formulaires participants
+            _buildParticipantsSection(),
 
             const SizedBox(height: 16),
 
@@ -475,6 +499,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
+  BuyerInfo get _currentBuyerInfo => BuyerInfo(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        birthDate: _customerBirthDate,
+        town: _townController.text.trim(),
+      );
+
+  Widget _buildParticipantsSection() {
+    return ParticipantFormsSection(
+      ticketQuantities: widget.params.ticketQuantities,
+      eventTickets: widget.params.event.tickets,
+      buyerInfo: _currentBuyerInfo,
+      attendeesMap: _attendeesMap,
+      onAttendeeChanged: (ticketTypeId, index, info) {
+        setState(() {
+          _attendeesMap[ticketTypeId]?[index] = info;
+        });
+      },
+    );
+  }
+
   Widget _buildTermsSection() {
     return Container(
       color: Colors.white,
@@ -661,6 +708,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
+    // Validate participants: attendees.length == quantity and all have names
+    for (final entry in widget.params.ticketQuantities.entries) {
+      if (entry.value <= 0) continue;
+      final attendees = _attendeesMap[entry.key] ?? [];
+      if (attendees.length != entry.value) {
+        setState(() {
+          _errorMessage = 'Chaque billet doit avoir un participant renseigné';
+        });
+        return;
+      }
+      for (final a in attendees) {
+        if ((a.firstName ?? '').trim().isEmpty ||
+            (a.lastName ?? '').trim().isEmpty) {
+          setState(() {
+            _errorMessage =
+                'Veuillez renseigner le prénom et le nom de chaque participant';
+          });
+          return;
+        }
+      }
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -669,12 +738,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     try {
       final bookingDataSource = ref.read(bookingApiDataSourceProvider);
 
-      // Construire la liste des items (tickets)
+      // Construire la liste des items avec attendees
       final items = widget.params.ticketQuantities.entries
           .where((e) => e.value > 0)
           .map((e) => BookingTicketRequestDto(
                 ticketTypeId: e.key,
                 quantity: e.value,
+                attendees: (_attendeesMap[e.key] ?? [])
+                    .map((p) => AttendeeRequestDto(
+                          firstName: p.firstName ?? '',
+                          lastName: p.lastName ?? '',
+                          email: p.email,
+                          phone: p.phone,
+                          birthDate: p.birthDate,
+                          age: p.age,
+                          city: p.city,
+                          membershipCity: p.membershipCity,
+                        ))
+                    .toList(),
               ))
           .toList();
 
@@ -691,6 +772,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         customerTown: _townController.text.trim().isNotEmpty
             ? _townController.text.trim()
             : null,
+        promoCode: widget.params.couponCode,
+        paymentMethod: widget.params.isFree ? 'free' : 'card',
+        acceptTerms: _acceptedTerms,
+        acceptNewsletter: _acceptNewsletter,
       );
 
       _bookingResponse = bookingResponse;

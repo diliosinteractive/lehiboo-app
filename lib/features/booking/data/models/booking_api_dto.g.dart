@@ -6,11 +6,42 @@ part of 'booking_api_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_$AttendeeRequestDtoImpl _$$AttendeeRequestDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$AttendeeRequestDtoImpl(
+      firstName: json['first_name'] as String,
+      lastName: json['last_name'] as String,
+      email: json['email'] as String?,
+      phone: json['phone'] as String?,
+      birthDate: json['birth_date'] as String?,
+      age: (json['age'] as num?)?.toInt(),
+      city: json['city'] as String?,
+      membershipCity: json['membership_city'] as String?,
+    );
+
+Map<String, dynamic> _$$AttendeeRequestDtoImplToJson(
+        _$AttendeeRequestDtoImpl instance) =>
+    <String, dynamic>{
+      'first_name': instance.firstName,
+      'last_name': instance.lastName,
+      'email': instance.email,
+      'phone': instance.phone,
+      'birth_date': instance.birthDate,
+      'age': instance.age,
+      'city': instance.city,
+      'membership_city': instance.membershipCity,
+    };
+
 _$BookingTicketRequestDtoImpl _$$BookingTicketRequestDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$BookingTicketRequestDtoImpl(
       ticketTypeId: json['ticket_type_id'] as String,
       quantity: (json['quantity'] as num).toInt(),
+      attendees: (json['attendees'] as List<dynamic>?)
+              ?.map(
+                  (e) => AttendeeRequestDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$$BookingTicketRequestDtoImplToJson(
@@ -18,6 +49,7 @@ Map<String, dynamic> _$$BookingTicketRequestDtoImplToJson(
     <String, dynamic>{
       'ticket_type_id': instance.ticketTypeId,
       'quantity': instance.quantity,
+      'attendees': instance.attendees,
     };
 
 _$CreateBookingResponseDtoImpl _$$CreateBookingResponseDtoImplFromJson(

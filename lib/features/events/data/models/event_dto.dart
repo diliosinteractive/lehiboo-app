@@ -41,9 +41,11 @@ class EventDto with _$EventDto {
     @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull) Map<String, dynamic>? seatConfig,
     @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull) Map<String, dynamic>? externalBooking,
     @JsonKey(name: 'event_type', fromJson: _parseMapOrNull) Map<String, dynamic>? eventType,
+    @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull) Map<String, dynamic>? eventTag,
     @JsonKey(name: 'target_audience', fromJson: _parseListOrNull) List<dynamic>? targetAudience,
     @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull) List<dynamic>? targetAudiences,
     @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull) String? bookingMode,
+    @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull) String? discoveryPricingType,
 
     // Rich Content V2
     @JsonKey(name: 'location_details', fromJson: _parseMapOrNull) Map<String, dynamic>? locationDetails,

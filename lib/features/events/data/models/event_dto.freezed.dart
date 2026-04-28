@@ -88,12 +88,16 @@ mixin _$EventDto {
       throw _privateConstructorUsedError;
   @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get eventType => throw _privateConstructorUsedError;
+  @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
+  Map<String, dynamic>? get eventTag => throw _privateConstructorUsedError;
   @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
   List<dynamic>? get targetAudience => throw _privateConstructorUsedError;
   @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull)
   List<dynamic>? get targetAudiences => throw _privateConstructorUsedError;
   @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull)
-  String? get bookingMode =>
+  String? get bookingMode => throw _privateConstructorUsedError;
+  @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull)
+  String? get discoveryPricingType =>
       throw _privateConstructorUsedError; // Rich Content V2
   @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get locationDetails =>
@@ -175,12 +179,16 @@ abstract class $EventDtoCopyWith<$Res> {
       Map<String, dynamic>? externalBooking,
       @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
       Map<String, dynamic>? eventType,
+      @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
+      Map<String, dynamic>? eventTag,
       @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
       List<dynamic>? targetAudience,
       @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull)
       List<dynamic>? targetAudiences,
       @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull)
       String? bookingMode,
+      @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull)
+      String? discoveryPricingType,
       @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
       Map<String, dynamic>? locationDetails,
       @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
@@ -258,9 +266,11 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? seatConfig = freezed,
     Object? externalBooking = freezed,
     Object? eventType = freezed,
+    Object? eventTag = freezed,
     Object? targetAudience = freezed,
     Object? targetAudiences = freezed,
     Object? bookingMode = freezed,
+    Object? discoveryPricingType = freezed,
     Object? locationDetails = freezed,
     Object? coOrganizers = freezed,
     Object? socialMedia = freezed,
@@ -409,6 +419,10 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.eventType
           : eventType // ignore: cast_nullable_to_non_nullable
               as Map<String, dynamic>?,
+      eventTag: freezed == eventTag
+          ? _value.eventTag
+          : eventTag // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
       targetAudience: freezed == targetAudience
           ? _value.targetAudience
           : targetAudience // ignore: cast_nullable_to_non_nullable
@@ -420,6 +434,10 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
       bookingMode: freezed == bookingMode
           ? _value.bookingMode
           : bookingMode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      discoveryPricingType: freezed == discoveryPricingType
+          ? _value.discoveryPricingType
+          : discoveryPricingType // ignore: cast_nullable_to_non_nullable
               as String?,
       locationDetails: freezed == locationDetails
           ? _value.locationDetails
@@ -627,12 +645,16 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       Map<String, dynamic>? externalBooking,
       @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
       Map<String, dynamic>? eventType,
+      @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
+      Map<String, dynamic>? eventTag,
       @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
       List<dynamic>? targetAudience,
       @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull)
       List<dynamic>? targetAudiences,
       @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull)
       String? bookingMode,
+      @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull)
+      String? discoveryPricingType,
       @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
       Map<String, dynamic>? locationDetails,
       @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
@@ -717,9 +739,11 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? seatConfig = freezed,
     Object? externalBooking = freezed,
     Object? eventType = freezed,
+    Object? eventTag = freezed,
     Object? targetAudience = freezed,
     Object? targetAudiences = freezed,
     Object? bookingMode = freezed,
+    Object? discoveryPricingType = freezed,
     Object? locationDetails = freezed,
     Object? coOrganizers = freezed,
     Object? socialMedia = freezed,
@@ -868,6 +892,10 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value._eventType
           : eventType // ignore: cast_nullable_to_non_nullable
               as Map<String, dynamic>?,
+      eventTag: freezed == eventTag
+          ? _value._eventTag
+          : eventTag // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
       targetAudience: freezed == targetAudience
           ? _value._targetAudience
           : targetAudience // ignore: cast_nullable_to_non_nullable
@@ -879,6 +907,10 @@ class __$$EventDtoImplCopyWithImpl<$Res>
       bookingMode: freezed == bookingMode
           ? _value.bookingMode
           : bookingMode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      discoveryPricingType: freezed == discoveryPricingType
+          ? _value.discoveryPricingType
+          : discoveryPricingType // ignore: cast_nullable_to_non_nullable
               as String?,
       locationDetails: freezed == locationDetails
           ? _value._locationDetails
@@ -974,12 +1006,16 @@ class _$EventDtoImpl implements _EventDto {
       final Map<String, dynamic>? externalBooking,
       @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? eventType,
+      @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
+      final Map<String, dynamic>? eventTag,
       @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
       final List<dynamic>? targetAudience,
       @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull)
       final List<dynamic>? targetAudiences,
       @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull)
       this.bookingMode,
+      @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull)
+      this.discoveryPricingType,
       @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? locationDetails,
       @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
@@ -1012,6 +1048,7 @@ class _$EventDtoImpl implements _EventDto {
         _seatConfig = seatConfig,
         _externalBooking = externalBooking,
         _eventType = eventType,
+        _eventTag = eventTag,
         _targetAudience = targetAudience,
         _targetAudiences = targetAudiences,
         _locationDetails = locationDetails,
@@ -1241,6 +1278,17 @@ class _$EventDtoImpl implements _EventDto {
     return EqualUnmodifiableMapView(value);
   }
 
+  final Map<String, dynamic>? _eventTag;
+  @override
+  @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
+  Map<String, dynamic>? get eventTag {
+    final value = _eventTag;
+    if (value == null) return null;
+    if (_eventTag is EqualUnmodifiableMapView) return _eventTag;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
   final List<dynamic>? _targetAudience;
   @override
   @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
@@ -1266,6 +1314,9 @@ class _$EventDtoImpl implements _EventDto {
   @override
   @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull)
   final String? bookingMode;
+  @override
+  @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull)
+  final String? discoveryPricingType;
 // Rich Content V2
   final Map<String, dynamic>? _locationDetails;
 // Rich Content V2
@@ -1350,7 +1401,7 @@ class _$EventDtoImpl implements _EventDto {
 
   @override
   String toString() {
-    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, isFavorite: $isFavorite)';
+    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, isFavorite: $isFavorite)';
   }
 
   @override
@@ -1411,12 +1462,15 @@ class _$EventDtoImpl implements _EventDto {
                 .equals(other._externalBooking, _externalBooking) &&
             const DeepCollectionEquality()
                 .equals(other._eventType, _eventType) &&
+            const DeepCollectionEquality().equals(other._eventTag, _eventTag) &&
             const DeepCollectionEquality()
                 .equals(other._targetAudience, _targetAudience) &&
             const DeepCollectionEquality()
                 .equals(other._targetAudiences, _targetAudiences) &&
             (identical(other.bookingMode, bookingMode) ||
                 other.bookingMode == bookingMode) &&
+            (identical(other.discoveryPricingType, discoveryPricingType) ||
+                other.discoveryPricingType == discoveryPricingType) &&
             const DeepCollectionEquality()
                 .equals(other._locationDetails, _locationDetails) &&
             const DeepCollectionEquality()
@@ -1476,9 +1530,11 @@ class _$EventDtoImpl implements _EventDto {
         const DeepCollectionEquality().hash(_seatConfig),
         const DeepCollectionEquality().hash(_externalBooking),
         const DeepCollectionEquality().hash(_eventType),
+        const DeepCollectionEquality().hash(_eventTag),
         const DeepCollectionEquality().hash(_targetAudience),
         const DeepCollectionEquality().hash(_targetAudiences),
         bookingMode,
+        discoveryPricingType,
         const DeepCollectionEquality().hash(_locationDetails),
         const DeepCollectionEquality().hash(_coOrganizers),
         const DeepCollectionEquality().hash(_socialMedia),
@@ -1554,12 +1610,16 @@ abstract class _EventDto implements EventDto {
       final Map<String, dynamic>? externalBooking,
       @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? eventType,
+      @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
+      final Map<String, dynamic>? eventTag,
       @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
       final List<dynamic>? targetAudience,
       @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull)
       final List<dynamic>? targetAudiences,
       @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull)
       final String? bookingMode,
+      @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull)
+      final String? discoveryPricingType,
       @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? locationDetails,
       @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
@@ -1677,6 +1737,9 @@ abstract class _EventDto implements EventDto {
   @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get eventType;
   @override
+  @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
+  Map<String, dynamic>? get eventTag;
+  @override
   @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
   List<dynamic>? get targetAudience;
   @override
@@ -1685,6 +1748,9 @@ abstract class _EventDto implements EventDto {
   @override
   @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull)
   String? get bookingMode;
+  @override
+  @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull)
+  String? get discoveryPricingType;
   @override // Rich Content V2
   @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get locationDetails;

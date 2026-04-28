@@ -33,6 +33,10 @@ class EventStickyBookingBar extends StatefulWidget {
   final CalendarDateSlot? selectedSlot;
   /// Number of active reminders for discovery events
   final int reminderCount;
+  /// Whether the currently selected slot has a reminder
+  final bool isSelectedSlotReminded;
+  /// Callback to toggle reminder on the selected slot
+  final VoidCallback? onReminderToggled;
 
   const EventStickyBookingBar({
     super.key,
@@ -46,6 +50,8 @@ class EventStickyBookingBar extends StatefulWidget {
     this.selectedDateLabel,
     this.selectedSlot,
     this.reminderCount = 0,
+    this.isSelectedSlotReminded = false,
+    this.onReminderToggled,
   });
 
   @override
@@ -312,6 +318,36 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
       final dateLabel = _formattedSlotDate ?? widget.selectedDateLabel;
       final spots = widget.selectedSlot?.spotsRemaining;
 
+      if (_isDiscovery) {
+        // Discovery: no price, just date + capacity
+        return Column(
+          key: ValueKey('discovery_date_${widget.selectedSlotId}'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (dateLabel != null)
+              Text(
+                dateLabel,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            if (spots != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                'Capacité prévue : $spots',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ],
+        );
+      }
+
       return Column(
         key: ValueKey('date_selected_${widget.selectedSlotId}'),
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +399,37 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
       );
     }
 
-    // No selection yet
+    // No selection yet — discovery: no price
+    if (_isDiscovery) {
+      return GestureDetector(
+        key: const ValueKey('discovery_no_selection'),
+        onTap: widget.onViewDatesPressed,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: HbColors.brandPrimary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.calendar_today, size: 14, color: HbColors.brandPrimary),
+              SizedBox(width: 6),
+              Text(
+                'Voir les dates',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: HbColors.brandPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // No selection yet — booking
     return Column(
       key: const ValueKey('no_selection'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,28 +494,69 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
   }
 
   Widget _buildActionButton(BuildContext context) {
-    // Discovery events: always show "Rappel" — they don't follow the
-    // date→tickets→book flow and shouldn't show "Complet" either.
+    // Discovery events: context-aware button
+    // No date → "Choisir une date" (scroll to dates)
+    // Date selected, no reminder → "Me rappeler" (create reminder)
+    // Date selected, has reminder → "Rappelé" in green (remove reminder)
     if (_isDiscovery) {
-      final hasReminders = widget.reminderCount > 0;
+      if (!_hasDateSelection) {
+        // No date selected → "Choisir une date"
+        return SpringButton(
+          enabled: true,
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            widget.onViewDatesPressed?.call();
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            decoration: BoxDecoration(
+              color: HbColors.brandPrimary,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: HbColors.brandPrimary.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.calendar_today, size: 18, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  'Choisir une date',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Date selected
+      final isReminded = widget.isSelectedSlotReminded;
+      final btnColor = isReminded ? HbColors.success : HbColors.brandPrimary;
+
       return SpringButton(
         enabled: true,
         onTap: () {
           HapticFeedback.mediumImpact();
-          if (hasReminders) {
-            widget.onBookPressed?.call();
-          } else {
-            widget.onViewDatesPressed?.call();
-          }
+          widget.onReminderToggled?.call();
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           decoration: BoxDecoration(
-            color: HbColors.brandPrimary,
+            color: btnColor,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: HbColors.brandPrimary.withValues(alpha: 0.25),
+                color: btnColor.withValues(alpha: 0.25),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -459,7 +566,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                hasReminders
+                isReminded
                     ? Icons.notifications_active
                     : Icons.notifications_outlined,
                 size: 18,
@@ -467,9 +574,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
               ),
               const SizedBox(width: 8),
               Text(
-                hasReminders
-                    ? '${widget.reminderCount} rappel${widget.reminderCount > 1 ? 's' : ''}'
-                    : 'Me rappeler',
+                isReminded ? 'Rappelé' : 'Me rappeler',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,

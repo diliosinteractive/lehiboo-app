@@ -20,18 +20,28 @@ class ApiBookingRepositoryImpl implements BookingRepository {
   Future<Booking> createBooking({
     required String activityId,
     required String slotId,
-    required int quantity,
+    required List<TicketSelection> ticketSelections,
     required BuyerInfo buyer,
-    required List<ParticipantInfo> participants,
+    bool acceptTerms = false,
+    bool acceptNewsletter = false,
+    String? promoCode,
   }) async {
-    // Note: Cette méthode est utilisée par le flow legacy (BookingFlowController)
-    // Le nouveau flow (CheckoutScreen) utilise directement le datasource
-    final items = [
-      BookingTicketRequestDto(
-        ticketTypeId: slotId,
-        quantity: quantity,
-      ),
-    ];
+    final items = ticketSelections.map((ts) => BookingTicketRequestDto(
+      ticketTypeId: ts.ticketTypeId,
+      quantity: ts.quantity,
+      attendees: ts.attendees.map((a) => AttendeeRequestDto(
+        firstName: a.firstName ?? '',
+        lastName: a.lastName ?? '',
+        email: a.email,
+        phone: a.phone,
+        birthDate: a.birthDate,
+        age: a.age,
+        city: a.city,
+        membershipCity: a.membershipCity,
+      )).toList(),
+    )).toList();
+
+    final totalQuantity = ticketSelections.fold<int>(0, (sum, ts) => sum + ts.quantity);
 
     final response = await _apiDataSource.createBooking(
       eventId: activityId,
@@ -43,6 +53,9 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       customerPhone: buyer.phone,
       customerBirthDate: buyer.birthDate,
       customerTown: buyer.town,
+      promoCode: promoCode,
+      acceptTerms: acceptTerms,
+      acceptNewsletter: acceptNewsletter,
     );
 
     return Booking(
@@ -50,7 +63,7 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       userId: '',
       slotId: slotId,
       activityId: activityId,
-      quantity: quantity,
+      quantity: totalQuantity,
       totalPrice: response.totalAmount,
       currency: 'EUR',
       status: response.status,
