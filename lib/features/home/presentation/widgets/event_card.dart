@@ -114,14 +114,14 @@ class EventCard extends ConsumerWidget {
           ),
         ),
 
-        // Top row: Date/Time Badge + Favorite Button
+        // Top row: Date badge (today/tomorrow only) + Favorite Button
         Positioned(
           top: 12,
           left: 12,
           right: 12,
           child: Row(
             children: [
-              if (activity.nextSlot != null)
+              if ((isToday || isTomorrow) && activity.nextSlot != null)
                 Expanded(
                   flex: 4,
                   child: Container(
@@ -132,10 +132,8 @@ class EventCard extends ConsumerWidget {
                     ),
                     child: Text(
                       _formatDateBadge(activity.nextSlot!.startDateTime),
-                      style: TextStyle(
-                        color: (isToday || isTomorrow)
-                            ? const Color(0xFFFF601F)
-                            : Colors.black,
+                      style: const TextStyle(
+                        color: Color(0xFFFF601F),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -270,9 +268,36 @@ class EventCard extends ConsumerWidget {
                 height: 1.1,
               ),
             ),
+            // Date below address (skipped for today/tomorrow — they keep the poster badge)
+            if (activity.nextSlot != null && !isToday && !isTomorrow) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 12,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      _formatDateBadge(activity.nextSlot!.startDateTime),
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 4),
           ] else ...[
-            // Compact mode: just location
+            // Compact mode: location + date
             const SizedBox(height: 4),
             Row(
               children: [
@@ -288,6 +313,31 @@ class EventCard extends ConsumerWidget {
                 ),
               ],
             ),
+            if (activity.nextSlot != null && !isToday && !isTomorrow) ...[
+              const SizedBox(height: 3),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 11,
+                    color: Colors.grey[500],
+                  ),
+                  const SizedBox(width: 3),
+                  Expanded(
+                    child: Text(
+                      _formatDateBadge(activity.nextSlot!.startDateTime),
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 4),
           ],
 

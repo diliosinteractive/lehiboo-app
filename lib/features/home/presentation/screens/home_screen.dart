@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/themes/colors.dart';
@@ -285,8 +286,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: Badge(
                 isLabelVisible: unread > 0,
                 label: Text('$unread'),
-                child: const Icon(Icons.forum_outlined,
-                    color: Colors.white),
+                child: Icon(
+                  PhosphorIconsRegular.chatCircleDots,
+                  color: Colors.white,
+                ),
               ),
               onPressed: () => context.push('/messages'),
             );

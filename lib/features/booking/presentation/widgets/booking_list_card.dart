@@ -49,6 +49,7 @@ class BookingListCard extends StatelessWidget {
     final ticketText = ticketCount > 1 ? '$ticketCount billets' : '1 billet';
 
     final reference = booking.reference;
+    final lifecycle = _resolveLifecycle(booking.status, startDateTime);
 
     return GestureDetector(
       onTap: onTap,
@@ -97,19 +98,33 @@ class BookingListCard extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            // Reference
-                            if (reference != null && reference.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                (reference.length > 8 ? reference.substring(0, 8) : reference).toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade500,
-                                  fontFamily: 'monospace',
-                                  letterSpacing: 0.5,
+                            // Reference + Status
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                if (reference != null && reference.isNotEmpty)
+                                  Expanded(
+                                    child: Text(
+                                      (reference.length > 8 ? reference.substring(0, 8) : reference).toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade500,
+                                        fontFamily: 'monospace',
+                                        letterSpacing: 0.5,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  )
+                                else
+                                  const Spacer(),
+                                const SizedBox(width: 8),
+                                BookingStatusBadge.fromString(
+                                  booking.status,
+                                  showIcon: false,
+                                  compact: true,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                             const SizedBox(height: 6),
                             // Date
                             Row(
@@ -155,21 +170,40 @@ class BookingListCard extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        // Bottom row: status, tickets, QR, price
+                        // Bottom row: tickets, QR, price
                         Row(
                           children: [
-                            BookingStatusBadge.fromString(
-                              booking.status,
-                              showIcon: false,
-                              compact: true,
+                            const Icon(
+                              Icons.confirmation_number_outlined,
+                              size: 14,
+                              color: HbColors.textSecondary,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 4),
                             Text(
                               ticketText,
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: HbColors.textSecondary,
                                 fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: lifecycle.color.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                lifecycle.label,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: lifecycle.color,
+                                ),
                               ),
                             ),
                             const Spacer(),
@@ -250,6 +284,17 @@ class BookingListCard extends StatelessWidget {
     );
   }
 
+  _Lifecycle _resolveLifecycle(String? status, DateTime? startDateTime) {
+    final normalized = status?.toLowerCase();
+    if (normalized == 'cancelled' || normalized == 'refunded') {
+      return const _Lifecycle('Annulé', Color(0xFFD32F2F));
+    }
+    if (startDateTime != null && startDateTime.isBefore(DateTime.now())) {
+      return _Lifecycle('Passé', Colors.grey.shade600);
+    }
+    return const _Lifecycle('À venir', Color(0xFF2E7D32));
+  }
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -266,4 +311,10 @@ class BookingListCard extends StatelessWidget {
     }
   }
 
+}
+
+class _Lifecycle {
+  final String label;
+  final Color color;
+  const _Lifecycle(this.label, this.color);
 }

@@ -93,6 +93,7 @@ dependencies:
   audioplayers: ^5.2.1  # Sons custom pour VoiceFab
   http: ^1.6.0
   font_awesome_flutter: ^10.12.0
+  phosphor_flutter: ^2.1.0
   package_info_plus: ^8.1.1
   confetti: ^0.8.0
   path_provider: ^2.1.5
