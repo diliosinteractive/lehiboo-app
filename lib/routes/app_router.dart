@@ -57,6 +57,8 @@ import '../features/messages/presentation/screens/conversations_list_screen.dart
 import '../features/messages/presentation/screens/conversation_detail_screen.dart';
 import '../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../features/messages/presentation/screens/support_detail_screen.dart';
+import '../features/reviews/presentation/screens/event_reviews_full_screen.dart';
+import '../features/reviews/presentation/screens/my_reviews_screen.dart';
 /// ChangeNotifier that drives GoRouter.refreshListenable so redirect logic
 /// re-runs on auth state changes WITHOUT rebuilding the GoRouter instance
 /// (which would reset the navigation stack).
@@ -623,6 +625,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/my-questions',
         name: 'my-questions',
         builder: (context, state) => const UserQuestionsScreen(),
+      ),
+      // User Reviews (Mes Avis)
+      GoRoute(
+        path: '/my-reviews',
+        name: 'my-reviews',
+        builder: (context, state) {
+          final reviewUuid = state.uri.queryParameters['reviewUuid'];
+          return MyReviewsScreen(highlightReviewUuid: reviewUuid);
+        },
+      ),
+      // Full reviews list for an event
+      GoRoute(
+        path: '/event/:slug/reviews',
+        name: 'event-reviews',
+        builder: (context, state) {
+          final slug = state.pathParameters['slug']!;
+          final extra = state.extra;
+          final title = extra is Map<String, dynamic>
+              ? extra['title']?.toString()
+              : null;
+          return EventReviewsFullScreen(eventSlug: slug, eventTitle: title);
+        },
       ),
     ],
     errorBuilder: (context, state) => const ErrorScreen(),

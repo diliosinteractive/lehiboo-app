@@ -22,12 +22,12 @@ import '../widgets/detail/event_ticket_card.dart';
 import '../widgets/detail/event_practical_info.dart';
 import '../widgets/detail/event_accessibility_section.dart';
 import '../widgets/detail/event_location_map.dart';
-import '../widgets/detail/event_reviews_section.dart';
 import '../widgets/detail/event_qa_section.dart';
 import '../widgets/detail/event_similar_carousel.dart';
 import '../widgets/detail/event_share_sheet.dart';
 import '../widgets/detail/event_sticky_booking_bar.dart';
-import '../widgets/detail/write_review_sheet.dart';
+import '../../../reviews/presentation/widgets/event_reviews_section.dart';
+import '../../../reviews/presentation/widgets/write_review_sheet.dart';
 import '../../../reminders/presentation/providers/reminders_provider.dart';
 import '../../../reminders/data/datasources/reminders_api_datasource.dart';
 
@@ -1241,8 +1241,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   // --- Actions pour reviews et Q&A ---
 
-  void _showWriteReviewDialog(Event event) {
-    WriteReviewSheet.show(
+  Future<void> _showWriteReviewDialog(Event event) async {
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: 'laisser un avis',
+    );
+    if (!allowed || !mounted) return;
+    await WriteReviewSheet.show(
       context,
       eventSlug: event.slug,
       eventTitle: event.title,
@@ -1250,9 +1256,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   void _showAllReviews(Event event) {
-    // TODO: Naviguer vers la page de tous les avis
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Voir tous les avis')),
+    context.push(
+      '/event/${event.slug}/reviews',
+      extra: {'title': event.title},
     );
   }
 
