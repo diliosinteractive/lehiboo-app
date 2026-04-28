@@ -951,75 +951,37 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Widget _buildTagsSection(Event event) {
     final chips = <_ChipEntry>[];
+    final seen = <String>{};
 
-    // Primary category
-    chips.add(_ChipEntry(
-      label: event.categoryLabel,
-      icon: Icons.category_outlined,
-      color: HbColors.brandPrimary,
-    ));
+    void addChip(String label, IconData icon, Color color) {
+      final trimmed = label.trim();
+      if (trimmed.isEmpty) return;
+      final key = trimmed.toLowerCase();
+      if (!seen.add(key)) return;
+      chips.add(_ChipEntry(label: trimmed, icon: icon, color: color));
+    }
 
-    // Other categories (skip if same name as primary label)
+    // Categories (all category names from API)
     for (final name in event.allCategoryNames) {
-      if (name.toLowerCase() != event.categoryLabel.toLowerCase() &&
-          !chips.any((c) => c.label.toLowerCase() == name.toLowerCase())) {
-        chips.add(_ChipEntry(
-          label: name,
-          icon: Icons.label_outlined,
-          color: HbColors.brandSecondary,
-        ));
-      }
+      addChip(name, Icons.category_outlined, HbColors.brandPrimary);
     }
 
-    // Event type
-    if (event.eventTypeTerm != null &&
-        !chips.any((c) => c.label.toLowerCase() == event.eventTypeTerm!.name.toLowerCase())) {
-      chips.add(_ChipEntry(
-        label: event.eventTypeTerm!.name,
-        icon: Icons.style_outlined,
-        color: Colors.deepPurple,
-      ));
+    // Themes (plural API field, with legacy singular as fallback)
+    for (final name in event.themeNames) {
+      addChip(name, Icons.palette_outlined, Colors.indigo);
     }
-
-    // Place type
-    final placeLabel = event.locationTypeLabel;
-    if (placeLabel.isNotEmpty) {
-      chips.add(_ChipEntry(
-        label: placeLabel,
-        icon: event.isOutdoor && !event.isIndoor
-            ? Icons.park_outlined
-            : Icons.home_outlined,
-        color: Colors.teal,
-      ));
-    }
-
-    // Theme
     if (event.thematiqueName != null) {
-      chips.add(_ChipEntry(
-        label: event.thematiqueName!,
-        icon: Icons.palette_outlined,
-        color: Colors.indigo,
-      ));
+      addChip(event.thematiqueName!, Icons.palette_outlined, Colors.indigo);
     }
 
-    // Audience
+    // Target audiences
     for (final term in event.targetAudienceTerms) {
-      chips.add(_ChipEntry(
-        label: term.name,
-        icon: Icons.people_outline,
-        color: Colors.blue,
-      ));
+      addChip(term.name, Icons.people_outline, Colors.blue);
     }
 
-    // Free-form tags
-    for (final tag in event.tags) {
-      if (!chips.any((c) => c.label.toLowerCase() == tag.toLowerCase())) {
-        chips.add(_ChipEntry(
-          label: tag,
-          icon: Icons.tag,
-          color: Colors.grey.shade600,
-        ));
-      }
+    // Emotions
+    for (final name in event.emotionNames) {
+      addChip(name, Icons.mood_outlined, Colors.orange);
     }
 
     if (chips.isEmpty) return const SizedBox.shrink();

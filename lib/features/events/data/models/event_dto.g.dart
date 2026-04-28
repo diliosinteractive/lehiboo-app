@@ -74,6 +74,11 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       creationSource: _parseStringOrNull(json['creation_source']),
       originalOrganizerName:
           _parseStringOrNull(json['original_organizer_name']),
+      themes:
+          json['themes'] == null ? const [] : _parseNamedList(json['themes']),
+      emotions: json['emotions'] == null
+          ? const []
+          : _parseNamedList(json['emotions']),
       isFavorite: json['is_favorite'] as bool? ?? false,
     );
 
@@ -127,6 +132,8 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'venue': instance.venueData,
       'creation_source': instance.creationSource,
       'original_organizer_name': instance.originalOrganizerName,
+      'themes': instance.themes,
+      'emotions': instance.emotions,
       'is_favorite': instance.isFavorite,
     };
 

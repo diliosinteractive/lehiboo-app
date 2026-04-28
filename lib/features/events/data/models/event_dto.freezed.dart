@@ -119,6 +119,10 @@ mixin _$EventDto {
   String? get creationSource => throw _privateConstructorUsedError;
   @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull)
   String? get originalOrganizerName => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseNamedList)
+  List<String> get themes => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseNamedList)
+  List<String> get emotions => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_favorite')
   bool get isFavorite => throw _privateConstructorUsedError;
 
@@ -206,6 +210,8 @@ abstract class $EventDtoCopyWith<$Res> {
       String? creationSource,
       @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull)
       String? originalOrganizerName,
+      @JsonKey(fromJson: _parseNamedList) List<String> themes,
+      @JsonKey(fromJson: _parseNamedList) List<String> emotions,
       @JsonKey(name: 'is_favorite') bool isFavorite});
 
   $EventImageDtoCopyWith<$Res>? get featuredImage;
@@ -280,6 +286,8 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? venueData = freezed,
     Object? creationSource = freezed,
     Object? originalOrganizerName = freezed,
+    Object? themes = null,
+    Object? emotions = null,
     Object? isFavorite = null,
   }) {
     return _then(_value.copyWith(
@@ -475,6 +483,14 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.originalOrganizerName
           : originalOrganizerName // ignore: cast_nullable_to_non_nullable
               as String?,
+      themes: null == themes
+          ? _value.themes
+          : themes // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      emotions: null == emotions
+          ? _value.emotions
+          : emotions // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       isFavorite: null == isFavorite
           ? _value.isFavorite
           : isFavorite // ignore: cast_nullable_to_non_nullable
@@ -672,6 +688,8 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       String? creationSource,
       @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull)
       String? originalOrganizerName,
+      @JsonKey(fromJson: _parseNamedList) List<String> themes,
+      @JsonKey(fromJson: _parseNamedList) List<String> emotions,
       @JsonKey(name: 'is_favorite') bool isFavorite});
 
   @override
@@ -753,6 +771,8 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? venueData = freezed,
     Object? creationSource = freezed,
     Object? originalOrganizerName = freezed,
+    Object? themes = null,
+    Object? emotions = null,
     Object? isFavorite = null,
   }) {
     return _then(_$EventDtoImpl(
@@ -948,6 +968,14 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value.originalOrganizerName
           : originalOrganizerName // ignore: cast_nullable_to_non_nullable
               as String?,
+      themes: null == themes
+          ? _value._themes
+          : themes // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      emotions: null == emotions
+          ? _value._emotions
+          : emotions // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       isFavorite: null == isFavorite
           ? _value.isFavorite
           : isFavorite // ignore: cast_nullable_to_non_nullable
@@ -1033,6 +1061,9 @@ class _$EventDtoImpl implements _EventDto {
       this.creationSource,
       @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull)
       this.originalOrganizerName,
+      @JsonKey(fromJson: _parseNamedList) final List<String> themes = const [],
+      @JsonKey(fromJson: _parseNamedList)
+      final List<String> emotions = const [],
       @JsonKey(name: 'is_favorite') this.isFavorite = false})
       : _gallery = gallery,
         _tags = tags,
@@ -1056,7 +1087,9 @@ class _$EventDtoImpl implements _EventDto {
         _socialMedia = socialMedia,
         _categories = categories,
         _slots = slots,
-        _venueData = venueData;
+        _venueData = venueData,
+        _themes = themes,
+        _emotions = emotions;
 
   factory _$EventDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$EventDtoImplFromJson(json);
@@ -1395,13 +1428,31 @@ class _$EventDtoImpl implements _EventDto {
   @override
   @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull)
   final String? originalOrganizerName;
+  final List<String> _themes;
+  @override
+  @JsonKey(fromJson: _parseNamedList)
+  List<String> get themes {
+    if (_themes is EqualUnmodifiableListView) return _themes;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_themes);
+  }
+
+  final List<String> _emotions;
+  @override
+  @JsonKey(fromJson: _parseNamedList)
+  List<String> get emotions {
+    if (_emotions is EqualUnmodifiableListView) return _emotions;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_emotions);
+  }
+
   @override
   @JsonKey(name: 'is_favorite')
   final bool isFavorite;
 
   @override
   String toString() {
-    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, isFavorite: $isFavorite)';
+    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite)';
   }
 
   @override
@@ -1488,6 +1539,8 @@ class _$EventDtoImpl implements _EventDto {
                 other.creationSource == creationSource) &&
             (identical(other.originalOrganizerName, originalOrganizerName) ||
                 other.originalOrganizerName == originalOrganizerName) &&
+            const DeepCollectionEquality().equals(other._themes, _themes) &&
+            const DeepCollectionEquality().equals(other._emotions, _emotions) &&
             (identical(other.isFavorite, isFavorite) ||
                 other.isFavorite == isFavorite));
   }
@@ -1544,6 +1597,8 @@ class _$EventDtoImpl implements _EventDto {
         const DeepCollectionEquality().hash(_venueData),
         creationSource,
         originalOrganizerName,
+        const DeepCollectionEquality().hash(_themes),
+        const DeepCollectionEquality().hash(_emotions),
         isFavorite
       ]);
 
@@ -1637,6 +1692,8 @@ abstract class _EventDto implements EventDto {
       final String? creationSource,
       @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull)
       final String? originalOrganizerName,
+      @JsonKey(fromJson: _parseNamedList) final List<String> themes,
+      @JsonKey(fromJson: _parseNamedList) final List<String> emotions,
       @JsonKey(name: 'is_favorite') final bool isFavorite}) = _$EventDtoImpl;
 
   factory _EventDto.fromJson(Map<String, dynamic> json) =
@@ -1778,6 +1835,12 @@ abstract class _EventDto implements EventDto {
   @override
   @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull)
   String? get originalOrganizerName;
+  @override
+  @JsonKey(fromJson: _parseNamedList)
+  List<String> get themes;
+  @override
+  @JsonKey(fromJson: _parseNamedList)
+  List<String> get emotions;
   @override
   @JsonKey(name: 'is_favorite')
   bool get isFavorite;

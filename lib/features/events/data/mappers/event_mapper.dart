@@ -213,6 +213,8 @@ class EventMapper {
       targetAudienceTerms: _resolveTargetAudienceTerms(dto),
       allCategoryNames: _resolveAllCategoryNames(dto),
       thematiqueName: dto.thematique?.name.isNotEmpty == true ? dto.thematique!.name : null,
+      themeNames: dto.themes,
+      emotionNames: dto.emotions,
 
       // RICH CONTENT MAPPING
       locationDetails: _resolveLocationDetails(dto),

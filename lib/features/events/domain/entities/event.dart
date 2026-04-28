@@ -121,6 +121,8 @@ class Event extends Equatable {
   final List<TaxonomyTerm> targetAudienceTerms; // Maps to 'target_audience' from API
   final List<String> allCategoryNames; // All category names from API (including primary)
   final String? thematiqueName; // Main thematique name from API
+  final List<String> themeNames; // From API 'themes' array
+  final List<String> emotionNames; // From API 'emotions' array
 
   // --- RICH CONTENT V2 ---
   final LocationDetails? locationDetails;
@@ -213,6 +215,8 @@ class Event extends Equatable {
     this.targetAudienceTerms = const [],
     this.allCategoryNames = const [],
     this.thematiqueName,
+    this.themeNames = const [],
+    this.emotionNames = const [],
     this.locationDetails,
     this.coOrganizers = const [],
 
@@ -435,6 +439,8 @@ class Event extends Equatable {
     List<TaxonomyTerm>? targetAudienceTerms,
     List<String>? allCategoryNames,
     String? thematiqueName,
+    List<String>? themeNames,
+    List<String>? emotionNames,
     LocationDetails? locationDetails,
     List<CoOrganizer>? coOrganizers,
 
@@ -520,6 +526,8 @@ class Event extends Equatable {
       targetAudienceTerms: targetAudienceTerms ?? this.targetAudienceTerms,
       allCategoryNames: allCategoryNames ?? this.allCategoryNames,
       thematiqueName: thematiqueName ?? this.thematiqueName,
+      themeNames: themeNames ?? this.themeNames,
+      emotionNames: emotionNames ?? this.emotionNames,
       locationDetails: locationDetails ?? this.locationDetails,
       coOrganizers: coOrganizers ?? this.coOrganizers,
 
@@ -608,6 +616,8 @@ class Event extends Equatable {
         targetAudienceTerms,
         allCategoryNames,
         thematiqueName,
+        themeNames,
+        emotionNames,
         locationDetails,
         coOrganizers,
         socialMedia,

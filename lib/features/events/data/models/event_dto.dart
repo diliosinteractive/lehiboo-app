@@ -60,6 +60,9 @@ class EventDto with _$EventDto {
     @JsonKey(name: 'creation_source', fromJson: _parseStringOrNull) String? creationSource,
     @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull) String? originalOrganizerName,
 
+    @JsonKey(fromJson: _parseNamedList) @Default([]) List<String> themes,
+    @JsonKey(fromJson: _parseNamedList) @Default([]) List<String> emotions,
+
     @JsonKey(name: 'is_favorite') @Default(false) bool isFavorite,
   }) = _EventDto;
 
@@ -337,6 +340,19 @@ List<String>? _parseStringList(dynamic value) {
   if (value == null) return null;
   if (value is List) {
     return value.map((e) => e.toString()).toList();
+  }
+  return [];
+}
+
+/// Parse a list of { "id": ..., "name": "..." } objects into a list of name strings
+List<String> _parseNamedList(dynamic value) {
+  if (value == null) return [];
+  if (value is List) {
+    return value
+        .whereType<Map>()
+        .map((e) => e['name']?.toString() ?? '')
+        .where((name) => name.isNotEmpty)
+        .toList();
   }
   return [];
 }
