@@ -186,6 +186,13 @@ class ProfileScreen extends ConsumerWidget {
         ),
         _buildMenuItem(
           context,
+          icon: Icons.question_answer_outlined,
+          title: 'Mes Questions',
+          subtitle: 'Vos questions sur les événements',
+          onTap: () => context.push('/my-questions'),
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.person_outline,
           title: 'Mon Compte',
           subtitle: 'Modifier vos informations',

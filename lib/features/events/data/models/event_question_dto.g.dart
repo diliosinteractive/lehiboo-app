@@ -57,6 +57,9 @@ _$EventQuestionDtoImpl _$$EventQuestionDtoImplFromJson(
       answer: json['answer'] == null
           ? null
           : QuestionAnswerDto.fromJson(json['answer'] as Map<String, dynamic>),
+      event: json['event'] == null
+          ? null
+          : QuestionEventDto.fromJson(json['event'] as Map<String, dynamic>),
       userVoted:
           json['user_voted'] == null ? false : _parseBool(json['user_voted']),
       userVotedCamel:
@@ -87,6 +90,7 @@ Map<String, dynamic> _$$EventQuestionDtoImplToJson(
       'hasAnswer': instance.hasAnswerCamel,
       'author': instance.author,
       'answer': instance.answer,
+      'event': instance.event,
       'user_voted': instance.userVoted,
       'userVoted': instance.userVotedCamel,
       'created_at_formatted': instance.createdAtFormatted,
@@ -152,6 +156,30 @@ Map<String, dynamic> _$$QuestionAnswerDtoImplToJson(
       'organizationName': instance.organizationNameCamel,
       'created_at_formatted': instance.createdAtFormatted,
       'createdAtFormatted': instance.createdAtFormattedCamel,
+    };
+
+_$QuestionEventDtoImpl _$$QuestionEventDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$QuestionEventDtoImpl(
+      id: json['id'] == null ? 0 : _parseInt(json['id']),
+      uuid: json['uuid'] == null ? '' : _parseString(json['uuid']),
+      title: json['title'] == null ? '' : _parseString(json['title']),
+      slug: json['slug'] == null ? '' : _parseString(json['slug']),
+      isDeleted:
+          json['is_deleted'] == null ? false : _parseBool(json['is_deleted']),
+      isDeletedCamel:
+          json['isDeleted'] == null ? false : _parseBool(json['isDeleted']),
+    );
+
+Map<String, dynamic> _$$QuestionEventDtoImplToJson(
+        _$QuestionEventDtoImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'uuid': instance.uuid,
+      'title': instance.title,
+      'slug': instance.slug,
+      'is_deleted': instance.isDeleted,
+      'isDeleted': instance.isDeletedCamel,
     };
 
 _$MetaPaginationDtoImpl _$$MetaPaginationDtoImplFromJson(

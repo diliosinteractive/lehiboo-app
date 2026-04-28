@@ -22,6 +22,7 @@ class EventQuestionMapper {
       ),
       author: dto.author != null ? _authorFromDto(dto.author!) : null,
       answer: dto.answer != null ? _answerFromDto(dto.answer!) : null,
+      event: dto.event != null ? _eventFromDto(dto.event!) : null,
     );
   }
 
@@ -42,6 +43,15 @@ class EventQuestionMapper {
       avatarUrl: dto.avatar,
       initials: dto.initials,
       isGuest: dto.isGuest || dto.isGuestCamel,
+    );
+  }
+
+  static QuestionEvent _eventFromDto(QuestionEventDto dto) {
+    return QuestionEvent(
+      uuid: dto.uuid,
+      title: dto.title,
+      slug: dto.slug,
+      isDeleted: dto.isDeleted || dto.isDeletedCamel,
     );
   }
 
