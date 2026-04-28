@@ -26,6 +26,7 @@ import '../features/auth/presentation/screens/business_register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../features/reminders/presentation/screens/reminders_list_screen.dart';
+import '../features/user_questions/presentation/screens/user_questions_screen.dart';
 import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
 import '../features/booking/presentation/screens/booking_participant_screen.dart';
 import '../features/booking/presentation/screens/booking_payment_screen.dart';
@@ -616,6 +617,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/my-reminders',
         name: 'my-reminders',
         builder: (context, state) => const RemindersListScreen(),
+      ),
+      // User Questions (Mes Questions)
+      GoRoute(
+        path: '/my-questions',
+        name: 'my-questions',
+        builder: (context, state) => const UserQuestionsScreen(),
       ),
     ],
     errorBuilder: (context, state) => const ErrorScreen(),
