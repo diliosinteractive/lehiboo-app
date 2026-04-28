@@ -20,18 +20,28 @@ class ApiBookingRepositoryImpl implements BookingRepository {
   Future<Booking> createBooking({
     required String activityId,
     required String slotId,
-    required int quantity,
+    required List<TicketSelection> ticketSelections,
     required BuyerInfo buyer,
-    required List<ParticipantInfo> participants,
+    bool acceptTerms = false,
+    bool acceptNewsletter = false,
+    String? promoCode,
   }) async {
-    // Note: Cette méthode est utilisée par le flow legacy (BookingFlowController)
-    // Le nouveau flow (CheckoutScreen) utilise directement le datasource
-    final items = [
-      BookingTicketRequestDto(
-        ticketTypeId: slotId,
-        quantity: quantity,
-      ),
-    ];
+    final items = ticketSelections.map((ts) => BookingTicketRequestDto(
+      ticketTypeId: ts.ticketTypeId,
+      quantity: ts.quantity,
+      attendees: ts.attendees.map((a) => AttendeeRequestDto(
+        firstName: a.firstName ?? '',
+        lastName: a.lastName ?? '',
+        email: a.email,
+        phone: a.phone,
+        birthDate: a.birthDate,
+        age: a.age,
+        city: a.city,
+        membershipCity: a.membershipCity,
+      )).toList(),
+    )).toList();
+
+    final totalQuantity = ticketSelections.fold<int>(0, (sum, ts) => sum + ts.quantity);
 
     final response = await _apiDataSource.createBooking(
       eventId: activityId,
@@ -43,6 +53,9 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       customerPhone: buyer.phone,
       customerBirthDate: buyer.birthDate,
       customerTown: buyer.town,
+      promoCode: promoCode,
+      acceptTerms: acceptTerms,
+      acceptNewsletter: acceptNewsletter,
     );
 
     return Booking(
@@ -50,7 +63,7 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       userId: '',
       slotId: slotId,
       activityId: activityId,
-      quantity: quantity,
+      quantity: totalQuantity,
       totalPrice: response.totalAmount,
       currency: 'EUR',
       status: response.status,
@@ -99,11 +112,11 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       if (b.slot != null) {
         // Priorité: startDatetime ou startDate (ISO string complet)
         if (b.slot!.startDatetime != null) {
-          slotDateTime = DateTime.tryParse(b.slot!.startDatetime!);
+          slotDateTime = _parseLocal(b.slot!.startDatetime!);
         } else if (b.slot!.startDate != null) {
-          slotDateTime = DateTime.tryParse(b.slot!.startDate!);
+          slotDateTime = _parseLocal(b.slot!.startDate!);
         } else if (b.slot!.slotDate != null && b.slot!.startTime != null) {
-          // Combiner slot_date + start_time
+          // Combiner slot_date + start_time (déjà en heure locale, pas d'offset)
           try {
             final datePart = b.slot!.slotDate!.split('T').first;
             slotDateTime = DateTime.parse('$datePart ${b.slot!.startTime}');
@@ -117,7 +130,7 @@ class ApiBookingRepositoryImpl implements BookingRepository {
 
       // 2. Fallback: utiliser slotDate au niveau du booking (convenience field)
       if (slotDateTime == null && b.slotDate != null) {
-        slotDateTime = DateTime.tryParse(b.slotDate!);
+        slotDateTime = _parseLocal(b.slotDate!);
       }
 
       // Mapper l'activity depuis l'event chargé ou les convenience fields
@@ -163,32 +176,52 @@ class ApiBookingRepositoryImpl implements BookingRepository {
         totalPrice: b.grandTotal ?? b.totalAmount ?? 0.0,
         currency: 'EUR',
         status: b.status,
-        createdAt: b.createdAt != null ? DateTime.tryParse(b.createdAt!) : null,
+        createdAt: b.createdAt != null ? _parseLocal(b.createdAt!) : null,
         activity: activity,
         slot: slot,
         customerBirthDate: b.customerBirthDate,
         customerTown: b.customerTown,
+        reference: b.reference ?? b.uuid,
       );
     }).toList();
   }
 
-  /// Parse la date de fin du slot
+  /// Parse la date de fin du slot. Toujours retournée en heure locale.
   DateTime _parseSlotEndDateTime(BookingSlotDto? slot, DateTime startDateTime) {
     if (slot == null) return startDateTime.add(const Duration(hours: 1));
 
     if (slot.endDatetime != null) {
-      return DateTime.tryParse(slot.endDatetime!) ?? startDateTime.add(const Duration(hours: 1));
+      return _parseLocal(slot.endDatetime!) ?? startDateTime.add(const Duration(hours: 1));
     }
     if (slot.endDate != null) {
-      return DateTime.tryParse(slot.endDate!) ?? startDateTime.add(const Duration(hours: 1));
+      return _parseLocal(slot.endDate!) ?? startDateTime.add(const Duration(hours: 1));
     }
     if (slot.endTime != null) {
       try {
-        final datePart = startDateTime.toIso8601String().split('T').first;
+        // startDateTime est déjà local après _parseLocal — on construit une date locale.
+        final d = startDateTime;
+        final datePart =
+            '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
         return DateTime.parse('$datePart ${slot.endTime}');
       } catch (_) {}
     }
     return startDateTime.add(const Duration(hours: 1));
+  }
+
+  /// Parse une chaîne ISO en préservant les heures "wall-clock" du backend.
+  ///
+  /// L'API encode les heures dans le fuseau de l'événement (ex. "+02:00"
+  /// pour Europe/Paris). `DateTime.tryParse` normalise vers UTC, et
+  /// `.toLocal()` reconvertirait vers le fuseau du device — ce qui peut
+  /// différer du fuseau de l'événement (notamment sur émulateur en UTC).
+  ///
+  /// L'écran de détail (`event_detail_screen`) affiche les `start_time`
+  /// bruts ("14:00:00") sans conversion. On reproduit ce comportement ici
+  /// en supprimant l'offset avant le parse, ce qui produit un DateTime
+  /// "naïf" dont les heures correspondent à celles écrites par le backend.
+  DateTime? _parseLocal(String iso) {
+    final cleaned = iso.replaceFirst(RegExp(r'(Z|[+-]\d{2}:?\d{2})$'), '');
+    return DateTime.tryParse(cleaned);
   }
 
   @override

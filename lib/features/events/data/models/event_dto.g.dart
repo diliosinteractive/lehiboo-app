@@ -59,9 +59,11 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       seatConfig: _parseMapOrNull(json['seat_config']),
       externalBooking: _parseMapOrNull(json['external_booking']),
       eventType: _parseMapOrNull(json['event_type']),
+      eventTag: _parseMapOrNull(json['event_tag']),
       targetAudience: _parseListOrNull(json['target_audience']),
       targetAudiences: _parseListOrNull(json['target_audiences']),
       bookingMode: _parseStringOrNull(json['booking_mode']),
+      discoveryPricingType: _parseStringOrNull(json['discovery_pricing_type']),
       locationDetails: _parseMapOrNull(json['location_details']),
       coOrganizers: _parseCoOrganizers(json['coorganizers']),
       socialMedia: _parseMapOrNull(json['social_media']),
@@ -72,6 +74,11 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       creationSource: _parseStringOrNull(json['creation_source']),
       originalOrganizerName:
           _parseStringOrNull(json['original_organizer_name']),
+      themes:
+          json['themes'] == null ? const [] : _parseNamedList(json['themes']),
+      emotions: json['emotions'] == null
+          ? const []
+          : _parseNamedList(json['emotions']),
       isFavorite: json['is_favorite'] as bool? ?? false,
     );
 
@@ -111,9 +118,11 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'seat_config': instance.seatConfig,
       'external_booking': instance.externalBooking,
       'event_type': instance.eventType,
+      'event_tag': instance.eventTag,
       'target_audience': instance.targetAudience,
       'target_audiences': instance.targetAudiences,
       'booking_mode': instance.bookingMode,
+      'discovery_pricing_type': instance.discoveryPricingType,
       'location_details': instance.locationDetails,
       'coorganizers': instance.coOrganizers,
       'social_media': instance.socialMedia,
@@ -123,6 +132,8 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'venue': instance.venueData,
       'creation_source': instance.creationSource,
       'original_organizer_name': instance.originalOrganizerName,
+      'themes': instance.themes,
+      'emotions': instance.emotions,
       'is_favorite': instance.isFavorite,
     };
 

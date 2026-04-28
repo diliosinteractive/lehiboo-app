@@ -921,7 +921,8 @@ class _StoryContent extends StatelessWidget {
       return 'Demain';
     } else {
       final weekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-      return '${weekdays[date.weekday - 1]} ${date.day}/${date.month}';
+      final year = (date.year % 100).toString().padLeft(2, '0');
+      return '${weekdays[date.weekday - 1]} ${date.day}/${date.month}/$year';
     }
   }
 }

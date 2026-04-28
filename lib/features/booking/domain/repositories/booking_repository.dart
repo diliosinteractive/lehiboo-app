@@ -5,9 +5,11 @@ abstract class BookingRepository {
   Future<Booking> createBooking({
     required String activityId,
     required String slotId,
-    required int quantity,
+    required List<TicketSelection> ticketSelections,
     required BuyerInfo buyer,
-    required List<ParticipantInfo> participants,
+    bool acceptTerms = false,
+    bool acceptNewsletter = false,
+    String? promoCode,
   });
 
   Future<Booking> confirmBooking({

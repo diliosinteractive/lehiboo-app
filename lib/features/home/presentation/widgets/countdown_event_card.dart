@@ -269,6 +269,31 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                     ),
                   ),
 
+                // Category badge (bottom left)
+                if (widget.activity.category != null)
+                  Positioned(
+                    bottom: 12,
+                    left: 12,
+                    child: GestureDetector(
+                      onTap: () => context.push('/search?categorySlug=${widget.activity.category!.slug}'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          widget.activity.category!.name,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
                 // Favorite button (bottom right)
                 Positioned(
                   bottom: 12,
@@ -307,45 +332,17 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                       ),
                     ),
 
-                  // Title + Category chip
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.activity.title,
-                          style: GoogleFonts.montserrat(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: HbColors.textSlate,
-                            height: 1.2,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (widget.activity.category != null) ...[
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => context.push('/search?categorySlug=${widget.activity.category!.slug}'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: _getCategoryColor(widget.activity.category!.slug).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              widget.activity.category!.name,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: _getCategoryColor(widget.activity.category!.slug),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  // Title
+                  Text(
+                    widget.activity.title,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: HbColors.textSlate,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
 
                   const SizedBox(height: 8),
@@ -455,18 +452,6 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
     );
   }
 
-  Color _getCategoryColor(String slug) {
-    switch (slug.toLowerCase()) {
-      case 'atelier': return Colors.purple;
-      case 'concert': return Colors.blue;
-      case 'spectacle': return Colors.red;
-      case 'sport': return Colors.green;
-      case 'marche': return Colors.orange;
-      case 'culture': return Colors.indigo;
-      default: return HbColors.brandPrimary;
-    }
-  }
-
   Widget _buildFallbackImage() {
     return Container(
       color: HbColors.brandPrimary,
@@ -493,7 +478,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
       dayPart = 'Demain';
     } else {
       final weekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-      dayPart = '${weekdays[date.weekday - 1]} ${date.day}/${date.month}';
+      final year = (date.year % 100).toString().padLeft(2, '0');
+      dayPart = '${weekdays[date.weekday - 1]} ${date.day}/${date.month}/$year';
     }
 
     final timePart = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
@@ -606,7 +592,8 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
     final dayName = days[dt.weekday - 1];
     final monthName = months[dt.month - 1];
     final time = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    return '$dayName ${dt.day} $monthName à $time';
+    final year = (dt.year % 100).toString().padLeft(2, '0');
+    return '$dayName ${dt.day} $monthName $year à $time';
   }
 
   bool get _isUrgent => _remaining.inHours < 6;
@@ -686,6 +673,30 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                       ),
                     ),
                   ),
+                // Category badge (bottom left)
+                if (widget.activity.category != null)
+                  Positioned(
+                    bottom: 10,
+                    left: 10,
+                    child: GestureDetector(
+                      onTap: () => context.push('/search?categorySlug=${widget.activity.category!.slug}'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          widget.activity.category!.name,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 // Favorite button
                 Positioned(
                   bottom: 10,
@@ -708,45 +719,17 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Titre + Category chip
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.activity.title,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1A1A),
-                            height: 1.1,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (widget.activity.category != null) ...[
-                        const SizedBox(width: 6),
-                        GestureDetector(
-                          onTap: () => context.push('/search?categorySlug=${widget.activity.category!.slug}'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: _getCategoryColor(widget.activity.category!.slug).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              widget.activity.category!.name,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: _getCategoryColor(widget.activity.category!.slug),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  // Titre
+                  Text(
+                    widget.activity.title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1A1A),
+                      height: 1.1,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   // Organisateur
@@ -845,18 +828,6 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
         ],
       ),
     );
-  }
-
-  Color _getCategoryColor(String slug) {
-    switch (slug.toLowerCase()) {
-      case 'atelier': return Colors.purple;
-      case 'concert': return Colors.blue;
-      case 'spectacle': return Colors.red;
-      case 'sport': return Colors.green;
-      case 'marche': return Colors.orange;
-      case 'culture': return Colors.indigo;
-      default: return HbColors.brandPrimary;
-    }
   }
 
   Widget _buildFallback() {

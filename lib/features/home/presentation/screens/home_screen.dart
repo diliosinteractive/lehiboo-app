@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/themes/colors.dart';
@@ -134,6 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     baseTitle: 'Activités disponibles aujourd\'hui',
                     emptyMessage: 'Aucune activité pour aujourd\'hui',
                     viewAllPath: '/search?date=today',
+                    isToday: true,
                   ),
                   _buildActivitySection(
                     context,
@@ -142,6 +144,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     baseTitle: 'Activités disponibles demain',
                     emptyMessage: 'Aucune activité pour demain',
                     viewAllPath: '/search?date=tomorrow',
+                    isTomorrow: true,
                   ),
                   _buildSectionTitle('Les recommandations', '/recommended'),
                   const SizedBox(height: 16),
@@ -249,8 +252,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       centerTitle: false,
       toolbarHeight: 60,
       title: Image.asset(
-        'assets/images/logo_lehiboo_experience.png',
-        width: 160,
+        'assets/images/logo_picto_lehiboo_old.png',
+        width: 30,
+        height: 35,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) => const Text(
           'Le Hiboo',
@@ -282,8 +286,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: Badge(
                 isLabelVisible: unread > 0,
                 label: Text('$unread'),
-                child: const Icon(Icons.mail_outline,
-                    color: Colors.white),
+                child: Icon(
+                  PhosphorIconsRegular.chatCircleDots,
+                  color: Colors.white,
+                ),
               ),
               onPressed: () => context.push('/messages'),
             );
@@ -360,6 +366,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String baseTitle,
     required String emptyMessage,
     required String viewAllPath,
+    bool isToday = false,
+    bool isTomorrow = false,
   }) {
     final activitiesAsyncValue = ref.watch(provider);
     final userLocationAsync = ref.watch(userLocationProvider);
@@ -416,10 +424,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: EventCard(
                       activity: activity,
                       isCompact: true,
-                      showTimeBadge: true,
-                      heroTagPrefix: baseTitle.toLowerCase().contains('demain')
-                          ? 'tomorrow'
-                          : 'today',
+                      isToday: isToday,
+                      isTomorrow: isTomorrow,
+                      heroTagPrefix: isTomorrow ? 'tomorrow' : 'today',
                     ),
                   );
                 },

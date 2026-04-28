@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../messages/presentation/providers/unread_count_provider.dart';
+import '../../../reviews/presentation/providers/pending_count_provider.dart';
 import '../providers/profile_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -183,6 +184,21 @@ class ProfileScreen extends ConsumerWidget {
           title: 'Mes Rappels',
           subtitle: 'Rappels d\'activités à venir',
           onTap: () => context.push('/my-reminders'),
+        ),
+        _buildMenuItem(
+          context,
+          icon: Icons.question_answer_outlined,
+          title: 'Mes Questions',
+          subtitle: 'Vos questions sur les événements',
+          onTap: () => context.push('/my-questions'),
+        ),
+        _buildMenuItem(
+          context,
+          icon: Icons.rate_review_outlined,
+          title: 'Mes Avis',
+          subtitle: 'Vos avis et réponses des organisateurs',
+          badge: ref.watch(pendingReviewCountProvider).valueOrNull,
+          onTap: () => context.push('/my-reviews'),
         ),
         _buildMenuItem(
           context,

@@ -86,6 +86,7 @@ class Event extends Equatable {
   final bool organizerIsPlatform;
   final bool organizerVerified;
   final int? organizerEventsCount;
+  final int? organizerFollowersCount;
   final List<String> organizerVenueTypes;
   final bool organizerAllowPublicContact;
   final bool isFavorite;
@@ -94,6 +95,7 @@ class Event extends Equatable {
   final EventStatus status;
   final String? bookingUrl;
   final bool hasDirectBooking;
+  final String? discoveryPricingType;
   final DateTime createdAt;
   final DateTime updatedAt;
   final int views;
@@ -119,6 +121,8 @@ class Event extends Equatable {
   final List<TaxonomyTerm> targetAudienceTerms; // Maps to 'target_audience' from API
   final List<String> allCategoryNames; // All category names from API (including primary)
   final String? thematiqueName; // Main thematique name from API
+  final List<String> themeNames; // From API 'themes' array
+  final List<String> emotionNames; // From API 'emotions' array
 
   // --- RICH CONTENT V2 ---
   final LocationDetails? locationDetails;
@@ -177,6 +181,7 @@ class Event extends Equatable {
     this.organizerIsPlatform = false,
     this.organizerVerified = false,
     this.organizerEventsCount,
+    this.organizerFollowersCount,
     this.organizerVenueTypes = const [],
     this.organizerAllowPublicContact = false,
     required this.isFavorite,
@@ -185,6 +190,7 @@ class Event extends Equatable {
     required this.status,
     this.bookingUrl,
     required this.hasDirectBooking,
+    this.discoveryPricingType,
     required this.createdAt,
     required this.updatedAt,
     required this.views,
@@ -209,6 +215,8 @@ class Event extends Equatable {
     this.targetAudienceTerms = const [],
     this.allCategoryNames = const [],
     this.thematiqueName,
+    this.themeNames = const [],
+    this.emotionNames = const [],
     this.locationDetails,
     this.coOrganizers = const [],
 
@@ -398,6 +406,7 @@ class Event extends Equatable {
     bool? organizerIsPlatform,
     bool? organizerVerified,
     int? organizerEventsCount,
+    int? organizerFollowersCount,
     List<String>? organizerVenueTypes,
     bool? organizerAllowPublicContact,
     bool? isFavorite,
@@ -406,6 +415,7 @@ class Event extends Equatable {
     EventStatus? status,
     String? bookingUrl,
     bool? hasDirectBooking,
+    String? discoveryPricingType,
     DateTime? createdAt,
     DateTime? updatedAt,
     int? views,
@@ -429,6 +439,8 @@ class Event extends Equatable {
     List<TaxonomyTerm>? targetAudienceTerms,
     List<String>? allCategoryNames,
     String? thematiqueName,
+    List<String>? themeNames,
+    List<String>? emotionNames,
     LocationDetails? locationDetails,
     List<CoOrganizer>? coOrganizers,
 
@@ -481,6 +493,7 @@ class Event extends Equatable {
       organizerIsPlatform: organizerIsPlatform ?? this.organizerIsPlatform,
       organizerVerified: organizerVerified ?? this.organizerVerified,
       organizerEventsCount: organizerEventsCount ?? this.organizerEventsCount,
+      organizerFollowersCount: organizerFollowersCount ?? this.organizerFollowersCount,
       organizerVenueTypes: organizerVenueTypes ?? this.organizerVenueTypes,
       organizerAllowPublicContact: organizerAllowPublicContact ?? this.organizerAllowPublicContact,
       isFavorite: isFavorite ?? this.isFavorite,
@@ -489,6 +502,7 @@ class Event extends Equatable {
       status: status ?? this.status,
       bookingUrl: bookingUrl ?? this.bookingUrl,
       hasDirectBooking: hasDirectBooking ?? this.hasDirectBooking,
+      discoveryPricingType: discoveryPricingType ?? this.discoveryPricingType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       views: views ?? this.views,
@@ -512,6 +526,8 @@ class Event extends Equatable {
       targetAudienceTerms: targetAudienceTerms ?? this.targetAudienceTerms,
       allCategoryNames: allCategoryNames ?? this.allCategoryNames,
       thematiqueName: thematiqueName ?? this.thematiqueName,
+      themeNames: themeNames ?? this.themeNames,
+      emotionNames: emotionNames ?? this.emotionNames,
       locationDetails: locationDetails ?? this.locationDetails,
       coOrganizers: coOrganizers ?? this.coOrganizers,
 
@@ -567,6 +583,7 @@ class Event extends Equatable {
         organizerIsPlatform,
         organizerVerified,
         organizerEventsCount,
+        organizerFollowersCount,
         organizerVenueTypes,
         organizerAllowPublicContact,
         isFavorite,
@@ -575,6 +592,7 @@ class Event extends Equatable {
         status,
         bookingUrl,
         hasDirectBooking,
+        discoveryPricingType,
         createdAt,
         updatedAt,
         views,
@@ -598,6 +616,8 @@ class Event extends Equatable {
         targetAudienceTerms,
         allCategoryNames,
         thematiqueName,
+        themeNames,
+        emotionNames,
         locationDetails,
         coOrganizers,
         socialMedia,

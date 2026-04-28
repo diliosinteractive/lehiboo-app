@@ -234,6 +234,7 @@ mixin _$EventQuestionDto {
   bool get hasAnswerCamel => throw _privateConstructorUsedError;
   QuestionAuthorDto? get author => throw _privateConstructorUsedError;
   QuestionAnswerDto? get answer => throw _privateConstructorUsedError;
+  QuestionEventDto? get event => throw _privateConstructorUsedError;
   @JsonKey(name: 'user_voted', fromJson: _parseBool)
   bool get userVoted => throw _privateConstructorUsedError;
   @JsonKey(name: 'userVoted', fromJson: _parseBool)
@@ -271,6 +272,7 @@ abstract class $EventQuestionDtoCopyWith<$Res> {
       @JsonKey(name: 'hasAnswer', fromJson: _parseBool) bool hasAnswerCamel,
       QuestionAuthorDto? author,
       QuestionAnswerDto? answer,
+      QuestionEventDto? event,
       @JsonKey(name: 'user_voted', fromJson: _parseBool) bool userVoted,
       @JsonKey(name: 'userVoted', fromJson: _parseBool) bool userVotedCamel,
       @JsonKey(name: 'created_at_formatted', fromJson: _parseString)
@@ -280,6 +282,7 @@ abstract class $EventQuestionDtoCopyWith<$Res> {
 
   $QuestionAuthorDtoCopyWith<$Res>? get author;
   $QuestionAnswerDtoCopyWith<$Res>? get answer;
+  $QuestionEventDtoCopyWith<$Res>? get event;
 }
 
 /// @nodoc
@@ -310,6 +313,7 @@ class _$EventQuestionDtoCopyWithImpl<$Res, $Val extends EventQuestionDto>
     Object? hasAnswerCamel = null,
     Object? author = freezed,
     Object? answer = freezed,
+    Object? event = freezed,
     Object? userVoted = null,
     Object? userVotedCamel = null,
     Object? createdAtFormatted = null,
@@ -376,6 +380,10 @@ class _$EventQuestionDtoCopyWithImpl<$Res, $Val extends EventQuestionDto>
           ? _value.answer
           : answer // ignore: cast_nullable_to_non_nullable
               as QuestionAnswerDto?,
+      event: freezed == event
+          ? _value.event
+          : event // ignore: cast_nullable_to_non_nullable
+              as QuestionEventDto?,
       userVoted: null == userVoted
           ? _value.userVoted
           : userVoted // ignore: cast_nullable_to_non_nullable
@@ -418,6 +426,18 @@ class _$EventQuestionDtoCopyWithImpl<$Res, $Val extends EventQuestionDto>
       return _then(_value.copyWith(answer: value) as $Val);
     });
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $QuestionEventDtoCopyWith<$Res>? get event {
+    if (_value.event == null) {
+      return null;
+    }
+
+    return $QuestionEventDtoCopyWith<$Res>(_value.event!, (value) {
+      return _then(_value.copyWith(event: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -444,6 +464,7 @@ abstract class _$$EventQuestionDtoImplCopyWith<$Res>
       @JsonKey(name: 'hasAnswer', fromJson: _parseBool) bool hasAnswerCamel,
       QuestionAuthorDto? author,
       QuestionAnswerDto? answer,
+      QuestionEventDto? event,
       @JsonKey(name: 'user_voted', fromJson: _parseBool) bool userVoted,
       @JsonKey(name: 'userVoted', fromJson: _parseBool) bool userVotedCamel,
       @JsonKey(name: 'created_at_formatted', fromJson: _parseString)
@@ -455,6 +476,8 @@ abstract class _$$EventQuestionDtoImplCopyWith<$Res>
   $QuestionAuthorDtoCopyWith<$Res>? get author;
   @override
   $QuestionAnswerDtoCopyWith<$Res>? get answer;
+  @override
+  $QuestionEventDtoCopyWith<$Res>? get event;
 }
 
 /// @nodoc
@@ -483,6 +506,7 @@ class __$$EventQuestionDtoImplCopyWithImpl<$Res>
     Object? hasAnswerCamel = null,
     Object? author = freezed,
     Object? answer = freezed,
+    Object? event = freezed,
     Object? userVoted = null,
     Object? userVotedCamel = null,
     Object? createdAtFormatted = null,
@@ -549,6 +573,10 @@ class __$$EventQuestionDtoImplCopyWithImpl<$Res>
           ? _value.answer
           : answer // ignore: cast_nullable_to_non_nullable
               as QuestionAnswerDto?,
+      event: freezed == event
+          ? _value.event
+          : event // ignore: cast_nullable_to_non_nullable
+              as QuestionEventDto?,
       userVoted: null == userVoted
           ? _value.userVoted
           : userVoted // ignore: cast_nullable_to_non_nullable
@@ -595,6 +623,7 @@ class _$EventQuestionDtoImpl implements _EventQuestionDto {
       this.hasAnswerCamel = false,
       this.author,
       this.answer,
+      this.event,
       @JsonKey(name: 'user_voted', fromJson: _parseBool) this.userVoted = false,
       @JsonKey(name: 'userVoted', fromJson: _parseBool)
       this.userVotedCamel = false,
@@ -649,6 +678,8 @@ class _$EventQuestionDtoImpl implements _EventQuestionDto {
   @override
   final QuestionAnswerDto? answer;
   @override
+  final QuestionEventDto? event;
+  @override
   @JsonKey(name: 'user_voted', fromJson: _parseBool)
   final bool userVoted;
   @override
@@ -663,7 +694,7 @@ class _$EventQuestionDtoImpl implements _EventQuestionDto {
 
   @override
   String toString() {
-    return 'EventQuestionDto(uuid: $uuid, question: $question, status: $status, helpfulCount: $helpfulCount, helpfulCountCamel: $helpfulCountCamel, isPublic: $isPublic, isPublicCamel: $isPublicCamel, isPinned: $isPinned, isPinnedCamel: $isPinnedCamel, isAnswered: $isAnswered, isAnsweredCamel: $isAnsweredCamel, hasAnswer: $hasAnswer, hasAnswerCamel: $hasAnswerCamel, author: $author, answer: $answer, userVoted: $userVoted, userVotedCamel: $userVotedCamel, createdAtFormatted: $createdAtFormatted, createdAtFormattedCamel: $createdAtFormattedCamel)';
+    return 'EventQuestionDto(uuid: $uuid, question: $question, status: $status, helpfulCount: $helpfulCount, helpfulCountCamel: $helpfulCountCamel, isPublic: $isPublic, isPublicCamel: $isPublicCamel, isPinned: $isPinned, isPinnedCamel: $isPinnedCamel, isAnswered: $isAnswered, isAnsweredCamel: $isAnsweredCamel, hasAnswer: $hasAnswer, hasAnswerCamel: $hasAnswerCamel, author: $author, answer: $answer, event: $event, userVoted: $userVoted, userVotedCamel: $userVotedCamel, createdAtFormatted: $createdAtFormatted, createdAtFormattedCamel: $createdAtFormattedCamel)';
   }
 
   @override
@@ -697,6 +728,7 @@ class _$EventQuestionDtoImpl implements _EventQuestionDto {
                 other.hasAnswerCamel == hasAnswerCamel) &&
             (identical(other.author, author) || other.author == author) &&
             (identical(other.answer, answer) || other.answer == answer) &&
+            (identical(other.event, event) || other.event == event) &&
             (identical(other.userVoted, userVoted) ||
                 other.userVoted == userVoted) &&
             (identical(other.userVotedCamel, userVotedCamel) ||
@@ -727,6 +759,7 @@ class _$EventQuestionDtoImpl implements _EventQuestionDto {
         hasAnswerCamel,
         author,
         answer,
+        event,
         userVoted,
         userVotedCamel,
         createdAtFormatted,
@@ -769,6 +802,7 @@ abstract class _EventQuestionDto implements EventQuestionDto {
       final bool hasAnswerCamel,
       final QuestionAuthorDto? author,
       final QuestionAnswerDto? answer,
+      final QuestionEventDto? event,
       @JsonKey(name: 'user_voted', fromJson: _parseBool) final bool userVoted,
       @JsonKey(name: 'userVoted', fromJson: _parseBool)
       final bool userVotedCamel,
@@ -822,6 +856,8 @@ abstract class _EventQuestionDto implements EventQuestionDto {
   QuestionAuthorDto? get author;
   @override
   QuestionAnswerDto? get answer;
+  @override
+  QuestionEventDto? get event;
   @override
   @JsonKey(name: 'user_voted', fromJson: _parseBool)
   bool get userVoted;
@@ -1473,6 +1509,270 @@ abstract class _QuestionAnswerDto implements QuestionAnswerDto {
   @override
   @JsonKey(ignore: true)
   _$$QuestionAnswerDtoImplCopyWith<_$QuestionAnswerDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+QuestionEventDto _$QuestionEventDtoFromJson(Map<String, dynamic> json) {
+  return _QuestionEventDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$QuestionEventDto {
+  @JsonKey(fromJson: _parseInt)
+  int get id => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseString)
+  String get uuid => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseString)
+  String get title => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseString)
+  String get slug => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_deleted', fromJson: _parseBool)
+  bool get isDeleted => throw _privateConstructorUsedError;
+  @JsonKey(name: 'isDeleted', fromJson: _parseBool)
+  bool get isDeletedCamel => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $QuestionEventDtoCopyWith<QuestionEventDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $QuestionEventDtoCopyWith<$Res> {
+  factory $QuestionEventDtoCopyWith(
+          QuestionEventDto value, $Res Function(QuestionEventDto) then) =
+      _$QuestionEventDtoCopyWithImpl<$Res, QuestionEventDto>;
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: _parseInt) int id,
+      @JsonKey(fromJson: _parseString) String uuid,
+      @JsonKey(fromJson: _parseString) String title,
+      @JsonKey(fromJson: _parseString) String slug,
+      @JsonKey(name: 'is_deleted', fromJson: _parseBool) bool isDeleted,
+      @JsonKey(name: 'isDeleted', fromJson: _parseBool) bool isDeletedCamel});
+}
+
+/// @nodoc
+class _$QuestionEventDtoCopyWithImpl<$Res, $Val extends QuestionEventDto>
+    implements $QuestionEventDtoCopyWith<$Res> {
+  _$QuestionEventDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? uuid = null,
+    Object? title = null,
+    Object? slug = null,
+    Object? isDeleted = null,
+    Object? isDeletedCamel = null,
+  }) {
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int,
+      uuid: null == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      slug: null == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String,
+      isDeleted: null == isDeleted
+          ? _value.isDeleted
+          : isDeleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isDeletedCamel: null == isDeletedCamel
+          ? _value.isDeletedCamel
+          : isDeletedCamel // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$QuestionEventDtoImplCopyWith<$Res>
+    implements $QuestionEventDtoCopyWith<$Res> {
+  factory _$$QuestionEventDtoImplCopyWith(_$QuestionEventDtoImpl value,
+          $Res Function(_$QuestionEventDtoImpl) then) =
+      __$$QuestionEventDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: _parseInt) int id,
+      @JsonKey(fromJson: _parseString) String uuid,
+      @JsonKey(fromJson: _parseString) String title,
+      @JsonKey(fromJson: _parseString) String slug,
+      @JsonKey(name: 'is_deleted', fromJson: _parseBool) bool isDeleted,
+      @JsonKey(name: 'isDeleted', fromJson: _parseBool) bool isDeletedCamel});
+}
+
+/// @nodoc
+class __$$QuestionEventDtoImplCopyWithImpl<$Res>
+    extends _$QuestionEventDtoCopyWithImpl<$Res, _$QuestionEventDtoImpl>
+    implements _$$QuestionEventDtoImplCopyWith<$Res> {
+  __$$QuestionEventDtoImplCopyWithImpl(_$QuestionEventDtoImpl _value,
+      $Res Function(_$QuestionEventDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? uuid = null,
+    Object? title = null,
+    Object? slug = null,
+    Object? isDeleted = null,
+    Object? isDeletedCamel = null,
+  }) {
+    return _then(_$QuestionEventDtoImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int,
+      uuid: null == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      slug: null == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String,
+      isDeleted: null == isDeleted
+          ? _value.isDeleted
+          : isDeleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isDeletedCamel: null == isDeletedCamel
+          ? _value.isDeletedCamel
+          : isDeletedCamel // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$QuestionEventDtoImpl implements _QuestionEventDto {
+  const _$QuestionEventDtoImpl(
+      {@JsonKey(fromJson: _parseInt) this.id = 0,
+      @JsonKey(fromJson: _parseString) this.uuid = '',
+      @JsonKey(fromJson: _parseString) this.title = '',
+      @JsonKey(fromJson: _parseString) this.slug = '',
+      @JsonKey(name: 'is_deleted', fromJson: _parseBool) this.isDeleted = false,
+      @JsonKey(name: 'isDeleted', fromJson: _parseBool)
+      this.isDeletedCamel = false});
+
+  factory _$QuestionEventDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$QuestionEventDtoImplFromJson(json);
+
+  @override
+  @JsonKey(fromJson: _parseInt)
+  final int id;
+  @override
+  @JsonKey(fromJson: _parseString)
+  final String uuid;
+  @override
+  @JsonKey(fromJson: _parseString)
+  final String title;
+  @override
+  @JsonKey(fromJson: _parseString)
+  final String slug;
+  @override
+  @JsonKey(name: 'is_deleted', fromJson: _parseBool)
+  final bool isDeleted;
+  @override
+  @JsonKey(name: 'isDeleted', fromJson: _parseBool)
+  final bool isDeletedCamel;
+
+  @override
+  String toString() {
+    return 'QuestionEventDto(id: $id, uuid: $uuid, title: $title, slug: $slug, isDeleted: $isDeleted, isDeletedCamel: $isDeletedCamel)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$QuestionEventDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.uuid, uuid) || other.uuid == uuid) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.slug, slug) || other.slug == slug) &&
+            (identical(other.isDeleted, isDeleted) ||
+                other.isDeleted == isDeleted) &&
+            (identical(other.isDeletedCamel, isDeletedCamel) ||
+                other.isDeletedCamel == isDeletedCamel));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, id, uuid, title, slug, isDeleted, isDeletedCamel);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$QuestionEventDtoImplCopyWith<_$QuestionEventDtoImpl> get copyWith =>
+      __$$QuestionEventDtoImplCopyWithImpl<_$QuestionEventDtoImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$QuestionEventDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _QuestionEventDto implements QuestionEventDto {
+  const factory _QuestionEventDto(
+      {@JsonKey(fromJson: _parseInt) final int id,
+      @JsonKey(fromJson: _parseString) final String uuid,
+      @JsonKey(fromJson: _parseString) final String title,
+      @JsonKey(fromJson: _parseString) final String slug,
+      @JsonKey(name: 'is_deleted', fromJson: _parseBool) final bool isDeleted,
+      @JsonKey(name: 'isDeleted', fromJson: _parseBool)
+      final bool isDeletedCamel}) = _$QuestionEventDtoImpl;
+
+  factory _QuestionEventDto.fromJson(Map<String, dynamic> json) =
+      _$QuestionEventDtoImpl.fromJson;
+
+  @override
+  @JsonKey(fromJson: _parseInt)
+  int get id;
+  @override
+  @JsonKey(fromJson: _parseString)
+  String get uuid;
+  @override
+  @JsonKey(fromJson: _parseString)
+  String get title;
+  @override
+  @JsonKey(fromJson: _parseString)
+  String get slug;
+  @override
+  @JsonKey(name: 'is_deleted', fromJson: _parseBool)
+  bool get isDeleted;
+  @override
+  @JsonKey(name: 'isDeleted', fromJson: _parseBool)
+  bool get isDeletedCamel;
+  @override
+  @JsonKey(ignore: true)
+  _$$QuestionEventDtoImplCopyWith<_$QuestionEventDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

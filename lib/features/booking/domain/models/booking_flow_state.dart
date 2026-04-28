@@ -17,6 +17,12 @@ class ParticipantInfo with _$ParticipantInfo {
   const factory ParticipantInfo({
     String? firstName,
     String? lastName,
+    String? email,
+    String? phone,
+    String? birthDate, // "YYYY-MM-DD"
+    int? age,
+    String? city,
+    String? membershipCity,
   }) = _ParticipantInfo;
 }
 
@@ -33,6 +39,16 @@ class BuyerInfo with _$BuyerInfo {
 }
 
 @freezed
+class TicketSelection with _$TicketSelection {
+  const factory TicketSelection({
+    required String ticketTypeId,
+    required String ticketName,
+    required int quantity,
+    @Default([]) List<ParticipantInfo> attendees,
+  }) = _TicketSelection;
+}
+
+@freezed
 class BookingFlowState with _$BookingFlowState {
   const factory BookingFlowState({
     required BookingStep step,
@@ -41,6 +57,7 @@ class BookingFlowState with _$BookingFlowState {
     @Default(1) int quantity,
     BuyerInfo? buyerInfo,
     List<ParticipantInfo>? participants,
+    @Default([]) List<TicketSelection> ticketSelections,
     double? totalPrice,
     String? currency,
     @Default(false) bool isFree,

@@ -31,9 +31,9 @@ class EventOrganizerCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Organisateur',
-            style: TextStyle(
+          Text(
+            event.organizerIsPlatform ? 'Sources Infos' : 'Organisateur',
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -144,12 +144,9 @@ class _VendorOrganizerCard extends StatelessWidget {
                 _buildVenueTypeTags(),
               ],
 
-              // Row 4: Events count
-              if (event.organizerEventsCount != null &&
-                  event.organizerEventsCount! > 0) ...[
-                const SizedBox(height: 10),
-                _buildEventsCount(),
-              ],
+              // Row 4: Events count + followers
+              const SizedBox(height: 10),
+              _buildStats(),
 
               // Row 5: Contact button
               if (event.organizerAllowPublicContact) ...[
@@ -251,14 +248,27 @@ class _VendorOrganizerCard extends StatelessWidget {
     );
   }
 
-  Widget _buildEventsCount() {
-    final count = event.organizerEventsCount!;
+  Widget _buildStats() {
+    final count = event.organizerEventsCount;
+    final followers = event.organizerFollowersCount ?? 0;
     return Row(
       children: [
-        Icon(Icons.event_outlined, size: 15, color: Colors.grey.shade500),
+        if (count != null && count > 0) ...[
+          Icon(Icons.event_outlined, size: 15, color: Colors.grey.shade500),
+          const SizedBox(width: 5),
+          Text(
+            '$count événement${count > 1 ? 's' : ''} publiés',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(width: 14),
+        ],
+        Icon(Icons.favorite_border, size: 15, color: HbColors.brandPrimary),
         const SizedBox(width: 5),
         Text(
-          '$count événement${count > 1 ? 's' : ''} publiés',
+          '$followers abonné${followers > 1 ? 's' : ''}',
           style: TextStyle(
             fontSize: 13,
             color: Colors.grey.shade600,
@@ -272,26 +282,7 @@ class _VendorOrganizerCard extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              context.push('/partner/${event.organizerId}');
-            },
-            icon: const Icon(Icons.storefront_outlined, size: 18),
-            label: const Text('Voir le profil'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: HbColors.textPrimary,
-              side: BorderSide(color: Colors.grey.shade300),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: OutlinedButton.icon(
+          child: ElevatedButton.icon(
             onPressed: () {
               HapticFeedback.lightImpact();
               context.push(Uri(
@@ -300,14 +291,36 @@ class _VendorOrganizerCard extends StatelessWidget {
               ).toString());
             },
             icon: const Icon(Icons.mail_outline, size: 18),
-            label: const Text('Nous contacter'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: HbColors.brandPrimary,
-              side: const BorderSide(color: HbColors.brandPrimary),
+            label: const Text('Contacter'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: HbColors.brandPrimary,
+              foregroundColor: Colors.white,
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(25),
               ),
               padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TextButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/partner/${event.organizerId}');
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: HbColors.brandPrimary,
+              backgroundColor: HbColors.brandPrimary.withValues(alpha: 0.08),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: const Text(
+              'Voir le profil',
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ),

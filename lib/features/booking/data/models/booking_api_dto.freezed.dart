@@ -14,6 +14,305 @@ T _$identity<T>(T value) => value;
 final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
+AttendeeRequestDto _$AttendeeRequestDtoFromJson(Map<String, dynamic> json) {
+  return _AttendeeRequestDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$AttendeeRequestDto {
+  @JsonKey(name: 'first_name')
+  String get firstName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'last_name')
+  String get lastName => throw _privateConstructorUsedError;
+  String? get email => throw _privateConstructorUsedError;
+  String? get phone => throw _privateConstructorUsedError;
+  @JsonKey(name: 'birth_date')
+  String? get birthDate => throw _privateConstructorUsedError;
+  int? get age => throw _privateConstructorUsedError;
+  String? get city => throw _privateConstructorUsedError;
+  @JsonKey(name: 'membership_city')
+  String? get membershipCity => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $AttendeeRequestDtoCopyWith<AttendeeRequestDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $AttendeeRequestDtoCopyWith<$Res> {
+  factory $AttendeeRequestDtoCopyWith(
+          AttendeeRequestDto value, $Res Function(AttendeeRequestDto) then) =
+      _$AttendeeRequestDtoCopyWithImpl<$Res, AttendeeRequestDto>;
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'first_name') String firstName,
+      @JsonKey(name: 'last_name') String lastName,
+      String? email,
+      String? phone,
+      @JsonKey(name: 'birth_date') String? birthDate,
+      int? age,
+      String? city,
+      @JsonKey(name: 'membership_city') String? membershipCity});
+}
+
+/// @nodoc
+class _$AttendeeRequestDtoCopyWithImpl<$Res, $Val extends AttendeeRequestDto>
+    implements $AttendeeRequestDtoCopyWith<$Res> {
+  _$AttendeeRequestDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? firstName = null,
+    Object? lastName = null,
+    Object? email = freezed,
+    Object? phone = freezed,
+    Object? birthDate = freezed,
+    Object? age = freezed,
+    Object? city = freezed,
+    Object? membershipCity = freezed,
+  }) {
+    return _then(_value.copyWith(
+      firstName: null == firstName
+          ? _value.firstName
+          : firstName // ignore: cast_nullable_to_non_nullable
+              as String,
+      lastName: null == lastName
+          ? _value.lastName
+          : lastName // ignore: cast_nullable_to_non_nullable
+              as String,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      age: freezed == age
+          ? _value.age
+          : age // ignore: cast_nullable_to_non_nullable
+              as int?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$AttendeeRequestDtoImplCopyWith<$Res>
+    implements $AttendeeRequestDtoCopyWith<$Res> {
+  factory _$$AttendeeRequestDtoImplCopyWith(_$AttendeeRequestDtoImpl value,
+          $Res Function(_$AttendeeRequestDtoImpl) then) =
+      __$$AttendeeRequestDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'first_name') String firstName,
+      @JsonKey(name: 'last_name') String lastName,
+      String? email,
+      String? phone,
+      @JsonKey(name: 'birth_date') String? birthDate,
+      int? age,
+      String? city,
+      @JsonKey(name: 'membership_city') String? membershipCity});
+}
+
+/// @nodoc
+class __$$AttendeeRequestDtoImplCopyWithImpl<$Res>
+    extends _$AttendeeRequestDtoCopyWithImpl<$Res, _$AttendeeRequestDtoImpl>
+    implements _$$AttendeeRequestDtoImplCopyWith<$Res> {
+  __$$AttendeeRequestDtoImplCopyWithImpl(_$AttendeeRequestDtoImpl _value,
+      $Res Function(_$AttendeeRequestDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? firstName = null,
+    Object? lastName = null,
+    Object? email = freezed,
+    Object? phone = freezed,
+    Object? birthDate = freezed,
+    Object? age = freezed,
+    Object? city = freezed,
+    Object? membershipCity = freezed,
+  }) {
+    return _then(_$AttendeeRequestDtoImpl(
+      firstName: null == firstName
+          ? _value.firstName
+          : firstName // ignore: cast_nullable_to_non_nullable
+              as String,
+      lastName: null == lastName
+          ? _value.lastName
+          : lastName // ignore: cast_nullable_to_non_nullable
+              as String,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      age: freezed == age
+          ? _value.age
+          : age // ignore: cast_nullable_to_non_nullable
+              as int?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$AttendeeRequestDtoImpl implements _AttendeeRequestDto {
+  const _$AttendeeRequestDtoImpl(
+      {@JsonKey(name: 'first_name') required this.firstName,
+      @JsonKey(name: 'last_name') required this.lastName,
+      this.email,
+      this.phone,
+      @JsonKey(name: 'birth_date') this.birthDate,
+      this.age,
+      this.city,
+      @JsonKey(name: 'membership_city') this.membershipCity});
+
+  factory _$AttendeeRequestDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AttendeeRequestDtoImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'first_name')
+  final String firstName;
+  @override
+  @JsonKey(name: 'last_name')
+  final String lastName;
+  @override
+  final String? email;
+  @override
+  final String? phone;
+  @override
+  @JsonKey(name: 'birth_date')
+  final String? birthDate;
+  @override
+  final int? age;
+  @override
+  final String? city;
+  @override
+  @JsonKey(name: 'membership_city')
+  final String? membershipCity;
+
+  @override
+  String toString() {
+    return 'AttendeeRequestDto(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, birthDate: $birthDate, age: $age, city: $city, membershipCity: $membershipCity)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AttendeeRequestDtoImpl &&
+            (identical(other.firstName, firstName) ||
+                other.firstName == firstName) &&
+            (identical(other.lastName, lastName) ||
+                other.lastName == lastName) &&
+            (identical(other.email, email) || other.email == email) &&
+            (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.birthDate, birthDate) ||
+                other.birthDate == birthDate) &&
+            (identical(other.age, age) || other.age == age) &&
+            (identical(other.city, city) || other.city == city) &&
+            (identical(other.membershipCity, membershipCity) ||
+                other.membershipCity == membershipCity));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, firstName, lastName, email,
+      phone, birthDate, age, city, membershipCity);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AttendeeRequestDtoImplCopyWith<_$AttendeeRequestDtoImpl> get copyWith =>
+      __$$AttendeeRequestDtoImplCopyWithImpl<_$AttendeeRequestDtoImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$AttendeeRequestDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _AttendeeRequestDto implements AttendeeRequestDto {
+  const factory _AttendeeRequestDto(
+          {@JsonKey(name: 'first_name') required final String firstName,
+          @JsonKey(name: 'last_name') required final String lastName,
+          final String? email,
+          final String? phone,
+          @JsonKey(name: 'birth_date') final String? birthDate,
+          final int? age,
+          final String? city,
+          @JsonKey(name: 'membership_city') final String? membershipCity}) =
+      _$AttendeeRequestDtoImpl;
+
+  factory _AttendeeRequestDto.fromJson(Map<String, dynamic> json) =
+      _$AttendeeRequestDtoImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'first_name')
+  String get firstName;
+  @override
+  @JsonKey(name: 'last_name')
+  String get lastName;
+  @override
+  String? get email;
+  @override
+  String? get phone;
+  @override
+  @JsonKey(name: 'birth_date')
+  String? get birthDate;
+  @override
+  int? get age;
+  @override
+  String? get city;
+  @override
+  @JsonKey(name: 'membership_city')
+  String? get membershipCity;
+  @override
+  @JsonKey(ignore: true)
+  _$$AttendeeRequestDtoImplCopyWith<_$AttendeeRequestDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 BookingTicketRequestDto _$BookingTicketRequestDtoFromJson(
     Map<String, dynamic> json) {
   return _BookingTicketRequestDto.fromJson(json);
@@ -24,6 +323,7 @@ mixin _$BookingTicketRequestDto {
   @JsonKey(name: 'ticket_type_id')
   String get ticketTypeId => throw _privateConstructorUsedError;
   int get quantity => throw _privateConstructorUsedError;
+  List<AttendeeRequestDto> get attendees => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -38,7 +338,9 @@ abstract class $BookingTicketRequestDtoCopyWith<$Res> {
       _$BookingTicketRequestDtoCopyWithImpl<$Res, BookingTicketRequestDto>;
   @useResult
   $Res call(
-      {@JsonKey(name: 'ticket_type_id') String ticketTypeId, int quantity});
+      {@JsonKey(name: 'ticket_type_id') String ticketTypeId,
+      int quantity,
+      List<AttendeeRequestDto> attendees});
 }
 
 /// @nodoc
@@ -57,6 +359,7 @@ class _$BookingTicketRequestDtoCopyWithImpl<$Res,
   $Res call({
     Object? ticketTypeId = null,
     Object? quantity = null,
+    Object? attendees = null,
   }) {
     return _then(_value.copyWith(
       ticketTypeId: null == ticketTypeId
@@ -67,6 +370,10 @@ class _$BookingTicketRequestDtoCopyWithImpl<$Res,
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int,
+      attendees: null == attendees
+          ? _value.attendees
+          : attendees // ignore: cast_nullable_to_non_nullable
+              as List<AttendeeRequestDto>,
     ) as $Val);
   }
 }
@@ -81,7 +388,9 @@ abstract class _$$BookingTicketRequestDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: 'ticket_type_id') String ticketTypeId, int quantity});
+      {@JsonKey(name: 'ticket_type_id') String ticketTypeId,
+      int quantity,
+      List<AttendeeRequestDto> attendees});
 }
 
 /// @nodoc
@@ -99,6 +408,7 @@ class __$$BookingTicketRequestDtoImplCopyWithImpl<$Res>
   $Res call({
     Object? ticketTypeId = null,
     Object? quantity = null,
+    Object? attendees = null,
   }) {
     return _then(_$BookingTicketRequestDtoImpl(
       ticketTypeId: null == ticketTypeId
@@ -109,6 +419,10 @@ class __$$BookingTicketRequestDtoImplCopyWithImpl<$Res>
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int,
+      attendees: null == attendees
+          ? _value._attendees
+          : attendees // ignore: cast_nullable_to_non_nullable
+              as List<AttendeeRequestDto>,
     ));
   }
 }
@@ -118,7 +432,9 @@ class __$$BookingTicketRequestDtoImplCopyWithImpl<$Res>
 class _$BookingTicketRequestDtoImpl implements _BookingTicketRequestDto {
   const _$BookingTicketRequestDtoImpl(
       {@JsonKey(name: 'ticket_type_id') required this.ticketTypeId,
-      required this.quantity});
+      required this.quantity,
+      final List<AttendeeRequestDto> attendees = const []})
+      : _attendees = attendees;
 
   factory _$BookingTicketRequestDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$BookingTicketRequestDtoImplFromJson(json);
@@ -128,10 +444,18 @@ class _$BookingTicketRequestDtoImpl implements _BookingTicketRequestDto {
   final String ticketTypeId;
   @override
   final int quantity;
+  final List<AttendeeRequestDto> _attendees;
+  @override
+  @JsonKey()
+  List<AttendeeRequestDto> get attendees {
+    if (_attendees is EqualUnmodifiableListView) return _attendees;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_attendees);
+  }
 
   @override
   String toString() {
-    return 'BookingTicketRequestDto(ticketTypeId: $ticketTypeId, quantity: $quantity)';
+    return 'BookingTicketRequestDto(ticketTypeId: $ticketTypeId, quantity: $quantity, attendees: $attendees)';
   }
 
   @override
@@ -142,12 +466,15 @@ class _$BookingTicketRequestDtoImpl implements _BookingTicketRequestDto {
             (identical(other.ticketTypeId, ticketTypeId) ||
                 other.ticketTypeId == ticketTypeId) &&
             (identical(other.quantity, quantity) ||
-                other.quantity == quantity));
+                other.quantity == quantity) &&
+            const DeepCollectionEquality()
+                .equals(other._attendees, _attendees));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, ticketTypeId, quantity);
+  int get hashCode => Object.hash(runtimeType, ticketTypeId, quantity,
+      const DeepCollectionEquality().hash(_attendees));
 
   @JsonKey(ignore: true)
   @override
@@ -166,8 +493,10 @@ class _$BookingTicketRequestDtoImpl implements _BookingTicketRequestDto {
 
 abstract class _BookingTicketRequestDto implements BookingTicketRequestDto {
   const factory _BookingTicketRequestDto(
-      {@JsonKey(name: 'ticket_type_id') required final String ticketTypeId,
-      required final int quantity}) = _$BookingTicketRequestDtoImpl;
+          {@JsonKey(name: 'ticket_type_id') required final String ticketTypeId,
+          required final int quantity,
+          final List<AttendeeRequestDto> attendees}) =
+      _$BookingTicketRequestDtoImpl;
 
   factory _BookingTicketRequestDto.fromJson(Map<String, dynamic> json) =
       _$BookingTicketRequestDtoImpl.fromJson;
@@ -177,6 +506,8 @@ abstract class _BookingTicketRequestDto implements BookingTicketRequestDto {
   String get ticketTypeId;
   @override
   int get quantity;
+  @override
+  List<AttendeeRequestDto> get attendees;
   @override
   @JsonKey(ignore: true)
   _$$BookingTicketRequestDtoImplCopyWith<_$BookingTicketRequestDtoImpl>

@@ -119,15 +119,28 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
     state = state.copyWith(isSubmitting: true, errorMessage: null);
     try {
       // 1. Create Booking
+      // Build ticket selections from legacy single-quantity state
+      final legacySelections = state.ticketSelections.isNotEmpty
+          ? state.ticketSelections
+          : [
+              TicketSelection(
+                ticketTypeId: state.selectedSlot!.id,
+                ticketName: '',
+                quantity: state.quantity,
+                attendees: state.participants ?? [
+                  ParticipantInfo(
+                    firstName: state.buyerInfo!.firstName,
+                    lastName: state.buyerInfo!.lastName,
+                  ),
+                ],
+              ),
+            ];
+
       final booking = await bookingRepository.createBooking(
         activityId: state.activity.id,
         slotId: state.selectedSlot!.id,
-        quantity: state.quantity,
+        ticketSelections: legacySelections,
         buyer: state.buyerInfo!,
-        participants: state.participants ?? [
-             // Default single participant = buyer if list empty
-             ParticipantInfo(firstName: state.buyerInfo!.firstName, lastName: state.buyerInfo!.lastName)
-        ],
       );
 
       // 2. Confirm Booking (if needed immediately or strictly for paid flow after stripe)

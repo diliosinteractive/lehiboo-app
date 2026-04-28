@@ -546,6 +546,12 @@ abstract class _Confirmation implements BookingStep {
 mixin _$ParticipantInfo {
   String? get firstName => throw _privateConstructorUsedError;
   String? get lastName => throw _privateConstructorUsedError;
+  String? get email => throw _privateConstructorUsedError;
+  String? get phone => throw _privateConstructorUsedError;
+  String? get birthDate => throw _privateConstructorUsedError; // "YYYY-MM-DD"
+  int? get age => throw _privateConstructorUsedError;
+  String? get city => throw _privateConstructorUsedError;
+  String? get membershipCity => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $ParticipantInfoCopyWith<ParticipantInfo> get copyWith =>
@@ -558,7 +564,15 @@ abstract class $ParticipantInfoCopyWith<$Res> {
           ParticipantInfo value, $Res Function(ParticipantInfo) then) =
       _$ParticipantInfoCopyWithImpl<$Res, ParticipantInfo>;
   @useResult
-  $Res call({String? firstName, String? lastName});
+  $Res call(
+      {String? firstName,
+      String? lastName,
+      String? email,
+      String? phone,
+      String? birthDate,
+      int? age,
+      String? city,
+      String? membershipCity});
 }
 
 /// @nodoc
@@ -576,6 +590,12 @@ class _$ParticipantInfoCopyWithImpl<$Res, $Val extends ParticipantInfo>
   $Res call({
     Object? firstName = freezed,
     Object? lastName = freezed,
+    Object? email = freezed,
+    Object? phone = freezed,
+    Object? birthDate = freezed,
+    Object? age = freezed,
+    Object? city = freezed,
+    Object? membershipCity = freezed,
   }) {
     return _then(_value.copyWith(
       firstName: freezed == firstName
@@ -585,6 +605,30 @@ class _$ParticipantInfoCopyWithImpl<$Res, $Val extends ParticipantInfo>
       lastName: freezed == lastName
           ? _value.lastName
           : lastName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      age: freezed == age
+          ? _value.age
+          : age // ignore: cast_nullable_to_non_nullable
+              as int?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
               as String?,
     ) as $Val);
   }
@@ -598,7 +642,15 @@ abstract class _$$ParticipantInfoImplCopyWith<$Res>
       __$$ParticipantInfoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String? firstName, String? lastName});
+  $Res call(
+      {String? firstName,
+      String? lastName,
+      String? email,
+      String? phone,
+      String? birthDate,
+      int? age,
+      String? city,
+      String? membershipCity});
 }
 
 /// @nodoc
@@ -614,6 +666,12 @@ class __$$ParticipantInfoImplCopyWithImpl<$Res>
   $Res call({
     Object? firstName = freezed,
     Object? lastName = freezed,
+    Object? email = freezed,
+    Object? phone = freezed,
+    Object? birthDate = freezed,
+    Object? age = freezed,
+    Object? city = freezed,
+    Object? membershipCity = freezed,
   }) {
     return _then(_$ParticipantInfoImpl(
       firstName: freezed == firstName
@@ -624,6 +682,30 @@ class __$$ParticipantInfoImplCopyWithImpl<$Res>
           ? _value.lastName
           : lastName // ignore: cast_nullable_to_non_nullable
               as String?,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      age: freezed == age
+          ? _value.age
+          : age // ignore: cast_nullable_to_non_nullable
+              as int?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+      membershipCity: freezed == membershipCity
+          ? _value.membershipCity
+          : membershipCity // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -631,16 +713,37 @@ class __$$ParticipantInfoImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$ParticipantInfoImpl implements _ParticipantInfo {
-  const _$ParticipantInfoImpl({this.firstName, this.lastName});
+  const _$ParticipantInfoImpl(
+      {this.firstName,
+      this.lastName,
+      this.email,
+      this.phone,
+      this.birthDate,
+      this.age,
+      this.city,
+      this.membershipCity});
 
   @override
   final String? firstName;
   @override
   final String? lastName;
+  @override
+  final String? email;
+  @override
+  final String? phone;
+  @override
+  final String? birthDate;
+// "YYYY-MM-DD"
+  @override
+  final int? age;
+  @override
+  final String? city;
+  @override
+  final String? membershipCity;
 
   @override
   String toString() {
-    return 'ParticipantInfo(firstName: $firstName, lastName: $lastName)';
+    return 'ParticipantInfo(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, birthDate: $birthDate, age: $age, city: $city, membershipCity: $membershipCity)';
   }
 
   @override
@@ -651,11 +754,20 @@ class _$ParticipantInfoImpl implements _ParticipantInfo {
             (identical(other.firstName, firstName) ||
                 other.firstName == firstName) &&
             (identical(other.lastName, lastName) ||
-                other.lastName == lastName));
+                other.lastName == lastName) &&
+            (identical(other.email, email) || other.email == email) &&
+            (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.birthDate, birthDate) ||
+                other.birthDate == birthDate) &&
+            (identical(other.age, age) || other.age == age) &&
+            (identical(other.city, city) || other.city == city) &&
+            (identical(other.membershipCity, membershipCity) ||
+                other.membershipCity == membershipCity));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, firstName, lastName);
+  int get hashCode => Object.hash(runtimeType, firstName, lastName, email,
+      phone, birthDate, age, city, membershipCity);
 
   @JsonKey(ignore: true)
   @override
@@ -668,12 +780,30 @@ class _$ParticipantInfoImpl implements _ParticipantInfo {
 abstract class _ParticipantInfo implements ParticipantInfo {
   const factory _ParticipantInfo(
       {final String? firstName,
-      final String? lastName}) = _$ParticipantInfoImpl;
+      final String? lastName,
+      final String? email,
+      final String? phone,
+      final String? birthDate,
+      final int? age,
+      final String? city,
+      final String? membershipCity}) = _$ParticipantInfoImpl;
 
   @override
   String? get firstName;
   @override
   String? get lastName;
+  @override
+  String? get email;
+  @override
+  String? get phone;
+  @override
+  String? get birthDate;
+  @override // "YYYY-MM-DD"
+  int? get age;
+  @override
+  String? get city;
+  @override
+  String? get membershipCity;
   @override
   @JsonKey(ignore: true)
   _$$ParticipantInfoImplCopyWith<_$ParticipantInfoImpl> get copyWith =>
@@ -906,6 +1036,200 @@ abstract class _BuyerInfo implements BuyerInfo {
 }
 
 /// @nodoc
+mixin _$TicketSelection {
+  String get ticketTypeId => throw _privateConstructorUsedError;
+  String get ticketName => throw _privateConstructorUsedError;
+  int get quantity => throw _privateConstructorUsedError;
+  List<ParticipantInfo> get attendees => throw _privateConstructorUsedError;
+
+  @JsonKey(ignore: true)
+  $TicketSelectionCopyWith<TicketSelection> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TicketSelectionCopyWith<$Res> {
+  factory $TicketSelectionCopyWith(
+          TicketSelection value, $Res Function(TicketSelection) then) =
+      _$TicketSelectionCopyWithImpl<$Res, TicketSelection>;
+  @useResult
+  $Res call(
+      {String ticketTypeId,
+      String ticketName,
+      int quantity,
+      List<ParticipantInfo> attendees});
+}
+
+/// @nodoc
+class _$TicketSelectionCopyWithImpl<$Res, $Val extends TicketSelection>
+    implements $TicketSelectionCopyWith<$Res> {
+  _$TicketSelectionCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? ticketTypeId = null,
+    Object? ticketName = null,
+    Object? quantity = null,
+    Object? attendees = null,
+  }) {
+    return _then(_value.copyWith(
+      ticketTypeId: null == ticketTypeId
+          ? _value.ticketTypeId
+          : ticketTypeId // ignore: cast_nullable_to_non_nullable
+              as String,
+      ticketName: null == ticketName
+          ? _value.ticketName
+          : ticketName // ignore: cast_nullable_to_non_nullable
+              as String,
+      quantity: null == quantity
+          ? _value.quantity
+          : quantity // ignore: cast_nullable_to_non_nullable
+              as int,
+      attendees: null == attendees
+          ? _value.attendees
+          : attendees // ignore: cast_nullable_to_non_nullable
+              as List<ParticipantInfo>,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$TicketSelectionImplCopyWith<$Res>
+    implements $TicketSelectionCopyWith<$Res> {
+  factory _$$TicketSelectionImplCopyWith(_$TicketSelectionImpl value,
+          $Res Function(_$TicketSelectionImpl) then) =
+      __$$TicketSelectionImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String ticketTypeId,
+      String ticketName,
+      int quantity,
+      List<ParticipantInfo> attendees});
+}
+
+/// @nodoc
+class __$$TicketSelectionImplCopyWithImpl<$Res>
+    extends _$TicketSelectionCopyWithImpl<$Res, _$TicketSelectionImpl>
+    implements _$$TicketSelectionImplCopyWith<$Res> {
+  __$$TicketSelectionImplCopyWithImpl(
+      _$TicketSelectionImpl _value, $Res Function(_$TicketSelectionImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? ticketTypeId = null,
+    Object? ticketName = null,
+    Object? quantity = null,
+    Object? attendees = null,
+  }) {
+    return _then(_$TicketSelectionImpl(
+      ticketTypeId: null == ticketTypeId
+          ? _value.ticketTypeId
+          : ticketTypeId // ignore: cast_nullable_to_non_nullable
+              as String,
+      ticketName: null == ticketName
+          ? _value.ticketName
+          : ticketName // ignore: cast_nullable_to_non_nullable
+              as String,
+      quantity: null == quantity
+          ? _value.quantity
+          : quantity // ignore: cast_nullable_to_non_nullable
+              as int,
+      attendees: null == attendees
+          ? _value._attendees
+          : attendees // ignore: cast_nullable_to_non_nullable
+              as List<ParticipantInfo>,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$TicketSelectionImpl implements _TicketSelection {
+  const _$TicketSelectionImpl(
+      {required this.ticketTypeId,
+      required this.ticketName,
+      required this.quantity,
+      final List<ParticipantInfo> attendees = const []})
+      : _attendees = attendees;
+
+  @override
+  final String ticketTypeId;
+  @override
+  final String ticketName;
+  @override
+  final int quantity;
+  final List<ParticipantInfo> _attendees;
+  @override
+  @JsonKey()
+  List<ParticipantInfo> get attendees {
+    if (_attendees is EqualUnmodifiableListView) return _attendees;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_attendees);
+  }
+
+  @override
+  String toString() {
+    return 'TicketSelection(ticketTypeId: $ticketTypeId, ticketName: $ticketName, quantity: $quantity, attendees: $attendees)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TicketSelectionImpl &&
+            (identical(other.ticketTypeId, ticketTypeId) ||
+                other.ticketTypeId == ticketTypeId) &&
+            (identical(other.ticketName, ticketName) ||
+                other.ticketName == ticketName) &&
+            (identical(other.quantity, quantity) ||
+                other.quantity == quantity) &&
+            const DeepCollectionEquality()
+                .equals(other._attendees, _attendees));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, ticketTypeId, ticketName,
+      quantity, const DeepCollectionEquality().hash(_attendees));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TicketSelectionImplCopyWith<_$TicketSelectionImpl> get copyWith =>
+      __$$TicketSelectionImplCopyWithImpl<_$TicketSelectionImpl>(
+          this, _$identity);
+}
+
+abstract class _TicketSelection implements TicketSelection {
+  const factory _TicketSelection(
+      {required final String ticketTypeId,
+      required final String ticketName,
+      required final int quantity,
+      final List<ParticipantInfo> attendees}) = _$TicketSelectionImpl;
+
+  @override
+  String get ticketTypeId;
+  @override
+  String get ticketName;
+  @override
+  int get quantity;
+  @override
+  List<ParticipantInfo> get attendees;
+  @override
+  @JsonKey(ignore: true)
+  _$$TicketSelectionImplCopyWith<_$TicketSelectionImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
 mixin _$BookingFlowState {
   BookingStep get step => throw _privateConstructorUsedError;
   Activity get activity => throw _privateConstructorUsedError;
@@ -913,6 +1237,8 @@ mixin _$BookingFlowState {
   int get quantity => throw _privateConstructorUsedError;
   BuyerInfo? get buyerInfo => throw _privateConstructorUsedError;
   List<ParticipantInfo>? get participants => throw _privateConstructorUsedError;
+  List<TicketSelection> get ticketSelections =>
+      throw _privateConstructorUsedError;
   double? get totalPrice => throw _privateConstructorUsedError;
   String? get currency => throw _privateConstructorUsedError;
   bool get isFree => throw _privateConstructorUsedError;
@@ -939,6 +1265,7 @@ abstract class $BookingFlowStateCopyWith<$Res> {
       int quantity,
       BuyerInfo? buyerInfo,
       List<ParticipantInfo>? participants,
+      List<TicketSelection> ticketSelections,
       double? totalPrice,
       String? currency,
       bool isFree,
@@ -973,6 +1300,7 @@ class _$BookingFlowStateCopyWithImpl<$Res, $Val extends BookingFlowState>
     Object? quantity = null,
     Object? buyerInfo = freezed,
     Object? participants = freezed,
+    Object? ticketSelections = null,
     Object? totalPrice = freezed,
     Object? currency = freezed,
     Object? isFree = null,
@@ -1006,6 +1334,10 @@ class _$BookingFlowStateCopyWithImpl<$Res, $Val extends BookingFlowState>
           ? _value.participants
           : participants // ignore: cast_nullable_to_non_nullable
               as List<ParticipantInfo>?,
+      ticketSelections: null == ticketSelections
+          ? _value.ticketSelections
+          : ticketSelections // ignore: cast_nullable_to_non_nullable
+              as List<TicketSelection>,
       totalPrice: freezed == totalPrice
           ? _value.totalPrice
           : totalPrice // ignore: cast_nullable_to_non_nullable
@@ -1105,6 +1437,7 @@ abstract class _$$BookingFlowStateImplCopyWith<$Res>
       int quantity,
       BuyerInfo? buyerInfo,
       List<ParticipantInfo>? participants,
+      List<TicketSelection> ticketSelections,
       double? totalPrice,
       String? currency,
       bool isFree,
@@ -1142,6 +1475,7 @@ class __$$BookingFlowStateImplCopyWithImpl<$Res>
     Object? quantity = null,
     Object? buyerInfo = freezed,
     Object? participants = freezed,
+    Object? ticketSelections = null,
     Object? totalPrice = freezed,
     Object? currency = freezed,
     Object? isFree = null,
@@ -1175,6 +1509,10 @@ class __$$BookingFlowStateImplCopyWithImpl<$Res>
           ? _value._participants
           : participants // ignore: cast_nullable_to_non_nullable
               as List<ParticipantInfo>?,
+      ticketSelections: null == ticketSelections
+          ? _value._ticketSelections
+          : ticketSelections // ignore: cast_nullable_to_non_nullable
+              as List<TicketSelection>,
       totalPrice: freezed == totalPrice
           ? _value.totalPrice
           : totalPrice // ignore: cast_nullable_to_non_nullable
@@ -1217,6 +1555,7 @@ class _$BookingFlowStateImpl implements _BookingFlowState {
       this.quantity = 1,
       this.buyerInfo,
       final List<ParticipantInfo>? participants,
+      final List<TicketSelection> ticketSelections = const [],
       this.totalPrice,
       this.currency,
       this.isFree = false,
@@ -1225,6 +1564,7 @@ class _$BookingFlowStateImpl implements _BookingFlowState {
       this.confirmedBooking,
       final List<Ticket>? tickets})
       : _participants = participants,
+        _ticketSelections = ticketSelections,
         _tickets = tickets;
 
   @override
@@ -1246,6 +1586,16 @@ class _$BookingFlowStateImpl implements _BookingFlowState {
     if (_participants is EqualUnmodifiableListView) return _participants;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(value);
+  }
+
+  final List<TicketSelection> _ticketSelections;
+  @override
+  @JsonKey()
+  List<TicketSelection> get ticketSelections {
+    if (_ticketSelections is EqualUnmodifiableListView)
+      return _ticketSelections;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_ticketSelections);
   }
 
   @override
@@ -1274,7 +1624,7 @@ class _$BookingFlowStateImpl implements _BookingFlowState {
 
   @override
   String toString() {
-    return 'BookingFlowState(step: $step, activity: $activity, selectedSlot: $selectedSlot, quantity: $quantity, buyerInfo: $buyerInfo, participants: $participants, totalPrice: $totalPrice, currency: $currency, isFree: $isFree, isSubmitting: $isSubmitting, errorMessage: $errorMessage, confirmedBooking: $confirmedBooking, tickets: $tickets)';
+    return 'BookingFlowState(step: $step, activity: $activity, selectedSlot: $selectedSlot, quantity: $quantity, buyerInfo: $buyerInfo, participants: $participants, ticketSelections: $ticketSelections, totalPrice: $totalPrice, currency: $currency, isFree: $isFree, isSubmitting: $isSubmitting, errorMessage: $errorMessage, confirmedBooking: $confirmedBooking, tickets: $tickets)';
   }
 
   @override
@@ -1293,6 +1643,8 @@ class _$BookingFlowStateImpl implements _BookingFlowState {
                 other.buyerInfo == buyerInfo) &&
             const DeepCollectionEquality()
                 .equals(other._participants, _participants) &&
+            const DeepCollectionEquality()
+                .equals(other._ticketSelections, _ticketSelections) &&
             (identical(other.totalPrice, totalPrice) ||
                 other.totalPrice == totalPrice) &&
             (identical(other.currency, currency) ||
@@ -1316,6 +1668,7 @@ class _$BookingFlowStateImpl implements _BookingFlowState {
       quantity,
       buyerInfo,
       const DeepCollectionEquality().hash(_participants),
+      const DeepCollectionEquality().hash(_ticketSelections),
       totalPrice,
       currency,
       isFree,
@@ -1340,6 +1693,7 @@ abstract class _BookingFlowState implements BookingFlowState {
       final int quantity,
       final BuyerInfo? buyerInfo,
       final List<ParticipantInfo>? participants,
+      final List<TicketSelection> ticketSelections,
       final double? totalPrice,
       final String? currency,
       final bool isFree,
@@ -1360,6 +1714,8 @@ abstract class _BookingFlowState implements BookingFlowState {
   BuyerInfo? get buyerInfo;
   @override
   List<ParticipantInfo>? get participants;
+  @override
+  List<TicketSelection> get ticketSelections;
   @override
   double? get totalPrice;
   @override

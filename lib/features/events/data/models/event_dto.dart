@@ -41,9 +41,11 @@ class EventDto with _$EventDto {
     @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull) Map<String, dynamic>? seatConfig,
     @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull) Map<String, dynamic>? externalBooking,
     @JsonKey(name: 'event_type', fromJson: _parseMapOrNull) Map<String, dynamic>? eventType,
+    @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull) Map<String, dynamic>? eventTag,
     @JsonKey(name: 'target_audience', fromJson: _parseListOrNull) List<dynamic>? targetAudience,
     @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull) List<dynamic>? targetAudiences,
     @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull) String? bookingMode,
+    @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull) String? discoveryPricingType,
 
     // Rich Content V2
     @JsonKey(name: 'location_details', fromJson: _parseMapOrNull) Map<String, dynamic>? locationDetails,
@@ -57,6 +59,9 @@ class EventDto with _$EventDto {
     @JsonKey(name: 'venue', fromJson: _parseMapOrNull) Map<String, dynamic>? venueData,
     @JsonKey(name: 'creation_source', fromJson: _parseStringOrNull) String? creationSource,
     @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull) String? originalOrganizerName,
+
+    @JsonKey(fromJson: _parseNamedList) @Default([]) List<String> themes,
+    @JsonKey(fromJson: _parseNamedList) @Default([]) List<String> emotions,
 
     @JsonKey(name: 'is_favorite') @Default(false) bool isFavorite,
   }) = _EventDto;
@@ -335,6 +340,19 @@ List<String>? _parseStringList(dynamic value) {
   if (value == null) return null;
   if (value is List) {
     return value.map((e) => e.toString()).toList();
+  }
+  return [];
+}
+
+/// Parse a list of { "id": ..., "name": "..." } objects into a list of name strings
+List<String> _parseNamedList(dynamic value) {
+  if (value == null) return [];
+  if (value is List) {
+    return value
+        .whereType<Map>()
+        .map((e) => e['name']?.toString() ?? '')
+        .where((name) => name.isNotEmpty)
+        .toList();
   }
   return [];
 }

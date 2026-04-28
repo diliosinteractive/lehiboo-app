@@ -5,13 +5,33 @@ part 'booking_api_dto.g.dart';
 
 // Request DTOs
 
+/// Attendee (participant) pour un item de ticket
+/// Format API: { "first_name": "...", "last_name": "...", ... }
+@freezed
+class AttendeeRequestDto with _$AttendeeRequestDto {
+  const factory AttendeeRequestDto({
+    @JsonKey(name: 'first_name') required String firstName,
+    @JsonKey(name: 'last_name') required String lastName,
+    String? email,
+    String? phone,
+    @JsonKey(name: 'birth_date') String? birthDate,
+    int? age,
+    String? city,
+    @JsonKey(name: 'membership_city') String? membershipCity,
+  }) = _AttendeeRequestDto;
+
+  factory AttendeeRequestDto.fromJson(Map<String, dynamic> json) =>
+      _$AttendeeRequestDtoFromJson(json);
+}
+
 /// DTO pour un item de ticket dans une requête de booking
-/// Format API: { "ticket_type_id": "uuid", "quantity": 2 }
+/// Format API: { "ticket_type_id": "uuid", "quantity": 2, "attendees": [...] }
 @freezed
 class BookingTicketRequestDto with _$BookingTicketRequestDto {
   const factory BookingTicketRequestDto({
     @JsonKey(name: 'ticket_type_id') required String ticketTypeId,
     required int quantity,
+    @Default([]) List<AttendeeRequestDto> attendees,
   }) = _BookingTicketRequestDto;
 
   factory BookingTicketRequestDto.fromJson(Map<String, dynamic> json) =>

@@ -69,6 +69,23 @@ class QuestionAnswer extends Equatable {
       ];
 }
 
+class QuestionEvent extends Equatable {
+  final String uuid;
+  final String title;
+  final String slug;
+  final bool isDeleted;
+
+  const QuestionEvent({
+    required this.uuid,
+    required this.title,
+    required this.slug,
+    this.isDeleted = false,
+  });
+
+  @override
+  List<Object?> get props => [uuid, title, slug, isDeleted];
+}
+
 class EventQuestion extends Equatable {
   final String uuid;
   final String question;
@@ -79,6 +96,7 @@ class EventQuestion extends Equatable {
   final String createdAtFormatted;
   final QuestionAuthor? author;
   final QuestionAnswer? answer;
+  final QuestionEvent? event;
 
   const EventQuestion({
     required this.uuid,
@@ -90,6 +108,7 @@ class EventQuestion extends Equatable {
     this.createdAtFormatted = '',
     this.author,
     this.answer,
+    this.event,
   });
 
   bool get hasAnswer => answer != null;
@@ -105,6 +124,7 @@ class EventQuestion extends Equatable {
     String? createdAtFormatted,
     QuestionAuthor? author,
     QuestionAnswer? answer,
+    QuestionEvent? event,
   }) {
     return EventQuestion(
       uuid: uuid ?? this.uuid,
@@ -116,6 +136,7 @@ class EventQuestion extends Equatable {
       createdAtFormatted: createdAtFormatted ?? this.createdAtFormatted,
       author: author ?? this.author,
       answer: answer ?? this.answer,
+      event: event ?? this.event,
     );
   }
 
@@ -130,6 +151,7 @@ class EventQuestion extends Equatable {
         createdAtFormatted,
         author,
         answer,
+        event,
       ];
 }
 

@@ -14,26 +14,38 @@ class BookingRepositoryImpl implements BookingRepository {
   Future<Booking> createBooking({
     required String activityId,
     required String slotId,
-    required int quantity,
+    required List<TicketSelection> ticketSelections,
     required BuyerInfo buyer,
-    required List<ParticipantInfo> participants,
+    bool acceptTerms = false,
+    bool acceptNewsletter = false,
+    String? promoCode,
   }) async {
     final response = await _dio.post(
       '/lehiboo/v1/bookings',
       data: {
         'activity_id': activityId,
         'slot_id': slotId,
-        'quantity': quantity,
-        'buyer': {
-          'first_name': buyer.firstName,
-          'last_name': buyer.lastName,
-          'email': buyer.email,
-          'phone': buyer.phone,
-        },
-        'participants': participants.map((p) => {
-          'first_name': p.firstName,
-          'last_name': p.lastName,
+        'items': ticketSelections.map((ts) => {
+          'ticket_type_id': ts.ticketTypeId,
+          'quantity': ts.quantity,
+          'attendees': ts.attendees.map((a) => {
+            'first_name': a.firstName ?? '',
+            'last_name': a.lastName ?? '',
+            if (a.email != null) 'email': a.email,
+            if (a.phone != null) 'phone': a.phone,
+            if (a.birthDate != null) 'birth_date': a.birthDate,
+            if (a.age != null) 'age': a.age,
+          }).toList(),
         }).toList(),
+        'customer_email': buyer.email,
+        'customer_first_name': buyer.firstName,
+        'customer_last_name': buyer.lastName,
+        if (buyer.phone != null) 'customer_phone': buyer.phone,
+        if (buyer.birthDate != null) 'customer_birth_date': buyer.birthDate,
+        if (buyer.town != null) 'customer_town': buyer.town,
+        if (promoCode != null) 'promo_code': promoCode,
+        'accept_terms': acceptTerms,
+        'accept_newsletter': acceptNewsletter,
       },
     );
     final data = response.data as Map<String, dynamic>;

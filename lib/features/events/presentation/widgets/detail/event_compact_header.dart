@@ -27,23 +27,27 @@ class EventCompactHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Titre
-          Text(
-            event.title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textPrimary,
-              height: 1.2,
-              letterSpacing: -0.5,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
+          // Titre + Type chip
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 16,
+            runSpacing: 8,
+            children: [
+              Text(
+                event.title,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: HbColors.textPrimary,
+                  height: 1.2,
+                  letterSpacing: -0.5,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              _buildEventTypeChip(),
+            ],
           ),
-          const SizedBox(height: 8),
-
-          // Type chip: Billetterie / Découverte
-          _buildEventTypeChip(),
           const SizedBox(height: 10),
 
           // Adresse
@@ -96,12 +100,20 @@ class EventCompactHeader extends StatelessWidget {
   Widget _buildTags() {
     final tags = <_TagData>[];
 
-    // 1. Primary category
-    tags.add(_TagData(
-      label: _getCategoryLabel(event.category),
-      icon: _getCategoryIcon(event.category),
-      color: HbColors.brandPrimary,
-    ));
+    // 1. Primary category — prefer event_tag from API, fallback to enum
+    if (event.eventTypeTerm != null) {
+      tags.add(_TagData(
+        label: event.eventTypeTerm!.name,
+        icon: _getCategoryIcon(event.category),
+        color: HbColors.brandPrimary,
+      ));
+    } else if (event.category != EventCategory.other) {
+      tags.add(_TagData(
+        label: _getCategoryLabel(event.category),
+        icon: _getCategoryIcon(event.category),
+        color: HbColors.brandPrimary,
+      ));
+    }
 
     // 2. Duration
     if (event.duration != null && event.duration!.inMinutes > 0) {

@@ -2,8 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
-import '../../../../core/utils/api_response_handler.dart';
-import '../models/event_review_dto.dart';
 import '../models/event_question_dto.dart';
 
 final eventSocialApiDataSourceProvider = Provider<EventSocialApiDataSource>((ref) {
@@ -11,130 +9,14 @@ final eventSocialApiDataSourceProvider = Provider<EventSocialApiDataSource>((ref
   return EventSocialApiDataSource(dio);
 });
 
-/// DataSource pour les features sociales des événements (Reviews & Q&A)
+/// DataSource pour les features Q&A des événements.
+///
+/// Note : la partie Reviews a été déplacée vers
+/// [lib/features/reviews/data/datasources/reviews_api_datasource.dart].
 class EventSocialApiDataSource {
   final Dio _dio;
 
   EventSocialApiDataSource(this._dio);
-
-  // ============ REVIEWS ============
-
-  /// Récupère la liste des avis approuvés pour un événement
-  Future<EventReviewsResponseDto> getEventReviews(
-    String eventSlug, {
-    int page = 1,
-    int perPage = 15,
-    int? rating,
-    bool verifiedOnly = false,
-    bool featuredOnly = false,
-    String sortBy = 'created_at',
-    String sortOrder = 'desc',
-  }) async {
-    debugPrint('=== EventSocialApiDataSource.getEventReviews ===');
-    debugPrint('Event slug: $eventSlug');
-
-    final queryParams = <String, dynamic>{
-      'page': page,
-      'per_page': perPage,
-      'sort_by': sortBy,
-      'sort_order': sortOrder,
-    };
-
-    if (rating != null) queryParams['rating'] = rating;
-    if (verifiedOnly) queryParams['verified_only'] = true;
-    if (featuredOnly) queryParams['featured_only'] = true;
-
-    final response = await _dio.get(
-      '/events/$eventSlug/reviews',
-      queryParameters: queryParams,
-    );
-
-    final data = response.data;
-
-    // L'API retourne { success: true, data: [...], meta: {...} }
-    if (data is Map<String, dynamic>) {
-      final reviews = (data['data'] as List<dynamic>?)
-          ?.map((e) => EventReviewDto.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [];
-
-      MetaDto? meta;
-      if (data['meta'] != null) {
-        meta = MetaDto.fromJson(data['meta'] as Map<String, dynamic>);
-      }
-
-      return EventReviewsResponseDto(data: reviews, meta: meta);
-    }
-
-    return const EventReviewsResponseDto();
-  }
-
-  /// Récupère les statistiques des avis pour un événement
-  Future<ReviewStatsDto> getEventReviewStats(String eventSlug) async {
-    debugPrint('=== EventSocialApiDataSource.getEventReviewStats ===');
-    debugPrint('Event slug: $eventSlug');
-
-    final response = await _dio.get('/events/$eventSlug/reviews/stats');
-    final data = response.data;
-
-    if (data is Map<String, dynamic>) {
-      // L'API retourne { success: true, data: {...stats...} }
-      final statsData = data['data'] ?? data;
-      return ReviewStatsDto.fromJson(statsData as Map<String, dynamic>);
-    }
-
-    return const ReviewStatsDto();
-  }
-
-  /// Crée un nouvel avis (authentification requise)
-  Future<EventReviewDto> createReview(
-    String eventSlug, {
-    required int rating,
-    String? title,
-    required String comment,
-  }) async {
-    debugPrint('=== EventSocialApiDataSource.createReview ===');
-
-    final response = await _dio.post(
-      '/events/$eventSlug/reviews',
-      data: {
-        'rating': rating,
-        if (title != null) 'title': title,
-        'comment': comment,
-      },
-    );
-
-    final data = response.data;
-    final reviewData = data['data'] ?? data;
-    return EventReviewDto.fromJson(reviewData as Map<String, dynamic>);
-  }
-
-  /// Vote utile/pas utile sur un avis
-  Future<void> voteReview(String reviewUuid, {required bool isHelpful}) async {
-    debugPrint('=== EventSocialApiDataSource.voteReview ===');
-    debugPrint('Review UUID: $reviewUuid, isHelpful: $isHelpful');
-
-    await _dio.post(
-      '/reviews/$reviewUuid/vote',
-      data: {'is_helpful': isHelpful},
-    );
-  }
-
-  /// Retire le vote sur un avis
-  Future<void> unvoteReview(String reviewUuid) async {
-    debugPrint('=== EventSocialApiDataSource.unvoteReview ===');
-
-    await _dio.delete('/reviews/$reviewUuid/vote');
-  }
-
-  /// Vérifie si l'utilisateur peut laisser un avis
-  Future<bool> canReview(String eventSlug) async {
-    final response = await _dio.get('/events/$eventSlug/reviews/can-review');
-    final payload = ApiResponseHandler.extractObject(
-      response.data,
-      unwrapRoot: true,
-    );
-    return payload['can_review'] == true;
-  }
 
   // ============ QUESTIONS ============
 

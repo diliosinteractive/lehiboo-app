@@ -11,6 +11,8 @@ import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart';
+import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 
 /// Écran de succès après une réservation avec confettis
 class BookingSuccessScreen extends ConsumerStatefulWidget {
@@ -131,6 +133,15 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
           _isLoadingTickets = false;
         });
       }
+    }
+  }
+
+  void _invalidateEventData() {
+    if (widget.event != null) {
+      final eventId = widget.event!.id;
+      ref.invalidate(eventDetailProvider(eventId));
+      ref.invalidate(eventAvailabilityProvider(eventId));
+      ref.invalidate(similarEventsProvider(eventId));
     }
   }
 
@@ -540,7 +551,10 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () => context.go('/my-bookings'),
+            onPressed: () {
+              _invalidateEventData();
+              context.go('/my-bookings');
+            },
             icon: const Icon(Icons.receipt_long),
             label: const Text('Voir mes réservations'),
             style: ElevatedButton.styleFrom(
@@ -559,7 +573,11 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => context.go('/'),
+            onPressed: () {
+              _invalidateEventData();
+              ref.invalidate(homeFeedProvider);
+              context.go('/');
+            },
             icon: const Icon(Icons.home_outlined),
             label: const Text('Retour à l\'accueil'),
             style: OutlinedButton.styleFrom(

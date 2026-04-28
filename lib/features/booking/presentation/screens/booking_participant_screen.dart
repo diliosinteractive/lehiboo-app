@@ -179,7 +179,7 @@ class _BookingParticipantScreenState extends ConsumerState<BookingParticipantScr
                     const SizedBox(height: 12),
                     HbTextField(
                       controller: _townCtrl,
-                      label: 'Ville',
+                      label: 'Ville d\'appartenance',
                     ),
 
                     const SizedBox(height: 32),

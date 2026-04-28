@@ -33,17 +33,18 @@ class BookingApiDataSource {
     String? customerPhone,
     String? customerBirthDate,
     String? customerTown,
-    String? couponCode,
+    String? customerAddress,
+    String? promoCode,
+    String? paymentMethod,
+    bool acceptTerms = false,
+    bool acceptNewsletter = false,
   }) async {
     final response = await _dio.post(
       '/bookings',
       data: {
         'event_id': eventId,
         'slot_id': slotId,
-        'items': items.map((t) => {
-          'ticket_type_id': t.ticketTypeId,
-          'quantity': t.quantity,
-        }).toList(),
+        'items': items.map((t) => t.toJson()).toList(),
         'customer_email': customerEmail,
         'customer_first_name': customerFirstName,
         'customer_last_name': customerLastName,
@@ -53,7 +54,13 @@ class BookingApiDataSource {
           'customer_birth_date': customerBirthDate,
         if (customerTown != null && customerTown.isNotEmpty)
           'customer_town': customerTown,
-        if (couponCode != null) 'coupon_code': couponCode,
+        if (customerAddress != null && customerAddress.isNotEmpty)
+          'customer_address': customerAddress,
+        if (promoCode != null && promoCode.isNotEmpty)
+          'promo_code': promoCode,
+        if (paymentMethod != null) 'payment_method': paymentMethod,
+        'accept_terms': acceptTerms,
+        'accept_newsletter': acceptNewsletter,
       },
     );
 

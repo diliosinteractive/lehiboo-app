@@ -34,6 +34,7 @@ class EventQuestionDto with _$EventQuestionDto {
     @JsonKey(name: 'hasAnswer', fromJson: _parseBool) @Default(false) bool hasAnswerCamel,
     QuestionAuthorDto? author,
     QuestionAnswerDto? answer,
+    QuestionEventDto? event,
     @JsonKey(name: 'user_voted', fromJson: _parseBool) @Default(false) bool userVoted,
     @JsonKey(name: 'userVoted', fromJson: _parseBool) @Default(false) bool userVotedCamel,
     @JsonKey(name: 'created_at_formatted', fromJson: _parseString) @Default('') String createdAtFormatted,
@@ -77,6 +78,22 @@ class QuestionAnswerDto with _$QuestionAnswerDto {
 
   factory QuestionAnswerDto.fromJson(Map<String, dynamic> json) =>
       _$QuestionAnswerDtoFromJson(json);
+}
+
+/// Référence légère vers un événement (utilisé par /user/questions)
+@freezed
+class QuestionEventDto with _$QuestionEventDto {
+  const factory QuestionEventDto({
+    @JsonKey(fromJson: _parseInt) @Default(0) int id,
+    @JsonKey(fromJson: _parseString) @Default('') String uuid,
+    @JsonKey(fromJson: _parseString) @Default('') String title,
+    @JsonKey(fromJson: _parseString) @Default('') String slug,
+    @JsonKey(name: 'is_deleted', fromJson: _parseBool) @Default(false) bool isDeleted,
+    @JsonKey(name: 'isDeleted', fromJson: _parseBool) @Default(false) bool isDeletedCamel,
+  }) = _QuestionEventDto;
+
+  factory QuestionEventDto.fromJson(Map<String, dynamic> json) =>
+      _$QuestionEventDtoFromJson(json);
 }
 
 /// Metadata de pagination

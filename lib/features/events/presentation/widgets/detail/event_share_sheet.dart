@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -14,7 +17,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// - Facebook
 /// - Instagram Story
 /// - Plus d'options (share natif)
-class EventShareSheet extends StatelessWidget {
+class EventShareSheet extends StatefulWidget {
   final Event event;
   final String? shareUrl;
 
@@ -41,7 +44,16 @@ class EventShareSheet extends StatelessWidget {
     );
   }
 
-  String get _shareUrl => shareUrl ?? 'https://lehiboo.com/event/${event.id}';
+  @override
+  State<EventShareSheet> createState() => _EventShareSheetState();
+}
+
+class _EventShareSheetState extends State<EventShareSheet> {
+  bool _isLoading = false;
+
+  Event get event => widget.event;
+
+  String get _shareUrl => widget.shareUrl ?? 'https://lehiboo.com/event/${event.id}';
 
   String get _shareText {
     final title = event.title;
@@ -62,6 +74,57 @@ class EventShareSheet extends StatelessWidget {
       'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  /// Downloads the event cover image to a temp file for sharing.
+  /// Returns null if no image or download fails.
+  Future<XFile?> _downloadCoverImage() async {
+    final imageUrl = event.coverImage ?? (event.images.isNotEmpty ? event.images.first : null);
+    if (imageUrl == null || imageUrl.isEmpty) return null;
+
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode != 200) return null;
+
+      final tempDir = await getTemporaryDirectory();
+      final ext = imageUrl.contains('.png') ? 'png' : 'jpg';
+      final file = File('${tempDir.path}/share_event_${event.id}.$ext');
+      await file.writeAsBytes(response.bodyBytes);
+
+      return XFile(file.path, mimeType: 'image/$ext');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Shares text + image via the native share sheet.
+  /// Falls back to text-only if the image can't be downloaded.
+  Future<void> _shareWithImage(BuildContext context) async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final imageFile = await _downloadCoverImage();
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (imageFile != null) {
+        await Share.shareXFiles(
+          [imageFile],
+          text: _shareText,
+          subject: event.title,
+        );
+      } else {
+        await Share.share(_shareText, subject: event.title);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      await Share.share(_shareText, subject: event.title);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -146,6 +209,32 @@ class EventShareSheet extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: HbColors.brandPrimary,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Préparation du partage...',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: HbColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
                 // Grille d'icônes sociales
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -200,6 +289,7 @@ class EventShareSheet extends StatelessWidget {
                     ),
                   ),
                 ),
+                ],
               ],
             ),
           ),
@@ -263,20 +353,13 @@ class EventShareSheet extends StatelessWidget {
   }
 
   Future<void> _shareWhatsApp(BuildContext context) async {
-    Navigator.pop(context);
-    final encodedText = Uri.encodeComponent(_shareText);
-    final url = Uri.parse('https://wa.me/?text=$encodedText');
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      // Fallback vers share natif
-      await Share.share(_shareText);
-    }
+    // Share with image via native sheet (WhatsApp supports image + text this way)
+    await _shareWithImage(context);
   }
 
   Future<void> _shareFacebook(BuildContext context) async {
     Navigator.pop(context);
+    // Facebook sharer fetches OG image from the URL automatically
     final encodedUrl = Uri.encodeComponent(_shareUrl);
     final url = Uri.parse('https://www.facebook.com/sharer/sharer.php?u=$encodedUrl');
 
@@ -286,18 +369,11 @@ class EventShareSheet extends StatelessWidget {
   }
 
   Future<void> _shareInstagram(BuildContext context) async {
-    Navigator.pop(context);
-    // Instagram ne supporte pas le partage direct de liens
-    // On ouvre l'app ou le share natif
-    await Share.share(_shareText);
+    await _shareWithImage(context);
   }
 
   Future<void> _shareNative(BuildContext context) async {
-    Navigator.pop(context);
-    await Share.share(
-      _shareText,
-      subject: event.title,
-    );
+    await _shareWithImage(context);
   }
 }
 
@@ -318,33 +394,35 @@ class ShareButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(
-          Icons.share_outlined,
-          size: 20,
-          color: iconColor ?? HbColors.textPrimary,
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        EventShareSheet.show(
+          context,
+          event: event,
+          shareUrl: shareUrl,
+        );
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: backgroundColor ?? Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 8,
+            ),
+          ],
         ),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          EventShareSheet.show(
-            context,
-            event: event,
-            shareUrl: shareUrl,
-          );
-        },
-        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        style: IconButton.styleFrom(padding: EdgeInsets.zero),
+        child: Center(
+          child: Icon(
+            Icons.share_outlined,
+            size: 20,
+            color: iconColor ?? HbColors.textPrimary,
+          ),
+        ),
       ),
     );
   }

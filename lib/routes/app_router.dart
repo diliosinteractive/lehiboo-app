@@ -26,6 +26,7 @@ import '../features/auth/presentation/screens/business_register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../features/reminders/presentation/screens/reminders_list_screen.dart';
+import '../features/user_questions/presentation/screens/user_questions_screen.dart';
 import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
 import '../features/booking/presentation/screens/booking_participant_screen.dart';
 import '../features/booking/presentation/screens/booking_payment_screen.dart';
@@ -56,6 +57,8 @@ import '../features/messages/presentation/screens/conversations_list_screen.dart
 import '../features/messages/presentation/screens/conversation_detail_screen.dart';
 import '../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../features/messages/presentation/screens/support_detail_screen.dart';
+import '../features/reviews/presentation/screens/event_reviews_full_screen.dart';
+import '../features/reviews/presentation/screens/my_reviews_screen.dart';
 /// ChangeNotifier that drives GoRouter.refreshListenable so redirect logic
 /// re-runs on auth state changes WITHOUT rebuilding the GoRouter instance
 /// (which would reset the navigation stack).
@@ -616,6 +619,34 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/my-reminders',
         name: 'my-reminders',
         builder: (context, state) => const RemindersListScreen(),
+      ),
+      // User Questions (Mes Questions)
+      GoRoute(
+        path: '/my-questions',
+        name: 'my-questions',
+        builder: (context, state) => const UserQuestionsScreen(),
+      ),
+      // User Reviews (Mes Avis)
+      GoRoute(
+        path: '/my-reviews',
+        name: 'my-reviews',
+        builder: (context, state) {
+          final reviewUuid = state.uri.queryParameters['reviewUuid'];
+          return MyReviewsScreen(highlightReviewUuid: reviewUuid);
+        },
+      ),
+      // Full reviews list for an event
+      GoRoute(
+        path: '/event/:slug/reviews',
+        name: 'event-reviews',
+        builder: (context, state) {
+          final slug = state.pathParameters['slug']!;
+          final extra = state.extra;
+          final title = extra is Map<String, dynamic>
+              ? extra['title']?.toString()
+              : null;
+          return EventReviewsFullScreen(eventSlug: slug, eventTitle: title);
+        },
       ),
     ],
     errorBuilder: (context, state) => const ErrorScreen(),
