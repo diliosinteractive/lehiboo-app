@@ -25,13 +25,20 @@ class BookingListCard extends StatelessWidget {
     final tokens = HbTheme.tokens(context);
     final activity = booking.activity;
 
-    final dateTime = booking.slot?.startDateTime;
-    final formattedDate = dateTime != null
-        ? _formatDate(dateTime)
+    final startDateTime = booking.slot?.startDateTime;
+    final endDateTime = booking.slot?.endDateTime;
+    final formattedDate = startDateTime != null
+        ? _formatDate(startDateTime)
         : 'Date non définie';
-    final formattedTime = dateTime != null
-        ? DateFormat('HH:mm').format(dateTime)
+    final formattedStartTime = startDateTime != null
+        ? DateFormat('HH:mm').format(startDateTime)
         : '';
+    final formattedEndTime = endDateTime != null
+        ? DateFormat('HH:mm').format(endDateTime)
+        : '';
+    final timeText = formattedStartTime.isNotEmpty && formattedEndTime.isNotEmpty
+        ? '$formattedStartTime - $formattedEndTime'
+        : formattedStartTime;
 
     final totalPrice = booking.totalPrice ?? 0;
     final priceText = totalPrice > 0
@@ -40,6 +47,8 @@ class BookingListCard extends StatelessWidget {
 
     final ticketCount = booking.quantity ?? 1;
     final ticketText = ticketCount > 1 ? '$ticketCount billets' : '1 billet';
+
+    final reference = booking.reference;
 
     return GestureDetector(
       onTap: onTap,
@@ -62,7 +71,7 @@ class BookingListCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Image - prend toute la hauteur
+                // Image
                 _buildImage(activity?.imageUrl),
                 // Content
                 Expanded(
@@ -88,8 +97,21 @@ class BookingListCard extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            // Reference
+                            if (reference != null && reference.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                (reference.length > 8 ? reference.substring(0, 8) : reference).toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                  fontFamily: 'monospace',
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 6),
-                            // Date & time
+                            // Date
                             Row(
                               children: [
                                 const Icon(
@@ -98,20 +120,38 @@ class BookingListCard extends StatelessWidget {
                                   color: HbColors.textSecondary,
                                 ),
                                 const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    '$formattedDate${formattedTime.isNotEmpty ? ' • $formattedTime' : ''}',
+                                Text(
+                                  formattedDate,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: HbColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Time
+                            if (timeText.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.access_time,
+                                    size: 14,
+                                    color: HbColors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    timeText,
                                     style: const TextStyle(
                                       fontSize: 13,
                                       color: HbColors.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -225,4 +265,5 @@ class BookingListCard extends StatelessWidget {
       return DateFormat('E d MMM yyyy', 'fr_FR').format(date);
     }
   }
+
 }

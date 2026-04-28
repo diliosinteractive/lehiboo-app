@@ -181,6 +181,7 @@ class ApiBookingRepositoryImpl implements BookingRepository {
         slot: slot,
         customerBirthDate: b.customerBirthDate,
         customerTown: b.customerTown,
+        reference: b.reference ?? b.uuid,
       );
     }).toList();
   }
