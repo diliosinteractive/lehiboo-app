@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 class MessageComposer extends ConsumerStatefulWidget {
   final String conversationUuid;
   final bool disabled;
-  final bool isSupport; // true → no file attachments (support only uses text)
+  final bool isSupport;
   final void Function(String? content, List<XFile> attachments) onSend;
 
   const MessageComposer({
@@ -27,7 +27,7 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
   bool _isSending = false;
 
   static const _maxFiles = 3;
-  static const _maxFileBytes = 5 * 1024 * 1024; // 5 MB
+  static const _maxFileBytes = 5 * 1024 * 1024;
   static const _allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
   static const _primaryColor = Color(0xFFFF601F);
 
@@ -107,9 +107,7 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
     if (result == null || result.files.isEmpty) return;
     final path = result.files.single.path;
     final name = result.files.single.name;
-    if (path != null) {
-      await _addFiles([XFile(path, name: name)]);
-    }
+    if (path != null) await _addFiles([XFile(path, name: name)]);
   }
 
   Future<void> _addFiles(List<XFile> files) async {
@@ -120,12 +118,12 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
       }
       final ext = file.name.split('.').last.toLowerCase();
       if (!_allowedExtensions.contains(ext)) {
-        _showError('Type de fichier non supporté: .$ext');
+        _showError('Type de fichier non supporté : .$ext');
         continue;
       }
       final size = await file.length();
       if (size > _maxFileBytes) {
-        _showError('${file.name} dépasse la limite de 5 MB.');
+        _showError('${file.name} dépasse la limite de 5 Mo.');
         continue;
       }
       setState(() => _selectedFiles.add(file));
@@ -142,7 +140,8 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
   Widget build(BuildContext context) {
     if (widget.disabled) {
       return Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.fromLTRB(
+            16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
         color: Colors.grey.shade100,
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -156,22 +155,28 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
       );
     }
 
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
-      ),
+      color: Colors.white,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Attachment preview chips
+          // Attachment chips strip
           if (_selectedFiles.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: Wrap(
                 spacing: 8,
+                runSpacing: 4,
                 children: _selectedFiles.map((f) {
+                  final isPdf = f.name.toLowerCase().endsWith('.pdf');
                   return Chip(
+                    avatar: Icon(
+                      isPdf ? Icons.picture_as_pdf : Icons.image_outlined,
+                      size: 14,
+                      color: isPdf ? Colors.red.shade400 : Colors.blue.shade400,
+                    ),
                     label: Text(f.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -180,54 +185,100 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
                     onDeleted: () =>
                         setState(() => _selectedFiles.remove(f)),
                     visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   );
                 }).toList(),
               ),
             ),
           // Input row
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: EdgeInsets.fromLTRB(10, 8, 10, 8 + bottomPad),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (!widget.isSupport)
-                  IconButton(
-                    icon: const Icon(Icons.attach_file),
-                    onPressed: _pickAttachment,
-                    color: Colors.grey,
-                    visualDensity: VisualDensity.compact,
-                  ),
+                // Pill-shaped text input
                 Expanded(
-                  child: TextField(
-                    controller: _textController,
-                    onChanged: (_) => setState(() {}),
-                    maxLines: null,
-                    maxLength: 2000,
-                    buildCounter: (_, {required currentLength, required isFocused, maxLength}) =>
-                        null,
-                    decoration: const InputDecoration(
-                      hintText: 'Votre message…',
-                      border: InputBorder.none,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F2F7),
+                      borderRadius: BorderRadius.circular(24),
                     ),
-                    onSubmitted: (_) => _send(),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (!widget.isSupport)
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(left: 4, bottom: 4),
+                            child: IconButton(
+                              icon: const Icon(Icons.attach_file, size: 20),
+                              color: Colors.grey.shade500,
+                              onPressed: _pickAttachment,
+                              visualDensity: VisualDensity.compact,
+                              splashRadius: 20,
+                            ),
+                          ),
+                        Expanded(
+                          child: TextField(
+                            controller: _textController,
+                            onChanged: (_) => setState(() {}),
+                            maxLines: 5,
+                            minLines: 1,
+                            maxLength: 2000,
+                            buildCounter: (_, {required currentLength,
+                                  required isFocused,
+                                  maxLength}) =>
+                                null,
+                            textCapitalization:
+                                TextCapitalization.sentences,
+                            decoration: InputDecoration(
+                              hintText: 'Votre message…',
+                              hintStyle: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 14),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: widget.isSupport ? 16 : 4,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
                   ),
                 ),
-                AnimatedOpacity(
-                  opacity: _canSend ? 1.0 : 0.4,
+                const SizedBox(width: 8),
+                // Circular send button
+                AnimatedScale(
+                  scale: _canSend ? 1.0 : 0.85,
                   duration: const Duration(milliseconds: 150),
-                  child: IconButton(
-                    icon: _isSending
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: _primaryColor),
-                          )
-                        : const Icon(Icons.send_rounded, color: _primaryColor),
-                    onPressed: _canSend ? _send : null,
+                  child: GestureDetector(
+                    onTap: _canSend ? _send : null,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _canSend
+                            ? _primaryColor
+                            : Colors.grey.shade300,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: _isSending
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white),
+                              )
+                            : const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 20),
+                      ),
+                    ),
                   ),
                 ),
               ],
