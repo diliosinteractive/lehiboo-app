@@ -166,6 +166,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       // the navigation stack (losing e.g. the EventDetail a guest guard was
       // invoked from).
 
+      // 4. Messages require authentication — redirect to login if not authenticated.
+      //    Covers direct navigation, deep links from FCM, and URL-bar entry.
+      // 4. Messages require authentication — handled via GuestGuard in UI entries
+      // for a better UX (modal instead of full-screen redirect).
+      if (state.matchedLocation.startsWith('/messages') &&
+          authState.status == AuthStatus.unauthenticated) {
+        return null;
+      }
+
       debugPrint('🔀 No redirect');
       return null;
     },
