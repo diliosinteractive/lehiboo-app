@@ -815,27 +815,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         );
         debugPrint('🟢 Stripe init OK');
 
-        // Let iOS finish any in-flight animations (keyboard dismissal,
-        // route transition) before presenting the Payment Sheet — without
-        // this gap the iOS SDK can hang waiting for a stable rootVC.
-        await Future.delayed(const Duration(milliseconds: 250));
+        // iOS-only: presentPaymentSheet was failing with
+        // "view is not in the window hierarchy" because flutter_stripe's
+        // iOS bridge was selecting an orphaned UIViewController as the
+        // presenter. Force the presentation onto a clean frame via
+        // addPostFrameCallback after a settle delay, which gives iOS time
+        // to flush keyboard dismissal + route transitions and rebuild a
+        // valid rootVC chain before Stripe walks it.
+        await Future<void>.delayed(const Duration(milliseconds: 500));
 
-        // Afficher le Payment Sheet
         debugPrint('🔵 Stripe present starting');
-        try {
-          await Stripe.instance.presentPaymentSheet().timeout(
-            const Duration(seconds: 20),
-            onTimeout: () {
-              debugPrint('🔴 presentPaymentSheet TIMED OUT after 20s — SDK never returned');
-              throw TimeoutException(
-                'Stripe presentPaymentSheet timeout (iOS native bridge stuck)',
-              );
-            },
-          );
-        } catch (e) {
-          debugPrint('🔴 presentPaymentSheet caught: ${e.runtimeType}: $e');
-          rethrow;
-        }
+        final presentCompleter = Completer<void>();
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          try {
+            await Stripe.instance.presentPaymentSheet().timeout(
+              const Duration(seconds: 20),
+              onTimeout: () {
+                debugPrint('🔴 presentPaymentSheet TIMED OUT after 20s');
+                throw TimeoutException(
+                  'Stripe presentPaymentSheet timeout (iOS native bridge stuck)',
+                );
+              },
+            );
+            presentCompleter.complete();
+          } catch (e) {
+            debugPrint('🔴 presentPaymentSheet caught: ${e.runtimeType}: $e');
+            presentCompleter.completeError(e);
+          }
+        });
+        await presentCompleter.future;
         debugPrint('🟢 Stripe present OK');
 
         // 4. Confirmer la réservation après paiement réussi
