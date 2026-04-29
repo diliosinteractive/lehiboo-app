@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -827,7 +829,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
         // Afficher le Payment Sheet
         debugPrint('🔵 Stripe present starting');
-        await Stripe.instance.presentPaymentSheet();
+        try {
+          await Stripe.instance.presentPaymentSheet().timeout(
+            const Duration(seconds: 20),
+            onTimeout: () {
+              debugPrint('🔴 presentPaymentSheet TIMED OUT after 20s — SDK never returned');
+              throw TimeoutException(
+                'Stripe presentPaymentSheet timeout (iOS native bridge stuck)',
+              );
+            },
+          );
+        } catch (e) {
+          debugPrint('🔴 presentPaymentSheet caught: ${e.runtimeType}: $e');
+          rethrow;
+        }
         debugPrint('🟢 Stripe present OK');
 
         // 4. Confirmer la réservation après paiement réussi
