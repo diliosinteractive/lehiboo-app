@@ -791,6 +791,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           bookingUuid: bookingUuid,
         );
 
+        final cs = paymentIntent.clientSecret;
+        final csPrefix = cs.length >= 10 ? cs.substring(0, 10) : cs;
+        debugPrint(
+            '🔵 Stripe init starting | clientSecret len=${cs.length} prefix=$csPrefix paymentIntentId=${paymentIntent.paymentIntentId} amount=${paymentIntent.amount}');
+
         // 3. Configurer et afficher le Payment Sheet Stripe
         await Stripe.instance.initPaymentSheet(
           paymentSheetParameters: SetupPaymentSheetParameters(
@@ -808,15 +813,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ),
           ),
         );
+        debugPrint('🟢 Stripe init OK');
 
         // Afficher le Payment Sheet
+        debugPrint('🔵 Stripe present starting');
         await Stripe.instance.presentPaymentSheet();
+        debugPrint('🟢 Stripe present OK');
 
         // 4. Confirmer la réservation après paiement réussi
+        debugPrint('🔵 confirmBooking starting');
         await bookingDataSource.confirmBooking(
           bookingUuid: bookingUuid,
           paymentIntentId: paymentIntent.paymentIntentId,
         );
+        debugPrint('🟢 confirmBooking OK');
       }
 
       // 5. Naviguer vers la confirmation avec confettis
@@ -828,13 +838,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           'selectedSlot': widget.params.selectedSlot,
         });
       }
-    } on StripeException catch (e) {
+    } on StripeException catch (e, st) {
       // Paiement annulé ou échoué
+      debugPrint('🔴 StripeException: code=${e.error.code} message=${e.error.message} localized=${e.error.localizedMessage}');
+      debugPrint('🔴 StripeException stack: $st');
       setState(() {
         _isLoading = false;
         _errorMessage = e.error.localizedMessage ?? 'Paiement annulé';
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('🔴 Checkout error: $e');
+      debugPrint('🔴 Checkout stack: $st');
       setState(() {
         _isLoading = false;
         _errorMessage = ApiResponseHandler.extractError(e);
