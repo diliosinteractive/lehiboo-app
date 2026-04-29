@@ -85,6 +85,11 @@ void main() async {
   final stripeKey = EnvConfig.stripePublishableKey;
   if (stripeKey.isNotEmpty) {
     Stripe.publishableKey = stripeKey;
+    // Required on iOS to prevent PaymentSheet hangs during the Apple Pay
+    // capability check, even when Apple Pay isn't enabled. Use a stable
+    // placeholder; replace with a real Apple-registered ID if/when Apple
+    // Pay is enabled.
+    Stripe.merchantIdentifier = 'merchant.com.lehiboo.app';
     try {
       await Stripe.instance.applySettings();
       debugPrint('Stripe initialized successfully');
