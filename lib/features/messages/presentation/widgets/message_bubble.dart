@@ -84,8 +84,8 @@ class _MessageBubbleState extends State<MessageBubble> {
             : null,
         child: Container(
           margin: EdgeInsets.only(
-            left: msg.isMine ? 56 : 8,
-            right: msg.isMine ? 8 : 56,
+            left: msg.isMine ? 48 : 8,
+            right: msg.isMine ? 8 : 48,
             top: 2,
             bottom: 2,
           ),
@@ -94,7 +94,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (!msg.isMine) ...[
-                _buildAvatar(msg),
+                _buildAvatar(msg, isMine: false),
                 const SizedBox(width: 6),
               ],
               Flexible(
@@ -122,6 +122,10 @@ class _MessageBubbleState extends State<MessageBubble> {
                   ],
                 ),
               ),
+              if (msg.isMine) ...[
+                const SizedBox(width: 6),
+                _buildAvatar(msg, isMine: true),
+              ],
             ],
           ),
         ),
@@ -129,19 +133,20 @@ class _MessageBubbleState extends State<MessageBubble> {
     );
   }
 
-  Widget _buildAvatar(Message msg) {
+  Widget _buildAvatar(Message msg, {required bool isMine}) {
     final name = msg.sender?.name ?? '';
-    final initial =
-        name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     return CircleAvatar(
       radius: 15,
-      backgroundColor: _primaryColor.withValues(alpha: 0.12),
+      backgroundColor: isMine
+          ? _primaryColor.withValues(alpha: 0.2)
+          : _primaryColor.withValues(alpha: 0.12),
       child: Text(
         initial,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: _primaryColor,
+          color: isMine ? _primaryColor : _primaryColor,
         ),
       ),
     );
