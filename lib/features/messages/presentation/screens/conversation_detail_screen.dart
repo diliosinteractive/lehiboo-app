@@ -7,6 +7,8 @@ import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
 class ConversationDetailScreen extends ConsumerStatefulWidget {
   final String conversationUuid;
@@ -34,7 +36,13 @@ class _ConversationDetailScreenState
   @override
   void initState() {
     super.initState();
-    // Provider auto-loads in its constructor via load() + _startPolling()
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = ref.read(authProvider);
+      if (authState.status == AuthStatus.unauthenticated) {
+        GuestRestrictionDialog.show(context,
+            featureName: 'voir cette conversation');
+      }
+    });
   }
 
   @override
@@ -96,13 +104,16 @@ class _ConversationDetailScreenState
 
           final titleText = widget.isSupport
               ? conversation.subject
-              : (conversation.organization?.companyName ?? conversation.subject);
+              : (conversation.organization?.companyName ??
+                  conversation.subject);
 
           return Column(
             children: [
               AppBar(
                 leading: BackButton(
-                  onPressed: () => context.canPop() ? context.pop() : context.go('/messages'),
+                  onPressed: () => context.canPop()
+                      ? context.pop()
+                      : context.go('/messages'),
                 ),
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,10 +135,45 @@ class _ConversationDetailScreenState
                   ],
                 ),
                 actions: [
+                  // Clickable event chip
+                  if (conversation.event != null)
+                    GestureDetector(
+                      onTap: () =>
+                          context.push('/event/${conversation.event!.uuid}'),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.calendar_today_outlined,
+                                size: 12, color: _primaryColor),
+                            const SizedBox(width: 4),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 100),
+                              child: Text(
+                                conversation.event!.title,
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: _primaryColor,
+                                    fontWeight: FontWeight.w600),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   if (!widget.isSupport)
                     PopupMenuButton<String>(
-                      onSelected: (value) =>
-                          _handleMenuAction(context, value, notifier, conversation.status),
+                      onSelected: (value) => _handleMenuAction(
+                          context, value, notifier, conversation.status),
                       itemBuilder: (ctx) => [
                         if (conversation.status == 'open')
                           const PopupMenuItem(
@@ -150,6 +196,21 @@ class _ConversationDetailScreenState
                                 SizedBox(width: 8),
                                 Text('Signaler',
                                     style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        if (conversation.userHasReported)
+                          PopupMenuItem<String>(
+                            enabled: false,
+                            child: Row(
+                              children: [
+                                Icon(Icons.flag,
+                                    size: 18, color: Colors.orange.shade400),
+                                const SizedBox(width: 8),
+                                Text('Signalé',
+                                    style: TextStyle(
+                                        color: Colors.orange.shade400,
+                                        fontWeight: FontWeight.w600)),
                               ],
                             ),
                           ),
@@ -224,7 +285,9 @@ class _ConversationDetailScreenState
         } catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+              SnackBar(
+                  content: Text('Erreur : $e'),
+                  backgroundColor: Colors.red),
             );
           }
         }
@@ -238,93 +301,155 @@ class _ConversationDetailScreenState
       BuildContext context, ConversationDetailNotifier notifier) {
     String? selectedReason;
     final commentController = TextEditingController();
+    bool isSubmitting = false;
+    bool submitted = false;
+    String? commentError;
+    String? supportUuid;
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Signaler la conversation'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: selectedReason,
-                decoration: const InputDecoration(
-                  labelText: 'Raison',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'spam', child: Text('Spam')),
-                  DropdownMenuItem(
-                      value: 'harcelement', child: Text('Harcèlement')),
-                  DropdownMenuItem(
-                      value: 'contenu_inapproprie',
-                      child: Text('Contenu inapproprié')),
-                  DropdownMenuItem(value: 'arnaque', child: Text('Arnaque')),
-                  DropdownMenuItem(value: 'autre', child: Text('Autre')),
+        builder: (ctx, setDialogState) {
+          if (submitted) {
+            return AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.flag, size: 48, color: Colors.orange.shade400),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Signalement transmis',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Votre signalement a bien été transmis à l\'équipe LeHiboo.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ],
-                onChanged: (v) => setDialogState(() => selectedReason = v),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: commentController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Commentaire (optionnel)',
-                  border: OutlineInputBorder(),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    if (supportUuid != null && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text(
+                              'Un ticket support a été créé pour le suivi.'),
+                          action: SnackBarAction(
+                            label: 'Voir',
+                            onPressed: () => context.push(
+                                '/messages/support/$supportUuid'),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('OK',
+                      style: TextStyle(color: _primaryColor)),
                 ),
+              ],
+            );
+          }
+
+          return AlertDialog(
+            title: const Text('Signaler la conversation'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: selectedReason,
+                  decoration: const InputDecoration(
+                    labelText: 'Raison *',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'inappropriate',
+                        child: Text('Contenu inapproprié')),
+                    DropdownMenuItem(
+                        value: 'harassment', child: Text('Harcèlement')),
+                    DropdownMenuItem(value: 'spam', child: Text('Spam')),
+                    DropdownMenuItem(value: 'other', child: Text('Autre')),
+                  ],
+                  onChanged: isSubmitting
+                      ? null
+                      : (v) => setDialogState(() => selectedReason = v),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: commentController,
+                  maxLines: 4,
+                  maxLength: 2000,
+                  enabled: !isSubmitting,
+                  decoration: InputDecoration(
+                    labelText: 'Commentaire * (min. 10 caractères)',
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                    errorText: commentError,
+                  ),
+                  onChanged: (_) {
+                    if (commentError != null) {
+                      setDialogState(() => commentError = null);
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                child: const Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: (selectedReason == null || isSubmitting)
+                    ? null
+                    : () async {
+                        final comment = commentController.text.trim();
+                        if (comment.length < 10) {
+                          setDialogState(() => commentError =
+                              'Le commentaire doit contenir au moins 10 caractères.');
+                          return;
+                        }
+                        setDialogState(() => isSubmitting = true);
+                        try {
+                          final result = await notifier.reportConversation(
+                              selectedReason!, comment);
+                          supportUuid = result.supportConversationUuid;
+                          setDialogState(() {
+                            isSubmitting = false;
+                            submitted = true;
+                          });
+                        } catch (e) {
+                          setDialogState(() => isSubmitting = false);
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text('Erreur : $e'),
+                                  backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Signaler',
+                        style: TextStyle(color: Colors.red)),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Annuler'),
-            ),
-            TextButton(
-              onPressed: selectedReason == null
-                  ? null
-                  : () async {
-                      Navigator.pop(ctx);
-                      try {
-                        final result = await notifier.reportConversation(
-                          selectedReason!,
-                          commentController.text.trim().isEmpty
-                              ? null
-                              : commentController.text.trim(),
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content:
-                                  const Text('Signalement envoyé. Merci.'),
-                              action: result.supportConversationUuid != null
-                                  ? SnackBarAction(
-                                      label: 'Voir le ticket support',
-                                      onPressed: () => context.push(
-                                          '/messages/support/${result.supportConversationUuid}'),
-                                    )
-                                  : null,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Erreur : $e'),
-                                backgroundColor: Colors.red),
-                          );
-                        }
-                      }
-                    },
-              child: const Text('Envoyer',
-                  style: TextStyle(color: _primaryColor)),
-            ),
-          ],
-        ),
+          );
+        },
       ),
-    );
+    ).then((_) => commentController.dispose());
   }
 }
 
@@ -343,7 +468,6 @@ class _MessagesList extends StatelessWidget {
       );
     }
 
-    // Find last own message index for delivery ticks
     final lastOwnIndex = () {
       for (int i = messages.length - 1; i >= 0; i--) {
         if (messages[i].isMine && !messages[i].isDeleted) return i;
@@ -376,19 +500,29 @@ class _MessagesList extends StatelessWidget {
   }
 
   List<Object> _buildItems(List<Message> msgs) {
-    // Messages reversed for display (ListView.reverse = true)
     final reversed = msgs.reversed.toList();
     final items = <Object>[];
-    DateTime? lastDate;
 
-    for (final msg in reversed) {
+    int i = 0;
+    while (i < reversed.length) {
       final msgDate = DateTime(
-          msg.createdAt.year, msg.createdAt.month, msg.createdAt.day);
-      if (lastDate == null || msgDate != lastDate) {
-        items.add(_DateSeparator(msgDate));
-        lastDate = msgDate;
+        reversed[i].createdAt.year,
+        reversed[i].createdAt.month,
+        reversed[i].createdAt.day,
+      );
+      // Add all messages for this date group first (they appear at lower indices = bottom)
+      while (i < reversed.length) {
+        final d = DateTime(
+          reversed[i].createdAt.year,
+          reversed[i].createdAt.month,
+          reversed[i].createdAt.day,
+        );
+        if (d != msgDate) break;
+        items.add(_MessageItem(reversed[i]));
+        i++;
       }
-      items.add(_MessageItem(msg));
+      // Separator added after the group — with reverse:true it renders above the group
+      items.add(_DateSeparator(msgDate));
     }
     return items;
   }

@@ -23,8 +23,8 @@ Pour le contrat API (endpoints, payloads, erreurs), voir `MOBILE_MESSAGES_API.md
 | Protection routes `/messages` — accès réservé aux utilisateurs connectés | Implémenté |
 | Chat UI refresh (bulles asymétriques, avatars, composer pill) | Implémenté |
 | Groupement des conversations par organisation | À implémenter |
-| Preview pièces jointes dans ConversationTile | À corriger |
-| Masquer bouton Signaler si déjà signalé | À corriger |
+| Preview pièces jointes dans ConversationTile | Implémenté |
+| Masquer bouton Signaler si déjà signalé | Implémenté |
 | Temps réel WebSocket | À implémenter (v2 active) |
 | Push FCM nouveaux messages | Backend prêt — voir section dédiée |
 
@@ -1062,16 +1062,17 @@ Note : pas d'édition, suppression, fermeture ou signalement disponibles pour le
 - [x] **GuestGuard** : bouton "Contacter" sur `EventOrganizerCard` vérifie l'auth avant d'ouvrir le formulaire
 
 ### À corriger / compléter
-- [ ] **ConversationTile** : afficher `organization.logo_url` dans l'avatar (actuellement initiales colorées uniquement)
-- [ ] **ConversationTile** : preview pièces jointes avec comptage `is_image` ("Une image envoyée" etc.) au lieu de "(Fichier joint)" générique
-- [ ] **ConversationTile** : ne rien afficher (pas "Aucun message") quand `latest_message == null`
-- [ ] **ConversationTile** : badge statut 3 états — orange "En attente" / vert "Ouvert" / gris+lock "Fermé"
-- [ ] **ConversationTile** : fond orange (`orange.shade50`) + sujet en gras quand `unreadCount > 0`
-- [ ] **ConversationTile** : compteur non lus affiché en `99+` au lieu de `9+`
-- [ ] **Bouton Signaler** : remplacé par badge non-interactif `🚩 Signalé` si `user_has_reported = true`
-- [ ] **Dialog signalement** : commentaire requis (min 10 chars), état succès in-dialog avant fermeture
-- [ ] **Thread header** : chip événement cliquable si `conversation.event != null`
-- [ ] **Thread header** : bouton Fermer visible uniquement si `status == open`
+- [x] **ConversationTile** : afficher `organization.logo_url` dans l'avatar (actuellement initiales colorées uniquement)
+- [x] **ConversationTile** : preview pièces jointes avec comptage `is_image` ("Une image envoyée" etc.) au lieu de "(Fichier joint)" générique
+- [x] **ConversationTile** : ne rien afficher (pas "Aucun message") quand `latest_message == null`
+- [x] **ConversationTile** : badge statut 3 états — orange "En attente" / vert "Ouvert" / gris+lock "Fermé"
+- [x] **ConversationTile** : fond orange (`orange.shade50`) + sujet en gras quand `unreadCount > 0`
+- [x] **ConversationTile** : compteur non lus affiché en `99+` au lieu de `9+`
+- [x] **Bouton Signaler** : remplacé par badge non-interactif `🚩 Signalé` si `user_has_reported = true`
+- [x] **Dialog signalement** : commentaire requis (min 10 chars), état succès in-dialog avant fermeture
+- [x] **Thread header** : chip événement cliquable si `conversation.event != null`
+- [x] **Thread header** : bouton Fermer visible uniquement si `status == open`
+- [x] **Thread detail** : séparateurs de date positionnés au-dessus de leur groupe de messages (fix reverse ListView)
 - [ ] **Groupement par org** : implémenter le pattern Option B (sidebar org → liste conversations) pour aligner avec le web
 
 ### WebSocket (v2 — priorité haute)
