@@ -804,20 +804,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             '🔵 Stripe init starting | clientSecret len=${cs.length} prefix=$csPrefix paymentIntentId=${paymentIntent.paymentIntentId} amount=${paymentIntent.amount}');
 
         // 3. Configurer et afficher le Payment Sheet Stripe
+        // NOTE: appearance + style stripped temporarily to isolate iOS hang.
+        // If this fixes presentation, re-introduce them with both light and
+        // dark variants and a sane primary button style.
         await Stripe.instance.initPaymentSheet(
           paymentSheetParameters: SetupPaymentSheetParameters(
             paymentIntentClientSecret: paymentIntent.clientSecret,
             merchantDisplayName: 'Le Hiboo',
-            style: ThemeMode.system,
-            appearance: PaymentSheetAppearance(
-              primaryButton: PaymentSheetPrimaryButtonAppearance(
-                colors: PaymentSheetPrimaryButtonTheme(
-                  light: PaymentSheetPrimaryButtonThemeColors(
-                    background: HbColors.brandPrimary,
-                  ),
-                ),
-              ),
-            ),
           ),
         );
         debugPrint('🟢 Stripe init OK');
