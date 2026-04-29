@@ -376,6 +376,19 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
                       ),
                     ],
                   ),
+                  if (_formatTimeRange(widget.selectedSlot!) != null) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatTimeRange(widget.selectedSlot!)!,
+                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ],
             ),
@@ -595,20 +608,28 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   }
 
   String _formatDate(CalendarDateSlot slot) {
-    final months = [
+    const months = [
       'Jan', 'Fév', 'Mars', 'Avr', 'Mai', 'Juin',
       'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'
     ];
-    final days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
     final dayName = days[slot.date.weekday - 1];
     final monthName = months[slot.date.month - 1];
-    var dateStr = '$dayName ${slot.date.day} $monthName';
+    return '$dayName ${slot.date.day} $monthName ${slot.date.year}';
+  }
 
-    if (slot.startTime != null) {
-      dateStr += ' à ${slot.startTime}';
-    }
+  String? _formatTimeRange(CalendarDateSlot slot) {
+    final start = _trimSeconds(slot.startTime);
+    if (start == null) return null;
+    final end = _trimSeconds(slot.endTime);
+    return end == null ? start : '$start - $end';
+  }
 
-    return dateStr;
+  String? _trimSeconds(String? time) {
+    if (time == null || time.isEmpty) return null;
+    final parts = time.split(':');
+    if (parts.length < 2) return time;
+    return '${parts[0]}:${parts[1]}';
   }
 }

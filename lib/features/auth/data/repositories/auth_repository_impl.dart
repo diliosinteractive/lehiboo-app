@@ -187,6 +187,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final lastName = await _secureStorage.getUserLastName();
     final birthDateStr = await _secureStorage.getUserBirthDate();
     final membershipCity = await _secureStorage.getUserMembershipCity();
+    final phone = await _secureStorage.getUserPhone();
 
     if (userId != null) {
       _cachedUser = HbUser(
@@ -195,6 +196,7 @@ class AuthRepositoryImpl implements AuthRepository {
         displayName: name ?? '',
         firstName: firstName,
         lastName: lastName,
+        phone: phone,
         role: _parseRole(role),
         birthDate: birthDateStr != null ? DateTime.tryParse(birthDateStr) : null,
         membershipCity: membershipCity,
@@ -222,6 +224,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await _secureStorage.saveUserDisplayName(user.displayName ?? '');
     if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
     if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
+    if (user.phone != null) await _secureStorage.saveUserPhone(user.phone!);
     if (user.birthDate != null) await _secureStorage.saveUserBirthDate(user.birthDate!.toIso8601String().substring(0, 10));
     if (user.membershipCity != null) await _secureStorage.saveUserMembershipCity(user.membershipCity!);
 
@@ -294,6 +297,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await _secureStorage.saveUserDisplayName(user.displayName ?? '');
       if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
       if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
+      if (user.phone != null) await _secureStorage.saveUserPhone(user.phone!);
       if (user.birthDate != null) await _secureStorage.saveUserBirthDate(user.birthDate!.toIso8601String().substring(0, 10));
       if (user.membershipCity != null) await _secureStorage.saveUserMembershipCity(user.membershipCity!);
 
@@ -338,6 +342,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await _secureStorage.saveUserDisplayName(user.displayName ?? '');
     if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
     if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
+    if (user.phone != null) await _secureStorage.saveUserPhone(user.phone!);
 
     _cachedUser = user;
 
