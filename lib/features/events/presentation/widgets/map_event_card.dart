@@ -170,10 +170,26 @@ class MapEventCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    activity.priceMin == 0 ? 'Gratuit' : '${(activity.priceMin ?? 0).toStringAsFixed(0)}€',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
+                  Builder(builder: (context) {
+                    final isTrulyFree = activity.priceMin == 0 &&
+                        (activity.priceMax == null || activity.priceMax == 0);
+                    if (isTrulyFree) {
+                      return const Text(
+                        'Gratuit',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      );
+                    }
+                    final isBooking =
+                        activity.reservationMode == ReservationMode.lehibooFree ||
+                            activity.reservationMode == ReservationMode.lehibooPaid;
+                    if (!isBooking) {
+                      return const SizedBox.shrink();
+                    }
+                    return Text(
+                      '${(activity.priceMin ?? 0).toStringAsFixed(0)}€',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    );
+                  }),
                 ],
               ),
             ),

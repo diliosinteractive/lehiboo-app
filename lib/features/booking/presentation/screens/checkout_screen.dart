@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -695,6 +697,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _onConfirmPressed() async {
+    // Dismiss keyboard before any async work — iOS PaymentSheet cannot
+    // present while the keyboard is animating, which silently hangs
+    // presentPaymentSheet on iOS (Android tolerates it).
+    FocusManager.instance.primaryFocus?.unfocus();
+
     // Valider le formulaire
     if (!_formKey.currentState!.validate()) {
       return;
@@ -796,21 +803,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           paymentSheetParameters: SetupPaymentSheetParameters(
             paymentIntentClientSecret: paymentIntent.clientSecret,
             merchantDisplayName: 'Le Hiboo',
-            style: ThemeMode.system,
-            appearance: PaymentSheetAppearance(
-              primaryButton: PaymentSheetPrimaryButtonAppearance(
-                colors: PaymentSheetPrimaryButtonTheme(
-                  light: PaymentSheetPrimaryButtonThemeColors(
-                    background: HbColors.brandPrimary,
-                  ),
-                ),
-              ),
-            ),
           ),
         );
 
-        // Afficher le Payment Sheet
-        await Stripe.instance.presentPaymentSheet();
+        // iOS belt-and-suspenders: settle delay + post-frame callback so
+        // the view hierarchy is stable before Stripe walks it. The real
+        // fix lives in AppDelegate.window, but these add safety against
+        // future plugins that might leave transient presented VCs.
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+
+        final presentCompleter = Completer<void>();
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          try {
+            await Stripe.instance.presentPaymentSheet();
+            presentCompleter.complete();
+          } catch (e) {
+            presentCompleter.completeError(e);
+          }
+        });
+        await presentCompleter.future;
 
         // 4. Confirmer la réservation après paiement réussi
         await bookingDataSource.confirmBooking(

@@ -7,12 +7,14 @@ import '../../../../core/utils/guest_guard.dart';
 import '../../../../core/widgets/feedback/hb_feedback.dart';
 import '../../domain/entities/can_review_result.dart';
 import '../../domain/entities/review.dart';
+// review_enums.dart fournit ReviewSortBy + CanReviewReason
 import '../../domain/entities/review_enums.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import '../providers/reviews_actions_provider.dart';
 import '../providers/reviews_providers.dart';
 import '../widgets/can_review_message.dart';
 import '../widgets/event_reviews_section.dart';
+import '../widgets/my_review_block.dart';
 import '../widgets/report_review_sheet.dart';
 import '../widgets/review_card.dart';
 import '../widgets/write_review_sheet.dart';
@@ -212,6 +214,16 @@ class _EventReviewsFullScreenState
     final statsAsync = ref.watch(eventReviewStatsProvider(widget.eventSlug));
     final canReviewAsync = ref.watch(canReviewProvider(widget.eventSlug));
 
+    // Avis utilisateur déjà laissé : on l'affiche en tête, sauf s'il est déjà
+    // dans la liste publique (status approved → doublon).
+    final myReview = canReviewAsync.maybeWhen(
+      data: (r) => r is CanReviewDenied ? r.existingReview : null,
+      orElse: () => null,
+    );
+    final myInList =
+        myReview != null && _items.any((r) => r.uuid == myReview.uuid);
+    final myReviewToShow = myInList ? null : myReview;
+
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
@@ -220,23 +232,23 @@ class _EventReviewsFullScreenState
         elevation: 0,
         foregroundColor: HbColors.textPrimary,
       ),
-      floatingActionButton: canReviewAsync.maybeWhen(
-        data: (r) => r is CanReviewAllowed
-            ? FloatingActionButton.extended(
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  _handleWriteReview();
-                },
-                backgroundColor: HbColors.brandPrimary,
-                icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                label: const Text(
-                  'Écrire un avis',
-                  style: TextStyle(color: Colors.white),
-                ),
-              )
-            : null,
-        orElse: () => null,
-      ),
+      // Pattern Q&A : FAB toujours visible, sauf si l'utilisateur a déjà
+      // un avis (entry-point d'édition dans le bloc "Votre avis"). Le tap
+      // est protégé par GuestGuard côté _handleWriteReview.
+      floatingActionButton: myReview != null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _handleWriteReview();
+              },
+              backgroundColor: HbColors.brandPrimary,
+              icon: const Icon(Icons.edit_outlined, color: Colors.white),
+              label: const Text(
+                'Écrire un avis',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
       body: RefreshIndicator(
         color: HbColors.brandPrimary,
         onRefresh: _loadFirstPage,
@@ -263,15 +275,33 @@ class _EventReviewsFullScreenState
                 ),
               ),
             ),
+            if (myReviewToShow != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: MyReviewBlock(
+                    review: myReviewToShow,
+                    eventSlug: widget.eventSlug,
+                    eventTitle: widget.eventTitle ?? '',
+                    onChanged: _loadFirstPage,
+                  ),
+                ),
+              ),
             SliverToBoxAdapter(
               child: canReviewAsync.maybeWhen(
-                data: (r) => r is CanReviewDenied
-                    ? Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
-                        child: CanReviewMessage(denied: r),
-                      )
-                    : const SizedBox.shrink(),
+                data: (r) {
+                  // Si on affiche déjà le bloc "Votre avis", ne pas redire
+                  // "vous avez déjà laissé un avis" en dessous.
+                  if (r is CanReviewDenied &&
+                      r.reason != CanReviewReason.alreadyReviewed) {
+                    return Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16),
+                      child: CanReviewMessage(denied: r),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
                 orElse: () => const SizedBox.shrink(),
               ),
             ),

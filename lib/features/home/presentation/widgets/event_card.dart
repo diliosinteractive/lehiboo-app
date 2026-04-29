@@ -357,6 +357,13 @@ class EventCard extends ConsumerWidget {
                   ),
                 );
               }
+              // Discovery activities: hide price for paid items.
+              final isBooking =
+                  activity.reservationMode == ReservationMode.lehibooFree ||
+                      activity.reservationMode == ReservationMode.lehibooPaid;
+              if (!isBooking) {
+                return const SizedBox.shrink();
+              }
               final price = (activity.priceMin! > 0)
                   ? activity.priceMin!
                   : activity.priceMax!;
