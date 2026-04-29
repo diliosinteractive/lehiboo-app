@@ -23,6 +23,7 @@ abstract class MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
+    List<XFile>? attachments,
   });
 
   Future<CreateFromBookingResult> createFromBooking(String bookingUuid);
@@ -32,6 +33,7 @@ abstract class MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
+    List<XFile>? attachments,
   });
 
   Future<Conversation> closeConversation(String uuid);

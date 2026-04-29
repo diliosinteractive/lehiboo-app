@@ -56,13 +56,30 @@ class MessagesApiDataSource {
     required String subject,
     required String message,
     String? eventId,
+    List<XFile>? attachments,
   }) async {
-    final r = await _dio.post('/user/conversations', data: {
-      'organization_uuid': organizationUuid,
-      'subject': subject,
-      'message': message,
-      if (eventId != null) 'event_id': eventId,
-    });
+    late Response<dynamic> r;
+    if (attachments != null && attachments.isNotEmpty) {
+      final files = <MultipartFile>[];
+      for (final f in attachments) {
+        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
+      }
+      final formData = FormData.fromMap({
+        'organization_uuid': organizationUuid,
+        'subject': subject,
+        'message': message,
+        if (eventId != null) 'event_id': eventId,
+        'attachments[]': files,
+      });
+      r = await _dio.post('/user/conversations', data: formData);
+    } else {
+      r = await _dio.post('/user/conversations', data: {
+        'organization_uuid': organizationUuid,
+        'subject': subject,
+        'message': message,
+        if (eventId != null) 'event_id': eventId,
+      });
+    }
     return ConversationDto.fromJson(
         (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
   }
@@ -86,15 +103,34 @@ class MessagesApiDataSource {
     required String subject,
     required String message,
     String? eventId,
+    List<XFile>? attachments,
   }) async {
-    final r = await _dio.post(
-      '/user/conversations/from-organization/$organizationUuid',
-      data: {
+    late Response<dynamic> r;
+    if (attachments != null && attachments.isNotEmpty) {
+      final files = <MultipartFile>[];
+      for (final f in attachments) {
+        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
+      }
+      final formData = FormData.fromMap({
         'subject': subject,
         'message': message,
         if (eventId != null) 'event_id': eventId,
-      },
-    );
+        'attachments[]': files,
+      });
+      r = await _dio.post(
+        '/user/conversations/from-organization/$organizationUuid',
+        data: formData,
+      );
+    } else {
+      r = await _dio.post(
+        '/user/conversations/from-organization/$organizationUuid',
+        data: {
+          'subject': subject,
+          'message': message,
+          if (eventId != null) 'event_id': eventId,
+        },
+      );
+    }
     return ConversationDto.fromJson(
         (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
   }

@@ -144,12 +144,14 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
+    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createConversation(
       organizationUuid: organizationUuid,
       subject: subject,
       message: message,
       eventId: eventId,
+      attachments: attachments,
     ));
   }
 
@@ -168,12 +170,14 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
+    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createFromOrganization(
       organizationUuid: organizationUuid,
       subject: subject,
       message: message,
       eventId: eventId,
+      attachments: attachments,
     ));
   }
 
