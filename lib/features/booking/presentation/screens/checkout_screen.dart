@@ -798,53 +798,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           bookingUuid: bookingUuid,
         );
 
-        final cs = paymentIntent.clientSecret;
-        final csPrefix = cs.length >= 10 ? cs.substring(0, 10) : cs;
-        debugPrint(
-            '🔵 Stripe init starting | clientSecret len=${cs.length} prefix=$csPrefix paymentIntentId=${paymentIntent.paymentIntentId} amount=${paymentIntent.amount}');
-
         // 3. Configurer et afficher le Payment Sheet Stripe
-        // NOTE: appearance + style stripped temporarily to isolate iOS hang.
-        // If this fixes presentation, re-introduce them with both light and
-        // dark variants and a sane primary button style.
         await Stripe.instance.initPaymentSheet(
           paymentSheetParameters: SetupPaymentSheetParameters(
             paymentIntentClientSecret: paymentIntent.clientSecret,
             merchantDisplayName: 'Le Hiboo',
           ),
         );
-        debugPrint('🟢 Stripe init OK');
 
-        // iOS-only: presentPaymentSheet was failing with
-        // "view is not in the window hierarchy" because flutter_stripe's
-        // iOS bridge was selecting an orphaned UIViewController as the
-        // presenter. Force the presentation onto a clean frame via
-        // addPostFrameCallback after a settle delay, which gives iOS time
-        // to flush keyboard dismissal + route transitions and rebuild a
-        // valid rootVC chain before Stripe walks it.
+        // iOS belt-and-suspenders: settle delay + post-frame callback so
+        // the view hierarchy is stable before Stripe walks it. The real
+        // fix lives in AppDelegate.window, but these add safety against
+        // future plugins that might leave transient presented VCs.
         await Future<void>.delayed(const Duration(milliseconds: 500));
 
-        debugPrint('🔵 Stripe present starting');
         final presentCompleter = Completer<void>();
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           try {
             await Stripe.instance.presentPaymentSheet();
             presentCompleter.complete();
           } catch (e) {
-            debugPrint('🔴 presentPaymentSheet caught: ${e.runtimeType}: $e');
             presentCompleter.completeError(e);
           }
         });
         await presentCompleter.future;
-        debugPrint('🟢 Stripe present OK');
 
         // 4. Confirmer la réservation après paiement réussi
-        debugPrint('🔵 confirmBooking starting');
         await bookingDataSource.confirmBooking(
           bookingUuid: bookingUuid,
           paymentIntentId: paymentIntent.paymentIntentId,
         );
-        debugPrint('🟢 confirmBooking OK');
       }
 
       // 5. Naviguer vers la confirmation avec confettis
@@ -856,17 +839,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           'selectedSlot': widget.params.selectedSlot,
         });
       }
-    } on StripeException catch (e, st) {
+    } on StripeException catch (e) {
       // Paiement annulé ou échoué
-      debugPrint('🔴 StripeException: code=${e.error.code} message=${e.error.message} localized=${e.error.localizedMessage}');
-      debugPrint('🔴 StripeException stack: $st');
       setState(() {
         _isLoading = false;
         _errorMessage = e.error.localizedMessage ?? 'Paiement annulé';
       });
-    } catch (e, st) {
-      debugPrint('🔴 Checkout error: $e');
-      debugPrint('🔴 Checkout stack: $st');
+    } catch (e) {
       setState(() {
         _isLoading = false;
         _errorMessage = ApiResponseHandler.extractError(e);
