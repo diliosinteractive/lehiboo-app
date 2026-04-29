@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/messages/presentation/widgets/new_conversation_form.dart';
 
 /// Organizer section that displays differently based on the event source:
 ///
@@ -285,10 +286,16 @@ class _VendorOrganizerCard extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: () {
               HapticFeedback.lightImpact();
-              context.push(Uri(
-                path: '/messages/new/from-organizer/${event.organizerId}',
-                queryParameters: {'name': event.organizerName},
-              ).toString());
+              NewConversationForm.show(
+                context,
+                conversationContext: FromOrganizerConversationContext(
+                  organizationUuid: event.organizerId,
+                  organizationName: event.organizerName,
+                  organizationLogoUrl: event.organizerLogo,
+                  prefilledEventId: event.id,
+                  prefilledEventTitle: event.title,
+                ),
+              );
             },
             icon: const Icon(Icons.mail_outline, size: 18),
             label: const Text('Contacter'),
