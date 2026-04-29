@@ -695,6 +695,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _onConfirmPressed() async {
+    // Dismiss keyboard before any async work — iOS PaymentSheet cannot
+    // present while the keyboard is animating, which silently hangs
+    // presentPaymentSheet on iOS (Android tolerates it).
+    FocusManager.instance.primaryFocus?.unfocus();
+
     // Valider le formulaire
     if (!_formKey.currentState!.validate()) {
       return;
@@ -814,6 +819,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         );
         debugPrint('🟢 Stripe init OK');
+
+        // Let iOS finish any in-flight animations (keyboard dismissal,
+        // route transition) before presenting the Payment Sheet — without
+        // this gap the iOS SDK can hang waiting for a stable rootVC.
+        await Future.delayed(const Duration(milliseconds: 250));
 
         // Afficher le Payment Sheet
         debugPrint('🔵 Stripe present starting');
