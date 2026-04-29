@@ -58,6 +58,24 @@ class UserReviewCard extends StatelessWidget {
                     ),
                   ),
                   ReviewStatusBadge(status: review.status),
+                  if (onEdit != null)
+                    _buildIconAction(
+                      icon: review.status == ReviewStatus.rejected
+                          ? Icons.refresh
+                          : Icons.edit_outlined,
+                      tooltip: review.status == ReviewStatus.rejected
+                          ? 'Réécrire'
+                          : 'Modifier',
+                      color: HbColors.brandPrimary,
+                      onPressed: onEdit!,
+                    ),
+                  if (onDelete != null)
+                    _buildIconAction(
+                      icon: Icons.delete_outline,
+                      tooltip: 'Supprimer',
+                      color: Colors.red.shade400,
+                      onPressed: onDelete!,
+                    ),
                 ],
               ),
               if (review.title.isNotEmpty) ...[
@@ -86,12 +104,26 @@ class UserReviewCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 _buildResponseHint(),
               ],
-              const SizedBox(height: 12),
-              _buildActions(context),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildIconAction({
+    required IconData icon,
+    required String tooltip,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18, color: color),
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
     );
   }
 
@@ -184,40 +216,4 @@ class UserReviewCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActions(BuildContext context) {
-    final isRejected = review.status == ReviewStatus.rejected;
-
-    return Row(
-      children: [
-        if (onEdit != null)
-          OutlinedButton.icon(
-            onPressed: onEdit,
-            icon: Icon(
-              isRejected ? Icons.refresh : Icons.edit_outlined,
-              size: 16,
-            ),
-            label: Text(isRejected ? 'Réécrire' : 'Modifier'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: HbColors.brandPrimary,
-              side: const BorderSide(color: HbColors.brandPrimary),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        const SizedBox(width: 8),
-        if (onDelete != null)
-          TextButton.icon(
-            onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline, size: 16),
-            label: const Text('Supprimer'),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red.shade600,
-            ),
-          ),
-      ],
-    );
-  }
 }

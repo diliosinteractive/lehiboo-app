@@ -467,6 +467,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               // 10. Avis (connecté à l'API)
               EventReviewsSection(
                 eventSlug: event.slug,
+                eventTitle: event.title,
                 onWriteReview: () => _showWriteReviewDialog(event),
                 onViewAll: () => _showAllReviews(event),
               ),
