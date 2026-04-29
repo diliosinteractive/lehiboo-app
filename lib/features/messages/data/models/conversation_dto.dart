@@ -59,6 +59,7 @@ class ConversationDto with _$ConversationDto {
     @JsonKey(name: 'last_message_at') String? lastMessageAt,
     @JsonKey(name: 'unread_count') @Default(0) int unreadCount,
     @JsonKey(name: 'is_signalement') @Default(false) bool isSignalement,
+    @JsonKey(name: 'user_has_reported') @Default(false) bool userHasReported,
     ConversationOrganizationDto? organization,
     ConversationParticipantDto? participant,
     ConversationEventDto? event,

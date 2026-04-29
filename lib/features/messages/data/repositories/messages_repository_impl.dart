@@ -87,6 +87,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
             : null,
         unreadCount: dto.unreadCount,
         isSignalement: dto.isSignalement,
+        userHasReported: dto.userHasReported,
         organization: _mapOrganization(dto.organization),
         participant: _mapParticipant(dto.participant),
         event: _mapEvent(dto.event),

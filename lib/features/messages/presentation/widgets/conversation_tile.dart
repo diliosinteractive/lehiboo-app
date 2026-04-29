@@ -57,7 +57,7 @@ class ConversationTile extends StatelessWidget {
             Text(
               lastMsg.isDeleted
                   ? 'Message supprimé'
-                  : (lastMsg.content ?? ''),
+                  : (lastMsg.content ?? '(Fichier joint)'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -67,6 +67,9 @@ class ConversationTile extends StatelessWidget {
                 fontWeight: conversation.unreadCount > 0
                     ? FontWeight.w500
                     : FontWeight.normal,
+                fontStyle: lastMsg.content == null && !lastMsg.isDeleted
+                    ? FontStyle.italic
+                    : FontStyle.normal,
               ),
             ),
           const SizedBox(height: 4),

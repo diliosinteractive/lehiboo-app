@@ -63,6 +63,7 @@ class Conversation extends Equatable {
   final DateTime? lastMessageAt;
   final int unreadCount;
   final bool isSignalement;
+  final bool userHasReported;
   final ConversationOrganization? organization;
   final ConversationParticipant? participant;
   final ConversationEvent? event;
@@ -80,6 +81,7 @@ class Conversation extends Equatable {
     this.lastMessageAt,
     required this.unreadCount,
     required this.isSignalement,
+    required this.userHasReported,
     this.organization,
     this.participant,
     this.event,
@@ -98,6 +100,7 @@ class Conversation extends Equatable {
     DateTime? lastMessageAt,
     int? unreadCount,
     bool? isSignalement,
+    bool? userHasReported,
     ConversationOrganization? organization,
     ConversationParticipant? participant,
     ConversationEvent? event,
@@ -115,6 +118,7 @@ class Conversation extends Equatable {
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
       unreadCount: unreadCount ?? this.unreadCount,
       isSignalement: isSignalement ?? this.isSignalement,
+      userHasReported: userHasReported ?? this.userHasReported,
       organization: organization ?? this.organization,
       participant: participant ?? this.participant,
       event: event ?? this.event,
@@ -135,6 +139,7 @@ class Conversation extends Equatable {
         lastMessageAt,
         unreadCount,
         isSignalement,
+        userHasReported,
         organization,
         participant,
         event,

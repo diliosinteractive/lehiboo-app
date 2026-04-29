@@ -742,6 +742,8 @@ mixin _$ConversationDto {
   int get unreadCount => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_signalement')
   bool get isSignalement => throw _privateConstructorUsedError;
+  @JsonKey(name: 'user_has_reported')
+  bool get userHasReported => throw _privateConstructorUsedError;
   ConversationOrganizationDto? get organization =>
       throw _privateConstructorUsedError;
   ConversationParticipantDto? get participant =>
@@ -778,6 +780,7 @@ abstract class $ConversationDtoCopyWith<$Res> {
       @JsonKey(name: 'last_message_at') String? lastMessageAt,
       @JsonKey(name: 'unread_count') int unreadCount,
       @JsonKey(name: 'is_signalement') bool isSignalement,
+      @JsonKey(name: 'user_has_reported') bool userHasReported,
       ConversationOrganizationDto? organization,
       ConversationParticipantDto? participant,
       ConversationEventDto? event,
@@ -815,6 +818,7 @@ class _$ConversationDtoCopyWithImpl<$Res, $Val extends ConversationDto>
     Object? lastMessageAt = freezed,
     Object? unreadCount = null,
     Object? isSignalement = null,
+    Object? userHasReported = null,
     Object? organization = freezed,
     Object? participant = freezed,
     Object? event = freezed,
@@ -863,6 +867,10 @@ class _$ConversationDtoCopyWithImpl<$Res, $Val extends ConversationDto>
       isSignalement: null == isSignalement
           ? _value.isSignalement
           : isSignalement // ignore: cast_nullable_to_non_nullable
+              as bool,
+      userHasReported: null == userHasReported
+          ? _value.userHasReported
+          : userHasReported // ignore: cast_nullable_to_non_nullable
               as bool,
       organization: freezed == organization
           ? _value.organization
@@ -965,6 +973,7 @@ abstract class _$$ConversationDtoImplCopyWith<$Res>
       @JsonKey(name: 'last_message_at') String? lastMessageAt,
       @JsonKey(name: 'unread_count') int unreadCount,
       @JsonKey(name: 'is_signalement') bool isSignalement,
+      @JsonKey(name: 'user_has_reported') bool userHasReported,
       ConversationOrganizationDto? organization,
       ConversationParticipantDto? participant,
       ConversationEventDto? event,
@@ -1004,6 +1013,7 @@ class __$$ConversationDtoImplCopyWithImpl<$Res>
     Object? lastMessageAt = freezed,
     Object? unreadCount = null,
     Object? isSignalement = null,
+    Object? userHasReported = null,
     Object? organization = freezed,
     Object? participant = freezed,
     Object? event = freezed,
@@ -1053,6 +1063,10 @@ class __$$ConversationDtoImplCopyWithImpl<$Res>
           ? _value.isSignalement
           : isSignalement // ignore: cast_nullable_to_non_nullable
               as bool,
+      userHasReported: null == userHasReported
+          ? _value.userHasReported
+          : userHasReported // ignore: cast_nullable_to_non_nullable
+              as bool,
       organization: freezed == organization
           ? _value.organization
           : organization // ignore: cast_nullable_to_non_nullable
@@ -1099,6 +1113,7 @@ class _$ConversationDtoImpl implements _ConversationDto {
       @JsonKey(name: 'last_message_at') this.lastMessageAt,
       @JsonKey(name: 'unread_count') this.unreadCount = 0,
       @JsonKey(name: 'is_signalement') this.isSignalement = false,
+      @JsonKey(name: 'user_has_reported') this.userHasReported = false,
       this.organization,
       this.participant,
       this.event,
@@ -1138,6 +1153,9 @@ class _$ConversationDtoImpl implements _ConversationDto {
   @JsonKey(name: 'is_signalement')
   final bool isSignalement;
   @override
+  @JsonKey(name: 'user_has_reported')
+  final bool userHasReported;
+  @override
   final ConversationOrganizationDto? organization;
   @override
   final ConversationParticipantDto? participant;
@@ -1164,7 +1182,7 @@ class _$ConversationDtoImpl implements _ConversationDto {
 
   @override
   String toString() {
-    return 'ConversationDto(id: $id, uuid: $uuid, subject: $subject, status: $status, statusLabel: $statusLabel, conversationType: $conversationType, closedAt: $closedAt, lastMessageAt: $lastMessageAt, unreadCount: $unreadCount, isSignalement: $isSignalement, organization: $organization, participant: $participant, event: $event, latestMessage: $latestMessage, messages: $messages, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ConversationDto(id: $id, uuid: $uuid, subject: $subject, status: $status, statusLabel: $statusLabel, conversationType: $conversationType, closedAt: $closedAt, lastMessageAt: $lastMessageAt, unreadCount: $unreadCount, isSignalement: $isSignalement, userHasReported: $userHasReported, organization: $organization, participant: $participant, event: $event, latestMessage: $latestMessage, messages: $messages, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -1188,6 +1206,8 @@ class _$ConversationDtoImpl implements _ConversationDto {
                 other.unreadCount == unreadCount) &&
             (identical(other.isSignalement, isSignalement) ||
                 other.isSignalement == isSignalement) &&
+            (identical(other.userHasReported, userHasReported) ||
+                other.userHasReported == userHasReported) &&
             (identical(other.organization, organization) ||
                 other.organization == organization) &&
             (identical(other.participant, participant) ||
@@ -1216,6 +1236,7 @@ class _$ConversationDtoImpl implements _ConversationDto {
       lastMessageAt,
       unreadCount,
       isSignalement,
+      userHasReported,
       organization,
       participant,
       event,
@@ -1252,6 +1273,7 @@ abstract class _ConversationDto implements ConversationDto {
           @JsonKey(name: 'last_message_at') final String? lastMessageAt,
           @JsonKey(name: 'unread_count') final int unreadCount,
           @JsonKey(name: 'is_signalement') final bool isSignalement,
+          @JsonKey(name: 'user_has_reported') final bool userHasReported,
           final ConversationOrganizationDto? organization,
           final ConversationParticipantDto? participant,
           final ConversationEventDto? event,
@@ -1290,6 +1312,9 @@ abstract class _ConversationDto implements ConversationDto {
   @override
   @JsonKey(name: 'is_signalement')
   bool get isSignalement;
+  @override
+  @JsonKey(name: 'user_has_reported')
+  bool get userHasReported;
   @override
   ConversationOrganizationDto? get organization;
   @override

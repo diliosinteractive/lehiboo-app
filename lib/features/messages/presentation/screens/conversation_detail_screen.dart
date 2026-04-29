@@ -140,18 +140,19 @@ class _ConversationDetailScreenState
                               ],
                             ),
                           ),
-                        const PopupMenuItem(
-                          value: 'report',
-                          child: Row(
-                            children: [
-                              Icon(Icons.flag_outlined,
-                                  size: 18, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('Signaler',
-                                  style: TextStyle(color: Colors.red)),
-                            ],
+                        if (!conversation.userHasReported)
+                          const PopupMenuItem(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(Icons.flag_outlined,
+                                    size: 18, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Signaler',
+                                    style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
                           ),
-                        ),
                       ],
                     ),
                 ],
