@@ -75,7 +75,7 @@ dependencies:
   freezed_annotation: ^2.4.4
 
   # Payment & Tickets
-  flutter_stripe: ^10.1.1
+  flutter_stripe: ^11.5.0
   qr_flutter: ^4.1.0
   screen_brightness: ^1.0.1
 
