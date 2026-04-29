@@ -399,6 +399,13 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                               ),
                             );
                           }
+                          final isBooking = widget.activity.reservationMode ==
+                                  ReservationMode.lehibooFree ||
+                              widget.activity.reservationMode ==
+                                  ReservationMode.lehibooPaid;
+                          if (!isBooking) {
+                            return const SizedBox.shrink();
+                          }
                           final price = (widget.activity.priceMin! > 0)
                               ? widget.activity.priceMin!
                               : widget.activity.priceMax!;
@@ -808,6 +815,13 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                           ),
                         );
                       }
+                      final isBooking = widget.activity.reservationMode ==
+                              ReservationMode.lehibooFree ||
+                          widget.activity.reservationMode ==
+                              ReservationMode.lehibooPaid;
+                      if (!isBooking) {
+                        return const SizedBox.shrink();
+                      }
                       final price = (widget.activity.priceMin! > 0)
                           ? widget.activity.priceMin!
                           : widget.activity.priceMax!;
@@ -1065,6 +1079,13 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                             fontWeight: FontWeight.w600,
                           ),
                         );
+                      }
+                      final isBooking = widget.activity.reservationMode ==
+                              ReservationMode.lehibooFree ||
+                          widget.activity.reservationMode ==
+                              ReservationMode.lehibooPaid;
+                      if (!isBooking) {
+                        return const SizedBox.shrink();
                       }
                       final price = (widget.activity.priceMin! > 0)
                           ? widget.activity.priceMin!
