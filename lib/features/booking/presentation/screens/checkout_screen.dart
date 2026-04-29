@@ -828,15 +828,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         final presentCompleter = Completer<void>();
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           try {
-            await Stripe.instance.presentPaymentSheet().timeout(
-              const Duration(seconds: 20),
-              onTimeout: () {
-                debugPrint('🔴 presentPaymentSheet TIMED OUT after 20s');
-                throw TimeoutException(
-                  'Stripe presentPaymentSheet timeout (iOS native bridge stuck)',
-                );
-              },
-            );
+            await Stripe.instance.presentPaymentSheet();
             presentCompleter.complete();
           } catch (e) {
             debugPrint('🔴 presentPaymentSheet caught: ${e.runtimeType}: $e');
