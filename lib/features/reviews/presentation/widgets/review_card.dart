@@ -211,6 +211,12 @@ class ReviewCard extends StatelessWidget {
   }
 
   Widget _buildActionsRow() {
+    // Quand l'utilisateur a déjà voté, on désactive les deux boutons :
+    // l'actif garde sa couleur (indique son choix), l'inactif passe en grisé.
+    // Le serveur refuse de re-voter (422 "already voted") sans unvote préalable
+    // — le visuel doit refléter ce verrou.
+    final hasVoted = review.userVote != null;
+
     return Row(
       children: [
         if (onVote != null) ...[
@@ -219,6 +225,7 @@ class ReviewCard extends StatelessWidget {
             activeIcon: Icons.thumb_up,
             count: review.helpfulCount,
             isActive: review.userVote == true,
+            enabled: !hasVoted,
             onTap: () => onVote!(review.uuid, true),
           ),
           const SizedBox(width: 16),
@@ -227,6 +234,7 @@ class ReviewCard extends StatelessWidget {
             activeIcon: Icons.thumb_down,
             count: review.notHelpfulCount,
             isActive: review.userVote == false,
+            enabled: !hasVoted,
             onTap: () => onVote!(review.uuid, false),
           ),
         ],
@@ -253,6 +261,7 @@ class _VoteButton extends StatelessWidget {
   final IconData activeIcon;
   final int count;
   final bool isActive;
+  final bool enabled;
   final VoidCallback onTap;
 
   const _VoteButton({
@@ -261,46 +270,66 @@ class _VoteButton extends StatelessWidget {
     required this.count,
     required this.isActive,
     required this.onTap,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Couleurs : actif → orange brand ; inactif & enabled → gris neutre ;
+    // inactif & disabled → gris très clair (effet "grisé / verrouillé").
+    final Color fgColor;
+    final Color bgColor;
+    if (isActive) {
+      fgColor = HbColors.brandPrimary;
+      bgColor = HbColors.brandPrimary.withValues(alpha: enabled ? 0.1 : 0.08);
+    } else if (enabled) {
+      fgColor = Colors.grey.shade600;
+      bgColor = Colors.grey.shade100;
+    } else {
+      fgColor = Colors.grey.shade400;
+      bgColor = Colors.grey.shade50;
+    }
+
+    final content = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(isActive ? activeIcon : icon, size: 16, color: fgColor),
+          if (count > 0) ...[
+            const SizedBox(width: 4),
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: fgColor,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    if (!enabled) {
+      // MouseRegion forbidden cursor + pas de GestureDetector → button non
+      // interactif. On garde l'opacité 1 pour que le choix reste lisible.
+      return MouseRegion(
+        cursor: SystemMouseCursors.forbidden,
+        child: content,
+      );
+    }
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         onTap();
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive
-              ? HbColors.brandPrimary.withValues(alpha: 0.1)
-              : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              size: 16,
-              color: isActive ? HbColors.brandPrimary : Colors.grey.shade600,
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 4),
-              Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color:
-                      isActive ? HbColors.brandPrimary : Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+      child: content,
     );
   }
 }

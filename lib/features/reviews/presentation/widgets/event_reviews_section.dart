@@ -9,6 +9,7 @@ import '../../domain/entities/review_stats.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import '../providers/reviews_actions_provider.dart';
 import '../providers/reviews_providers.dart';
+import 'my_review_block.dart';
 import 'rating_stars.dart';
 import 'review_card.dart';
 
@@ -18,12 +19,14 @@ import 'review_card.dart';
 /// `canReview` est `Allowed`. Sinon, affiche un message contextuel ([reason]).
 class EventReviewsSection extends ConsumerWidget {
   final String eventSlug;
+  final String eventTitle;
   final VoidCallback? onWriteReview;
   final VoidCallback? onViewAll;
 
   const EventReviewsSection({
     super.key,
     required this.eventSlug,
+    this.eventTitle = '',
     this.onWriteReview,
     this.onViewAll,
   });
@@ -37,19 +40,23 @@ class EventReviewsSection extends ConsumerWidget {
         query: const ReviewsQuery(perPage: 3),
       )),
     );
-    // Gate les CTAs "Écrire" sur le résultat de can-review : on ne propose
-    // d'écrire que si l'utilisateur est explicitement autorisé. En cas
-    // d'erreur (401 non connecté), on n'expose pas de bouton qui mènerait
-    // à une 401 silencieuse.
-    final canWrite = ref.watch(canReviewProvider(eventSlug)).maybeWhen(
-          data: (r) => r is CanReviewAllowed,
-          orElse: () => false,
-        );
+    final canReviewAsync = ref.watch(canReviewProvider(eventSlug));
+    // Si l'utilisateur a déjà laissé un avis, on récupère son existingReview
+    // depuis can-review pour l'afficher en tête de section (pattern Q&A
+    // "Votre question").
+    final myReview = canReviewAsync.maybeWhen(
+      data: (r) => r is CanReviewDenied ? r.existingReview : null,
+      orElse: () => null,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(statsAsync, canWrite: canWrite),
+        // Pattern Q&A : le bouton "Écrire" est toujours visible, sauf si
+        // l'utilisateur a déjà un avis (entry-point d'édition dans le bloc
+        // "Votre avis"). Le tap est protégé par GuestGuard côté parent —
+        // les non-authentifiés sont invités à se connecter.
+        _buildHeader(statsAsync, hasMyReview: myReview != null),
         const SizedBox(height: 16),
         statsAsync.when(
           loading: _buildLoading,
@@ -59,8 +66,21 @@ class EventReviewsSection extends ConsumerWidget {
               loading: _buildLoading,
               error: (e, _) => _buildError(e.toString()),
               data: (page) {
-                if (!stats.hasReviews) return _buildEmpty(canWrite: canWrite);
-                return _buildContent(ref, stats, page.items);
+                // Évite le doublon : si l'avis user est déjà dans la liste
+                // publique (status approved), on le retire du bloc dédié.
+                final myInList = myReview != null &&
+                    page.items.any((r) => r.uuid == myReview.uuid);
+                final myReviewToShow = myInList ? null : myReview;
+
+                if (!stats.hasReviews && myReviewToShow == null) {
+                  return _buildEmpty();
+                }
+                return _buildContent(
+                  ref,
+                  stats,
+                  page.items,
+                  myReview: myReviewToShow,
+                );
               },
             );
           },
@@ -71,12 +91,16 @@ class EventReviewsSection extends ConsumerWidget {
 
   Widget _buildHeader(
     AsyncValue<ReviewStats> statsAsync, {
-    required bool canWrite,
+    bool hasMyReview = false,
   }) {
     final hasReviews = statsAsync.maybeWhen(
       data: (s) => s.hasReviews,
       orElse: () => true,
     );
+    // Pas besoin du bouton "Écrire" en header quand l'utilisateur a déjà
+    // son bloc "Votre avis" en haut de la section (qui contient déjà Modifier).
+    final showWriteButton =
+        onWriteReview != null && hasReviews && !hasMyReview;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -120,7 +144,7 @@ class EventReviewsSection extends ConsumerWidget {
               ),
             ],
           ),
-          if (onWriteReview != null && hasReviews && canWrite)
+          if (showWriteButton)
             TextButton.icon(
               onPressed: () {
                 HapticFeedback.lightImpact();
@@ -180,7 +204,7 @@ class EventReviewsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmpty({required bool canWrite}) {
+  Widget _buildEmpty() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -225,7 +249,7 @@ class EventReviewsSection extends ConsumerWidget {
                 height: 1.4,
               ),
             ),
-            if (onWriteReview != null && canWrite) ...[
+            if (onWriteReview != null) ...[
               const SizedBox(height: 20),
               FilledButton.icon(
                 icon: const Icon(Icons.edit_outlined, size: 18),
@@ -254,14 +278,23 @@ class EventReviewsSection extends ConsumerWidget {
   Widget _buildContent(
     WidgetRef ref,
     ReviewStats stats,
-    List<Review> reviews,
-  ) {
+    List<Review> reviews, {
+    Review? myReview,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          ReviewStatsCard(stats: stats),
-          const SizedBox(height: 16),
+          if (myReview != null)
+            MyReviewBlock(
+              review: myReview,
+              eventSlug: eventSlug,
+              eventTitle: eventTitle,
+            ),
+          if (stats.hasReviews) ...[
+            ReviewStatsCard(stats: stats),
+            const SizedBox(height: 16),
+          ],
           ...reviews.take(3).map((review) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
