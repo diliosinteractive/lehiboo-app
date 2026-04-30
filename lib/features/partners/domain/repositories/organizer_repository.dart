@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasources/organizer_api_datasource.dart';
 import '../../data/models/organizer_profile_dto.dart';
+import '../../../reviews/data/models/review_dto.dart';
 
 /// Public organizer profile + follow operations.
 ///
@@ -24,6 +25,18 @@ abstract class OrganizerRepository {
     int page,
     int perPage,
   });
+
+  Future<ReviewsResponseDto> getReviews(
+    String identifier, {
+    int? rating,
+    bool verifiedOnly,
+    String sortBy,
+    String sortOrder,
+    int page,
+    int perPage,
+  });
+
+  Future<ReviewStatsDto> getReviewsStats(String identifier);
 }
 
 final organizerRepositoryProvider = Provider<OrganizerRepository>((ref) {

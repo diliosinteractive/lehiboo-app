@@ -581,7 +581,21 @@ mixin _$ReviewDto {
   @JsonKey(name: 'isFeatured', fromJson: parseBool)
   bool get isFeaturedCamel => throw _privateConstructorUsedError;
   ReviewAuthorDto? get author => throw _privateConstructorUsedError;
-  ReviewResponseDto? get response => throw _privateConstructorUsedError;
+  ReviewResponseDto? get response =>
+      throw _privateConstructorUsedError; // Event context — populated by the organizer-scoped reviews endpoint
+// (`GET /organizers/{id}/reviews`); null when the review is fetched
+// from the event-scoped endpoint, since the event is already implicit.
+  @JsonKey(name: 'eventTitle', fromJson: parseStringOrNull)
+  String? get eventTitle => throw _privateConstructorUsedError;
+  @JsonKey(name: 'eventSlug', fromJson: parseStringOrNull)
+  String? get eventSlug => throw _privateConstructorUsedError;
+  @JsonKey(name: 'eventUuid', fromJson: parseStringOrNull)
+  String? get eventUuid => throw _privateConstructorUsedError;
+  ReviewEventDto? get event => throw _privateConstructorUsedError;
+  @JsonKey(name: 'hasResponse', fromJson: parseBool)
+  bool get hasResponse => throw _privateConstructorUsedError;
+  @JsonKey(name: 'organizerResponse', fromJson: parseStringOrNull)
+  String? get organizerResponse => throw _privateConstructorUsedError;
   @JsonKey(name: 'user_vote', fromJson: parseBoolOrNull)
   bool? get userVote => throw _privateConstructorUsedError;
   @JsonKey(name: 'userVote', fromJson: parseBoolOrNull)
@@ -630,6 +644,16 @@ abstract class $ReviewDtoCopyWith<$Res> {
       @JsonKey(name: 'isFeatured', fromJson: parseBool) bool isFeaturedCamel,
       ReviewAuthorDto? author,
       ReviewResponseDto? response,
+      @JsonKey(name: 'eventTitle', fromJson: parseStringOrNull)
+      String? eventTitle,
+      @JsonKey(name: 'eventSlug', fromJson: parseStringOrNull)
+      String? eventSlug,
+      @JsonKey(name: 'eventUuid', fromJson: parseStringOrNull)
+      String? eventUuid,
+      ReviewEventDto? event,
+      @JsonKey(name: 'hasResponse', fromJson: parseBool) bool hasResponse,
+      @JsonKey(name: 'organizerResponse', fromJson: parseStringOrNull)
+      String? organizerResponse,
       @JsonKey(name: 'user_vote', fromJson: parseBoolOrNull) bool? userVote,
       @JsonKey(name: 'userVote', fromJson: parseBoolOrNull) bool? userVoteCamel,
       @JsonKey(name: 'created_at', fromJson: parseStringOrNull)
@@ -643,6 +667,7 @@ abstract class $ReviewDtoCopyWith<$Res> {
 
   $ReviewAuthorDtoCopyWith<$Res>? get author;
   $ReviewResponseDtoCopyWith<$Res>? get response;
+  $ReviewEventDtoCopyWith<$Res>? get event;
 }
 
 /// @nodoc
@@ -675,6 +700,12 @@ class _$ReviewDtoCopyWithImpl<$Res, $Val extends ReviewDto>
     Object? isFeaturedCamel = null,
     Object? author = freezed,
     Object? response = freezed,
+    Object? eventTitle = freezed,
+    Object? eventSlug = freezed,
+    Object? eventUuid = freezed,
+    Object? event = freezed,
+    Object? hasResponse = null,
+    Object? organizerResponse = freezed,
     Object? userVote = freezed,
     Object? userVoteCamel = freezed,
     Object? createdAt = freezed,
@@ -751,6 +782,30 @@ class _$ReviewDtoCopyWithImpl<$Res, $Val extends ReviewDto>
           ? _value.response
           : response // ignore: cast_nullable_to_non_nullable
               as ReviewResponseDto?,
+      eventTitle: freezed == eventTitle
+          ? _value.eventTitle
+          : eventTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventSlug: freezed == eventSlug
+          ? _value.eventSlug
+          : eventSlug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventUuid: freezed == eventUuid
+          ? _value.eventUuid
+          : eventUuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      event: freezed == event
+          ? _value.event
+          : event // ignore: cast_nullable_to_non_nullable
+              as ReviewEventDto?,
+      hasResponse: null == hasResponse
+          ? _value.hasResponse
+          : hasResponse // ignore: cast_nullable_to_non_nullable
+              as bool,
+      organizerResponse: freezed == organizerResponse
+          ? _value.organizerResponse
+          : organizerResponse // ignore: cast_nullable_to_non_nullable
+              as String?,
       userVote: freezed == userVote
           ? _value.userVote
           : userVote // ignore: cast_nullable_to_non_nullable
@@ -801,6 +856,18 @@ class _$ReviewDtoCopyWithImpl<$Res, $Val extends ReviewDto>
       return _then(_value.copyWith(response: value) as $Val);
     });
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $ReviewEventDtoCopyWith<$Res>? get event {
+    if (_value.event == null) {
+      return null;
+    }
+
+    return $ReviewEventDtoCopyWith<$Res>(_value.event!, (value) {
+      return _then(_value.copyWith(event: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -835,6 +902,16 @@ abstract class _$$ReviewDtoImplCopyWith<$Res>
       @JsonKey(name: 'isFeatured', fromJson: parseBool) bool isFeaturedCamel,
       ReviewAuthorDto? author,
       ReviewResponseDto? response,
+      @JsonKey(name: 'eventTitle', fromJson: parseStringOrNull)
+      String? eventTitle,
+      @JsonKey(name: 'eventSlug', fromJson: parseStringOrNull)
+      String? eventSlug,
+      @JsonKey(name: 'eventUuid', fromJson: parseStringOrNull)
+      String? eventUuid,
+      ReviewEventDto? event,
+      @JsonKey(name: 'hasResponse', fromJson: parseBool) bool hasResponse,
+      @JsonKey(name: 'organizerResponse', fromJson: parseStringOrNull)
+      String? organizerResponse,
       @JsonKey(name: 'user_vote', fromJson: parseBoolOrNull) bool? userVote,
       @JsonKey(name: 'userVote', fromJson: parseBoolOrNull) bool? userVoteCamel,
       @JsonKey(name: 'created_at', fromJson: parseStringOrNull)
@@ -850,6 +927,8 @@ abstract class _$$ReviewDtoImplCopyWith<$Res>
   $ReviewAuthorDtoCopyWith<$Res>? get author;
   @override
   $ReviewResponseDtoCopyWith<$Res>? get response;
+  @override
+  $ReviewEventDtoCopyWith<$Res>? get event;
 }
 
 /// @nodoc
@@ -880,6 +959,12 @@ class __$$ReviewDtoImplCopyWithImpl<$Res>
     Object? isFeaturedCamel = null,
     Object? author = freezed,
     Object? response = freezed,
+    Object? eventTitle = freezed,
+    Object? eventSlug = freezed,
+    Object? eventUuid = freezed,
+    Object? event = freezed,
+    Object? hasResponse = null,
+    Object? organizerResponse = freezed,
     Object? userVote = freezed,
     Object? userVoteCamel = freezed,
     Object? createdAt = freezed,
@@ -956,6 +1041,30 @@ class __$$ReviewDtoImplCopyWithImpl<$Res>
           ? _value.response
           : response // ignore: cast_nullable_to_non_nullable
               as ReviewResponseDto?,
+      eventTitle: freezed == eventTitle
+          ? _value.eventTitle
+          : eventTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventSlug: freezed == eventSlug
+          ? _value.eventSlug
+          : eventSlug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      eventUuid: freezed == eventUuid
+          ? _value.eventUuid
+          : eventUuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      event: freezed == event
+          ? _value.event
+          : event // ignore: cast_nullable_to_non_nullable
+              as ReviewEventDto?,
+      hasResponse: null == hasResponse
+          ? _value.hasResponse
+          : hasResponse // ignore: cast_nullable_to_non_nullable
+              as bool,
+      organizerResponse: freezed == organizerResponse
+          ? _value.organizerResponse
+          : organizerResponse // ignore: cast_nullable_to_non_nullable
+              as String?,
       userVote: freezed == userVote
           ? _value.userVote
           : userVote // ignore: cast_nullable_to_non_nullable
@@ -1014,6 +1123,14 @@ class _$ReviewDtoImpl implements _ReviewDto {
       this.isFeaturedCamel = false,
       this.author,
       this.response,
+      @JsonKey(name: 'eventTitle', fromJson: parseStringOrNull) this.eventTitle,
+      @JsonKey(name: 'eventSlug', fromJson: parseStringOrNull) this.eventSlug,
+      @JsonKey(name: 'eventUuid', fromJson: parseStringOrNull) this.eventUuid,
+      this.event,
+      @JsonKey(name: 'hasResponse', fromJson: parseBool)
+      this.hasResponse = false,
+      @JsonKey(name: 'organizerResponse', fromJson: parseStringOrNull)
+      this.organizerResponse,
       @JsonKey(name: 'user_vote', fromJson: parseBoolOrNull) this.userVote,
       @JsonKey(name: 'userVote', fromJson: parseBoolOrNull) this.userVoteCamel,
       @JsonKey(name: 'created_at', fromJson: parseStringOrNull) this.createdAt,
@@ -1075,6 +1192,26 @@ class _$ReviewDtoImpl implements _ReviewDto {
   final ReviewAuthorDto? author;
   @override
   final ReviewResponseDto? response;
+// Event context — populated by the organizer-scoped reviews endpoint
+// (`GET /organizers/{id}/reviews`); null when the review is fetched
+// from the event-scoped endpoint, since the event is already implicit.
+  @override
+  @JsonKey(name: 'eventTitle', fromJson: parseStringOrNull)
+  final String? eventTitle;
+  @override
+  @JsonKey(name: 'eventSlug', fromJson: parseStringOrNull)
+  final String? eventSlug;
+  @override
+  @JsonKey(name: 'eventUuid', fromJson: parseStringOrNull)
+  final String? eventUuid;
+  @override
+  final ReviewEventDto? event;
+  @override
+  @JsonKey(name: 'hasResponse', fromJson: parseBool)
+  final bool hasResponse;
+  @override
+  @JsonKey(name: 'organizerResponse', fromJson: parseStringOrNull)
+  final String? organizerResponse;
   @override
   @JsonKey(name: 'user_vote', fromJson: parseBoolOrNull)
   final bool? userVote;
@@ -1096,7 +1233,7 @@ class _$ReviewDtoImpl implements _ReviewDto {
 
   @override
   String toString() {
-    return 'ReviewDto(uuid: $uuid, rating: $rating, title: $title, comment: $comment, status: $status, helpfulCount: $helpfulCount, helpfulCountCamel: $helpfulCountCamel, notHelpfulCount: $notHelpfulCount, notHelpfulCountCamel: $notHelpfulCountCamel, helpfulnessPercentage: $helpfulnessPercentage, helpfulnessPercentageCamel: $helpfulnessPercentageCamel, isVerifiedPurchase: $isVerifiedPurchase, isVerifiedPurchaseCamel: $isVerifiedPurchaseCamel, isFeatured: $isFeatured, isFeaturedCamel: $isFeaturedCamel, author: $author, response: $response, userVote: $userVote, userVoteCamel: $userVoteCamel, createdAt: $createdAt, createdAtCamel: $createdAtCamel, createdAtFormatted: $createdAtFormatted, createdAtFormattedCamel: $createdAtFormattedCamel)';
+    return 'ReviewDto(uuid: $uuid, rating: $rating, title: $title, comment: $comment, status: $status, helpfulCount: $helpfulCount, helpfulCountCamel: $helpfulCountCamel, notHelpfulCount: $notHelpfulCount, notHelpfulCountCamel: $notHelpfulCountCamel, helpfulnessPercentage: $helpfulnessPercentage, helpfulnessPercentageCamel: $helpfulnessPercentageCamel, isVerifiedPurchase: $isVerifiedPurchase, isVerifiedPurchaseCamel: $isVerifiedPurchaseCamel, isFeatured: $isFeatured, isFeaturedCamel: $isFeaturedCamel, author: $author, response: $response, eventTitle: $eventTitle, eventSlug: $eventSlug, eventUuid: $eventUuid, event: $event, hasResponse: $hasResponse, organizerResponse: $organizerResponse, userVote: $userVote, userVoteCamel: $userVoteCamel, createdAt: $createdAt, createdAtCamel: $createdAtCamel, createdAtFormatted: $createdAtFormatted, createdAtFormattedCamel: $createdAtFormattedCamel)';
   }
 
   @override
@@ -1135,6 +1272,17 @@ class _$ReviewDtoImpl implements _ReviewDto {
             (identical(other.author, author) || other.author == author) &&
             (identical(other.response, response) ||
                 other.response == response) &&
+            (identical(other.eventTitle, eventTitle) ||
+                other.eventTitle == eventTitle) &&
+            (identical(other.eventSlug, eventSlug) ||
+                other.eventSlug == eventSlug) &&
+            (identical(other.eventUuid, eventUuid) ||
+                other.eventUuid == eventUuid) &&
+            (identical(other.event, event) || other.event == event) &&
+            (identical(other.hasResponse, hasResponse) ||
+                other.hasResponse == hasResponse) &&
+            (identical(other.organizerResponse, organizerResponse) ||
+                other.organizerResponse == organizerResponse) &&
             (identical(other.userVote, userVote) ||
                 other.userVote == userVote) &&
             (identical(other.userVoteCamel, userVoteCamel) ||
@@ -1171,6 +1319,12 @@ class _$ReviewDtoImpl implements _ReviewDto {
         isFeaturedCamel,
         author,
         response,
+        eventTitle,
+        eventSlug,
+        eventUuid,
+        event,
+        hasResponse,
+        organizerResponse,
         userVote,
         userVoteCamel,
         createdAt,
@@ -1221,6 +1375,16 @@ abstract class _ReviewDto implements ReviewDto {
       final bool isFeaturedCamel,
       final ReviewAuthorDto? author,
       final ReviewResponseDto? response,
+      @JsonKey(name: 'eventTitle', fromJson: parseStringOrNull)
+      final String? eventTitle,
+      @JsonKey(name: 'eventSlug', fromJson: parseStringOrNull)
+      final String? eventSlug,
+      @JsonKey(name: 'eventUuid', fromJson: parseStringOrNull)
+      final String? eventUuid,
+      final ReviewEventDto? event,
+      @JsonKey(name: 'hasResponse', fromJson: parseBool) final bool hasResponse,
+      @JsonKey(name: 'organizerResponse', fromJson: parseStringOrNull)
+      final String? organizerResponse,
       @JsonKey(name: 'user_vote', fromJson: parseBoolOrNull)
       final bool? userVote,
       @JsonKey(name: 'userVote', fromJson: parseBoolOrNull)
@@ -1285,6 +1449,25 @@ abstract class _ReviewDto implements ReviewDto {
   ReviewAuthorDto? get author;
   @override
   ReviewResponseDto? get response;
+  @override // Event context — populated by the organizer-scoped reviews endpoint
+// (`GET /organizers/{id}/reviews`); null when the review is fetched
+// from the event-scoped endpoint, since the event is already implicit.
+  @JsonKey(name: 'eventTitle', fromJson: parseStringOrNull)
+  String? get eventTitle;
+  @override
+  @JsonKey(name: 'eventSlug', fromJson: parseStringOrNull)
+  String? get eventSlug;
+  @override
+  @JsonKey(name: 'eventUuid', fromJson: parseStringOrNull)
+  String? get eventUuid;
+  @override
+  ReviewEventDto? get event;
+  @override
+  @JsonKey(name: 'hasResponse', fromJson: parseBool)
+  bool get hasResponse;
+  @override
+  @JsonKey(name: 'organizerResponse', fromJson: parseStringOrNull)
+  String? get organizerResponse;
   @override
   @JsonKey(name: 'user_vote', fromJson: parseBoolOrNull)
   bool? get userVote;
@@ -2024,6 +2207,220 @@ abstract class _ReviewResponseDto implements ReviewResponseDto {
   @override
   @JsonKey(ignore: true)
   _$$ReviewResponseDtoImplCopyWith<_$ReviewResponseDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+ReviewEventDto _$ReviewEventDtoFromJson(Map<String, dynamic> json) {
+  return _ReviewEventDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ReviewEventDto {
+  @JsonKey(fromJson: parseInt)
+  int get id => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: parseStringOrNull)
+  String? get uuid => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: parseString)
+  String get title => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: parseString)
+  String get slug => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $ReviewEventDtoCopyWith<ReviewEventDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ReviewEventDtoCopyWith<$Res> {
+  factory $ReviewEventDtoCopyWith(
+          ReviewEventDto value, $Res Function(ReviewEventDto) then) =
+      _$ReviewEventDtoCopyWithImpl<$Res, ReviewEventDto>;
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: parseInt) int id,
+      @JsonKey(fromJson: parseStringOrNull) String? uuid,
+      @JsonKey(fromJson: parseString) String title,
+      @JsonKey(fromJson: parseString) String slug});
+}
+
+/// @nodoc
+class _$ReviewEventDtoCopyWithImpl<$Res, $Val extends ReviewEventDto>
+    implements $ReviewEventDtoCopyWith<$Res> {
+  _$ReviewEventDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? uuid = freezed,
+    Object? title = null,
+    Object? slug = null,
+  }) {
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      slug: null == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$ReviewEventDtoImplCopyWith<$Res>
+    implements $ReviewEventDtoCopyWith<$Res> {
+  factory _$$ReviewEventDtoImplCopyWith(_$ReviewEventDtoImpl value,
+          $Res Function(_$ReviewEventDtoImpl) then) =
+      __$$ReviewEventDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: parseInt) int id,
+      @JsonKey(fromJson: parseStringOrNull) String? uuid,
+      @JsonKey(fromJson: parseString) String title,
+      @JsonKey(fromJson: parseString) String slug});
+}
+
+/// @nodoc
+class __$$ReviewEventDtoImplCopyWithImpl<$Res>
+    extends _$ReviewEventDtoCopyWithImpl<$Res, _$ReviewEventDtoImpl>
+    implements _$$ReviewEventDtoImplCopyWith<$Res> {
+  __$$ReviewEventDtoImplCopyWithImpl(
+      _$ReviewEventDtoImpl _value, $Res Function(_$ReviewEventDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? uuid = freezed,
+    Object? title = null,
+    Object? slug = null,
+  }) {
+    return _then(_$ReviewEventDtoImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      slug: null == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ReviewEventDtoImpl implements _ReviewEventDto {
+  const _$ReviewEventDtoImpl(
+      {@JsonKey(fromJson: parseInt) this.id = 0,
+      @JsonKey(fromJson: parseStringOrNull) this.uuid,
+      @JsonKey(fromJson: parseString) this.title = '',
+      @JsonKey(fromJson: parseString) this.slug = ''});
+
+  factory _$ReviewEventDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ReviewEventDtoImplFromJson(json);
+
+  @override
+  @JsonKey(fromJson: parseInt)
+  final int id;
+  @override
+  @JsonKey(fromJson: parseStringOrNull)
+  final String? uuid;
+  @override
+  @JsonKey(fromJson: parseString)
+  final String title;
+  @override
+  @JsonKey(fromJson: parseString)
+  final String slug;
+
+  @override
+  String toString() {
+    return 'ReviewEventDto(id: $id, uuid: $uuid, title: $title, slug: $slug)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ReviewEventDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.uuid, uuid) || other.uuid == uuid) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.slug, slug) || other.slug == slug));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, uuid, title, slug);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ReviewEventDtoImplCopyWith<_$ReviewEventDtoImpl> get copyWith =>
+      __$$ReviewEventDtoImplCopyWithImpl<_$ReviewEventDtoImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ReviewEventDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _ReviewEventDto implements ReviewEventDto {
+  const factory _ReviewEventDto(
+          {@JsonKey(fromJson: parseInt) final int id,
+          @JsonKey(fromJson: parseStringOrNull) final String? uuid,
+          @JsonKey(fromJson: parseString) final String title,
+          @JsonKey(fromJson: parseString) final String slug}) =
+      _$ReviewEventDtoImpl;
+
+  factory _ReviewEventDto.fromJson(Map<String, dynamic> json) =
+      _$ReviewEventDtoImpl.fromJson;
+
+  @override
+  @JsonKey(fromJson: parseInt)
+  int get id;
+  @override
+  @JsonKey(fromJson: parseStringOrNull)
+  String? get uuid;
+  @override
+  @JsonKey(fromJson: parseString)
+  String get title;
+  @override
+  @JsonKey(fromJson: parseString)
+  String get slug;
+  @override
+  @JsonKey(ignore: true)
+  _$$ReviewEventDtoImplCopyWith<_$ReviewEventDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

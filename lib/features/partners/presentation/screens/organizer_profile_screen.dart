@@ -12,7 +12,7 @@ import '../widgets/organizer_activities_tab.dart';
 import '../widgets/organizer_avatar.dart';
 import '../widgets/organizer_coordinates_panel.dart';
 import '../widgets/organizer_identity_card.dart';
-import '../widgets/organizer_reviews_tab_placeholder.dart';
+import '../widgets/organizer_reviews_tab.dart';
 
 /// Public organizer profile screen — implements
 /// `docs/ORGANIZER_PROFILE_MOBILE_SPEC.md`.
@@ -152,7 +152,7 @@ class _Content extends ConsumerWidget {
           body: TabBarView(
             children: [
               OrganizerActivitiesTab(organizerIdentifier: organizer.uuid),
-              OrganizerReviewsTabPlaceholder(organizer: organizer),
+              OrganizerReviewsTab(organizerIdentifier: organizer.uuid),
             ],
           ),
         ),
