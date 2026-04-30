@@ -1,3 +1,4 @@
+import 'package:add_2_calendar/add_2_calendar.dart' as cal;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,8 @@ import 'package:lehiboo/features/booking/presentation/widgets/booking_hero_heade
 import 'package:lehiboo/features/booking/presentation/widgets/event_info_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_detail_summary_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/ticket_preview_card.dart';
+import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
+import 'package:lehiboo/features/booking/presentation/utils/ticket_download_helper.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
@@ -43,6 +46,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     if (_booking != null) {
       _isLoading = false;
       _generateMockTickets();
+      // Fetch real tickets (with proper UUIDs) so the per-ticket download
+      // button can hit /me/tickets/{uuid}/download.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadRealTickets();
+      });
     } else {
       // Différer le chargement après le build pour éviter l'erreur Riverpod
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -96,9 +104,65 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
     // Generate mock tickets based on quantity
     _generateMockTickets();
+    // Then upgrade to real tickets (with backend UUIDs) for per-ticket
+    // downloads.
+    _loadRealTickets();
+  }
+
+  /// Fetch real tickets from `/bookings/{uuid}/tickets`, merge with the
+  /// attendee data already on the booking, and replace [_tickets] so the
+  /// per-ticket download button has a real UUID to hit.
+  Future<void> _loadRealTickets() async {
+    final booking = _booking;
+    if (booking == null) return;
+    try {
+      final dtos = await ref
+          .read(bookingApiDataSourceProvider)
+          .getBookingTickets(bookingUuid: booking.id);
+      if (!mounted || dtos.isEmpty) return;
+
+      // BookingTicketDto.id is a UUID string — use it directly for the
+      // per-ticket /me/tickets/{uuid}/download endpoint. Look up the ticket
+      // type name from Booking.attendees[index] (populated from
+      // items[].ticketTypeName in the mapper) so the preview card can show
+      // "Standard Entry" / "VIP" instead of a generic label.
+      final attendees = booking.attendees;
+      final merged = List<Ticket>.generate(dtos.length, (index) {
+        final dto = dtos[index];
+        final attendee =
+            (attendees != null && index < attendees.length) ? attendees[index] : null;
+        return Ticket(
+          id: dto.id,
+          bookingId: booking.id,
+          userId: booking.userId,
+          slotId: booking.slotId,
+          ticketType: attendee?.ticketTypeName ?? 'Standard',
+          qrCodeData: dto.qrCode,
+          status: dto.status,
+          attendeeFirstName: dto.attendeeFirstName ?? attendee?.firstName,
+          attendeeLastName: dto.attendeeLastName ?? attendee?.lastName,
+          attendeeEmail: dto.attendeeEmail ?? attendee?.email,
+        );
+      });
+
+      setState(() {
+        _tickets = merged;
+      });
+    } catch (e) {
+      debugPrint('🎫 _loadRealTickets failed (keeping mock tickets): $e');
+    }
   }
 
   void _generateMockTickets() {
+    final realTickets = _booking?.tickets;
+    if (realTickets != null && realTickets.isNotEmpty) {
+      // Use the real tickets built from items[].attendee_details[] in the
+      // mapper. They already carry attendeeFirstName / LastName / Email.
+      _tickets = realTickets;
+      setState(() {});
+      return;
+    }
+
     final quantity = _booking?.quantity ?? 1;
     _tickets = List.generate(
       quantity,
@@ -134,6 +198,64 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     Share.share(shareText);
   }
 
+  /// Hands off to the system calendar's "create event" flow with the booking
+  /// pre-filled. Uses [add_2_calendar] which dispatches a native intent —
+  /// no calendar permissions required, the user manually saves the entry
+  /// from the calendar app.
+  Future<void> _addToCalendar() async {
+    final booking = _booking;
+    final activity = booking?.activity;
+    final slot = booking?.slot;
+    if (booking == null || activity == null || slot == null) return;
+
+    // Build a sensible end time. Most slots have endDateTime set; fall back
+    // to a 2-hour window if the API didn't send one (or sent the same value
+    // for both, which we treat as "unknown duration").
+    final start = slot.startDateTime;
+    DateTime end = slot.endDateTime;
+    if (!end.isAfter(start)) {
+      end = start.add(const Duration(hours: 2));
+    }
+
+    final location = [
+      activity.city?.name,
+    ].whereType<String>().where((s) => s.isNotEmpty).join(', ');
+
+    final reference = booking.id.length > 8
+        ? booking.id.substring(0, 8).toUpperCase()
+        : booking.id.toUpperCase();
+    final descriptionParts = <String>[
+      if (activity.excerpt != null && activity.excerpt!.isNotEmpty)
+        activity.excerpt!
+      else if (activity.description.isNotEmpty)
+        activity.description,
+      'Réservation Le Hiboo : $reference',
+    ];
+
+    final event = cal.Event(
+      title: activity.title,
+      description: descriptionParts.join('\n\n'),
+      location: location.isEmpty ? null : location,
+      startDate: start,
+      endDate: end,
+      iosParams: const cal.IOSParams(reminder: Duration(hours: 1)),
+      androidParams: const cal.AndroidParams(emailInvites: []),
+    );
+
+    final added = await cal.Add2Calendar.addEvent2Cal(event);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          added
+              ? 'Événement ajouté au calendrier'
+              : "Impossible d'ajouter au calendrier",
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   String _formatDate(DateTime date) {
     final months = [
       'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
@@ -153,85 +275,181 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     return '$weekday $day $month $year à $hour:$minute';
   }
 
-  void _showCancelConfirmation() {
-    showDialog(
+  Future<void> _showCancelConfirmation() async {
+    final reasonController = TextEditingController();
+    final deadline = _booking?.cancellation?.deadlineFormatted;
+
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Annuler la réservation'),
-        content: const Text(
-          'Êtes-vous sûr de vouloir annuler cette réservation ? '
-          'Cette action est irréversible.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Êtes-vous sûr de vouloir annuler cette réservation ? '
+              'Cette action est irréversible.',
+            ),
+            if (deadline != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Date limite : $deadline',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              maxLength: 1000,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Raison (optionnel)',
+                hintText: 'Empêchement personnel…',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Attention : aucun remboursement ne sera effectué après l'annulation.",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: HbColors.error,
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Non, garder'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _cancelBooking();
-            },
+            onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: HbColors.error),
             child: const Text('Oui, annuler'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      await _cancelBooking(reason: reasonController.text.trim());
+    }
+    reasonController.dispose();
   }
 
-  Future<void> _cancelBooking() async {
+  Future<void> _cancelBooking({String? reason}) async {
     final booking = _booking;
     if (booking == null) return;
 
-    // L'API utilise l'UUID (comme pour les favoris)
     final bookingUuid = booking.id;
-
-    debugPrint('🚫 Annulation booking: uuid=$bookingUuid, numericId=${booking.numericId}');
+    debugPrint(
+        '🚫 Annulation booking: uuid=$bookingUuid reason=${reason?.isNotEmpty == true ? "<${reason!.length} chars>" : "<empty>"}');
 
     setState(() => _isLoading = true);
 
     try {
       final repository = ref.read(bookingRepositoryProvider);
-      await repository.cancelBooking(bookingUuid);
+      final updated = await repository.cancelBooking(bookingUuid, reason: reason);
 
-      debugPrint('🚫 Annulation réussie');
+      debugPrint('🚫 Annulation réussie, status=${updated.status}');
       HapticFeedback.heavyImpact();
 
-      // Rafraîchir la liste des réservations
+      // Spec §3.6: replace local booking with the response — no re-fetch.
+      // Refresh the list so the home/bookings tab reflects the new status.
       ref.read(bookingsListControllerProvider.notifier).refresh();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Réservation annulée avec succès'),
-            backgroundColor: HbColors.error,
-          ),
-        );
-        context.pop();
-      }
+      if (!mounted) return;
+      setState(() {
+        _booking = updated;
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Réservation annulée. Aucun remboursement ne sera effectué.'),
+          backgroundColor: HbColors.error,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } on BookingCancellationForbiddenException {
+      // Spec §4: deadline likely passed — re-fetch booking detail so the
+      // button visibility updates and the user sees the right state.
+      debugPrint('🚫 403 Forbidden — refreshing booking');
+      ref.read(bookingsListControllerProvider.notifier).refresh();
+      _showCancelError(
+        "L'annulation n'est plus possible "
+        "(délai dépassé ou non autorisé par l'organisateur).",
+      );
+    } on BookingCancellationNotFoundException {
+      _showCancelError('Cette réservation est introuvable.');
+    } on BookingCancellationValidationException {
+      _showCancelError('La raison saisie est trop longue (1000 caractères max).');
     } catch (e) {
       debugPrint('🚫 Erreur annulation: $e');
-      setState(() => _isLoading = false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de l\'annulation: $e'),
-            backgroundColor: HbColors.error,
-          ),
-        );
-      }
+      _showCancelError("Impossible d'annuler la réservation. Réessayez.");
     }
   }
 
-  void _downloadAllTickets() {
-    // TODO: Implement PDF download
-    HapticFeedback.lightImpact();
+  void _showCancelError(String message) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
     ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: HbColors.error,
+      ),
+    );
+  }
+
+  Future<void> _downloadAllTickets() async {
+    if (_booking == null) return;
+    HapticFeedback.lightImpact();
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
       const SnackBar(
-        content: Text('Téléchargement des billets...'),
+        content: Text('Préparation du PDF…'),
         backgroundColor: HbColors.brandPrimary,
+        duration: Duration(seconds: 30),
+      ),
+    );
+
+    try {
+      final pdf = await ref
+          .read(bookingApiDataSourceProvider)
+          .downloadBookingTicketsBundle(_booking!.id);
+      messenger.hideCurrentSnackBar();
+      await shareTicketPdf(pdf);
+    } on TicketsNotReadyException {
+      _showDownloadError(
+        messenger,
+        'Vos billets sont en cours de génération, réessayez dans un instant.',
+      );
+    } on NotAuthorizedToDownloadException {
+      _showDownloadError(
+        messenger,
+        "Vous n'êtes pas autorisé à télécharger ces billets.",
+      );
+    } catch (_) {
+      _showDownloadError(
+        messenger,
+        'Téléchargement impossible. Réessayez plus tard.',
+      );
+    }
+  }
+
+  void _showDownloadError(ScaffoldMessengerState messenger, String message) {
+    messenger.hideCurrentSnackBar();
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: HbColors.error,
       ),
     );
   }
@@ -338,7 +556,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ? booking.id.substring(0, 8).toUpperCase()
         : booking.id.toUpperCase();
 
-    final canCancel = booking.status == 'confirmed' || booking.status == 'pending';
+    // Per spec §4: drive the cancel button purely from cancellation.canCancel
+    // (which the backend computes from status, event.allow_cancellation, and
+    // the deadline). Falls back to status-only when the API didn't include
+    // the cancellation block — old/cached bookings.
+    final canCancel = booking.cancellation?.canCancel ??
+        (booking.status == 'confirmed' || booking.status == 'pending');
 
     return Scaffold(
       backgroundColor: HbColors.orangePastel,
@@ -404,8 +627,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   _buildCustomerInfoCard(booking),
                 ],
                 SizedBox(height: tokens.spacing.m),
-                // Tickets section
-                if (_tickets.isNotEmpty)
+                // Tickets section — only for confirmed bookings with generated
+                // tickets (spec §4). Hidden for pending/cancelled to avoid the
+                // bundle endpoint returning 404/403 from the download button.
+                if (_tickets.isNotEmpty && _booking?.status == 'confirmed')
                   TicketsSection(
                     tickets: _tickets,
                     onTicketTap: (ticket) {
@@ -415,6 +640,24 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                     onDownloadAll: _downloadAllTickets,
                   ),
                 SizedBox(height: tokens.spacing.m),
+                // Add to calendar button — only when we have a slot date.
+                if (_booking != null && _booking!.slot?.startDateTime != null)
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
+                    child: OutlinedButton.icon(
+                      onPressed: _addToCalendar,
+                      icon: const Icon(Icons.event_available_outlined, size: 18),
+                      label: const Text('Ajouter au calendrier'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                SizedBox(height: tokens.spacing.xs),
                 // Contact organizer button
                 if (_booking != null)
                   Container(

@@ -27,6 +27,8 @@ import 'features/petit_boo/domain/repositories/petit_boo_repository.dart';
 import 'features/messages/data/repositories/messages_repository_impl.dart';
 import 'features/reviews/data/repositories/reviews_repository_impl.dart';
 import 'features/reviews/domain/repositories/reviews_repository.dart';
+import 'features/partners/data/repositories/organizer_repository_impl.dart';
+import 'features/partners/domain/repositories/organizer_repository.dart';
 
 // Fake Repositories (for offline testing)
 import 'data/repositories/fake_activity_repository_impl.dart';
@@ -150,6 +152,10 @@ List<Override> _getRealApiOverrides() {
     // Reviews Repository
     reviewsRepositoryProvider.overrideWith((ref) {
       return ref.read(reviewsRepositoryImplProvider);
+    }),
+    // Organizer Repository (public organizer profile + follow)
+    organizerRepositoryProvider.overrideWith((ref) {
+      return ref.read(organizerRepositoryImplProvider);
     }),
     // Keep activity repository for backward compatibility
     activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),

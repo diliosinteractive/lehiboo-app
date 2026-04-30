@@ -208,6 +208,7 @@ class DeepLinkService {
       '/search',
       '/explore',
       '/partner/',
+      '/organizers/',
       '/ai-',
       '/hibons-',
       '/',

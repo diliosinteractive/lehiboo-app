@@ -71,6 +71,10 @@ class TicketPreviewCard extends StatelessWidget {
     final status = TicketStatusExtension.fromString(ticket.status);
     final displayName = attendeeName ?? 'Participant';
     final displayType = ticketTypeName ?? ticket.ticketType ?? 'Standard';
+    final realName = [
+      ticket.attendeeFirstName?.trim(),
+      ticket.attendeeLastName?.trim(),
+    ].where((s) => s != null && s.isNotEmpty).join(' ');
 
     return GestureDetector(
       onTap: onTap,
@@ -111,18 +115,28 @@ class TicketPreviewCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    displayType,
+                    displayName,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: HbColors.textPrimary,
                     ),
                   ),
+                  if (realName.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      realName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: HbColors.textPrimary,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 2),
                   Text(
-                    displayName,
+                    displayType,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: HbColors.textSecondary,
                     ),
                   ),

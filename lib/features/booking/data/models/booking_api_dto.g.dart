@@ -248,6 +248,13 @@ _$BookingListItemDtoImpl _$$BookingListItemDtoImplFromJson(
       slot: json['slot'] == null
           ? null
           : BookingSlotDto.fromJson(json['slot'] as Map<String, dynamic>),
+      items: (json['items'] as List<dynamic>?)
+          ?.map((e) => BookingItemDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      cancellation: json['cancellation'] == null
+          ? null
+          : BookingCancellationDto.fromJson(
+              json['cancellation'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$$BookingListItemDtoImplToJson(
@@ -277,6 +284,76 @@ Map<String, dynamic> _$$BookingListItemDtoImplToJson(
       'createdAt2': instance.createdAt2,
       'event': instance.event,
       'slot': instance.slot,
+      'items': instance.items,
+      'cancellation': instance.cancellation,
+    };
+
+_$BookingCancellationDtoImpl _$$BookingCancellationDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$BookingCancellationDtoImpl(
+      allowed: json['allowed'] as bool?,
+      canCancel: json['canCancel'] as bool?,
+      hoursBeforeEvent: (json['hoursBeforeEvent'] as num?)?.toInt(),
+      deadline: json['deadline'] as String?,
+      deadlineFormatted: json['deadlineFormatted'] as String?,
+      reason: json['reason'] as String?,
+      cancelledAt: json['cancelledAt'] as String?,
+    );
+
+Map<String, dynamic> _$$BookingCancellationDtoImplToJson(
+        _$BookingCancellationDtoImpl instance) =>
+    <String, dynamic>{
+      'allowed': instance.allowed,
+      'canCancel': instance.canCancel,
+      'hoursBeforeEvent': instance.hoursBeforeEvent,
+      'deadline': instance.deadline,
+      'deadlineFormatted': instance.deadlineFormatted,
+      'reason': instance.reason,
+      'cancelledAt': instance.cancelledAt,
+    };
+
+_$BookingItemDtoImpl _$$BookingItemDtoImplFromJson(Map<String, dynamic> json) =>
+    _$BookingItemDtoImpl(
+      id: (json['id'] as num?)?.toInt(),
+      ticketTypeId: (json['ticket_type_id'] as num?)?.toInt(),
+      quantity: (json['quantity'] as num?)?.toInt(),
+      ticketTypeName: json['ticketTypeName'] as String?,
+      attendeeDetails: (json['attendee_details'] as List<dynamic>?)
+          ?.map((e) =>
+              BookingAttendeeDetailDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$$BookingItemDtoImplToJson(
+        _$BookingItemDtoImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'ticket_type_id': instance.ticketTypeId,
+      'quantity': instance.quantity,
+      'ticketTypeName': instance.ticketTypeName,
+      'attendee_details': instance.attendeeDetails,
+    };
+
+_$BookingAttendeeDetailDtoImpl _$$BookingAttendeeDetailDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$BookingAttendeeDetailDtoImpl(
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
+      email: json['email'] as String?,
+      phone: json['phone'] as String?,
+      age: (json['age'] as num?)?.toInt(),
+      city: json['city'] as String?,
+    );
+
+Map<String, dynamic> _$$BookingAttendeeDetailDtoImplToJson(
+        _$BookingAttendeeDetailDtoImpl instance) =>
+    <String, dynamic>{
+      'first_name': instance.firstName,
+      'last_name': instance.lastName,
+      'email': instance.email,
+      'phone': instance.phone,
+      'age': instance.age,
+      'city': instance.city,
     };
 
 _$BookingEventDtoImpl _$$BookingEventDtoImplFromJson(
@@ -352,10 +429,59 @@ Map<String, dynamic> _$$TicketsListResponseDtoImplToJson(
       'count': instance.count,
     };
 
+_$BookingTicketDtoImpl _$$BookingTicketDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$BookingTicketDtoImpl(
+      id: json['id'] as String,
+      uuid: json['uuid'] as String?,
+      bookingId: (json['booking_id'] as num?)?.toInt(),
+      bookingItemId: (json['booking_item_id'] as num?)?.toInt(),
+      eventId: (json['event_id'] as num?)?.toInt(),
+      slotId: (json['slot_id'] as num?)?.toInt(),
+      ticketTypeId: (json['ticket_type_id'] as num?)?.toInt(),
+      qrCode: json['qr_code'] as String,
+      attendeeFirstName: json['attendee_first_name'] as String?,
+      attendeeLastName: json['attendee_last_name'] as String?,
+      attendeeEmail: json['attendee_email'] as String?,
+      attendeePhone: json['attendee_phone'] as String?,
+      attendeeName: json['attendee_name'] as String?,
+      price: (json['price'] as num?)?.toDouble(),
+      status: json['status'] as String,
+      statusLabel: json['status_label'] as String?,
+      customFields: json['custom_fields'] as Map<String, dynamic>?,
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
+    );
+
+Map<String, dynamic> _$$BookingTicketDtoImplToJson(
+        _$BookingTicketDtoImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'uuid': instance.uuid,
+      'booking_id': instance.bookingId,
+      'booking_item_id': instance.bookingItemId,
+      'event_id': instance.eventId,
+      'slot_id': instance.slotId,
+      'ticket_type_id': instance.ticketTypeId,
+      'qr_code': instance.qrCode,
+      'attendee_first_name': instance.attendeeFirstName,
+      'attendee_last_name': instance.attendeeLastName,
+      'attendee_email': instance.attendeeEmail,
+      'attendee_phone': instance.attendeePhone,
+      'attendee_name': instance.attendeeName,
+      'price': instance.price,
+      'status': instance.status,
+      'status_label': instance.statusLabel,
+      'custom_fields': instance.customFields,
+      'created_at': instance.createdAt,
+      'updated_at': instance.updatedAt,
+    };
+
 _$TicketDetailDtoImpl _$$TicketDetailDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$TicketDetailDtoImpl(
       id: (json['id'] as num).toInt(),
+      uuid: json['uuid'] as String?,
       ticketNumber: json['ticket_number'] as String,
       status: json['status'] as String,
       statusLabel: json['status_label'] as String,
@@ -380,6 +506,7 @@ Map<String, dynamic> _$$TicketDetailDtoImplToJson(
         _$TicketDetailDtoImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
+      'uuid': instance.uuid,
       'ticket_number': instance.ticketNumber,
       'status': instance.status,
       'status_label': instance.statusLabel,

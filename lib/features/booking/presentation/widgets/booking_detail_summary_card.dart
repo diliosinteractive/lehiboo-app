@@ -36,6 +36,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
   });
 
   factory BookingDetailSummaryCard.fromBooking(Booking booking) {
+    final symbol = _currencySymbol(booking.currency);
     // In a real app, we'd parse booking.items
     // For now, we create a simple line from booking data
     final items = <BookingLineItem>[
@@ -43,15 +44,31 @@ class BookingDetailSummaryCard extends StatelessWidget {
         label: 'Billet',
         quantity: booking.quantity ?? 1,
         unitPrice: (booking.totalPrice ?? 0) / (booking.quantity ?? 1),
-        currency: booking.currency ?? '€',
+        currency: symbol,
       ),
     ];
 
     return BookingDetailSummaryCard(
       items: items,
       totalPrice: booking.totalPrice ?? 0,
-      currency: booking.currency ?? '€',
+      currency: symbol,
     );
+  }
+
+  /// Convert an ISO currency code (e.g. "EUR") to its display symbol.
+  /// Already-symbolic strings pass through unchanged.
+  static String _currencySymbol(String? raw) {
+    if (raw == null || raw.isEmpty) return '€';
+    switch (raw.toUpperCase()) {
+      case 'EUR':
+        return '€';
+      case 'USD':
+        return r'$';
+      case 'GBP':
+        return '£';
+      default:
+        return raw;
+    }
   }
 
   @override
@@ -145,18 +162,38 @@ class BookingDetailSummaryCard extends StatelessWidget {
   }
 
   Widget _buildLineItem(BookingLineItem item) {
+    final showUnitBreakdown = item.quantity > 1 && item.unitPrice > 0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '${item.quantity}× ${item.label}',
-            style: const TextStyle(
-              fontSize: 14,
-              color: HbColors.textPrimary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${item.quantity}× ${item.label}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+                if (showUnitBreakdown) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${item.unitPrice.toStringAsFixed(2)}${item.currency} / billet',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: HbColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             '${item.totalPrice.toStringAsFixed(2)}${item.currency}',
             style: const TextStyle(

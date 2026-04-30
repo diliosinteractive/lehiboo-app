@@ -41,7 +41,8 @@ import '../domain/entities/booking.dart' as booking_entity;
 import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
-import '../features/partners/presentation/screens/partner_detail_screen.dart';
+import '../features/partners/presentation/screens/organizer_profile_screen.dart';
+import '../features/partners/presentation/screens/followed_organizers_screen.dart';
 // Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
 import '../features/gamification/presentation/screens/hibon_shop_screen.dart';
@@ -355,14 +356,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      // Partner route
+      // Organizer profile (public)
+      GoRoute(
+        path: '/organizers/:identifier',
+        name: 'organizer-profile',
+        builder: (context, state) => OrganizerProfileScreen(
+          identifier: state.pathParameters['identifier']!,
+        ),
+      ),
+      // Authed user's followed organizers list
+      GoRoute(
+        path: '/me/followed-organizers',
+        name: 'followed-organizers',
+        builder: (_, __) => const FollowedOrganizersScreen(),
+      ),
+      // Backward-compat: legacy /partner/:id → /organizers/:id
       GoRoute(
         path: '/partner/:id',
         name: 'partner-detail',
-        builder: (context, state) {
-          final partnerId = state.pathParameters['id']!;
-          return PartnerDetailScreen(partnerId: partnerId);
-        },
+        redirect: (context, state) =>
+            '/organizers/${state.pathParameters['id']!}',
       ),
       // Favorites
       GoRoute(

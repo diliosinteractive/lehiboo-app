@@ -96,15 +96,23 @@ class ApiBookingRepositoryImpl implements BookingRepository {
   }
 
   @override
-  Future<void> cancelBooking(String bookingId) async {
-    await _apiDataSource.cancelBooking(bookingId: bookingId);
+  Future<Booking> cancelBooking(String bookingId, {String? reason}) async {
+    final dto = await _apiDataSource.cancelBooking(
+      bookingUuid: bookingId,
+      reason: reason,
+    );
+    return _mapBookingDto(dto);
   }
 
   @override
   Future<List<Booking>> getMyBookings() async {
     final response = await _apiDataSource.getMyBookings();
+    return response.data.map(_mapBookingDto).toList();
+  }
 
-    return response.data.map((b) {
+  /// Maps a [BookingListItemDto] to the domain [Booking] entity. Used by
+  /// both list and cancel responses (they share the same shape).
+  Booking _mapBookingDto(BookingListItemDto b) {
       // Parser la date du slot depuis les différentes sources possibles
       DateTime? slotDateTime;
 
@@ -166,24 +174,94 @@ class ApiBookingRepositoryImpl implements BookingRepository {
         );
       }
 
+      // Flatten items[].attendee_details[] into a single attendee list,
+      // preserving order so the index lines up with the per-ticket UI.
+      final attendees = <Attendee>[];
+      if (b.items != null) {
+        for (final item in b.items!) {
+          final details = item.attendeeDetails;
+          if (details == null) continue;
+          for (final a in details) {
+            attendees.add(Attendee(
+              firstName: a.firstName,
+              lastName: a.lastName,
+              email: a.email,
+              phone: a.phone,
+              age: a.age,
+              city: a.city,
+              ticketTypeName: item.ticketTypeName,
+            ));
+          }
+        }
+      }
+
+      // Build real Ticket entities backed by attendee data when available.
+      // Falls back to leaving tickets null so the UI can mock them as before.
+      final bookingUuid = b.uuid ?? b.id.toString();
+      List<Ticket>? tickets;
+      if (attendees.isNotEmpty) {
+        tickets = List<Ticket>.generate(attendees.length, (index) {
+          final a = attendees[index];
+          return Ticket(
+            id: '${bookingUuid}_ticket_$index',
+            bookingId: bookingUuid,
+            userId: b.userId?.toString() ?? '',
+            slotId: b.slotId?.toString() ?? '',
+            ticketType: a.ticketTypeName ?? 'Standard',
+            status: 'active',
+            attendeeFirstName: a.firstName,
+            attendeeLastName: a.lastName,
+            attendeeEmail: a.email,
+          );
+        });
+      }
+
+      // Prefer real attendee count, then API's ticketCount, then 1 as last
+      // resort. Items[].quantity is the ground truth when items are present.
+      final itemsQuantity = b.items
+          ?.fold<int>(0, (sum, it) => sum + (it.quantity ?? 0));
+      final quantity = (attendees.isNotEmpty)
+          ? attendees.length
+          : (itemsQuantity != null && itemsQuantity > 0)
+              ? itemsQuantity
+              : (b.ticketCount ?? 1);
+
+      // Map cancellation block.
+      BookingCancellationInfo? cancellation;
+      if (b.cancellation != null) {
+        final c = b.cancellation!;
+        cancellation = BookingCancellationInfo(
+          allowed: c.allowed ?? false,
+          canCancel: c.canCancel ?? false,
+          hoursBeforeEvent: c.hoursBeforeEvent,
+          deadline: c.deadline != null ? _parseLocal(c.deadline!) : null,
+          deadlineFormatted: c.deadlineFormatted,
+          reason: c.reason,
+          cancelledAt:
+              c.cancelledAt != null ? _parseLocal(c.cancelledAt!) : null,
+        );
+      }
+
       return Booking(
-        id: b.uuid ?? b.id.toString(),
+        id: bookingUuid,
         numericId: b.id, // ID numérique pour les appels API
         userId: b.userId?.toString() ?? '',
         slotId: b.slotId?.toString() ?? '',
         activityId: b.eventId?.toString() ?? '',
-        quantity: b.ticketCount ?? 1,
+        quantity: quantity,
         totalPrice: b.grandTotal ?? b.totalAmount ?? 0.0,
         currency: 'EUR',
         status: b.status,
         createdAt: b.createdAt != null ? _parseLocal(b.createdAt!) : null,
         activity: activity,
         slot: slot,
+        tickets: tickets,
+        attendees: attendees.isNotEmpty ? attendees : null,
+        cancellation: cancellation,
         customerBirthDate: b.customerBirthDate,
         customerTown: b.customerTown,
         reference: b.reference ?? b.uuid,
       );
-    }).toList();
   }
 
   /// Parse la date de fin du slot. Toujours retournée en heure locale.
