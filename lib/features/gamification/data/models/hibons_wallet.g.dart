@@ -9,14 +9,19 @@ part of 'hibons_wallet.dart';
 _$HibonsWalletImpl _$$HibonsWalletImplFromJson(Map<String, dynamic> json) =>
     _$HibonsWalletImpl(
       balance: (json['balance'] as num?)?.toInt() ?? 0,
-      xp: (json['xp'] as num?)?.toInt() ?? 0,
-      level: (json['level'] as num?)?.toInt() ?? 1,
-      rank: json['rank'] as String? ?? 'explorateur',
-      rankLabel: json['rankLabel'] as String? ?? 'Explorateur',
-      rankIcon: json['rankIcon'] as String? ?? '🧭',
+      lifetimeEarned: (json['lifetimeEarned'] as num?)?.toInt() ?? 0,
+      rank: json['rank'] as String? ?? 'curieux',
+      rankEnum: $enumDecodeNullable(_$HibonsRankEnumMap, json['rankEnum']) ??
+          HibonsRank.curieux,
+      rankLabel: json['rankLabel'] as String? ?? 'Curieux',
+      rankIcon: json['rankIcon'] as String? ?? '🔍',
+      nextRank: $enumDecodeNullable(_$HibonsRankEnumMap, json['nextRank']),
+      nextRankLabel: json['nextRankLabel'] as String?,
+      hibonsToNextRank: (json['hibonsToNextRank'] as num?)?.toInt(),
+      progressToNextRank: (json['progressToNextRank'] as num?)?.toInt() ?? 0,
+      petitBooBonus: (json['petitBooBonus'] as num?)?.toInt() ?? 0,
       currentStreak: (json['currentStreak'] as num?)?.toInt() ?? 0,
       maxStreak: (json['maxStreak'] as num?)?.toInt() ?? 7,
-      progressToNextLevel: (json['progressToNextLevel'] as num?)?.toInt() ?? 0,
       canClaimDaily: json['canClaimDaily'] as bool? ?? true,
       canSpinWheel: json['canSpinWheel'] as bool? ?? true,
       chatQuota: json['chatQuota'] == null
@@ -30,26 +35,43 @@ _$HibonsWalletImpl _$$HibonsWalletImplFromJson(Map<String, dynamic> json) =>
       lastActionDate: json['lastActionDate'] == null
           ? null
           : DateTime.parse(json['lastActionDate'] as String),
+      xp: (json['xp'] as num?)?.toInt(),
+      level: (json['level'] as num?)?.toInt(),
+      progressToNextLevel: (json['progressToNextLevel'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$HibonsWalletImplToJson(_$HibonsWalletImpl instance) =>
     <String, dynamic>{
       'balance': instance.balance,
-      'xp': instance.xp,
-      'level': instance.level,
+      'lifetimeEarned': instance.lifetimeEarned,
       'rank': instance.rank,
+      'rankEnum': _$HibonsRankEnumMap[instance.rankEnum]!,
       'rankLabel': instance.rankLabel,
       'rankIcon': instance.rankIcon,
+      'nextRank': _$HibonsRankEnumMap[instance.nextRank],
+      'nextRankLabel': instance.nextRankLabel,
+      'hibonsToNextRank': instance.hibonsToNextRank,
+      'progressToNextRank': instance.progressToNextRank,
+      'petitBooBonus': instance.petitBooBonus,
       'currentStreak': instance.currentStreak,
       'maxStreak': instance.maxStreak,
-      'progressToNextLevel': instance.progressToNextLevel,
       'canClaimDaily': instance.canClaimDaily,
       'canSpinWheel': instance.canSpinWheel,
       'chatQuota': instance.chatQuota,
       'dailyRewards': instance.dailyRewards,
       'streakShieldActive': instance.streakShieldActive,
       'lastActionDate': instance.lastActionDate?.toIso8601String(),
+      'xp': instance.xp,
+      'level': instance.level,
+      'progressToNextLevel': instance.progressToNextLevel,
     };
+
+const _$HibonsRankEnumMap = {
+  HibonsRank.curieux: 'curieux',
+  HibonsRank.explorateur: 'explorateur',
+  HibonsRank.aventurier: 'aventurier',
+  HibonsRank.legende: 'legende',
+};
 
 _$ChatQuotaImpl _$$ChatQuotaImplFromJson(Map<String, dynamic> json) =>
     _$ChatQuotaImpl(

@@ -72,75 +72,7 @@ class GamificationDashboardScreen extends ConsumerWidget {
                       children: [
                         const SizedBox(height: 20),
                         walletAsync.when(
-                          data: (wallet) => Column(
-                            children: [
-                               // Avatar / Rank Icon
-                               Container(
-                                 padding: const EdgeInsets.all(4),
-                                 decoration: BoxDecoration(
-                                   color: Colors.white,
-                                   shape: BoxShape.circle,
-                                   boxShadow: [
-                                     BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5)),
-                                   ],
-                                 ),
-                                 child: const CircleAvatar(
-                                   radius: 36,
-                                   backgroundColor: Color(0xFFFFF3E0),
-                                   child: Icon(Icons.emoji_events_rounded, size: 40, color: Color(0xFFFF601F)),
-                                 ),
-                               ),
-                               const SizedBox(height: 12),
-                               Text(
-                                 wallet.rank,
-                                 style: const TextStyle(
-                                   color: Colors.white,
-                                   fontSize: 24,
-                                   fontWeight: FontWeight.bold,
-                                   shadows: [Shadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)],
-                                 ),
-                               ),
-                               Text(
-                                 'Niveau ${wallet.level}',
-                                 style: TextStyle(
-                                   color: Colors.white.withOpacity(0.9),
-                                   fontSize: 16,
-                                   fontWeight: FontWeight.w500,
-                                 ),
-                               ),
-                               const SizedBox(height: 20),
-                               
-                               // XP Bar
-                               Container(
-                                 width: 200,
-                                 height: 8,
-                                 decoration: BoxDecoration(
-                                   color: Colors.white.withOpacity(0.3),
-                                   borderRadius: BorderRadius.circular(4),
-                                 ),
-                                 alignment: Alignment.centerLeft,
-                                 child: Container(
-                                   width: 200 * 0.7, // Mock 70%
-                                   decoration: BoxDecoration(
-                                     color: Colors.white,
-                                     borderRadius: BorderRadius.circular(4),
-                                     boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                                   ),
-                                 ),
-                               ),
-                                const SizedBox(height: 6),
-                                SizedBox(
-                                  width: 200,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('${wallet.xp} XP', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                                      Text('Suivant: ${wallet.xp + 150} XP', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
+                          data: (wallet) => _buildRankHeader(wallet),
                           loading: () => const CircularProgressIndicator(color: Colors.white),
                           error: (_, __) => const SizedBox(),
                         ),
@@ -228,6 +160,90 @@ class GamificationDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRankHeader(HibonsWallet wallet) {
+    final hasNextRank = wallet.nextRank != null;
+    final progressFraction = (wallet.progressToNextRank.clamp(0, 100)) / 100.0;
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5)),
+            ],
+          ),
+          child: const CircleAvatar(
+            radius: 36,
+            backgroundColor: Color(0xFFFFF3E0),
+            child: Icon(Icons.emoji_events_rounded, size: 40, color: Color(0xFFFF601F)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          wallet.rankLabel,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            shadows: [Shadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)],
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (hasNextRank) ...[
+          Container(
+            width: 200,
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            alignment: Alignment.centerLeft,
+            child: Container(
+              width: 200 * progressFraction,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (wallet.hibonsToNextRank != null)
+            Text(
+              'Plus que ${wallet.hibonsToNextRank} avant ${wallet.nextRankLabel}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          const SizedBox(height: 2),
+          Text(
+            '${wallet.lifetimeEarned} Hibons gagnés',
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
+          ),
+        ] else ...[
+          Text(
+            '${wallet.lifetimeEarned} Hibons gagnés',
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Rang maximal atteint',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ],
     );
   }
 

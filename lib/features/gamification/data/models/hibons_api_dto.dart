@@ -8,18 +8,24 @@ part 'hibons_api_dto.g.dart';
 class WalletResponseDto with _$WalletResponseDto {
   const factory WalletResponseDto({
     required int balance,
-    required int xp,
-    required int level,
+    @JsonKey(name: 'lifetime_earned') @Default(0) int lifetimeEarned,
     required String rank,
     @JsonKey(name: 'rank_label') required String rankLabel,
     @JsonKey(name: 'rank_icon') required String rankIcon,
+    @JsonKey(name: 'next_rank') String? nextRank,
+    @JsonKey(name: 'next_rank_label') String? nextRankLabel,
+    @JsonKey(name: 'hibons_to_next_rank') int? hibonsToNextRank,
+    @JsonKey(name: 'progress_to_next_rank') @Default(0) int progressToNextRank,
+    @JsonKey(name: 'petit_boo_bonus') @Default(0) int petitBooBonus,
     @JsonKey(name: 'current_streak') required int currentStreak,
     @JsonKey(name: 'max_streak') required int maxStreak,
-    @JsonKey(name: 'progress_to_next_level') required int progressToNextLevel,
     @JsonKey(name: 'can_claim_daily') required bool canClaimDaily,
     @JsonKey(name: 'can_spin_wheel') required bool canSpinWheel,
     @JsonKey(name: 'chat_quota') required ChatQuotaDto chatQuota,
     @JsonKey(name: 'daily_rewards') required List<DailyRewardItemDto> dailyRewards,
+    int? xp,
+    int? level,
+    @JsonKey(name: 'progress_to_next_level') int? progressToNextLevel,
   }) = _WalletResponseDto;
 
   factory WalletResponseDto.fromJson(Map<String, dynamic> json) =>

@@ -10,14 +10,17 @@ _$WalletResponseDtoImpl _$$WalletResponseDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$WalletResponseDtoImpl(
       balance: (json['balance'] as num).toInt(),
-      xp: (json['xp'] as num).toInt(),
-      level: (json['level'] as num).toInt(),
+      lifetimeEarned: (json['lifetime_earned'] as num?)?.toInt() ?? 0,
       rank: json['rank'] as String,
       rankLabel: json['rank_label'] as String,
       rankIcon: json['rank_icon'] as String,
+      nextRank: json['next_rank'] as String?,
+      nextRankLabel: json['next_rank_label'] as String?,
+      hibonsToNextRank: (json['hibons_to_next_rank'] as num?)?.toInt(),
+      progressToNextRank: (json['progress_to_next_rank'] as num?)?.toInt() ?? 0,
+      petitBooBonus: (json['petit_boo_bonus'] as num?)?.toInt() ?? 0,
       currentStreak: (json['current_streak'] as num).toInt(),
       maxStreak: (json['max_streak'] as num).toInt(),
-      progressToNextLevel: (json['progress_to_next_level'] as num).toInt(),
       canClaimDaily: json['can_claim_daily'] as bool,
       canSpinWheel: json['can_spin_wheel'] as bool,
       chatQuota:
@@ -25,24 +28,33 @@ _$WalletResponseDtoImpl _$$WalletResponseDtoImplFromJson(
       dailyRewards: (json['daily_rewards'] as List<dynamic>)
           .map((e) => DailyRewardItemDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      xp: (json['xp'] as num?)?.toInt(),
+      level: (json['level'] as num?)?.toInt(),
+      progressToNextLevel: (json['progress_to_next_level'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$WalletResponseDtoImplToJson(
         _$WalletResponseDtoImpl instance) =>
     <String, dynamic>{
       'balance': instance.balance,
-      'xp': instance.xp,
-      'level': instance.level,
+      'lifetime_earned': instance.lifetimeEarned,
       'rank': instance.rank,
       'rank_label': instance.rankLabel,
       'rank_icon': instance.rankIcon,
+      'next_rank': instance.nextRank,
+      'next_rank_label': instance.nextRankLabel,
+      'hibons_to_next_rank': instance.hibonsToNextRank,
+      'progress_to_next_rank': instance.progressToNextRank,
+      'petit_boo_bonus': instance.petitBooBonus,
       'current_streak': instance.currentStreak,
       'max_streak': instance.maxStreak,
-      'progress_to_next_level': instance.progressToNextLevel,
       'can_claim_daily': instance.canClaimDaily,
       'can_spin_wheel': instance.canSpinWheel,
       'chat_quota': instance.chatQuota,
       'daily_rewards': instance.dailyRewards,
+      'xp': instance.xp,
+      'level': instance.level,
+      'progress_to_next_level': instance.progressToNextLevel,
     };
 
 _$ChatQuotaDtoImpl _$$ChatQuotaDtoImplFromJson(Map<String, dynamic> json) =>
