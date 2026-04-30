@@ -88,6 +88,18 @@ class ReviewDto with _$ReviewDto {
     bool isFeaturedCamel,
     ReviewAuthorDto? author,
     ReviewResponseDto? response,
+    // Event context — populated by the organizer-scoped reviews endpoint
+    // (`GET /organizers/{id}/reviews`); null when the review is fetched
+    // from the event-scoped endpoint, since the event is already implicit.
+    @JsonKey(name: 'eventTitle', fromJson: parseStringOrNull) String? eventTitle,
+    @JsonKey(name: 'eventSlug', fromJson: parseStringOrNull) String? eventSlug,
+    @JsonKey(name: 'eventUuid', fromJson: parseStringOrNull) String? eventUuid,
+    ReviewEventDto? event,
+    @JsonKey(name: 'hasResponse', fromJson: parseBool)
+    @Default(false)
+    bool hasResponse,
+    @JsonKey(name: 'organizerResponse', fromJson: parseStringOrNull)
+    String? organizerResponse,
     @JsonKey(name: 'user_vote', fromJson: parseBoolOrNull) bool? userVote,
     @JsonKey(name: 'userVote', fromJson: parseBoolOrNull) bool? userVoteCamel,
     @JsonKey(name: 'created_at', fromJson: parseStringOrNull) String? createdAt,
@@ -151,6 +163,21 @@ class ReviewResponseDto with _$ReviewResponseDto {
 
   factory ReviewResponseDto.fromJson(Map<String, dynamic> json) =>
       _$ReviewResponseDtoFromJson(json);
+}
+
+/// Lightweight event reference embedded on each row of the organizer-scoped
+/// reviews endpoint (`GET /organizers/{id}/reviews`).
+@freezed
+class ReviewEventDto with _$ReviewEventDto {
+  const factory ReviewEventDto({
+    @JsonKey(fromJson: parseInt) @Default(0) int id,
+    @JsonKey(fromJson: parseStringOrNull) String? uuid,
+    @JsonKey(fromJson: parseString) @Default('') String title,
+    @JsonKey(fromJson: parseString) @Default('') String slug,
+  }) = _ReviewEventDto;
+
+  factory ReviewEventDto.fromJson(Map<String, dynamic> json) =>
+      _$ReviewEventDtoFromJson(json);
 }
 
 @freezed
