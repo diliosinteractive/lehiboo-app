@@ -1076,16 +1076,20 @@ Note : pas d'édition, suppression, fermeture ou signalement disponibles pour le
 - [ ] **Groupement par org** : implémenter le pattern Option B (sidebar org → liste conversations) pour aligner avec le web
 
 ### WebSocket (v2 — priorité haute)
-- [ ] Connexion au channel `private-user.{userId}` via pusher_channels_flutter
-- [ ] Handler `message.received` → refetch ou append selon le thread actif
-- [ ] Handler `message.delivered` → maj ticks
-- [ ] Handler `message.edited` → maj bulle en local
-- [ ] Handler `message.deleted` → placeholder en local
-- [ ] Handler `conversation.read` → ticks bleus
-- [ ] Handler `conversation.created` → invalider liste
-- [ ] Handler `conversation.closed` → verrouiller composer
-- [ ] Handler `conversation.reopened` → déverrouiller composer
-- [ ] Désactiver le polling quand WebSocket connecté
+- [x] Connexion au channel `private-user.{userId}` via pusher_channels_flutter
+- [x] Handler `message.received` → refetch ou append selon le thread actif
+- [x] Handler `message.delivered` → maj ticks
+- [x] Handler `message.edited` → maj bulle en local
+- [x] Handler `message.deleted` → placeholder en local
+- [x] Handler `conversation.read` → ticks bleus
+- [x] Handler `conversation.created` → invalider liste
+- [x] Handler `conversation.closed` → verrouiller composer
+- [x] Handler `conversation.reopened` → déverrouiller composer
+- [x] Désactiver le polling quand WebSocket connecté
+
+**Fichiers clés :**
+- `lib/features/messages/presentation/providers/messages_realtime_provider.dart` — `MessagesRealtimeNotifier` + `messagesRealtimeProvider` + `RealtimeEvent`
+- `PUSHER_APP_KEY` et `PUSHER_APP_CLUSTER` à configurer en `.env` (laisser vide → WS ignoré silencieusement)
 
 ### Push FCM
 

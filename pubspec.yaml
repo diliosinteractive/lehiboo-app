@@ -97,6 +97,7 @@ dependencies:
   package_info_plus: ^8.1.1
   confetti: ^0.8.0
   path_provider: ^2.1.5
+  pusher_channels_flutter: ^2.0.1
 
 dev_dependencies:
   flutter_test:

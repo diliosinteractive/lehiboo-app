@@ -5,6 +5,7 @@ import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../../data/datasources/messages_polling_datasource.dart';
 import 'unread_count_provider.dart';
+import 'messages_realtime_provider.dart';
 
 class ConversationsState {
   final AsyncValue<List<Conversation>> conversations;
@@ -49,23 +50,62 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   final MessagesPollingDatasource _polling;
   final Ref _ref;
   Timer? _pollTimer;
+  StreamSubscription<RealtimeEvent>? _realtimeSub;
 
   ConversationsNotifier(this._repo, this._polling, this._ref)
       : super(const ConversationsState()) {
     load();
     _startUnreadPolling();
+    _subscribeToRealtime();
   }
 
   void _startUnreadPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      // Skip when WebSocket is connected — WS events keep unread count current
+      if (_ref.read(messagesRealtimeProvider)) return;
       try {
         final count = await _polling.getTotalUnreadCount();
         _ref.read(unreadCountProvider.notifier).state = count;
-      } catch (_) {
-        // Ignore polling errors silently
+      } catch (_) {}
+    });
+  }
+
+  void _subscribeToRealtime() {
+    _realtimeSub = _ref
+        .read(messagesRealtimeProvider.notifier)
+        .events
+        .listen((event) {
+      if (!mounted) return;
+      switch (event.type) {
+        case RealtimeEventType.messageReceived:
+          // Refresh list to update latest_message preview and unread count
+          refresh();
+          _refreshUnreadCount();
+        case RealtimeEventType.conversationCreated:
+          refresh();
+          _refreshUnreadCount();
+        case RealtimeEventType.conversationClosed:
+          if (event.conversationUuid != null) {
+            _applyConversationStatus(event.conversationUuid!, 'closed');
+          }
+        case RealtimeEventType.conversationReopened:
+          if (event.conversationUuid != null) {
+            _applyConversationStatus(event.conversationUuid!, 'open');
+          }
+        default:
+          break;
       }
     });
+  }
+
+  void _applyConversationStatus(String convUuid, String status) {
+    final current = state.conversations.valueOrNull;
+    if (current == null) return;
+    final updated = current
+        .map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c)
+        .toList();
+    state = state.copyWith(conversations: AsyncValue.data(updated));
   }
 
   Future<void> load() async {
@@ -152,6 +192,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
 
   @override
   void dispose() {
+    _realtimeSub?.cancel();
     _pollTimer?.cancel();
     super.dispose();
   }

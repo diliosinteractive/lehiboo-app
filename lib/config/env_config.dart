@@ -65,4 +65,11 @@ class EnvConfig {
   static String get htUsername => dotenv.env['HT_USERNAME'] ?? '';
   static String get htPassword => dotenv.env['HT_PASSWORD'] ?? '';
   static String get securityHeaderName => dotenv.env['SECURITY_HEADER_NAME'] ?? 'Authorization';
+
+  // Pusher / WebSocket
+  static String get pusherKey => dotenv.env['PUSHER_APP_KEY'] ?? '';
+  static String get pusherCluster => dotenv.env['PUSHER_APP_CLUSTER'] ?? 'eu';
+  static String get pusherAuthEndpoint =>
+      dotenv.env['PUSHER_AUTH_ENDPOINT'] ??
+      '${apiBaseUrl.replaceAll('/api/v1', '')}/broadcasting/auth';
 }

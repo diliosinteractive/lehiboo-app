@@ -8,6 +8,7 @@ import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import 'unread_count_provider.dart';
 import 'conversations_provider.dart';
+import 'messages_realtime_provider.dart';
 
 class ConversationDetailState {
   final AsyncValue<Conversation> conversation;
@@ -45,6 +46,7 @@ class ConversationDetailNotifier
   final MessagesRepository _repo;
   final Ref _ref;
   Timer? _pollTimer;
+  StreamSubscription<RealtimeEvent>? _realtimeSub;
 
   ConversationDetailNotifier(
     this._uuid,
@@ -54,11 +56,108 @@ class ConversationDetailNotifier
   ) : super(ConversationDetailState(isSupport: _isSupport)) {
     load();
     _startPolling();
+    _subscribeToRealtime();
   }
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) => _silentRefresh());
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      // Skip polling when WebSocket is connected — WS handles updates
+      if (_ref.read(messagesRealtimeProvider)) return;
+      await _silentRefresh();
+    });
+  }
+
+  void _subscribeToRealtime() {
+    _realtimeSub = _ref
+        .read(messagesRealtimeProvider.notifier)
+        .events
+        .listen((event) {
+      if (!mounted) return;
+      if (event.conversationUuid != _uuid) return;
+      switch (event.type) {
+        case RealtimeEventType.messageReceived:
+          _silentRefresh();
+        case RealtimeEventType.messageDelivered:
+          if (event.messageUuid != null) _applyDelivered(event.messageUuid!);
+        case RealtimeEventType.messageEdited:
+          if (event.messageUuid != null && event.content != null) {
+            _applyEdit(event.messageUuid!, event.content!, event.editedAt);
+          }
+        case RealtimeEventType.messageDeleted:
+          if (event.messageUuid != null) _applyDelete(event.messageUuid!);
+        case RealtimeEventType.conversationRead:
+          _applyAllRead();
+        case RealtimeEventType.conversationClosed:
+          _applyStatus('closed');
+        case RealtimeEventType.conversationReopened:
+          _applyStatus('open');
+        default:
+          break;
+      }
+    });
+  }
+
+  // ── Realtime local state updates ──────────────────────────────────────────
+
+  void _applyDelivered(String messageUuid) {
+    final conv = state.conversation.valueOrNull;
+    if (conv == null) return;
+    final messages = conv.messages
+        .map((m) =>
+            m.uuid == messageUuid ? m.copyWith(isDelivered: true) : m)
+        .toList();
+    state = state.copyWith(
+        conversation: AsyncValue.data(conv.copyWith(messages: messages)));
+  }
+
+  void _applyEdit(String messageUuid, String content, DateTime? editedAt) {
+    final conv = state.conversation.valueOrNull;
+    if (conv == null) return;
+    final messages = conv.messages.map((m) {
+      if (m.uuid == messageUuid) {
+        return m.copyWith(
+            content: content,
+            isEdited: true,
+            editedAt: editedAt ?? DateTime.now());
+      }
+      return m;
+    }).toList();
+    state = state.copyWith(
+        conversation: AsyncValue.data(conv.copyWith(messages: messages)));
+  }
+
+  void _applyDelete(String messageUuid) {
+    final conv = state.conversation.valueOrNull;
+    if (conv == null) return;
+    final messages = conv.messages
+        .map((m) =>
+            m.uuid == messageUuid ? m.copyWith(isDeleted: true) : m)
+        .toList();
+    state = state.copyWith(
+        conversation: AsyncValue.data(conv.copyWith(messages: messages)));
+  }
+
+  void _applyAllRead() {
+    final conv = state.conversation.valueOrNull;
+    if (conv == null) return;
+    final now = DateTime.now();
+    final messages = conv.messages.map((m) {
+      if (m.isMine && !m.isRead) {
+        return m.copyWith(isRead: true, readAt: now);
+      }
+      return m;
+    }).toList();
+    state = state.copyWith(
+        conversation: AsyncValue.data(conv.copyWith(messages: messages)));
+  }
+
+  void _applyStatus(String status) {
+    final conv = state.conversation.valueOrNull;
+    if (conv == null) return;
+    state = state.copyWith(
+        conversation: AsyncValue.data(conv.copyWith(status: status)));
+    _ref.read(conversationsProvider.notifier).refresh();
   }
 
   Future<void> _silentRefresh() async {
@@ -224,6 +323,7 @@ class ConversationDetailNotifier
 
   @override
   void dispose() {
+    _realtimeSub?.cancel();
     _pollTimer?.cancel();
     super.dispose();
   }
