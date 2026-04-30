@@ -96,15 +96,23 @@ class ApiBookingRepositoryImpl implements BookingRepository {
   }
 
   @override
-  Future<void> cancelBooking(String bookingId) async {
-    await _apiDataSource.cancelBooking(bookingId: bookingId);
+  Future<Booking> cancelBooking(String bookingId, {String? reason}) async {
+    final dto = await _apiDataSource.cancelBooking(
+      bookingUuid: bookingId,
+      reason: reason,
+    );
+    return _mapBookingDto(dto);
   }
 
   @override
   Future<List<Booking>> getMyBookings() async {
     final response = await _apiDataSource.getMyBookings();
+    return response.data.map(_mapBookingDto).toList();
+  }
 
-    return response.data.map((b) {
+  /// Maps a [BookingListItemDto] to the domain [Booking] entity. Used by
+  /// both list and cancel responses (they share the same shape).
+  Booking _mapBookingDto(BookingListItemDto b) {
       // Parser la date du slot depuis les différentes sources possibles
       DateTime? slotDateTime;
 
@@ -218,6 +226,22 @@ class ApiBookingRepositoryImpl implements BookingRepository {
               ? itemsQuantity
               : (b.ticketCount ?? 1);
 
+      // Map cancellation block.
+      BookingCancellationInfo? cancellation;
+      if (b.cancellation != null) {
+        final c = b.cancellation!;
+        cancellation = BookingCancellationInfo(
+          allowed: c.allowed ?? false,
+          canCancel: c.canCancel ?? false,
+          hoursBeforeEvent: c.hoursBeforeEvent,
+          deadline: c.deadline != null ? _parseLocal(c.deadline!) : null,
+          deadlineFormatted: c.deadlineFormatted,
+          reason: c.reason,
+          cancelledAt:
+              c.cancelledAt != null ? _parseLocal(c.cancelledAt!) : null,
+        );
+      }
+
       return Booking(
         id: bookingUuid,
         numericId: b.id, // ID numérique pour les appels API
@@ -233,11 +257,11 @@ class ApiBookingRepositoryImpl implements BookingRepository {
         slot: slot,
         tickets: tickets,
         attendees: attendees.isNotEmpty ? attendees : null,
+        cancellation: cancellation,
         customerBirthDate: b.customerBirthDate,
         customerTown: b.customerTown,
         reference: b.reference ?? b.uuid,
       );
-    }).toList();
   }
 
   /// Parse la date de fin du slot. Toujours retournée en heure locale.

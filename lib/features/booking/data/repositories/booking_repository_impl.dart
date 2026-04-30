@@ -68,8 +68,21 @@ class BookingRepositoryImpl implements BookingRepository {
   }
 
   @override
-  Future<void> cancelBooking(String bookingId) async {
-    await _dio.post('/lehiboo/v1/bookings/$bookingId/cancel');
+  Future<Booking> cancelBooking(String bookingId, {String? reason}) async {
+    final response = await _dio.post(
+      '/lehiboo/v1/bookings/$bookingId/cancel',
+      data: {
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+        'notify_customer': true,
+      },
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      return BookingDto.fromJson(
+        (data['data'] as Map<String, dynamic>?) ?? data,
+      ).toDomain();
+    }
+    throw Exception('Unexpected cancel response');
   }
 
   @override

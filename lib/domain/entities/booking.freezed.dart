@@ -37,6 +37,8 @@ mixin _$Booking {
   List<Ticket>? get tickets =>
       throw _privateConstructorUsedError; // Flat list of attendees across all booking items
   List<Attendee>? get attendees =>
+      throw _privateConstructorUsedError; // Cancellation eligibility + deadline (drives the cancel button)
+  BookingCancellationInfo? get cancellation =>
       throw _privateConstructorUsedError; // Customer info
   String? get customerEmail => throw _privateConstructorUsedError;
   String? get customerFirstName => throw _privateConstructorUsedError;
@@ -75,6 +77,7 @@ abstract class $BookingCopyWith<$Res> {
       Slot? slot,
       List<Ticket>? tickets,
       List<Attendee>? attendees,
+      BookingCancellationInfo? cancellation,
       String? customerEmail,
       String? customerFirstName,
       String? customerLastName,
@@ -85,6 +88,7 @@ abstract class $BookingCopyWith<$Res> {
 
   $ActivityCopyWith<$Res>? get activity;
   $SlotCopyWith<$Res>? get slot;
+  $BookingCancellationInfoCopyWith<$Res>? get cancellation;
 }
 
 /// @nodoc
@@ -116,6 +120,7 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
     Object? slot = freezed,
     Object? tickets = freezed,
     Object? attendees = freezed,
+    Object? cancellation = freezed,
     Object? customerEmail = freezed,
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
@@ -189,6 +194,10 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
           ? _value.attendees
           : attendees // ignore: cast_nullable_to_non_nullable
               as List<Attendee>?,
+      cancellation: freezed == cancellation
+          ? _value.cancellation
+          : cancellation // ignore: cast_nullable_to_non_nullable
+              as BookingCancellationInfo?,
       customerEmail: freezed == customerEmail
           ? _value.customerEmail
           : customerEmail // ignore: cast_nullable_to_non_nullable
@@ -243,6 +252,19 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
       return _then(_value.copyWith(slot: value) as $Val);
     });
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $BookingCancellationInfoCopyWith<$Res>? get cancellation {
+    if (_value.cancellation == null) {
+      return null;
+    }
+
+    return $BookingCancellationInfoCopyWith<$Res>(_value.cancellation!,
+        (value) {
+      return _then(_value.copyWith(cancellation: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -269,6 +291,7 @@ abstract class _$$BookingImplCopyWith<$Res> implements $BookingCopyWith<$Res> {
       Slot? slot,
       List<Ticket>? tickets,
       List<Attendee>? attendees,
+      BookingCancellationInfo? cancellation,
       String? customerEmail,
       String? customerFirstName,
       String? customerLastName,
@@ -281,6 +304,8 @@ abstract class _$$BookingImplCopyWith<$Res> implements $BookingCopyWith<$Res> {
   $ActivityCopyWith<$Res>? get activity;
   @override
   $SlotCopyWith<$Res>? get slot;
+  @override
+  $BookingCancellationInfoCopyWith<$Res>? get cancellation;
 }
 
 /// @nodoc
@@ -310,6 +335,7 @@ class __$$BookingImplCopyWithImpl<$Res>
     Object? slot = freezed,
     Object? tickets = freezed,
     Object? attendees = freezed,
+    Object? cancellation = freezed,
     Object? customerEmail = freezed,
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
@@ -383,6 +409,10 @@ class __$$BookingImplCopyWithImpl<$Res>
           ? _value._attendees
           : attendees // ignore: cast_nullable_to_non_nullable
               as List<Attendee>?,
+      cancellation: freezed == cancellation
+          ? _value.cancellation
+          : cancellation // ignore: cast_nullable_to_non_nullable
+              as BookingCancellationInfo?,
       customerEmail: freezed == customerEmail
           ? _value.customerEmail
           : customerEmail // ignore: cast_nullable_to_non_nullable
@@ -435,6 +465,7 @@ class _$BookingImpl implements _Booking {
       this.slot,
       final List<Ticket>? tickets,
       final List<Attendee>? attendees,
+      this.cancellation,
       this.customerEmail,
       this.customerFirstName,
       this.customerLastName,
@@ -501,6 +532,9 @@ class _$BookingImpl implements _Booking {
     return EqualUnmodifiableListView(value);
   }
 
+// Cancellation eligibility + deadline (drives the cancel button)
+  @override
+  final BookingCancellationInfo? cancellation;
 // Customer info
   @override
   final String? customerEmail;
@@ -522,7 +556,7 @@ class _$BookingImpl implements _Booking {
 
   @override
   String toString() {
-    return 'Booking(id: $id, numericId: $numericId, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, attendees: $attendees, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, customerBirthDate: $customerBirthDate, customerTown: $customerTown, reference: $reference)';
+    return 'Booking(id: $id, numericId: $numericId, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, attendees: $attendees, cancellation: $cancellation, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, customerBirthDate: $customerBirthDate, customerTown: $customerTown, reference: $reference)';
   }
 
   @override
@@ -556,6 +590,8 @@ class _$BookingImpl implements _Booking {
             const DeepCollectionEquality().equals(other._tickets, _tickets) &&
             const DeepCollectionEquality()
                 .equals(other._attendees, _attendees) &&
+            (identical(other.cancellation, cancellation) ||
+                other.cancellation == cancellation) &&
             (identical(other.customerEmail, customerEmail) ||
                 other.customerEmail == customerEmail) &&
             (identical(other.customerFirstName, customerFirstName) ||
@@ -591,6 +627,7 @@ class _$BookingImpl implements _Booking {
         slot,
         const DeepCollectionEquality().hash(_tickets),
         const DeepCollectionEquality().hash(_attendees),
+        cancellation,
         customerEmail,
         customerFirstName,
         customerLastName,
@@ -625,6 +662,7 @@ abstract class _Booking implements Booking {
       final Slot? slot,
       final List<Ticket>? tickets,
       final List<Attendee>? attendees,
+      final BookingCancellationInfo? cancellation,
       final String? customerEmail,
       final String? customerFirstName,
       final String? customerLastName,
@@ -665,6 +703,8 @@ abstract class _Booking implements Booking {
   List<Ticket>? get tickets;
   @override // Flat list of attendees across all booking items
   List<Attendee>? get attendees;
+  @override // Cancellation eligibility + deadline (drives the cancel button)
+  BookingCancellationInfo? get cancellation;
   @override // Customer info
   String? get customerEmail;
   @override
@@ -927,6 +967,260 @@ abstract class _Attendee implements Attendee {
   @JsonKey(ignore: true)
   _$$AttendeeImplCopyWith<_$AttendeeImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+mixin _$BookingCancellationInfo {
+  bool get allowed => throw _privateConstructorUsedError;
+  bool get canCancel => throw _privateConstructorUsedError;
+  int? get hoursBeforeEvent => throw _privateConstructorUsedError;
+  DateTime? get deadline => throw _privateConstructorUsedError;
+  String? get deadlineFormatted => throw _privateConstructorUsedError;
+  String? get reason => throw _privateConstructorUsedError;
+  DateTime? get cancelledAt => throw _privateConstructorUsedError;
+
+  @JsonKey(ignore: true)
+  $BookingCancellationInfoCopyWith<BookingCancellationInfo> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BookingCancellationInfoCopyWith<$Res> {
+  factory $BookingCancellationInfoCopyWith(BookingCancellationInfo value,
+          $Res Function(BookingCancellationInfo) then) =
+      _$BookingCancellationInfoCopyWithImpl<$Res, BookingCancellationInfo>;
+  @useResult
+  $Res call(
+      {bool allowed,
+      bool canCancel,
+      int? hoursBeforeEvent,
+      DateTime? deadline,
+      String? deadlineFormatted,
+      String? reason,
+      DateTime? cancelledAt});
+}
+
+/// @nodoc
+class _$BookingCancellationInfoCopyWithImpl<$Res,
+        $Val extends BookingCancellationInfo>
+    implements $BookingCancellationInfoCopyWith<$Res> {
+  _$BookingCancellationInfoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? allowed = null,
+    Object? canCancel = null,
+    Object? hoursBeforeEvent = freezed,
+    Object? deadline = freezed,
+    Object? deadlineFormatted = freezed,
+    Object? reason = freezed,
+    Object? cancelledAt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      allowed: null == allowed
+          ? _value.allowed
+          : allowed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      canCancel: null == canCancel
+          ? _value.canCancel
+          : canCancel // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hoursBeforeEvent: freezed == hoursBeforeEvent
+          ? _value.hoursBeforeEvent
+          : hoursBeforeEvent // ignore: cast_nullable_to_non_nullable
+              as int?,
+      deadline: freezed == deadline
+          ? _value.deadline
+          : deadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      deadlineFormatted: freezed == deadlineFormatted
+          ? _value.deadlineFormatted
+          : deadlineFormatted // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cancelledAt: freezed == cancelledAt
+          ? _value.cancelledAt
+          : cancelledAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BookingCancellationInfoImplCopyWith<$Res>
+    implements $BookingCancellationInfoCopyWith<$Res> {
+  factory _$$BookingCancellationInfoImplCopyWith(
+          _$BookingCancellationInfoImpl value,
+          $Res Function(_$BookingCancellationInfoImpl) then) =
+      __$$BookingCancellationInfoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {bool allowed,
+      bool canCancel,
+      int? hoursBeforeEvent,
+      DateTime? deadline,
+      String? deadlineFormatted,
+      String? reason,
+      DateTime? cancelledAt});
+}
+
+/// @nodoc
+class __$$BookingCancellationInfoImplCopyWithImpl<$Res>
+    extends _$BookingCancellationInfoCopyWithImpl<$Res,
+        _$BookingCancellationInfoImpl>
+    implements _$$BookingCancellationInfoImplCopyWith<$Res> {
+  __$$BookingCancellationInfoImplCopyWithImpl(
+      _$BookingCancellationInfoImpl _value,
+      $Res Function(_$BookingCancellationInfoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? allowed = null,
+    Object? canCancel = null,
+    Object? hoursBeforeEvent = freezed,
+    Object? deadline = freezed,
+    Object? deadlineFormatted = freezed,
+    Object? reason = freezed,
+    Object? cancelledAt = freezed,
+  }) {
+    return _then(_$BookingCancellationInfoImpl(
+      allowed: null == allowed
+          ? _value.allowed
+          : allowed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      canCancel: null == canCancel
+          ? _value.canCancel
+          : canCancel // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hoursBeforeEvent: freezed == hoursBeforeEvent
+          ? _value.hoursBeforeEvent
+          : hoursBeforeEvent // ignore: cast_nullable_to_non_nullable
+              as int?,
+      deadline: freezed == deadline
+          ? _value.deadline
+          : deadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      deadlineFormatted: freezed == deadlineFormatted
+          ? _value.deadlineFormatted
+          : deadlineFormatted // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cancelledAt: freezed == cancelledAt
+          ? _value.cancelledAt
+          : cancelledAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$BookingCancellationInfoImpl implements _BookingCancellationInfo {
+  const _$BookingCancellationInfoImpl(
+      {this.allowed = false,
+      this.canCancel = false,
+      this.hoursBeforeEvent,
+      this.deadline,
+      this.deadlineFormatted,
+      this.reason,
+      this.cancelledAt});
+
+  @override
+  @JsonKey()
+  final bool allowed;
+  @override
+  @JsonKey()
+  final bool canCancel;
+  @override
+  final int? hoursBeforeEvent;
+  @override
+  final DateTime? deadline;
+  @override
+  final String? deadlineFormatted;
+  @override
+  final String? reason;
+  @override
+  final DateTime? cancelledAt;
+
+  @override
+  String toString() {
+    return 'BookingCancellationInfo(allowed: $allowed, canCancel: $canCancel, hoursBeforeEvent: $hoursBeforeEvent, deadline: $deadline, deadlineFormatted: $deadlineFormatted, reason: $reason, cancelledAt: $cancelledAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BookingCancellationInfoImpl &&
+            (identical(other.allowed, allowed) || other.allowed == allowed) &&
+            (identical(other.canCancel, canCancel) ||
+                other.canCancel == canCancel) &&
+            (identical(other.hoursBeforeEvent, hoursBeforeEvent) ||
+                other.hoursBeforeEvent == hoursBeforeEvent) &&
+            (identical(other.deadline, deadline) ||
+                other.deadline == deadline) &&
+            (identical(other.deadlineFormatted, deadlineFormatted) ||
+                other.deadlineFormatted == deadlineFormatted) &&
+            (identical(other.reason, reason) || other.reason == reason) &&
+            (identical(other.cancelledAt, cancelledAt) ||
+                other.cancelledAt == cancelledAt));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, allowed, canCancel,
+      hoursBeforeEvent, deadline, deadlineFormatted, reason, cancelledAt);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BookingCancellationInfoImplCopyWith<_$BookingCancellationInfoImpl>
+      get copyWith => __$$BookingCancellationInfoImplCopyWithImpl<
+          _$BookingCancellationInfoImpl>(this, _$identity);
+}
+
+abstract class _BookingCancellationInfo implements BookingCancellationInfo {
+  const factory _BookingCancellationInfo(
+      {final bool allowed,
+      final bool canCancel,
+      final int? hoursBeforeEvent,
+      final DateTime? deadline,
+      final String? deadlineFormatted,
+      final String? reason,
+      final DateTime? cancelledAt}) = _$BookingCancellationInfoImpl;
+
+  @override
+  bool get allowed;
+  @override
+  bool get canCancel;
+  @override
+  int? get hoursBeforeEvent;
+  @override
+  DateTime? get deadline;
+  @override
+  String? get deadlineFormatted;
+  @override
+  String? get reason;
+  @override
+  DateTime? get cancelledAt;
+  @override
+  @JsonKey(ignore: true)
+  _$$BookingCancellationInfoImplCopyWith<_$BookingCancellationInfoImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc

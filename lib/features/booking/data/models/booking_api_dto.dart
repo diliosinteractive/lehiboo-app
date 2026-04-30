@@ -196,10 +196,28 @@ class BookingListItemDto with _$BookingListItemDto {
     // Booking line items with attendee details (returned on detail endpoint
     // and on richer list responses).
     List<BookingItemDto>? items,
+    // Cancellation eligibility + deadline.
+    BookingCancellationDto? cancellation,
   }) = _BookingListItemDto;
 
   factory BookingListItemDto.fromJson(Map<String, dynamic> json) =>
       _$BookingListItemDtoFromJson(json);
+}
+
+@freezed
+class BookingCancellationDto with _$BookingCancellationDto {
+  const factory BookingCancellationDto({
+    bool? allowed,
+    bool? canCancel,
+    int? hoursBeforeEvent,
+    String? deadline,
+    String? deadlineFormatted,
+    String? reason,
+    String? cancelledAt,
+  }) = _BookingCancellationDto;
+
+  factory BookingCancellationDto.fromJson(Map<String, dynamic> json) =>
+      _$BookingCancellationDtoFromJson(json);
 }
 
 @freezed

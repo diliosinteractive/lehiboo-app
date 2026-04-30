@@ -251,6 +251,10 @@ _$BookingListItemDtoImpl _$$BookingListItemDtoImplFromJson(
       items: (json['items'] as List<dynamic>?)
           ?.map((e) => BookingItemDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      cancellation: json['cancellation'] == null
+          ? null
+          : BookingCancellationDto.fromJson(
+              json['cancellation'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$$BookingListItemDtoImplToJson(
@@ -281,6 +285,31 @@ Map<String, dynamic> _$$BookingListItemDtoImplToJson(
       'event': instance.event,
       'slot': instance.slot,
       'items': instance.items,
+      'cancellation': instance.cancellation,
+    };
+
+_$BookingCancellationDtoImpl _$$BookingCancellationDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$BookingCancellationDtoImpl(
+      allowed: json['allowed'] as bool?,
+      canCancel: json['canCancel'] as bool?,
+      hoursBeforeEvent: (json['hoursBeforeEvent'] as num?)?.toInt(),
+      deadline: json['deadline'] as String?,
+      deadlineFormatted: json['deadlineFormatted'] as String?,
+      reason: json['reason'] as String?,
+      cancelledAt: json['cancelledAt'] as String?,
+    );
+
+Map<String, dynamic> _$$BookingCancellationDtoImplToJson(
+        _$BookingCancellationDtoImpl instance) =>
+    <String, dynamic>{
+      'allowed': instance.allowed,
+      'canCancel': instance.canCancel,
+      'hoursBeforeEvent': instance.hoursBeforeEvent,
+      'deadline': instance.deadline,
+      'deadlineFormatted': instance.deadlineFormatted,
+      'reason': instance.reason,
+      'cancelledAt': instance.cancelledAt,
     };
 
 _$BookingItemDtoImpl _$$BookingItemDtoImplFromJson(Map<String, dynamic> json) =>

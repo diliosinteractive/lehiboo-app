@@ -121,21 +121,28 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       if (!mounted || dtos.isEmpty) return;
 
       // BookingTicketDto.id is a UUID string — use it directly for the
-      // per-ticket /me/tickets/{uuid}/download endpoint.
-      final merged = dtos.map((dto) {
+      // per-ticket /me/tickets/{uuid}/download endpoint. Look up the ticket
+      // type name from Booking.attendees[index] (populated from
+      // items[].ticketTypeName in the mapper) so the preview card can show
+      // "Standard Entry" / "VIP" instead of a generic label.
+      final attendees = booking.attendees;
+      final merged = List<Ticket>.generate(dtos.length, (index) {
+        final dto = dtos[index];
+        final attendee =
+            (attendees != null && index < attendees.length) ? attendees[index] : null;
         return Ticket(
           id: dto.id,
           bookingId: booking.id,
           userId: booking.userId,
           slotId: booking.slotId,
-          ticketType: 'Standard',
+          ticketType: attendee?.ticketTypeName ?? 'Standard',
           qrCodeData: dto.qrCode,
           status: dto.status,
-          attendeeFirstName: dto.attendeeFirstName,
-          attendeeLastName: dto.attendeeLastName,
-          attendeeEmail: dto.attendeeEmail,
+          attendeeFirstName: dto.attendeeFirstName ?? attendee?.firstName,
+          attendeeLastName: dto.attendeeLastName ?? attendee?.lastName,
+          attendeeEmail: dto.attendeeEmail ?? attendee?.email,
         );
-      }).toList();
+      });
 
       setState(() {
         _tickets = merged;
@@ -209,76 +216,136 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     return '$weekday $day $month $year à $hour:$minute';
   }
 
-  void _showCancelConfirmation() {
-    showDialog(
+  Future<void> _showCancelConfirmation() async {
+    final reasonController = TextEditingController();
+    final deadline = _booking?.cancellation?.deadlineFormatted;
+
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Annuler la réservation'),
-        content: const Text(
-          'Êtes-vous sûr de vouloir annuler cette réservation ? '
-          'Cette action est irréversible.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Êtes-vous sûr de vouloir annuler cette réservation ? '
+              'Cette action est irréversible.',
+            ),
+            if (deadline != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Date limite : $deadline',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              maxLength: 1000,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Raison (optionnel)',
+                hintText: 'Empêchement personnel…',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Le remboursement éventuel sera traité par l'organisateur.",
+              style: TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Non, garder'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _cancelBooking();
-            },
+            onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: HbColors.error),
             child: const Text('Oui, annuler'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      await _cancelBooking(reason: reasonController.text.trim());
+    }
+    reasonController.dispose();
   }
 
-  Future<void> _cancelBooking() async {
+  Future<void> _cancelBooking({String? reason}) async {
     final booking = _booking;
     if (booking == null) return;
 
-    // L'API utilise l'UUID (comme pour les favoris)
     final bookingUuid = booking.id;
-
-    debugPrint('🚫 Annulation booking: uuid=$bookingUuid, numericId=${booking.numericId}');
+    debugPrint(
+        '🚫 Annulation booking: uuid=$bookingUuid reason=${reason?.isNotEmpty == true ? "<${reason!.length} chars>" : "<empty>"}');
 
     setState(() => _isLoading = true);
 
     try {
       final repository = ref.read(bookingRepositoryProvider);
-      await repository.cancelBooking(bookingUuid);
+      final updated = await repository.cancelBooking(bookingUuid, reason: reason);
 
-      debugPrint('🚫 Annulation réussie');
+      debugPrint('🚫 Annulation réussie, status=${updated.status}');
       HapticFeedback.heavyImpact();
 
-      // Rafraîchir la liste des réservations
+      // Spec §3.6: replace local booking with the response — no re-fetch.
+      // Refresh the list so the home/bookings tab reflects the new status.
       ref.read(bookingsListControllerProvider.notifier).refresh();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Réservation annulée avec succès'),
-            backgroundColor: HbColors.error,
-          ),
-        );
-        context.pop();
-      }
+      if (!mounted) return;
+      setState(() {
+        _booking = updated;
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Réservation annulée. '
+              "L'organisateur traitera l'éventuel remboursement."),
+          backgroundColor: HbColors.error,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } on BookingCancellationForbiddenException {
+      // Spec §4: deadline likely passed — re-fetch booking detail so the
+      // button visibility updates and the user sees the right state.
+      debugPrint('🚫 403 Forbidden — refreshing booking');
+      ref.read(bookingsListControllerProvider.notifier).refresh();
+      _showCancelError(
+        "L'annulation n'est plus possible "
+        "(délai dépassé ou non autorisé par l'organisateur).",
+      );
+    } on BookingCancellationNotFoundException {
+      _showCancelError('Cette réservation est introuvable.');
+    } on BookingCancellationValidationException {
+      _showCancelError('La raison saisie est trop longue (1000 caractères max).');
     } catch (e) {
       debugPrint('🚫 Erreur annulation: $e');
-      setState(() => _isLoading = false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de l\'annulation: $e'),
-            backgroundColor: HbColors.error,
-          ),
-        );
-      }
+      _showCancelError("Impossible d'annuler la réservation. Réessayez.");
     }
+  }
+
+  void _showCancelError(String message) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: HbColors.error,
+      ),
+    );
   }
 
   Future<void> _downloadAllTickets() async {
@@ -431,7 +498,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ? booking.id.substring(0, 8).toUpperCase()
         : booking.id.toUpperCase();
 
-    final canCancel = booking.status == 'confirmed' || booking.status == 'pending';
+    // Per spec §4: drive the cancel button purely from cancellation.canCancel
+    // (which the backend computes from status, event.allow_cancellation, and
+    // the deadline). Falls back to status-only when the API didn't include
+    // the cancellation block — old/cached bookings.
+    final canCancel = booking.cancellation?.canCancel ??
+        (booking.status == 'confirmed' || booking.status == 'pending');
 
     return Scaffold(
       backgroundColor: HbColors.orangePastel,

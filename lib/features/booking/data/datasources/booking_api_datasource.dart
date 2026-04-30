@@ -150,31 +150,45 @@ class BookingApiDataSource {
     return BookingListItemDto.fromJson(payload);
   }
 
-  /// Annule une réservation
+  /// Annule une réservation côté client.
+  /// Spec: BOOKING_TICKETS_CANCELLATION_MOBILE_SPEC.md §3.
   ///
-  /// [bookingId] peut être l'ID numérique ou l'UUID selon l'API
-  Future<void> cancelBooking({
-    required String bookingId,
+  /// Returns the updated [BookingListItemDto] from the response so the
+  /// caller can swap its in-memory booking without re-fetching.
+  Future<BookingListItemDto> cancelBooking({
+    required String bookingUuid,
     String? reason,
+    bool notifyCustomer = true,
   }) async {
-    debugPrint('🚫 API cancelBooking: POST /me/bookings/$bookingId/cancel');
+    debugPrint('🚫 API cancelBooking: POST /me/bookings/$bookingUuid/cancel');
     final response = await _dio.post(
-      '/me/bookings/$bookingId/cancel',
+      '/me/bookings/$bookingUuid/cancel',
       data: {
-        if (reason != null) 'reason': reason,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+        'notify_customer': notifyCustomer,
       },
+      options: Options(
+        headers: {
+          'X-Platform': 'mobile',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        // Defer 4xx handling to the caller so we can surface 403/404/422
+        // distinctly rather than letting Dio throw a generic DioException.
+        validateStatus: (s) => s != null && s < 500,
+      ),
     );
 
-    final data = response.data;
-    debugPrint('🚫 API cancelBooking response: $data');
-
-    if (data is Map<String, dynamic> && data['success'] == false) {
-      final message = ApiResponseHandler.extractError(
-        Exception(data['message']),
-        fallback: 'Impossible d\'annuler la réservation.',
-      );
-      throw Exception(message);
+    final status = response.statusCode;
+    if (status == 403) throw const BookingCancellationForbiddenException();
+    if (status == 404) throw const BookingCancellationNotFoundException();
+    if (status == 422) throw const BookingCancellationValidationException();
+    if (status != 200) {
+      throw BookingCancellationFailedException(status);
     }
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return BookingListItemDto.fromJson(payload);
   }
 
   Future<TicketsListResponseDto> getMyTickets({
@@ -269,4 +283,23 @@ class NotAuthorizedToDownloadException implements Exception {
 class TicketDownloadFailedException implements Exception {
   final int? statusCode;
   const TicketDownloadFailedException(this.statusCode);
+}
+
+/// Booking is no longer cancellable (deadline passed, event disallows
+/// cancellation, or user not the owner). Spec §3.7.
+class BookingCancellationForbiddenException implements Exception {
+  const BookingCancellationForbiddenException();
+}
+
+class BookingCancellationNotFoundException implements Exception {
+  const BookingCancellationNotFoundException();
+}
+
+class BookingCancellationValidationException implements Exception {
+  const BookingCancellationValidationException();
+}
+
+class BookingCancellationFailedException implements Exception {
+  final int? statusCode;
+  const BookingCancellationFailedException(this.statusCode);
 }
