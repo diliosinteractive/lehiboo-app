@@ -33,10 +33,13 @@ Mobile should reproduce all three blocks plus the activity tab. The reviews tab 
 | 3 | `POST` | `/api/v1/me/organizers/{slug_or_uuid}/follow` | Follow | required |
 | 4 | `DELETE` | `/api/v1/me/organizers/{slug_or_uuid}/follow` | Unfollow | required |
 | 5 | `POST` | `/api/v1/me/conversations/from-organization/{organizationUuid}` | Send a message via the contact form | required |
+| 6 | `GET` | `/api/v1/me/organizers/following` | List the user's followed organizers (paginated) — **powers a separate "Following" screen, not this profile screen** | required |
 
 > **Slug or UUID** — endpoints 1–4 accept either as the path parameter (recently aligned). Mobile should send `organization.uuid` since that's the field consistently exposed across the rest of the API. Route param is named `{slug}` in the route definition for legacy reasons; the controllers detect UUID format internally.
 >
 > **Endpoint 5** requires the **UUID** (the route uses `{organizationUuid}` and the controller does `where('uuid', ...)` — slug is not accepted).
+>
+> **Endpoint 6** is documented in this spec for cohesion (all organizer-related routes in one place) but it powers a different mobile screen — the "Organisateurs suivis" list. See §6bis for details.
 
 ---
 
@@ -267,6 +270,151 @@ Returns the new conversation envelope (full payload documented separately in `MO
 | `403` | `organization.allow_public_contact == false` — the org disabled public messaging. **Mobile must hide the Contact button when `allow_public_contact` is false** (the data is in endpoint 1's response). |
 | `404` | Organization UUID doesn't exist or is not verified |
 | `422` | Validation failure (subject too short, etc.) |
+
+---
+
+## 6bis. Endpoint 6 — User's followed organizers (separate screen)
+
+```
+GET /api/v1/me/organizers/following
+```
+
+This endpoint powers a **separate mobile screen** — the "Organisateurs suivis" list a user reaches from their profile/menu. It's not used by the profile screen this spec primarily describes, but it's documented here so all organizer-related routes live in one place.
+
+### 6bis.1 Headers
+
+```
+GET /api/v1/me/organizers/following HTTP/1.1
+Host: api.lehiboo.com
+Accept: application/json
+Authorization: Bearer <token>      # required
+X-Platform: mobile                  # recommended for symmetry
+```
+
+### 6bis.2 Query params
+
+| Param | Type | Default | Constraints | Notes |
+|---|---|---|---|---|
+| `search` | string | — | max 255 | Full-text on org name fields (`organization_name`, `organization_display_name`, `company_name`). Leave empty for full list. |
+| `per_page` | int | **100** | 1–100 | Default is intentionally high to preserve "give me everything" semantics for the dashboard's client-side filtering. Pass a smaller value (e.g. `20`) for paginated mobile lists. |
+| `page` | int | 1 | ≥ 1 | Standard Laravel page number. |
+
+### 6bis.3 Authorization
+
+Standard `auth:sanctum`. The endpoint scopes to `auth()->user()` automatically — there is no path param. A 401 means token missing or expired.
+
+### 6bis.4 Filters applied server-side
+
+The list is automatically filtered to:
+- Organizations with `status = 'verified'` (suspended/pending orgs are hidden — even if the user once followed them).
+- Result ordered by `organizer_follows.created_at DESC` (most recently followed first).
+- Each item gets `is_followed = true` set explicitly (no need to infer per-row).
+
+### 6bis.5 Success — `200 OK`
+
+```jsonc
+{
+  "success": true,
+  "data": [
+    {
+      "uuid": "019d35e0-...",
+      "slug": "theatre-de-denain",
+      "name": "Théâtre de Denain",
+      "display_name": "Théâtre de Denain",
+      "logo": "https://...",
+      "cover_image": "https://...",
+      "city": "Denain",
+      "verified": true,
+      "events_count": 24,           // published events only
+      "followers_count": 1234,
+      "is_followed": true,           // always true on this endpoint
+      "average_rating": 4.6,
+      "reviews_count": 128,
+      "social_links": { ... },
+      "establishment_types": [ ... ]
+      // ...full OrganizationResource — see §3.3 for the complete field list
+    }
+  ],
+  "meta": {
+    "total": 24,
+    "page": 1,
+    "per_page": 100,
+    "last_page": 1
+  }
+}
+```
+
+Each item is the same `OrganizationResource` shape as endpoint 1 (the profile endpoint), so mobile can reuse the same `OrganizerProfile` data class for parsing.
+
+### 6bis.6 Errors
+
+| Status | Cause |
+|---|---|
+| `401 Unauthorized` | Token missing/expired |
+| `422 Unprocessable Entity` | `per_page` out of range, `search` exceeds 255 chars, etc. — standard Laravel validation envelope |
+
+### 6bis.7 Recommended mobile usage
+
+```
+On "Organisateurs suivis" screen mount:
+  GET /me/organizers/following?per_page=20&page=1
+
+On scroll near end:
+  GET /me/organizers/following?per_page=20&page=N+1
+  Append response.data to local list. Stop when meta.page >= meta.last_page.
+
+On search:
+  Debounce 250ms, then:
+  GET /me/organizers/following?search={query}&per_page=20&page=1
+  Replace local list.
+
+On unfollow tap (any item):
+  Optimistic remove + DELETE /me/organizers/{uuid}/follow.
+  On 4xx, restore the item.
+```
+
+### 6bis.8 Sample call (Dio)
+
+```dart
+Future<PaginatedFollowed> fetchFollowedOrganizers({
+  String? search,
+  int page = 1,
+  int perPage = 20,
+}) async {
+  final response = await dio.get<Map<String, dynamic>>(
+    '/api/v1/me/organizers/following',
+    queryParameters: {
+      if (search != null && search.isNotEmpty) 'search': search,
+      'page': page,
+      'per_page': perPage,
+    },
+    options: Options(headers: {'Authorization': 'Bearer $token'}),
+  );
+
+  final body = response.data!;
+  final items = (body['data'] as List)
+      .map((j) => OrganizerProfile.fromJson(j))
+      .toList();
+
+  return PaginatedFollowed(
+    items: items,
+    page: body['meta']['page'] as int,
+    perPage: body['meta']['per_page'] as int,
+    total: body['meta']['total'] as int,
+    lastPage: body['meta']['last_page'] as int,
+  );
+}
+```
+
+### 6bis.9 Operational notes
+
+| Concern | Note |
+|---|---|
+| **Default per_page is 100** | This is a *backwards-compatibility* default chosen so the existing web dashboard (which filters client-side on the full list) keeps working. Mobile should explicitly pass a smaller `per_page` (e.g. 20) for paginated lists — don't rely on the default. |
+| **`is_followed` is hard-set to `true`** | Every row on this endpoint is by definition followed, so the field is set explicitly rather than inferred from the pivot. Mobile can trust it without re-querying. |
+| **Suspended orgs disappear** | If an organizer the user follows transitions from `verified` to `suspended`, that org will silently drop out of this list — even though the underlying `organizer_follows` row still exists. There's currently no UI signal for "you used to follow this org but it's suspended now"; if that's user-visible behavior is needed, it requires a backend change. |
+| **No cursor pagination** | Standard page/per_page pagination only. For very long lists (thousands), cursor pagination on `organizer_follows.created_at` would be more stable, but no user is anywhere near that scale today. |
+| **Cache invalidation** | Invalidate this list whenever the user follows or unfollows from any other screen (e.g. the profile screen's Follow button). Both follow endpoints return `is_followed` and `followers_count` for the affected org — but they don't tell you the new ordering, so refetching this list is safest. |
 
 ---
 

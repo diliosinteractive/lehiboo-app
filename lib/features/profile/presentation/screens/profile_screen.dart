@@ -165,6 +165,13 @@ class ProfileScreen extends ConsumerWidget {
         ),
         _buildMenuItem(
           context,
+          icon: Icons.groups_outlined,
+          title: 'Organisateurs suivis',
+          subtitle: 'Gérer les organisateurs que vous suivez',
+          onTap: () => context.push('/me/followed-organizers'),
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.mail_outline,
           title: 'Mes Messages',
           subtitle: 'Conversations avec les organisateurs',
