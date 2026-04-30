@@ -66,9 +66,20 @@ class EnvConfig {
   static String get htPassword => dotenv.env['HT_PASSWORD'] ?? '';
   static String get securityHeaderName => dotenv.env['SECURITY_HEADER_NAME'] ?? 'Authorization';
 
-  // Pusher / WebSocket
+  // Pusher / WebSocket (Laravel Reverb — Pusher-protocol compatible)
   static String get pusherKey => dotenv.env['PUSHER_APP_KEY'] ?? '';
   static String get pusherCluster => dotenv.env['PUSHER_APP_CLUSTER'] ?? 'eu';
+
+  /// Custom WebSocket host (required for Reverb — do NOT use Pusher cloud).
+  static String get pusherHost => dotenv.env['PUSHER_HOST'] ?? '';
+
+  /// WebSocket port. 443 for TLS (production/staging), 80 for plain (dev).
+  static int get pusherPort =>
+      int.tryParse(dotenv.env['PUSHER_PORT'] ?? '') ?? (pusherUseTLS ? 443 : 80);
+
+  static bool get pusherUseTLS =>
+      dotenv.env['PUSHER_USE_TLS']?.toLowerCase() == 'true';
+
   static String get pusherAuthEndpoint =>
       dotenv.env['PUSHER_AUTH_ENDPOINT'] ??
       '${apiBaseUrl.replaceAll('/api/v1', '')}/broadcasting/auth';

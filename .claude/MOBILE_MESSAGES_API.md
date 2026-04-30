@@ -1,51 +1,26 @@
-# Messages Mobile - Guide d'integration API
+# Messages Mobile — Guide d'intégration API
 
-Ce document sert de reference pour construire la section `Messages` de l'application mobile.
+Ce document est la référence contractuelle pour la section `Messages` de l'application mobile Flutter.
+Pour l'architecture écrans, les patterns UX et les DTOs Dart, voir `MOBILE_MESSAGES_IMPLEMENTATION.md`.
 
-Scope retenu pour cette v1 mobile :
-- utilisateur authentifie uniquement
-- conversations `participant_vendor`
-- conversations `user_support`
-- pas de dashboard vendor/admin dans le mobile
+---
 
-Si vous ouvrez plus tard des vues mobile pour vendor ou admin, utilisez ce document comme base, mais les endpoints de cette version couvrent d'abord le role `user`.
+## Scope retenu (participant uniquement)
 
-## Vue d'ensemble
+| Type de conversation      | Inclus | Endpoint prefix                   |
+|---------------------------|--------|-----------------------------------|
+| `participant_vendor`      | Oui    | `/api/v1/user/conversations`      |
+| `user_support`            | Oui    | `/api/v1/user/support-conversations` |
+| `vendor_admin`            | Non    | (v2, rôle vendor)                 |
+| `organization_organization` | Non  | (v2, rôle vendor)                 |
 
-Le mobile peut reproduire ce parcours :
+---
 
-```text
-/messages
-  -> liste des conversations user <-> organisateur
-  -> badge unread count
-
-/messages/new
-  -> nouvelle conversation depuis dashboard mobile
-
-/messages/new/from-booking/:bookingUuid
-  -> ouvrir ou creer une conversation liee a une reservation
-
-/messages/new/from-organizer/:organizationUuid
-  -> contacter un organisateur depuis sa page publique
-
-/messages/:conversationUuid
-  -> detail conversation organisateur
-
-/messages/support
-  -> liste des conversations support LeHiboo
-
-/messages/support/new
-  -> ouvrir une conversation support
-
-/messages/support/:conversationUuid
-  -> detail conversation support
-```
-
-## Conventions importantes
+## Conventions générales
 
 ### Base URL
 
-```text
+```
 /api/v1
 ```
 
@@ -58,85 +33,41 @@ Authorization: Bearer {token}
 Accept: application/json
 ```
 
-### Format de reponse reel
+### Format de réponse
 
-Le module messaging ne renvoie pas toujours `success: true`.
+| Type                | Structure                                         |
+|---------------------|---------------------------------------------------|
+| Liste paginée       | `{ data: [...], links: {...}, meta: {...} }`      |
+| Création / update   | `{ message: "...", data: {...} }`                 |
+| Objet unique (show) | `{ data: {...} }`                                 |
+| Compteurs           | `{ count: N, unreadCount: N }`                    |
+| Signalement (création) | `{ message: "...", data: { uuid, support_conversation_uuid } }` |
 
-En pratique :
-- les listes paginees renvoient `data + links + meta`
-- les creations et updates renvoient souvent `message + data`
-- certains endpoints renvoient directement un `MessageResource` ou `ConversationResource`
-- les counts renvoient juste `count` ou `count + unreadCount`
+### Pièces jointes — règles communes
 
-### Pieces jointes
+- `multipart/form-data` dès qu'il y a au moins un fichier
+- Max `3` fichiers par message
+- Max `5 MB` par fichier
+- Types acceptés : `jpg`, `jpeg`, `png`, `webp`, `pdf`
+- `content` peut être omis si au moins un fichier est joint
 
-Utiliser `multipart/form-data` si vous envoyez des fichiers.
+### Identifiants
 
-Regles communes :
-- max `3` fichiers
-- max `5 MB` par fichier
-- types acceptes : `jpg`, `jpeg`, `png`, `webp`, `pdf`
-
-### Parametres de route
-
-Pour les conversations et les messages, le backend attend des `uuid` dans l'URL.
-
-Exemples :
+Toujours utiliser des **uuid** dans les URLs :
 - `/user/conversations/{conversationUuid}`
 - `/user/conversations/{conversationUuid}/messages/{messageUuid}`
 
-### Etats metier
+---
 
-Conversation types :
-- `participant_vendor`
-- `user_support`
+## Objets JSON canoniques
 
-Statuses :
-- `open`
-- `closed`
-
-Sender types actuellement exposes par le code :
-- `participant`
-- `organization`
-- `admin`
-- `system`
-
-### Semantique de lecture actuelle
-
-Quand un thread est ouvert ou quand l'endpoint `POST /read` est appele, le backend marque les messages recus selon le role :
-
-- `participant` : les messages non-system envoyes par `organization` et `admin`
-- `vendor` : les messages non-system envoyes par `participant` et `admin`
-- `admin` : les messages non-system envoyes par `organization` et `participant`
-
-Note importante :
-- cette regle cote admin a ete elargie pour couvrir aussi les threads `user_support`
-- sinon les messages envoyes par `participant` restaient non lus dans l'onglet admin `Users`
-
-## Routes frontend mobile recommandees
-
-| Route mobile | Ecran | API principale |
-|---|---|---|
-| `/messages` | liste conversations organisateurs | `GET /user/conversations` |
-| `/messages/new` | nouveau message depuis app | `GET /user/conversations/contactable-organizations`, `POST /user/conversations` |
-| `/messages/new/from-booking/:bookingUuid` | contact depuis une reservation | `POST /user/conversations/from-booking/{bookingUuid}` |
-| `/messages/new/from-organizer/:organizationUuid` | contact depuis page publique organisateur | `POST /user/conversations/from-organization/{organizationUuid}` |
-| `/messages/:conversationUuid` | detail conversation organisateur | `GET /user/conversations/{uuid}` |
-| `/messages/support` | liste support LeHiboo | `GET /user/support-conversations` |
-| `/messages/support/new` | nouveau ticket support | `POST /user/support-conversations` |
-| `/messages/support/:conversationUuid` | detail support | `GET /user/support-conversations/{uuid}` |
-
-## Objets JSON a connaitre
-
-### Conversation summary/detail
-
-Le backend retourne les champs snake_case et une partie des alias camelCase. Pour le mobile, utilisez snake_case comme format canonique.
+### Conversation (résumé — liste)
 
 ```json
 {
   "id": 41,
   "uuid": "2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd",
-  "subject": "Question sur ma reservation",
+  "subject": "Question sur ma réservation",
   "status": "open",
   "status_label": "Ouvert",
   "conversation_type": "participant_vendor",
@@ -144,6 +75,7 @@ Le backend retourne les champs snake_case et une partie des alias camelCase. Pou
   "last_message_at": "2026-04-23T10:30:00+00:00",
   "unread_count": 2,
   "is_signalement": false,
+  "user_has_reported": false,
   "organization": {
     "id": 8,
     "uuid": "6c1dc735-83ff-48e3-a94f-f97f5233fa51",
@@ -155,12 +87,6 @@ Le backend retourne les champs snake_case et une partie des alias camelCase. Pou
     "logo_url": "https://cdn.example.com/logo.png",
     "avatar_url": "https://cdn.example.com/avatar.png"
   },
-  "participant": {
-    "id": 17,
-    "name": "Jane Doe",
-    "email": "jane@example.com",
-    "avatar_url": "https://cdn.example.com/users/jane.png"
-  },
   "event": {
     "id": 12,
     "uuid": "553300f8-d6de-47f9-876d-1bb08e9d5984",
@@ -168,37 +94,76 @@ Le backend retourne les champs snake_case et une partie des alias camelCase. Pou
     "slug": "concert-du-vendredi"
   },
   "latest_message": {
-    "id": 90,
     "uuid": "71d17bd7-909c-4dd1-a535-3bdb5fc53d9d",
-    "conversation_id": 41,
     "sender_type": "organization",
-    "sender_type_label": "Organisateur",
-    "is_system": false,
-    "sender": {
-      "id": 8,
-      "name": "Le Hiboo",
-      "avatar_url": "https://cdn.example.com/avatar.png"
-    },
-    "guest_name": null,
-    "guest_email": null,
     "content": "Bonjour, voici la confirmation.",
-    "is_deleted": false,
-    "is_edited": false,
     "is_read": false,
-    "is_delivered": true,
-    "read_at": null,
-    "delivered_at": "2026-04-23T10:31:00+00:00",
-    "edited_at": null,
     "is_mine": false,
-    "attachments": [],
-    "created_at": "2026-04-23T10:30:00+00:00",
-    "updated_at": "2026-04-23T10:30:00+00:00"
+    "attachments": [
+      {
+        "uuid": "0c51dc2b-1315-4277-a95a-fc00f3e4d162",
+        "url": "https://cdn.example.com/messages/photo.jpg",
+        "original_name": "photo.jpg",
+        "mime_type": "image/jpeg",
+        "size": 204800,
+        "is_image": true,
+        "is_pdf": false
+      }
+    ],
+    "created_at": "2026-04-23T10:30:00+00:00"
   },
-  "messages": [],
   "created_at": "2026-04-22T12:00:00+00:00",
   "updated_at": "2026-04-23T10:30:00+00:00"
 }
 ```
+
+**Champs importants :**
+
+| Champ | Type | Usage |
+|-------|------|-------|
+| `organization.logo_url` | string\|null | Afficher le logo dans le tile de liste et la sidebar |
+| `organization.avatar_url` | string\|null | Fallback si `logo_url` est null |
+| `latest_message.attachments` | array | Toujours retourné depuis le 24 avril 2026 (eager-loaded côté backend) |
+| `latest_message.content` | string\|null | `null` si message pièces jointes uniquement |
+| `user_has_reported` | bool | Griser/masquer le bouton "Signaler" sans appel supplémentaire |
+| `is_signalement` | bool | Afficher chip "Signalement" dans l'onglet support |
+| `unread_count` | int | Nombre de messages non lus dans cette conversation |
+
+### Logique de preview du dernier message (ConversationTile)
+
+Utiliser cette règle pour afficher le texte de prévisualisation dans le tile :
+
+```
+si latest_message == null
+  → afficher rien (pas de "Aucun message")
+
+si latest_message.content != null
+  → afficher content (tronqué à ~80 chars)
+
+si latest_message.content == null et attachments.length > 0
+  imageCount = attachments.filter(a => a.is_image).length
+  fileCount  = attachments.length - imageCount
+
+  si fileCount == 0 :
+    imageCount == 1  → "Une image envoyée"  (+ icone paperclip)
+    imageCount  > 1  → "{n} images envoyées" (+ icone paperclip)
+
+  si imageCount == 0 :
+    fileCount == 1  → "Un fichier envoyé"  (+ icone paperclip)
+    fileCount  > 1  → "{n} fichiers envoyés" (+ icone paperclip)
+
+  sinon (mixte) :
+    → "{n} pièces jointes" (+ icone paperclip)
+
+si latest_message.content == null et attachments vide
+  → afficher rien
+```
+
+### Conversation (détail — show)
+
+Même structure que le résumé avec en plus :
+- `messages: [Message]` — liste complète triée par `id ASC`
+- `participant: { id, name, email, avatar_url }`
 
 ### Message
 
@@ -242,83 +207,76 @@ Le backend retourne les champs snake_case et une partie des alias camelCase. Pou
 }
 ```
 
-## Endpoints mobile - conversations organisateur
+**Règles d'affichage :**
+
+| Condition | Rendu |
+|-----------|-------|
+| `is_deleted = true` | `content = null` — afficher "Ce message a été supprimé" (italique gris) |
+| `content = null` + `attachments` non vide | Afficher uniquement les pièces jointes, pas de texte |
+| `is_edited = true` | Afficher "(modifié)" sous le timestamp |
+| `is_system = true` | Chip centré, pas de bulle |
+| `is_mine = true` | Bulle droite, couleur primaire |
+| `is_mine = false` | Bulle gauche, avatar du sender |
+
+### Sender types
+
+| Valeur | Qui | Bulle |
+|--------|-----|-------|
+| `participant` | L'utilisateur connecté | Droite (`is_mine = true`) |
+| `organization` | L'organisateur | Gauche |
+| `admin` | Admin LeHiboo | Gauche (dans support) |
+| `system` | Système | Chip centré |
+
+---
+
+## Endpoints — Conversations organisateur
 
 ### 1. Lister les conversations
 
 ```http
-GET /api/v1/user/conversations?status=open&unread_only=true&page=1&per_page=15
+GET /api/v1/user/conversations
 ```
 
-Query possibles :
-- `status`: `open` | `closed`
-- `event_id`: integer
-- `unread_only`: `true`
-- `search`: string
-- `period`: `today` | `week` | `month` | `older`
-- `page`
-- `per_page`
+Query params :
 
-Reponse :
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `status` | `open` \| `closed` | Filtrer par statut |
+| `event_id` | integer | Filtrer par événement |
+| `unread_only` | `true` | Seulement les non lus |
+| `search` | string | Recherche texte libre |
+| `period` | `today` \| `week` \| `month` \| `older` | Filtrer par période |
+| `page` | integer | Page (défaut 1) |
+| `per_page` | integer | Résultats par page (défaut 15) |
+
+Réponse `200` :
 
 ```json
 {
-  "data": [
-    {
-      "id": 41,
-      "uuid": "2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd",
-      "subject": "Question sur ma reservation",
-      "status": "open",
-      "status_label": "Ouvert",
-      "conversation_type": "participant_vendor",
-      "last_message_at": "2026-04-23T10:30:00+00:00",
-      "unread_count": 2,
-      "organization": {
-        "uuid": "6c1dc735-83ff-48e3-a94f-f97f5233fa51",
-        "company_name": "Le Hiboo Events",
-        "organization_name": "Le Hiboo Events",
-        "logo_url": "https://cdn.example.com/logo.png",
-        "avatar_url": "https://cdn.example.com/avatar.png"
-      },
-      "event": {
-        "id": 12,
-        "uuid": "553300f8-d6de-47f9-876d-1bb08e9d5984",
-        "title": "Concert du vendredi",
-        "slug": "concert-du-vendredi"
-      },
-      "latest_message": {
-        "uuid": "71d17bd7-909c-4dd1-a535-3bdb5fc53d9d",
-        "sender_type": "organization",
-        "content": "Bonjour, voici la confirmation.",
-        "is_read": false,
-        "created_at": "2026-04-23T10:30:00+00:00"
-      }
-    }
-  ],
+  "data": [ /* Conversation summary */ ],
   "links": {
-    "first": "http://api.example.test/api/v1/user/conversations?page=1",
-    "last": "http://api.example.test/api/v1/user/conversations?page=3",
-    "prev": null,
-    "next": "http://api.example.test/api/v1/user/conversations?page=2"
+    "first": "...", "last": "...", "prev": null, "next": "..."
   },
   "meta": {
     "current_page": 1,
     "last_page": 3,
     "per_page": 15,
-    "total": 33,
-    "from": 1,
-    "to": 15
+    "total": 33
   }
 }
 ```
 
-### 2. Compteur non lus
+**Important** : `latest_message.attachments` est toujours inclus depuis le 24 avril 2026.
+
+---
+
+### 2. Compteur non lus (participant_vendor uniquement)
 
 ```http
 GET /api/v1/user/conversations/unread-count
 ```
 
-Reponse :
+Réponse :
 
 ```json
 {
@@ -327,13 +285,17 @@ Reponse :
 }
 ```
 
-### 3. Evenements utilisables comme filtre
+**Attention** : cet endpoint ne compte que les conversations `participant_vendor`. Les conversations `user_support` ne sont pas incluses. Pour un badge global, additionner manuellement les `unread_count` des conversations support depuis la liste `GET /user/support-conversations`.
+
+---
+
+### 3. Événements utilisables comme filtre
 
 ```http
 GET /api/v1/user/conversations/events
 ```
 
-Reponse :
+Réponse :
 
 ```json
 {
@@ -348,13 +310,17 @@ Reponse :
 }
 ```
 
-### 4. Organisateurs contactables
+---
+
+### 4. Organisateurs contactables (sélecteur de destinataire)
 
 ```http
 GET /api/v1/user/conversations/contactable-organizations
 ```
 
-Reponse :
+Retourne les organisations avec lesquelles l'utilisateur a déjà une relation (réservation confirmée ou conversation existante).
+
+Réponse :
 
 ```json
 {
@@ -370,12 +336,19 @@ Reponse :
 }
 ```
 
-### 5. Creer une conversation depuis l'app
+**Usage UI** : Cet endpoint alimente le sélecteur de destinataire dans le formulaire "Nouveau message". Implémenter un champ de recherche côté client avec filtrage local sur `company_name` (pas de paramètre `search` côté serveur sur cet endpoint — filtrer la liste reçue).
+
+---
+
+### 5. Créer une conversation depuis le dashboard
 
 ```http
 POST /api/v1/user/conversations
-Content-Type: application/json
+Content-Type: application/json          (si pas de fichiers)
+Content-Type: multipart/form-data       (si pièces jointes à l'envoi initial)
 ```
+
+Corps JSON :
 
 ```json
 {
@@ -386,11 +359,38 @@ Content-Type: application/json
 }
 ```
 
-Reponse `201` :
+Corps multipart (si pièces jointes dès la création) :
+
+```text
+organization_uuid=6c1dc735-83ff-48e3-a94f-f97f5233fa51
+subject=Question sur mon billet
+message=Bonjour, puis-je modifier ma venue ?
+event_id=12
+files[]=<fichier1>
+files[]=<fichier2>
+```
+
+Notes :
+- `organization_uuid` : obligatoire, uuid de l'org contactable
+- `subject` : obligatoire, **max 100 caractères**
+- `message` : obligatoire si aucun fichier joint, max 2000 caractères
+- `event_id` : optionnel, integer ou uuid string
+- `files[]` : optionnel, mêmes contraintes que les pièces jointes de message (max 3, 5 MB, jpg/png/webp/pdf)
+
+### Limites de validation
+
+| Champ | Contrainte |
+| ----- | ---------- |
+| `subject` | Obligatoire, max **100** caractères |
+| `message` | Obligatoire si aucun fichier, max **2 000** caractères |
+| `files[]` / `attachments[]` | Max **3** fichiers par envoi, max **5 MB** par fichier |
+| Types acceptés | `jpg`, `jpeg`, `png`, `webp`, `pdf` |
+
+Réponse `201` :
 
 ```json
 {
-  "message": "Conversation creee avec succes.",
+  "message": "Conversation créée avec succès.",
   "data": {
     "uuid": "2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd",
     "subject": "Question sur mon billet",
@@ -407,41 +407,39 @@ Reponse `201` :
 }
 ```
 
-### 6. Ouvrir ou creer depuis une reservation
+---
+
+### 6. Ouvrir ou créer depuis une réservation
 
 ```http
 POST /api/v1/user/conversations/from-booking/{bookingUuid}
 ```
 
-Cas conversation deja existante :
+Pas de corps requis. Le backend déduit l'organisation depuis la réservation.
+
+Réponse si conversation existante :
 
 ```json
 {
-  "message": "Conversation existante trouvee.",
-  "data": {
-    "uuid": "2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd",
-    "subject": "Reservation #AB12CD34 - Concert du vendredi",
-    "status": "open",
-    "conversation_type": "participant_vendor"
-  },
+  "message": "Conversation existante trouvée.",
+  "data": { "uuid": "...", "subject": "Réservation #AB12CD34 - Concert du vendredi", "status": "open" },
   "created": false
 }
 ```
 
-Cas conversation creee :
+Réponse si créée :
 
 ```json
 {
-  "message": "Conversation creee avec succes.",
-  "data": {
-    "uuid": "2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd",
-    "subject": "Reservation #AB12CD34 - Concert du vendredi",
-    "status": "open",
-    "conversation_type": "participant_vendor"
-  },
+  "message": "Conversation créée avec succès.",
+  "data": { "uuid": "...", "subject": "Réservation #AB12CD34 - Concert du vendredi", "status": "open" },
   "created": true
 }
 ```
+
+**Flow** : naviguer vers le thread `data.uuid` dans les deux cas. Si `created = true`, le thread est vide — l'utilisateur écrit le premier message.
+
+---
 
 ### 7. Contacter un organisateur depuis sa page publique
 
@@ -450,115 +448,109 @@ POST /api/v1/user/conversations/from-organization/{organizationUuid}
 Content-Type: application/json
 ```
 
+Corps :
+
 ```json
 {
-  "subject": "Question avant reservation",
-  "message": "Bonjour, est-ce adapte aux enfants ?",
+  "subject": "Question avant réservation",
+  "message": "Bonjour, est-ce adapté aux enfants ?",
   "event_id": "553300f8-d6de-47f9-876d-1bb08e9d5984"
 }
 ```
 
 Notes :
-- `event_id` peut etre UUID ou integer string pour cet endpoint
-- si `allow_public_contact = false`, le backend renvoie `403`
+- `event_id` accepte uuid string ou integer string
+- Si `allow_public_contact = false` côté organisateur → réponse `403`
 
-Reponse `201` :
+Réponse `201` :
 
 ```json
 {
-  "message": "Conversation creee avec succes.",
-  "data": {
-    "uuid": "2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd",
-    "subject": "Question avant reservation",
-    "status": "open",
-    "conversation_type": "participant_vendor"
-  }
+  "message": "Conversation créée avec succès.",
+  "data": { "uuid": "2c83f27f-...", "subject": "Question avant réservation", "status": "open" }
 }
 ```
 
-### 8. Detail d'une conversation
+Erreur `403` :
+
+```json
+{
+  "message": "Cet organisateur n'accepte pas les messages depuis sa page publique."
+}
+```
+
+**UI** : Masquer ou désactiver le bouton "Contacter" si `allow_public_contact = false` est disponible dans la réponse de la page organisateur.
+
+---
+
+### 8. Détail d'une conversation (+ mark-as-read automatique)
 
 ```http
 GET /api/v1/user/conversations/{conversationUuid}
 ```
 
-Effet de bord important :
-- ouvre le thread
-- marque comme lus les messages recus
-- declenche l'evenement realtime de lecture
+**Effet de bord** : ouvre le thread et marque automatiquement comme lus tous les messages reçus non lus. Pas besoin d'appel séparé.
 
-Reponse :
+Réponse `200` :
 
 ```json
 {
   "data": {
     "uuid": "2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd",
-    "subject": "Question sur ma reservation",
+    "subject": "Question sur ma réservation",
     "status": "open",
     "conversation_type": "participant_vendor",
-    "messages": [
-      {
-        "uuid": "aaa11111-1111-1111-1111-111111111111",
-        "sender_type": "participant",
-        "content": "Bonjour, j'ai une question.",
-        "is_mine": true,
-        "is_read": true,
-        "attachments": []
-      },
-      {
-        "uuid": "bbb22222-2222-2222-2222-222222222222",
-        "sender_type": "organization",
-        "content": "Bonjour, nous vous repondons.",
-        "is_mine": false,
-        "is_read": true,
-        "attachments": []
-      }
-    ]
+    "user_has_reported": false,
+    "organization": { /* ConversationOrganization complet */ },
+    "participant": {
+      "id": 17,
+      "name": "Jane Doe",
+      "email": "jane@example.com",
+      "avatar_url": "https://cdn.example.com/users/jane.png"
+    },
+    "event": { /* ConversationEvent */ },
+    "messages": [ /* Message[] trié par id ASC */ ]
   }
 }
 ```
+
+---
 
 ### 9. Envoyer un message
 
 ```http
 POST /api/v1/user/conversations/{conversationUuid}/messages
-Content-Type: application/json
+Content-Type: application/json   (ou multipart/form-data si fichiers)
 ```
+
+Corps JSON :
+
+```json
+{ "content": "Merci pour votre retour." }
+```
+
+Corps multipart (avec fichiers) :
+
+```
+content=Merci pour votre retour.
+attachments[]=<fichier1>
+attachments[]=<fichier2>
+```
+
+Réponse `200` : objet `Message` complet.
+
+Erreur si conversation fermée :
 
 ```json
 {
-  "content": "Merci pour votre retour."
+  "message": "Cette conversation est close. Vous ne pouvez plus y répondre."
 }
 ```
+HTTP `422`.
 
-Ou en `multipart/form-data` avec `attachments[]`.
+---
 
-Reponse :
-
-```json
-{
-  "id": 90,
-  "uuid": "71d17bd7-909c-4dd1-a535-3bdb5fc53d9d",
-  "conversation_id": 41,
-  "sender_type": "participant",
-  "sender_type_label": "Participant",
-  "content": "Merci pour votre retour.",
-  "is_deleted": false,
-  "is_edited": false,
-  "is_read": false,
-  "is_delivered": false,
-  "is_mine": true,
-  "attachments": [],
-  "created_at": "2026-04-23T10:35:00+00:00",
-  "updated_at": "2026-04-23T10:35:00+00:00"
-}
-```
-
-Important :
-- `content` peut etre omis si vous envoyez au moins un fichier
-- si la conversation est `closed`, reponse `422`
-
-### 10. Editer un message
+### 10. Éditer un message
 
 ```http
 PATCH /api/v1/user/conversations/{conversationUuid}/messages/{messageUuid}
@@ -566,25 +558,26 @@ Content-Type: application/json
 ```
 
 ```json
-{
-  "content": "Merci pour votre retour rapide."
-}
+{ "content": "Texte corrigé." }
 ```
 
-Reponse :
+Réponse `200` :
 
 ```json
 {
-  "message": "Message modifie avec succes.",
+  "message": "Message modifié avec succès.",
   "data": {
-    "uuid": "71d17bd7-909c-4dd1-a535-3bdb5fc53d9d",
-    "sender_type": "participant",
-    "content": "Merci pour votre retour rapide.",
+    "uuid": "...",
+    "content": "Texte corrigé.",
     "is_edited": true,
     "edited_at": "2026-04-23T10:40:00+00:00"
   }
 }
 ```
+
+**Règle** : uniquement disponible pour les conversations `participant_vendor`. Ne pas exposer pour `user_support`.
+
+---
 
 ### 11. Supprimer un message
 
@@ -592,17 +585,17 @@ Reponse :
 DELETE /api/v1/user/conversations/{conversationUuid}/messages/{messageUuid}
 ```
 
-Reponse :
+Réponse `200` :
 
 ```json
-{
-  "message": "Message supprime avec succes."
-}
+{ "message": "Message supprimé avec succès." }
 ```
 
-Apres suppression, le backend garde le message en soft delete et le detail conversation retournera :
-- `content: null`
-- `is_deleted: true`
+Le message passe en soft-delete : `content = null`, `is_deleted = true`. Les pièces jointes sont également masquées.
+
+**Règle** : uniquement disponible pour les conversations `participant_vendor`. Ne pas exposer pour `user_support`.
+
+---
 
 ### 12. Fermer une conversation
 
@@ -610,152 +603,24 @@ Apres suppression, le backend garde le message en soft delete et le detail conve
 POST /api/v1/user/conversations/{conversationUuid}/close
 ```
 
-Reponse :
+Réponse `200` :
 
 ```json
 {
-  "message": "Conversation close avec succes.",
+  "message": "Conversation close avec succès.",
   "data": {
-    "uuid": "2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd",
+    "uuid": "...",
     "status": "closed",
     "closed_at": "2026-04-23T11:00:00+00:00"
   }
 }
 ```
 
-## Endpoints mobile - support LeHiboo
+Après fermeture : le composer est désactivé, l'utilisateur ne peut pas rouvrir (seul un admin peut réouvrir).
 
-### 13. Lister les conversations support
+---
 
-```http
-GET /api/v1/user/support-conversations?page=1&per_page=15
-```
-
-Reponse :
-
-```json
-{
-  "data": [
-    {
-      "uuid": "0a2f52f0-ae65-4547-ae75-0d8172b8b3f7",
-      "subject": "Probleme de paiement",
-      "status": "open",
-      "conversation_type": "user_support",
-      "unread_count": 1,
-      "is_signalement": false,
-      "latest_message": {
-        "uuid": "9b4acfd0-ef51-4948-9298-f3c68c06229c",
-        "sender_type": "admin",
-        "content": "Nous examinons votre demande."
-      }
-    }
-  ],
-  "meta": {
-    "current_page": 1,
-    "last_page": 1,
-    "per_page": 15,
-    "total": 1
-  }
-}
-```
-
-### 14. Creer une conversation support
-
-```http
-POST /api/v1/user/support-conversations
-Content-Type: application/json
-```
-
-```json
-{
-  "subject": "Probleme de paiement",
-  "message": "Mon paiement est reste en attente."
-}
-```
-
-Reponse `201` :
-
-```json
-{
-  "message": "Conversation support creee avec succes.",
-  "data": {
-    "uuid": "0a2f52f0-ae65-4547-ae75-0d8172b8b3f7",
-    "subject": "Probleme de paiement",
-    "status": "open",
-    "conversation_type": "user_support"
-  }
-}
-```
-
-### 15. Detail d'une conversation support
-
-```http
-GET /api/v1/user/support-conversations/{conversationUuid}
-```
-
-Effet de bord :
-- marque les messages recus comme lus
-
-Reponse :
-
-```json
-{
-  "data": {
-    "uuid": "0a2f52f0-ae65-4547-ae75-0d8172b8b3f7",
-    "subject": "Probleme de paiement",
-    "status": "open",
-    "conversation_type": "user_support",
-    "is_signalement": false,
-    "messages": [
-      {
-        "uuid": "9b4acfd0-ef51-4948-9298-f3c68c06229c",
-        "sender_type": "admin",
-        "content": "Nous examinons votre demande.",
-        "is_mine": false
-      }
-    ]
-  }
-}
-```
-
-### 16. Envoyer un message dans support
-
-```http
-POST /api/v1/user/support-conversations/{conversationUuid}/messages
-```
-
-```json
-{
-  "content": "Merci, je joins une capture."
-}
-```
-
-Reponse :
-
-```json
-{
-  "id": 112,
-  "uuid": "91e8ee69-3cc2-4f94-a44a-32985a4a4540",
-  "conversation_id": 51,
-  "sender_type": "participant",
-  "sender_type_label": "Participant",
-  "content": "Merci, je joins une capture.",
-  "is_deleted": false,
-  "is_edited": false,
-  "is_read": false,
-  "is_delivered": false,
-  "is_mine": true,
-  "attachments": [],
-  "created_at": "2026-04-23T11:15:00+00:00",
-  "updated_at": "2026-04-23T11:15:00+00:00"
-}
-```
-
-## Endpoint mobile - signalement
-
-### 17. Signaler une conversation
-
-Le signalement cree un thread support de suivi.
+### 13. Signaler une conversation
 
 ```http
 POST /api/v1/user/conversations/{conversationUuid}/report
@@ -765,21 +630,26 @@ Content-Type: application/json
 ```json
 {
   "reason": "spam",
-  "comment": "Cet organisateur m'envoie des messages non souhaites."
+  "comment": "Cet organisateur m'envoie des messages non souhaités."
 }
 ```
 
-Valeurs autorisees pour `reason` :
-- `inappropriate`
-- `harassment`
-- `spam`
-- `other`
+Valeurs autorisées pour `reason` :
 
-Reponse `201` :
+| Valeur | Label |
+|--------|-------|
+| `inappropriate` | Contenu inapproprié |
+| `harassment` | Harcèlement |
+| `spam` | Spam |
+| `other` | Autre |
+
+`comment` : **requis**, min 10 chars, max 2000 chars. Le dialog côté web invalide si `comment.trim().length < 10`.
+
+Réponse `201` :
 
 ```json
 {
-  "message": "Votre signalement a bien ete transmis a l'equipe LeHiboo.",
+  "message": "Votre signalement a bien été transmis à l'équipe LeHiboo.",
   "data": {
     "uuid": "3f4f601c-0f3c-4d84-a91a-fae96415d731",
     "support_conversation_uuid": "0a2f52f0-ae65-4547-ae75-0d8172b8b3f7"
@@ -787,107 +657,373 @@ Reponse `201` :
 }
 ```
 
-## Erreurs courantes
+**Comportement** : crée automatiquement un thread support de suivi (`support_conversation_uuid`). Proposer à l'utilisateur de naviguer vers ce thread.
 
-### 401 non authentifie
+Erreur si déjà signalé :
+
+```json
+{ "message": "Vous avez déjà signalé cette conversation." }
+```
+HTTP `422`.
+
+---
+
+## Endpoints — Conversations support LeHiboo
+
+### 14. Lister les conversations support
+
+```http
+GET /api/v1/user/support-conversations?page=1&per_page=15
+```
+
+Query params :
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `status` | `open` \| `closed` | Filtrer par statut |
+| `unread_only` | `true` | Seulement les non lus |
+| `search` | string | Recherche texte |
+| `period` | `today` \| `week` \| `month` \| `older` | Filtrer par période |
+| `page` | integer | Page |
+| `per_page` | integer | Par page |
+
+Réponse `200` :
 
 ```json
 {
-  "message": "Unauthenticated.",
-  "error": "unauthenticated"
+  "data": [
+    {
+      "uuid": "0a2f52f0-ae65-4547-ae75-0d8172b8b3f7",
+      "subject": "Problème de paiement",
+      "status": "open",
+      "conversation_type": "user_support",
+      "unread_count": 1,
+      "is_signalement": false,
+      "latest_message": {
+        "uuid": "9b4acfd0-ef51-4948-9298-f3c68c06229c",
+        "sender_type": "admin",
+        "content": "Nous examinons votre demande.",
+        "is_mine": false,
+        "attachments": []
+      }
+    }
+  ],
+  "meta": { "current_page": 1, "last_page": 1, "per_page": 15, "total": 1 }
 }
 ```
 
-### 403 relation non autorisee
+**Badge "Signalement"** : `is_signalement` est visible dans la liste support — ces threads sont créés automatiquement quand l'utilisateur signale une conversation organisateur. Ce champ n'est **jamais exposé au participant côté organisateur** (uniquement dans les threads support qui lui appartiennent).
 
-Exemple quand l'utilisateur essaie de contacter un organisateur sans relation :
+**Unread count support** : il n'existe pas d'endpoint `unread-count` dédié pour le support. Pour le badge, sommer les `unread_count` de chaque item retourné par cet endpoint (ou garder un compteur local mis à jour via les events realtime).
+
+---
+
+### 15. Créer une conversation support
+
+```http
+POST /api/v1/user/support-conversations
+Content-Type: application/json         (si pas de fichiers)
+Content-Type: multipart/form-data      (si pièces jointes)
+```
+
+Corps JSON :
 
 ```json
 {
-  "message": "Vous ne pouvez contacter que les organisateurs avec lesquels vous avez une relation."
+  "subject": "Problème de paiement",
+  "message": "Mon paiement est resté en attente depuis 48h."
 }
 ```
 
-### 403 contact public desactive
+Corps multipart (avec pièces jointes) :
+
+```text
+subject=Problème de paiement
+message=Mon paiement est resté en attente depuis 48h.
+attachments[]=<fichier>
+```
+
+`subject` (requis, max 255 chars) et `message` (requis) obligatoires. Les pièces jointes suivent les mêmes contraintes que les messages : max 3, 5 MB, types `jpg/jpeg/png/webp/pdf`.
+
+Réponse `201` :
 
 ```json
 {
-  "message": "Cet organisateur n'accepte pas les messages depuis sa page publique."
+  "message": "Conversation support créée avec succès.",
+  "data": {
+    "uuid": "0a2f52f0-ae65-4547-ae75-0d8172b8b3f7",
+    "subject": "Problème de paiement",
+    "status": "open",
+    "conversation_type": "user_support"
+  }
 }
 ```
 
-### 404 ressource introuvable
+---
 
-```json
-{
-  "message": "Reservation non trouvee."
-}
+### 16. Détail d'une conversation support (+ mark-as-read automatique)
+
+```http
+GET /api/v1/user/support-conversations/{conversationUuid}
 ```
 
-### 422 validation
+**Effet de bord** : marque automatiquement les messages reçus comme lus.
+
+Réponse `200` :
 
 ```json
 {
-  "message": "The given data was invalid.",
-  "errors": {
-    "subject": [
-      "The subject field is required."
+  "data": {
+    "uuid": "0a2f52f0-ae65-4547-ae75-0d8172b8b3f7",
+    "subject": "Problème de paiement",
+    "status": "open",
+    "conversation_type": "user_support",
+    "is_signalement": false,
+    "messages": [
+      {
+        "uuid": "9b4acfd0-ef51-4948-9298-f3c68c06229c",
+        "sender_type": "admin",
+        "content": "Nous examinons votre demande.",
+        "is_mine": false,
+        "attachments": []
+      }
     ]
   }
 }
 ```
 
-### 422 conversation deja fermee
+---
+
+### 17. Envoyer un message dans support
+
+```http
+POST /api/v1/user/support-conversations/{conversationUuid}/messages
+Content-Type: application/json         (si pas de fichiers)
+Content-Type: multipart/form-data      (si pièces jointes)
+```
+
+Corps JSON :
+
+```json
+{ "content": "Merci, je joins une capture." }
+```
+
+Corps multipart (avec pièces jointes) :
+
+```text
+content=Merci, je joins une capture.
+attachments[]=<fichier>
+```
+
+Réponse `200` : objet `Message` complet.
+
+**Restrictions** : pas d'endpoints d'édition, suppression, fermeture ou signalement côté participant sur les conversations support. Le menu long-press (modifier/supprimer) et l'option "Fermer" ne doivent pas être affichés dans ces threads.
+
+---
+
+## Temps réel — WebSocket Broadcasting
+
+### Infrastructure
+
+Le backend broadcast via **Laravel Reverb** sur des channels privés.
+
+Auth channel : `POST /broadcasting/auth` avec `Authorization: Bearer {token}` (standard Laravel Broadcasting).
+
+### Channels
+
+| Channel | Scope |
+|---------|-------|
+| `private-user.{userId}` | Tous les events participant |
+
+### Événements disponibles sur `private-user.{userId}`
+
+#### `message.received`
+
+Nouveau message dans une conversation (toutes directions).
 
 ```json
 {
-  "message": "Cette conversation est close. Vous ne pouvez plus y repondre."
+  "message_uuid": "...",
+  "conversation_uuid": "...",
+  "sender_type": "organization",
+  "sender_name": "Le Hiboo Events",
+  "content_preview": "Bonjour, voici...",
+  "conversation_subject": "Question sur ma réservation",
+  "created_at": "2026-04-23T10:30:00+00:00"
 }
 ```
 
-### 422 signalement en double
+**Action** : si on est dans ce thread → appeler `GET show` pour récupérer le message complet. Sinon → incrémenter le badge unread, mettre à jour `latest_message` dans la liste.
+
+#### `message.delivered`
+
+Confirmation de livraison d'un message envoyé par l'utilisateur.
 
 ```json
 {
-  "message": "Vous avez deja signale cette conversation."
+  "message_uuid": "...",
+  "conversation_uuid": "...",
+  "delivered_at": "2026-04-23T10:30:01+00:00"
 }
 ```
 
-## Recommandations implementation mobile
+**Action** : passer `is_delivered = true` sur le message correspondant dans le cache local (ticks gris simple → double).
 
-### Liste messages
+#### `message.edited`
 
-- afficher `unread_count`
-- afficher `latest_message.content`
-- afficher le nom de `organization.company_name` pour `participant_vendor`
-- afficher un badge `Signalement` si `is_signalement = true`
+Un message a été édité par son expéditeur.
 
-### Detail conversation
+```json
+{
+  "message_uuid": "...",
+  "conversation_uuid": "...",
+  "content": "Texte mis à jour",
+  "edited_at": "2026-04-23T10:45:00+00:00"
+}
+```
 
-- trier selon `messages` recu du backend, deja ordonnes par `id asc`
-- afficher les pieces jointes avant le texte si vous voulez coller au web
-- afficher l'etat du message sortant avec `is_delivered`, `is_read`, `read_at`
-- si `is_deleted = true`, rendre un placeholder "Message supprime"
+**Action** : mettre à jour `content`, `is_edited = true`, `edited_at` dans le cache local. Pas de refetch complet nécessaire.
 
-### Creation / reply
+#### `message.deleted`
 
-- passer en `multipart/form-data` des qu'il y a au moins un fichier
-- permettre envoi sans texte si au moins un fichier est joint
-- bloquer le composer si `status = closed`
+Un message a été supprimé.
 
-### Synchronisation
+```json
+{
+  "message_uuid": "...",
+  "conversation_uuid": "...",
+  "deleted_at": "2026-04-23T10:50:00+00:00"
+}
+```
 
-- ouvrir le detail suffit pour marquer lu
-- la logique de "mark as read" depend du role du viewer, pas seulement du type de conversation
-- apres `send`, `edit`, `delete`, `close`, invalider detail + liste + unread count
-- si vous ajoutez le realtime plus tard, les events utiles sont `message.received`, `message.delivered`, `conversation.read`
+**Action** : passer `is_deleted = true`, `content = null`, vider `attachments` dans le cache local.
 
-## Hors scope de cette v1 mobile
+#### `conversation.read`
 
-Ces endpoints existent cote web/dashboard mais ne sont pas prioritaires pour l'app mobile user :
-- `/api/v1/vendor/conversations`
-- `/api/v1/vendor/org-conversations`
-- `/api/v1/admin/conversations`
-- `/api/v1/admin/conversation-reports`
+L'autre partie a lu les messages envoyés par l'utilisateur.
 
-Si besoin, une v2 de ce document pourra couvrir vendor et admin avec leurs propres routes mobiles.
+```json
+{
+  "conversation_uuid": "...",
+  "reader_id": 8,
+  "reader_name": "Le Hiboo Events",
+  "messages_read_count": 3,
+  "read_at": "2026-04-23T11:00:00+00:00"
+}
+```
+
+**Action** : passer `is_read = true` sur les messages `is_mine = true` concernés. Ticks doubles gris → bleus/primaire.
+
+#### `conversation.created`
+
+Nouvelle conversation créée (notamment quand un admin ou vendor initie la conversation vers l'utilisateur).
+
+```json
+{
+  "conversation_uuid": "...",
+  "conversation_type": "participant_vendor",
+  "subject": "Question avant réservation",
+  "created_at": "2026-04-23T11:05:00+00:00"
+}
+```
+
+**Action** : invalider la liste de conversations + unread count.
+
+#### `conversation.closed`
+
+La conversation a été fermée.
+
+```json
+{
+  "conversation_uuid": "...",
+  "closed_at": "2026-04-23T11:10:00+00:00"
+}
+```
+
+**Action** : refetch du détail pour verrouiller le composer. Mettre à jour `status = "closed"` dans la liste.
+
+#### `conversation.reopened`
+
+La conversation a été réouverte par un admin.
+
+```json
+{
+  "conversation_uuid": "...",
+  "reopened_at": "2026-04-23T14:00:00+00:00"
+}
+```
+
+**Action** : refetch du détail pour déverrouiller le composer. Mettre à jour `status = "open"` dans la liste.
+
+---
+
+## Stratégie de synchronisation — Polling (actuel)
+
+| Surface | Intervalle | Endpoint |
+|---------|------------|----------|
+| Thread detail (actif) | 10 secondes | `GET /user/conversations/{uuid}` |
+| Badge unread global | 30 secondes | `GET /user/conversations/unread-count` + somme support |
+| Liste conversations | Au retour sur l'écran | `GET /user/conversations` |
+
+**Note** : le polling du detail marque automatiquement comme lus (effet de bord du `GET show`). Pas besoin d'appel `POST /read` séparé — cet endpoint n'existe pas côté participant.
+
+---
+
+## Erreurs courantes
+
+### 401 — Non authentifié
+
+```json
+{ "message": "Unauthenticated.", "error": "unauthenticated" }
+```
+
+### 403 — Relation non autorisée
+
+```json
+{ "message": "Vous ne pouvez contacter que les organisateurs avec lesquels vous avez une relation." }
+```
+
+### 403 — Contact public désactivé
+
+```json
+{ "message": "Cet organisateur n'accepte pas les messages depuis sa page publique." }
+```
+
+### 404 — Ressource introuvable
+
+```json
+{ "message": "Conversation non trouvée." }
+```
+
+### 422 — Validation
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": { "subject": ["The subject field is required."] }
+}
+```
+
+### 422 — Conversation fermée
+
+```json
+{ "message": "Cette conversation est close. Vous ne pouvez plus y répondre." }
+```
+
+### 422 — Signalement en double
+
+```json
+{ "message": "Vous avez déjà signalé cette conversation." }
+```
+
+---
+
+## Hors scope participant (endpoints web/dashboard existants non exposés côté user)
+
+| Endpoint | Rôle web |
+|----------|----------|
+| `GET /vendor/conversations` | Vendor — liste côté org |
+| `POST /vendor/conversations/to-participant` | Vendor — contacter un participant |
+| `GET /admin/conversations` | Admin |
+| `POST /admin/conversations/{uuid}/reopen` | Admin — réouvrir |
+| `GET /admin/conversation-reports` | Admin — liste signalements |

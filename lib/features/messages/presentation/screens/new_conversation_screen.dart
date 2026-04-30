@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/repositories/messages_repository_impl.dart';
 import '../widgets/new_conversation_form.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
 class NewConversationScreen extends ConsumerStatefulWidget {
   final String? fromBookingUuid;
@@ -32,7 +34,16 @@ class _NewConversationScreenState
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
+    
+    // Safety check for unauthenticated users (e.g. deep links)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = ref.read(authProvider);
+      if (authState.status == AuthStatus.unauthenticated) {
+        GuestRestrictionDialog.show(context, featureName: 'envoyer un message');
+      } else {
+        _init();
+      }
+    });
   }
 
   Future<void> _init() async {

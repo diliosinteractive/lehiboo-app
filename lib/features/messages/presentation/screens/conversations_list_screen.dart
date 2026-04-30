@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../providers/conversations_provider.dart';
 import '../providers/support_conversations_provider.dart';
 import '../widgets/conversation_tile.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
 class ConversationsListScreen extends ConsumerStatefulWidget {
   const ConversationsListScreen({super.key});
@@ -29,6 +31,14 @@ class _ConversationsListScreenState
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    // Safety check for unauthenticated users (e.g. deep links)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = ref.read(authProvider);
+      if (authState.status == AuthStatus.unauthenticated) {
+        GuestRestrictionDialog.show(context, featureName: 'voir vos messages');
+      }
+    });
   }
 
   @override

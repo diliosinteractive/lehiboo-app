@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:pusher_channels_flutter/pusher_channels_flutter.dart';
+import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:lehiboo/config/env_config.dart';
 import 'package:lehiboo/core/constants/app_constants.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -38,27 +38,70 @@ class RealtimeEvent {
   });
 }
 
+// ── Auth delegate ─────────────────────────────────────────────────────────────
+
+/// Reads the Bearer token from secure storage on each auth request so it's
+/// always fresh (no need to recreate the channel when the token rotates).
+class _StorageTokenAuthDelegate
+    implements
+        EndpointAuthorizableChannelAuthorizationDelegate<
+            PrivateChannelAuthorizationData> {
+  final FlutterSecureStorage _storage;
+
+  const _StorageTokenAuthDelegate(this._storage);
+
+  @override
+  EndpointAuthFailedCallback? get onAuthFailed => null;
+
+  @override
+  Future<PrivateChannelAuthorizationData> authorizationData(
+    String socketId,
+    String channelName,
+  ) async {
+    final token = await _storage.read(key: AppConstants.keyAuthToken);
+    if (token == null) throw Exception('No auth token available');
+    final response = await http.post(
+      Uri.parse(EnvConfig.pusherAuthEndpoint),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: {
+        'socket_id': socketId,
+        'channel_name': channelName,
+      },
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Pusher auth failed: ${response.statusCode}');
+    }
+    final decoded = jsonDecode(response.body) as Map;
+    return PrivateChannelAuthorizationData(authKey: decoded['auth'] as String);
+  }
+}
+
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
-/// Manages the Pusher WebSocket connection for real-time message updates.
+/// Manages the WebSocket connection for real-time message updates via
+/// dart_pusher_channels (pure Dart, supports custom Reverb host/port/TLS).
 /// State = isConnected.
 class MessagesRealtimeNotifier extends StateNotifier<bool> {
   final Ref _ref;
-  PusherChannelsFlutter? _pusher;
-  String? _subscribedUserId;
+  PusherChannelsClient? _client;
+  StreamSubscription<PusherChannelsClientLifeCycleState>? _lifecycleSub;
+  StreamSubscription<ChannelReadEvent>? _eventSub;
+  StreamSubscription<void>? _connectedSub;
   final _storage = const FlutterSecureStorage();
   final _eventsController = StreamController<RealtimeEvent>.broadcast();
 
   Stream<RealtimeEvent> get events => _eventsController.stream;
 
   MessagesRealtimeNotifier(this._ref) : super(false) {
-    // Connect if already authenticated
     final authState = _ref.read(authProvider);
     if (authState.status == AuthStatus.authenticated &&
         authState.user != null) {
       _connect(authState.user!.id);
     }
-    // React to future auth state changes
     _ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.status == AuthStatus.authenticated && next.user != null) {
         if (prev?.user?.id != next.user!.id) {
@@ -76,83 +119,73 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
       debugPrint('Pusher: PUSHER_APP_KEY not configured — skipping WS');
       return;
     }
+    if (EnvConfig.pusherHost.isEmpty) {
+      debugPrint('Pusher: PUSHER_HOST not configured — skipping WS');
+      return;
+    }
     try {
-      _pusher = PusherChannelsFlutter.getInstance();
-      await _pusher!.init(
-        apiKey: EnvConfig.pusherKey,
-        cluster: EnvConfig.pusherCluster,
-        onConnectionStateChange: (currentState, previousState) {
-          if (mounted) state = currentState == 'CONNECTED';
-        },
-        onError: (message, code, error) {
-          debugPrint('Pusher error [$code]: $message');
-        },
-        onAuthorizer: (channelName, socketId, options) =>
-            _authorizer(channelName, socketId),
+      final options = PusherChannelsOptions.fromHost(
+        scheme: EnvConfig.pusherUseTLS ? 'wss' : 'ws',
+        host: EnvConfig.pusherHost,
+        key: EnvConfig.pusherKey,
+        port: EnvConfig.pusherPort,
       );
-      await _pusher!.subscribe(
-        channelName: 'private-user.$userId',
-        onEvent: _handleEvent,
+
+      _client = PusherChannelsClient.websocket(
+        options: options,
+        connectionErrorHandler: (error, trace, refresh) {
+          debugPrint('Pusher connection error: $error');
+          refresh();
+        },
+        minimumReconnectDelayDuration: const Duration(seconds: 2),
       );
-      await _pusher!.connect();
-      _subscribedUserId = userId;
+
+      _lifecycleSub = _client!.lifecycleStream.listen((lifecycleState) {
+        if (mounted) {
+          state = lifecycleState ==
+              PusherChannelsClientLifeCycleState.establishedConnection;
+        }
+      });
+
+      final channel = _client!.privateChannel(
+        'private-user.$userId',
+        authorizationDelegate: _StorageTokenAuthDelegate(_storage),
+      );
+
+      _eventSub = channel.bindToAll().listen(_handleEvent);
+
+      _connectedSub = _client!.onConnectionEstablished.listen((_) {
+        channel.subscribeIfNotUnsubscribed();
+      });
+
+      await _client!.connect();
     } catch (e) {
       debugPrint('Pusher connect failed: $e');
     }
   }
 
   Future<void> _disconnect() async {
-    if (_pusher == null) return;
+    _lifecycleSub?.cancel();
+    _eventSub?.cancel();
+    _connectedSub?.cancel();
+    _lifecycleSub = null;
+    _eventSub = null;
+    _connectedSub = null;
     try {
-      if (_subscribedUserId != null) {
-        await _pusher!
-            .unsubscribe(channelName: 'private-user.$_subscribedUserId');
-      }
-      await _pusher!.disconnect();
+      await _client?.disconnect();
+      _client?.dispose();
     } catch (_) {}
-    _pusher = null;
-    _subscribedUserId = null;
+    _client = null;
     if (mounted) state = false;
   }
 
-  Future<dynamic> _authorizer(String channelName, String socketId) async {
-    try {
-      final token = await _storage.read(key: AppConstants.keyAuthToken);
-      if (token == null) return null;
-      final response = await http.post(
-        Uri.parse(EnvConfig.pusherAuthEndpoint),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'socket_id': socketId,
-          'channel_name': channelName,
-        }),
-      );
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-    } catch (e) {
-      debugPrint('Pusher auth failed: $e');
-    }
-    return null;
-  }
-
-  void _handleEvent(PusherEvent event) {
+  void _handleEvent(ChannelReadEvent event) {
     if (_eventsController.isClosed) return;
-    final rawData = event.data ?? '{}';
-    Map<String, dynamic> data;
-    try {
-      data = jsonDecode(rawData) as Map<String, dynamic>;
-    } catch (_) {
-      return;
-    }
+    final data = event.tryGetDataAsMap() ?? {};
     final convUuid = data['conversation_uuid'] as String?;
     final msgUuid = data['message_uuid'] as String?;
 
-    switch (event.eventName) {
+    switch (event.name) {
       case 'message.received':
         if (convUuid == null) return;
         _emit(RealtimeEvent(

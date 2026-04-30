@@ -291,7 +291,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   color: Colors.white,
                 ),
               ),
-              onPressed: () => context.push('/messages'),
+              onPressed: () async {
+                final allowed = await GuestGuard.check(
+                  context: context,
+                  ref: ref,
+                  featureName: 'voir vos messages',
+                );
+                if (allowed && mounted) {
+                  context.push('/messages');
+                }
+              },
             );
           },
         ),
