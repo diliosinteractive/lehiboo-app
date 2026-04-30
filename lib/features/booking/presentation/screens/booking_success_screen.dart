@@ -39,7 +39,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
 
-  List<TicketDetailDto>? _tickets;
+  List<BookingTicketDto>? _tickets;
   bool _isLoadingTickets = false;
   // ignore: unused_field - Préservé pour usage futur
   String? _errorMessage;
@@ -439,7 +439,12 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
     );
   }
 
-  Widget _buildTicketCard(TicketDetailDto ticket) {
+  Widget _buildTicketCard(BookingTicketDto ticket) {
+    final attendeeName = ticket.attendeeName ??
+        [ticket.attendeeFirstName, ticket.attendeeLastName]
+            .where((s) => s != null && s.isNotEmpty)
+            .join(' ');
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -474,31 +479,23 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
           ),
           const SizedBox(height: 12),
 
-          // Infos billet
+          // Code (QR code as the human-readable reference)
           Text(
-            ticket.ticketType,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            ticket.ticketNumber,
+            ticket.qrCode,
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade600,
               fontFamily: 'monospace',
             ),
           ),
-          if (ticket.attendee != null) ...[
+          if (attendeeName.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              ticket.attendee!.name,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
+              attendeeName,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: HbColors.textPrimary,
               ),
             ),
           ],

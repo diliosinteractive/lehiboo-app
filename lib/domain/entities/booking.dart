@@ -23,6 +23,8 @@ class Booking with _$Booking {
     Slot? slot,
     // Tickets associated with this booking
     List<Ticket>? tickets,
+    // Flat list of attendees across all booking items
+    List<Attendee>? attendees,
     // Customer info
     String? customerEmail,
     String? customerFirstName,
@@ -34,6 +36,19 @@ class Booking with _$Booking {
     // Reference (short code for display)
     String? reference,
   }) = _Booking;
+}
+
+@freezed
+class Attendee with _$Attendee {
+  const factory Attendee({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+    int? age,
+    String? city,
+    String? ticketTypeName,
+  }) = _Attendee;
 }
 
 @freezed

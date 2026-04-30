@@ -193,10 +193,43 @@ class BookingListItemDto with _$BookingListItemDto {
     // Relations loaded by API
     BookingEventDto? event,
     BookingSlotDto? slot,
+    // Booking line items with attendee details (returned on detail endpoint
+    // and on richer list responses).
+    List<BookingItemDto>? items,
   }) = _BookingListItemDto;
 
   factory BookingListItemDto.fromJson(Map<String, dynamic> json) =>
       _$BookingListItemDtoFromJson(json);
+}
+
+@freezed
+class BookingItemDto with _$BookingItemDto {
+  const factory BookingItemDto({
+    int? id,
+    @JsonKey(name: 'ticket_type_id') int? ticketTypeId,
+    int? quantity,
+    String? ticketTypeName,
+    @JsonKey(name: 'attendee_details')
+    List<BookingAttendeeDetailDto>? attendeeDetails,
+  }) = _BookingItemDto;
+
+  factory BookingItemDto.fromJson(Map<String, dynamic> json) =>
+      _$BookingItemDtoFromJson(json);
+}
+
+@freezed
+class BookingAttendeeDetailDto with _$BookingAttendeeDetailDto {
+  const factory BookingAttendeeDetailDto({
+    @JsonKey(name: 'first_name') String? firstName,
+    @JsonKey(name: 'last_name') String? lastName,
+    String? email,
+    String? phone,
+    int? age,
+    String? city,
+  }) = _BookingAttendeeDetailDto;
+
+  factory BookingAttendeeDetailDto.fromJson(Map<String, dynamic> json) =>
+      _$BookingAttendeeDetailDtoFromJson(json);
 }
 
 @freezed
@@ -248,10 +281,43 @@ class TicketsListResponseDto with _$TicketsListResponseDto {
       _$TicketsListResponseDtoFromJson(json);
 }
 
+/// Ticket as returned by `GET /bookings/{uuid}/tickets`. The shape is
+/// flatter than [TicketDetailDto] (which models the `/me/tickets/{uuid}`
+/// endpoint) — attendee fields are flat, no nested event, and `id` is a
+/// UUID string rather than an int.
+@freezed
+class BookingTicketDto with _$BookingTicketDto {
+  const factory BookingTicketDto({
+    required String id,
+    String? uuid,
+    @JsonKey(name: 'booking_id') int? bookingId,
+    @JsonKey(name: 'booking_item_id') int? bookingItemId,
+    @JsonKey(name: 'event_id') int? eventId,
+    @JsonKey(name: 'slot_id') int? slotId,
+    @JsonKey(name: 'ticket_type_id') int? ticketTypeId,
+    @JsonKey(name: 'qr_code') required String qrCode,
+    @JsonKey(name: 'attendee_first_name') String? attendeeFirstName,
+    @JsonKey(name: 'attendee_last_name') String? attendeeLastName,
+    @JsonKey(name: 'attendee_email') String? attendeeEmail,
+    @JsonKey(name: 'attendee_phone') String? attendeePhone,
+    @JsonKey(name: 'attendee_name') String? attendeeName,
+    double? price,
+    required String status,
+    @JsonKey(name: 'status_label') String? statusLabel,
+    @JsonKey(name: 'custom_fields') Map<String, dynamic>? customFields,
+    @JsonKey(name: 'created_at') String? createdAt,
+    @JsonKey(name: 'updated_at') String? updatedAt,
+  }) = _BookingTicketDto;
+
+  factory BookingTicketDto.fromJson(Map<String, dynamic> json) =>
+      _$BookingTicketDtoFromJson(json);
+}
+
 @freezed
 class TicketDetailDto with _$TicketDetailDto {
   const factory TicketDetailDto({
     required int id,
+    String? uuid,
     @JsonKey(name: 'ticket_number') required String ticketNumber,
     required String status,
     @JsonKey(name: 'status_label') required String statusLabel,

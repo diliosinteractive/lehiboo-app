@@ -12,6 +12,8 @@ import 'package:lehiboo/features/booking/presentation/widgets/booking_hero_heade
 import 'package:lehiboo/features/booking/presentation/widgets/event_info_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_detail_summary_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/ticket_preview_card.dart';
+import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
+import 'package:lehiboo/features/booking/presentation/utils/ticket_download_helper.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
@@ -43,6 +45,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     if (_booking != null) {
       _isLoading = false;
       _generateMockTickets();
+      // Fetch real tickets (with proper UUIDs) so the per-ticket download
+      // button can hit /me/tickets/{uuid}/download.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadRealTickets();
+      });
     } else {
       // Différer le chargement après le build pour éviter l'erreur Riverpod
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -96,9 +103,58 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
     // Generate mock tickets based on quantity
     _generateMockTickets();
+    // Then upgrade to real tickets (with backend UUIDs) for per-ticket
+    // downloads.
+    _loadRealTickets();
+  }
+
+  /// Fetch real tickets from `/bookings/{uuid}/tickets`, merge with the
+  /// attendee data already on the booking, and replace [_tickets] so the
+  /// per-ticket download button has a real UUID to hit.
+  Future<void> _loadRealTickets() async {
+    final booking = _booking;
+    if (booking == null) return;
+    try {
+      final dtos = await ref
+          .read(bookingApiDataSourceProvider)
+          .getBookingTickets(bookingUuid: booking.id);
+      if (!mounted || dtos.isEmpty) return;
+
+      // BookingTicketDto.id is a UUID string — use it directly for the
+      // per-ticket /me/tickets/{uuid}/download endpoint.
+      final merged = dtos.map((dto) {
+        return Ticket(
+          id: dto.id,
+          bookingId: booking.id,
+          userId: booking.userId,
+          slotId: booking.slotId,
+          ticketType: 'Standard',
+          qrCodeData: dto.qrCode,
+          status: dto.status,
+          attendeeFirstName: dto.attendeeFirstName,
+          attendeeLastName: dto.attendeeLastName,
+          attendeeEmail: dto.attendeeEmail,
+        );
+      }).toList();
+
+      setState(() {
+        _tickets = merged;
+      });
+    } catch (e) {
+      debugPrint('🎫 _loadRealTickets failed (keeping mock tickets): $e');
+    }
   }
 
   void _generateMockTickets() {
+    final realTickets = _booking?.tickets;
+    if (realTickets != null && realTickets.isNotEmpty) {
+      // Use the real tickets built from items[].attendee_details[] in the
+      // mapper. They already carry attendeeFirstName / LastName / Email.
+      _tickets = realTickets;
+      setState(() {});
+      return;
+    }
+
     final quantity = _booking?.quantity ?? 1;
     _tickets = List.generate(
       quantity,
@@ -225,13 +281,50 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }
   }
 
-  void _downloadAllTickets() {
-    // TODO: Implement PDF download
+  Future<void> _downloadAllTickets() async {
+    if (_booking == null) return;
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
       const SnackBar(
-        content: Text('Téléchargement des billets...'),
+        content: Text('Préparation du PDF…'),
         backgroundColor: HbColors.brandPrimary,
+        duration: Duration(seconds: 30),
+      ),
+    );
+
+    try {
+      final pdf = await ref
+          .read(bookingApiDataSourceProvider)
+          .downloadBookingTicketsBundle(_booking!.id);
+      messenger.hideCurrentSnackBar();
+      await shareTicketPdf(pdf);
+    } on TicketsNotReadyException {
+      _showDownloadError(
+        messenger,
+        'Vos billets sont en cours de génération, réessayez dans un instant.',
+      );
+    } on NotAuthorizedToDownloadException {
+      _showDownloadError(
+        messenger,
+        "Vous n'êtes pas autorisé à télécharger ces billets.",
+      );
+    } catch (_) {
+      _showDownloadError(
+        messenger,
+        'Téléchargement impossible. Réessayez plus tard.',
+      );
+    }
+  }
+
+  void _showDownloadError(ScaffoldMessengerState messenger, String message) {
+    messenger.hideCurrentSnackBar();
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: HbColors.error,
       ),
     );
   }
@@ -404,8 +497,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   _buildCustomerInfoCard(booking),
                 ],
                 SizedBox(height: tokens.spacing.m),
-                // Tickets section
-                if (_tickets.isNotEmpty)
+                // Tickets section — only for confirmed bookings with generated
+                // tickets (spec §4). Hidden for pending/cancelled to avoid the
+                // bundle endpoint returning 404/403 from the download button.
+                if (_tickets.isNotEmpty && _booking?.status == 'confirmed')
                   TicketsSection(
                     tickets: _tickets,
                     onTicketTap: (ticket) {

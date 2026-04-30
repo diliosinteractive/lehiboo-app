@@ -145,18 +145,38 @@ class BookingDetailSummaryCard extends StatelessWidget {
   }
 
   Widget _buildLineItem(BookingLineItem item) {
+    final showUnitBreakdown = item.quantity > 1 && item.unitPrice > 0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '${item.quantity}× ${item.label}',
-            style: const TextStyle(
-              fontSize: 14,
-              color: HbColors.textPrimary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${item.quantity}× ${item.label}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+                if (showUnitBreakdown) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${item.unitPrice.toStringAsFixed(2)}${item.currency} / billet',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: HbColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             '${item.totalPrice.toStringAsFixed(2)}${item.currency}',
             style: const TextStyle(
