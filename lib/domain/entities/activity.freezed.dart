@@ -42,6 +42,10 @@ mixin _$Activity {
   double? get rating => throw _privateConstructorUsedError;
   int? get reviewsCount => throw _privateConstructorUsedError;
 
+  /// Members-only event — drives the "Privé 🔒" badge on event cards.
+  /// Spec: MEMBERSHIPS_MOBILE_SPEC.md §20.
+  bool get isMembersOnly => throw _privateConstructorUsedError;
+
   @JsonKey(ignore: true)
   $ActivityCopyWith<Activity> get copyWith =>
       throw _privateConstructorUsedError;
@@ -77,7 +81,8 @@ abstract class $ActivityCopyWith<$Res> {
       String? bookingEmail,
       Slot? nextSlot,
       double? rating,
-      int? reviewsCount});
+      int? reviewsCount,
+      bool isMembersOnly});
 
   $CategoryCopyWith<$Res>? get category;
   $AgeRangeCopyWith<$Res>? get ageRange;
@@ -125,6 +130,7 @@ class _$ActivityCopyWithImpl<$Res, $Val extends Activity>
     Object? nextSlot = freezed,
     Object? rating = freezed,
     Object? reviewsCount = freezed,
+    Object? isMembersOnly = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -227,6 +233,10 @@ class _$ActivityCopyWithImpl<$Res, $Val extends Activity>
           ? _value.reviewsCount
           : reviewsCount // ignore: cast_nullable_to_non_nullable
               as int?,
+      isMembersOnly: null == isMembersOnly
+          ? _value.isMembersOnly
+          : isMembersOnly // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 
@@ -336,7 +346,8 @@ abstract class _$$ActivityImplCopyWith<$Res>
       String? bookingEmail,
       Slot? nextSlot,
       double? rating,
-      int? reviewsCount});
+      int? reviewsCount,
+      bool isMembersOnly});
 
   @override
   $CategoryCopyWith<$Res>? get category;
@@ -388,6 +399,7 @@ class __$$ActivityImplCopyWithImpl<$Res>
     Object? nextSlot = freezed,
     Object? rating = freezed,
     Object? reviewsCount = freezed,
+    Object? isMembersOnly = null,
   }) {
     return _then(_$ActivityImpl(
       id: null == id
@@ -490,6 +502,10 @@ class __$$ActivityImplCopyWithImpl<$Res>
           ? _value.reviewsCount
           : reviewsCount // ignore: cast_nullable_to_non_nullable
               as int?,
+      isMembersOnly: null == isMembersOnly
+          ? _value.isMembersOnly
+          : isMembersOnly // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -522,7 +538,8 @@ class _$ActivityImpl implements _Activity {
       this.bookingEmail,
       this.nextSlot,
       this.rating,
-      this.reviewsCount})
+      this.reviewsCount,
+      this.isMembersOnly = false})
       : _tags = tags;
 
   @override
@@ -584,9 +601,15 @@ class _$ActivityImpl implements _Activity {
   @override
   final int? reviewsCount;
 
+  /// Members-only event — drives the "Privé 🔒" badge on event cards.
+  /// Spec: MEMBERSHIPS_MOBILE_SPEC.md §20.
+  @override
+  @JsonKey()
+  final bool isMembersOnly;
+
   @override
   String toString() {
-    return 'Activity(id: $id, title: $title, slug: $slug, description: $description, excerpt: $excerpt, imageUrl: $imageUrl, category: $category, tags: $tags, ageRange: $ageRange, audience: $audience, isFree: $isFree, priceMin: $priceMin, priceMax: $priceMax, currency: $currency, indoorOutdoor: $indoorOutdoor, durationMinutes: $durationMinutes, city: $city, partner: $partner, reservationMode: $reservationMode, externalBookingUrl: $externalBookingUrl, bookingPhone: $bookingPhone, bookingEmail: $bookingEmail, nextSlot: $nextSlot, rating: $rating, reviewsCount: $reviewsCount)';
+    return 'Activity(id: $id, title: $title, slug: $slug, description: $description, excerpt: $excerpt, imageUrl: $imageUrl, category: $category, tags: $tags, ageRange: $ageRange, audience: $audience, isFree: $isFree, priceMin: $priceMin, priceMax: $priceMax, currency: $currency, indoorOutdoor: $indoorOutdoor, durationMinutes: $durationMinutes, city: $city, partner: $partner, reservationMode: $reservationMode, externalBookingUrl: $externalBookingUrl, bookingPhone: $bookingPhone, bookingEmail: $bookingEmail, nextSlot: $nextSlot, rating: $rating, reviewsCount: $reviewsCount, isMembersOnly: $isMembersOnly)';
   }
 
   @override
@@ -634,7 +657,9 @@ class _$ActivityImpl implements _Activity {
                 other.nextSlot == nextSlot) &&
             (identical(other.rating, rating) || other.rating == rating) &&
             (identical(other.reviewsCount, reviewsCount) ||
-                other.reviewsCount == reviewsCount));
+                other.reviewsCount == reviewsCount) &&
+            (identical(other.isMembersOnly, isMembersOnly) ||
+                other.isMembersOnly == isMembersOnly));
   }
 
   @override
@@ -664,7 +689,8 @@ class _$ActivityImpl implements _Activity {
         bookingEmail,
         nextSlot,
         rating,
-        reviewsCount
+        reviewsCount,
+        isMembersOnly
       ]);
 
   @JsonKey(ignore: true)
@@ -700,7 +726,8 @@ abstract class _Activity implements Activity {
       final String? bookingEmail,
       final Slot? nextSlot,
       final double? rating,
-      final int? reviewsCount}) = _$ActivityImpl;
+      final int? reviewsCount,
+      final bool isMembersOnly}) = _$ActivityImpl;
 
   @override
   String get id;
@@ -752,6 +779,11 @@ abstract class _Activity implements Activity {
   double? get rating;
   @override
   int? get reviewsCount;
+  @override
+
+  /// Members-only event — drives the "Privé 🔒" badge on event cards.
+  /// Spec: MEMBERSHIPS_MOBILE_SPEC.md §20.
+  bool get isMembersOnly;
   @override
   @JsonKey(ignore: true)
   _$$ActivityImplCopyWith<_$ActivityImpl> get copyWith =>

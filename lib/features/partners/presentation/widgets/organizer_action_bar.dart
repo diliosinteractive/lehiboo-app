@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/guest_restriction_dialog.dart';
+import '../../../memberships/presentation/widgets/organizer_join_button.dart'
+    show confirmAndJoin;
 import '../../data/models/organizer_profile_dto.dart';
 import '../providers/organizer_profile_providers.dart';
 
@@ -13,11 +15,11 @@ import '../providers/organizer_profile_providers.dart';
 /// - **Contact** is hidden when `organizer.allow_public_contact == false`.
 /// - **Coordinates** is a UI toggle owned by the parent screen.
 ///
-/// The Follow button lives next to the organizer name (see
-/// [OrganizerFollowButton]); this widget still owns the auth-replay
-/// listener so a pending follow intent — captured before the user logged
-/// in — fires the toggle through [followStateControllerProvider]
-/// regardless of where the visible button sits.
+/// The Follow and Join buttons live next to the organizer name (see
+/// [OrganizerFollowButton] / [OrganizerJoinButton]); this widget still
+/// owns the auth-replay listener so any pending intent — captured before
+/// the user logged in — fires through the appropriate provider regardless
+/// of where the visible button sits.
 ///
 /// Auth gating: tapping any button while unauthenticated stores the intent
 /// in [pendingOrganizerActionProvider] and opens [GuestRestrictionDialog].
@@ -120,6 +122,7 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
           PendingOrganizerAction.follow => "suivre cet organisateur",
           PendingOrganizerAction.contact => "contacter cet organisateur",
           PendingOrganizerAction.coordinates => "voir les coordonnées",
+          PendingOrganizerAction.join => "rejoindre cet organisateur",
         },
       );
       return;
@@ -128,21 +131,31 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
   }
 
   void _runAction(PendingOrganizerAction action) {
+    final orgName = widget.organizer.displayName?.isNotEmpty ?? false
+        ? widget.organizer.displayName!
+        : widget.organizer.name;
     switch (action) {
       case PendingOrganizerAction.follow:
         ref
             .read(followStateControllerProvider(widget.organizer.uuid).notifier)
             .toggle();
       case PendingOrganizerAction.contact:
-        final name = widget.organizer.displayName?.isNotEmpty ?? false
-            ? widget.organizer.displayName!
-            : widget.organizer.name;
         context.push(
           '/messages/new/from-organizer/${widget.organizer.uuid}'
-          '?name=${Uri.encodeQueryComponent(name)}',
+          '?name=${Uri.encodeQueryComponent(orgName)}',
         );
       case PendingOrganizerAction.coordinates:
         widget.onCoordinatesToggle(!widget.coordinatesOpen);
+      case PendingOrganizerAction.join:
+        // Re-show the confirm dialog after login replay so the user still
+        // sees the "Rejoindre l'espace privé de X ?" prompt and isn't
+        // silently joined the moment they authenticate.
+        confirmAndJoin(
+          context,
+          ref,
+          widget.organizer.uuid,
+          orgName,
+        );
     }
   }
 }

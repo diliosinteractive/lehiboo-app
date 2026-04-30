@@ -106,6 +106,7 @@ class EventToActivityMapper {
       nextSlot: nextSlot,
       rating: event.rating,
       reviewsCount: event.reviewsCount,
+      isMembersOnly: event.isMembersOnly,
     );
   }
 

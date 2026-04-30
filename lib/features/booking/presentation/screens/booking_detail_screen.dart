@@ -59,6 +59,16 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    // Tear down any in-flight snackbar BEFORE the widget tree is gone so
+    // the snackbar's animation status listener doesn't fire on a
+    // deactivated tree and crash via findAncestorStateOfType.
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.removeCurrentSnackBar(reason: SnackBarClosedReason.remove);
+    super.dispose();
+  }
+
   Future<void> _loadBookingDetails() async {
     debugPrint('📖 BookingDetailScreen: Loading details for bookingId=${widget.bookingId}');
 
@@ -410,48 +420,69 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     if (_booking == null) return;
     HapticFeedback.lightImpact();
 
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      const SnackBar(
-        content: Text('Préparation du PDF…'),
-        backgroundColor: HbColors.brandPrimary,
-        duration: Duration(seconds: 30),
-      ),
-    );
+    _showInfoSnack('Préparation du PDF…');
 
     try {
       final pdf = await ref
           .read(bookingApiDataSourceProvider)
           .downloadBookingTicketsBundle(_booking!.id);
-      messenger.hideCurrentSnackBar();
-      await shareTicketPdf(pdf);
+      _hideSnack();
+      final saved = await shareTicketPdf(pdf);
+      _showInfoSnack('Billets enregistrés dans ${saved.displayLocation}');
     } on TicketsNotReadyException {
       _showDownloadError(
-        messenger,
         'Vos billets sont en cours de génération, réessayez dans un instant.',
       );
     } on NotAuthorizedToDownloadException {
       _showDownloadError(
-        messenger,
         "Vous n'êtes pas autorisé à télécharger ces billets.",
       );
     } catch (_) {
-      _showDownloadError(
-        messenger,
-        'Téléchargement impossible. Réessayez plus tard.',
-      );
+      _showDownloadError('Téléchargement impossible. Réessayez plus tard.');
     }
   }
 
-  void _showDownloadError(ScaffoldMessengerState messenger, String message) {
-    messenger.hideCurrentSnackBar();
+  /// Snackbar helpers that re-resolve [ScaffoldMessenger] each call and
+  /// guard with [mounted] / try-catch. Holding a [ScaffoldMessengerState]
+  /// across awaits goes stale when the share sheet causes a rebuild and
+  /// crashes with "Looking up a deactivated widget's ancestor is unsafe".
+  void _showInfoSnack(String message) {
     if (!mounted) return;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: HbColors.error,
-      ),
-    );
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: HbColors.brandPrimary,
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    } catch (e) {
+      debugPrint('🍞 info snack failed: $e');
+    }
+  }
+
+  void _hideSnack() {
+    if (!mounted) return;
+    try {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    } catch (_) {
+      // Tree mutated mid-flight; safe to ignore.
+    }
+  }
+
+  void _showDownloadError(String message) {
+    _hideSnack();
+    if (!mounted) return;
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: HbColors.error,
+        ),
+      );
+    } catch (e) {
+      debugPrint('🍞 error snack failed: $e');
+    }
   }
 
   void _navigateToTicket(Ticket ticket, int index) {

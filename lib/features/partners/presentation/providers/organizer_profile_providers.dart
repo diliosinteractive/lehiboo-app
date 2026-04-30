@@ -222,7 +222,7 @@ final followStateControllerProvider =
 
 /// Which action the user attempted before the auth dialog showed up.
 /// After successful login, the screen replays it and clears the state.
-enum PendingOrganizerAction { follow, contact, coordinates }
+enum PendingOrganizerAction { follow, contact, coordinates, join }
 
 final pendingOrganizerActionProvider =
     StateProvider<PendingOrganizerAction?>((ref) => null);

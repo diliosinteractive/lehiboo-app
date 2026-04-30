@@ -90,6 +90,7 @@ The fields below are everything the mobile screen needs (the resource exposes mo
 | `allow_public_contact` / `allowPublicContact` | bool | **gate the Contact button** — hide when `false` |
 | `eventsCount` / `events_count` | int | **stats row** — "N activities" |
 | `followersCount` / `followers_count` | int | **stats row** — "N followers" |
+| `membersCount` / `members_count` | int | **stats row** — "N membres" (count of `active` organization memberships; excludes pending/rejected/suspended and the owner). |
 | `is_followed` / `isFollowed` | bool \| null | **Follow button state**. `null` = not authenticated (hide the button). `false` = show "Follow". `true` = show "Following". |
 | `reviews_count` | int | **stats row** — "(N reviews)" |
 | `average_rating` | float \| null | **stats row** — only render when `> 0` |
@@ -329,6 +330,7 @@ The list is automatically filtered to:
       "verified": true,
       "events_count": 24,           // published events only
       "followers_count": 1234,
+      "members_count": 42,
       "is_followed": true,           // always true on this endpoint
       "average_rating": 4.6,
       "reviews_count": 128,
@@ -773,72 +775,74 @@ After successful login, mobile should return to this screen and re-trigger the a
 
 ```dart
 class OrganizerProfile {
-  final String uuid;
-  final String slug;
-  final String displayName;
-  final String? description;
-  final String? logo;
-  final String? coverImage;
-  final String? city;
-  final String? website;
-  final String? email;
-  final String? phone;
-  final bool verified;
-  final bool allowPublicContact;
-  final int eventsCount;
-  final int followersCount;
-  final int reviewsCount;
-  final double? averageRating;
-  final bool? isFollowed;                       // null when unauthenticated
-  final SocialLinks? socialLinks;
-  final List<EstablishmentType> establishmentTypes;
+   final String uuid;
+   final String slug;
+   final String displayName;
+   final String? description;
+   final String? logo;
+   final String? coverImage;
+   final String? city;
+   final String? website;
+   final String? email;
+   final String? phone;
+   final bool verified;
+   final bool allowPublicContact;
+   final int eventsCount;
+   final int followersCount;
+   final int membersCount;
+   final int reviewsCount;
+   final double? averageRating;
+   final bool? isFollowed;                       // null when unauthenticated
+   final SocialLinks? socialLinks;
+   final List<EstablishmentType> establishmentTypes;
 
-  factory OrganizerProfile.fromJson(Map<String, dynamic> json) =>
-      OrganizerProfile(
-        uuid: json['uuid'] as String,
-        slug: json['slug'] as String,
-        displayName: (json['display_name'] ?? json['name']) as String,
-        description: json['description'] as String?,
-        logo: json['logo'] as String?,
-        coverImage: json['cover_image'] as String?,
-        city: json['city'] as String?,
-        website: json['website'] as String?,
-        email: json['email'] as String?,
-        phone: json['phone'] as String?,
-        verified: (json['verified'] ?? json['isVerified']) as bool? ?? false,
-        allowPublicContact: json['allow_public_contact'] as bool? ?? true,
-        eventsCount: (json['events_count'] ?? json['eventsCount']) as int? ?? 0,
-        followersCount: (json['followers_count'] ?? json['followersCount']) as int? ?? 0,
-        reviewsCount: json['reviews_count'] as int? ?? 0,
-        averageRating: (json['average_rating'] as num?)?.toDouble(),
-        isFollowed: json['is_followed'] as bool?,
-        socialLinks: json['social_links'] == null
-            ? null
-            : SocialLinks.fromJson(json['social_links']),
-        establishmentTypes: (json['establishment_types'] as List? ?? [])
-            .map((j) => EstablishmentType.fromJson(j))
-            .toList(),
-      );
+   factory OrganizerProfile.fromJson(Map<String, dynamic> json) =>
+           OrganizerProfile(
+              uuid: json['uuid'] as String,
+              slug: json['slug'] as String,
+              displayName: (json['display_name'] ?? json['name']) as String,
+              description: json['description'] as String?,
+              logo: json['logo'] as String?,
+              coverImage: json['cover_image'] as String?,
+              city: json['city'] as String?,
+              website: json['website'] as String?,
+              email: json['email'] as String?,
+              phone: json['phone'] as String?,
+              verified: (json['verified'] ?? json['isVerified']) as bool? ?? false,
+              allowPublicContact: json['allow_public_contact'] as bool? ?? true,
+              eventsCount: (json['events_count'] ?? json['eventsCount']) as int? ?? 0,
+              followersCount: (json['followers_count'] ?? json['followersCount']) as int? ?? 0,
+              membersCount: (json['members_count'] ?? json['membersCount']) as int? ?? 0,
+              reviewsCount: json['reviews_count'] as int? ?? 0,
+              averageRating: (json['average_rating'] as num?)?.toDouble(),
+              isFollowed: json['is_followed'] as bool?,
+              socialLinks: json['social_links'] == null
+                      ? null
+                      : SocialLinks.fromJson(json['social_links']),
+              establishmentTypes: (json['establishment_types'] as List? ?? [])
+                      .map((j) => EstablishmentType.fromJson(j))
+                      .toList(),
+           );
 }
 
 class SocialLinks {
-  final String? facebook, instagram, twitter, linkedin, youtube;
-  /* fromJson trivial */
+   final String? facebook, instagram, twitter, linkedin, youtube;
+/* fromJson trivial */
 }
 
 class EstablishmentType {
-  final String uuid, name, slug;
-  /* fromJson trivial */
+   final String uuid, name, slug;
+/* fromJson trivial */
 }
 
 class FollowState {
-  final bool isFollowed;
-  final int followersCount;
-  factory FollowState.fromJson(Map<String, dynamic> json) =>
-      FollowState(
-        isFollowed: json['is_followed'] as bool,
-        followersCount: json['followers_count'] as int,
-      );
+   final bool isFollowed;
+   final int followersCount;
+   factory FollowState.fromJson(Map<String, dynamic> json) =>
+           FollowState(
+              isFollowed: json['is_followed'] as bool,
+              followersCount: json['followers_count'] as int,
+           );
 }
 ```
 

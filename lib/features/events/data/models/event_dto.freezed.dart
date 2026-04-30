@@ -124,7 +124,12 @@ mixin _$EventDto {
   @JsonKey(fromJson: _parseNamedList)
   List<String> get emotions => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_favorite')
-  bool get isFavorite => throw _privateConstructorUsedError;
+  bool get isFavorite =>
+      throw _privateConstructorUsedError; // Spec MEMBERSHIPS_MOBILE_SPEC.md §20: surfaced by both EventResource
+// (snake + camelCase) and MobileEventResource (snake_case only). When
+// true, drives a "Privé 🔒" badge on event cards across all listings.
+  @JsonKey(name: 'is_members_only', fromJson: _parseBool)
+  bool get isMembersOnly => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -212,7 +217,9 @@ abstract class $EventDtoCopyWith<$Res> {
       String? originalOrganizerName,
       @JsonKey(fromJson: _parseNamedList) List<String> themes,
       @JsonKey(fromJson: _parseNamedList) List<String> emotions,
-      @JsonKey(name: 'is_favorite') bool isFavorite});
+      @JsonKey(name: 'is_favorite') bool isFavorite,
+      @JsonKey(name: 'is_members_only', fromJson: _parseBool)
+      bool isMembersOnly});
 
   $EventImageDtoCopyWith<$Res>? get featuredImage;
   $EventCategoryDtoCopyWith<$Res>? get category;
@@ -289,6 +296,7 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? themes = null,
     Object? emotions = null,
     Object? isFavorite = null,
+    Object? isMembersOnly = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -495,6 +503,10 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.isFavorite
           : isFavorite // ignore: cast_nullable_to_non_nullable
               as bool,
+      isMembersOnly: null == isMembersOnly
+          ? _value.isMembersOnly
+          : isMembersOnly // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 
@@ -690,7 +702,9 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       String? originalOrganizerName,
       @JsonKey(fromJson: _parseNamedList) List<String> themes,
       @JsonKey(fromJson: _parseNamedList) List<String> emotions,
-      @JsonKey(name: 'is_favorite') bool isFavorite});
+      @JsonKey(name: 'is_favorite') bool isFavorite,
+      @JsonKey(name: 'is_members_only', fromJson: _parseBool)
+      bool isMembersOnly});
 
   @override
   $EventImageDtoCopyWith<$Res>? get featuredImage;
@@ -774,6 +788,7 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? themes = null,
     Object? emotions = null,
     Object? isFavorite = null,
+    Object? isMembersOnly = null,
   }) {
     return _then(_$EventDtoImpl(
       id: null == id
@@ -980,6 +995,10 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value.isFavorite
           : isFavorite // ignore: cast_nullable_to_non_nullable
               as bool,
+      isMembersOnly: null == isMembersOnly
+          ? _value.isMembersOnly
+          : isMembersOnly // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -1064,7 +1083,9 @@ class _$EventDtoImpl implements _EventDto {
       @JsonKey(fromJson: _parseNamedList) final List<String> themes = const [],
       @JsonKey(fromJson: _parseNamedList)
       final List<String> emotions = const [],
-      @JsonKey(name: 'is_favorite') this.isFavorite = false})
+      @JsonKey(name: 'is_favorite') this.isFavorite = false,
+      @JsonKey(name: 'is_members_only', fromJson: _parseBool)
+      this.isMembersOnly = false})
       : _gallery = gallery,
         _tags = tags,
         _ticketTypes = ticketTypes,
@@ -1449,10 +1470,16 @@ class _$EventDtoImpl implements _EventDto {
   @override
   @JsonKey(name: 'is_favorite')
   final bool isFavorite;
+// Spec MEMBERSHIPS_MOBILE_SPEC.md §20: surfaced by both EventResource
+// (snake + camelCase) and MobileEventResource (snake_case only). When
+// true, drives a "Privé 🔒" badge on event cards across all listings.
+  @override
+  @JsonKey(name: 'is_members_only', fromJson: _parseBool)
+  final bool isMembersOnly;
 
   @override
   String toString() {
-    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite)';
+    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite, isMembersOnly: $isMembersOnly)';
   }
 
   @override
@@ -1542,7 +1569,9 @@ class _$EventDtoImpl implements _EventDto {
             const DeepCollectionEquality().equals(other._themes, _themes) &&
             const DeepCollectionEquality().equals(other._emotions, _emotions) &&
             (identical(other.isFavorite, isFavorite) ||
-                other.isFavorite == isFavorite));
+                other.isFavorite == isFavorite) &&
+            (identical(other.isMembersOnly, isMembersOnly) ||
+                other.isMembersOnly == isMembersOnly));
   }
 
   @JsonKey(ignore: true)
@@ -1599,7 +1628,8 @@ class _$EventDtoImpl implements _EventDto {
         originalOrganizerName,
         const DeepCollectionEquality().hash(_themes),
         const DeepCollectionEquality().hash(_emotions),
-        isFavorite
+        isFavorite,
+        isMembersOnly
       ]);
 
   @JsonKey(ignore: true)
@@ -1694,7 +1724,9 @@ abstract class _EventDto implements EventDto {
       final String? originalOrganizerName,
       @JsonKey(fromJson: _parseNamedList) final List<String> themes,
       @JsonKey(fromJson: _parseNamedList) final List<String> emotions,
-      @JsonKey(name: 'is_favorite') final bool isFavorite}) = _$EventDtoImpl;
+      @JsonKey(name: 'is_favorite') final bool isFavorite,
+      @JsonKey(name: 'is_members_only', fromJson: _parseBool)
+      final bool isMembersOnly}) = _$EventDtoImpl;
 
   factory _EventDto.fromJson(Map<String, dynamic> json) =
       _$EventDtoImpl.fromJson;
@@ -1844,6 +1876,11 @@ abstract class _EventDto implements EventDto {
   @override
   @JsonKey(name: 'is_favorite')
   bool get isFavorite;
+  @override // Spec MEMBERSHIPS_MOBILE_SPEC.md §20: surfaced by both EventResource
+// (snake + camelCase) and MobileEventResource (snake_case only). When
+// true, drives a "Privé 🔒" badge on event cards across all listings.
+  @JsonKey(name: 'is_members_only', fromJson: _parseBool)
+  bool get isMembersOnly;
   @override
   @JsonKey(ignore: true)
   _$$EventDtoImplCopyWith<_$EventDtoImpl> get copyWith =>

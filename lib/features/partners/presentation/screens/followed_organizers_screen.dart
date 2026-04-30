@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -20,6 +22,8 @@ class FollowedOrganizersScreen extends ConsumerStatefulWidget {
 class _FollowedOrganizersScreenState
     extends ConsumerState<FollowedOrganizersScreen> {
   final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -32,6 +36,8 @@ class _FollowedOrganizersScreenState
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
+    _searchDebounce?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -40,6 +46,57 @@ class _FollowedOrganizersScreenState
         _scrollController.position.maxScrollExtent - 240) {
       ref.read(followedOrganizersControllerProvider.notifier).loadMore();
     }
+  }
+
+  /// Debounce keystrokes so we don't fire one network call per character.
+  /// 350 ms is a comfortable typing pause and matches the in-house
+  /// search bars elsewhere in the app.
+  void _onSearchChanged(String value) {
+    setState(() {}); // refresh suffix clear-icon visibility
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      ref.read(followedOrganizersControllerProvider.notifier).setSearch(value);
+    });
+  }
+
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _onSearchChanged,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Rechercher un organisateur',
+          hintStyle: GoogleFonts.figtree(
+            fontSize: 14,
+            color: Colors.grey[500],
+          ),
+          prefixIcon: Icon(Icons.search, color: Colors.grey[600], size: 20),
+          suffixIcon: _searchController.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: Icon(Icons.close, color: Colors.grey[600], size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                    _searchDebounce?.cancel();
+                    ref
+                        .read(followedOrganizersControllerProvider.notifier)
+                        .setSearch('');
+                    setState(() {}); // refresh suffix-icon visibility
+                  },
+                ),
+          filled: true,
+          fillColor: Colors.grey[100],
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        style: GoogleFonts.figtree(fontSize: 14),
+      ),
+    );
   }
 
   @override
@@ -63,63 +120,74 @@ class _FollowedOrganizersScreenState
         ),
         iconTheme: const IconThemeData(color: HbColors.textPrimary),
       ),
-      body: asyncState.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: HbColors.brandPrimary),
-        ),
-        error: (e, _) => _ErrorState(
-          onRetry: () =>
-              ref.read(followedOrganizersControllerProvider.notifier).refresh(),
-        ),
-        data: (state) {
-          if (state.items.isEmpty) {
-            return const _EmptyState();
-          }
-          return RefreshIndicator(
-            color: HbColors.brandPrimary,
-            onRefresh: () =>
-                ref.read(followedOrganizersControllerProvider.notifier).refresh(),
-            child: ListView.separated(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(top: 4, bottom: 24),
-              itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                thickness: 1,
-                color: Colors.grey[100],
-                indent: 20,
-                endIndent: 20,
+      body: Column(
+        children: [
+          _buildSearchField(),
+          Expanded(
+            child: asyncState.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: HbColors.brandPrimary),
               ),
-              itemBuilder: (context, index) {
-                if (index == state.items.length) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: HbColors.brandPrimary,
-                      ),
-                    ),
-                  );
+              error: (e, _) => _ErrorState(
+                onRetry: () => ref
+                    .read(followedOrganizersControllerProvider.notifier)
+                    .refresh(),
+              ),
+              data: (state) {
+                if (state.items.isEmpty) {
+                  return _EmptyState(isSearch: _searchController.text.isNotEmpty);
                 }
-                final org = state.items[index];
-                return FollowedOrganizerTile(
-                  organizer: org,
-                  onUnfollowTap: () => ref
+                return RefreshIndicator(
+                  color: HbColors.brandPrimary,
+                  onRefresh: () => ref
                       .read(followedOrganizersControllerProvider.notifier)
-                      .unfollow(org.uuid),
+                      .refresh(),
+                  child: ListView.separated(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(top: 4, bottom: 24),
+                    itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: Colors.grey[100],
+                      indent: 20,
+                      endIndent: 20,
+                    ),
+                    itemBuilder: (context, index) {
+                      if (index == state.items.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: HbColors.brandPrimary,
+                            ),
+                          ),
+                        );
+                      }
+                      final org = state.items[index];
+                      return FollowedOrganizerTile(
+                        organizer: org,
+                        onUnfollowTap: () => ref
+                            .read(followedOrganizersControllerProvider.notifier)
+                            .unfollow(org.uuid),
+                      );
+                    },
+                  ),
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  final bool isSearch;
+
+  const _EmptyState({this.isSearch = false});
 
   @override
   Widget build(BuildContext context) {
@@ -129,10 +197,16 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.favorite_outline, size: 56, color: Colors.grey[400]),
+            Icon(
+              isSearch ? Icons.search_off : Icons.favorite_outline,
+              size: 56,
+              color: Colors.grey[400],
+            ),
             const SizedBox(height: 16),
             Text(
-              'Vous ne suivez aucun organisateur',
+              isSearch
+                  ? 'Aucun organisateur trouvé'
+                  : 'Vous ne suivez aucun organisateur',
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -142,7 +216,9 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Suivez un organisateur depuis sa page pour le retrouver ici.',
+              isSearch
+                  ? 'Essayez un autre mot-clé.'
+                  : 'Suivez un organisateur depuis sa page pour le retrouver ici.',
               textAlign: TextAlign.center,
               style: GoogleFonts.figtree(
                 fontSize: 14,
