@@ -105,6 +105,14 @@ class SecureStorageService {
     return await _storage.read(key: 'user_membership_city');
   }
 
+  Future<void> saveUserPhone(String phone) async {
+    await _storage.write(key: 'user_phone', value: phone);
+  }
+
+  Future<String?> getUserPhone() async {
+    return await _storage.read(key: 'user_phone');
+  }
+
   // Clear all auth data
   Future<void> clearAuthData() async {
     await _storage.delete(key: AppConstants.keyAuthToken);
@@ -117,6 +125,7 @@ class SecureStorageService {
     await _storage.delete(key: 'user_last_name');
     await _storage.delete(key: 'user_birth_date');
     await _storage.delete(key: 'user_membership_city');
+    await _storage.delete(key: 'user_phone');
   }
 
   // Check if user is authenticated
