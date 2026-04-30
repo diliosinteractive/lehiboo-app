@@ -38,6 +38,10 @@
 	<string>L'application a besoin d'accéder à votre galerie pour vous permettre de choisir une photo de profil ou de partager des images.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>L'application utilise la reconnaissance vocale pour vous permettre de discuter avec Petit Boo.</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
