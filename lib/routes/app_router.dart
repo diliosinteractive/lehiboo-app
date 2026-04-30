@@ -43,6 +43,9 @@ import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
 import '../features/partners/presentation/screens/organizer_profile_screen.dart';
 import '../features/partners/presentation/screens/followed_organizers_screen.dart';
+import '../features/memberships/presentation/screens/invitation_landing_screen.dart';
+import '../features/memberships/presentation/screens/memberships_screen.dart';
+import '../features/memberships/presentation/screens/private_events_screen.dart';
 // Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
 import '../features/gamification/presentation/screens/hibon_shop_screen.dart';
@@ -271,7 +274,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => LoginScreen(
+          redirectTo: state.uri.queryParameters['redirect'],
+        ),
       ),
       // Main register route - shows type selection
       GoRoute(
@@ -369,6 +374,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/me/followed-organizers',
         name: 'followed-organizers',
         builder: (_, __) => const FollowedOrganizersScreen(),
+      ),
+      // Authed user's memberships (4 tabs: active / pending / rejected / invitations)
+      GoRoute(
+        path: '/me/memberships',
+        name: 'memberships',
+        builder: (_, state) => MembershipsScreen(
+          initialTab: state.uri.queryParameters['tab'],
+        ),
+      ),
+      // Private events visible to the user via active memberships
+      GoRoute(
+        path: '/me/private-events',
+        name: 'private-events',
+        builder: (_, state) => PrivateEventsScreen(
+          initialOrgFilter: state.uri.queryParameters['org'],
+        ),
+      ),
+      // Invitation deep-link landing — public preview before login
+      GoRoute(
+        path: '/invitations/:token',
+        name: 'invitation-landing',
+        builder: (_, state) => InvitationLandingScreen(
+          token: state.pathParameters['token']!,
+        ),
       ),
       // Backward-compat: legacy /partner/:id → /organizers/:id
       GoRoute(

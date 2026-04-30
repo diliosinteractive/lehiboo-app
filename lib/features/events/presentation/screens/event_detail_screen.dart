@@ -26,6 +26,8 @@ import '../widgets/detail/event_qa_section.dart';
 import '../widgets/detail/event_similar_carousel.dart';
 import '../widgets/detail/event_share_sheet.dart';
 import '../widgets/detail/event_sticky_booking_bar.dart';
+import '../../../memberships/domain/exceptions/members_only_exception.dart';
+import '../../../memberships/presentation/widgets/members_only_gate.dart';
 import '../../../reviews/presentation/widgets/event_reviews_section.dart';
 import '../../../reviews/presentation/widgets/write_review_sheet.dart';
 import '../../../reminders/presentation/providers/reminders_provider.dart';
@@ -200,7 +202,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         loading: () => const Center(
           child: CircularProgressIndicator(color: HbColors.brandPrimary),
         ),
-        error: (error, stack) => _buildErrorState(error),
+        error: (error, stack) {
+          // Spec MEMBERSHIPS §20: 403 with body { error: members_only }
+          // is a non-fatal "you're not a member" gate, not an error.
+          if (error is MembersOnlyException) {
+            return MembersOnlyGate(organization: error.organization);
+          }
+          return _buildErrorState(error);
+        },
       ),
       bottomNavigationBar: eventAsync.valueOrNull != null &&
               !_shouldHideBookingBar(eventAsync.value!)

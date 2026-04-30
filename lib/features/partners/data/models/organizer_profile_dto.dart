@@ -29,11 +29,20 @@ class OrganizerProfileDto with _$OrganizerProfileDto {
     @JsonKey(name: 'events_count', fromJson: _int) @Default(0) int eventsCount,
     @JsonKey(name: 'followers_count', fromJson: _int) @Default(0)
     int followersCount,
+    // members_count: count(active) on OrganizationMember for this org.
+    // Excludes pending/rejected/suspended and the owner. Defaults to 0
+    // when the backend response predates the addition.
+    @JsonKey(name: 'members_count', fromJson: _int) @Default(0)
+    int membersCount,
     @JsonKey(name: 'reviews_count', fromJson: _int) @Default(0)
     int reviewsCount,
     @JsonKey(name: 'average_rating', fromJson: _doubleOrNull)
     double? averageRating,
     @JsonKey(name: 'is_followed') bool? isFollowed,
+    // Tri-state per spec MEMBERSHIPS_MOBILE_SPEC.md §18: null when
+    // unauthenticated, false for non-owner, true when the authed user owns
+    // this org. Hides the Rejoindre button on the user's own org.
+    @JsonKey(name: 'is_owner') bool? isOwner,
     @JsonKey(name: 'social_links') SocialLinksDto? socialLinks,
     @JsonKey(name: 'establishment_types')
     List<EstablishmentTypeDto>? establishmentTypes,

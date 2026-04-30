@@ -109,7 +109,9 @@ No body required. The user is identified by the bearer token; the organization b
       "name": "Bobo Junior",
       "logo_url": "https://...",
       "cover_url": "https://...",
-      "address": "Lyon, France"
+      "address": "Lyon, France",
+      "members_count": 42,
+      "membersCount": 42
     },
     "requested_at": "2026-04-30T16:14:00+02:00",
     "approved_at": null,
@@ -118,6 +120,8 @@ No body required. The user is identified by the bearer token; the organization b
   }
 }
 ```
+
+> **`members_count`** — count of `active` memberships in the organization (excludes `pending`, `rejected`, `suspended`, and the owner). Useful for showing "N membres" on the membership card. Same field is exposed on `OrganizationResource` (full profile) and on the embedded organization block of invitations.
 
 ### 3.5 Errors
 
@@ -226,7 +230,11 @@ Paginated list of the user's memberships across all statuses. Default excludes t
       "id": 42,
       "status": "active",
       "status_label": "Actif",
-      "organization": { "id": 7, "uuid": "...", "slug": "bobo-corp", "name": "Bobo Junior", "logo_url": "...", "cover_url": "...", "address": "Lyon, France" },
+      "organization": {
+        "id": 7, "uuid": "...", "slug": "bobo-corp", "name": "Bobo Junior",
+        "logo_url": "...", "cover_url": "...", "address": "Lyon, France",
+        "members_count": 42, "membersCount": 42
+      },
       "requested_at": "2026-04-15T10:12:00+02:00",
       "approved_at": "2026-04-16T09:30:00+02:00",
       "rejected_at": null,
@@ -310,7 +318,9 @@ None. The list isn't paginated server-side (typical user has 0–5 pending invit
         "name": "Bobo Junior",
         "logo": "https://...",
         "city": "Lyon",
-        "verified": true
+        "verified": true,
+        "members_count": 42,
+        "membersCount": 42
       },
       "invited_by": {
         "uuid": "...",
@@ -910,7 +920,20 @@ All membership push payloads follow the convention established by other notifica
 }
 ```
 
-Mobile should treat `action` as the canonical deep-link target and ignore the `_id` / `_uuid` / `_slug` triplet unless additional context is needed (e.g. fetching the org logo for an in-app banner).
+**Routing convention — `data.type` is canonical, `data.action` is web-shaped.** The `data.action` value is a **web URL** (`/dashboard/memberships?...`) used by the web client. Mobile must **not** route to it directly. Instead, branch on `data.type` to map to the equivalent Flutter route:
+
+```dart
+Route routeForPushType(Map<String, String> data) {
+  return switch (data['type']) {
+    'organization_join_approved'      => MembershipsRoute(tab: MembershipTab.active),
+    'organization_join_rejected'      => MembershipsRoute(tab: MembershipTab.rejected),
+    'organization_invitation_received'=> MembershipsRoute(tab: MembershipTab.invitations),
+    _ => HomeRoute(),
+  };
+}
+```
+
+This keeps backend payloads platform-agnostic — both web and mobile consume the same `data.type` switch but each owns its own URL space. Mobile may still use `data.organization_uuid`, `data.organization_slug`, or `data.organization_name` to enrich the routed screen (e.g. highlight the matching card).
 
 ### 16.2 Behavior on push receipt
 
@@ -927,15 +950,15 @@ enum MembershipStatus { pending, active, rejected }
 
 extension MembershipStatusX on MembershipStatus {
   String get label => switch (this) {
-        MembershipStatus.pending => 'En attente',
-        MembershipStatus.active => 'Actif',
-        MembershipStatus.rejected => 'Refusée',
-      };
+    MembershipStatus.pending => 'En attente',
+    MembershipStatus.active => 'Actif',
+    MembershipStatus.rejected => 'Refusée',
+  };
   Color get color => switch (this) {
-        MembershipStatus.pending => const Color(0xFFF59E0B),
-        MembershipStatus.active => const Color(0xFF10B981),
-        MembershipStatus.rejected => const Color(0xFF6B7280),
-      };
+    MembershipStatus.pending => const Color(0xFFF59E0B),
+    MembershipStatus.active => const Color(0xFF10B981),
+    MembershipStatus.rejected => const Color(0xFF6B7280),
+  };
 }
 
 class Membership {
@@ -948,16 +971,16 @@ class Membership {
   final DateTime? rejectedAt;
 
   factory Membership.fromJson(Map<String, dynamic> json) => Membership(
-        id: json['id'] as int,
-        status: MembershipStatus.values.byName(json['status'] as String),
-        statusLabel: json['status_label'] as String,
-        organization: json['organization'] == null
-            ? null
-            : OrganizationSummary.fromJson(json['organization']),
-        requestedAt: _parseDate(json['requested_at']),
-        approvedAt: _parseDate(json['approved_at']),
-        rejectedAt: _parseDate(json['rejected_at']),
-      );
+    id: json['id'] as int,
+    status: MembershipStatus.values.byName(json['status'] as String),
+    statusLabel: json['status_label'] as String,
+    organization: json['organization'] == null
+        ? null
+        : OrganizationSummary.fromJson(json['organization']),
+    requestedAt: _parseDate(json['requested_at']),
+    approvedAt: _parseDate(json['approved_at']),
+    rejectedAt: _parseDate(json['rejected_at']),
+  );
 }
 
 class OrganizationSummary {
@@ -1004,7 +1027,7 @@ class PaginatedMemberships {
 | **`/me/invitations` returns invitation token in plaintext** — same domain, HTTPS only — but mobile should treat the token as sensitive: don't log it, don't include in crash reports. The server enforces email match on accept/decline so a leaked token still requires the right account, but the convention is to handle it like a session token. |
 | **Re-apply after rejection** | Allowed. The server creates a new `pending` row each time. Mobile may want to cap "remember rejection for 7 days" so users don't immediately retry — but that's a UX choice, not enforced server-side. |
 | **Suspended status** | `Suspended` exists in the enum but is **never** in customer responses (controller's default filter excludes it). Mobile types should not include it. |
-| **Owner of the organization can't be a member** | If the user is the org's owner, the request endpoint returns 403. Mobile hides the "Rejoindre" button on profile screens when `currentUser.uuid == organization.user_uuid` (the latter is exposed on organizer profile responses). |
+| **Owner of the organization can't be a member** | If the user is the org's owner, the request endpoint returns 403. Mobile hides the "Rejoindre" button on profile screens when `organization.is_owner == true`. The `is_owner` field is **tri-state** on the organizer profile response: `true` when the authenticated user owns the org, `false` when authenticated and not the owner, `null` when unauthenticated. Same pattern as `is_followed` (see ORGANIZER_PROFILE_MOBILE_SPEC.md §3.3). |
 | **Localized labels** | `status_label` is server-rendered in the request's `Accept-Language` locale. Mobile should still keep its own locale-driven labels (color tokens + Dart enum) so UI works offline / when the API call fails. |
 | **Path-param flexibility** | Endpoints 1, 2 accept slug or UUID for the org; mobile should send `uuid` for stability across renames. |
 
@@ -1024,7 +1047,7 @@ class PaginatedMemberships {
 
 | Topic | Note |
 |---|---|
-| **Members-only badge on event cards** | Mobile event cards should display a "Privé 🔒" badge when `event.is_members_only == true`. Confirm the field is exposed by `MobileEventResource` (it should be — verify and add to the EventResource doc if missing). |
+| **Members-only badge on event cards** | Mobile event cards display a "Privé 🔒" badge when `event.is_members_only == true`. The field is exposed by both `EventResource` (snake_case + camelCase mirror) and `MobileEventResource` (snake_case only) — confirmed as of this spec. |
 | **Members-only event 403 gate** | Direct-link access to a private event by a non-member returns `HTTP 403` with `{"error": "members_only", "organization": {...}}`. Mobile should detect this in the event-detail call and render a gate screen with a "Rejoindre {Organization}" CTA — same flow as §14.2. |
 | **Notification topic vs token** | Backend uses per-user device tokens (not topics) — when the user accepts an invitation and becomes a member, no automatic FCM topic subscription is created. If product wants "all members of org X get notified of new private events" via topic, that's a backend addition. |
 | **Bulk invite UX preview** | The vendor-side `bulk-invite` endpoint exists but currently sends only email. If vendors want to invite via a shareable link mobile users can paste in-app, that's a separate enhancement. |

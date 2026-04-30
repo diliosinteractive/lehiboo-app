@@ -80,6 +80,9 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
           ? const []
           : _parseNamedList(json['emotions']),
       isFavorite: json['is_favorite'] as bool? ?? false,
+      isMembersOnly: json['is_members_only'] == null
+          ? false
+          : _parseBool(json['is_members_only']),
     );
 
 Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
@@ -135,6 +138,7 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'themes': instance.themes,
       'emotions': instance.emotions,
       'is_favorite': instance.isFavorite,
+      'is_members_only': instance.isMembersOnly,
     };
 
 _$EventImageDtoImpl _$$EventImageDtoImplFromJson(Map<String, dynamic> json) =>

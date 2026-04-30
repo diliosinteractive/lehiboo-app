@@ -28,6 +28,7 @@ import '../widgets/contextual_hero.dart';
 import '../widgets/event_stories.dart';
 import '../widgets/countdown_event_card.dart';
 import '../widgets/personalized_section.dart';
+import '../../../memberships/presentation/widgets/personalized_feed_section.dart';
 // Les imports suivants sont commentés car les sections sont désactivées en attendant l'API backend
 // import '../widgets/native_ad_card.dart';
 // import '../widgets/partner_highlight.dart';
@@ -128,6 +129,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Spec MEMBERSHIPS §11: aggregated "Pour vous" carousel
+                  // surfaced above the daily sections. Hidden when
+                  // unauthenticated or when the response is empty.
+                  const PersonalizedFeedSection(),
                   _buildActivitySection(
                     context,
                     ref,
