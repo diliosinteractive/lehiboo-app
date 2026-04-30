@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
+import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart';
@@ -66,6 +67,10 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
       _confettiController.play();
       _scaleController.forward();
       HapticFeedback.heavyImpact();
+      // Make sure the bookings list reflects this brand-new booking the
+      // next time the user opens the bookings tab. Safe whether the
+      // provider is currently alive or not — a no-op in the latter case.
+      ref.invalidate(bookingsListControllerProvider);
     });
 
     // Charger les tickets

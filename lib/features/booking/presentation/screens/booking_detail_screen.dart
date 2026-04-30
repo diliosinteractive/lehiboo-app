@@ -1,3 +1,4 @@
+import 'package:add_2_calendar/add_2_calendar.dart' as cal;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -197,6 +198,64 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     Share.share(shareText);
   }
 
+  /// Hands off to the system calendar's "create event" flow with the booking
+  /// pre-filled. Uses [add_2_calendar] which dispatches a native intent —
+  /// no calendar permissions required, the user manually saves the entry
+  /// from the calendar app.
+  Future<void> _addToCalendar() async {
+    final booking = _booking;
+    final activity = booking?.activity;
+    final slot = booking?.slot;
+    if (booking == null || activity == null || slot == null) return;
+
+    // Build a sensible end time. Most slots have endDateTime set; fall back
+    // to a 2-hour window if the API didn't send one (or sent the same value
+    // for both, which we treat as "unknown duration").
+    final start = slot.startDateTime;
+    DateTime end = slot.endDateTime;
+    if (!end.isAfter(start)) {
+      end = start.add(const Duration(hours: 2));
+    }
+
+    final location = [
+      activity.city?.name,
+    ].whereType<String>().where((s) => s.isNotEmpty).join(', ');
+
+    final reference = booking.id.length > 8
+        ? booking.id.substring(0, 8).toUpperCase()
+        : booking.id.toUpperCase();
+    final descriptionParts = <String>[
+      if (activity.excerpt != null && activity.excerpt!.isNotEmpty)
+        activity.excerpt!
+      else if (activity.description.isNotEmpty)
+        activity.description,
+      'Réservation Le Hiboo : $reference',
+    ];
+
+    final event = cal.Event(
+      title: activity.title,
+      description: descriptionParts.join('\n\n'),
+      location: location.isEmpty ? null : location,
+      startDate: start,
+      endDate: end,
+      iosParams: const cal.IOSParams(reminder: Duration(hours: 1)),
+      androidParams: const cal.AndroidParams(emailInvites: []),
+    );
+
+    final added = await cal.Add2Calendar.addEvent2Cal(event);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          added
+              ? 'Événement ajouté au calendrier'
+              : "Impossible d'ajouter au calendrier",
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   String _formatDate(DateTime date) {
     final months = [
       'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
@@ -255,11 +314,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              "Le remboursement éventuel sera traité par l'organisateur.",
+              "Attention : aucun remboursement ne sera effectué après l'annulation.",
               style: TextStyle(
                 fontSize: 12,
-                fontStyle: FontStyle.italic,
-                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+                color: HbColors.error,
               ),
             ),
           ],
@@ -312,8 +371,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Réservation annulée. '
-              "L'organisateur traitera l'éventuel remboursement."),
+          content: Text('Réservation annulée. Aucun remboursement ne sera effectué.'),
           backgroundColor: HbColors.error,
           duration: Duration(seconds: 4),
         ),
@@ -582,6 +640,24 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                     onDownloadAll: _downloadAllTickets,
                   ),
                 SizedBox(height: tokens.spacing.m),
+                // Add to calendar button — only when we have a slot date.
+                if (_booking != null && _booking!.slot?.startDateTime != null)
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
+                    child: OutlinedButton.icon(
+                      onPressed: _addToCalendar,
+                      icon: const Icon(Icons.event_available_outlined, size: 18),
+                      label: const Text('Ajouter au calendrier'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                SizedBox(height: tokens.spacing.xs),
                 // Contact organizer button
                 if (_booking != null)
                   Container(
