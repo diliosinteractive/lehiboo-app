@@ -152,52 +152,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
-        builder: (ctx) => DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
-          minChildSize: 0.3,
-          expand: false,
-          builder: (_, scrollCtrl) => Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Choisir un organisateur',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: orgs.isEmpty
-                    ? const Center(
-                        child: Text('Aucun organisateur disponible.',
-                            style: TextStyle(color: Colors.grey)))
-                    : ListView.builder(
-                        controller: scrollCtrl,
-                        itemCount: orgs.length,
-                        itemBuilder: (_, i) {
-                          final org = orgs[i];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  _primaryColor.withValues(alpha: 0.15),
-                              child: Text(
-                                org.companyName.isNotEmpty
-                                    ? org.companyName[0].toUpperCase()
-                                    : '?',
-                                style:
-                                    const TextStyle(color: _primaryColor),
-                              ),
-                            ),
-                            title: Text(org.companyName),
-                            subtitle: Text(org.organizationName),
-                            onTap: () => Navigator.pop(ctx, org),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ),
+        builder: (_) => _OrgPickerSheet(orgs: orgs),
       );
       if (picked != null && mounted) {
         setState(() {
@@ -934,6 +889,118 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                   fontSize: 13,
                   fontWeight: FontWeight.w600)),
       ],
+    );
+  }
+}
+
+// ── Org picker bottom sheet with search ────────────────────────────────────────
+
+class _OrgPickerSheet extends StatefulWidget {
+  final List<ConversationOrganization> orgs;
+
+  const _OrgPickerSheet({required this.orgs});
+
+  @override
+  State<_OrgPickerSheet> createState() => _OrgPickerSheetState();
+}
+
+class _OrgPickerSheetState extends State<_OrgPickerSheet> {
+  static const _primaryColor = Color(0xFFFF601F);
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _query.isEmpty
+        ? widget.orgs
+        : widget.orgs
+            .where((o) =>
+                o.companyName.toLowerCase().contains(_query.toLowerCase()))
+            .toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      minChildSize: 0.3,
+      expand: false,
+      builder: (_, scrollCtrl) => Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text('Choisir un organisateur',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              autofocus: true,
+              onChanged: (v) => setState(() => _query = v),
+              decoration: InputDecoration(
+                hintText: 'Rechercher par nom…',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: widget.orgs.isEmpty
+                ? const Center(
+                    child: Text('Aucun organisateur disponible.',
+                        style: TextStyle(color: Colors.grey)))
+                : filtered.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Aucun résultat pour "$_query".',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollCtrl,
+                        itemCount: filtered.length,
+                        itemBuilder: (_, i) {
+                          final org = filtered[i];
+                          final logoUrl =
+                              org.logoUrl ?? org.avatarUrl;
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor:
+                                  _primaryColor.withValues(alpha: 0.15),
+                              backgroundImage: logoUrl != null &&
+                                      logoUrl.isNotEmpty
+                                  ? CachedNetworkImageProvider(logoUrl)
+                                  : null,
+                              child: logoUrl == null || logoUrl.isEmpty
+                                  ? Text(
+                                      org.companyName.isNotEmpty
+                                          ? org.companyName[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                          color: _primaryColor),
+                                    )
+                                  : null,
+                            ),
+                            title: Text(org.companyName),
+                            subtitle: org.organizationName != org.companyName
+                                ? Text(org.organizationName)
+                                : null,
+                            onTap: () => Navigator.pop(context, org),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
     );
   }
 }
