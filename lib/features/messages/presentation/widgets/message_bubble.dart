@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../domain/entities/message.dart';
@@ -75,11 +76,15 @@ class _MessageBubbleState extends State<MessageBubble> {
       );
     }
 
-    return Align(
+    final isOptimistic = msg.uuid.startsWith('temp-');
+
+    return Opacity(
+      opacity: isOptimistic ? 0.6 : 1.0,
+      child: Align(
       alignment:
           msg.isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
-        onLongPress: msg.isMine && !msg.isDeleted
+        onLongPress: msg.isMine && !msg.isDeleted && !isOptimistic
             ? () => _showContextMenu(context)
             : null,
         child: Container(
@@ -118,7 +123,18 @@ class _MessageBubbleState extends State<MessageBubble> {
                       ),
                     _buildBubble(context, msg),
                     if (widget.isLastOwn && msg.isMine && !msg.isDeleted)
-                      _buildDeliveryTicks(msg),
+                      isOptimistic
+                          ? const Padding(
+                              padding: EdgeInsets.only(right: 4, top: 2),
+                              child: SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: Colors.grey),
+                              ),
+                            )
+                          : _buildDeliveryTicks(msg),
                   ],
                 ),
               ),
@@ -130,23 +146,34 @@ class _MessageBubbleState extends State<MessageBubble> {
           ),
         ),
       ),
+      ),
     );
   }
 
   Widget _buildAvatar(Message msg, {required bool isMine}) {
+    final url = msg.sender?.avatarUrl;
     final name = msg.sender?.name ?? '';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final bg = isMine
+        ? _primaryColor.withValues(alpha: 0.2)
+        : _primaryColor.withValues(alpha: 0.12);
+
+    if (url != null && url.isNotEmpty) {
+      return CircleAvatar(
+        radius: 15,
+        backgroundColor: bg,
+        backgroundImage: CachedNetworkImageProvider(url),
+      );
+    }
     return CircleAvatar(
       radius: 15,
-      backgroundColor: isMine
-          ? _primaryColor.withValues(alpha: 0.2)
-          : _primaryColor.withValues(alpha: 0.12),
+      backgroundColor: bg,
       child: Text(
         initial,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: isMine ? _primaryColor : _primaryColor,
+          color: _primaryColor,
         ),
       ),
     );

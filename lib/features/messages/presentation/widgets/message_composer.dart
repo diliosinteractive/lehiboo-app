@@ -229,7 +229,17 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
                             buildCounter: (_, {required currentLength,
                                   required isFocused,
                                   maxLength}) =>
-                                null,
+                                currentLength >= 1800
+                                    ? Text(
+                                        '$currentLength / 2000',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: currentLength >= 1950
+                                              ? Colors.red
+                                              : Colors.grey.shade500,
+                                        ),
+                                      )
+                                    : null,
                             textCapitalization:
                                 TextCapitalization.sentences,
                             decoration: InputDecoration(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
 import '../widgets/message_bubble.dart';
@@ -59,7 +60,7 @@ class _SupportThreadView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final providerKey = (uuid: conversationUuid, isSupport: true);
+    final providerKey = (uuid: conversationUuid, route: ConversationRoute.participantSupport);
     final state = ref.watch(conversationDetailProvider(providerKey));
     final notifier = ref.read(conversationDetailProvider(providerKey).notifier);
 
@@ -211,16 +212,25 @@ class _MessagesList extends StatelessWidget {
   List<Object> _buildItems(List<Message> msgs) {
     final reversed = msgs.reversed.toList();
     final items = <Object>[];
-    DateTime? lastDate;
 
-    for (final msg in reversed) {
-      final msgDate =
-          DateTime(msg.createdAt.year, msg.createdAt.month, msg.createdAt.day);
-      if (lastDate == null || msgDate != lastDate) {
-        items.add(_DateSeparator(msgDate));
-        lastDate = msgDate;
+    int i = 0;
+    while (i < reversed.length) {
+      final msgDate = DateTime(
+        reversed[i].createdAt.year,
+        reversed[i].createdAt.month,
+        reversed[i].createdAt.day,
+      );
+      while (i < reversed.length) {
+        final d = DateTime(
+          reversed[i].createdAt.year,
+          reversed[i].createdAt.month,
+          reversed[i].createdAt.day,
+        );
+        if (d != msgDate) break;
+        items.add(_MessageItem(reversed[i]));
+        i++;
       }
-      items.add(_MessageItem(msg));
+      items.add(_DateSeparator(msgDate));
     }
     return items;
   }

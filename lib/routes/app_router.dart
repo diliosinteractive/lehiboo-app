@@ -57,6 +57,10 @@ import '../features/messages/presentation/screens/conversations_list_screen.dart
 import '../features/messages/presentation/screens/conversation_detail_screen.dart';
 import '../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../features/messages/presentation/screens/support_detail_screen.dart';
+import '../features/messages/presentation/screens/vendor_new_conversation_screen.dart';
+import '../features/messages/presentation/screens/admin_new_conversation_screen.dart';
+import '../features/messages/presentation/screens/admin_report_detail_screen.dart';
+import '../features/messages/domain/entities/conversation_route.dart';
 import '../features/reviews/presentation/screens/event_reviews_full_screen.dart';
 import '../features/reviews/presentation/screens/my_reviews_screen.dart';
 /// ChangeNotifier that drives GoRouter.refreshListenable so redirect logic
@@ -225,15 +229,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'my-bookings',
             builder: (context, state) => const BookingsListScreen(),
           ),
-          GoRoute(
-            path: '/messages',
-            name: 'messages',
-            builder: (_, __) => const ConversationsListScreen(),
-          ),
         ],
       ),
 
-      // Messages detail routes — outside ShellRoute so navbar is hidden
+      // Messages routes — outside ShellRoute so navbar is hidden
+      GoRoute(
+        path: '/messages',
+        name: 'messages',
+        builder: (_, __) => const ConversationsListScreen(),
+      ),
       GoRoute(
         path: '/messages/new',
         name: 'messages-new',
@@ -266,7 +270,80 @@ final routerProvider = Provider<GoRouter>((ref) {
           conversationUuid: state.pathParameters['conversationUuid']!,
         ),
       ),
-      // IMPORTANT: static sub-paths (new, support) must be declared before this wildcard
+
+      // ── Vendor routes (static before parameterized) ───────────────────────
+      GoRoute(
+        path: '/messages/vendor/new/participant',
+        name: 'messages-vendor-new-participant',
+        builder: (_, __) => const VendorNewConversationScreen(
+            mode: VendorConversationMode.toParticipant),
+      ),
+      GoRoute(
+        path: '/messages/vendor/new/partner',
+        name: 'messages-vendor-new-partner',
+        builder: (_, __) => const VendorNewConversationScreen(
+            mode: VendorConversationMode.toPartner),
+      ),
+      GoRoute(
+        path: '/messages/vendor/new/support',
+        name: 'messages-vendor-new-support',
+        builder: (_, __) => const VendorNewConversationScreen(
+            mode: VendorConversationMode.supportThread),
+      ),
+      GoRoute(
+        path: '/messages/vendor-org/:conversationUuid',
+        name: 'messages-vendor-org-detail',
+        builder: (_, state) => ConversationDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+          route: ConversationRoute.vendorOrgOrg,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/vendor/:conversationUuid',
+        name: 'messages-vendor-detail',
+        builder: (_, state) => ConversationDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+          route: ConversationRoute.vendor,
+        ),
+      ),
+
+      // ── Admin routes (static before parameterized) ────────────────────────
+      GoRoute(
+        path: '/messages/admin/new/user',
+        name: 'messages-admin-new-user',
+        builder: (_, __) => const AdminNewConversationScreen(
+            mode: AdminConversationMode.toUser),
+      ),
+      GoRoute(
+        path: '/messages/admin/new/organizer',
+        name: 'messages-admin-new-organizer',
+        builder: (_, __) => const AdminNewConversationScreen(
+            mode: AdminConversationMode.toOrganizer),
+      ),
+      GoRoute(
+        path: '/messages/admin/reports/:reportUuid',
+        name: 'messages-admin-report-detail',
+        builder: (_, state) => AdminReportDetailScreen(
+          reportUuid: state.pathParameters['reportUuid']!,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/admin/:conversationUuid',
+        name: 'messages-admin-detail',
+        builder: (_, state) {
+          final readonly =
+              state.uri.queryParameters['readonly'] == 'true';
+          return ConversationDetailScreen(
+            conversationUuid: state.pathParameters['conversationUuid']!,
+            route: readonly
+                ? ConversationRoute.adminReadonly
+                : ConversationRoute.admin,
+          );
+        },
+      ),
+
+      // IMPORTANT: static sub-paths (new, support, vendor, admin) must be
+      // declared before this wildcard
       GoRoute(
         path: '/messages/:conversationUuid',
         name: 'messages-detail',

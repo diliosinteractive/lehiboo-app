@@ -61,6 +61,8 @@ class ConversationDto with _$ConversationDto {
     @JsonKey(name: 'is_signalement') @Default(false) bool isSignalement,
     @JsonKey(name: 'user_has_reported') @Default(false) bool userHasReported,
     ConversationOrganizationDto? organization,
+    @JsonKey(name: 'partner_organization')
+    ConversationOrganizationDto? partnerOrganization,
     ConversationParticipantDto? participant,
     ConversationEventDto? event,
     @JsonKey(name: 'latest_message') MessageDto? latestMessage,

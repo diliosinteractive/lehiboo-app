@@ -65,6 +65,7 @@ class Conversation extends Equatable {
   final bool isSignalement;
   final bool userHasReported;
   final ConversationOrganization? organization;
+  final ConversationOrganization? partnerOrganization;
   final ConversationParticipant? participant;
   final ConversationEvent? event;
   final Message? latestMessage;
@@ -83,6 +84,7 @@ class Conversation extends Equatable {
     required this.isSignalement,
     required this.userHasReported,
     this.organization,
+    this.partnerOrganization,
     this.participant,
     this.event,
     this.latestMessage,
@@ -102,6 +104,7 @@ class Conversation extends Equatable {
     bool? isSignalement,
     bool? userHasReported,
     ConversationOrganization? organization,
+    ConversationOrganization? partnerOrganization,
     ConversationParticipant? participant,
     ConversationEvent? event,
     Message? latestMessage,
@@ -120,6 +123,7 @@ class Conversation extends Equatable {
       isSignalement: isSignalement ?? this.isSignalement,
       userHasReported: userHasReported ?? this.userHasReported,
       organization: organization ?? this.organization,
+      partnerOrganization: partnerOrganization ?? this.partnerOrganization,
       participant: participant ?? this.participant,
       event: event ?? this.event,
       latestMessage: latestMessage ?? this.latestMessage,
@@ -141,6 +145,7 @@ class Conversation extends Equatable {
         isSignalement,
         userHasReported,
         organization,
+        partnerOrganization,
         participant,
         event,
         latestMessage,

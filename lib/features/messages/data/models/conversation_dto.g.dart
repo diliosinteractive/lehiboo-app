@@ -84,6 +84,10 @@ _$ConversationDtoImpl _$$ConversationDtoImplFromJson(
           ? null
           : ConversationOrganizationDto.fromJson(
               json['organization'] as Map<String, dynamic>),
+      partnerOrganization: json['partner_organization'] == null
+          ? null
+          : ConversationOrganizationDto.fromJson(
+              json['partner_organization'] as Map<String, dynamic>),
       participant: json['participant'] == null
           ? null
           : ConversationParticipantDto.fromJson(
@@ -118,6 +122,7 @@ Map<String, dynamic> _$$ConversationDtoImplToJson(
       'is_signalement': instance.isSignalement,
       'user_has_reported': instance.userHasReported,
       'organization': instance.organization,
+      'partner_organization': instance.partnerOrganization,
       'participant': instance.participant,
       'event': instance.event,
       'latest_message': instance.latestMessage,

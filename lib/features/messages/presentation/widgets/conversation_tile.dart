@@ -7,18 +7,21 @@ import '../../domain/entities/message.dart';
 class ConversationTile extends StatelessWidget {
   final Conversation conversation;
   final VoidCallback onTap;
+  final bool showLehibooAvatar;
+  final VoidCallback? onReport;
 
   const ConversationTile({
     super.key,
     required this.conversation,
     required this.onTap,
+    this.showLehibooAvatar = false,
+    this.onReport,
   });
 
   static const _primaryColor = Color(0xFFFF601F);
 
   @override
   Widget build(BuildContext context) {
-    final org = conversation.organization;
     final lastMsg = conversation.latestMessage;
     final hasUnread = conversation.unreadCount > 0;
     final previewText = _buildPreviewText(lastMsg);
@@ -26,6 +29,10 @@ class ConversationTile extends StatelessWidget {
         lastMsg.content == null &&
         !lastMsg.isDeleted &&
         lastMsg.attachments.isNotEmpty;
+    final displayName = _displayName();
+    final hasNameEntity = conversation.participant != null ||
+        conversation.organization != null ||
+        conversation.partnerOrganization != null;
 
     return InkWell(
       onTap: onTap,
@@ -45,7 +52,7 @@ class ConversationTile extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                _buildAvatar(org),
+                _buildAvatar(),
                 if (hasUnread)
                   Positioned(
                     right: 0,
@@ -67,25 +74,39 @@ class ConversationTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row 1: org name + status badge + timestamp
+                  // Row 1: name + status | timestamp + report
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      // Left: name + status badge tight together
                       Expanded(
-                        child: Text(
-                          org?.companyName ?? conversation.subject,
-                          style: TextStyle(
-                            fontWeight:
-                                hasUnread ? FontWeight.w700 : FontWeight.w500,
-                            fontSize: 15,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                displayName,
+                                style: TextStyle(
+                                  fontWeight: hasUnread
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  fontSize: 15,
+                                  color: Colors.black87,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            if (conversation.isSignalement) ...[
+                              _signalementBadge(),
+                              const SizedBox(width: 4),
+                            ],
+                            _buildStatusBadge(),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      _buildStatusBadge(),
+                      // Right: timestamp + report widget (far end)
                       if (conversation.lastMessageAt != null) ...[
                         const SizedBox(width: 6),
                         Text(
@@ -94,10 +115,15 @@ class ConversationTile extends StatelessWidget {
                               fontSize: 11, color: Colors.grey.shade500),
                         ),
                       ],
+                      if (onReport != null ||
+                          conversation.userHasReported) ...[
+                        const SizedBox(width: 6),
+                        _buildReportWidget(),
+                      ],
                     ],
                   ),
-                  // Row 2: subject (vendor threads only, org is the name above)
-                  if (org != null) ...[
+                  // Row 2: subject subtitle (when there's a name entity)
+                  if (hasNameEntity) ...[
                     const SizedBox(height: 2),
                     Text(
                       conversation.subject,
@@ -162,7 +188,50 @@ class ConversationTile extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(ConversationOrganization? org) {
+  String _displayName() {
+    if (showLehibooAvatar) return 'Support LeHiboo';
+    switch (conversation.conversationType) {
+      case 'organization_organization':
+        return conversation.partnerOrganization?.companyName ??
+            conversation.subject;
+      case 'vendor_admin':
+        if (conversation.organization != null) {
+          return conversation.organization!.companyName;
+        }
+        return 'Support LeHiboo';
+      case 'participant_vendor':
+      case 'user_support':
+        if (conversation.participant != null) {
+          return conversation.participant!.name;
+        }
+        return conversation.organization?.companyName ?? conversation.subject;
+      default:
+        return conversation.organization?.companyName ?? conversation.subject;
+    }
+  }
+
+  Widget _buildAvatar() {
+    if (showLehibooAvatar) return _lehibooAvatar();
+    switch (conversation.conversationType) {
+      case 'organization_organization':
+        return _orgAvatar(conversation.partnerOrganization);
+      case 'vendor_admin':
+        if (conversation.organization != null) {
+          return _orgAvatar(conversation.organization);
+        }
+        return _lehibooAvatar();
+      case 'participant_vendor':
+      case 'user_support':
+        if (conversation.participant != null) {
+          return _participantAvatar(conversation.participant!);
+        }
+        return _orgAvatar(conversation.organization);
+      default:
+        return _orgAvatar(conversation.organization);
+    }
+  }
+
+  Widget _orgAvatar(ConversationOrganization? org) {
     final url = org?.logoUrl ?? org?.avatarUrl;
     if (url != null && url.isNotEmpty) {
       return CircleAvatar(
@@ -171,16 +240,113 @@ class ConversationTile extends StatelessWidget {
         backgroundImage: CachedNetworkImageProvider(url),
       );
     }
-    final initials = org != null && org.companyName.isNotEmpty
+    final initial = org != null && org.companyName.isNotEmpty
         ? org.companyName[0].toUpperCase()
         : 'S';
     return CircleAvatar(
       radius: 24,
       backgroundColor: _primaryColor,
       child: Text(
-        initials,
+        initial,
         style: const TextStyle(
             color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+      ),
+    );
+  }
+
+  Widget _participantAvatar(ConversationParticipant participant) {
+    final url = participant.avatarUrl;
+    if (url != null && url.isNotEmpty) {
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.grey.shade100,
+        backgroundImage: CachedNetworkImageProvider(url),
+      );
+    }
+    final initial = participant.name.isNotEmpty
+        ? participant.name[0].toUpperCase()
+        : '?';
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: _primaryColor,
+      child: Text(
+        initial,
+        style: const TextStyle(
+            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+      ),
+    );
+  }
+
+  Widget _lehibooAvatar() {
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: _primaryColor.withValues(alpha: 0.12),
+      child: const Icon(Icons.support_agent, color: _primaryColor, size: 24),
+    );
+  }
+
+  Widget _buildReportWidget() {
+    if (conversation.userHasReported) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade100,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.flag, size: 10, color: Colors.orange.shade700),
+            const SizedBox(width: 3),
+            Text(
+              'Signalé',
+              style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.orange.shade700,
+                  fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    }
+    return GestureDetector(
+      onTap: onReport,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade400),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.flag_outlined, size: 10, color: Colors.grey.shade600),
+            const SizedBox(width: 3),
+            Text(
+              'Signaler',
+              style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _signalementBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.red.shade100,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        'Signalement',
+        style: TextStyle(
+            fontSize: 9, color: Colors.red.shade700, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -260,7 +426,8 @@ class ConversationTile extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.calendar_today_outlined, size: 10, color: _primaryColor),
+          const Icon(Icons.calendar_today_outlined,
+              size: 10, color: _primaryColor),
           const SizedBox(width: 4),
           Flexible(
             child: Text(

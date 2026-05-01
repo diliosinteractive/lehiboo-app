@@ -1,26 +1,33 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/conversation.dart';
+import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import 'unread_count_provider.dart';
 import 'conversations_provider.dart';
+import 'support_conversations_provider.dart';
+import 'vendor_conversations_provider.dart';
+import 'vendor_org_conversations_provider.dart';
+import 'admin_conversations_provider.dart';
 import 'messages_realtime_provider.dart';
 
 class ConversationDetailState {
   final AsyncValue<Conversation> conversation;
   final bool isSending;
   final String? sendError;
-  final bool isSupport; // true → use support endpoints
+  final ConversationRoute route;
 
   const ConversationDetailState({
     this.conversation = const AsyncValue.loading(),
     this.isSending = false,
     this.sendError,
-    this.isSupport = false,
+    this.route = ConversationRoute.participant,
   });
 
   ConversationDetailState copyWith({
@@ -28,13 +35,13 @@ class ConversationDetailState {
     bool? isSending,
     String? sendError,
     bool clearSendError = false,
-    bool? isSupport,
+    ConversationRoute? route,
   }) {
     return ConversationDetailState(
       conversation: conversation ?? this.conversation,
       isSending: isSending ?? this.isSending,
       sendError: clearSendError ? null : (sendError ?? this.sendError),
-      isSupport: isSupport ?? this.isSupport,
+      route: route ?? this.route,
     );
   }
 }
@@ -42,7 +49,7 @@ class ConversationDetailState {
 class ConversationDetailNotifier
     extends StateNotifier<ConversationDetailState> {
   final String _uuid;
-  final bool _isSupport;
+  final ConversationRoute _route;
   final MessagesRepository _repo;
   final Ref _ref;
   Timer? _pollTimer;
@@ -50,19 +57,26 @@ class ConversationDetailNotifier
 
   ConversationDetailNotifier(
     this._uuid,
-    this._isSupport,
+    this._route,
     this._repo,
     this._ref,
-  ) : super(ConversationDetailState(isSupport: _isSupport)) {
+  ) : super(ConversationDetailState(route: _route)) {
     load();
     _startPolling();
     _subscribeToRealtime();
+    _ref.listen<AuthState>(authProvider, (prev, next) {
+      if (prev?.user?.id != next.user?.id) {
+        _pollTimer?.cancel();
+        _pollTimer = null;
+        _realtimeSub?.cancel();
+        _realtimeSub = null;
+      }
+    });
   }
 
   void _startPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
-      // Skip polling when WebSocket is connected — WS handles updates
       if (_ref.read(messagesRealtimeProvider)) return;
       await _silentRefresh();
     });
@@ -157,56 +171,165 @@ class ConversationDetailNotifier
     if (conv == null) return;
     state = state.copyWith(
         conversation: AsyncValue.data(conv.copyWith(status: status)));
-    _ref.read(conversationsProvider.notifier).refresh();
+    _invalidateList();
+  }
+
+  void _invalidateList() {
+    switch (_route) {
+      case ConversationRoute.participant:
+        _ref.read(conversationsProvider.notifier).refresh();
+      case ConversationRoute.participantSupport:
+        _ref.read(supportConversationsProvider.notifier).refresh();
+      case ConversationRoute.vendor:
+        _ref.read(vendorConversationsProvider.notifier).refresh();
+      case ConversationRoute.vendorOrgOrg:
+        _ref.read(vendorOrgConversationsProvider.notifier).refresh();
+      case ConversationRoute.admin:
+      case ConversationRoute.adminReadonly:
+        _ref.read(adminConversationsProvider('user_support').notifier).refresh();
+        _ref.read(adminConversationsProvider('vendor_admin').notifier).refresh();
+    }
+  }
+
+  String _senderTypeForRoute() {
+    return switch (_route) {
+      ConversationRoute.vendor || ConversationRoute.vendorOrgOrg =>
+        'organization',
+      ConversationRoute.admin || ConversationRoute.adminReadonly => 'admin',
+      _ => 'participant',
+    };
+  }
+
+  Future<Conversation> _fetchConversation() async {
+    return switch (_route) {
+      ConversationRoute.participant => _repo
+          .markConversationAsRead(_uuid)
+          .then((_) => _repo.getConversation(_uuid)),
+      ConversationRoute.participantSupport =>
+        _repo.getSupportConversation(_uuid),
+      ConversationRoute.vendor => _repo
+          .markVendorConversationAsRead(_uuid)
+          .then((_) => _repo.getVendorConversation(_uuid)),
+      ConversationRoute.vendorOrgOrg => _repo
+          .markOrgConversationAsRead(_uuid)
+          .then((_) => _repo.getOrgConversation(_uuid)),
+      ConversationRoute.admin => _repo
+          .markAdminConversationAsRead(_uuid)
+          .then((_) => _repo.getAdminConversation(_uuid)),
+      ConversationRoute.adminReadonly => _repo.getAdminConversation(_uuid),
+    };
+  }
+
+  Future<Conversation> _fetchConversationSilent() async {
+    return switch (_route) {
+      ConversationRoute.participant => _repo.getConversation(_uuid),
+      ConversationRoute.participantSupport =>
+        _repo.getSupportConversation(_uuid),
+      ConversationRoute.vendor => _repo.getVendorConversation(_uuid),
+      ConversationRoute.vendorOrgOrg => _repo.getOrgConversation(_uuid),
+      ConversationRoute.admin => _repo.getAdminConversation(_uuid),
+      ConversationRoute.adminReadonly => _repo.getAdminConversation(_uuid),
+    };
   }
 
   Future<void> _silentRefresh() async {
     try {
-      final conversation = _isSupport
-          ? await _repo.getSupportConversation(_uuid)
-          : await _repo.getConversation(_uuid);
+      final conversation = await _fetchConversationSilent();
       if (!mounted) return;
       state = state.copyWith(conversation: AsyncValue.data(conversation));
-      // Decrement global unread badge by this conversation's unread count
       final unread = conversation.unreadCount;
       if (unread > 0) {
         final current = _ref.read(unreadCountProvider);
         _ref.read(unreadCountProvider.notifier).state =
             (current - unread).clamp(0, current);
+      } else {
+        // Re-apply zero so a list refresh that returned stale data is corrected.
+        _applyReadToList();
       }
-    } catch (_) {
-      // Silent — don't change state on poll failure
-    }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 403 || e.response?.statusCode == 401) {
+        // Stale provider from a previous session/role — stop polling immediately.
+        _pollTimer?.cancel();
+        _pollTimer = null;
+      }
+    } catch (_) {}
   }
 
   Future<void> load() async {
+    final prevUnread = _getListUnread();
     state = state.copyWith(conversation: const AsyncValue.loading());
     try {
-      final conversation = _isSupport
-          ? await _repo.getSupportConversation(_uuid)
-          : await _repo.getConversation(_uuid);
+      final conversation = await _fetchConversation();
       state = state.copyWith(conversation: AsyncValue.data(conversation));
-      // Decrement global badge
-      final unread = conversation.unreadCount;
-      if (unread > 0) {
+      _applyReadToList();
+      if (prevUnread > 0) {
         final current = _ref.read(unreadCountProvider);
         _ref.read(unreadCountProvider.notifier).state =
-            (current - unread).clamp(0, current);
+            (current - prevUnread).clamp(0, current);
       }
     } catch (e, st) {
       state = state.copyWith(conversation: AsyncValue.error(e, st));
     }
   }
 
+  int _getListUnread() {
+    List<Conversation>? list;
+    switch (_route) {
+      case ConversationRoute.participant:
+        list = _ref.read(conversationsProvider).conversations.valueOrNull;
+      case ConversationRoute.participantSupport:
+        list = _ref.read(supportConversationsProvider).conversations.valueOrNull;
+      case ConversationRoute.vendor:
+        list = _ref.read(vendorConversationsProvider).conversations.valueOrNull;
+        if (list == null || !list.any((c) => c.uuid == _uuid)) {
+          list = _ref.read(vendorSupportProvider).conversations.valueOrNull;
+        }
+      case ConversationRoute.vendorOrgOrg:
+        list = _ref.read(vendorOrgConversationsProvider).conversations.valueOrNull;
+      case ConversationRoute.admin:
+        list = _ref.read(adminConversationsProvider('user_support')).conversations.valueOrNull;
+        if (list == null || !list.any((c) => c.uuid == _uuid)) {
+          list = _ref.read(adminConversationsProvider('vendor_admin')).conversations.valueOrNull;
+        }
+      case ConversationRoute.adminReadonly:
+        return 0;
+    }
+    if (list == null) return 0;
+    try {
+      return list.firstWhere((c) => c.uuid == _uuid).unreadCount;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  void _applyReadToList() {
+    switch (_route) {
+      case ConversationRoute.participant:
+        _ref.read(conversationsProvider.notifier).applyRead(_uuid);
+      case ConversationRoute.participantSupport:
+        _ref.read(supportConversationsProvider.notifier).applyRead(_uuid);
+      case ConversationRoute.vendor:
+        _ref.read(vendorConversationsProvider.notifier).applyRead(_uuid);
+        _ref.read(vendorSupportProvider.notifier).applyRead(_uuid);
+      case ConversationRoute.vendorOrgOrg:
+        _ref.read(vendorOrgConversationsProvider.notifier).applyRead(_uuid);
+      case ConversationRoute.admin:
+        _ref.read(adminConversationsProvider('user_support').notifier).applyRead(_uuid);
+        _ref.read(adminConversationsProvider('vendor_admin').notifier).applyRead(_uuid);
+      case ConversationRoute.adminReadonly:
+        break;
+    }
+  }
+
   Future<void> sendMessage({String? content, List<XFile>? attachments}) async {
+    if (_route == ConversationRoute.adminReadonly) return;
     final conversation = state.conversation.valueOrNull;
     if (conversation == null) return;
 
-    // Optimistic: create a temp message
     final tempUuid = 'temp-${DateTime.now().millisecondsSinceEpoch}';
     final tempMessage = Message(
       uuid: tempUuid,
-      senderType: 'participant',
+      senderType: _senderTypeForRoute(),
       isSystem: false,
       sender: null,
       content: content,
@@ -228,19 +351,8 @@ class ConversationDetailNotifier
     );
 
     try {
-      final sentMessage = _isSupport
-          ? await _repo.sendSupportMessage(
-              conversationUuid: _uuid,
-              content: content ?? '',
-            )
-          : await _repo.sendMessage(
-              conversationUuid: _uuid,
-              content: content,
-              attachments: attachments,
-            );
-
+      final sentMessage = await _sendMessageForRoute(content, attachments);
       if (!mounted) return;
-      // Replace temp message with real one
       final updated = optimisticMessages
           .map((m) => m.uuid == tempUuid ? sentMessage : m)
           .toList();
@@ -248,53 +360,104 @@ class ConversationDetailNotifier
         conversation: AsyncValue.data(conversation.copyWith(messages: updated)),
         isSending: false,
       );
-      // Refresh list to update latest_message preview
-      _ref.read(conversationsProvider.notifier).refresh();
+      _invalidateList();
     } catch (e, s) {
       log(e.toString(), stackTrace: s);
       if (!mounted) return;
-      // Mark optimistic message as failed — remove it and show error
-      final reverted = optimisticMessages
-          .where((m) => m.uuid != tempUuid)
-          .toList();
+      final reverted =
+          optimisticMessages.where((m) => m.uuid != tempUuid).toList();
       state = state.copyWith(
-        conversation: AsyncValue.data(conversation.copyWith(messages: reverted)),
+        conversation:
+            AsyncValue.data(conversation.copyWith(messages: reverted)),
         isSending: false,
         sendError: e.toString(),
       );
     }
   }
 
+  Future<Message> _sendMessageForRoute(
+      String? content, List<XFile>? attachments) {
+    return switch (_route) {
+      ConversationRoute.participant => _repo.sendMessage(
+          conversationUuid: _uuid,
+          content: content,
+          attachments: attachments,
+        ),
+      ConversationRoute.participantSupport => _repo.sendSupportMessage(
+          conversationUuid: _uuid,
+          content: content ?? '',
+        ),
+      ConversationRoute.vendor => _repo.sendVendorMessage(
+          conversationUuid: _uuid,
+          content: content,
+          attachments: attachments,
+        ),
+      ConversationRoute.vendorOrgOrg => _repo.sendOrgMessage(
+          conversationUuid: _uuid,
+          content: content,
+          attachments: attachments,
+        ),
+      ConversationRoute.admin => _repo.sendAdminMessage(
+          conversationUuid: _uuid,
+          content: content,
+          attachments: attachments,
+        ),
+      ConversationRoute.adminReadonly => throw UnsupportedError(
+          'Cannot send messages in read-only mode',
+        ),
+    };
+  }
+
   Future<void> editMessage(String messageUuid, String content) async {
     final conversation = state.conversation.valueOrNull;
     if (conversation == null) return;
-    try {
-      final updated = await _repo.editMessage(
-        conversationUuid: _uuid,
-        messageUuid: messageUuid,
-        content: content,
-      );
-      final messages = conversation.messages
-          .map((m) => m.uuid == messageUuid ? updated : m)
-          .toList();
-      state = state.copyWith(
-          conversation:
-              AsyncValue.data(conversation.copyWith(messages: messages)));
-    } catch (_) {
-      rethrow;
-    }
+    final updated = await _editMessageForRoute(messageUuid, content);
+    final messages =
+        conversation.messages.map((m) => m.uuid == messageUuid ? updated : m).toList();
+    state = state.copyWith(
+        conversation:
+            AsyncValue.data(conversation.copyWith(messages: messages)));
+  }
+
+  Future<Message> _editMessageForRoute(String messageUuid, String content) {
+    return switch (_route) {
+      ConversationRoute.participant => _repo.editMessage(
+          conversationUuid: _uuid,
+          messageUuid: messageUuid,
+          content: content,
+        ),
+      ConversationRoute.participantSupport => _repo.editMessage(
+          conversationUuid: _uuid,
+          messageUuid: messageUuid,
+          content: content,
+        ),
+      ConversationRoute.vendor => _repo.editVendorMessage(
+          conversationUuid: _uuid,
+          messageUuid: messageUuid,
+          content: content,
+        ),
+      ConversationRoute.vendorOrgOrg => _repo.editOrgMessage(
+          conversationUuid: _uuid,
+          messageUuid: messageUuid,
+          content: content,
+        ),
+      ConversationRoute.admin => _repo.editAdminMessage(
+          conversationUuid: _uuid,
+          messageUuid: messageUuid,
+          content: content,
+        ),
+      ConversationRoute.adminReadonly => throw UnsupportedError(
+          'Cannot edit messages in read-only mode',
+        ),
+    };
   }
 
   Future<void> deleteMessage(String messageUuid) async {
     final conversation = state.conversation.valueOrNull;
     if (conversation == null) return;
-    await _repo.deleteMessage(
-        conversationUuid: _uuid, messageUuid: messageUuid);
-    // Replace with soft-deleted placeholder
+    await _deleteMessageForRoute(messageUuid);
     final messages = conversation.messages.map((m) {
-      if (m.uuid == messageUuid) {
-        return m.copyWith(isDeleted: true);
-      }
+      if (m.uuid == messageUuid) return m.copyWith(isDeleted: true);
       return m;
     }).toList();
     state = state.copyWith(
@@ -302,10 +465,48 @@ class ConversationDetailNotifier
             AsyncValue.data(conversation.copyWith(messages: messages)));
   }
 
+  Future<void> _deleteMessageForRoute(String messageUuid) {
+    return switch (_route) {
+      ConversationRoute.participant => _repo.deleteMessage(
+          conversationUuid: _uuid, messageUuid: messageUuid),
+      ConversationRoute.participantSupport => _repo.deleteMessage(
+          conversationUuid: _uuid, messageUuid: messageUuid),
+      ConversationRoute.vendor => _repo.deleteVendorMessage(
+          conversationUuid: _uuid, messageUuid: messageUuid),
+      ConversationRoute.vendorOrgOrg => _repo.deleteOrgMessage(
+          conversationUuid: _uuid, messageUuid: messageUuid),
+      ConversationRoute.admin => _repo.deleteAdminMessage(
+          conversationUuid: _uuid, messageUuid: messageUuid),
+      ConversationRoute.adminReadonly => throw UnsupportedError(
+          'Cannot delete messages in read-only mode',
+        ),
+    };
+  }
+
   Future<void> closeConversation() async {
-    final closed = await _repo.closeConversation(_uuid);
+    final closed = await _closeConversationForRoute();
     state = state.copyWith(conversation: AsyncValue.data(closed));
-    _ref.read(conversationsProvider.notifier).refresh();
+    _invalidateList();
+  }
+
+  Future<Conversation> _closeConversationForRoute() {
+    return switch (_route) {
+      ConversationRoute.participant => _repo.closeConversation(_uuid),
+      ConversationRoute.participantSupport => _repo.closeConversation(_uuid),
+      ConversationRoute.vendor => _repo.closeVendorConversation(_uuid),
+      ConversationRoute.vendorOrgOrg => _repo.closeOrgConversation(_uuid),
+      ConversationRoute.admin => _repo.closeAdminConversation(_uuid),
+      ConversationRoute.adminReadonly =>
+        throw UnsupportedError('Cannot close in read-only mode'),
+    };
+  }
+
+  Future<void> reopenConversation() async {
+    if (_route != ConversationRoute.admin) return;
+    final reopened = await _repo.reopenAdminConversation(_uuid);
+    state = state.copyWith(conversation: AsyncValue.data(reopened));
+    _ref.read(adminConversationsProvider('user_support').notifier).refresh();
+    _ref.read(adminConversationsProvider('vendor_admin').notifier).refresh();
   }
 
   Future<ReportConversationResult> reportConversation(
@@ -329,14 +530,15 @@ class ConversationDetailNotifier
   }
 }
 
-// Family provider keyed by (uuid, isSupport)
-final conversationDetailProvider = StateNotifierProvider.family<
+// Family provider keyed by (uuid, route) — autoDispose so the poll timer is
+// cancelled as soon as the conversation screen is popped (0 listeners).
+final conversationDetailProvider = StateNotifierProvider.autoDispose.family<
     ConversationDetailNotifier,
     ConversationDetailState,
-    ({String uuid, bool isSupport})>((ref, params) {
+    ({String uuid, ConversationRoute route})>((ref, params) {
   return ConversationDetailNotifier(
     params.uuid,
-    params.isSupport,
+    params.route,
     ref.read(messagesRepositoryProvider),
     ref,
   );

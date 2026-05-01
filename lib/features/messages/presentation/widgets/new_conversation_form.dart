@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
+import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
+import '../../domain/repositories/messages_repository.dart';
 
 // ── Context sealed class ────────────────────────────────────────────────────
 
@@ -33,6 +37,46 @@ class FromOrganizerConversationContext extends NewConversationContext {
 
 /// Fixed recipient: Support Le Hiboo.
 class SupportConversationContext extends NewConversationContext {}
+
+/// Admin contacts any user (live API search)
+class AdminToUserConversationContext extends NewConversationContext {}
+
+/// Admin contacts any org/vendor (live API search)
+class AdminToOrgConversationContext extends NewConversationContext {}
+
+/// Vendor contacts a participant who has interacted with their org (live API search)
+class VendorToParticipantConversationContext extends NewConversationContext {}
+
+/// Vendor contacts an accepted partner org (pre-loaded list, client-side filter)
+class VendorToPartnerConversationContext extends NewConversationContext {}
+
+/// Vendor opens a support ticket with LeHiboo (fixed recipient, subject optional)
+class VendorSupportConversationContext extends NewConversationContext {}
+
+// ── Helpers for parsing raw admin search JSON into domain entities ──────────
+
+ConversationParticipant _participantFromJson(Map<String, dynamic> json) {
+  final firstName = json['first_name'] as String? ?? json['firstName'] as String? ?? '';
+  final lastName = json['last_name'] as String? ?? json['lastName'] as String? ?? '';
+  return ConversationParticipant(
+    id: int.tryParse(json['id'].toString()) ?? 0,
+    name: json['name'] as String? ?? '$firstName $lastName'.trim(),
+    email: json['email'] as String? ?? '',
+    avatarUrl: json['avatar_url'] as String? ?? json['avatarUrl'] as String?,
+  );
+}
+
+ConversationOrganization _orgFromJson(Map<String, dynamic> json) {
+  final name = json['company_name'] as String? ?? json['name'] as String? ?? '';
+  return ConversationOrganization(
+    id: int.tryParse(json['id'].toString()) ?? 0,
+    uuid: json['uuid'] as String? ?? '',
+    companyName: name,
+    organizationName: json['organization_name'] as String? ?? name,
+    logoUrl: json['logo_url'] as String? ?? json['logoUrl'] as String?,
+    avatarUrl: json['avatar_url'] as String? ?? json['avatarUrl'] as String?,
+  );
+}
 
 // ── Widget ──────────────────────────────────────────────────────────────────
 
@@ -80,6 +124,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     'Autre',
   ];
 
+  // Existing fields
   ConversationOrganization? _selectedOrg;
   String? _eventId;
   String? _eventTitle;
@@ -93,12 +138,35 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   String? _submitError;
   bool _submitted = false;
 
+  // Admin recipient
+  ConversationParticipant? _selectedAdminUser;
+  ConversationOrganization? _selectedAdminOrg;
+  // Vendor recipient
+  ConversationParticipant? _selectedVendorParticipant;
+  AcceptedPartner? _selectedPartner;
+  List<AcceptedPartner> _allPartners = [];
+  // Shared error flag for new contexts
+  bool _recipientError = false;
+
+  // Existing getters
   bool get _isSupport =>
       widget.conversationContext is SupportConversationContext;
   bool get _isDashboard =>
       widget.conversationContext is DashboardConversationContext;
   bool get _isFromOrg =>
       widget.conversationContext is FromOrganizerConversationContext;
+
+  // New getters
+  bool get _isAdminToUser =>
+      widget.conversationContext is AdminToUserConversationContext;
+  bool get _isAdminToOrg =>
+      widget.conversationContext is AdminToOrgConversationContext;
+  bool get _isVendorToParticipant =>
+      widget.conversationContext is VendorToParticipantConversationContext;
+  bool get _isVendorToPartner =>
+      widget.conversationContext is VendorToPartnerConversationContext;
+  bool get _isVendorSupport =>
+      widget.conversationContext is VendorSupportConversationContext;
 
   @override
   void initState() {
@@ -110,6 +178,16 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     }
     _subjectCtrl.addListener(() => setState(() {}));
     _messageCtrl.addListener(() => setState(() {}));
+
+    if (widget.conversationContext is VendorToPartnerConversationContext) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          final partners =
+              await ref.read(messagesRepositoryImplProvider).getAcceptedPartners();
+          if (mounted) setState(() => _allPartners = partners);
+        } catch (_) {}
+      });
+    }
   }
 
   @override
@@ -121,19 +199,34 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
-  String get _subtitle => _isSupport
-      ? 'Décrivez votre problème et notre équipe vous répondra rapidement.'
-      : 'Composez votre message ci-dessous.';
+  String get _subtitle {
+    if (_isSupport || _isVendorSupport) {
+      return 'Décrivez votre problème et notre équipe vous répondra rapidement.';
+    }
+    if (_isAdminToUser ||
+        _isAdminToOrg ||
+        _isVendorToParticipant ||
+        _isVendorToPartner) {
+      return 'Sélectionnez un destinataire et composez votre message.';
+    }
+    return 'Composez votre message ci-dessous.';
+  }
 
   bool _validate() {
     final orgMissing = _isDashboard && _selectedOrg == null;
-    final subjectMissing = _subjectCtrl.text.trim().isEmpty;
+    final recipientMissing = (_isAdminToUser && _selectedAdminUser == null) ||
+        (_isAdminToOrg && _selectedAdminOrg == null) ||
+        (_isVendorToParticipant && _selectedVendorParticipant == null) ||
+        (_isVendorToPartner && _selectedPartner == null);
+    final subjectMissing =
+        !_isVendorSupport && _subjectCtrl.text.trim().isEmpty;
     final messageMissing = _messageCtrl.text.trim().isEmpty;
     setState(() {
       _submitted = true;
       _orgError = orgMissing;
+      _recipientError = recipientMissing;
     });
-    return !orgMissing && !subjectMissing && !messageMissing;
+    return !orgMissing && !recipientMissing && !subjectMissing && !messageMissing;
   }
 
   // ── Org picker (DashboardContext only) ─────────────────────────────────────
@@ -162,6 +255,79 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // ── Admin/Vendor search openers ────────────────────────────────────────────
+
+  Future<void> _openAdminUserSearch() async {
+    final ds = ref.read(messagesApiDataSourceProvider);
+    final selected = await showModalBottomSheet<ConversationParticipant>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _AdminUserSearchSheet(datasource: ds),
+    );
+    if (selected != null && mounted) {
+      setState(() {
+        _selectedAdminUser = selected;
+        _recipientError = false;
+      });
+    }
+  }
+
+  Future<void> _openAdminOrgSearch() async {
+    final ds = ref.read(messagesApiDataSourceProvider);
+    final selected = await showModalBottomSheet<ConversationOrganization>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _AdminOrgSearchSheet(datasource: ds),
+    );
+    if (selected != null && mounted) {
+      setState(() {
+        _selectedAdminOrg = selected;
+        _recipientError = false;
+      });
+    }
+  }
+
+  Future<void> _openVendorParticipantSearch() async {
+    final repo = ref.read(messagesRepositoryImplProvider);
+    final selected = await showModalBottomSheet<ConversationParticipant>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _VendorParticipantSearchSheet(repo: repo),
+    );
+    if (selected != null && mounted) {
+      setState(() {
+        _selectedVendorParticipant = selected;
+        _recipientError = false;
+      });
+    }
+  }
+
+  Future<void> _openVendorPartnerSearch() async {
+    final selected = await showModalBottomSheet<AcceptedPartner>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _VendorPartnerSearchSheet(partners: _allPartners),
+    );
+    if (selected != null && mounted) {
+      setState(() {
+        _selectedPartner = selected;
+        _recipientError = false;
+      });
     }
   }
 
@@ -271,10 +437,56 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         );
         uuid = conv.uuid;
         route = '/messages/$uuid';
+      } else if (_isAdminToUser) {
+        final conv = await repo.createAdminUserThread(
+          userId: _selectedAdminUser!.id,
+          subject: subject.isEmpty ? null : subject,
+          message: message.isEmpty ? null : message,
+          attachments: files.isEmpty ? null : files,
+        );
+        uuid = conv.uuid;
+        route = '/messages/admin/${conv.uuid}';
+      } else if (_isAdminToOrg) {
+        final conv = await repo.createAdminSupportThread(
+          organizationUuid: _selectedAdminOrg!.uuid,
+          subject: subject.isEmpty ? null : subject,
+          message: message.isEmpty ? null : message,
+          attachments: files.isEmpty ? null : files,
+        );
+        uuid = conv.uuid;
+        route = '/messages/admin/${conv.uuid}';
+      } else if (_isVendorToParticipant) {
+        final conv = await repo.createVendorConversationToParticipant(
+          participantId: _selectedVendorParticipant!.id,
+          subject: subject,
+          message: message,
+          attachments: files.isEmpty ? null : files,
+        );
+        uuid = conv.uuid;
+        route = '/messages/vendor/${conv.uuid}';
+      } else if (_isVendorToPartner) {
+        final conv = await repo.createOrgConversation(
+          partnerOrganizationId: _selectedPartner!.id,
+          subject: subject,
+          message: message,
+          attachments: files.isEmpty ? null : files,
+        );
+        uuid = conv.uuid;
+        route = '/messages/vendor-org/${conv.uuid}';
+      } else if (_isVendorSupport) {
+        final conv = await repo.createVendorSupportThread(
+          subject: subject.isEmpty ? 'Support' : subject,
+          message: message,
+          attachments: files.isEmpty ? null : files,
+        );
+        uuid = conv.uuid;
+        route = '/messages/vendor/${conv.uuid}';
       } else {
+        // SupportConversationContext (fallback)
         final conv = await repo.createSupportConversation(
           subject: subject,
           message: message,
+          attachments: _files.isNotEmpty ? _files : null,
         );
         uuid = conv.uuid;
         route = '/messages/support/$uuid';
@@ -363,10 +575,8 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                         _buildSubjectField(),
                         const SizedBox(height: 16),
                         _buildMessageField(),
-                        if (!_isSupport) ...[
-                          const SizedBox(height: 16),
-                          _buildAttachmentsSection(),
-                        ],
+                        const SizedBox(height: 16),
+                        _buildAttachmentsSection(),
                         if (_submitError != null) ...[
                           const SizedBox(height: 12),
                           Container(
@@ -413,6 +623,81 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         color: _primaryColor,
       );
     }
+
+    // Admin contexts
+    if (_isAdminToUser) {
+      return _buildSearchableRecipient(
+        label: 'Destinataire',
+        selectedAvatarUrl: _selectedAdminUser?.avatarUrl,
+        selectedName: _selectedAdminUser?.name,
+        selectedSubtitle: _selectedAdminUser?.email,
+        hasError: _recipientError,
+        placeholder: 'Rechercher un utilisateur…',
+        placeholderIcon: Icons.person_search_outlined,
+        onTap: _openAdminUserSearch,
+        onClear: () => setState(() {
+          _selectedAdminUser = null;
+          _recipientError = false;
+        }),
+      );
+    }
+    if (_isAdminToOrg) {
+      return _buildSearchableRecipient(
+        label: 'Organisation',
+        selectedAvatarUrl: _selectedAdminOrg?.logoUrl,
+        selectedName: _selectedAdminOrg?.companyName,
+        hasError: _recipientError,
+        placeholder: 'Rechercher une organisation…',
+        placeholderIcon: Icons.business_outlined,
+        onTap: _openAdminOrgSearch,
+        onClear: () => setState(() {
+          _selectedAdminOrg = null;
+          _recipientError = false;
+        }),
+      );
+    }
+
+    // Vendor contexts
+    if (_isVendorToParticipant) {
+      return _buildSearchableRecipient(
+        label: 'Participant',
+        selectedAvatarUrl: _selectedVendorParticipant?.avatarUrl,
+        selectedName: _selectedVendorParticipant?.name,
+        selectedSubtitle: _selectedVendorParticipant?.email,
+        hasError: _recipientError,
+        placeholder: 'Rechercher un participant…',
+        placeholderIcon: Icons.person_search_outlined,
+        onTap: _openVendorParticipantSearch,
+        onClear: () => setState(() {
+          _selectedVendorParticipant = null;
+          _recipientError = false;
+        }),
+      );
+    }
+    if (_isVendorToPartner) {
+      return _buildSearchableRecipient(
+        label: 'Partenaire',
+        selectedAvatarUrl:
+            _selectedPartner?.logoUrl ?? _selectedPartner?.avatarUrl,
+        selectedName: _selectedPartner?.companyName,
+        hasError: _recipientError,
+        placeholder: 'Rechercher un partenaire…',
+        placeholderIcon: Icons.handshake_outlined,
+        onTap: _openVendorPartnerSearch,
+        onClear: () => setState(() {
+          _selectedPartner = null;
+          _recipientError = false;
+        }),
+      );
+    }
+    if (_isVendorSupport) {
+      return _buildFixedRecipientCard(
+        icon: const Icon(Icons.support_agent, color: Colors.white, size: 20),
+        label: 'Support Le Hiboo',
+        color: _primaryColor,
+      );
+    }
+
     // DashboardContext — tappable picker row
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -477,6 +762,117 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
               style: TextStyle(
                   fontSize: 11, color: Colors.red.shade600),
             ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSearchableRecipient({
+    required String label,
+    required String? selectedName,
+    String? selectedAvatarUrl,
+    String? selectedSubtitle,
+    required bool hasError,
+    required String placeholder,
+    required IconData placeholderIcon,
+    required VoidCallback onTap,
+    required VoidCallback onClear,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel(label, required: true),
+        const SizedBox(height: 6),
+        if (selectedName != null)
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+            decoration: BoxDecoration(
+              color: _primaryColor.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(10),
+              border:
+                  Border.all(color: _primaryColor.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: _primaryColor.withValues(alpha: 0.15),
+                  backgroundImage: selectedAvatarUrl != null &&
+                          selectedAvatarUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(selectedAvatarUrl)
+                      : null,
+                  child: selectedAvatarUrl == null ||
+                          selectedAvatarUrl.isEmpty
+                      ? Text(
+                          selectedName.isNotEmpty
+                              ? selectedName[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              color: _primaryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13))
+                      : null,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(selectedName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14)),
+                      if (selectedSubtitle != null)
+                        Text(selectedSubtitle,
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 16),
+                  color: Colors.grey,
+                  onPressed: onClear,
+                  padding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          )
+        else
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: hasError ? Colors.red : Colors.grey.shade300,
+                    width: hasError ? 1.5 : 1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search,
+                      size: 20, color: Colors.grey.shade500),
+                  const SizedBox(width: 10),
+                  Expanded(
+                      child: Text(placeholder,
+                          style: TextStyle(
+                              color: Colors.grey.shade500, fontSize: 14))),
+                  Icon(placeholderIcon,
+                      size: 18, color: _primaryColor),
+                ],
+              ),
+            ),
+          ),
+        if (hasError && selectedName == null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4),
+            child: Text('Ce champ est requis.',
+                style: TextStyle(
+                    fontSize: 11, color: Colors.red.shade600)),
           ),
       ],
     );
@@ -636,12 +1032,13 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Widget _buildSubjectField() {
-    final hasError =
-        _submitted && _subjectCtrl.text.trim().isEmpty;
+    final hasError = _submitted &&
+        !_isVendorSupport &&
+        _subjectCtrl.text.trim().isEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('Objet', required: true),
+        _sectionLabel('Objet', required: !_isVendorSupport),
         const SizedBox(height: 6),
         TextField(
           controller: _subjectCtrl,
@@ -854,7 +1251,9 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                 : const Icon(Icons.send_rounded,
                     size: 16, color: Colors.white),
             label: Text(
-              _isSupport ? 'Envoyer au support' : 'Envoyer',
+              (_isSupport || _isVendorSupport)
+                  ? 'Envoyer au support'
+                  : 'Envoyer',
               style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600),
@@ -995,6 +1394,613 @@ class _OrgPickerSheetState extends State<_OrgPickerSheet> {
                                 ? Text(org.organizationName)
                                 : null,
                             onTap: () => Navigator.pop(context, org),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Admin user search sheet ────────────────────────────────────────────────────
+
+class _AdminUserSearchSheet extends StatefulWidget {
+  final MessagesApiDataSource datasource;
+  const _AdminUserSearchSheet({required this.datasource});
+
+  @override
+  State<_AdminUserSearchSheet> createState() => _AdminUserSearchSheetState();
+}
+
+class _AdminUserSearchSheetState extends State<_AdminUserSearchSheet> {
+  static const _primaryColor = Color(0xFFFF601F);
+  List<ConversationParticipant> _results = [];
+  bool _loading = true;
+  String _query = '';
+  String? _error;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _search('');
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _search(String q) async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final raw = await widget.datasource.searchAdminUsers(search: q);
+      if (mounted) {
+        setState(() {
+          _results = raw.map(_participantFromJson).toList();
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
+  }
+
+  void _onQueryChanged(String v) {
+    _query = v;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () => _search(v));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (_, scrollCtrl) => Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text('Rechercher un utilisateur',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              autofocus: true,
+              onChanged: _onQueryChanged,
+              decoration: InputDecoration(
+                hintText: 'Nom, prénom ou e-mail…',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Erreur : $_error',
+                          style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                        ),
+                      )
+                    : _results.isEmpty
+                        ? Center(
+                            child: Text(
+                              _query.isEmpty
+                                  ? 'Aucun utilisateur disponible.'
+                                  : 'Aucun résultat pour "$_query".',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollCtrl,
+                            itemCount: _results.length,
+                            itemBuilder: (_, i) {
+                              final user = _results[i];
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      _primaryColor.withValues(alpha: 0.15),
+                                  backgroundImage: user.avatarUrl != null &&
+                                          user.avatarUrl!.isNotEmpty
+                                      ? CachedNetworkImageProvider(user.avatarUrl!)
+                                      : null,
+                                  child: user.avatarUrl == null ||
+                                          user.avatarUrl!.isEmpty
+                                      ? Text(
+                                          user.name.isNotEmpty
+                                              ? user.name[0].toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                              color: _primaryColor),
+                                        )
+                                      : null,
+                                ),
+                                title: Text(user.name),
+                                subtitle: Text(user.email),
+                                onTap: () => Navigator.pop(context, user),
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Admin org search sheet ─────────────────────────────────────────────────────
+
+class _AdminOrgSearchSheet extends StatefulWidget {
+  final MessagesApiDataSource datasource;
+  const _AdminOrgSearchSheet({required this.datasource});
+
+  @override
+  State<_AdminOrgSearchSheet> createState() => _AdminOrgSearchSheetState();
+}
+
+class _AdminOrgSearchSheetState extends State<_AdminOrgSearchSheet> {
+  static const _primaryColor = Color(0xFFFF601F);
+  List<ConversationOrganization> _results = [];
+  bool _loading = true;
+  String _query = '';
+  String? _error;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _search('');
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _search(String q) async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final raw =
+          await widget.datasource.searchAdminOrganizations(search: q);
+      if (mounted) {
+        setState(() {
+          _results = raw.map(_orgFromJson).toList();
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
+  }
+
+  void _onQueryChanged(String v) {
+    _query = v;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () => _search(v));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (_, scrollCtrl) => Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text('Rechercher une organisation',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              autofocus: true,
+              onChanged: _onQueryChanged,
+              decoration: InputDecoration(
+                hintText: 'Nom de l\'organisation…',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Erreur : $_error',
+                          style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                        ),
+                      )
+                    : _results.isEmpty
+                        ? Center(
+                            child: Text(
+                              _query.isEmpty
+                                  ? 'Aucune organisation disponible.'
+                                  : 'Aucun résultat pour "$_query".',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollCtrl,
+                            itemCount: _results.length,
+                            itemBuilder: (_, i) {
+                              final org = _results[i];
+                              final orgImageUrl = org.logoUrl?.isNotEmpty == true
+                                  ? org.logoUrl
+                                  : org.avatarUrl?.isNotEmpty == true
+                                      ? org.avatarUrl
+                                      : null;
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      _primaryColor.withValues(alpha: 0.15),
+                                  backgroundImage: orgImageUrl != null
+                                      ? CachedNetworkImageProvider(orgImageUrl)
+                                      : null,
+                                  child: orgImageUrl == null
+                                      ? Text(
+                                          org.companyName.isNotEmpty
+                                              ? org.companyName[0].toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                              color: _primaryColor),
+                                        )
+                                      : null,
+                                ),
+                                title: Text(org.companyName),
+                                onTap: () => Navigator.pop(context, org),
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Vendor participant search sheet ───────────────────────────────────────────
+
+class _VendorParticipantSearchSheet extends StatefulWidget {
+  final MessagesRepository repo;
+  const _VendorParticipantSearchSheet({required this.repo});
+
+  @override
+  State<_VendorParticipantSearchSheet> createState() =>
+      _VendorParticipantSearchSheetState();
+}
+
+class _VendorParticipantSearchSheetState
+    extends State<_VendorParticipantSearchSheet> {
+  static const _primaryColor = Color(0xFFFF601F);
+  List<ConversationParticipant> _results = [];
+  bool _loading = true;
+  String _query = '';
+  String? _error;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _search('');
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _search(String q) async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final participants =
+          await widget.repo.getInteractedParticipants(search: q);
+      if (mounted) {
+        setState(() {
+          _results = participants;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
+  }
+
+  void _onQueryChanged(String v) {
+    _query = v;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () => _search(v));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (_, scrollCtrl) => Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text('Rechercher un participant',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              'Seuls les participants ayant interagi avec votre organisation.',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: TextField(
+              autofocus: true,
+              onChanged: _onQueryChanged,
+              decoration: InputDecoration(
+                hintText: 'Nom ou e-mail…',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Erreur : $_error',
+                          style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                        ),
+                      )
+                    : _results.isEmpty
+                        ? Center(
+                            child: Text(
+                              _query.isEmpty
+                                  ? 'Aucun participant disponible.'
+                                  : 'Aucun résultat pour "$_query".',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollCtrl,
+                            itemCount: _results.length,
+                            itemBuilder: (_, i) {
+                              final p = _results[i];
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      _primaryColor.withValues(alpha: 0.15),
+                                  backgroundImage: p.avatarUrl != null &&
+                                          p.avatarUrl!.isNotEmpty
+                                      ? CachedNetworkImageProvider(p.avatarUrl!)
+                                      : null,
+                                  child: p.avatarUrl == null ||
+                                          p.avatarUrl!.isEmpty
+                                      ? Text(
+                                          p.name.isNotEmpty
+                                              ? p.name[0].toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                              color: _primaryColor),
+                                        )
+                                      : null,
+                                ),
+                                title: Text(p.name),
+                                subtitle: Text(p.email),
+                                onTap: () => Navigator.pop(context, p),
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Vendor partner search sheet (client-side filter) ──────────────────────────
+
+class _VendorPartnerSearchSheet extends StatefulWidget {
+  final List<AcceptedPartner> partners;
+  const _VendorPartnerSearchSheet({required this.partners});
+
+  @override
+  State<_VendorPartnerSearchSheet> createState() =>
+      _VendorPartnerSearchSheetState();
+}
+
+class _VendorPartnerSearchSheetState
+    extends State<_VendorPartnerSearchSheet> {
+  static const _primaryColor = Color(0xFFFF601F);
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _query.isEmpty
+        ? widget.partners
+        : widget.partners
+            .where((p) =>
+                p.companyName
+                    .toLowerCase()
+                    .contains(_query.toLowerCase()) ||
+                p.organizationName
+                    .toLowerCase()
+                    .contains(_query.toLowerCase()))
+            .toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (_, scrollCtrl) => Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text('Rechercher un partenaire',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              autofocus: true,
+              onChanged: (v) => setState(() => _query = v),
+              decoration: InputDecoration(
+                hintText: 'Nom de l\'organisation partenaire…',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: widget.partners.isEmpty
+                ? const Center(
+                    child: Text('Aucun partenaire disponible.',
+                        style: TextStyle(color: Colors.grey)))
+                : filtered.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Aucun résultat pour "$_query".',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollCtrl,
+                        itemCount: filtered.length,
+                        itemBuilder: (_, i) {
+                          final partner = filtered[i];
+                          final logoUrl =
+                              partner.logoUrl ?? partner.avatarUrl;
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor:
+                                  _primaryColor.withValues(alpha: 0.15),
+                              backgroundImage: logoUrl != null &&
+                                      logoUrl.isNotEmpty
+                                  ? CachedNetworkImageProvider(logoUrl)
+                                  : null,
+                              child: logoUrl == null || logoUrl.isEmpty
+                                  ? Text(
+                                      partner.companyName.isNotEmpty
+                                          ? partner.companyName[0]
+                                              .toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                          color: _primaryColor),
+                                    )
+                                  : null,
+                            ),
+                            title: Text(partner.companyName),
+                            subtitle:
+                                partner.organizationName != partner.companyName
+                                    ? Text(partner.organizationName)
+                                    : null,
+                            onTap: () => Navigator.pop(context, partner),
                           );
                         },
                       ),

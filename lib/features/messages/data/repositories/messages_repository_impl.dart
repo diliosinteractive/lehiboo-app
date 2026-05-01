@@ -1,12 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../domain/entities/accepted_partner.dart';
+import '../../domain/entities/admin_report_stats.dart';
 import '../../domain/entities/conversation.dart';
+import '../../domain/entities/conversation_report.dart';
 import '../../domain/entities/message.dart';
+import '../../domain/entities/vendor_stats.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../datasources/messages_api_datasource.dart';
+import '../models/accepted_partner_dto.dart';
+import '../models/admin_report_stats_dto.dart';
 import '../models/attachment_dto.dart';
 import '../models/conversation_dto.dart';
+import '../models/conversation_report_dto.dart';
 import '../models/message_dto.dart';
+import '../models/vendor_stats_dto.dart';
 
 class MessagesRepositoryImpl implements MessagesRepository {
   final MessagesApiDataSource _api;
@@ -89,6 +97,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
         isSignalement: dto.isSignalement,
         userHasReported: dto.userHasReported,
         organization: _mapOrganization(dto.organization),
+        partnerOrganization: _mapOrganization(dto.partnerOrganization),
         participant: _mapParticipant(dto.participant),
         event: _mapEvent(dto.event),
         latestMessage:
@@ -97,6 +106,61 @@ class MessagesRepositoryImpl implements MessagesRepository {
         createdAt: DateTime.parse(dto.createdAt),
         updatedAt: DateTime.parse(dto.updatedAt),
       );
+
+  AcceptedPartner _mapAcceptedPartner(AcceptedPartnerDto dto) => AcceptedPartner(
+        id: dto.id,
+        companyName: dto.companyName,
+        organizationName: dto.organizationName,
+        logoUrl: dto.logoUrl,
+        avatarUrl: dto.avatarUrl,
+      );
+
+  VendorStats _mapVendorStats(VendorStatsDto dto) => VendorStats(
+        clientTotal: dto.clientTotal,
+        clientUnread: dto.clientUnread,
+        supportTotal: dto.supportTotal,
+        supportUnread: dto.supportUnread,
+      );
+
+  AdminReportStats _mapAdminReportStats(AdminReportStatsDto dto) =>
+      AdminReportStats(
+        pending: dto.pending,
+        reviewed: dto.reviewed,
+        dismissed: dto.dismissed,
+        total: dto.total,
+      );
+
+  ConversationReportParty? _mapReportParty(Map<String, dynamic>? map) {
+    if (map == null) return null;
+    return ConversationReportParty(
+      id: (map['id'] as num).toInt(),
+      name: map['name'] as String? ?? '',
+      email: map['email'] as String? ?? '',
+      avatarUrl: map['avatar_url'] as String?,
+      organizationUuid: map['organization_uuid'] as String?,
+      organizationName: map['organization_name'] as String?,
+    );
+  }
+
+  ConversationReport _mapConversationReport(ConversationReportDto dto) {
+    final conv = dto.conversation;
+    return ConversationReport(
+      uuid: dto.uuid,
+      reason: dto.reason,
+      comment: dto.comment,
+      status: dto.status,
+      createdAt: DateTime.parse(dto.createdAt),
+      reviewedAt:
+          dto.reviewedAt != null ? DateTime.parse(dto.reviewedAt!) : null,
+      adminNote: dto.adminNote,
+      conversationUuid: conv?['uuid'] as String?,
+      conversationSubject: conv?['subject'] as String?,
+      reporter: _mapReportParty(dto.reporter),
+      againstWhom: _mapReportParty(dto.againstWhom),
+      againstWhomType: dto.againstWhom?['type'] as String?,
+      reviewedByName: (dto.reviewedBy)?['name'] as String?,
+    );
+  }
 
   ConversationsListResult _mapListResult(
       ConversationsListResponseDto response, int page) {
@@ -117,6 +181,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
     String? status,
     bool? unreadOnly,
     String? search,
+    String? period,
     int page = 1,
     int perPage = 15,
   }) async {
@@ -124,6 +189,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
       status: status,
       unreadOnly: unreadOnly,
       search: search,
+      period: period,
       page: page,
       perPage: perPage,
     );
@@ -136,6 +202,11 @@ class MessagesRepositoryImpl implements MessagesRepository {
   @override
   Future<Conversation> getConversation(String uuid) async {
     return _mapConversation(await _api.getConversation(uuid));
+  }
+
+  @override
+  Future<void> markConversationAsRead(String uuid) {
+    return _api.markConversationAsRead(uuid);
   }
 
   @override
@@ -262,10 +333,12 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Conversation> createSupportConversation({
     required String subject,
     required String message,
+    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createSupportConversation(
       subject: subject,
       message: message,
+      attachments: attachments,
     ));
   }
 
@@ -284,6 +357,393 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<List<ConversationOrganization>> getContactableOrganizations() async {
     final dtos = await _api.getContactableOrganizations();
     return dtos.map((dto) => _mapOrganization(dto)!).toList();
+  }
+
+  // ===== Vendor — conversations =====
+
+  @override
+  Future<ConversationsListResult> getVendorConversations({
+    String? conversationType,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    final response = await _api.getVendorConversations(
+      conversationType: conversationType,
+      status: status,
+      unreadOnly: unreadOnly,
+      search: search,
+      period: period,
+      page: page,
+      perPage: perPage,
+    );
+    return _mapListResult(response, page);
+  }
+
+  @override
+  Future<int> getVendorUnreadCount() => _api.getVendorUnreadCount();
+
+  @override
+  Future<VendorStats> getVendorStats() async {
+    return _mapVendorStats(await _api.getVendorStats());
+  }
+
+  @override
+  Future<List<ConversationParticipant>> getInteractedParticipants({
+    String? search,
+  }) async {
+    final dtos = await _api.getInteractedParticipants(search: search);
+    return dtos.map((dto) => _mapParticipant(dto)!).toList();
+  }
+
+  @override
+  Future<Conversation> createVendorConversationToParticipant({
+    required int participantId,
+    required String subject,
+    required String message,
+    int? eventId,
+    List<XFile>? attachments,
+  }) async {
+    return _mapConversation(await _api.createVendorConversationToParticipant(
+      participantId: participantId,
+      subject: subject,
+      message: message,
+      eventId: eventId,
+      attachments: attachments,
+    ));
+  }
+
+  @override
+  Future<Conversation> createVendorSupportThread({
+    required String subject,
+    required String message,
+    List<XFile>? attachments,
+  }) async {
+    return _mapConversation(await _api.createVendorSupportThread(
+      subject: subject,
+      message: message,
+      attachments: attachments,
+    ));
+  }
+
+  @override
+  Future<Conversation> getVendorConversation(String uuid) async {
+    return _mapConversation(await _api.getVendorConversation(uuid));
+  }
+
+  @override
+  Future<void> markVendorConversationAsRead(String uuid) {
+    return _api.markVendorConversationAsRead(uuid);
+  }
+
+  @override
+  Future<Message> sendVendorMessage({
+    required String conversationUuid,
+    String? content,
+    List<XFile>? attachments,
+  }) async {
+    return _mapMessage(await _api.sendVendorMessage(
+      conversationUuid: conversationUuid,
+      content: content,
+      attachments: attachments,
+    ));
+  }
+
+  @override
+  Future<Message> editVendorMessage({
+    required String conversationUuid,
+    required String messageUuid,
+    required String content,
+  }) async {
+    return _mapMessage(await _api.editVendorMessage(
+      conversationUuid: conversationUuid,
+      messageUuid: messageUuid,
+      content: content,
+    ));
+  }
+
+  @override
+  Future<void> deleteVendorMessage({
+    required String conversationUuid,
+    required String messageUuid,
+  }) {
+    return _api.deleteVendorMessage(
+      conversationUuid: conversationUuid,
+      messageUuid: messageUuid,
+    );
+  }
+
+  @override
+  Future<Conversation> closeVendorConversation(String uuid) async {
+    return _mapConversation(await _api.closeVendorConversation(uuid));
+  }
+
+  // ===== Vendor — org-conversations =====
+
+  @override
+  Future<List<AcceptedPartner>> getAcceptedPartners() async {
+    final dtos = await _api.getAcceptedPartners();
+    return dtos.map(_mapAcceptedPartner).toList();
+  }
+
+  @override
+  Future<ConversationsListResult> getOrgConversations({
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    final response = await _api.getOrgConversations(
+      status: status,
+      unreadOnly: unreadOnly,
+      search: search,
+      period: period,
+      page: page,
+      perPage: perPage,
+    );
+    return _mapListResult(response, page);
+  }
+
+  @override
+  Future<Conversation> createOrgConversation({
+    required int partnerOrganizationId,
+    required String subject,
+    required String message,
+    List<XFile>? attachments,
+  }) async {
+    return _mapConversation(await _api.createOrgConversation(
+      partnerOrganizationId: partnerOrganizationId,
+      subject: subject,
+      message: message,
+      attachments: attachments,
+    ));
+  }
+
+  @override
+  Future<Conversation> getOrgConversation(String uuid) async {
+    return _mapConversation(await _api.getOrgConversation(uuid));
+  }
+
+  @override
+  Future<void> markOrgConversationAsRead(String uuid) {
+    return _api.markOrgConversationAsRead(uuid);
+  }
+
+  @override
+  Future<Message> sendOrgMessage({
+    required String conversationUuid,
+    String? content,
+    List<XFile>? attachments,
+  }) async {
+    return _mapMessage(await _api.sendOrgMessage(
+      conversationUuid: conversationUuid,
+      content: content,
+      attachments: attachments,
+    ));
+  }
+
+  @override
+  Future<Message> editOrgMessage({
+    required String conversationUuid,
+    required String messageUuid,
+    required String content,
+  }) async {
+    return _mapMessage(await _api.editOrgMessage(
+      conversationUuid: conversationUuid,
+      messageUuid: messageUuid,
+      content: content,
+    ));
+  }
+
+  @override
+  Future<void> deleteOrgMessage({
+    required String conversationUuid,
+    required String messageUuid,
+  }) {
+    return _api.deleteOrgMessage(
+      conversationUuid: conversationUuid,
+      messageUuid: messageUuid,
+    );
+  }
+
+  @override
+  Future<Conversation> closeOrgConversation(String uuid) async {
+    return _mapConversation(await _api.closeOrgConversation(uuid));
+  }
+
+  // ===== Admin — conversations =====
+
+  @override
+  Future<ConversationsListResult> getAdminConversations({
+    String? conversationType,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    final response = await _api.getAdminConversations(
+      conversationType: conversationType,
+      status: status,
+      unreadOnly: unreadOnly,
+      search: search,
+      period: period,
+      page: page,
+      perPage: perPage,
+    );
+    return _mapListResult(response, page);
+  }
+
+  @override
+  Future<int> getAdminUnreadCount() => _api.getAdminUnreadCount();
+
+  @override
+  Future<Conversation> createAdminUserThread({
+    int? userId,
+    String? userUuid,
+    String? subject,
+    String? message,
+    List<XFile>? attachments,
+  }) async {
+    return _mapConversation(await _api.createAdminUserThread(
+      userId: userId,
+      userUuid: userUuid,
+      subject: subject,
+      message: message,
+      attachments: attachments,
+    ));
+  }
+
+  @override
+  Future<Conversation> createAdminSupportThread({
+    required String organizationUuid,
+    String? subject,
+    String? message,
+    List<XFile>? attachments,
+  }) async {
+    return _mapConversation(await _api.createAdminSupportThread(
+      organizationUuid: organizationUuid,
+      subject: subject,
+      message: message,
+      attachments: attachments,
+    ));
+  }
+
+  @override
+  Future<Conversation> getAdminConversation(String uuid) async {
+    return _mapConversation(await _api.getAdminConversation(uuid));
+  }
+
+  @override
+  Future<void> markAdminConversationAsRead(String uuid) {
+    return _api.markAdminConversationAsRead(uuid);
+  }
+
+  @override
+  Future<Message> sendAdminMessage({
+    required String conversationUuid,
+    String? content,
+    List<XFile>? attachments,
+  }) async {
+    return _mapMessage(await _api.sendAdminMessage(
+      conversationUuid: conversationUuid,
+      content: content,
+      attachments: attachments,
+    ));
+  }
+
+  @override
+  Future<Message> editAdminMessage({
+    required String conversationUuid,
+    required String messageUuid,
+    required String content,
+  }) async {
+    return _mapMessage(await _api.editAdminMessage(
+      conversationUuid: conversationUuid,
+      messageUuid: messageUuid,
+      content: content,
+    ));
+  }
+
+  @override
+  Future<void> deleteAdminMessage({
+    required String conversationUuid,
+    required String messageUuid,
+  }) {
+    return _api.deleteAdminMessage(
+      conversationUuid: conversationUuid,
+      messageUuid: messageUuid,
+    );
+  }
+
+  @override
+  Future<Conversation> closeAdminConversation(String uuid) async {
+    return _mapConversation(await _api.closeAdminConversation(uuid));
+  }
+
+  @override
+  Future<Conversation> reopenAdminConversation(String uuid) async {
+    return _mapConversation(await _api.reopenAdminConversation(uuid));
+  }
+
+  // ===== Admin — reports =====
+
+  @override
+  Future<ConversationReportsListResult> getAdminConversationReports({
+    String? search,
+    String? reason,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    final response = await _api.getAdminConversationReports(
+      search: search,
+      reason: reason,
+      page: page,
+      perPage: perPage,
+    );
+    final reports = response.data.map(_mapConversationReport).toList();
+    final lastPage = response.lastPage ?? 1;
+    return ConversationReportsListResult(
+      reports: reports,
+      hasMore: page < lastPage,
+      currentPage: page,
+      totalCount: response.total ?? reports.length,
+    );
+  }
+
+  @override
+  Future<AdminReportStats> getAdminConversationReportStats() async {
+    return _mapAdminReportStats(await _api.getAdminConversationReportStats());
+  }
+
+  @override
+  Future<void> reviewAdminConversationReport({
+    required String reportUuid,
+    required String action,
+    String? adminNote,
+  }) {
+    return _api.reviewAdminConversationReport(
+      reportUuid: reportUuid,
+      action: action,
+      adminNote: adminNote,
+    );
+  }
+
+  @override
+  Future<void> updateAdminConversationReportNote({
+    required String reportUuid,
+    String? adminNote,
+  }) {
+    return _api.updateAdminConversationReportNote(
+      reportUuid: reportUuid,
+      adminNote: adminNote,
+    );
   }
 }
 

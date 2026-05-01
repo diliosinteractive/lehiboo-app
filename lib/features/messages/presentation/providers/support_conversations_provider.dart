@@ -72,6 +72,16 @@ class SupportConversationsNotifier
   Future<void> refresh() async {
     await load();
   }
+
+  void applyRead(String uuid) {
+    final current = state.conversations.valueOrNull;
+    if (current == null) return;
+    final idx = current.indexWhere((c) => c.uuid == uuid);
+    if (idx == -1 || current[idx].unreadCount == 0) return;
+    final updated = [...current];
+    updated[idx] = current[idx].copyWith(unreadCount: 0);
+    state = state.copyWith(conversations: AsyncValue.data(updated));
+  }
 }
 
 final supportConversationsProvider = StateNotifierProvider<

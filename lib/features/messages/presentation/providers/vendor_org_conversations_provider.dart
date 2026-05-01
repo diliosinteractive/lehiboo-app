@@ -3,20 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
-import '../../data/datasources/messages_polling_datasource.dart';
-import 'unread_count_provider.dart';
 import 'messages_realtime_provider.dart';
 
-class ConversationsState {
+class VendorOrgConversationsState {
   final AsyncValue<List<Conversation>> conversations;
   final int currentPage;
   final bool hasMore;
-  final String? statusFilter;   // null = all, 'open', 'closed'
+  final String? statusFilter;
   final bool unreadOnly;
   final String? searchQuery;
-  final String? period;          // null = all, 'today', 'week', 'month', 'older'
+  final String? period;
 
-  const ConversationsState({
+  const VendorOrgConversationsState({
     this.conversations = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
@@ -26,7 +24,7 @@ class ConversationsState {
     this.period,
   });
 
-  ConversationsState copyWith({
+  VendorOrgConversationsState copyWith({
     AsyncValue<List<Conversation>>? conversations,
     int? currentPage,
     bool? hasMore,
@@ -38,43 +36,30 @@ class ConversationsState {
     String? period,
     bool clearPeriod = false,
   }) {
-    return ConversationsState(
+    return VendorOrgConversationsState(
       conversations: conversations ?? this.conversations,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
-      statusFilter: clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
+      statusFilter:
+          clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
       unreadOnly: unreadOnly ?? this.unreadOnly,
-      searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
+      searchQuery:
+          clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
       period: clearPeriod ? null : (period ?? this.period),
     );
   }
 }
 
-class ConversationsNotifier extends StateNotifier<ConversationsState> {
+class VendorOrgConversationsNotifier
+    extends StateNotifier<VendorOrgConversationsState> {
   final MessagesRepository _repo;
-  final MessagesPollingDatasource _polling;
   final Ref _ref;
-  Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
-  final Set<String> _readUuids = {};
 
-  ConversationsNotifier(this._repo, this._polling, this._ref)
-      : super(const ConversationsState()) {
+  VendorOrgConversationsNotifier(this._repo, this._ref)
+      : super(const VendorOrgConversationsState()) {
     load();
-    _startUnreadPolling();
     _subscribeToRealtime();
-  }
-
-  void _startUnreadPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      // Skip when WebSocket is connected — WS events keep unread count current
-      if (_ref.read(messagesRealtimeProvider)) return;
-      try {
-        final count = await _polling.getTotalUnreadCount();
-        _ref.read(unreadCountProvider.notifier).state = count;
-      } catch (_) {}
-    });
   }
 
   void _subscribeToRealtime() {
@@ -83,20 +68,22 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         .events
         .listen((event) {
       if (!mounted) return;
+      if (event.conversationType != null &&
+          event.conversationType != 'organization_organization') {
+        return;
+      }
       switch (event.type) {
         case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
-          _refreshUnreadCount();
+          refresh();
         case RealtimeEventType.conversationCreated:
           refresh();
-          _refreshUnreadCount();
         case RealtimeEventType.conversationClosed:
           if (event.conversationUuid != null) {
-            _applyConversationStatus(event.conversationUuid!, 'closed');
+            _applyStatus(event.conversationUuid!, 'closed');
           }
         case RealtimeEventType.conversationReopened:
           if (event.conversationUuid != null) {
-            _applyConversationStatus(event.conversationUuid!, 'open');
+            _applyStatus(event.conversationUuid!, 'open');
           }
         default:
           break;
@@ -104,34 +91,16 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     });
   }
 
-  void _applyConversationStatus(String convUuid, String status) {
+  void _applyStatus(String convUuid, String status) {
     final current = state.conversations.valueOrNull;
     if (current == null) return;
-    final updated = current
-        .map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c)
-        .toList();
-    state = state.copyWith(conversations: AsyncValue.data(updated));
-  }
-
-  void _applyNewMessage(RealtimeEvent event) {
-    final uuid = event.conversationUuid;
-    final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
-      refresh();
-      return;
-    }
-    final idx = current.indexWhere((c) => c.uuid == uuid);
-    if (idx == -1) {
-      refresh();
-      return;
-    }
-    final updated = current[idx].copyWith(
-      unreadCount: current[idx].unreadCount + 1,
+    state = state.copyWith(
+      conversations: AsyncValue.data(
+        current
+            .map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c)
+            .toList(),
+      ),
     );
-    final list = [...current];
-    list.removeAt(idx);
-    list.insert(0, updated);
-    state = state.copyWith(conversations: AsyncValue.data(list));
   }
 
   Future<void> load() async {
@@ -141,29 +110,18 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
       hasMore: false,
     );
     try {
-      final result = await _repo.getConversations(
+      final result = await _repo.getOrgConversations(
         status: state.statusFilter,
         unreadOnly: state.unreadOnly ? true : null,
         search: state.searchQuery,
         period: state.period,
         page: 1,
       );
-      var conversations = result.conversations;
-      if (_readUuids.isNotEmpty) {
-        conversations = conversations.map((c) {
-          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
-            return c.copyWith(unreadCount: 0);
-          }
-          return c;
-        }).toList();
-      }
       state = state.copyWith(
-        conversations: AsyncValue.data(conversations),
+        conversations: AsyncValue.data(result.conversations),
         currentPage: 1,
         hasMore: result.hasMore,
       );
-      // Refresh global unread count
-      _refreshUnreadCount();
     } catch (e, st) {
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
@@ -175,7 +133,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     if (current == null) return;
     try {
       final nextPage = state.currentPage + 1;
-      final result = await _repo.getConversations(
+      final result = await _repo.getOrgConversations(
         status: state.statusFilter,
         unreadOnly: state.unreadOnly ? true : null,
         search: state.searchQuery,
@@ -187,17 +145,12 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         currentPage: nextPage,
         hasMore: result.hasMore,
       );
-    } catch (_) {
-      // Keep existing list on loadMore failure
-    }
+    } catch (_) {}
   }
 
-  Future<void> refresh() async {
-    await load();
-  }
+  Future<void> refresh() async => load();
 
   void applyRead(String uuid) {
-    _readUuids.add(uuid);
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -240,26 +193,17 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     load();
   }
 
-  Future<void> _refreshUnreadCount() async {
-    try {
-      final count = await _polling.getTotalUnreadCount();
-      _ref.read(unreadCountProvider.notifier).state = count;
-    } catch (_) {}
-  }
-
   @override
   void dispose() {
     _realtimeSub?.cancel();
-    _pollTimer?.cancel();
     super.dispose();
   }
 }
 
-final conversationsProvider =
-    StateNotifierProvider<ConversationsNotifier, ConversationsState>((ref) {
-  return ConversationsNotifier(
+final vendorOrgConversationsProvider = StateNotifierProvider<
+    VendorOrgConversationsNotifier, VendorOrgConversationsState>((ref) {
+  return VendorOrgConversationsNotifier(
     ref.read(messagesRepositoryProvider),
-    ref.read(messagesPollingDatasourceProvider),
     ref,
   );
 });
