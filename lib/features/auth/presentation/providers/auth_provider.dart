@@ -383,3 +383,10 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
 final currentUserProvider = Provider<HbUser?>((ref) {
   return ref.watch(authProvider).user;
 });
+
+/// True while a [GuestRestrictionDialog] is on screen and listening for
+/// auth changes. Authentication screens (register, OTP) check this flag
+/// to suppress their own post-auth `context.go('/')` so the dialog can
+/// pop itself and let the original gated action resume on the screen
+/// underneath.
+final guestGuardActiveProvider = StateProvider<bool>((ref) => false);

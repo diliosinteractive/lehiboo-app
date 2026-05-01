@@ -15,7 +15,9 @@ class GuestGuard {
       return true;
     }
 
-    await GuestRestrictionDialog.show(context, featureName: featureName);
-    return false;
+    // Dialog returns `true` when the user signs in inline so the caller
+    // can resume the gated action (favoriting, posting a review, etc.)
+    // without losing in-flight UI state.
+    return await GuestRestrictionDialog.show(context, featureName: featureName);
   }
 }

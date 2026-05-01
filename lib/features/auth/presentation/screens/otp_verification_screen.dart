@@ -99,7 +99,13 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
       }
 
       if (success && mounted) {
-        context.go('/');
+        // If the OTP flow was triggered from a GuestRestrictionDialog,
+        // skip the navigation reset — the dialog's auth-state listener
+        // will pop pushed screens and the dialog itself, returning the
+        // user to the original screen so the gated action resumes.
+        if (!ref.read(guestGuardActiveProvider)) {
+          context.go('/');
+        }
       }
     } finally {
       if (mounted) {
