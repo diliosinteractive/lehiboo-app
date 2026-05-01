@@ -73,8 +73,19 @@ class GamificationRepositoryImpl implements GamificationRepository {
               amount: dto.amount,
               description: dto.description,
               timestamp: DateTime.parse(dto.createdAt),
+              source: _normalizeSource(dto.source),
+              pillar: dto.pillar,
+              balanceAfter: dto.balanceAfter,
             ))
         .toList();
+  }
+
+  /// Backend a migré 'favorite_added' → 'favorite_event_added' ; le cache local
+  /// peut encore contenir l'ancienne valeur. Normaliser pour éviter le double
+  /// case dans les filtres.
+  String? _normalizeSource(String? source) {
+    if (source == 'favorite_added') return 'favorite_event_added';
+    return source;
   }
 
   TransactionType _parseTransactionType(String type) {

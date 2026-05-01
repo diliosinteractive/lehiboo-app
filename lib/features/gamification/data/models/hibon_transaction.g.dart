@@ -14,6 +14,9 @@ _$HibonTransactionImpl _$$HibonTransactionImplFromJson(
       amount: (json['amount'] as num).toInt(),
       description: json['description'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
+      source: json['source'] as String?,
+      pillar: json['pillar'] as String?,
+      balanceAfter: (json['balanceAfter'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$HibonTransactionImplToJson(
@@ -24,6 +27,9 @@ Map<String, dynamic> _$$HibonTransactionImplToJson(
       'amount': instance.amount,
       'description': instance.description,
       'timestamp': instance.timestamp.toIso8601String(),
+      'source': instance.source,
+      'pillar': instance.pillar,
+      'balanceAfter': instance.balanceAfter,
     };
 
 const _$TransactionTypeEnumMap = {

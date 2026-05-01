@@ -8,6 +8,12 @@ import '../../../messages/presentation/providers/unread_count_provider.dart';
 import '../../../reviews/presentation/providers/pending_count_provider.dart';
 import '../providers/profile_provider.dart';
 
+class _ProfileField {
+  final String label;
+  final bool filled;
+  const _ProfileField(this.label, this.filled);
+}
+
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -142,6 +148,10 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+
+        // Profile completion (5 fields → reward 50 H lifetime)
+        _buildProfileCompletionCard(context, user),
         const SizedBox(height: 24),
 
         // Statistics Section
@@ -379,6 +389,120 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// Affiche la progression du profil (N/5 champs comptés par le serveur :
+  /// firstName, lastName, avatarUrl, birthDate, membershipCity).
+  /// Récompense de 50 Hibons (1×/lifetime) au passage à 5/5.
+  Widget _buildProfileCompletionCard(BuildContext context, user) {
+    final fields = <_ProfileField>[
+      _ProfileField('Prénom', _isFilled(user.firstName)),
+      _ProfileField('Nom', _isFilled(user.lastName)),
+      _ProfileField('Photo', _isFilled(user.avatarUrl)),
+      _ProfileField('Date de naissance', user.birthDate != null),
+      _ProfileField('Ville d\'adhésion', _isFilled(user.membershipCity)),
+    ];
+    final completed = fields.where((f) => f.filled).length;
+    final isComplete = completed == fields.length;
+    final missing = fields.where((f) => !f.filled).map((f) => f.label).toList();
+
+    return GestureDetector(
+      onTap: isComplete ? null : () => context.push('/profile/edit'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isComplete
+                ? Colors.green.withValues(alpha: 0.3)
+                : const Color(0xFFFFB300).withValues(alpha: 0.3),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isComplete ? Icons.verified : Icons.monetization_on,
+                  size: 20,
+                  color: isComplete ? Colors.green : const Color(0xFFFFB300),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isComplete
+                        ? 'Profil complet'
+                        : 'Profil $completed/${fields.length} — gagne 50 Hibons',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: HbColors.textSlate,
+                    ),
+                  ),
+                ),
+                if (!isComplete)
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: Colors.grey,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: completed / fields.length,
+                minHeight: 6,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isComplete ? Colors.green : const Color(0xFFFFB300),
+                ),
+              ),
+            ),
+            if (!isComplete) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: missing
+                    .map((label) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFB300).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            label,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF8B6914),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _isFilled(String? value) => value != null && value.trim().isNotEmpty;
 
   Widget _buildStatisticsSection(WidgetRef ref) {
     final statsAsync = ref.watch(userStatsProvider);

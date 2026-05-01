@@ -179,12 +179,38 @@ Map<String, dynamic> _$$WheelSpinResponseDtoImplToJson(
       'new_balance': instance.newBalance,
     };
 
+_$HibonsRewardResponseDtoImpl _$$HibonsRewardResponseDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$HibonsRewardResponseDtoImpl(
+      awarded: json['awarded'] as bool? ?? false,
+      amount: (json['amount'] as num?)?.toInt() ?? 0,
+      reason: json['reason'] as String?,
+      channel: json['channel'] as String?,
+      newBalance: (json['new_balance'] as num?)?.toInt(),
+      lifetimeEarned: (json['lifetime_earned'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$$HibonsRewardResponseDtoImplToJson(
+        _$HibonsRewardResponseDtoImpl instance) =>
+    <String, dynamic>{
+      'awarded': instance.awarded,
+      'amount': instance.amount,
+      'reason': instance.reason,
+      'channel': instance.channel,
+      'new_balance': instance.newBalance,
+      'lifetime_earned': instance.lifetimeEarned,
+    };
+
 _$TransactionDtoImpl _$$TransactionDtoImplFromJson(Map<String, dynamic> json) =>
     _$TransactionDtoImpl(
       id: json['id'] as String,
       type: json['type'] as String,
       amount: (json['amount'] as num).toInt(),
       description: json['description'] as String,
+      source: json['source'] as String?,
+      pillar: json['pillar'] as String?,
+      balanceAfter: (json['balance_after'] as num?)?.toInt(),
+      meta: json['meta'] as Map<String, dynamic>?,
       createdAt: json['created_at'] as String,
     );
 
@@ -195,6 +221,10 @@ Map<String, dynamic> _$$TransactionDtoImplToJson(
       'type': instance.type,
       'amount': instance.amount,
       'description': instance.description,
+      'source': instance.source,
+      'pillar': instance.pillar,
+      'balance_after': instance.balanceAfter,
+      'meta': instance.meta,
       'created_at': instance.createdAt,
     };
 

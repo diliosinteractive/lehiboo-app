@@ -25,6 +25,9 @@ mixin _$HibonTransaction {
   int get amount => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   DateTime get timestamp => throw _privateConstructorUsedError;
+  String? get source => throw _privateConstructorUsedError;
+  String? get pillar => throw _privateConstructorUsedError;
+  int? get balanceAfter => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -43,7 +46,10 @@ abstract class $HibonTransactionCopyWith<$Res> {
       TransactionType type,
       int amount,
       String description,
-      DateTime timestamp});
+      DateTime timestamp,
+      String? source,
+      String? pillar,
+      int? balanceAfter});
 }
 
 /// @nodoc
@@ -64,6 +70,9 @@ class _$HibonTransactionCopyWithImpl<$Res, $Val extends HibonTransaction>
     Object? amount = null,
     Object? description = null,
     Object? timestamp = null,
+    Object? source = freezed,
+    Object? pillar = freezed,
+    Object? balanceAfter = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -86,6 +95,18 @@ class _$HibonTransactionCopyWithImpl<$Res, $Val extends HibonTransaction>
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      source: freezed == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillar: freezed == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String?,
+      balanceAfter: freezed == balanceAfter
+          ? _value.balanceAfter
+          : balanceAfter // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -103,7 +124,10 @@ abstract class _$$HibonTransactionImplCopyWith<$Res>
       TransactionType type,
       int amount,
       String description,
-      DateTime timestamp});
+      DateTime timestamp,
+      String? source,
+      String? pillar,
+      int? balanceAfter});
 }
 
 /// @nodoc
@@ -122,6 +146,9 @@ class __$$HibonTransactionImplCopyWithImpl<$Res>
     Object? amount = null,
     Object? description = null,
     Object? timestamp = null,
+    Object? source = freezed,
+    Object? pillar = freezed,
+    Object? balanceAfter = freezed,
   }) {
     return _then(_$HibonTransactionImpl(
       id: null == id
@@ -144,6 +171,18 @@ class __$$HibonTransactionImplCopyWithImpl<$Res>
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      source: freezed == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillar: freezed == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String?,
+      balanceAfter: freezed == balanceAfter
+          ? _value.balanceAfter
+          : balanceAfter // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -156,7 +195,10 @@ class _$HibonTransactionImpl implements _HibonTransaction {
       required this.type,
       required this.amount,
       required this.description,
-      required this.timestamp});
+      required this.timestamp,
+      this.source,
+      this.pillar,
+      this.balanceAfter});
 
   factory _$HibonTransactionImpl.fromJson(Map<String, dynamic> json) =>
       _$$HibonTransactionImplFromJson(json);
@@ -171,10 +213,16 @@ class _$HibonTransactionImpl implements _HibonTransaction {
   final String description;
   @override
   final DateTime timestamp;
+  @override
+  final String? source;
+  @override
+  final String? pillar;
+  @override
+  final int? balanceAfter;
 
   @override
   String toString() {
-    return 'HibonTransaction(id: $id, type: $type, amount: $amount, description: $description, timestamp: $timestamp)';
+    return 'HibonTransaction(id: $id, type: $type, amount: $amount, description: $description, timestamp: $timestamp, source: $source, pillar: $pillar, balanceAfter: $balanceAfter)';
   }
 
   @override
@@ -188,13 +236,17 @@ class _$HibonTransactionImpl implements _HibonTransaction {
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.timestamp, timestamp) ||
-                other.timestamp == timestamp));
+                other.timestamp == timestamp) &&
+            (identical(other.source, source) || other.source == source) &&
+            (identical(other.pillar, pillar) || other.pillar == pillar) &&
+            (identical(other.balanceAfter, balanceAfter) ||
+                other.balanceAfter == balanceAfter));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, type, amount, description, timestamp);
+  int get hashCode => Object.hash(runtimeType, id, type, amount, description,
+      timestamp, source, pillar, balanceAfter);
 
   @JsonKey(ignore: true)
   @override
@@ -217,7 +269,10 @@ abstract class _HibonTransaction implements HibonTransaction {
       required final TransactionType type,
       required final int amount,
       required final String description,
-      required final DateTime timestamp}) = _$HibonTransactionImpl;
+      required final DateTime timestamp,
+      final String? source,
+      final String? pillar,
+      final int? balanceAfter}) = _$HibonTransactionImpl;
 
   factory _HibonTransaction.fromJson(Map<String, dynamic> json) =
       _$HibonTransactionImpl.fromJson;
@@ -232,6 +287,12 @@ abstract class _HibonTransaction implements HibonTransaction {
   String get description;
   @override
   DateTime get timestamp;
+  @override
+  String? get source;
+  @override
+  String? get pillar;
+  @override
+  int? get balanceAfter;
   @override
   @JsonKey(ignore: true)
   _$$HibonTransactionImplCopyWith<_$HibonTransactionImpl> get copyWith =>

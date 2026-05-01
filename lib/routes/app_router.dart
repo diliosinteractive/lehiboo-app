@@ -49,6 +49,7 @@ import '../features/gamification/presentation/screens/hibon_shop_screen.dart';
 import '../features/gamification/presentation/screens/lucky_wheel_screen.dart';
 import '../features/gamification/presentation/screens/achievements_screen.dart';
 import '../features/gamification/presentation/screens/gamification_dashboard_screen.dart';
+import '../features/gamification/presentation/screens/how_to_earn_hibons_screen.dart';
 import '../features/petit_boo/presentation/screens/petit_boo_chat_screen.dart';
 import '../features/petit_boo/presentation/screens/petit_boo_brain_screen.dart';
 import '../features/petit_boo/presentation/screens/conversation_list_screen.dart';
@@ -589,6 +590,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/achievements',
         name: 'achievements',
         builder: (context, state) => const AchievementsScreen(),
+      ),
+      GoRoute(
+        path: '/hibons/how-to-earn',
+        name: 'hibons-how-to-earn',
+        builder: (context, state) => const HowToEarnHibonsScreen(),
       ),
       // Petit Boo AI Chat
       GoRoute(

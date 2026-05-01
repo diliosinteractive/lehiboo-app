@@ -21,6 +21,8 @@ class HbUser with _$HbUser {
     @Default(UserRole.subscriber) UserRole role,
     DateTime? registeredAt,
     @Default(false) bool isVerified,
+    @Default(false) bool newsletter,
+    @Default(false) bool pushNotificationsEnabled,
     @Default(UserCapabilities()) UserCapabilities capabilities,
     // Legacy fields for backwards compatibility
     List<String>? interestsCategoryIds,

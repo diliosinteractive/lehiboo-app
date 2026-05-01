@@ -82,11 +82,19 @@ class GamificationDashboardScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            actions: const [
-              Padding(
+            actions: [
+              IconButton(
+                tooltip: 'Comment gagner des Hibons',
+                icon: const Icon(
+                  Icons.help_outline_rounded,
+                  color: Colors.white,
+                ),
+                onPressed: () => context.push('/hibons/how-to-earn'),
+              ),
+              const Padding(
                 padding: EdgeInsets.only(right: 16.0),
                 child: HibonCounterWidget(compact: true),
-              )
+              ),
             ],
           ),
 

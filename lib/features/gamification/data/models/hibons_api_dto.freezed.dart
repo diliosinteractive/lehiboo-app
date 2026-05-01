@@ -2047,6 +2047,264 @@ abstract class _WheelSpinResponseDto implements WheelSpinResponseDto {
       get copyWith => throw _privateConstructorUsedError;
 }
 
+HibonsRewardResponseDto _$HibonsRewardResponseDtoFromJson(
+    Map<String, dynamic> json) {
+  return _HibonsRewardResponseDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$HibonsRewardResponseDto {
+  bool get awarded => throw _privateConstructorUsedError;
+  int get amount => throw _privateConstructorUsedError;
+  String? get reason => throw _privateConstructorUsedError;
+  String? get channel => throw _privateConstructorUsedError;
+  @JsonKey(name: 'new_balance')
+  int? get newBalance => throw _privateConstructorUsedError;
+  @JsonKey(name: 'lifetime_earned')
+  int? get lifetimeEarned => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $HibonsRewardResponseDtoCopyWith<HibonsRewardResponseDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $HibonsRewardResponseDtoCopyWith<$Res> {
+  factory $HibonsRewardResponseDtoCopyWith(HibonsRewardResponseDto value,
+          $Res Function(HibonsRewardResponseDto) then) =
+      _$HibonsRewardResponseDtoCopyWithImpl<$Res, HibonsRewardResponseDto>;
+  @useResult
+  $Res call(
+      {bool awarded,
+      int amount,
+      String? reason,
+      String? channel,
+      @JsonKey(name: 'new_balance') int? newBalance,
+      @JsonKey(name: 'lifetime_earned') int? lifetimeEarned});
+}
+
+/// @nodoc
+class _$HibonsRewardResponseDtoCopyWithImpl<$Res,
+        $Val extends HibonsRewardResponseDto>
+    implements $HibonsRewardResponseDtoCopyWith<$Res> {
+  _$HibonsRewardResponseDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? awarded = null,
+    Object? amount = null,
+    Object? reason = freezed,
+    Object? channel = freezed,
+    Object? newBalance = freezed,
+    Object? lifetimeEarned = freezed,
+  }) {
+    return _then(_value.copyWith(
+      awarded: null == awarded
+          ? _value.awarded
+          : awarded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      channel: freezed == channel
+          ? _value.channel
+          : channel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      newBalance: freezed == newBalance
+          ? _value.newBalance
+          : newBalance // ignore: cast_nullable_to_non_nullable
+              as int?,
+      lifetimeEarned: freezed == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$HibonsRewardResponseDtoImplCopyWith<$Res>
+    implements $HibonsRewardResponseDtoCopyWith<$Res> {
+  factory _$$HibonsRewardResponseDtoImplCopyWith(
+          _$HibonsRewardResponseDtoImpl value,
+          $Res Function(_$HibonsRewardResponseDtoImpl) then) =
+      __$$HibonsRewardResponseDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {bool awarded,
+      int amount,
+      String? reason,
+      String? channel,
+      @JsonKey(name: 'new_balance') int? newBalance,
+      @JsonKey(name: 'lifetime_earned') int? lifetimeEarned});
+}
+
+/// @nodoc
+class __$$HibonsRewardResponseDtoImplCopyWithImpl<$Res>
+    extends _$HibonsRewardResponseDtoCopyWithImpl<$Res,
+        _$HibonsRewardResponseDtoImpl>
+    implements _$$HibonsRewardResponseDtoImplCopyWith<$Res> {
+  __$$HibonsRewardResponseDtoImplCopyWithImpl(
+      _$HibonsRewardResponseDtoImpl _value,
+      $Res Function(_$HibonsRewardResponseDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? awarded = null,
+    Object? amount = null,
+    Object? reason = freezed,
+    Object? channel = freezed,
+    Object? newBalance = freezed,
+    Object? lifetimeEarned = freezed,
+  }) {
+    return _then(_$HibonsRewardResponseDtoImpl(
+      awarded: null == awarded
+          ? _value.awarded
+          : awarded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      channel: freezed == channel
+          ? _value.channel
+          : channel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      newBalance: freezed == newBalance
+          ? _value.newBalance
+          : newBalance // ignore: cast_nullable_to_non_nullable
+              as int?,
+      lifetimeEarned: freezed == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$HibonsRewardResponseDtoImpl implements _HibonsRewardResponseDto {
+  const _$HibonsRewardResponseDtoImpl(
+      {this.awarded = false,
+      this.amount = 0,
+      this.reason,
+      this.channel,
+      @JsonKey(name: 'new_balance') this.newBalance,
+      @JsonKey(name: 'lifetime_earned') this.lifetimeEarned});
+
+  factory _$HibonsRewardResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$HibonsRewardResponseDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final bool awarded;
+  @override
+  @JsonKey()
+  final int amount;
+  @override
+  final String? reason;
+  @override
+  final String? channel;
+  @override
+  @JsonKey(name: 'new_balance')
+  final int? newBalance;
+  @override
+  @JsonKey(name: 'lifetime_earned')
+  final int? lifetimeEarned;
+
+  @override
+  String toString() {
+    return 'HibonsRewardResponseDto(awarded: $awarded, amount: $amount, reason: $reason, channel: $channel, newBalance: $newBalance, lifetimeEarned: $lifetimeEarned)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$HibonsRewardResponseDtoImpl &&
+            (identical(other.awarded, awarded) || other.awarded == awarded) &&
+            (identical(other.amount, amount) || other.amount == amount) &&
+            (identical(other.reason, reason) || other.reason == reason) &&
+            (identical(other.channel, channel) || other.channel == channel) &&
+            (identical(other.newBalance, newBalance) ||
+                other.newBalance == newBalance) &&
+            (identical(other.lifetimeEarned, lifetimeEarned) ||
+                other.lifetimeEarned == lifetimeEarned));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, awarded, amount, reason, channel,
+      newBalance, lifetimeEarned);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$HibonsRewardResponseDtoImplCopyWith<_$HibonsRewardResponseDtoImpl>
+      get copyWith => __$$HibonsRewardResponseDtoImplCopyWithImpl<
+          _$HibonsRewardResponseDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$HibonsRewardResponseDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _HibonsRewardResponseDto implements HibonsRewardResponseDto {
+  const factory _HibonsRewardResponseDto(
+          {final bool awarded,
+          final int amount,
+          final String? reason,
+          final String? channel,
+          @JsonKey(name: 'new_balance') final int? newBalance,
+          @JsonKey(name: 'lifetime_earned') final int? lifetimeEarned}) =
+      _$HibonsRewardResponseDtoImpl;
+
+  factory _HibonsRewardResponseDto.fromJson(Map<String, dynamic> json) =
+      _$HibonsRewardResponseDtoImpl.fromJson;
+
+  @override
+  bool get awarded;
+  @override
+  int get amount;
+  @override
+  String? get reason;
+  @override
+  String? get channel;
+  @override
+  @JsonKey(name: 'new_balance')
+  int? get newBalance;
+  @override
+  @JsonKey(name: 'lifetime_earned')
+  int? get lifetimeEarned;
+  @override
+  @JsonKey(ignore: true)
+  _$$HibonsRewardResponseDtoImplCopyWith<_$HibonsRewardResponseDtoImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
 TransactionDto _$TransactionDtoFromJson(Map<String, dynamic> json) {
   return _TransactionDto.fromJson(json);
 }
@@ -2058,6 +2316,11 @@ mixin _$TransactionDto {
       throw _privateConstructorUsedError; // earn, spend, purchase, refund
   int get amount => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
+  String? get source => throw _privateConstructorUsedError;
+  String? get pillar => throw _privateConstructorUsedError;
+  @JsonKey(name: 'balance_after')
+  int? get balanceAfter => throw _privateConstructorUsedError;
+  Map<String, dynamic>? get meta => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   String get createdAt => throw _privateConstructorUsedError;
 
@@ -2078,6 +2341,10 @@ abstract class $TransactionDtoCopyWith<$Res> {
       String type,
       int amount,
       String description,
+      String? source,
+      String? pillar,
+      @JsonKey(name: 'balance_after') int? balanceAfter,
+      Map<String, dynamic>? meta,
       @JsonKey(name: 'created_at') String createdAt});
 }
 
@@ -2098,6 +2365,10 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
     Object? type = null,
     Object? amount = null,
     Object? description = null,
+    Object? source = freezed,
+    Object? pillar = freezed,
+    Object? balanceAfter = freezed,
+    Object? meta = freezed,
     Object? createdAt = null,
   }) {
     return _then(_value.copyWith(
@@ -2117,6 +2388,22 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
+      source: freezed == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillar: freezed == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String?,
+      balanceAfter: freezed == balanceAfter
+          ? _value.balanceAfter
+          : balanceAfter // ignore: cast_nullable_to_non_nullable
+              as int?,
+      meta: freezed == meta
+          ? _value.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -2138,6 +2425,10 @@ abstract class _$$TransactionDtoImplCopyWith<$Res>
       String type,
       int amount,
       String description,
+      String? source,
+      String? pillar,
+      @JsonKey(name: 'balance_after') int? balanceAfter,
+      Map<String, dynamic>? meta,
       @JsonKey(name: 'created_at') String createdAt});
 }
 
@@ -2156,6 +2447,10 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
     Object? type = null,
     Object? amount = null,
     Object? description = null,
+    Object? source = freezed,
+    Object? pillar = freezed,
+    Object? balanceAfter = freezed,
+    Object? meta = freezed,
     Object? createdAt = null,
   }) {
     return _then(_$TransactionDtoImpl(
@@ -2175,6 +2470,22 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
+      source: freezed == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillar: freezed == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String?,
+      balanceAfter: freezed == balanceAfter
+          ? _value.balanceAfter
+          : balanceAfter // ignore: cast_nullable_to_non_nullable
+              as int?,
+      meta: freezed == meta
+          ? _value._meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -2191,7 +2502,12 @@ class _$TransactionDtoImpl implements _TransactionDto {
       required this.type,
       required this.amount,
       required this.description,
-      @JsonKey(name: 'created_at') required this.createdAt});
+      this.source,
+      this.pillar,
+      @JsonKey(name: 'balance_after') this.balanceAfter,
+      final Map<String, dynamic>? meta,
+      @JsonKey(name: 'created_at') required this.createdAt})
+      : _meta = meta;
 
   factory _$TransactionDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$TransactionDtoImplFromJson(json);
@@ -2206,12 +2522,29 @@ class _$TransactionDtoImpl implements _TransactionDto {
   @override
   final String description;
   @override
+  final String? source;
+  @override
+  final String? pillar;
+  @override
+  @JsonKey(name: 'balance_after')
+  final int? balanceAfter;
+  final Map<String, dynamic>? _meta;
+  @override
+  Map<String, dynamic>? get meta {
+    final value = _meta;
+    if (value == null) return null;
+    if (_meta is EqualUnmodifiableMapView) return _meta;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
   @JsonKey(name: 'created_at')
   final String createdAt;
 
   @override
   String toString() {
-    return 'TransactionDto(id: $id, type: $type, amount: $amount, description: $description, createdAt: $createdAt)';
+    return 'TransactionDto(id: $id, type: $type, amount: $amount, description: $description, source: $source, pillar: $pillar, balanceAfter: $balanceAfter, meta: $meta, createdAt: $createdAt)';
   }
 
   @override
@@ -2224,14 +2557,28 @@ class _$TransactionDtoImpl implements _TransactionDto {
             (identical(other.amount, amount) || other.amount == amount) &&
             (identical(other.description, description) ||
                 other.description == description) &&
+            (identical(other.source, source) || other.source == source) &&
+            (identical(other.pillar, pillar) || other.pillar == pillar) &&
+            (identical(other.balanceAfter, balanceAfter) ||
+                other.balanceAfter == balanceAfter) &&
+            const DeepCollectionEquality().equals(other._meta, _meta) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, type, amount, description, createdAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      type,
+      amount,
+      description,
+      source,
+      pillar,
+      balanceAfter,
+      const DeepCollectionEquality().hash(_meta),
+      createdAt);
 
   @JsonKey(ignore: true)
   @override
@@ -2254,6 +2601,10 @@ abstract class _TransactionDto implements TransactionDto {
           required final String type,
           required final int amount,
           required final String description,
+          final String? source,
+          final String? pillar,
+          @JsonKey(name: 'balance_after') final int? balanceAfter,
+          final Map<String, dynamic>? meta,
           @JsonKey(name: 'created_at') required final String createdAt}) =
       _$TransactionDtoImpl;
 
@@ -2268,6 +2619,15 @@ abstract class _TransactionDto implements TransactionDto {
   int get amount;
   @override
   String get description;
+  @override
+  String? get source;
+  @override
+  String? get pillar;
+  @override
+  @JsonKey(name: 'balance_after')
+  int? get balanceAfter;
+  @override
+  Map<String, dynamic>? get meta;
   @override
   @JsonKey(name: 'created_at')
   String get createdAt;

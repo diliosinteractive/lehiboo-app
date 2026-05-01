@@ -127,6 +127,23 @@ class WheelSpinResponseDto with _$WheelSpinResponseDto {
       _$WheelSpinResponseDtoFromJson(json);
 }
 
+/// DTO générique pour les endpoints qui créditent des Hibons et retournent
+/// `awarded` + `amount` (heartbeat, track-view, track-share).
+@freezed
+class HibonsRewardResponseDto with _$HibonsRewardResponseDto {
+  const factory HibonsRewardResponseDto({
+    @Default(false) bool awarded,
+    @Default(0) int amount,
+    String? reason,
+    String? channel,
+    @JsonKey(name: 'new_balance') int? newBalance,
+    @JsonKey(name: 'lifetime_earned') int? lifetimeEarned,
+  }) = _HibonsRewardResponseDto;
+
+  factory HibonsRewardResponseDto.fromJson(Map<String, dynamic> json) =>
+      _$HibonsRewardResponseDtoFromJson(json);
+}
+
 /// DTO pour GET /mobile/hibons/transactions
 @freezed
 class TransactionDto with _$TransactionDto {
@@ -135,6 +152,10 @@ class TransactionDto with _$TransactionDto {
     required String type, // earn, spend, purchase, refund
     required int amount,
     required String description,
+    String? source,
+    String? pillar,
+    @JsonKey(name: 'balance_after') int? balanceAfter,
+    Map<String, dynamic>? meta,
     @JsonKey(name: 'created_at') required String createdAt,
   }) = _TransactionDto;
 

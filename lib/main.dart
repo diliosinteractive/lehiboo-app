@@ -42,6 +42,9 @@ import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 // Push Notifications
 import 'features/notifications/presentation/providers/push_notification_provider.dart';
 
+// Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
+import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
+
 // Configuration flag - set to false to use fake data
 const bool useRealApi = true;
 
@@ -183,6 +186,10 @@ class LeHibooApp extends ConsumerWidget {
     // Watch push notification provider to initialize on auth state changes
     // The provider will auto-initialize when user logs in and unregister on logout
     ref.watch(pushNotificationProvider);
+
+    // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après
+    // 3 min en foreground si l'user est authentifié.
+    ref.watch(sessionHeartbeatProvider);
 
     return MaterialApp.router(
       title: 'Le Hiboo',

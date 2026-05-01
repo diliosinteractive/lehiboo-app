@@ -123,4 +123,56 @@ class GamificationApiDataSource {
       return [];
     }
   }
+
+  /// Heartbeat session : crédite l'user après 3 min en foreground (1×/jour).
+  /// Tolère 422 (too_short / already_today) en renvoyant `awarded: false`.
+  Future<HibonsRewardResponseDto> sendSessionHeartbeat(DateTime sessionStartedAt) async {
+    debugPrint('🎮 GamificationAPI: POST /mobile/hibons/session-heartbeat');
+    try {
+      final response = await _dio.post(
+        '/mobile/hibons/session-heartbeat',
+        data: {'session_started_at': sessionStartedAt.toUtc().toIso8601String()},
+      );
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return HibonsRewardResponseDto.fromJson(payload);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        final raw = e.response?.data;
+        final payload = raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>
+            ? raw['data'] as Map<String, dynamic>
+            : <String, dynamic>{};
+        return HibonsRewardResponseDto.fromJson(payload);
+      }
+      rethrow;
+    }
+  }
+
+  /// Track-view sur une catégorie. Crédite 20 H à la 1ère exploration (cap 5/jour).
+  Future<HibonsRewardResponseDto> trackCategoryView(String slug) async {
+    debugPrint('🎮 GamificationAPI: POST /categories/$slug/track-view');
+    try {
+      final response = await _dio.post('/categories/$slug/track-view');
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return HibonsRewardResponseDto.fromJson(payload);
+    } on DioException {
+      // Tolérer silencieusement (analytics best-effort)
+      return const HibonsRewardResponseDto();
+    }
+  }
+
+  /// Track-share sur un event. Crédite 10 H par event (cap 2/sem).
+  /// channel ∈ {whatsapp, facebook, twitter, native, email, link, other}.
+  Future<HibonsRewardResponseDto> trackEventShare(String slug, String channel) async {
+    debugPrint('🎮 GamificationAPI: POST /events/$slug/track-share (channel: $channel)');
+    try {
+      final response = await _dio.post(
+        '/events/$slug/track-share',
+        data: {'channel': channel},
+      );
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return HibonsRewardResponseDto.fromJson(payload);
+    } on DioException {
+      return const HibonsRewardResponseDto();
+    }
+  }
 }
