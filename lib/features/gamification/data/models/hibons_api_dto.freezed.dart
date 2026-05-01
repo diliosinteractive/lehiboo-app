@@ -21,19 +21,27 @@ WalletResponseDto _$WalletResponseDtoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$WalletResponseDto {
   int get balance => throw _privateConstructorUsedError;
-  int get xp => throw _privateConstructorUsedError;
-  int get level => throw _privateConstructorUsedError;
+  @JsonKey(name: 'lifetime_earned')
+  int get lifetimeEarned => throw _privateConstructorUsedError;
   String get rank => throw _privateConstructorUsedError;
   @JsonKey(name: 'rank_label')
   String get rankLabel => throw _privateConstructorUsedError;
   @JsonKey(name: 'rank_icon')
   String get rankIcon => throw _privateConstructorUsedError;
+  @JsonKey(name: 'next_rank')
+  String? get nextRank => throw _privateConstructorUsedError;
+  @JsonKey(name: 'next_rank_label')
+  String? get nextRankLabel => throw _privateConstructorUsedError;
+  @JsonKey(name: 'hibons_to_next_rank')
+  int? get hibonsToNextRank => throw _privateConstructorUsedError;
+  @JsonKey(name: 'progress_to_next_rank')
+  int get progressToNextRank => throw _privateConstructorUsedError;
+  @JsonKey(name: 'petit_boo_bonus')
+  int get petitBooBonus => throw _privateConstructorUsedError;
   @JsonKey(name: 'current_streak')
   int get currentStreak => throw _privateConstructorUsedError;
   @JsonKey(name: 'max_streak')
   int get maxStreak => throw _privateConstructorUsedError;
-  @JsonKey(name: 'progress_to_next_level')
-  int get progressToNextLevel => throw _privateConstructorUsedError;
   @JsonKey(name: 'can_claim_daily')
   bool get canClaimDaily => throw _privateConstructorUsedError;
   @JsonKey(name: 'can_spin_wheel')
@@ -43,6 +51,10 @@ mixin _$WalletResponseDto {
   @JsonKey(name: 'daily_rewards')
   List<DailyRewardItemDto> get dailyRewards =>
       throw _privateConstructorUsedError;
+  int? get xp => throw _privateConstructorUsedError;
+  int? get level => throw _privateConstructorUsedError;
+  @JsonKey(name: 'progress_to_next_level')
+  int? get progressToNextLevel => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -58,18 +70,24 @@ abstract class $WalletResponseDtoCopyWith<$Res> {
   @useResult
   $Res call(
       {int balance,
-      int xp,
-      int level,
+      @JsonKey(name: 'lifetime_earned') int lifetimeEarned,
       String rank,
       @JsonKey(name: 'rank_label') String rankLabel,
       @JsonKey(name: 'rank_icon') String rankIcon,
+      @JsonKey(name: 'next_rank') String? nextRank,
+      @JsonKey(name: 'next_rank_label') String? nextRankLabel,
+      @JsonKey(name: 'hibons_to_next_rank') int? hibonsToNextRank,
+      @JsonKey(name: 'progress_to_next_rank') int progressToNextRank,
+      @JsonKey(name: 'petit_boo_bonus') int petitBooBonus,
       @JsonKey(name: 'current_streak') int currentStreak,
       @JsonKey(name: 'max_streak') int maxStreak,
-      @JsonKey(name: 'progress_to_next_level') int progressToNextLevel,
       @JsonKey(name: 'can_claim_daily') bool canClaimDaily,
       @JsonKey(name: 'can_spin_wheel') bool canSpinWheel,
       @JsonKey(name: 'chat_quota') ChatQuotaDto chatQuota,
-      @JsonKey(name: 'daily_rewards') List<DailyRewardItemDto> dailyRewards});
+      @JsonKey(name: 'daily_rewards') List<DailyRewardItemDto> dailyRewards,
+      int? xp,
+      int? level,
+      @JsonKey(name: 'progress_to_next_level') int? progressToNextLevel});
 
   $ChatQuotaDtoCopyWith<$Res> get chatQuota;
 }
@@ -88,31 +106,33 @@ class _$WalletResponseDtoCopyWithImpl<$Res, $Val extends WalletResponseDto>
   @override
   $Res call({
     Object? balance = null,
-    Object? xp = null,
-    Object? level = null,
+    Object? lifetimeEarned = null,
     Object? rank = null,
     Object? rankLabel = null,
     Object? rankIcon = null,
+    Object? nextRank = freezed,
+    Object? nextRankLabel = freezed,
+    Object? hibonsToNextRank = freezed,
+    Object? progressToNextRank = null,
+    Object? petitBooBonus = null,
     Object? currentStreak = null,
     Object? maxStreak = null,
-    Object? progressToNextLevel = null,
     Object? canClaimDaily = null,
     Object? canSpinWheel = null,
     Object? chatQuota = null,
     Object? dailyRewards = null,
+    Object? xp = freezed,
+    Object? level = freezed,
+    Object? progressToNextLevel = freezed,
   }) {
     return _then(_value.copyWith(
       balance: null == balance
           ? _value.balance
           : balance // ignore: cast_nullable_to_non_nullable
               as int,
-      xp: null == xp
-          ? _value.xp
-          : xp // ignore: cast_nullable_to_non_nullable
-              as int,
-      level: null == level
-          ? _value.level
-          : level // ignore: cast_nullable_to_non_nullable
+      lifetimeEarned: null == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
               as int,
       rank: null == rank
           ? _value.rank
@@ -126,6 +146,26 @@ class _$WalletResponseDtoCopyWithImpl<$Res, $Val extends WalletResponseDto>
           ? _value.rankIcon
           : rankIcon // ignore: cast_nullable_to_non_nullable
               as String,
+      nextRank: freezed == nextRank
+          ? _value.nextRank
+          : nextRank // ignore: cast_nullable_to_non_nullable
+              as String?,
+      nextRankLabel: freezed == nextRankLabel
+          ? _value.nextRankLabel
+          : nextRankLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hibonsToNextRank: freezed == hibonsToNextRank
+          ? _value.hibonsToNextRank
+          : hibonsToNextRank // ignore: cast_nullable_to_non_nullable
+              as int?,
+      progressToNextRank: null == progressToNextRank
+          ? _value.progressToNextRank
+          : progressToNextRank // ignore: cast_nullable_to_non_nullable
+              as int,
+      petitBooBonus: null == petitBooBonus
+          ? _value.petitBooBonus
+          : petitBooBonus // ignore: cast_nullable_to_non_nullable
+              as int,
       currentStreak: null == currentStreak
           ? _value.currentStreak
           : currentStreak // ignore: cast_nullable_to_non_nullable
@@ -133,10 +173,6 @@ class _$WalletResponseDtoCopyWithImpl<$Res, $Val extends WalletResponseDto>
       maxStreak: null == maxStreak
           ? _value.maxStreak
           : maxStreak // ignore: cast_nullable_to_non_nullable
-              as int,
-      progressToNextLevel: null == progressToNextLevel
-          ? _value.progressToNextLevel
-          : progressToNextLevel // ignore: cast_nullable_to_non_nullable
               as int,
       canClaimDaily: null == canClaimDaily
           ? _value.canClaimDaily
@@ -154,6 +190,18 @@ class _$WalletResponseDtoCopyWithImpl<$Res, $Val extends WalletResponseDto>
           ? _value.dailyRewards
           : dailyRewards // ignore: cast_nullable_to_non_nullable
               as List<DailyRewardItemDto>,
+      xp: freezed == xp
+          ? _value.xp
+          : xp // ignore: cast_nullable_to_non_nullable
+              as int?,
+      level: freezed == level
+          ? _value.level
+          : level // ignore: cast_nullable_to_non_nullable
+              as int?,
+      progressToNextLevel: freezed == progressToNextLevel
+          ? _value.progressToNextLevel
+          : progressToNextLevel // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 
@@ -176,18 +224,24 @@ abstract class _$$WalletResponseDtoImplCopyWith<$Res>
   @useResult
   $Res call(
       {int balance,
-      int xp,
-      int level,
+      @JsonKey(name: 'lifetime_earned') int lifetimeEarned,
       String rank,
       @JsonKey(name: 'rank_label') String rankLabel,
       @JsonKey(name: 'rank_icon') String rankIcon,
+      @JsonKey(name: 'next_rank') String? nextRank,
+      @JsonKey(name: 'next_rank_label') String? nextRankLabel,
+      @JsonKey(name: 'hibons_to_next_rank') int? hibonsToNextRank,
+      @JsonKey(name: 'progress_to_next_rank') int progressToNextRank,
+      @JsonKey(name: 'petit_boo_bonus') int petitBooBonus,
       @JsonKey(name: 'current_streak') int currentStreak,
       @JsonKey(name: 'max_streak') int maxStreak,
-      @JsonKey(name: 'progress_to_next_level') int progressToNextLevel,
       @JsonKey(name: 'can_claim_daily') bool canClaimDaily,
       @JsonKey(name: 'can_spin_wheel') bool canSpinWheel,
       @JsonKey(name: 'chat_quota') ChatQuotaDto chatQuota,
-      @JsonKey(name: 'daily_rewards') List<DailyRewardItemDto> dailyRewards});
+      @JsonKey(name: 'daily_rewards') List<DailyRewardItemDto> dailyRewards,
+      int? xp,
+      int? level,
+      @JsonKey(name: 'progress_to_next_level') int? progressToNextLevel});
 
   @override
   $ChatQuotaDtoCopyWith<$Res> get chatQuota;
@@ -205,31 +259,33 @@ class __$$WalletResponseDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? balance = null,
-    Object? xp = null,
-    Object? level = null,
+    Object? lifetimeEarned = null,
     Object? rank = null,
     Object? rankLabel = null,
     Object? rankIcon = null,
+    Object? nextRank = freezed,
+    Object? nextRankLabel = freezed,
+    Object? hibonsToNextRank = freezed,
+    Object? progressToNextRank = null,
+    Object? petitBooBonus = null,
     Object? currentStreak = null,
     Object? maxStreak = null,
-    Object? progressToNextLevel = null,
     Object? canClaimDaily = null,
     Object? canSpinWheel = null,
     Object? chatQuota = null,
     Object? dailyRewards = null,
+    Object? xp = freezed,
+    Object? level = freezed,
+    Object? progressToNextLevel = freezed,
   }) {
     return _then(_$WalletResponseDtoImpl(
       balance: null == balance
           ? _value.balance
           : balance // ignore: cast_nullable_to_non_nullable
               as int,
-      xp: null == xp
-          ? _value.xp
-          : xp // ignore: cast_nullable_to_non_nullable
-              as int,
-      level: null == level
-          ? _value.level
-          : level // ignore: cast_nullable_to_non_nullable
+      lifetimeEarned: null == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
               as int,
       rank: null == rank
           ? _value.rank
@@ -243,6 +299,26 @@ class __$$WalletResponseDtoImplCopyWithImpl<$Res>
           ? _value.rankIcon
           : rankIcon // ignore: cast_nullable_to_non_nullable
               as String,
+      nextRank: freezed == nextRank
+          ? _value.nextRank
+          : nextRank // ignore: cast_nullable_to_non_nullable
+              as String?,
+      nextRankLabel: freezed == nextRankLabel
+          ? _value.nextRankLabel
+          : nextRankLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hibonsToNextRank: freezed == hibonsToNextRank
+          ? _value.hibonsToNextRank
+          : hibonsToNextRank // ignore: cast_nullable_to_non_nullable
+              as int?,
+      progressToNextRank: null == progressToNextRank
+          ? _value.progressToNextRank
+          : progressToNextRank // ignore: cast_nullable_to_non_nullable
+              as int,
+      petitBooBonus: null == petitBooBonus
+          ? _value.petitBooBonus
+          : petitBooBonus // ignore: cast_nullable_to_non_nullable
+              as int,
       currentStreak: null == currentStreak
           ? _value.currentStreak
           : currentStreak // ignore: cast_nullable_to_non_nullable
@@ -250,10 +326,6 @@ class __$$WalletResponseDtoImplCopyWithImpl<$Res>
       maxStreak: null == maxStreak
           ? _value.maxStreak
           : maxStreak // ignore: cast_nullable_to_non_nullable
-              as int,
-      progressToNextLevel: null == progressToNextLevel
-          ? _value.progressToNextLevel
-          : progressToNextLevel // ignore: cast_nullable_to_non_nullable
               as int,
       canClaimDaily: null == canClaimDaily
           ? _value.canClaimDaily
@@ -271,6 +343,18 @@ class __$$WalletResponseDtoImplCopyWithImpl<$Res>
           ? _value._dailyRewards
           : dailyRewards // ignore: cast_nullable_to_non_nullable
               as List<DailyRewardItemDto>,
+      xp: freezed == xp
+          ? _value.xp
+          : xp // ignore: cast_nullable_to_non_nullable
+              as int?,
+      level: freezed == level
+          ? _value.level
+          : level // ignore: cast_nullable_to_non_nullable
+              as int?,
+      progressToNextLevel: freezed == progressToNextLevel
+          ? _value.progressToNextLevel
+          : progressToNextLevel // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -280,20 +364,25 @@ class __$$WalletResponseDtoImplCopyWithImpl<$Res>
 class _$WalletResponseDtoImpl implements _WalletResponseDto {
   const _$WalletResponseDtoImpl(
       {required this.balance,
-      required this.xp,
-      required this.level,
+      @JsonKey(name: 'lifetime_earned') this.lifetimeEarned = 0,
       required this.rank,
       @JsonKey(name: 'rank_label') required this.rankLabel,
       @JsonKey(name: 'rank_icon') required this.rankIcon,
+      @JsonKey(name: 'next_rank') this.nextRank,
+      @JsonKey(name: 'next_rank_label') this.nextRankLabel,
+      @JsonKey(name: 'hibons_to_next_rank') this.hibonsToNextRank,
+      @JsonKey(name: 'progress_to_next_rank') this.progressToNextRank = 0,
+      @JsonKey(name: 'petit_boo_bonus') this.petitBooBonus = 0,
       @JsonKey(name: 'current_streak') required this.currentStreak,
       @JsonKey(name: 'max_streak') required this.maxStreak,
-      @JsonKey(name: 'progress_to_next_level')
-      required this.progressToNextLevel,
       @JsonKey(name: 'can_claim_daily') required this.canClaimDaily,
       @JsonKey(name: 'can_spin_wheel') required this.canSpinWheel,
       @JsonKey(name: 'chat_quota') required this.chatQuota,
       @JsonKey(name: 'daily_rewards')
-      required final List<DailyRewardItemDto> dailyRewards})
+      required final List<DailyRewardItemDto> dailyRewards,
+      this.xp,
+      this.level,
+      @JsonKey(name: 'progress_to_next_level') this.progressToNextLevel})
       : _dailyRewards = dailyRewards;
 
   factory _$WalletResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -302,9 +391,8 @@ class _$WalletResponseDtoImpl implements _WalletResponseDto {
   @override
   final int balance;
   @override
-  final int xp;
-  @override
-  final int level;
+  @JsonKey(name: 'lifetime_earned')
+  final int lifetimeEarned;
   @override
   final String rank;
   @override
@@ -314,14 +402,26 @@ class _$WalletResponseDtoImpl implements _WalletResponseDto {
   @JsonKey(name: 'rank_icon')
   final String rankIcon;
   @override
+  @JsonKey(name: 'next_rank')
+  final String? nextRank;
+  @override
+  @JsonKey(name: 'next_rank_label')
+  final String? nextRankLabel;
+  @override
+  @JsonKey(name: 'hibons_to_next_rank')
+  final int? hibonsToNextRank;
+  @override
+  @JsonKey(name: 'progress_to_next_rank')
+  final int progressToNextRank;
+  @override
+  @JsonKey(name: 'petit_boo_bonus')
+  final int petitBooBonus;
+  @override
   @JsonKey(name: 'current_streak')
   final int currentStreak;
   @override
   @JsonKey(name: 'max_streak')
   final int maxStreak;
-  @override
-  @JsonKey(name: 'progress_to_next_level')
-  final int progressToNextLevel;
   @override
   @JsonKey(name: 'can_claim_daily')
   final bool canClaimDaily;
@@ -341,8 +441,16 @@ class _$WalletResponseDtoImpl implements _WalletResponseDto {
   }
 
   @override
+  final int? xp;
+  @override
+  final int? level;
+  @override
+  @JsonKey(name: 'progress_to_next_level')
+  final int? progressToNextLevel;
+
+  @override
   String toString() {
-    return 'WalletResponseDto(balance: $balance, xp: $xp, level: $level, rank: $rank, rankLabel: $rankLabel, rankIcon: $rankIcon, currentStreak: $currentStreak, maxStreak: $maxStreak, progressToNextLevel: $progressToNextLevel, canClaimDaily: $canClaimDaily, canSpinWheel: $canSpinWheel, chatQuota: $chatQuota, dailyRewards: $dailyRewards)';
+    return 'WalletResponseDto(balance: $balance, lifetimeEarned: $lifetimeEarned, rank: $rank, rankLabel: $rankLabel, rankIcon: $rankIcon, nextRank: $nextRank, nextRankLabel: $nextRankLabel, hibonsToNextRank: $hibonsToNextRank, progressToNextRank: $progressToNextRank, petitBooBonus: $petitBooBonus, currentStreak: $currentStreak, maxStreak: $maxStreak, canClaimDaily: $canClaimDaily, canSpinWheel: $canSpinWheel, chatQuota: $chatQuota, dailyRewards: $dailyRewards, xp: $xp, level: $level, progressToNextLevel: $progressToNextLevel)';
   }
 
   @override
@@ -351,19 +459,27 @@ class _$WalletResponseDtoImpl implements _WalletResponseDto {
         (other.runtimeType == runtimeType &&
             other is _$WalletResponseDtoImpl &&
             (identical(other.balance, balance) || other.balance == balance) &&
-            (identical(other.xp, xp) || other.xp == xp) &&
-            (identical(other.level, level) || other.level == level) &&
+            (identical(other.lifetimeEarned, lifetimeEarned) ||
+                other.lifetimeEarned == lifetimeEarned) &&
             (identical(other.rank, rank) || other.rank == rank) &&
             (identical(other.rankLabel, rankLabel) ||
                 other.rankLabel == rankLabel) &&
             (identical(other.rankIcon, rankIcon) ||
                 other.rankIcon == rankIcon) &&
+            (identical(other.nextRank, nextRank) ||
+                other.nextRank == nextRank) &&
+            (identical(other.nextRankLabel, nextRankLabel) ||
+                other.nextRankLabel == nextRankLabel) &&
+            (identical(other.hibonsToNextRank, hibonsToNextRank) ||
+                other.hibonsToNextRank == hibonsToNextRank) &&
+            (identical(other.progressToNextRank, progressToNextRank) ||
+                other.progressToNextRank == progressToNextRank) &&
+            (identical(other.petitBooBonus, petitBooBonus) ||
+                other.petitBooBonus == petitBooBonus) &&
             (identical(other.currentStreak, currentStreak) ||
                 other.currentStreak == currentStreak) &&
             (identical(other.maxStreak, maxStreak) ||
                 other.maxStreak == maxStreak) &&
-            (identical(other.progressToNextLevel, progressToNextLevel) ||
-                other.progressToNextLevel == progressToNextLevel) &&
             (identical(other.canClaimDaily, canClaimDaily) ||
                 other.canClaimDaily == canClaimDaily) &&
             (identical(other.canSpinWheel, canSpinWheel) ||
@@ -371,26 +487,37 @@ class _$WalletResponseDtoImpl implements _WalletResponseDto {
             (identical(other.chatQuota, chatQuota) ||
                 other.chatQuota == chatQuota) &&
             const DeepCollectionEquality()
-                .equals(other._dailyRewards, _dailyRewards));
+                .equals(other._dailyRewards, _dailyRewards) &&
+            (identical(other.xp, xp) || other.xp == xp) &&
+            (identical(other.level, level) || other.level == level) &&
+            (identical(other.progressToNextLevel, progressToNextLevel) ||
+                other.progressToNextLevel == progressToNextLevel));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      balance,
-      xp,
-      level,
-      rank,
-      rankLabel,
-      rankIcon,
-      currentStreak,
-      maxStreak,
-      progressToNextLevel,
-      canClaimDaily,
-      canSpinWheel,
-      chatQuota,
-      const DeepCollectionEquality().hash(_dailyRewards));
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        balance,
+        lifetimeEarned,
+        rank,
+        rankLabel,
+        rankIcon,
+        nextRank,
+        nextRankLabel,
+        hibonsToNextRank,
+        progressToNextRank,
+        petitBooBonus,
+        currentStreak,
+        maxStreak,
+        canClaimDaily,
+        canSpinWheel,
+        chatQuota,
+        const DeepCollectionEquality().hash(_dailyRewards),
+        xp,
+        level,
+        progressToNextLevel
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -409,22 +536,27 @@ class _$WalletResponseDtoImpl implements _WalletResponseDto {
 
 abstract class _WalletResponseDto implements WalletResponseDto {
   const factory _WalletResponseDto(
-          {required final int balance,
-          required final int xp,
-          required final int level,
-          required final String rank,
-          @JsonKey(name: 'rank_label') required final String rankLabel,
-          @JsonKey(name: 'rank_icon') required final String rankIcon,
-          @JsonKey(name: 'current_streak') required final int currentStreak,
-          @JsonKey(name: 'max_streak') required final int maxStreak,
-          @JsonKey(name: 'progress_to_next_level')
-          required final int progressToNextLevel,
-          @JsonKey(name: 'can_claim_daily') required final bool canClaimDaily,
-          @JsonKey(name: 'can_spin_wheel') required final bool canSpinWheel,
-          @JsonKey(name: 'chat_quota') required final ChatQuotaDto chatQuota,
-          @JsonKey(name: 'daily_rewards')
-          required final List<DailyRewardItemDto> dailyRewards}) =
-      _$WalletResponseDtoImpl;
+      {required final int balance,
+      @JsonKey(name: 'lifetime_earned') final int lifetimeEarned,
+      required final String rank,
+      @JsonKey(name: 'rank_label') required final String rankLabel,
+      @JsonKey(name: 'rank_icon') required final String rankIcon,
+      @JsonKey(name: 'next_rank') final String? nextRank,
+      @JsonKey(name: 'next_rank_label') final String? nextRankLabel,
+      @JsonKey(name: 'hibons_to_next_rank') final int? hibonsToNextRank,
+      @JsonKey(name: 'progress_to_next_rank') final int progressToNextRank,
+      @JsonKey(name: 'petit_boo_bonus') final int petitBooBonus,
+      @JsonKey(name: 'current_streak') required final int currentStreak,
+      @JsonKey(name: 'max_streak') required final int maxStreak,
+      @JsonKey(name: 'can_claim_daily') required final bool canClaimDaily,
+      @JsonKey(name: 'can_spin_wheel') required final bool canSpinWheel,
+      @JsonKey(name: 'chat_quota') required final ChatQuotaDto chatQuota,
+      @JsonKey(name: 'daily_rewards')
+      required final List<DailyRewardItemDto> dailyRewards,
+      final int? xp,
+      final int? level,
+      @JsonKey(name: 'progress_to_next_level')
+      final int? progressToNextLevel}) = _$WalletResponseDtoImpl;
 
   factory _WalletResponseDto.fromJson(Map<String, dynamic> json) =
       _$WalletResponseDtoImpl.fromJson;
@@ -432,9 +564,8 @@ abstract class _WalletResponseDto implements WalletResponseDto {
   @override
   int get balance;
   @override
-  int get xp;
-  @override
-  int get level;
+  @JsonKey(name: 'lifetime_earned')
+  int get lifetimeEarned;
   @override
   String get rank;
   @override
@@ -444,14 +575,26 @@ abstract class _WalletResponseDto implements WalletResponseDto {
   @JsonKey(name: 'rank_icon')
   String get rankIcon;
   @override
+  @JsonKey(name: 'next_rank')
+  String? get nextRank;
+  @override
+  @JsonKey(name: 'next_rank_label')
+  String? get nextRankLabel;
+  @override
+  @JsonKey(name: 'hibons_to_next_rank')
+  int? get hibonsToNextRank;
+  @override
+  @JsonKey(name: 'progress_to_next_rank')
+  int get progressToNextRank;
+  @override
+  @JsonKey(name: 'petit_boo_bonus')
+  int get petitBooBonus;
+  @override
   @JsonKey(name: 'current_streak')
   int get currentStreak;
   @override
   @JsonKey(name: 'max_streak')
   int get maxStreak;
-  @override
-  @JsonKey(name: 'progress_to_next_level')
-  int get progressToNextLevel;
   @override
   @JsonKey(name: 'can_claim_daily')
   bool get canClaimDaily;
@@ -464,6 +607,13 @@ abstract class _WalletResponseDto implements WalletResponseDto {
   @override
   @JsonKey(name: 'daily_rewards')
   List<DailyRewardItemDto> get dailyRewards;
+  @override
+  int? get xp;
+  @override
+  int? get level;
+  @override
+  @JsonKey(name: 'progress_to_next_level')
+  int? get progressToNextLevel;
   @override
   @JsonKey(ignore: true)
   _$$WalletResponseDtoImplCopyWith<_$WalletResponseDtoImpl> get copyWith =>
@@ -1897,6 +2047,264 @@ abstract class _WheelSpinResponseDto implements WheelSpinResponseDto {
       get copyWith => throw _privateConstructorUsedError;
 }
 
+HibonsRewardResponseDto _$HibonsRewardResponseDtoFromJson(
+    Map<String, dynamic> json) {
+  return _HibonsRewardResponseDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$HibonsRewardResponseDto {
+  bool get awarded => throw _privateConstructorUsedError;
+  int get amount => throw _privateConstructorUsedError;
+  String? get reason => throw _privateConstructorUsedError;
+  String? get channel => throw _privateConstructorUsedError;
+  @JsonKey(name: 'new_balance')
+  int? get newBalance => throw _privateConstructorUsedError;
+  @JsonKey(name: 'lifetime_earned')
+  int? get lifetimeEarned => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $HibonsRewardResponseDtoCopyWith<HibonsRewardResponseDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $HibonsRewardResponseDtoCopyWith<$Res> {
+  factory $HibonsRewardResponseDtoCopyWith(HibonsRewardResponseDto value,
+          $Res Function(HibonsRewardResponseDto) then) =
+      _$HibonsRewardResponseDtoCopyWithImpl<$Res, HibonsRewardResponseDto>;
+  @useResult
+  $Res call(
+      {bool awarded,
+      int amount,
+      String? reason,
+      String? channel,
+      @JsonKey(name: 'new_balance') int? newBalance,
+      @JsonKey(name: 'lifetime_earned') int? lifetimeEarned});
+}
+
+/// @nodoc
+class _$HibonsRewardResponseDtoCopyWithImpl<$Res,
+        $Val extends HibonsRewardResponseDto>
+    implements $HibonsRewardResponseDtoCopyWith<$Res> {
+  _$HibonsRewardResponseDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? awarded = null,
+    Object? amount = null,
+    Object? reason = freezed,
+    Object? channel = freezed,
+    Object? newBalance = freezed,
+    Object? lifetimeEarned = freezed,
+  }) {
+    return _then(_value.copyWith(
+      awarded: null == awarded
+          ? _value.awarded
+          : awarded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      channel: freezed == channel
+          ? _value.channel
+          : channel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      newBalance: freezed == newBalance
+          ? _value.newBalance
+          : newBalance // ignore: cast_nullable_to_non_nullable
+              as int?,
+      lifetimeEarned: freezed == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$HibonsRewardResponseDtoImplCopyWith<$Res>
+    implements $HibonsRewardResponseDtoCopyWith<$Res> {
+  factory _$$HibonsRewardResponseDtoImplCopyWith(
+          _$HibonsRewardResponseDtoImpl value,
+          $Res Function(_$HibonsRewardResponseDtoImpl) then) =
+      __$$HibonsRewardResponseDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {bool awarded,
+      int amount,
+      String? reason,
+      String? channel,
+      @JsonKey(name: 'new_balance') int? newBalance,
+      @JsonKey(name: 'lifetime_earned') int? lifetimeEarned});
+}
+
+/// @nodoc
+class __$$HibonsRewardResponseDtoImplCopyWithImpl<$Res>
+    extends _$HibonsRewardResponseDtoCopyWithImpl<$Res,
+        _$HibonsRewardResponseDtoImpl>
+    implements _$$HibonsRewardResponseDtoImplCopyWith<$Res> {
+  __$$HibonsRewardResponseDtoImplCopyWithImpl(
+      _$HibonsRewardResponseDtoImpl _value,
+      $Res Function(_$HibonsRewardResponseDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? awarded = null,
+    Object? amount = null,
+    Object? reason = freezed,
+    Object? channel = freezed,
+    Object? newBalance = freezed,
+    Object? lifetimeEarned = freezed,
+  }) {
+    return _then(_$HibonsRewardResponseDtoImpl(
+      awarded: null == awarded
+          ? _value.awarded
+          : awarded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      channel: freezed == channel
+          ? _value.channel
+          : channel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      newBalance: freezed == newBalance
+          ? _value.newBalance
+          : newBalance // ignore: cast_nullable_to_non_nullable
+              as int?,
+      lifetimeEarned: freezed == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$HibonsRewardResponseDtoImpl implements _HibonsRewardResponseDto {
+  const _$HibonsRewardResponseDtoImpl(
+      {this.awarded = false,
+      this.amount = 0,
+      this.reason,
+      this.channel,
+      @JsonKey(name: 'new_balance') this.newBalance,
+      @JsonKey(name: 'lifetime_earned') this.lifetimeEarned});
+
+  factory _$HibonsRewardResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$HibonsRewardResponseDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final bool awarded;
+  @override
+  @JsonKey()
+  final int amount;
+  @override
+  final String? reason;
+  @override
+  final String? channel;
+  @override
+  @JsonKey(name: 'new_balance')
+  final int? newBalance;
+  @override
+  @JsonKey(name: 'lifetime_earned')
+  final int? lifetimeEarned;
+
+  @override
+  String toString() {
+    return 'HibonsRewardResponseDto(awarded: $awarded, amount: $amount, reason: $reason, channel: $channel, newBalance: $newBalance, lifetimeEarned: $lifetimeEarned)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$HibonsRewardResponseDtoImpl &&
+            (identical(other.awarded, awarded) || other.awarded == awarded) &&
+            (identical(other.amount, amount) || other.amount == amount) &&
+            (identical(other.reason, reason) || other.reason == reason) &&
+            (identical(other.channel, channel) || other.channel == channel) &&
+            (identical(other.newBalance, newBalance) ||
+                other.newBalance == newBalance) &&
+            (identical(other.lifetimeEarned, lifetimeEarned) ||
+                other.lifetimeEarned == lifetimeEarned));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, awarded, amount, reason, channel,
+      newBalance, lifetimeEarned);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$HibonsRewardResponseDtoImplCopyWith<_$HibonsRewardResponseDtoImpl>
+      get copyWith => __$$HibonsRewardResponseDtoImplCopyWithImpl<
+          _$HibonsRewardResponseDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$HibonsRewardResponseDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _HibonsRewardResponseDto implements HibonsRewardResponseDto {
+  const factory _HibonsRewardResponseDto(
+          {final bool awarded,
+          final int amount,
+          final String? reason,
+          final String? channel,
+          @JsonKey(name: 'new_balance') final int? newBalance,
+          @JsonKey(name: 'lifetime_earned') final int? lifetimeEarned}) =
+      _$HibonsRewardResponseDtoImpl;
+
+  factory _HibonsRewardResponseDto.fromJson(Map<String, dynamic> json) =
+      _$HibonsRewardResponseDtoImpl.fromJson;
+
+  @override
+  bool get awarded;
+  @override
+  int get amount;
+  @override
+  String? get reason;
+  @override
+  String? get channel;
+  @override
+  @JsonKey(name: 'new_balance')
+  int? get newBalance;
+  @override
+  @JsonKey(name: 'lifetime_earned')
+  int? get lifetimeEarned;
+  @override
+  @JsonKey(ignore: true)
+  _$$HibonsRewardResponseDtoImplCopyWith<_$HibonsRewardResponseDtoImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
 TransactionDto _$TransactionDtoFromJson(Map<String, dynamic> json) {
   return _TransactionDto.fromJson(json);
 }
@@ -1908,6 +2316,11 @@ mixin _$TransactionDto {
       throw _privateConstructorUsedError; // earn, spend, purchase, refund
   int get amount => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
+  String? get source => throw _privateConstructorUsedError;
+  String? get pillar => throw _privateConstructorUsedError;
+  @JsonKey(name: 'balance_after')
+  int? get balanceAfter => throw _privateConstructorUsedError;
+  Map<String, dynamic>? get meta => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   String get createdAt => throw _privateConstructorUsedError;
 
@@ -1928,6 +2341,10 @@ abstract class $TransactionDtoCopyWith<$Res> {
       String type,
       int amount,
       String description,
+      String? source,
+      String? pillar,
+      @JsonKey(name: 'balance_after') int? balanceAfter,
+      Map<String, dynamic>? meta,
       @JsonKey(name: 'created_at') String createdAt});
 }
 
@@ -1948,6 +2365,10 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
     Object? type = null,
     Object? amount = null,
     Object? description = null,
+    Object? source = freezed,
+    Object? pillar = freezed,
+    Object? balanceAfter = freezed,
+    Object? meta = freezed,
     Object? createdAt = null,
   }) {
     return _then(_value.copyWith(
@@ -1967,6 +2388,22 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
+      source: freezed == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillar: freezed == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String?,
+      balanceAfter: freezed == balanceAfter
+          ? _value.balanceAfter
+          : balanceAfter // ignore: cast_nullable_to_non_nullable
+              as int?,
+      meta: freezed == meta
+          ? _value.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -1988,6 +2425,10 @@ abstract class _$$TransactionDtoImplCopyWith<$Res>
       String type,
       int amount,
       String description,
+      String? source,
+      String? pillar,
+      @JsonKey(name: 'balance_after') int? balanceAfter,
+      Map<String, dynamic>? meta,
       @JsonKey(name: 'created_at') String createdAt});
 }
 
@@ -2006,6 +2447,10 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
     Object? type = null,
     Object? amount = null,
     Object? description = null,
+    Object? source = freezed,
+    Object? pillar = freezed,
+    Object? balanceAfter = freezed,
+    Object? meta = freezed,
     Object? createdAt = null,
   }) {
     return _then(_$TransactionDtoImpl(
@@ -2025,6 +2470,22 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
+      source: freezed == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillar: freezed == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String?,
+      balanceAfter: freezed == balanceAfter
+          ? _value.balanceAfter
+          : balanceAfter // ignore: cast_nullable_to_non_nullable
+              as int?,
+      meta: freezed == meta
+          ? _value._meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -2041,7 +2502,12 @@ class _$TransactionDtoImpl implements _TransactionDto {
       required this.type,
       required this.amount,
       required this.description,
-      @JsonKey(name: 'created_at') required this.createdAt});
+      this.source,
+      this.pillar,
+      @JsonKey(name: 'balance_after') this.balanceAfter,
+      final Map<String, dynamic>? meta,
+      @JsonKey(name: 'created_at') required this.createdAt})
+      : _meta = meta;
 
   factory _$TransactionDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$TransactionDtoImplFromJson(json);
@@ -2056,12 +2522,29 @@ class _$TransactionDtoImpl implements _TransactionDto {
   @override
   final String description;
   @override
+  final String? source;
+  @override
+  final String? pillar;
+  @override
+  @JsonKey(name: 'balance_after')
+  final int? balanceAfter;
+  final Map<String, dynamic>? _meta;
+  @override
+  Map<String, dynamic>? get meta {
+    final value = _meta;
+    if (value == null) return null;
+    if (_meta is EqualUnmodifiableMapView) return _meta;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
   @JsonKey(name: 'created_at')
   final String createdAt;
 
   @override
   String toString() {
-    return 'TransactionDto(id: $id, type: $type, amount: $amount, description: $description, createdAt: $createdAt)';
+    return 'TransactionDto(id: $id, type: $type, amount: $amount, description: $description, source: $source, pillar: $pillar, balanceAfter: $balanceAfter, meta: $meta, createdAt: $createdAt)';
   }
 
   @override
@@ -2074,14 +2557,28 @@ class _$TransactionDtoImpl implements _TransactionDto {
             (identical(other.amount, amount) || other.amount == amount) &&
             (identical(other.description, description) ||
                 other.description == description) &&
+            (identical(other.source, source) || other.source == source) &&
+            (identical(other.pillar, pillar) || other.pillar == pillar) &&
+            (identical(other.balanceAfter, balanceAfter) ||
+                other.balanceAfter == balanceAfter) &&
+            const DeepCollectionEquality().equals(other._meta, _meta) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, type, amount, description, createdAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      type,
+      amount,
+      description,
+      source,
+      pillar,
+      balanceAfter,
+      const DeepCollectionEquality().hash(_meta),
+      createdAt);
 
   @JsonKey(ignore: true)
   @override
@@ -2104,6 +2601,10 @@ abstract class _TransactionDto implements TransactionDto {
           required final String type,
           required final int amount,
           required final String description,
+          final String? source,
+          final String? pillar,
+          @JsonKey(name: 'balance_after') final int? balanceAfter,
+          final Map<String, dynamic>? meta,
           @JsonKey(name: 'created_at') required final String createdAt}) =
       _$TransactionDtoImpl;
 
@@ -2118,6 +2619,15 @@ abstract class _TransactionDto implements TransactionDto {
   int get amount;
   @override
   String get description;
+  @override
+  String? get source;
+  @override
+  String? get pillar;
+  @override
+  @JsonKey(name: 'balance_after')
+  int? get balanceAfter;
+  @override
+  Map<String, dynamic>? get meta;
   @override
   @JsonKey(name: 'created_at')
   String get createdAt;

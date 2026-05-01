@@ -223,6 +223,9 @@ mixin _$UserDto {
   String? get registeredAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_verified')
   bool get isVerified => throw _privateConstructorUsedError;
+  bool get newsletter => throw _privateConstructorUsedError;
+  @JsonKey(name: 'push_notifications_enabled')
+  bool get pushNotificationsEnabled => throw _privateConstructorUsedError;
   UserCapabilitiesDto? get capabilities => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -251,6 +254,9 @@ abstract class $UserDtoCopyWith<$Res> {
       String role,
       @JsonKey(name: 'registered_at') String? registeredAt,
       @JsonKey(name: 'is_verified') bool isVerified,
+      bool newsletter,
+      @JsonKey(name: 'push_notifications_enabled')
+      bool pushNotificationsEnabled,
       UserCapabilitiesDto? capabilities});
 
   $UserCapabilitiesDtoCopyWith<$Res>? get capabilities;
@@ -284,6 +290,8 @@ class _$UserDtoCopyWithImpl<$Res, $Val extends UserDto>
     Object? role = null,
     Object? registeredAt = freezed,
     Object? isVerified = null,
+    Object? newsletter = null,
+    Object? pushNotificationsEnabled = null,
     Object? capabilities = freezed,
   }) {
     return _then(_value.copyWith(
@@ -347,6 +355,14 @@ class _$UserDtoCopyWithImpl<$Res, $Val extends UserDto>
           ? _value.isVerified
           : isVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      newsletter: null == newsletter
+          ? _value.newsletter
+          : newsletter // ignore: cast_nullable_to_non_nullable
+              as bool,
+      pushNotificationsEnabled: null == pushNotificationsEnabled
+          ? _value.pushNotificationsEnabled
+          : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
+              as bool,
       capabilities: freezed == capabilities
           ? _value.capabilities
           : capabilities // ignore: cast_nullable_to_non_nullable
@@ -390,6 +406,9 @@ abstract class _$$UserDtoImplCopyWith<$Res> implements $UserDtoCopyWith<$Res> {
       String role,
       @JsonKey(name: 'registered_at') String? registeredAt,
       @JsonKey(name: 'is_verified') bool isVerified,
+      bool newsletter,
+      @JsonKey(name: 'push_notifications_enabled')
+      bool pushNotificationsEnabled,
       UserCapabilitiesDto? capabilities});
 
   @override
@@ -422,6 +441,8 @@ class __$$UserDtoImplCopyWithImpl<$Res>
     Object? role = null,
     Object? registeredAt = freezed,
     Object? isVerified = null,
+    Object? newsletter = null,
+    Object? pushNotificationsEnabled = null,
     Object? capabilities = freezed,
   }) {
     return _then(_$UserDtoImpl(
@@ -485,6 +506,14 @@ class __$$UserDtoImplCopyWithImpl<$Res>
           ? _value.isVerified
           : isVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      newsletter: null == newsletter
+          ? _value.newsletter
+          : newsletter // ignore: cast_nullable_to_non_nullable
+              as bool,
+      pushNotificationsEnabled: null == pushNotificationsEnabled
+          ? _value.pushNotificationsEnabled
+          : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
+              as bool,
       capabilities: freezed == capabilities
           ? _value.capabilities
           : capabilities // ignore: cast_nullable_to_non_nullable
@@ -512,6 +541,9 @@ class _$UserDtoImpl implements _UserDto {
       required this.role,
       @JsonKey(name: 'registered_at') this.registeredAt,
       @JsonKey(name: 'is_verified') this.isVerified = false,
+      this.newsletter = false,
+      @JsonKey(name: 'push_notifications_enabled')
+      this.pushNotificationsEnabled = false,
       this.capabilities});
 
   factory _$UserDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -557,11 +589,17 @@ class _$UserDtoImpl implements _UserDto {
   @JsonKey(name: 'is_verified')
   final bool isVerified;
   @override
+  @JsonKey()
+  final bool newsletter;
+  @override
+  @JsonKey(name: 'push_notifications_enabled')
+  final bool pushNotificationsEnabled;
+  @override
   final UserCapabilitiesDto? capabilities;
 
   @override
   String toString() {
-    return 'UserDto(id: $id, email: $email, displayName: $displayName, name: $name, firstName: $firstName, lastName: $lastName, phone: $phone, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, avatarUrl: $avatarUrl, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, capabilities: $capabilities)';
+    return 'UserDto(id: $id, email: $email, displayName: $displayName, name: $name, firstName: $firstName, lastName: $lastName, phone: $phone, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, avatarUrl: $avatarUrl, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, newsletter: $newsletter, pushNotificationsEnabled: $pushNotificationsEnabled, capabilities: $capabilities)';
   }
 
   @override
@@ -592,6 +630,11 @@ class _$UserDtoImpl implements _UserDto {
                 other.registeredAt == registeredAt) &&
             (identical(other.isVerified, isVerified) ||
                 other.isVerified == isVerified) &&
+            (identical(other.newsletter, newsletter) ||
+                other.newsletter == newsletter) &&
+            (identical(
+                    other.pushNotificationsEnabled, pushNotificationsEnabled) ||
+                other.pushNotificationsEnabled == pushNotificationsEnabled) &&
             (identical(other.capabilities, capabilities) ||
                 other.capabilities == capabilities));
   }
@@ -615,6 +658,8 @@ class _$UserDtoImpl implements _UserDto {
       role,
       registeredAt,
       isVerified,
+      newsletter,
+      pushNotificationsEnabled,
       capabilities);
 
   @JsonKey(ignore: true)
@@ -648,6 +693,9 @@ abstract class _UserDto implements UserDto {
       required final String role,
       @JsonKey(name: 'registered_at') final String? registeredAt,
       @JsonKey(name: 'is_verified') final bool isVerified,
+      final bool newsletter,
+      @JsonKey(name: 'push_notifications_enabled')
+      final bool pushNotificationsEnabled,
       final UserCapabilitiesDto? capabilities}) = _$UserDtoImpl;
 
   factory _UserDto.fromJson(Map<String, dynamic> json) = _$UserDtoImpl.fromJson;
@@ -690,6 +738,11 @@ abstract class _UserDto implements UserDto {
   @override
   @JsonKey(name: 'is_verified')
   bool get isVerified;
+  @override
+  bool get newsletter;
+  @override
+  @JsonKey(name: 'push_notifications_enabled')
+  bool get pushNotificationsEnabled;
   @override
   UserCapabilitiesDto? get capabilities;
   @override

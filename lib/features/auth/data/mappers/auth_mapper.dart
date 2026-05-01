@@ -19,6 +19,8 @@ class AuthMapper {
       role: _parseRole(dto.role),
       registeredAt: dto.registeredAt != null ? DateTime.tryParse(dto.registeredAt!) : null,
       isVerified: dto.isVerified,
+      newsletter: dto.newsletter,
+      pushNotificationsEnabled: dto.pushNotificationsEnabled,
       capabilities: dto.capabilities != null
           ? UserCapabilities(
               canBook: dto.capabilities!.canBook,

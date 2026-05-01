@@ -33,6 +33,8 @@ class UserDto with _$UserDto {
     required String role,
     @JsonKey(name: 'registered_at') String? registeredAt,
     @JsonKey(name: 'is_verified') @Default(false) bool isVerified,
+    @Default(false) bool newsletter,
+    @JsonKey(name: 'push_notifications_enabled') @Default(false) bool pushNotificationsEnabled,
     UserCapabilitiesDto? capabilities,
   }) = _UserDto;
 

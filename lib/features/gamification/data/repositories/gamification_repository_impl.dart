@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../domain/repositories/gamification_repository.dart';
 import '../datasources/gamification_api_datasource.dart';
+import '../models/hibons_rank.dart';
 import '../models/hibons_wallet.dart';
 import '../models/hibon_transaction.dart';
 import '../models/daily_reward.dart';
@@ -24,14 +25,18 @@ class GamificationRepositoryImpl implements GamificationRepository {
     // Mapper le DTO vers le modèle
     _cachedWallet = HibonsWallet(
       balance: dto.balance,
-      xp: dto.xp,
-      level: dto.level,
+      lifetimeEarned: dto.lifetimeEarned,
       rank: dto.rank,
+      rankEnum: HibonsRank.fromString(dto.rank),
       rankLabel: dto.rankLabel,
       rankIcon: dto.rankIcon,
+      nextRank: dto.nextRank == null ? null : HibonsRank.fromString(dto.nextRank),
+      nextRankLabel: dto.nextRankLabel,
+      hibonsToNextRank: dto.hibonsToNextRank,
+      progressToNextRank: dto.progressToNextRank,
+      petitBooBonus: dto.petitBooBonus,
       currentStreak: dto.currentStreak,
       maxStreak: dto.maxStreak,
-      progressToNextLevel: dto.progressToNextLevel,
       canClaimDaily: dto.canClaimDaily,
       canSpinWheel: dto.canSpinWheel,
       chatQuota: ChatQuota(
@@ -68,8 +73,19 @@ class GamificationRepositoryImpl implements GamificationRepository {
               amount: dto.amount,
               description: dto.description,
               timestamp: DateTime.parse(dto.createdAt),
+              source: _normalizeSource(dto.source),
+              pillar: dto.pillar,
+              balanceAfter: dto.balanceAfter,
             ))
         .toList();
+  }
+
+  /// Backend a migré 'favorite_added' → 'favorite_event_added' ; le cache local
+  /// peut encore contenir l'ancienne valeur. Normaliser pour éviter le double
+  /// case dans les filtres.
+  String? _normalizeSource(String? source) {
+    if (source == 'favorite_added') return 'favorite_event_added';
+    return source;
   }
 
   TransactionType _parseTransactionType(String type) {

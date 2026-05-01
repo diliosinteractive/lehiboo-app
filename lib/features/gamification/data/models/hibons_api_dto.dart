@@ -8,18 +8,24 @@ part 'hibons_api_dto.g.dart';
 class WalletResponseDto with _$WalletResponseDto {
   const factory WalletResponseDto({
     required int balance,
-    required int xp,
-    required int level,
+    @JsonKey(name: 'lifetime_earned') @Default(0) int lifetimeEarned,
     required String rank,
     @JsonKey(name: 'rank_label') required String rankLabel,
     @JsonKey(name: 'rank_icon') required String rankIcon,
+    @JsonKey(name: 'next_rank') String? nextRank,
+    @JsonKey(name: 'next_rank_label') String? nextRankLabel,
+    @JsonKey(name: 'hibons_to_next_rank') int? hibonsToNextRank,
+    @JsonKey(name: 'progress_to_next_rank') @Default(0) int progressToNextRank,
+    @JsonKey(name: 'petit_boo_bonus') @Default(0) int petitBooBonus,
     @JsonKey(name: 'current_streak') required int currentStreak,
     @JsonKey(name: 'max_streak') required int maxStreak,
-    @JsonKey(name: 'progress_to_next_level') required int progressToNextLevel,
     @JsonKey(name: 'can_claim_daily') required bool canClaimDaily,
     @JsonKey(name: 'can_spin_wheel') required bool canSpinWheel,
     @JsonKey(name: 'chat_quota') required ChatQuotaDto chatQuota,
     @JsonKey(name: 'daily_rewards') required List<DailyRewardItemDto> dailyRewards,
+    int? xp,
+    int? level,
+    @JsonKey(name: 'progress_to_next_level') int? progressToNextLevel,
   }) = _WalletResponseDto;
 
   factory WalletResponseDto.fromJson(Map<String, dynamic> json) =>
@@ -121,6 +127,23 @@ class WheelSpinResponseDto with _$WheelSpinResponseDto {
       _$WheelSpinResponseDtoFromJson(json);
 }
 
+/// DTO générique pour les endpoints qui créditent des Hibons et retournent
+/// `awarded` + `amount` (heartbeat, track-view, track-share).
+@freezed
+class HibonsRewardResponseDto with _$HibonsRewardResponseDto {
+  const factory HibonsRewardResponseDto({
+    @Default(false) bool awarded,
+    @Default(0) int amount,
+    String? reason,
+    String? channel,
+    @JsonKey(name: 'new_balance') int? newBalance,
+    @JsonKey(name: 'lifetime_earned') int? lifetimeEarned,
+  }) = _HibonsRewardResponseDto;
+
+  factory HibonsRewardResponseDto.fromJson(Map<String, dynamic> json) =>
+      _$HibonsRewardResponseDtoFromJson(json);
+}
+
 /// DTO pour GET /mobile/hibons/transactions
 @freezed
 class TransactionDto with _$TransactionDto {
@@ -129,6 +152,10 @@ class TransactionDto with _$TransactionDto {
     required String type, // earn, spend, purchase, refund
     required int amount,
     required String description,
+    String? source,
+    String? pillar,
+    @JsonKey(name: 'balance_after') int? balanceAfter,
+    Map<String, dynamic>? meta,
     @JsonKey(name: 'created_at') required String createdAt,
   }) = _TransactionDto;
 

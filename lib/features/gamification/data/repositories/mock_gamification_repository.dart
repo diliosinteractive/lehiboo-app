@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:lehiboo/features/gamification/data/models/hibons_rank.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_wallet.dart';
 import 'package:lehiboo/features/gamification/data/models/hibon_transaction.dart';
 import 'package:lehiboo/features/gamification/data/models/daily_reward.dart';
@@ -11,14 +12,18 @@ class MockGamificationRepository implements GamificationRepository {
   // --- Simulating Database State ---
   HibonsWallet _wallet = HibonsWallet(
     balance: 1530,
-    xp: 350,
-    level: 3,
-    rank: 'explorateur',
-    rankLabel: 'Petit Boo Aventurier',
-    rankIcon: '🦉',
+    lifetimeEarned: 1430,
+    rank: 'aventurier',
+    rankEnum: HibonsRank.aventurier,
+    rankLabel: 'Aventurier',
+    rankIcon: '🗺️',
+    nextRank: HibonsRank.legende,
+    nextRankLabel: 'Légende',
+    hibonsToNextRank: 3570,
+    progressToNextRank: 28,
+    petitBooBonus: 2,
     currentStreak: 4,
     maxStreak: 7,
-    progressToNextLevel: 50,
     canClaimDaily: true,
     canSpinWheel: true,
     chatQuota: ChatQuota(

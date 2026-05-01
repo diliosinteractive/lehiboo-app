@@ -18,6 +18,9 @@ class HibonTransaction with _$HibonTransaction {
     required int amount,
     required String description,
     required DateTime timestamp,
+    String? source,
+    String? pillar,
+    int? balanceAfter,
   }) = _HibonTransaction;
 
   factory HibonTransaction.fromJson(Map<String, dynamic> json) =>

@@ -1,10 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/gamification/data/datasources/gamification_api_datasource.dart';
+import 'package:lehiboo/features/gamification/presentation/providers/gamification_provider.dart';
+import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,7 +21,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// - Facebook
 /// - Instagram Story
 /// - Plus d'options (share natif)
-class EventShareSheet extends StatefulWidget {
+class EventShareSheet extends ConsumerStatefulWidget {
   final Event event;
   final String? shareUrl;
 
@@ -45,11 +49,24 @@ class EventShareSheet extends StatefulWidget {
   }
 
   @override
-  State<EventShareSheet> createState() => _EventShareSheetState();
+  ConsumerState<EventShareSheet> createState() => _EventShareSheetState();
 }
 
-class _EventShareSheetState extends State<EventShareSheet> {
+class _EventShareSheetState extends ConsumerState<EventShareSheet> {
   bool _isLoading = false;
+
+  /// Crédite l'user (10 H, 1×/event/lifetime, cap 2/sem) au tap d'un bouton
+  /// de partage. Best-effort — silencieux en cas d'échec serveur.
+  /// channel ∈ {whatsapp, facebook, twitter, native, email, link, other}.
+  Future<void> _trackShare(String channel) async {
+    final api = ref.read(gamificationApiDataSourceProvider);
+    final result = await api.trackEventShare(event.slug, channel);
+    if (!mounted) return;
+    if (result.awarded && result.amount > 0) {
+      PetitBooToast.hibonsEarned(context, amount: result.amount);
+      ref.invalidate(gamificationNotifierProvider);
+    }
+  }
 
   Event get event => widget.event;
 
@@ -342,6 +359,7 @@ class _EventShareSheetState extends State<EventShareSheet> {
   }
 
   void _copyLink(BuildContext context) {
+    _trackShare('link');
     Clipboard.setData(ClipboardData(text: _shareUrl));
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -353,11 +371,13 @@ class _EventShareSheetState extends State<EventShareSheet> {
   }
 
   Future<void> _shareWhatsApp(BuildContext context) async {
+    _trackShare('whatsapp');
     // Share with image via native sheet (WhatsApp supports image + text this way)
     await _shareWithImage(context);
   }
 
   Future<void> _shareFacebook(BuildContext context) async {
+    _trackShare('facebook');
     Navigator.pop(context);
     // Facebook sharer fetches OG image from the URL automatically
     final encodedUrl = Uri.encodeComponent(_shareUrl);
@@ -369,10 +389,13 @@ class _EventShareSheetState extends State<EventShareSheet> {
   }
 
   Future<void> _shareInstagram(BuildContext context) async {
+    // Instagram n'est pas dans l'enum officielle des channels backend → 'other'.
+    _trackShare('other');
     await _shareWithImage(context);
   }
 
   Future<void> _shareNative(BuildContext context) async {
+    _trackShare('native');
     await _shareWithImage(context);
   }
 }

@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'hibons_rank.dart';
+
 part 'hibons_wallet.freezed.dart';
 part 'hibons_wallet.g.dart';
 
@@ -7,14 +9,18 @@ part 'hibons_wallet.g.dart';
 class HibonsWallet with _$HibonsWallet {
   const factory HibonsWallet({
     @Default(0) int balance,
-    @Default(0) int xp,
-    @Default(1) int level,
-    @Default('explorateur') String rank,
-    @Default('Explorateur') String rankLabel,
-    @Default('🧭') String rankIcon,
+    @Default(0) int lifetimeEarned,
+    @Default('curieux') String rank,
+    @Default(HibonsRank.curieux) HibonsRank rankEnum,
+    @Default('Curieux') String rankLabel,
+    @Default('🔍') String rankIcon,
+    HibonsRank? nextRank,
+    String? nextRankLabel,
+    int? hibonsToNextRank,
+    @Default(0) int progressToNextRank,
+    @Default(0) int petitBooBonus,
     @Default(0) int currentStreak,
     @Default(7) int maxStreak,
-    @Default(0) int progressToNextLevel,
     @Default(true) bool canClaimDaily,
     @Default(true) bool canSpinWheel,
     ChatQuota? chatQuota,
@@ -22,6 +28,9 @@ class HibonsWallet with _$HibonsWallet {
     // Champs legacy pour compatibilité (non utilisés par l'API)
     @Default(false) bool streakShieldActive,
     DateTime? lastActionDate,
+    @Deprecated('Use lifetimeEarned') int? xp,
+    @Deprecated('Use rankEnum') int? level,
+    @Deprecated('Use progressToNextRank') int? progressToNextLevel,
   }) = _HibonsWallet;
 
   factory HibonsWallet.fromJson(Map<String, dynamic> json) =>

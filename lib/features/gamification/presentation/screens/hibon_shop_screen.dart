@@ -93,11 +93,11 @@ class HibonShopScreen extends ConsumerWidget {
                     context, 
                     ref,
                     title: 'Multiplicateur x1.5 (1h)',
-                    description: 'Gagnez plus d\'XP pendant 1h',
+                    description: 'Gagnez plus de Hibons pendant 1h',
                     price: 100,
                     icon: Icons.bolt,
                     color: Colors.amber,
-                    onTap: () => _buyItem(context, ref, 'Multiplicateur XP', 100),
+                    onTap: () => _buyItem(context, ref, 'Multiplicateur Hibons', 100),
                   ),
                   
                   const SizedBox(height: 24),
