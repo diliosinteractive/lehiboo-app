@@ -158,28 +158,41 @@ class EventCard extends ConsumerWidget {
           ),
         ),
 
-        // Bottom-left: Category Badge
-        if (activity.category != null)
+        // Bottom-left: Category Badge (above) + Privé badge (stacked under).
+        if (activity.category != null || activity.isMembersOnly)
           Positioned(
             bottom: 12,
             left: 12,
-            child: GestureDetector(
-              onTap: () => context.push('/search?categorySlug=${activity.category!.slug}'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  activity.category!.name,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (activity.category != null)
+                  GestureDetector(
+                    onTap: () => context.push(
+                        '/search?categorySlug=${activity.category!.slug}'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        activity.category!.name,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                if (activity.isMembersOnly) ...[
+                  if (activity.category != null) const SizedBox(height: 6),
+                  const _PrivateBadge(),
+                ],
+              ],
             ),
           ),
       ],
@@ -457,4 +470,36 @@ class EventCard extends ConsumerWidget {
     return _formatSlotDateTime(dt);
   }
 
+}
+
+/// "Privé 🔒" badge for members-only events. Same size language as the
+/// category badge so the two stack cleanly.
+class _PrivateBadge extends StatelessWidget {
+  const _PrivateBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF601F),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.lock_outline, size: 10, color: Colors.white),
+          SizedBox(width: 4),
+          Text(
+            'Privé',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

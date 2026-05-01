@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
+import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart';
@@ -39,7 +40,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
 
-  List<TicketDetailDto>? _tickets;
+  List<BookingTicketDto>? _tickets;
   bool _isLoadingTickets = false;
   // ignore: unused_field - Préservé pour usage futur
   String? _errorMessage;
@@ -66,6 +67,10 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
       _confettiController.play();
       _scaleController.forward();
       HapticFeedback.heavyImpact();
+      // Make sure the bookings list reflects this brand-new booking the
+      // next time the user opens the bookings tab. Safe whether the
+      // provider is currently alive or not — a no-op in the latter case.
+      ref.invalidate(bookingsListControllerProvider);
     });
 
     // Charger les tickets
@@ -439,7 +444,12 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
     );
   }
 
-  Widget _buildTicketCard(TicketDetailDto ticket) {
+  Widget _buildTicketCard(BookingTicketDto ticket) {
+    final attendeeName = ticket.attendeeName ??
+        [ticket.attendeeFirstName, ticket.attendeeLastName]
+            .where((s) => s != null && s.isNotEmpty)
+            .join(' ');
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -474,31 +484,23 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
           ),
           const SizedBox(height: 12),
 
-          // Infos billet
+          // Code (QR code as the human-readable reference)
           Text(
-            ticket.ticketType,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            ticket.ticketNumber,
+            ticket.qrCode,
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade600,
               fontFamily: 'monospace',
             ),
           ),
-          if (ticket.attendee != null) ...[
+          if (attendeeName.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              ticket.attendee!.name,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
+              attendeeName,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: HbColors.textPrimary,
               ),
             ),
           ],

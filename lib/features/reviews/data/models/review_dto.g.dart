@@ -104,6 +104,15 @@ _$ReviewDtoImpl _$$ReviewDtoImplFromJson(Map<String, dynamic> json) =>
           ? null
           : ReviewResponseDto.fromJson(
               json['response'] as Map<String, dynamic>),
+      eventTitle: parseStringOrNull(json['eventTitle']),
+      eventSlug: parseStringOrNull(json['eventSlug']),
+      eventUuid: parseStringOrNull(json['eventUuid']),
+      event: json['event'] == null
+          ? null
+          : ReviewEventDto.fromJson(json['event'] as Map<String, dynamic>),
+      hasResponse:
+          json['hasResponse'] == null ? false : parseBool(json['hasResponse']),
+      organizerResponse: parseStringOrNull(json['organizerResponse']),
       userVote: parseBoolOrNull(json['user_vote']),
       userVoteCamel: parseBoolOrNull(json['userVote']),
       createdAt: parseStringOrNull(json['created_at']),
@@ -135,6 +144,12 @@ Map<String, dynamic> _$$ReviewDtoImplToJson(_$ReviewDtoImpl instance) =>
       'isFeatured': instance.isFeaturedCamel,
       'author': instance.author,
       'response': instance.response,
+      'eventTitle': instance.eventTitle,
+      'eventSlug': instance.eventSlug,
+      'eventUuid': instance.eventUuid,
+      'event': instance.event,
+      'hasResponse': instance.hasResponse,
+      'organizerResponse': instance.organizerResponse,
       'user_vote': instance.userVote,
       'userVote': instance.userVoteCamel,
       'created_at': instance.createdAt,
@@ -209,6 +224,23 @@ Map<String, dynamic> _$$ReviewResponseDtoImplToJson(
       'createdAt': instance.createdAtCamel,
       'created_at_formatted': instance.createdAtFormatted,
       'createdAtFormatted': instance.createdAtFormattedCamel,
+    };
+
+_$ReviewEventDtoImpl _$$ReviewEventDtoImplFromJson(Map<String, dynamic> json) =>
+    _$ReviewEventDtoImpl(
+      id: json['id'] == null ? 0 : parseInt(json['id']),
+      uuid: parseStringOrNull(json['uuid']),
+      title: json['title'] == null ? '' : parseString(json['title']),
+      slug: json['slug'] == null ? '' : parseString(json['slug']),
+    );
+
+Map<String, dynamic> _$$ReviewEventDtoImplToJson(
+        _$ReviewEventDtoImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'uuid': instance.uuid,
+      'title': instance.title,
+      'slug': instance.slug,
     };
 
 _$ReviewOrganizationDtoImpl _$$ReviewOrganizationDtoImplFromJson(

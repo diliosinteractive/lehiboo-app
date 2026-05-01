@@ -66,9 +66,15 @@ class FakeBookingRepositoryImpl implements BookingRepository {
   }
 
   @override
-  Future<void> cancelBooking(String bookingId) async {
+  Future<Booking> cancelBooking(String bookingId, {String? reason}) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    _localBookings.removeWhere((b) => b.id == bookingId);
+    final index = _localBookings.indexWhere((b) => b.id == bookingId);
+    if (index < 0) {
+      throw Exception('Booking $bookingId not found');
+    }
+    final cancelled = _localBookings[index].copyWith(status: 'cancelled');
+    _localBookings[index] = cancelled;
+    return cancelled;
   }
 
   @override

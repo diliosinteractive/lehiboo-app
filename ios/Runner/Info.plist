@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCalendarsUsageDescription</key>
+	<string>L'application a besoin d'accéder à votre calendrier pour ajouter vos réservations à votre agenda.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>L'application a besoin d'ajouter vos réservations à votre calendrier.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>L'application a besoin d'accéder à la caméra pour vous permettre de prendre des photos de profil ou de partager des images dans le chat.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -38,6 +42,10 @@
 	<string>L'application a besoin d'accéder à votre galerie pour vous permettre de choisir une photo de profil ou de partager des images.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>L'application utilise la reconnaissance vocale pour vous permettre de discuter avec Petit Boo.</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

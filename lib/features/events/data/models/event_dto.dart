@@ -64,6 +64,11 @@ class EventDto with _$EventDto {
     @JsonKey(fromJson: _parseNamedList) @Default([]) List<String> emotions,
 
     @JsonKey(name: 'is_favorite') @Default(false) bool isFavorite,
+    // Spec MEMBERSHIPS_MOBILE_SPEC.md §20: surfaced by both EventResource
+    // (snake + camelCase) and MobileEventResource (snake_case only). When
+    // true, drives a "Privé 🔒" badge on event cards across all listings.
+    @JsonKey(name: 'is_members_only', fromJson: _parseBool) @Default(false)
+    bool isMembersOnly,
   }) = _EventDto;
 
   factory EventDto.fromJson(Map<String, dynamic> json) =>

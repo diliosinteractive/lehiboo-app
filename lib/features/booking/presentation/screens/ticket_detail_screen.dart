@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
+import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
+import 'package:lehiboo/features/booking/presentation/utils/ticket_download_helper.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/large_qr_code.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/fullscreen_qr_sheet.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/ticket_preview_card.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 
-class TicketDetailScreen extends StatefulWidget {
+class TicketDetailScreen extends ConsumerStatefulWidget {
   final String ticketId;
   final Ticket? ticket;
   final List<Ticket>? tickets;
@@ -28,10 +31,10 @@ class TicketDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<TicketDetailScreen> createState() => _TicketDetailScreenState();
+  ConsumerState<TicketDetailScreen> createState() => _TicketDetailScreenState();
 }
 
-class _TicketDetailScreenState extends State<TicketDetailScreen> {
+class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   late PageController _pageController;
   late int _currentIndex;
   double? _originalBrightness;
@@ -50,6 +53,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   void dispose() {
     _pageController.dispose();
     _restoreBrightness();
+    // Tear down any in-flight snackbar so its animation listener can't
+    // fire on a deactivated tree (crashes in findAncestorStateOfType).
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.removeCurrentSnackBar(reason: SnackBarClosedReason.remove);
     super.dispose();
   }
 
@@ -111,14 +118,68 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     Share.share(shareText);
   }
 
-  void _downloadTicket(Ticket ticket) {
+  Future<void> _downloadTicket(Ticket ticket) async {
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Téléchargement du billet...'),
-        backgroundColor: HbColors.brandPrimary,
-      ),
-    );
+
+    _showInfoSnack('Préparation du PDF…');
+
+    try {
+      final pdf = await ref
+          .read(bookingApiDataSourceProvider)
+          .downloadSingleTicket(ticket.id);
+      _hideSnack();
+      final saved = await shareTicketPdf(pdf);
+      _showInfoSnack('Billet enregistré dans ${saved.displayLocation}');
+    } on TicketsNotReadyException {
+      _showDownloadError(
+        'Ce billet est en cours de génération, réessayez dans un instant.',
+      );
+    } on NotAuthorizedToDownloadException {
+      _showDownloadError("Ce billet n'est plus téléchargeable.");
+    } catch (_) {
+      _showDownloadError('Téléchargement impossible. Réessayez plus tard.');
+    }
+  }
+
+  // Snackbar helpers — re-resolve [ScaffoldMessenger] each call and guard
+  // with [mounted] / try-catch. Holding a [ScaffoldMessengerState] across
+  // awaits goes stale when the share sheet causes a rebuild and crashes
+  // with "Looking up a deactivated widget's ancestor is unsafe".
+  void _showInfoSnack(String message) {
+    if (!mounted) return;
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: HbColors.brandPrimary,
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    } catch (e) {
+      debugPrint('🍞 info snack failed: $e');
+    }
+  }
+
+  void _hideSnack() {
+    if (!mounted) return;
+    try {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    } catch (_) {}
+  }
+
+  void _showDownloadError(String message) {
+    _hideSnack();
+    if (!mounted) return;
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: HbColors.error,
+        ),
+      );
+    } catch (e) {
+      debugPrint('🍞 error snack failed: $e');
+    }
   }
 
   @override
@@ -221,31 +282,33 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 ),
               ),
             ),
-          // Download button
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.m,
-              0,
-              tokens.spacing.m,
-              MediaQuery.of(context).padding.bottom + 16,
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _downloadTicket(_tickets[_currentIndex]),
-                icon: const Icon(Icons.download, size: 20),
-                label: const Text('Télécharger le billet PDF'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: HbColors.brandPrimary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+          // Download button — hidden for cancelled tickets (spec §2.4: backend
+          // returns 403 for cancelled tickets even to the owner).
+          if (_tickets[_currentIndex].status != 'cancelled')
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.m,
+                0,
+                tokens.spacing.m,
+                MediaQuery.of(context).padding.bottom + 16,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _downloadTicket(_tickets[_currentIndex]),
+                  icon: const Icon(Icons.download, size: 20),
+                  label: const Text('Télécharger le billet PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HbColors.brandPrimary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -259,7 +322,22 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
     final qrData = ticket.qrCodeData ?? ticket.id;
     final ticketType = ticket.ticketType ?? 'Standard';
-    final attendeeName = 'Participant ${index + 1}';
+    final participantLabel = 'Participant ${index + 1}';
+
+    // Pull the matching attendee from the booking. Attendees are flattened in
+    // the same order tickets are generated in the mapper, so index lines up.
+    final attendees = widget.booking?.attendees;
+    final attendee = (attendees != null && index < attendees.length)
+        ? attendees[index]
+        : null;
+    final fullName = [
+      attendee?.firstName?.trim() ?? ticket.attendeeFirstName?.trim(),
+      attendee?.lastName?.trim() ?? ticket.attendeeLastName?.trim(),
+    ].where((s) => s != null && s.isNotEmpty).join(' ');
+    final email = attendee?.email ?? ticket.attendeeEmail;
+    final phone = attendee?.phone;
+    final city = attendee?.city;
+    final age = attendee?.age;
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(tokens.spacing.m),
@@ -307,13 +385,24 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            attendeeName,
+                            participantLabel,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: HbColors.textPrimary,
                             ),
                           ),
+                          if (fullName.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              fullName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: HbColors.textPrimary,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 2),
                           Row(
                             children: [
@@ -357,6 +446,32 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     ),
                   ],
                 ),
+                // Extra attendee info: email, phone, age, city.
+                if ((email != null && email.isNotEmpty) ||
+                    (phone != null && phone.isNotEmpty) ||
+                    age != null ||
+                    (city != null && city.isNotEmpty)) ...[
+                  const SizedBox(height: 12),
+                  Divider(height: 1, color: Colors.black.withOpacity(0.08)),
+                  const SizedBox(height: 12),
+                  if (email != null && email.isNotEmpty)
+                    _buildInfoRow(icon: Icons.email_outlined, text: email),
+                  if (phone != null && phone.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _buildInfoRow(icon: Icons.phone_outlined, text: phone),
+                  ],
+                  if (age != null) ...[
+                    const SizedBox(height: 6),
+                    _buildInfoRow(
+                      icon: Icons.cake_outlined,
+                      text: '$age ans',
+                    ),
+                  ],
+                  if (city != null && city.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _buildInfoRow(icon: Icons.location_city_outlined, text: city),
+                  ],
+                ],
               ],
             ),
           ),
@@ -391,7 +506,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   const SizedBox(height: 8),
                   _buildInfoRow(
                     icon: Icons.access_time,
-                    text: DateFormat('HH:mm').format(slot!.startDateTime!),
+                    text:
+                        '${DateFormat('HH:mm').format(slot!.startDateTime!)} - '
+                        '${DateFormat('HH:mm').format(slot.endDateTime)}',
                   ),
                 ],
                 if (activity?.city?.name != null) ...[

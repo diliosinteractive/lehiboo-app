@@ -35,6 +35,10 @@ mixin _$Booking {
   Slot? get slot =>
       throw _privateConstructorUsedError; // Tickets associated with this booking
   List<Ticket>? get tickets =>
+      throw _privateConstructorUsedError; // Flat list of attendees across all booking items
+  List<Attendee>? get attendees =>
+      throw _privateConstructorUsedError; // Cancellation eligibility + deadline (drives the cancel button)
+  BookingCancellationInfo? get cancellation =>
       throw _privateConstructorUsedError; // Customer info
   String? get customerEmail => throw _privateConstructorUsedError;
   String? get customerFirstName => throw _privateConstructorUsedError;
@@ -72,6 +76,8 @@ abstract class $BookingCopyWith<$Res> {
       Activity? activity,
       Slot? slot,
       List<Ticket>? tickets,
+      List<Attendee>? attendees,
+      BookingCancellationInfo? cancellation,
       String? customerEmail,
       String? customerFirstName,
       String? customerLastName,
@@ -82,6 +88,7 @@ abstract class $BookingCopyWith<$Res> {
 
   $ActivityCopyWith<$Res>? get activity;
   $SlotCopyWith<$Res>? get slot;
+  $BookingCancellationInfoCopyWith<$Res>? get cancellation;
 }
 
 /// @nodoc
@@ -112,6 +119,8 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
     Object? activity = freezed,
     Object? slot = freezed,
     Object? tickets = freezed,
+    Object? attendees = freezed,
+    Object? cancellation = freezed,
     Object? customerEmail = freezed,
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
@@ -181,6 +190,14 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
           ? _value.tickets
           : tickets // ignore: cast_nullable_to_non_nullable
               as List<Ticket>?,
+      attendees: freezed == attendees
+          ? _value.attendees
+          : attendees // ignore: cast_nullable_to_non_nullable
+              as List<Attendee>?,
+      cancellation: freezed == cancellation
+          ? _value.cancellation
+          : cancellation // ignore: cast_nullable_to_non_nullable
+              as BookingCancellationInfo?,
       customerEmail: freezed == customerEmail
           ? _value.customerEmail
           : customerEmail // ignore: cast_nullable_to_non_nullable
@@ -235,6 +252,19 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
       return _then(_value.copyWith(slot: value) as $Val);
     });
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $BookingCancellationInfoCopyWith<$Res>? get cancellation {
+    if (_value.cancellation == null) {
+      return null;
+    }
+
+    return $BookingCancellationInfoCopyWith<$Res>(_value.cancellation!,
+        (value) {
+      return _then(_value.copyWith(cancellation: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -260,6 +290,8 @@ abstract class _$$BookingImplCopyWith<$Res> implements $BookingCopyWith<$Res> {
       Activity? activity,
       Slot? slot,
       List<Ticket>? tickets,
+      List<Attendee>? attendees,
+      BookingCancellationInfo? cancellation,
       String? customerEmail,
       String? customerFirstName,
       String? customerLastName,
@@ -272,6 +304,8 @@ abstract class _$$BookingImplCopyWith<$Res> implements $BookingCopyWith<$Res> {
   $ActivityCopyWith<$Res>? get activity;
   @override
   $SlotCopyWith<$Res>? get slot;
+  @override
+  $BookingCancellationInfoCopyWith<$Res>? get cancellation;
 }
 
 /// @nodoc
@@ -300,6 +334,8 @@ class __$$BookingImplCopyWithImpl<$Res>
     Object? activity = freezed,
     Object? slot = freezed,
     Object? tickets = freezed,
+    Object? attendees = freezed,
+    Object? cancellation = freezed,
     Object? customerEmail = freezed,
     Object? customerFirstName = freezed,
     Object? customerLastName = freezed,
@@ -369,6 +405,14 @@ class __$$BookingImplCopyWithImpl<$Res>
           ? _value._tickets
           : tickets // ignore: cast_nullable_to_non_nullable
               as List<Ticket>?,
+      attendees: freezed == attendees
+          ? _value._attendees
+          : attendees // ignore: cast_nullable_to_non_nullable
+              as List<Attendee>?,
+      cancellation: freezed == cancellation
+          ? _value.cancellation
+          : cancellation // ignore: cast_nullable_to_non_nullable
+              as BookingCancellationInfo?,
       customerEmail: freezed == customerEmail
           ? _value.customerEmail
           : customerEmail // ignore: cast_nullable_to_non_nullable
@@ -420,6 +464,8 @@ class _$BookingImpl implements _Booking {
       this.activity,
       this.slot,
       final List<Ticket>? tickets,
+      final List<Attendee>? attendees,
+      this.cancellation,
       this.customerEmail,
       this.customerFirstName,
       this.customerLastName,
@@ -427,7 +473,8 @@ class _$BookingImpl implements _Booking {
       this.customerBirthDate,
       this.customerTown,
       this.reference})
-      : _tickets = tickets;
+      : _tickets = tickets,
+        _attendees = attendees;
 
   @override
   final String id;
@@ -473,6 +520,21 @@ class _$BookingImpl implements _Booking {
     return EqualUnmodifiableListView(value);
   }
 
+// Flat list of attendees across all booking items
+  final List<Attendee>? _attendees;
+// Flat list of attendees across all booking items
+  @override
+  List<Attendee>? get attendees {
+    final value = _attendees;
+    if (value == null) return null;
+    if (_attendees is EqualUnmodifiableListView) return _attendees;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+// Cancellation eligibility + deadline (drives the cancel button)
+  @override
+  final BookingCancellationInfo? cancellation;
 // Customer info
   @override
   final String? customerEmail;
@@ -494,7 +556,7 @@ class _$BookingImpl implements _Booking {
 
   @override
   String toString() {
-    return 'Booking(id: $id, numericId: $numericId, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, customerBirthDate: $customerBirthDate, customerTown: $customerTown, reference: $reference)';
+    return 'Booking(id: $id, numericId: $numericId, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, attendees: $attendees, cancellation: $cancellation, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, customerBirthDate: $customerBirthDate, customerTown: $customerTown, reference: $reference)';
   }
 
   @override
@@ -526,6 +588,10 @@ class _$BookingImpl implements _Booking {
                 other.activity == activity) &&
             (identical(other.slot, slot) || other.slot == slot) &&
             const DeepCollectionEquality().equals(other._tickets, _tickets) &&
+            const DeepCollectionEquality()
+                .equals(other._attendees, _attendees) &&
+            (identical(other.cancellation, cancellation) ||
+                other.cancellation == cancellation) &&
             (identical(other.customerEmail, customerEmail) ||
                 other.customerEmail == customerEmail) &&
             (identical(other.customerFirstName, customerFirstName) ||
@@ -560,6 +626,8 @@ class _$BookingImpl implements _Booking {
         activity,
         slot,
         const DeepCollectionEquality().hash(_tickets),
+        const DeepCollectionEquality().hash(_attendees),
+        cancellation,
         customerEmail,
         customerFirstName,
         customerLastName,
@@ -593,6 +661,8 @@ abstract class _Booking implements Booking {
       final Activity? activity,
       final Slot? slot,
       final List<Ticket>? tickets,
+      final List<Attendee>? attendees,
+      final BookingCancellationInfo? cancellation,
       final String? customerEmail,
       final String? customerFirstName,
       final String? customerLastName,
@@ -631,6 +701,10 @@ abstract class _Booking implements Booking {
   Slot? get slot;
   @override // Tickets associated with this booking
   List<Ticket>? get tickets;
+  @override // Flat list of attendees across all booking items
+  List<Attendee>? get attendees;
+  @override // Cancellation eligibility + deadline (drives the cancel button)
+  BookingCancellationInfo? get cancellation;
   @override // Customer info
   String? get customerEmail;
   @override
@@ -649,6 +723,504 @@ abstract class _Booking implements Booking {
   @JsonKey(ignore: true)
   _$$BookingImplCopyWith<_$BookingImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+mixin _$Attendee {
+  String? get firstName => throw _privateConstructorUsedError;
+  String? get lastName => throw _privateConstructorUsedError;
+  String? get email => throw _privateConstructorUsedError;
+  String? get phone => throw _privateConstructorUsedError;
+  int? get age => throw _privateConstructorUsedError;
+  String? get city => throw _privateConstructorUsedError;
+  String? get ticketTypeName => throw _privateConstructorUsedError;
+
+  @JsonKey(ignore: true)
+  $AttendeeCopyWith<Attendee> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $AttendeeCopyWith<$Res> {
+  factory $AttendeeCopyWith(Attendee value, $Res Function(Attendee) then) =
+      _$AttendeeCopyWithImpl<$Res, Attendee>;
+  @useResult
+  $Res call(
+      {String? firstName,
+      String? lastName,
+      String? email,
+      String? phone,
+      int? age,
+      String? city,
+      String? ticketTypeName});
+}
+
+/// @nodoc
+class _$AttendeeCopyWithImpl<$Res, $Val extends Attendee>
+    implements $AttendeeCopyWith<$Res> {
+  _$AttendeeCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? firstName = freezed,
+    Object? lastName = freezed,
+    Object? email = freezed,
+    Object? phone = freezed,
+    Object? age = freezed,
+    Object? city = freezed,
+    Object? ticketTypeName = freezed,
+  }) {
+    return _then(_value.copyWith(
+      firstName: freezed == firstName
+          ? _value.firstName
+          : firstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastName: freezed == lastName
+          ? _value.lastName
+          : lastName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      age: freezed == age
+          ? _value.age
+          : age // ignore: cast_nullable_to_non_nullable
+              as int?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+      ticketTypeName: freezed == ticketTypeName
+          ? _value.ticketTypeName
+          : ticketTypeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$AttendeeImplCopyWith<$Res>
+    implements $AttendeeCopyWith<$Res> {
+  factory _$$AttendeeImplCopyWith(
+          _$AttendeeImpl value, $Res Function(_$AttendeeImpl) then) =
+      __$$AttendeeImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String? firstName,
+      String? lastName,
+      String? email,
+      String? phone,
+      int? age,
+      String? city,
+      String? ticketTypeName});
+}
+
+/// @nodoc
+class __$$AttendeeImplCopyWithImpl<$Res>
+    extends _$AttendeeCopyWithImpl<$Res, _$AttendeeImpl>
+    implements _$$AttendeeImplCopyWith<$Res> {
+  __$$AttendeeImplCopyWithImpl(
+      _$AttendeeImpl _value, $Res Function(_$AttendeeImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? firstName = freezed,
+    Object? lastName = freezed,
+    Object? email = freezed,
+    Object? phone = freezed,
+    Object? age = freezed,
+    Object? city = freezed,
+    Object? ticketTypeName = freezed,
+  }) {
+    return _then(_$AttendeeImpl(
+      firstName: freezed == firstName
+          ? _value.firstName
+          : firstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastName: freezed == lastName
+          ? _value.lastName
+          : lastName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      age: freezed == age
+          ? _value.age
+          : age // ignore: cast_nullable_to_non_nullable
+              as int?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+      ticketTypeName: freezed == ticketTypeName
+          ? _value.ticketTypeName
+          : ticketTypeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$AttendeeImpl implements _Attendee {
+  const _$AttendeeImpl(
+      {this.firstName,
+      this.lastName,
+      this.email,
+      this.phone,
+      this.age,
+      this.city,
+      this.ticketTypeName});
+
+  @override
+  final String? firstName;
+  @override
+  final String? lastName;
+  @override
+  final String? email;
+  @override
+  final String? phone;
+  @override
+  final int? age;
+  @override
+  final String? city;
+  @override
+  final String? ticketTypeName;
+
+  @override
+  String toString() {
+    return 'Attendee(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, age: $age, city: $city, ticketTypeName: $ticketTypeName)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AttendeeImpl &&
+            (identical(other.firstName, firstName) ||
+                other.firstName == firstName) &&
+            (identical(other.lastName, lastName) ||
+                other.lastName == lastName) &&
+            (identical(other.email, email) || other.email == email) &&
+            (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.age, age) || other.age == age) &&
+            (identical(other.city, city) || other.city == city) &&
+            (identical(other.ticketTypeName, ticketTypeName) ||
+                other.ticketTypeName == ticketTypeName));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, firstName, lastName, email,
+      phone, age, city, ticketTypeName);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AttendeeImplCopyWith<_$AttendeeImpl> get copyWith =>
+      __$$AttendeeImplCopyWithImpl<_$AttendeeImpl>(this, _$identity);
+}
+
+abstract class _Attendee implements Attendee {
+  const factory _Attendee(
+      {final String? firstName,
+      final String? lastName,
+      final String? email,
+      final String? phone,
+      final int? age,
+      final String? city,
+      final String? ticketTypeName}) = _$AttendeeImpl;
+
+  @override
+  String? get firstName;
+  @override
+  String? get lastName;
+  @override
+  String? get email;
+  @override
+  String? get phone;
+  @override
+  int? get age;
+  @override
+  String? get city;
+  @override
+  String? get ticketTypeName;
+  @override
+  @JsonKey(ignore: true)
+  _$$AttendeeImplCopyWith<_$AttendeeImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+mixin _$BookingCancellationInfo {
+  bool get allowed => throw _privateConstructorUsedError;
+  bool get canCancel => throw _privateConstructorUsedError;
+  int? get hoursBeforeEvent => throw _privateConstructorUsedError;
+  DateTime? get deadline => throw _privateConstructorUsedError;
+  String? get deadlineFormatted => throw _privateConstructorUsedError;
+  String? get reason => throw _privateConstructorUsedError;
+  DateTime? get cancelledAt => throw _privateConstructorUsedError;
+
+  @JsonKey(ignore: true)
+  $BookingCancellationInfoCopyWith<BookingCancellationInfo> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BookingCancellationInfoCopyWith<$Res> {
+  factory $BookingCancellationInfoCopyWith(BookingCancellationInfo value,
+          $Res Function(BookingCancellationInfo) then) =
+      _$BookingCancellationInfoCopyWithImpl<$Res, BookingCancellationInfo>;
+  @useResult
+  $Res call(
+      {bool allowed,
+      bool canCancel,
+      int? hoursBeforeEvent,
+      DateTime? deadline,
+      String? deadlineFormatted,
+      String? reason,
+      DateTime? cancelledAt});
+}
+
+/// @nodoc
+class _$BookingCancellationInfoCopyWithImpl<$Res,
+        $Val extends BookingCancellationInfo>
+    implements $BookingCancellationInfoCopyWith<$Res> {
+  _$BookingCancellationInfoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? allowed = null,
+    Object? canCancel = null,
+    Object? hoursBeforeEvent = freezed,
+    Object? deadline = freezed,
+    Object? deadlineFormatted = freezed,
+    Object? reason = freezed,
+    Object? cancelledAt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      allowed: null == allowed
+          ? _value.allowed
+          : allowed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      canCancel: null == canCancel
+          ? _value.canCancel
+          : canCancel // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hoursBeforeEvent: freezed == hoursBeforeEvent
+          ? _value.hoursBeforeEvent
+          : hoursBeforeEvent // ignore: cast_nullable_to_non_nullable
+              as int?,
+      deadline: freezed == deadline
+          ? _value.deadline
+          : deadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      deadlineFormatted: freezed == deadlineFormatted
+          ? _value.deadlineFormatted
+          : deadlineFormatted // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cancelledAt: freezed == cancelledAt
+          ? _value.cancelledAt
+          : cancelledAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BookingCancellationInfoImplCopyWith<$Res>
+    implements $BookingCancellationInfoCopyWith<$Res> {
+  factory _$$BookingCancellationInfoImplCopyWith(
+          _$BookingCancellationInfoImpl value,
+          $Res Function(_$BookingCancellationInfoImpl) then) =
+      __$$BookingCancellationInfoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {bool allowed,
+      bool canCancel,
+      int? hoursBeforeEvent,
+      DateTime? deadline,
+      String? deadlineFormatted,
+      String? reason,
+      DateTime? cancelledAt});
+}
+
+/// @nodoc
+class __$$BookingCancellationInfoImplCopyWithImpl<$Res>
+    extends _$BookingCancellationInfoCopyWithImpl<$Res,
+        _$BookingCancellationInfoImpl>
+    implements _$$BookingCancellationInfoImplCopyWith<$Res> {
+  __$$BookingCancellationInfoImplCopyWithImpl(
+      _$BookingCancellationInfoImpl _value,
+      $Res Function(_$BookingCancellationInfoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? allowed = null,
+    Object? canCancel = null,
+    Object? hoursBeforeEvent = freezed,
+    Object? deadline = freezed,
+    Object? deadlineFormatted = freezed,
+    Object? reason = freezed,
+    Object? cancelledAt = freezed,
+  }) {
+    return _then(_$BookingCancellationInfoImpl(
+      allowed: null == allowed
+          ? _value.allowed
+          : allowed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      canCancel: null == canCancel
+          ? _value.canCancel
+          : canCancel // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hoursBeforeEvent: freezed == hoursBeforeEvent
+          ? _value.hoursBeforeEvent
+          : hoursBeforeEvent // ignore: cast_nullable_to_non_nullable
+              as int?,
+      deadline: freezed == deadline
+          ? _value.deadline
+          : deadline // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      deadlineFormatted: freezed == deadlineFormatted
+          ? _value.deadlineFormatted
+          : deadlineFormatted // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cancelledAt: freezed == cancelledAt
+          ? _value.cancelledAt
+          : cancelledAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$BookingCancellationInfoImpl implements _BookingCancellationInfo {
+  const _$BookingCancellationInfoImpl(
+      {this.allowed = false,
+      this.canCancel = false,
+      this.hoursBeforeEvent,
+      this.deadline,
+      this.deadlineFormatted,
+      this.reason,
+      this.cancelledAt});
+
+  @override
+  @JsonKey()
+  final bool allowed;
+  @override
+  @JsonKey()
+  final bool canCancel;
+  @override
+  final int? hoursBeforeEvent;
+  @override
+  final DateTime? deadline;
+  @override
+  final String? deadlineFormatted;
+  @override
+  final String? reason;
+  @override
+  final DateTime? cancelledAt;
+
+  @override
+  String toString() {
+    return 'BookingCancellationInfo(allowed: $allowed, canCancel: $canCancel, hoursBeforeEvent: $hoursBeforeEvent, deadline: $deadline, deadlineFormatted: $deadlineFormatted, reason: $reason, cancelledAt: $cancelledAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BookingCancellationInfoImpl &&
+            (identical(other.allowed, allowed) || other.allowed == allowed) &&
+            (identical(other.canCancel, canCancel) ||
+                other.canCancel == canCancel) &&
+            (identical(other.hoursBeforeEvent, hoursBeforeEvent) ||
+                other.hoursBeforeEvent == hoursBeforeEvent) &&
+            (identical(other.deadline, deadline) ||
+                other.deadline == deadline) &&
+            (identical(other.deadlineFormatted, deadlineFormatted) ||
+                other.deadlineFormatted == deadlineFormatted) &&
+            (identical(other.reason, reason) || other.reason == reason) &&
+            (identical(other.cancelledAt, cancelledAt) ||
+                other.cancelledAt == cancelledAt));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, allowed, canCancel,
+      hoursBeforeEvent, deadline, deadlineFormatted, reason, cancelledAt);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BookingCancellationInfoImplCopyWith<_$BookingCancellationInfoImpl>
+      get copyWith => __$$BookingCancellationInfoImplCopyWithImpl<
+          _$BookingCancellationInfoImpl>(this, _$identity);
+}
+
+abstract class _BookingCancellationInfo implements BookingCancellationInfo {
+  const factory _BookingCancellationInfo(
+      {final bool allowed,
+      final bool canCancel,
+      final int? hoursBeforeEvent,
+      final DateTime? deadline,
+      final String? deadlineFormatted,
+      final String? reason,
+      final DateTime? cancelledAt}) = _$BookingCancellationInfoImpl;
+
+  @override
+  bool get allowed;
+  @override
+  bool get canCancel;
+  @override
+  int? get hoursBeforeEvent;
+  @override
+  DateTime? get deadline;
+  @override
+  String? get deadlineFormatted;
+  @override
+  String? get reason;
+  @override
+  DateTime? get cancelledAt;
+  @override
+  @JsonKey(ignore: true)
+  _$$BookingCancellationInfoImplCopyWith<_$BookingCancellationInfoImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc

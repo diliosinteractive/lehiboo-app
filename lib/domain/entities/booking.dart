@@ -23,6 +23,10 @@ class Booking with _$Booking {
     Slot? slot,
     // Tickets associated with this booking
     List<Ticket>? tickets,
+    // Flat list of attendees across all booking items
+    List<Attendee>? attendees,
+    // Cancellation eligibility + deadline (drives the cancel button)
+    BookingCancellationInfo? cancellation,
     // Customer info
     String? customerEmail,
     String? customerFirstName,
@@ -34,6 +38,34 @@ class Booking with _$Booking {
     // Reference (short code for display)
     String? reference,
   }) = _Booking;
+}
+
+@freezed
+class Attendee with _$Attendee {
+  const factory Attendee({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+    int? age,
+    String? city,
+    String? ticketTypeName,
+  }) = _Attendee;
+}
+
+/// Pre-flight info from the API on whether the booking can be self-cancelled
+/// and the deadline.
+@freezed
+class BookingCancellationInfo with _$BookingCancellationInfo {
+  const factory BookingCancellationInfo({
+    @Default(false) bool allowed,
+    @Default(false) bool canCancel,
+    int? hoursBeforeEvent,
+    DateTime? deadline,
+    String? deadlineFormatted,
+    String? reason,
+    DateTime? cancelledAt,
+  }) = _BookingCancellationInfo;
 }
 
 @freezed

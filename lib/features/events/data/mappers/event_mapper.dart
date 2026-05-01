@@ -164,6 +164,7 @@ class EventMapper {
       organizerVenueTypes: dto.organizer?.venueTypes ?? const [],
       organizerAllowPublicContact: dto.organizer?.allowPublicContact ?? false,
       isFavorite: dto.isFavorite,
+      isMembersOnly: dto.isMembersOnly,
       isFeatured: dto.isFeatured,
       isRecommended: false,
       status: _determineStatus(startDate, endDate),

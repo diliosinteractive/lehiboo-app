@@ -2456,7 +2456,13 @@ mixin _$BookingListItemDto {
   String? get createdAt2 =>
       throw _privateConstructorUsedError; // Relations loaded by API
   BookingEventDto? get event => throw _privateConstructorUsedError;
-  BookingSlotDto? get slot => throw _privateConstructorUsedError;
+  BookingSlotDto? get slot =>
+      throw _privateConstructorUsedError; // Booking line items with attendee details (returned on detail endpoint
+// and on richer list responses).
+  List<BookingItemDto>? get items =>
+      throw _privateConstructorUsedError; // Cancellation eligibility + deadline.
+  BookingCancellationDto? get cancellation =>
+      throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -2494,10 +2500,13 @@ abstract class $BookingListItemDtoCopyWith<$Res> {
       @JsonKey(name: 'created_at') String? createdAt,
       String? createdAt2,
       BookingEventDto? event,
-      BookingSlotDto? slot});
+      BookingSlotDto? slot,
+      List<BookingItemDto>? items,
+      BookingCancellationDto? cancellation});
 
   $BookingEventDtoCopyWith<$Res>? get event;
   $BookingSlotDtoCopyWith<$Res>? get slot;
+  $BookingCancellationDtoCopyWith<$Res>? get cancellation;
 }
 
 /// @nodoc
@@ -2537,6 +2546,8 @@ class _$BookingListItemDtoCopyWithImpl<$Res, $Val extends BookingListItemDto>
     Object? createdAt2 = freezed,
     Object? event = freezed,
     Object? slot = freezed,
+    Object? items = freezed,
+    Object? cancellation = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -2635,6 +2646,14 @@ class _$BookingListItemDtoCopyWithImpl<$Res, $Val extends BookingListItemDto>
           ? _value.slot
           : slot // ignore: cast_nullable_to_non_nullable
               as BookingSlotDto?,
+      items: freezed == items
+          ? _value.items
+          : items // ignore: cast_nullable_to_non_nullable
+              as List<BookingItemDto>?,
+      cancellation: freezed == cancellation
+          ? _value.cancellation
+          : cancellation // ignore: cast_nullable_to_non_nullable
+              as BookingCancellationDto?,
     ) as $Val);
   }
 
@@ -2659,6 +2678,18 @@ class _$BookingListItemDtoCopyWithImpl<$Res, $Val extends BookingListItemDto>
 
     return $BookingSlotDtoCopyWith<$Res>(_value.slot!, (value) {
       return _then(_value.copyWith(slot: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $BookingCancellationDtoCopyWith<$Res>? get cancellation {
+    if (_value.cancellation == null) {
+      return null;
+    }
+
+    return $BookingCancellationDtoCopyWith<$Res>(_value.cancellation!, (value) {
+      return _then(_value.copyWith(cancellation: value) as $Val);
     });
   }
 }
@@ -2695,12 +2726,16 @@ abstract class _$$BookingListItemDtoImplCopyWith<$Res>
       @JsonKey(name: 'created_at') String? createdAt,
       String? createdAt2,
       BookingEventDto? event,
-      BookingSlotDto? slot});
+      BookingSlotDto? slot,
+      List<BookingItemDto>? items,
+      BookingCancellationDto? cancellation});
 
   @override
   $BookingEventDtoCopyWith<$Res>? get event;
   @override
   $BookingSlotDtoCopyWith<$Res>? get slot;
+  @override
+  $BookingCancellationDtoCopyWith<$Res>? get cancellation;
 }
 
 /// @nodoc
@@ -2738,6 +2773,8 @@ class __$$BookingListItemDtoImplCopyWithImpl<$Res>
     Object? createdAt2 = freezed,
     Object? event = freezed,
     Object? slot = freezed,
+    Object? items = freezed,
+    Object? cancellation = freezed,
   }) {
     return _then(_$BookingListItemDtoImpl(
       id: null == id
@@ -2836,6 +2873,14 @@ class __$$BookingListItemDtoImplCopyWithImpl<$Res>
           ? _value.slot
           : slot // ignore: cast_nullable_to_non_nullable
               as BookingSlotDto?,
+      items: freezed == items
+          ? _value._items
+          : items // ignore: cast_nullable_to_non_nullable
+              as List<BookingItemDto>?,
+      cancellation: freezed == cancellation
+          ? _value.cancellation
+          : cancellation // ignore: cast_nullable_to_non_nullable
+              as BookingCancellationDto?,
     ));
   }
 }
@@ -2867,7 +2912,10 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
       @JsonKey(name: 'created_at') this.createdAt,
       this.createdAt2,
       this.event,
-      this.slot});
+      this.slot,
+      final List<BookingItemDto>? items,
+      this.cancellation})
+      : _items = items;
 
   factory _$BookingListItemDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$BookingListItemDtoImplFromJson(json);
@@ -2932,10 +2980,27 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
   final BookingEventDto? event;
   @override
   final BookingSlotDto? slot;
+// Booking line items with attendee details (returned on detail endpoint
+// and on richer list responses).
+  final List<BookingItemDto>? _items;
+// Booking line items with attendee details (returned on detail endpoint
+// and on richer list responses).
+  @override
+  List<BookingItemDto>? get items {
+    final value = _items;
+    if (value == null) return null;
+    if (_items is EqualUnmodifiableListView) return _items;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+// Cancellation eligibility + deadline.
+  @override
+  final BookingCancellationDto? cancellation;
 
   @override
   String toString() {
-    return 'BookingListItemDto(id: $id, uuid: $uuid, reference: $reference, status: $status, eventId: $eventId, slotId: $slotId, userId: $userId, eventTitle: $eventTitle, eventSlug: $eventSlug, eventImage: $eventImage, slotDate: $slotDate, grandTotal: $grandTotal, totalAmount: $totalAmount, ticketCount: $ticketCount, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerBirthDate: $customerBirthDate, customerTown: $customerTown, canCancel: $canCancel, createdAt: $createdAt, createdAt2: $createdAt2, event: $event, slot: $slot)';
+    return 'BookingListItemDto(id: $id, uuid: $uuid, reference: $reference, status: $status, eventId: $eventId, slotId: $slotId, userId: $userId, eventTitle: $eventTitle, eventSlug: $eventSlug, eventImage: $eventImage, slotDate: $slotDate, grandTotal: $grandTotal, totalAmount: $totalAmount, ticketCount: $ticketCount, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerBirthDate: $customerBirthDate, customerTown: $customerTown, canCancel: $canCancel, createdAt: $createdAt, createdAt2: $createdAt2, event: $event, slot: $slot, items: $items, cancellation: $cancellation)';
   }
 
   @override
@@ -2982,7 +3047,10 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
             (identical(other.createdAt2, createdAt2) ||
                 other.createdAt2 == createdAt2) &&
             (identical(other.event, event) || other.event == event) &&
-            (identical(other.slot, slot) || other.slot == slot));
+            (identical(other.slot, slot) || other.slot == slot) &&
+            const DeepCollectionEquality().equals(other._items, _items) &&
+            (identical(other.cancellation, cancellation) ||
+                other.cancellation == cancellation));
   }
 
   @JsonKey(ignore: true)
@@ -3012,7 +3080,9 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
         createdAt,
         createdAt2,
         event,
-        slot
+        slot,
+        const DeepCollectionEquality().hash(_items),
+        cancellation
       ]);
 
   @JsonKey(ignore: true)
@@ -3055,7 +3125,9 @@ abstract class _BookingListItemDto implements BookingListItemDto {
       @JsonKey(name: 'created_at') final String? createdAt,
       final String? createdAt2,
       final BookingEventDto? event,
-      final BookingSlotDto? slot}) = _$BookingListItemDtoImpl;
+      final BookingSlotDto? slot,
+      final List<BookingItemDto>? items,
+      final BookingCancellationDto? cancellation}) = _$BookingListItemDtoImpl;
 
   factory _BookingListItemDto.fromJson(Map<String, dynamic> json) =
       _$BookingListItemDtoImpl.fromJson;
@@ -3118,10 +3190,788 @@ abstract class _BookingListItemDto implements BookingListItemDto {
   BookingEventDto? get event;
   @override
   BookingSlotDto? get slot;
+  @override // Booking line items with attendee details (returned on detail endpoint
+// and on richer list responses).
+  List<BookingItemDto>? get items;
+  @override // Cancellation eligibility + deadline.
+  BookingCancellationDto? get cancellation;
   @override
   @JsonKey(ignore: true)
   _$$BookingListItemDtoImplCopyWith<_$BookingListItemDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+BookingCancellationDto _$BookingCancellationDtoFromJson(
+    Map<String, dynamic> json) {
+  return _BookingCancellationDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$BookingCancellationDto {
+  bool? get allowed => throw _privateConstructorUsedError;
+  bool? get canCancel => throw _privateConstructorUsedError;
+  int? get hoursBeforeEvent => throw _privateConstructorUsedError;
+  String? get deadline => throw _privateConstructorUsedError;
+  String? get deadlineFormatted => throw _privateConstructorUsedError;
+  String? get reason => throw _privateConstructorUsedError;
+  String? get cancelledAt => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $BookingCancellationDtoCopyWith<BookingCancellationDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BookingCancellationDtoCopyWith<$Res> {
+  factory $BookingCancellationDtoCopyWith(BookingCancellationDto value,
+          $Res Function(BookingCancellationDto) then) =
+      _$BookingCancellationDtoCopyWithImpl<$Res, BookingCancellationDto>;
+  @useResult
+  $Res call(
+      {bool? allowed,
+      bool? canCancel,
+      int? hoursBeforeEvent,
+      String? deadline,
+      String? deadlineFormatted,
+      String? reason,
+      String? cancelledAt});
+}
+
+/// @nodoc
+class _$BookingCancellationDtoCopyWithImpl<$Res,
+        $Val extends BookingCancellationDto>
+    implements $BookingCancellationDtoCopyWith<$Res> {
+  _$BookingCancellationDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? allowed = freezed,
+    Object? canCancel = freezed,
+    Object? hoursBeforeEvent = freezed,
+    Object? deadline = freezed,
+    Object? deadlineFormatted = freezed,
+    Object? reason = freezed,
+    Object? cancelledAt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      allowed: freezed == allowed
+          ? _value.allowed
+          : allowed // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      canCancel: freezed == canCancel
+          ? _value.canCancel
+          : canCancel // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      hoursBeforeEvent: freezed == hoursBeforeEvent
+          ? _value.hoursBeforeEvent
+          : hoursBeforeEvent // ignore: cast_nullable_to_non_nullable
+              as int?,
+      deadline: freezed == deadline
+          ? _value.deadline
+          : deadline // ignore: cast_nullable_to_non_nullable
+              as String?,
+      deadlineFormatted: freezed == deadlineFormatted
+          ? _value.deadlineFormatted
+          : deadlineFormatted // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cancelledAt: freezed == cancelledAt
+          ? _value.cancelledAt
+          : cancelledAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BookingCancellationDtoImplCopyWith<$Res>
+    implements $BookingCancellationDtoCopyWith<$Res> {
+  factory _$$BookingCancellationDtoImplCopyWith(
+          _$BookingCancellationDtoImpl value,
+          $Res Function(_$BookingCancellationDtoImpl) then) =
+      __$$BookingCancellationDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {bool? allowed,
+      bool? canCancel,
+      int? hoursBeforeEvent,
+      String? deadline,
+      String? deadlineFormatted,
+      String? reason,
+      String? cancelledAt});
+}
+
+/// @nodoc
+class __$$BookingCancellationDtoImplCopyWithImpl<$Res>
+    extends _$BookingCancellationDtoCopyWithImpl<$Res,
+        _$BookingCancellationDtoImpl>
+    implements _$$BookingCancellationDtoImplCopyWith<$Res> {
+  __$$BookingCancellationDtoImplCopyWithImpl(
+      _$BookingCancellationDtoImpl _value,
+      $Res Function(_$BookingCancellationDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? allowed = freezed,
+    Object? canCancel = freezed,
+    Object? hoursBeforeEvent = freezed,
+    Object? deadline = freezed,
+    Object? deadlineFormatted = freezed,
+    Object? reason = freezed,
+    Object? cancelledAt = freezed,
+  }) {
+    return _then(_$BookingCancellationDtoImpl(
+      allowed: freezed == allowed
+          ? _value.allowed
+          : allowed // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      canCancel: freezed == canCancel
+          ? _value.canCancel
+          : canCancel // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      hoursBeforeEvent: freezed == hoursBeforeEvent
+          ? _value.hoursBeforeEvent
+          : hoursBeforeEvent // ignore: cast_nullable_to_non_nullable
+              as int?,
+      deadline: freezed == deadline
+          ? _value.deadline
+          : deadline // ignore: cast_nullable_to_non_nullable
+              as String?,
+      deadlineFormatted: freezed == deadlineFormatted
+          ? _value.deadlineFormatted
+          : deadlineFormatted // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reason: freezed == reason
+          ? _value.reason
+          : reason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cancelledAt: freezed == cancelledAt
+          ? _value.cancelledAt
+          : cancelledAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$BookingCancellationDtoImpl implements _BookingCancellationDto {
+  const _$BookingCancellationDtoImpl(
+      {this.allowed,
+      this.canCancel,
+      this.hoursBeforeEvent,
+      this.deadline,
+      this.deadlineFormatted,
+      this.reason,
+      this.cancelledAt});
+
+  factory _$BookingCancellationDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BookingCancellationDtoImplFromJson(json);
+
+  @override
+  final bool? allowed;
+  @override
+  final bool? canCancel;
+  @override
+  final int? hoursBeforeEvent;
+  @override
+  final String? deadline;
+  @override
+  final String? deadlineFormatted;
+  @override
+  final String? reason;
+  @override
+  final String? cancelledAt;
+
+  @override
+  String toString() {
+    return 'BookingCancellationDto(allowed: $allowed, canCancel: $canCancel, hoursBeforeEvent: $hoursBeforeEvent, deadline: $deadline, deadlineFormatted: $deadlineFormatted, reason: $reason, cancelledAt: $cancelledAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BookingCancellationDtoImpl &&
+            (identical(other.allowed, allowed) || other.allowed == allowed) &&
+            (identical(other.canCancel, canCancel) ||
+                other.canCancel == canCancel) &&
+            (identical(other.hoursBeforeEvent, hoursBeforeEvent) ||
+                other.hoursBeforeEvent == hoursBeforeEvent) &&
+            (identical(other.deadline, deadline) ||
+                other.deadline == deadline) &&
+            (identical(other.deadlineFormatted, deadlineFormatted) ||
+                other.deadlineFormatted == deadlineFormatted) &&
+            (identical(other.reason, reason) || other.reason == reason) &&
+            (identical(other.cancelledAt, cancelledAt) ||
+                other.cancelledAt == cancelledAt));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, allowed, canCancel,
+      hoursBeforeEvent, deadline, deadlineFormatted, reason, cancelledAt);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BookingCancellationDtoImplCopyWith<_$BookingCancellationDtoImpl>
+      get copyWith => __$$BookingCancellationDtoImplCopyWithImpl<
+          _$BookingCancellationDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$BookingCancellationDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _BookingCancellationDto implements BookingCancellationDto {
+  const factory _BookingCancellationDto(
+      {final bool? allowed,
+      final bool? canCancel,
+      final int? hoursBeforeEvent,
+      final String? deadline,
+      final String? deadlineFormatted,
+      final String? reason,
+      final String? cancelledAt}) = _$BookingCancellationDtoImpl;
+
+  factory _BookingCancellationDto.fromJson(Map<String, dynamic> json) =
+      _$BookingCancellationDtoImpl.fromJson;
+
+  @override
+  bool? get allowed;
+  @override
+  bool? get canCancel;
+  @override
+  int? get hoursBeforeEvent;
+  @override
+  String? get deadline;
+  @override
+  String? get deadlineFormatted;
+  @override
+  String? get reason;
+  @override
+  String? get cancelledAt;
+  @override
+  @JsonKey(ignore: true)
+  _$$BookingCancellationDtoImplCopyWith<_$BookingCancellationDtoImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+BookingItemDto _$BookingItemDtoFromJson(Map<String, dynamic> json) {
+  return _BookingItemDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$BookingItemDto {
+  int? get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'ticket_type_id')
+  int? get ticketTypeId => throw _privateConstructorUsedError;
+  int? get quantity => throw _privateConstructorUsedError;
+  String? get ticketTypeName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'attendee_details')
+  List<BookingAttendeeDetailDto>? get attendeeDetails =>
+      throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $BookingItemDtoCopyWith<BookingItemDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BookingItemDtoCopyWith<$Res> {
+  factory $BookingItemDtoCopyWith(
+          BookingItemDto value, $Res Function(BookingItemDto) then) =
+      _$BookingItemDtoCopyWithImpl<$Res, BookingItemDto>;
+  @useResult
+  $Res call(
+      {int? id,
+      @JsonKey(name: 'ticket_type_id') int? ticketTypeId,
+      int? quantity,
+      String? ticketTypeName,
+      @JsonKey(name: 'attendee_details')
+      List<BookingAttendeeDetailDto>? attendeeDetails});
+}
+
+/// @nodoc
+class _$BookingItemDtoCopyWithImpl<$Res, $Val extends BookingItemDto>
+    implements $BookingItemDtoCopyWith<$Res> {
+  _$BookingItemDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = freezed,
+    Object? ticketTypeId = freezed,
+    Object? quantity = freezed,
+    Object? ticketTypeName = freezed,
+    Object? attendeeDetails = freezed,
+  }) {
+    return _then(_value.copyWith(
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ticketTypeId: freezed == ticketTypeId
+          ? _value.ticketTypeId
+          : ticketTypeId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      quantity: freezed == quantity
+          ? _value.quantity
+          : quantity // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ticketTypeName: freezed == ticketTypeName
+          ? _value.ticketTypeName
+          : ticketTypeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeeDetails: freezed == attendeeDetails
+          ? _value.attendeeDetails
+          : attendeeDetails // ignore: cast_nullable_to_non_nullable
+              as List<BookingAttendeeDetailDto>?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BookingItemDtoImplCopyWith<$Res>
+    implements $BookingItemDtoCopyWith<$Res> {
+  factory _$$BookingItemDtoImplCopyWith(_$BookingItemDtoImpl value,
+          $Res Function(_$BookingItemDtoImpl) then) =
+      __$$BookingItemDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {int? id,
+      @JsonKey(name: 'ticket_type_id') int? ticketTypeId,
+      int? quantity,
+      String? ticketTypeName,
+      @JsonKey(name: 'attendee_details')
+      List<BookingAttendeeDetailDto>? attendeeDetails});
+}
+
+/// @nodoc
+class __$$BookingItemDtoImplCopyWithImpl<$Res>
+    extends _$BookingItemDtoCopyWithImpl<$Res, _$BookingItemDtoImpl>
+    implements _$$BookingItemDtoImplCopyWith<$Res> {
+  __$$BookingItemDtoImplCopyWithImpl(
+      _$BookingItemDtoImpl _value, $Res Function(_$BookingItemDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = freezed,
+    Object? ticketTypeId = freezed,
+    Object? quantity = freezed,
+    Object? ticketTypeName = freezed,
+    Object? attendeeDetails = freezed,
+  }) {
+    return _then(_$BookingItemDtoImpl(
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ticketTypeId: freezed == ticketTypeId
+          ? _value.ticketTypeId
+          : ticketTypeId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      quantity: freezed == quantity
+          ? _value.quantity
+          : quantity // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ticketTypeName: freezed == ticketTypeName
+          ? _value.ticketTypeName
+          : ticketTypeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeeDetails: freezed == attendeeDetails
+          ? _value._attendeeDetails
+          : attendeeDetails // ignore: cast_nullable_to_non_nullable
+              as List<BookingAttendeeDetailDto>?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$BookingItemDtoImpl implements _BookingItemDto {
+  const _$BookingItemDtoImpl(
+      {this.id,
+      @JsonKey(name: 'ticket_type_id') this.ticketTypeId,
+      this.quantity,
+      this.ticketTypeName,
+      @JsonKey(name: 'attendee_details')
+      final List<BookingAttendeeDetailDto>? attendeeDetails})
+      : _attendeeDetails = attendeeDetails;
+
+  factory _$BookingItemDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BookingItemDtoImplFromJson(json);
+
+  @override
+  final int? id;
+  @override
+  @JsonKey(name: 'ticket_type_id')
+  final int? ticketTypeId;
+  @override
+  final int? quantity;
+  @override
+  final String? ticketTypeName;
+  final List<BookingAttendeeDetailDto>? _attendeeDetails;
+  @override
+  @JsonKey(name: 'attendee_details')
+  List<BookingAttendeeDetailDto>? get attendeeDetails {
+    final value = _attendeeDetails;
+    if (value == null) return null;
+    if (_attendeeDetails is EqualUnmodifiableListView) return _attendeeDetails;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
+  String toString() {
+    return 'BookingItemDto(id: $id, ticketTypeId: $ticketTypeId, quantity: $quantity, ticketTypeName: $ticketTypeName, attendeeDetails: $attendeeDetails)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BookingItemDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.ticketTypeId, ticketTypeId) ||
+                other.ticketTypeId == ticketTypeId) &&
+            (identical(other.quantity, quantity) ||
+                other.quantity == quantity) &&
+            (identical(other.ticketTypeName, ticketTypeName) ||
+                other.ticketTypeName == ticketTypeName) &&
+            const DeepCollectionEquality()
+                .equals(other._attendeeDetails, _attendeeDetails));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, ticketTypeId, quantity,
+      ticketTypeName, const DeepCollectionEquality().hash(_attendeeDetails));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BookingItemDtoImplCopyWith<_$BookingItemDtoImpl> get copyWith =>
+      __$$BookingItemDtoImplCopyWithImpl<_$BookingItemDtoImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$BookingItemDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _BookingItemDto implements BookingItemDto {
+  const factory _BookingItemDto(
+          {final int? id,
+          @JsonKey(name: 'ticket_type_id') final int? ticketTypeId,
+          final int? quantity,
+          final String? ticketTypeName,
+          @JsonKey(name: 'attendee_details')
+          final List<BookingAttendeeDetailDto>? attendeeDetails}) =
+      _$BookingItemDtoImpl;
+
+  factory _BookingItemDto.fromJson(Map<String, dynamic> json) =
+      _$BookingItemDtoImpl.fromJson;
+
+  @override
+  int? get id;
+  @override
+  @JsonKey(name: 'ticket_type_id')
+  int? get ticketTypeId;
+  @override
+  int? get quantity;
+  @override
+  String? get ticketTypeName;
+  @override
+  @JsonKey(name: 'attendee_details')
+  List<BookingAttendeeDetailDto>? get attendeeDetails;
+  @override
+  @JsonKey(ignore: true)
+  _$$BookingItemDtoImplCopyWith<_$BookingItemDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+BookingAttendeeDetailDto _$BookingAttendeeDetailDtoFromJson(
+    Map<String, dynamic> json) {
+  return _BookingAttendeeDetailDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$BookingAttendeeDetailDto {
+  @JsonKey(name: 'first_name')
+  String? get firstName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'last_name')
+  String? get lastName => throw _privateConstructorUsedError;
+  String? get email => throw _privateConstructorUsedError;
+  String? get phone => throw _privateConstructorUsedError;
+  int? get age => throw _privateConstructorUsedError;
+  String? get city => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $BookingAttendeeDetailDtoCopyWith<BookingAttendeeDetailDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BookingAttendeeDetailDtoCopyWith<$Res> {
+  factory $BookingAttendeeDetailDtoCopyWith(BookingAttendeeDetailDto value,
+          $Res Function(BookingAttendeeDetailDto) then) =
+      _$BookingAttendeeDetailDtoCopyWithImpl<$Res, BookingAttendeeDetailDto>;
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'first_name') String? firstName,
+      @JsonKey(name: 'last_name') String? lastName,
+      String? email,
+      String? phone,
+      int? age,
+      String? city});
+}
+
+/// @nodoc
+class _$BookingAttendeeDetailDtoCopyWithImpl<$Res,
+        $Val extends BookingAttendeeDetailDto>
+    implements $BookingAttendeeDetailDtoCopyWith<$Res> {
+  _$BookingAttendeeDetailDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? firstName = freezed,
+    Object? lastName = freezed,
+    Object? email = freezed,
+    Object? phone = freezed,
+    Object? age = freezed,
+    Object? city = freezed,
+  }) {
+    return _then(_value.copyWith(
+      firstName: freezed == firstName
+          ? _value.firstName
+          : firstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastName: freezed == lastName
+          ? _value.lastName
+          : lastName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      age: freezed == age
+          ? _value.age
+          : age // ignore: cast_nullable_to_non_nullable
+              as int?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BookingAttendeeDetailDtoImplCopyWith<$Res>
+    implements $BookingAttendeeDetailDtoCopyWith<$Res> {
+  factory _$$BookingAttendeeDetailDtoImplCopyWith(
+          _$BookingAttendeeDetailDtoImpl value,
+          $Res Function(_$BookingAttendeeDetailDtoImpl) then) =
+      __$$BookingAttendeeDetailDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'first_name') String? firstName,
+      @JsonKey(name: 'last_name') String? lastName,
+      String? email,
+      String? phone,
+      int? age,
+      String? city});
+}
+
+/// @nodoc
+class __$$BookingAttendeeDetailDtoImplCopyWithImpl<$Res>
+    extends _$BookingAttendeeDetailDtoCopyWithImpl<$Res,
+        _$BookingAttendeeDetailDtoImpl>
+    implements _$$BookingAttendeeDetailDtoImplCopyWith<$Res> {
+  __$$BookingAttendeeDetailDtoImplCopyWithImpl(
+      _$BookingAttendeeDetailDtoImpl _value,
+      $Res Function(_$BookingAttendeeDetailDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? firstName = freezed,
+    Object? lastName = freezed,
+    Object? email = freezed,
+    Object? phone = freezed,
+    Object? age = freezed,
+    Object? city = freezed,
+  }) {
+    return _then(_$BookingAttendeeDetailDtoImpl(
+      firstName: freezed == firstName
+          ? _value.firstName
+          : firstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastName: freezed == lastName
+          ? _value.lastName
+          : lastName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      email: freezed == email
+          ? _value.email
+          : email // ignore: cast_nullable_to_non_nullable
+              as String?,
+      phone: freezed == phone
+          ? _value.phone
+          : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      age: freezed == age
+          ? _value.age
+          : age // ignore: cast_nullable_to_non_nullable
+              as int?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$BookingAttendeeDetailDtoImpl implements _BookingAttendeeDetailDto {
+  const _$BookingAttendeeDetailDtoImpl(
+      {@JsonKey(name: 'first_name') this.firstName,
+      @JsonKey(name: 'last_name') this.lastName,
+      this.email,
+      this.phone,
+      this.age,
+      this.city});
+
+  factory _$BookingAttendeeDetailDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BookingAttendeeDetailDtoImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'first_name')
+  final String? firstName;
+  @override
+  @JsonKey(name: 'last_name')
+  final String? lastName;
+  @override
+  final String? email;
+  @override
+  final String? phone;
+  @override
+  final int? age;
+  @override
+  final String? city;
+
+  @override
+  String toString() {
+    return 'BookingAttendeeDetailDto(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, age: $age, city: $city)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BookingAttendeeDetailDtoImpl &&
+            (identical(other.firstName, firstName) ||
+                other.firstName == firstName) &&
+            (identical(other.lastName, lastName) ||
+                other.lastName == lastName) &&
+            (identical(other.email, email) || other.email == email) &&
+            (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.age, age) || other.age == age) &&
+            (identical(other.city, city) || other.city == city));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, firstName, lastName, email, phone, age, city);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BookingAttendeeDetailDtoImplCopyWith<_$BookingAttendeeDetailDtoImpl>
+      get copyWith => __$$BookingAttendeeDetailDtoImplCopyWithImpl<
+          _$BookingAttendeeDetailDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$BookingAttendeeDetailDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _BookingAttendeeDetailDto implements BookingAttendeeDetailDto {
+  const factory _BookingAttendeeDetailDto(
+      {@JsonKey(name: 'first_name') final String? firstName,
+      @JsonKey(name: 'last_name') final String? lastName,
+      final String? email,
+      final String? phone,
+      final int? age,
+      final String? city}) = _$BookingAttendeeDetailDtoImpl;
+
+  factory _BookingAttendeeDetailDto.fromJson(Map<String, dynamic> json) =
+      _$BookingAttendeeDetailDtoImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'first_name')
+  String? get firstName;
+  @override
+  @JsonKey(name: 'last_name')
+  String? get lastName;
+  @override
+  String? get email;
+  @override
+  String? get phone;
+  @override
+  int? get age;
+  @override
+  String? get city;
+  @override
+  @JsonKey(ignore: true)
+  _$$BookingAttendeeDetailDtoImplCopyWith<_$BookingAttendeeDetailDtoImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 BookingEventDto _$BookingEventDtoFromJson(Map<String, dynamic> json) {
@@ -3958,6 +4808,595 @@ abstract class _TicketsListResponseDto implements TicketsListResponseDto {
       get copyWith => throw _privateConstructorUsedError;
 }
 
+BookingTicketDto _$BookingTicketDtoFromJson(Map<String, dynamic> json) {
+  return _BookingTicketDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$BookingTicketDto {
+  String get id => throw _privateConstructorUsedError;
+  String? get uuid => throw _privateConstructorUsedError;
+  @JsonKey(name: 'booking_id')
+  int? get bookingId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'booking_item_id')
+  int? get bookingItemId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'event_id')
+  int? get eventId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'slot_id')
+  int? get slotId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'ticket_type_id')
+  int? get ticketTypeId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'qr_code')
+  String get qrCode => throw _privateConstructorUsedError;
+  @JsonKey(name: 'attendee_first_name')
+  String? get attendeeFirstName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'attendee_last_name')
+  String? get attendeeLastName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'attendee_email')
+  String? get attendeeEmail => throw _privateConstructorUsedError;
+  @JsonKey(name: 'attendee_phone')
+  String? get attendeePhone => throw _privateConstructorUsedError;
+  @JsonKey(name: 'attendee_name')
+  String? get attendeeName => throw _privateConstructorUsedError;
+  double? get price => throw _privateConstructorUsedError;
+  String get status => throw _privateConstructorUsedError;
+  @JsonKey(name: 'status_label')
+  String? get statusLabel => throw _privateConstructorUsedError;
+  @JsonKey(name: 'custom_fields')
+  Map<String, dynamic>? get customFields => throw _privateConstructorUsedError;
+  @JsonKey(name: 'created_at')
+  String? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'updated_at')
+  String? get updatedAt => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $BookingTicketDtoCopyWith<BookingTicketDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BookingTicketDtoCopyWith<$Res> {
+  factory $BookingTicketDtoCopyWith(
+          BookingTicketDto value, $Res Function(BookingTicketDto) then) =
+      _$BookingTicketDtoCopyWithImpl<$Res, BookingTicketDto>;
+  @useResult
+  $Res call(
+      {String id,
+      String? uuid,
+      @JsonKey(name: 'booking_id') int? bookingId,
+      @JsonKey(name: 'booking_item_id') int? bookingItemId,
+      @JsonKey(name: 'event_id') int? eventId,
+      @JsonKey(name: 'slot_id') int? slotId,
+      @JsonKey(name: 'ticket_type_id') int? ticketTypeId,
+      @JsonKey(name: 'qr_code') String qrCode,
+      @JsonKey(name: 'attendee_first_name') String? attendeeFirstName,
+      @JsonKey(name: 'attendee_last_name') String? attendeeLastName,
+      @JsonKey(name: 'attendee_email') String? attendeeEmail,
+      @JsonKey(name: 'attendee_phone') String? attendeePhone,
+      @JsonKey(name: 'attendee_name') String? attendeeName,
+      double? price,
+      String status,
+      @JsonKey(name: 'status_label') String? statusLabel,
+      @JsonKey(name: 'custom_fields') Map<String, dynamic>? customFields,
+      @JsonKey(name: 'created_at') String? createdAt,
+      @JsonKey(name: 'updated_at') String? updatedAt});
+}
+
+/// @nodoc
+class _$BookingTicketDtoCopyWithImpl<$Res, $Val extends BookingTicketDto>
+    implements $BookingTicketDtoCopyWith<$Res> {
+  _$BookingTicketDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? uuid = freezed,
+    Object? bookingId = freezed,
+    Object? bookingItemId = freezed,
+    Object? eventId = freezed,
+    Object? slotId = freezed,
+    Object? ticketTypeId = freezed,
+    Object? qrCode = null,
+    Object? attendeeFirstName = freezed,
+    Object? attendeeLastName = freezed,
+    Object? attendeeEmail = freezed,
+    Object? attendeePhone = freezed,
+    Object? attendeeName = freezed,
+    Object? price = freezed,
+    Object? status = null,
+    Object? statusLabel = freezed,
+    Object? customFields = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      bookingId: freezed == bookingId
+          ? _value.bookingId
+          : bookingId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      bookingItemId: freezed == bookingItemId
+          ? _value.bookingItemId
+          : bookingItemId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      eventId: freezed == eventId
+          ? _value.eventId
+          : eventId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      slotId: freezed == slotId
+          ? _value.slotId
+          : slotId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ticketTypeId: freezed == ticketTypeId
+          ? _value.ticketTypeId
+          : ticketTypeId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      qrCode: null == qrCode
+          ? _value.qrCode
+          : qrCode // ignore: cast_nullable_to_non_nullable
+              as String,
+      attendeeFirstName: freezed == attendeeFirstName
+          ? _value.attendeeFirstName
+          : attendeeFirstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeeLastName: freezed == attendeeLastName
+          ? _value.attendeeLastName
+          : attendeeLastName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeeEmail: freezed == attendeeEmail
+          ? _value.attendeeEmail
+          : attendeeEmail // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeePhone: freezed == attendeePhone
+          ? _value.attendeePhone
+          : attendeePhone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeeName: freezed == attendeeName
+          ? _value.attendeeName
+          : attendeeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      price: freezed == price
+          ? _value.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as double?,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      statusLabel: freezed == statusLabel
+          ? _value.statusLabel
+          : statusLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customFields: freezed == customFields
+          ? _value.customFields
+          : customFields // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BookingTicketDtoImplCopyWith<$Res>
+    implements $BookingTicketDtoCopyWith<$Res> {
+  factory _$$BookingTicketDtoImplCopyWith(_$BookingTicketDtoImpl value,
+          $Res Function(_$BookingTicketDtoImpl) then) =
+      __$$BookingTicketDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String? uuid,
+      @JsonKey(name: 'booking_id') int? bookingId,
+      @JsonKey(name: 'booking_item_id') int? bookingItemId,
+      @JsonKey(name: 'event_id') int? eventId,
+      @JsonKey(name: 'slot_id') int? slotId,
+      @JsonKey(name: 'ticket_type_id') int? ticketTypeId,
+      @JsonKey(name: 'qr_code') String qrCode,
+      @JsonKey(name: 'attendee_first_name') String? attendeeFirstName,
+      @JsonKey(name: 'attendee_last_name') String? attendeeLastName,
+      @JsonKey(name: 'attendee_email') String? attendeeEmail,
+      @JsonKey(name: 'attendee_phone') String? attendeePhone,
+      @JsonKey(name: 'attendee_name') String? attendeeName,
+      double? price,
+      String status,
+      @JsonKey(name: 'status_label') String? statusLabel,
+      @JsonKey(name: 'custom_fields') Map<String, dynamic>? customFields,
+      @JsonKey(name: 'created_at') String? createdAt,
+      @JsonKey(name: 'updated_at') String? updatedAt});
+}
+
+/// @nodoc
+class __$$BookingTicketDtoImplCopyWithImpl<$Res>
+    extends _$BookingTicketDtoCopyWithImpl<$Res, _$BookingTicketDtoImpl>
+    implements _$$BookingTicketDtoImplCopyWith<$Res> {
+  __$$BookingTicketDtoImplCopyWithImpl(_$BookingTicketDtoImpl _value,
+      $Res Function(_$BookingTicketDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? uuid = freezed,
+    Object? bookingId = freezed,
+    Object? bookingItemId = freezed,
+    Object? eventId = freezed,
+    Object? slotId = freezed,
+    Object? ticketTypeId = freezed,
+    Object? qrCode = null,
+    Object? attendeeFirstName = freezed,
+    Object? attendeeLastName = freezed,
+    Object? attendeeEmail = freezed,
+    Object? attendeePhone = freezed,
+    Object? attendeeName = freezed,
+    Object? price = freezed,
+    Object? status = null,
+    Object? statusLabel = freezed,
+    Object? customFields = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+  }) {
+    return _then(_$BookingTicketDtoImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      bookingId: freezed == bookingId
+          ? _value.bookingId
+          : bookingId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      bookingItemId: freezed == bookingItemId
+          ? _value.bookingItemId
+          : bookingItemId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      eventId: freezed == eventId
+          ? _value.eventId
+          : eventId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      slotId: freezed == slotId
+          ? _value.slotId
+          : slotId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ticketTypeId: freezed == ticketTypeId
+          ? _value.ticketTypeId
+          : ticketTypeId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      qrCode: null == qrCode
+          ? _value.qrCode
+          : qrCode // ignore: cast_nullable_to_non_nullable
+              as String,
+      attendeeFirstName: freezed == attendeeFirstName
+          ? _value.attendeeFirstName
+          : attendeeFirstName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeeLastName: freezed == attendeeLastName
+          ? _value.attendeeLastName
+          : attendeeLastName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeeEmail: freezed == attendeeEmail
+          ? _value.attendeeEmail
+          : attendeeEmail // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeePhone: freezed == attendeePhone
+          ? _value.attendeePhone
+          : attendeePhone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      attendeeName: freezed == attendeeName
+          ? _value.attendeeName
+          : attendeeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      price: freezed == price
+          ? _value.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as double?,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      statusLabel: freezed == statusLabel
+          ? _value.statusLabel
+          : statusLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customFields: freezed == customFields
+          ? _value._customFields
+          : customFields // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$BookingTicketDtoImpl implements _BookingTicketDto {
+  const _$BookingTicketDtoImpl(
+      {required this.id,
+      this.uuid,
+      @JsonKey(name: 'booking_id') this.bookingId,
+      @JsonKey(name: 'booking_item_id') this.bookingItemId,
+      @JsonKey(name: 'event_id') this.eventId,
+      @JsonKey(name: 'slot_id') this.slotId,
+      @JsonKey(name: 'ticket_type_id') this.ticketTypeId,
+      @JsonKey(name: 'qr_code') required this.qrCode,
+      @JsonKey(name: 'attendee_first_name') this.attendeeFirstName,
+      @JsonKey(name: 'attendee_last_name') this.attendeeLastName,
+      @JsonKey(name: 'attendee_email') this.attendeeEmail,
+      @JsonKey(name: 'attendee_phone') this.attendeePhone,
+      @JsonKey(name: 'attendee_name') this.attendeeName,
+      this.price,
+      required this.status,
+      @JsonKey(name: 'status_label') this.statusLabel,
+      @JsonKey(name: 'custom_fields') final Map<String, dynamic>? customFields,
+      @JsonKey(name: 'created_at') this.createdAt,
+      @JsonKey(name: 'updated_at') this.updatedAt})
+      : _customFields = customFields;
+
+  factory _$BookingTicketDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BookingTicketDtoImplFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String? uuid;
+  @override
+  @JsonKey(name: 'booking_id')
+  final int? bookingId;
+  @override
+  @JsonKey(name: 'booking_item_id')
+  final int? bookingItemId;
+  @override
+  @JsonKey(name: 'event_id')
+  final int? eventId;
+  @override
+  @JsonKey(name: 'slot_id')
+  final int? slotId;
+  @override
+  @JsonKey(name: 'ticket_type_id')
+  final int? ticketTypeId;
+  @override
+  @JsonKey(name: 'qr_code')
+  final String qrCode;
+  @override
+  @JsonKey(name: 'attendee_first_name')
+  final String? attendeeFirstName;
+  @override
+  @JsonKey(name: 'attendee_last_name')
+  final String? attendeeLastName;
+  @override
+  @JsonKey(name: 'attendee_email')
+  final String? attendeeEmail;
+  @override
+  @JsonKey(name: 'attendee_phone')
+  final String? attendeePhone;
+  @override
+  @JsonKey(name: 'attendee_name')
+  final String? attendeeName;
+  @override
+  final double? price;
+  @override
+  final String status;
+  @override
+  @JsonKey(name: 'status_label')
+  final String? statusLabel;
+  final Map<String, dynamic>? _customFields;
+  @override
+  @JsonKey(name: 'custom_fields')
+  Map<String, dynamic>? get customFields {
+    final value = _customFields;
+    if (value == null) return null;
+    if (_customFields is EqualUnmodifiableMapView) return _customFields;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
+  @JsonKey(name: 'created_at')
+  final String? createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  final String? updatedAt;
+
+  @override
+  String toString() {
+    return 'BookingTicketDto(id: $id, uuid: $uuid, bookingId: $bookingId, bookingItemId: $bookingItemId, eventId: $eventId, slotId: $slotId, ticketTypeId: $ticketTypeId, qrCode: $qrCode, attendeeFirstName: $attendeeFirstName, attendeeLastName: $attendeeLastName, attendeeEmail: $attendeeEmail, attendeePhone: $attendeePhone, attendeeName: $attendeeName, price: $price, status: $status, statusLabel: $statusLabel, customFields: $customFields, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BookingTicketDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.uuid, uuid) || other.uuid == uuid) &&
+            (identical(other.bookingId, bookingId) ||
+                other.bookingId == bookingId) &&
+            (identical(other.bookingItemId, bookingItemId) ||
+                other.bookingItemId == bookingItemId) &&
+            (identical(other.eventId, eventId) || other.eventId == eventId) &&
+            (identical(other.slotId, slotId) || other.slotId == slotId) &&
+            (identical(other.ticketTypeId, ticketTypeId) ||
+                other.ticketTypeId == ticketTypeId) &&
+            (identical(other.qrCode, qrCode) || other.qrCode == qrCode) &&
+            (identical(other.attendeeFirstName, attendeeFirstName) ||
+                other.attendeeFirstName == attendeeFirstName) &&
+            (identical(other.attendeeLastName, attendeeLastName) ||
+                other.attendeeLastName == attendeeLastName) &&
+            (identical(other.attendeeEmail, attendeeEmail) ||
+                other.attendeeEmail == attendeeEmail) &&
+            (identical(other.attendeePhone, attendeePhone) ||
+                other.attendeePhone == attendeePhone) &&
+            (identical(other.attendeeName, attendeeName) ||
+                other.attendeeName == attendeeName) &&
+            (identical(other.price, price) || other.price == price) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.statusLabel, statusLabel) ||
+                other.statusLabel == statusLabel) &&
+            const DeepCollectionEquality()
+                .equals(other._customFields, _customFields) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        uuid,
+        bookingId,
+        bookingItemId,
+        eventId,
+        slotId,
+        ticketTypeId,
+        qrCode,
+        attendeeFirstName,
+        attendeeLastName,
+        attendeeEmail,
+        attendeePhone,
+        attendeeName,
+        price,
+        status,
+        statusLabel,
+        const DeepCollectionEquality().hash(_customFields),
+        createdAt,
+        updatedAt
+      ]);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BookingTicketDtoImplCopyWith<_$BookingTicketDtoImpl> get copyWith =>
+      __$$BookingTicketDtoImplCopyWithImpl<_$BookingTicketDtoImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$BookingTicketDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _BookingTicketDto implements BookingTicketDto {
+  const factory _BookingTicketDto(
+      {required final String id,
+      final String? uuid,
+      @JsonKey(name: 'booking_id') final int? bookingId,
+      @JsonKey(name: 'booking_item_id') final int? bookingItemId,
+      @JsonKey(name: 'event_id') final int? eventId,
+      @JsonKey(name: 'slot_id') final int? slotId,
+      @JsonKey(name: 'ticket_type_id') final int? ticketTypeId,
+      @JsonKey(name: 'qr_code') required final String qrCode,
+      @JsonKey(name: 'attendee_first_name') final String? attendeeFirstName,
+      @JsonKey(name: 'attendee_last_name') final String? attendeeLastName,
+      @JsonKey(name: 'attendee_email') final String? attendeeEmail,
+      @JsonKey(name: 'attendee_phone') final String? attendeePhone,
+      @JsonKey(name: 'attendee_name') final String? attendeeName,
+      final double? price,
+      required final String status,
+      @JsonKey(name: 'status_label') final String? statusLabel,
+      @JsonKey(name: 'custom_fields') final Map<String, dynamic>? customFields,
+      @JsonKey(name: 'created_at') final String? createdAt,
+      @JsonKey(name: 'updated_at')
+      final String? updatedAt}) = _$BookingTicketDtoImpl;
+
+  factory _BookingTicketDto.fromJson(Map<String, dynamic> json) =
+      _$BookingTicketDtoImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  String? get uuid;
+  @override
+  @JsonKey(name: 'booking_id')
+  int? get bookingId;
+  @override
+  @JsonKey(name: 'booking_item_id')
+  int? get bookingItemId;
+  @override
+  @JsonKey(name: 'event_id')
+  int? get eventId;
+  @override
+  @JsonKey(name: 'slot_id')
+  int? get slotId;
+  @override
+  @JsonKey(name: 'ticket_type_id')
+  int? get ticketTypeId;
+  @override
+  @JsonKey(name: 'qr_code')
+  String get qrCode;
+  @override
+  @JsonKey(name: 'attendee_first_name')
+  String? get attendeeFirstName;
+  @override
+  @JsonKey(name: 'attendee_last_name')
+  String? get attendeeLastName;
+  @override
+  @JsonKey(name: 'attendee_email')
+  String? get attendeeEmail;
+  @override
+  @JsonKey(name: 'attendee_phone')
+  String? get attendeePhone;
+  @override
+  @JsonKey(name: 'attendee_name')
+  String? get attendeeName;
+  @override
+  double? get price;
+  @override
+  String get status;
+  @override
+  @JsonKey(name: 'status_label')
+  String? get statusLabel;
+  @override
+  @JsonKey(name: 'custom_fields')
+  Map<String, dynamic>? get customFields;
+  @override
+  @JsonKey(name: 'created_at')
+  String? get createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  String? get updatedAt;
+  @override
+  @JsonKey(ignore: true)
+  _$$BookingTicketDtoImplCopyWith<_$BookingTicketDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 TicketDetailDto _$TicketDetailDtoFromJson(Map<String, dynamic> json) {
   return _TicketDetailDto.fromJson(json);
 }
@@ -3965,6 +5404,7 @@ TicketDetailDto _$TicketDetailDtoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$TicketDetailDto {
   int get id => throw _privateConstructorUsedError;
+  String? get uuid => throw _privateConstructorUsedError;
   @JsonKey(name: 'ticket_number')
   String get ticketNumber => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
@@ -4005,6 +5445,7 @@ abstract class $TicketDetailDtoCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
+      String? uuid,
       @JsonKey(name: 'ticket_number') String ticketNumber,
       String status,
       @JsonKey(name: 'status_label') String statusLabel,
@@ -4039,6 +5480,7 @@ class _$TicketDetailDtoCopyWithImpl<$Res, $Val extends TicketDetailDto>
   @override
   $Res call({
     Object? id = null,
+    Object? uuid = freezed,
     Object? ticketNumber = null,
     Object? status = null,
     Object? statusLabel = null,
@@ -4060,6 +5502,10 @@ class _$TicketDetailDtoCopyWithImpl<$Res, $Val extends TicketDetailDto>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
       ticketNumber: null == ticketNumber
           ? _value.ticketNumber
           : ticketNumber // ignore: cast_nullable_to_non_nullable
@@ -4154,6 +5600,7 @@ abstract class _$$TicketDetailDtoImplCopyWith<$Res>
   @useResult
   $Res call(
       {int id,
+      String? uuid,
       @JsonKey(name: 'ticket_number') String ticketNumber,
       String status,
       @JsonKey(name: 'status_label') String statusLabel,
@@ -4188,6 +5635,7 @@ class __$$TicketDetailDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? uuid = freezed,
     Object? ticketNumber = null,
     Object? status = null,
     Object? statusLabel = null,
@@ -4209,6 +5657,10 @@ class __$$TicketDetailDtoImplCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
       ticketNumber: null == ticketNumber
           ? _value.ticketNumber
           : ticketNumber // ignore: cast_nullable_to_non_nullable
@@ -4278,6 +5730,7 @@ class __$$TicketDetailDtoImplCopyWithImpl<$Res>
 class _$TicketDetailDtoImpl implements _TicketDetailDto {
   const _$TicketDetailDtoImpl(
       {required this.id,
+      this.uuid,
       @JsonKey(name: 'ticket_number') required this.ticketNumber,
       required this.status,
       @JsonKey(name: 'status_label') required this.statusLabel,
@@ -4299,6 +5752,8 @@ class _$TicketDetailDtoImpl implements _TicketDetailDto {
 
   @override
   final int id;
+  @override
+  final String? uuid;
   @override
   @JsonKey(name: 'ticket_number')
   final String ticketNumber;
@@ -4342,7 +5797,7 @@ class _$TicketDetailDtoImpl implements _TicketDetailDto {
 
   @override
   String toString() {
-    return 'TicketDetailDto(id: $id, ticketNumber: $ticketNumber, status: $status, statusLabel: $statusLabel, qrCode: $qrCode, ticketType: $ticketType, bookingId: $bookingId, attendee: $attendee, seatInfo: $seatInfo, price: $price, usedAt: $usedAt, createdAt: $createdAt, event: $event, canDownloadPdf: $canDownloadPdf, instructions: $instructions, isUpcoming: $isUpcoming)';
+    return 'TicketDetailDto(id: $id, uuid: $uuid, ticketNumber: $ticketNumber, status: $status, statusLabel: $statusLabel, qrCode: $qrCode, ticketType: $ticketType, bookingId: $bookingId, attendee: $attendee, seatInfo: $seatInfo, price: $price, usedAt: $usedAt, createdAt: $createdAt, event: $event, canDownloadPdf: $canDownloadPdf, instructions: $instructions, isUpcoming: $isUpcoming)';
   }
 
   @override
@@ -4351,6 +5806,7 @@ class _$TicketDetailDtoImpl implements _TicketDetailDto {
         (other.runtimeType == runtimeType &&
             other is _$TicketDetailDtoImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.uuid, uuid) || other.uuid == uuid) &&
             (identical(other.ticketNumber, ticketNumber) ||
                 other.ticketNumber == ticketNumber) &&
             (identical(other.status, status) || other.status == status) &&
@@ -4383,6 +5839,7 @@ class _$TicketDetailDtoImpl implements _TicketDetailDto {
   int get hashCode => Object.hash(
       runtimeType,
       id,
+      uuid,
       ticketNumber,
       status,
       statusLabel,
@@ -4417,6 +5874,7 @@ class _$TicketDetailDtoImpl implements _TicketDetailDto {
 abstract class _TicketDetailDto implements TicketDetailDto {
   const factory _TicketDetailDto(
           {required final int id,
+          final String? uuid,
           @JsonKey(name: 'ticket_number') required final String ticketNumber,
           required final String status,
           @JsonKey(name: 'status_label') required final String statusLabel,
@@ -4439,6 +5897,8 @@ abstract class _TicketDetailDto implements TicketDetailDto {
 
   @override
   int get id;
+  @override
+  String? get uuid;
   @override
   @JsonKey(name: 'ticket_number')
   String get ticketNumber;

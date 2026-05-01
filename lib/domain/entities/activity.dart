@@ -43,6 +43,9 @@ class Activity with _$Activity {
     Slot? nextSlot,
     double? rating,
     int? reviewsCount,
+    /// Members-only event — drives the "Privé 🔒" badge on event cards.
+    /// Spec: MEMBERSHIPS_MOBILE_SPEC.md §20.
+    @Default(false) bool isMembersOnly,
   }) = _Activity;
 }
 

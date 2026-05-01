@@ -17,7 +17,9 @@ abstract class BookingRepository {
     String? paymentIntentId,
   });
 
-  Future<void> cancelBooking(String bookingId);
+  /// Cancel a booking on behalf of the customer. Returns the updated
+  /// [Booking] from the API so callers can replace local state.
+  Future<Booking> cancelBooking(String bookingId, {String? reason});
 
   Future<List<Booking>> getMyBookings();
 

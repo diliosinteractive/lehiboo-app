@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../models/booking_api_dto.dart';
+import '../models/ticket_pdf_download.dart';
 
 final bookingApiDataSourceProvider = Provider<BookingApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -100,21 +101,21 @@ class BookingApiDataSource {
     await _dio.post('/bookings/$bookingUuid/confirm-free');
   }
 
-  /// Récupère les tickets d'un booking (avec polling si nécessaire)
-  Future<List<TicketDetailDto>> getBookingTickets({
+  /// Récupère les tickets d'un booking (avec polling si nécessaire).
+  /// Spec: BOOKING_TICKETS_CANCELLATION_MOBILE_SPEC.md
+  Future<List<BookingTicketDto>> getBookingTickets({
     required String bookingUuid,
   }) async {
     debugPrint('🎫 getBookingTickets: GET /bookings/$bookingUuid/tickets');
     final response = await _dio.get('/bookings/$bookingUuid/tickets');
 
     final data = response.data;
-    debugPrint('🎫 getBookingTickets response: $data');
 
     try {
       final ticketsList = ApiResponseHandler.extractList(data);
       debugPrint('🎫 getBookingTickets: ${ticketsList.length} tickets trouvés');
       return ticketsList
-          .map((t) => TicketDetailDto.fromJson(t as Map<String, dynamic>))
+          .map((t) => BookingTicketDto.fromJson(t as Map<String, dynamic>))
           .toList();
     } on ApiFormatException {
       debugPrint('🎫 getBookingTickets: Pas de data ou pas une liste');
@@ -149,31 +150,45 @@ class BookingApiDataSource {
     return BookingListItemDto.fromJson(payload);
   }
 
-  /// Annule une réservation
+  /// Annule une réservation côté client.
+  /// Spec: BOOKING_TICKETS_CANCELLATION_MOBILE_SPEC.md §3.
   ///
-  /// [bookingId] peut être l'ID numérique ou l'UUID selon l'API
-  Future<void> cancelBooking({
-    required String bookingId,
+  /// Returns the updated [BookingListItemDto] from the response so the
+  /// caller can swap its in-memory booking without re-fetching.
+  Future<BookingListItemDto> cancelBooking({
+    required String bookingUuid,
     String? reason,
+    bool notifyCustomer = true,
   }) async {
-    debugPrint('🚫 API cancelBooking: POST /me/bookings/$bookingId/cancel');
+    debugPrint('🚫 API cancelBooking: POST /me/bookings/$bookingUuid/cancel');
     final response = await _dio.post(
-      '/me/bookings/$bookingId/cancel',
+      '/me/bookings/$bookingUuid/cancel',
       data: {
-        if (reason != null) 'reason': reason,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+        'notify_customer': notifyCustomer,
       },
+      options: Options(
+        headers: {
+          'X-Platform': 'mobile',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        // Defer 4xx handling to the caller so we can surface 403/404/422
+        // distinctly rather than letting Dio throw a generic DioException.
+        validateStatus: (s) => s != null && s < 500,
+      ),
     );
 
-    final data = response.data;
-    debugPrint('🚫 API cancelBooking response: $data');
-
-    if (data is Map<String, dynamic> && data['success'] == false) {
-      final message = ApiResponseHandler.extractError(
-        Exception(data['message']),
-        fallback: 'Impossible d\'annuler la réservation.',
-      );
-      throw Exception(message);
+    final status = response.statusCode;
+    if (status == 403) throw const BookingCancellationForbiddenException();
+    if (status == 404) throw const BookingCancellationNotFoundException();
+    if (status == 422) throw const BookingCancellationValidationException();
+    if (status != 200) {
+      throw BookingCancellationFailedException(status);
     }
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return BookingListItemDto.fromJson(payload);
   }
 
   Future<TicketsListResponseDto> getMyTickets({
@@ -197,10 +212,94 @@ class BookingApiDataSource {
     return TicketDetailDto.fromJson(payload);
   }
 
-  Future<String> downloadTicketPdf(int ticketId) async {
-    final response = await _dio.get('/me/tickets/$ticketId/download');
-
-    final payload = ApiResponseHandler.extractObject(response.data);
-    return payload['pdf_url'] as String;
+  /// Streams the bundled PDF (all tickets of a booking) as raw bytes.
+  /// Spec: BOOKING_TICKETS_CANCELLATION_MOBILE_SPEC.md §1.
+  Future<TicketPdfDownload> downloadBookingTicketsBundle(
+    String bookingUuid,
+  ) async {
+    final response = await _dio.get<List<int>>(
+      '/bookings/$bookingUuid/tickets/download',
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {'Accept': 'application/pdf'},
+        validateStatus: (s) => s != null && s < 500,
+      ),
+    );
+    return _handlePdfResponse(
+      response,
+      fallbackFilename: 'billets-$bookingUuid.pdf',
+    );
   }
+
+  /// Streams a single ticket PDF as raw bytes.
+  /// Spec: BOOKING_TICKETS_CANCELLATION_MOBILE_SPEC.md §2.
+  Future<TicketPdfDownload> downloadSingleTicket(String ticketUuid) async {
+    final response = await _dio.get<List<int>>(
+      '/me/tickets/$ticketUuid/download',
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {'Accept': 'application/pdf'},
+        validateStatus: (s) => s != null && s < 500,
+      ),
+    );
+    return _handlePdfResponse(
+      response,
+      fallbackFilename: 'billet-$ticketUuid.pdf',
+    );
+  }
+
+  TicketPdfDownload _handlePdfResponse(
+    Response<List<int>> response, {
+    required String fallbackFilename,
+  }) {
+    final status = response.statusCode;
+    if (status == 200 && response.data != null) {
+      return TicketPdfDownload(
+        bytes: response.data!,
+        filename: _extractFilename(response.headers) ?? fallbackFilename,
+      );
+    }
+    if (status == 404) throw const TicketsNotReadyException();
+    if (status == 403) throw const NotAuthorizedToDownloadException();
+    throw TicketDownloadFailedException(status);
+  }
+
+  String? _extractFilename(Headers headers) {
+    final disposition = headers.value('content-disposition');
+    if (disposition == null) return null;
+    final match = RegExp(r'filename="([^"]+)"').firstMatch(disposition);
+    return match?.group(1);
+  }
+}
+
+class TicketsNotReadyException implements Exception {
+  const TicketsNotReadyException();
+}
+
+class NotAuthorizedToDownloadException implements Exception {
+  const NotAuthorizedToDownloadException();
+}
+
+class TicketDownloadFailedException implements Exception {
+  final int? statusCode;
+  const TicketDownloadFailedException(this.statusCode);
+}
+
+/// Booking is no longer cancellable (deadline passed, event disallows
+/// cancellation, or user not the owner). Spec §3.7.
+class BookingCancellationForbiddenException implements Exception {
+  const BookingCancellationForbiddenException();
+}
+
+class BookingCancellationNotFoundException implements Exception {
+  const BookingCancellationNotFoundException();
+}
+
+class BookingCancellationValidationException implements Exception {
+  const BookingCancellationValidationException();
+}
+
+class BookingCancellationFailedException implements Exception {
+  final int? statusCode;
+  const BookingCancellationFailedException(this.statusCode);
 }
