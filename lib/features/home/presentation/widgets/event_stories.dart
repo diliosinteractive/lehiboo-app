@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/services/volume_routing.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/widgets/story_video_player.dart';
 import 'package:lehiboo/features/stories/domain/entities/story.dart';
@@ -558,6 +559,9 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
         }
       });
 
+    // Route hardware volume buttons to media stream while the viewer is open.
+    VolumeRouting.useMediaStream();
+
     // Mark initial story as viewed, record impression, and start progress
     _markCurrentAsViewed();
     _recordCurrentImpression();
@@ -566,6 +570,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
   @override
   void dispose() {
+    VolumeRouting.restoreDefault();
     _isPaused.dispose();
     _pageController.dispose();
     _progressController.dispose();

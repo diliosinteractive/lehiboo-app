@@ -1,6 +1,7 @@
 package com.dilios.lehiboo
 
 import android.content.ContentValues
+import android.media.AudioManager
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -13,9 +14,24 @@ import java.io.FileOutputStream
 
 class MainActivity : FlutterFragmentActivity() {
     private val channelName = "com.lehiboo.app/file_saver"
+    private val volumeChannelName = "com.lehiboo.app/volume_routing"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, volumeChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "setMediaStream" -> {
+                        volumeControlStream = AudioManager.STREAM_MUSIC
+                        result.success(null)
+                    }
+                    "restoreDefault" -> {
+                        volumeControlStream = AudioManager.USE_DEFAULT_STREAM_TYPE
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
