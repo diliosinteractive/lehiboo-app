@@ -207,18 +207,17 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        if (!widget.isSupport)
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(left: 4, bottom: 4),
-                            child: IconButton(
-                              icon: const Icon(Icons.attach_file, size: 20),
-                              color: Colors.grey.shade500,
-                              onPressed: _pickAttachment,
-                              visualDensity: VisualDensity.compact,
-                              splashRadius: 20,
-                            ),
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(left: 4, bottom: 4),
+                          child: IconButton(
+                            icon: const Icon(Icons.attach_file, size: 20),
+                            color: Colors.grey.shade500,
+                            onPressed: _pickAttachment,
+                            visualDensity: VisualDensity.compact,
+                            splashRadius: 20,
                           ),
+                        ),
                         Expanded(
                           child: TextField(
                             controller: _textController,
@@ -248,8 +247,8 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
                                   color: Colors.grey.shade400,
                                   fontSize: 14),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: widget.isSupport ? 16 : 4,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 4,
                                 vertical: 12,
                               ),
                             ),

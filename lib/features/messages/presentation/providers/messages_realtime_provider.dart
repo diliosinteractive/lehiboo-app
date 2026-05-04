@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:lehiboo/config/env_config.dart';
 import 'package:lehiboo/core/constants/app_constants.dart';
+import 'dart:developer' as dev;
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'conversations_provider.dart';
 import 'support_conversations_provider.dart';
@@ -98,9 +98,11 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   PusherChannelsClient? _client;
   StreamSubscription<PusherChannelsClientLifeCycleState>? _lifecycleSub;
   StreamSubscription<ChannelReadEvent>? _eventSub;
+  StreamSubscription<ChannelReadEvent>? _orgEventSub;
   StreamSubscription<void>? _connectedSub;
   final _storage = const FlutterSecureStorage();
   final _eventsController = StreamController<RealtimeEvent>.broadcast();
+  int? _orgId; // numeric org ID currently subscribed to
 
   Stream<RealtimeEvent> get events => _eventsController.stream;
 
@@ -126,16 +128,15 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   Future<void> _connect(String userId) async {
     await _disconnect();
     if (EnvConfig.pusherKey.isEmpty) {
-      dev.log('[Pusher] PUSHER_APP_KEY not configured — skipping WS', name: 'Realtime');
+      dev.log('[Pusher] PUSHER_APP_KEY not configured — skipping WS');
       return;
     }
     if (EnvConfig.pusherHost.isEmpty) {
-      dev.log('[Pusher] PUSHER_HOST not configured — skipping WS', name: 'Realtime');
+      dev.log('[Pusher] PUSHER_HOST not configured — skipping WS');
       return;
     }
     dev.log(
       '[Pusher] Connecting → ${EnvConfig.pusherUseTLS ? "wss" : "ws"}://${EnvConfig.pusherHost}:${EnvConfig.pusherPort} key=${EnvConfig.pusherKey} channel=private-user.$userId',
-      name: 'Realtime',
     );
     try {
       final options = PusherChannelsOptions.fromHost(
@@ -148,14 +149,14 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
       _client = PusherChannelsClient.websocket(
         options: options,
         connectionErrorHandler: (error, trace, refresh) {
-          dev.log('[Pusher] Connection error: $error', name: 'Realtime', error: error, stackTrace: trace);
+          dev.log('[Pusher] Connection error: $error');
           refresh();
         },
         minimumReconnectDelayDuration: const Duration(seconds: 2),
       );
 
       _lifecycleSub = _client!.lifecycleStream.listen((lifecycleState) {
-        dev.log('[Pusher] Lifecycle → $lifecycleState', name: 'Realtime');
+        dev.log('[Pusher] Lifecycle → $lifecycleState');
         if (mounted) {
           state = lifecycleState ==
               PusherChannelsClientLifeCycleState.establishedConnection;
@@ -170,13 +171,15 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
       _eventSub = channel.bindToAll().listen(_handleEvent);
 
       _connectedSub = _client!.onConnectionEstablished.listen((_) {
-        dev.log('[Pusher] Connected — subscribing to private-user.$userId', name: 'Realtime');
+        dev.log('[Pusher] Connected — subscribing to private-user.$userId');
         channel.subscribeIfNotUnsubscribed();
+        // Re-subscribe to org channel on every (re)connect
+        if (_orgId != null) _subscribeOrgChannel(_orgId!);
       });
 
       await _client!.connect();
     } catch (e, st) {
-      dev.log('[Pusher] connect() failed: $e', name: 'Realtime', error: e, stackTrace: st);
+      dev.log('[Pusher] connect() failed: $e\n$st');
     }
   }
 
@@ -194,16 +197,45 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   Future<void> _disconnect() async {
     _lifecycleSub?.cancel();
     _eventSub?.cancel();
+    _orgEventSub?.cancel();
     _connectedSub?.cancel();
     _lifecycleSub = null;
     _eventSub = null;
+    _orgEventSub = null;
     _connectedSub = null;
+    _orgId = null;
     try {
       await _client?.disconnect();
       _client?.dispose();
     } catch (_) {}
     _client = null;
     if (mounted) state = false;
+  }
+
+  /// Subscribe to the vendor's organisation channel (`private-organization.{orgId}`).
+  /// Safe to call multiple times — skips if already subscribed to the same org.
+  void subscribeToOrganization(int orgId) {
+    if (_orgId == orgId) return;
+    _orgId = orgId;
+    if (_client == null) {
+      // Client not yet created; _orgId is stored and will be used in
+      // onConnectionEstablished once _connect() runs.
+      dev.log('[Pusher] subscribeToOrganization: client not ready, queued orgId=$orgId');
+      return;
+    }
+    _subscribeOrgChannel(orgId);
+  }
+
+  void _subscribeOrgChannel(int orgId) {
+    _orgEventSub?.cancel();
+    final channelName = 'private-organization.$orgId';
+    dev.log('[Pusher] Subscribing to $channelName');
+    final orgChannel = _client!.privateChannel(
+      channelName,
+      authorizationDelegate: _StorageTokenAuthDelegate(_storage),
+    );
+    _orgEventSub = orgChannel.bindToAll().listen(_handleEvent);
+    orgChannel.subscribeIfNotUnsubscribed();
   }
 
   void _handleEvent(ChannelReadEvent event) {
@@ -215,15 +247,17 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
 
     dev.log(
       '[Pusher] ▶ event="${event.name}" conv_uuid=$convUuid conv_type=$convType msg_uuid=$msgUuid raw=$data',
-      name: 'Realtime',
     );
 
     switch (event.name) {
       case 'message.received':
         if (convUuid == null) {
-          dev.log('[Pusher] message.received dropped — no conversation_uuid', name: 'Realtime');
+          dev.log('[Pusher] message.received dropped — no conversation_uuid');
           return;
         }
+        // Increment badge immediately — no API round-trip needed.
+        // Each notifier's _refreshUnreadCount() / 30s poll will re-sync the exact value.
+        _ref.read(unreadCountProvider.notifier).update((n) => n + 1);
         _emit(RealtimeEvent(
           type: RealtimeEventType.messageReceived,
           conversationUuid: convUuid,
@@ -232,7 +266,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'message.delivered':
         if (convUuid == null || msgUuid == null) {
-          dev.log('[Pusher] message.delivered dropped — missing uuid(s)', name: 'Realtime');
+          dev.log('[Pusher] message.delivered dropped — missing uuid(s)');
           return;
         }
         _emit(RealtimeEvent(
@@ -243,7 +277,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'message.edited':
         if (convUuid == null || msgUuid == null) {
-          dev.log('[Pusher] message.edited dropped — missing uuid(s)', name: 'Realtime');
+          dev.log('[Pusher] message.edited dropped — missing uuid(s)');
           return;
         }
         _emit(RealtimeEvent(
@@ -256,7 +290,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'message.deleted':
         if (convUuid == null || msgUuid == null) {
-          dev.log('[Pusher] message.deleted dropped — missing uuid(s)', name: 'Realtime');
+          dev.log('[Pusher] message.deleted dropped — missing uuid(s)');
           return;
         }
         _emit(RealtimeEvent(
@@ -267,7 +301,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'conversation.read':
         if (convUuid == null) {
-          dev.log('[Pusher] conversation.read dropped — no conversation_uuid', name: 'Realtime');
+          dev.log('[Pusher] conversation.read dropped — no conversation_uuid');
           return;
         }
         _emit(RealtimeEvent(
@@ -282,7 +316,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'conversation.closed':
         if (convUuid == null) {
-          dev.log('[Pusher] conversation.closed dropped — no conversation_uuid', name: 'Realtime');
+          dev.log('[Pusher] conversation.closed dropped — no conversation_uuid');
           return;
         }
         _emit(RealtimeEvent(
@@ -292,7 +326,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'conversation.reopened':
         if (convUuid == null) {
-          dev.log('[Pusher] conversation.reopened dropped — no conversation_uuid', name: 'Realtime');
+          dev.log('[Pusher] conversation.reopened dropped — no conversation_uuid');
           return;
         }
         _emit(RealtimeEvent(
@@ -301,14 +335,13 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           conversationType: convType,
         ));
       default:
-        dev.log('[Pusher] ⚠ unhandled event="${event.name}" data=$data', name: 'Realtime');
+        dev.log('[Pusher] ⚠ unhandled event="${event.name}" data=$data');
     }
   }
 
   void _emit(RealtimeEvent event) {
     dev.log(
       '[Pusher] ✔ emit type=${event.type.name} conv=${event.conversationUuid} convType=${event.conversationType}',
-      name: 'Realtime',
     );
     if (!_eventsController.isClosed) _eventsController.add(event);
   }

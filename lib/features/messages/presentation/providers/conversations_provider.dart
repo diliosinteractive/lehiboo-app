@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:developer' as dev;
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
@@ -78,15 +79,27 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   void _subscribeToRealtime() {
+    dev.log('[ParticipantConv] Subscribed to realtime events');
     _realtimeSub = _ref
         .read(messagesRealtimeProvider.notifier)
         .events
         .listen((event) {
       if (!mounted) return;
+      final type = event.conversationType;
+      dev.log(
+        '[ParticipantConv] event received: type=${event.type.name} conv=${event.conversationUuid} convType=$type',
+      );
+      // Accept participant_vendor events, or events with no type (backend may omit it).
+      // Support conversations are handled by supportConversationsProvider.
+      if (type != null && type != 'participant_vendor') {
+        dev.log(
+          '[ParticipantConv] skipping — convType=$type is not participant_vendor',
+        );
+        return;
+      }
       switch (event.type) {
         case RealtimeEventType.messageReceived:
           _applyNewMessage(event);
-          _refreshUnreadCount();
         case RealtimeEventType.conversationCreated:
           refresh();
           _refreshUnreadCount();
@@ -117,14 +130,17 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     final uuid = event.conversationUuid;
     final current = state.conversations.valueOrNull;
     if (current == null || uuid == null) {
+      dev.log('[ParticipantConv] applyNewMessage: no list loaded, refreshing');
       refresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
     if (idx == -1) {
+      dev.log('[ParticipantConv] applyNewMessage: conv=$uuid not in list (${current.length} items), refreshing');
       refresh();
       return;
     }
+    dev.log('[ParticipantConv] applyNewMessage: conv=$uuid found at idx=$idx, unread=${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
     final updated = current[idx].copyWith(
       unreadCount: current[idx].unreadCount + 1,
     );

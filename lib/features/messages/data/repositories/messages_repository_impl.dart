@@ -345,11 +345,13 @@ class MessagesRepositoryImpl implements MessagesRepository {
   @override
   Future<Message> sendSupportMessage({
     required String conversationUuid,
-    required String content,
+    String? content,
+    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendSupportMessage(
       conversationUuid: conversationUuid,
       content: content,
+      attachments: attachments,
     ));
   }
 

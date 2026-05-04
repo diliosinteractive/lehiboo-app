@@ -44,6 +44,9 @@ import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 // Push Notifications
 import 'features/notifications/presentation/providers/push_notification_provider.dart';
 
+// Messages realtime (Pusher WebSocket — eagerly initialised at app boot)
+import 'features/messages/presentation/providers/messages_realtime_provider.dart';
+
 // Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
 import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
 
@@ -192,6 +195,11 @@ class LeHibooApp extends ConsumerWidget {
     // Watch push notification provider to initialize on auth state changes
     // The provider will auto-initialize when user logs in and unregister on logout
     ref.watch(pushNotificationProvider);
+
+    // Eagerly initialize the Pusher WebSocket so it connects as soon as the
+    // user authenticates — not lazily when they navigate to the messages screen.
+    // This mirrors the web frontend which subscribes globally at app boot.
+    ref.watch(messagesRealtimeProvider);
 
     // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après
     // 3 min en foreground si l'user est authentifié.

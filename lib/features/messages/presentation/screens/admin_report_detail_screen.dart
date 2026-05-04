@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../domain/entities/conversation_report.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../providers/admin_conversations_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Local state / notifier
@@ -65,27 +66,30 @@ class _ReportDetailNotifier extends StateNotifier<_ReportDetailState> {
   Future<void> reviewReport(String action, {String? adminNote}) async {
     state = state.copyWith(saving: true);
     try {
-      await _ref
-          .read(messagesRepositoryProvider)
-          .reviewAdminConversationReport(
-            reportUuid: _uuid,
-            action: action,
-            adminNote: adminNote,
-          );
-      _ref.read(adminReportsProvider.notifier).reviewReport(
+      // Single API call through the list provider (it handles local list update)
+      await _ref.read(adminReportsProvider.notifier).reviewReport(
             _uuid,
             action,
             adminNote: adminNote,
           );
-      final updated = _ref
+      final current = state.report.valueOrNull!;
+      final fromList = _ref
           .read(adminReportsProvider)
           .reports
           .valueOrNull
           ?.where((r) => r.uuid == _uuid)
           .firstOrNull;
-      state = state.copyWith(
-          report: AsyncValue.data(updated ?? state.report.valueOrNull!),
-          saving: false);
+      // Patch the detail state — always set reviewedByName from the current admin
+      final reviewerName = _ref.read(authProvider).user?.displayName ??
+          fromList?.reviewedByName ??
+          current.reviewedByName;
+      final patched = (fromList ?? current).copyWith(
+        status: action == 'dismiss' ? 'dismissed' : 'reviewed',
+        reviewedAt: DateTime.now(),
+        adminNote: adminNote ?? current.adminNote,
+        reviewedByName: reviewerName,
+      );
+      state = state.copyWith(report: AsyncValue.data(patched), saving: false);
     } catch (e) {
       state = state.copyWith(saving: false);
       rethrow;

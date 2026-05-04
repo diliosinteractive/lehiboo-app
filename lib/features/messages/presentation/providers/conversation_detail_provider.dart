@@ -385,7 +385,8 @@ class ConversationDetailNotifier
         ),
       ConversationRoute.participantSupport => _repo.sendSupportMessage(
           conversationUuid: _uuid,
-          content: content ?? '',
+          content: content,
+          attachments: attachments,
         ),
       ConversationRoute.vendor => _repo.sendVendorMessage(
           conversationUuid: _uuid,

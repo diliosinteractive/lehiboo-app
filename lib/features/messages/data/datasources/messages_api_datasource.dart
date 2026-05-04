@@ -288,12 +288,29 @@ class MessagesApiDataSource {
   // 17. POST /user/support-conversations/{uuid}/messages
   Future<MessageDto> sendSupportMessage({
     required String conversationUuid,
-    required String content,
+    String? content,
+    List<XFile>? attachments,
   }) async {
-    final r = await _dio.post(
-      '/user/support-conversations/$conversationUuid/messages',
-      data: {'content': content},
-    );
+    late Response<dynamic> r;
+    if (attachments != null && attachments.isNotEmpty) {
+      final files = <MultipartFile>[];
+      for (final f in attachments) {
+        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
+      }
+      final formData = FormData.fromMap({
+        if (content != null && content.isNotEmpty) 'content': content,
+        'attachments[]': files,
+      });
+      r = await _dio.post(
+        '/user/support-conversations/$conversationUuid/messages',
+        data: formData,
+      );
+    } else {
+      r = await _dio.post(
+        '/user/support-conversations/$conversationUuid/messages',
+        data: {'content': content},
+      );
+    }
     final raw = r.data as Map<String, dynamic>;
     final payload = raw.containsKey('data') ? raw['data'] as Map<String, dynamic> : raw;
     return MessageDto.fromJson(payload);

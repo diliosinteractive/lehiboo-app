@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:developer' as dev;
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/vendor_stats.dart';
 import '../../domain/repositories/messages_repository.dart';
@@ -125,18 +125,15 @@ class VendorConversationsNotifier
       if (type != null && type != 'participant_vendor') {
         dev.log(
           '[VendorConv] skipping event type=${event.type.name} convType=$type (not participant_vendor)',
-          name: 'Realtime',
         );
         return;
       }
       dev.log(
         '[VendorConv] handling event type=${event.type.name} conv=${event.conversationUuid} convType=$type',
-        name: 'Realtime',
       );
       switch (event.type) {
         case RealtimeEventType.messageReceived:
           _applyNewMessage(event);
-          _refreshUnreadCount();
         case RealtimeEventType.conversationCreated:
           refresh();
           _refreshUnreadCount();
@@ -215,6 +212,14 @@ class VendorConversationsNotifier
         hasMore: result.hasMore,
       );
       _refreshUnreadCount();
+      // Subscribe to the vendor's org channel for real-time updates.
+      // The org ID is available from any conversation's organization field.
+      final orgId = conversations
+          .map((c) => c.organization?.id)
+          .firstWhere((id) => id != null && id > 0, orElse: () => null);
+      if (orgId != null) {
+        _ref.read(messagesRealtimeProvider.notifier).subscribeToOrganization(orgId);
+      }
     } catch (e, st) {
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
@@ -330,13 +335,11 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
       if (type != null && type != 'vendor_admin') {
         dev.log(
           '[VendorSupport] skipping event type=${event.type.name} convType=$type (not vendor_admin)',
-          name: 'Realtime',
         );
         return;
       }
       dev.log(
         '[VendorSupport] handling event type=${event.type.name} conv=${event.conversationUuid} convType=$type',
-        name: 'Realtime',
       );
       switch (event.type) {
         case RealtimeEventType.messageReceived:

@@ -67,6 +67,7 @@ class AdminConversationsNotifier
   final Ref _ref;
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
+  final Set<String> _readUuids = {};
 
   AdminConversationsNotifier(
     this._conversationType,
@@ -106,7 +107,6 @@ class AdminConversationsNotifier
       switch (event.type) {
         case RealtimeEventType.messageReceived:
           _applyNewMessage(event);
-          if (_conversationType == 'user_support') _refreshUnreadCount();
         case RealtimeEventType.conversationCreated:
           refresh();
           if (_conversationType == 'user_support') _refreshUnreadCount();
@@ -172,8 +172,17 @@ class AdminConversationsNotifier
         period: state.period,
         page: 1,
       );
+      var conversations = result.conversations;
+      if (_readUuids.isNotEmpty) {
+        conversations = conversations.map((c) {
+          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
+            return c.copyWith(unreadCount: 0);
+          }
+          return c;
+        }).toList();
+      }
       state = state.copyWith(
-        conversations: AsyncValue.data(result.conversations),
+        conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
       );
@@ -208,6 +217,7 @@ class AdminConversationsNotifier
   Future<void> refresh() async => load();
 
   void applyRead(String uuid) {
+    _readUuids.add(uuid);
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);

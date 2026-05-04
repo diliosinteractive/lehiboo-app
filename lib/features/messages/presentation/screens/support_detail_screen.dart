@@ -151,9 +151,10 @@ class _SupportThreadView extends ConsumerWidget {
               MessageComposer(
                 conversationUuid: conversationUuid,
                 disabled: isClosed,
-                isSupport: true,
-                onSend: (content, _) =>
-                    notifier.sendMessage(content: content),
+                onSend: (content, attachments) => notifier.sendMessage(
+                  content: content,
+                  attachments: attachments,
+                ),
               ),
             ],
           );

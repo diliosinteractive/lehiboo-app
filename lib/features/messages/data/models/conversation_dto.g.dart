@@ -9,7 +9,7 @@ part of 'conversation_dto.dart';
 _$ConversationOrganizationDtoImpl _$$ConversationOrganizationDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$ConversationOrganizationDtoImpl(
-      id: (json['id'] as num).toInt(),
+      id: (json['id'] as num?)?.toInt() ?? 0,
       uuid: json['uuid'] as String,
       companyName: json['company_name'] as String,
       organizationName: json['organization_name'] as String,

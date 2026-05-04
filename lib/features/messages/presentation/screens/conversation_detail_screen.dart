@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -114,6 +115,25 @@ class _ConversationDetailScreenState
               conversation.organization?.companyName ?? conversation.subject,
           };
 
+          final titleAvatarUrl = switch (route) {
+            ConversationRoute.participant =>
+              conversation.organization?.logoUrl,
+            ConversationRoute.vendor =>
+              conversation.participant?.avatarUrl,
+            ConversationRoute.vendorOrgOrg =>
+              conversation.partnerOrganization?.logoUrl,
+            ConversationRoute.admin ||
+            ConversationRoute.adminReadonly =>
+              conversation.participant?.avatarUrl ??
+                  conversation.organization?.logoUrl,
+            ConversationRoute.participantSupport =>
+              conversation.participant?.avatarUrl ??
+                  conversation.organization?.logoUrl,
+          };
+          final titleInitial = titleText.isNotEmpty
+              ? titleText[0].toUpperCase()
+              : '?';
+
           final showSubjectSubtitle = route != ConversationRoute.participantSupport;
           final showOverflowMenu = !_isReadonly;
           final canReport = route == ConversationRoute.participant ||
@@ -129,23 +149,59 @@ class _ConversationDetailScreenState
                   onPressed: () =>
                       context.canPop() ? context.pop() : context.go('/messages'),
                 ),
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                title: Row(
                   children: [
-                    Text(titleText,
-                        style: const TextStyle(fontSize: 16),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    if (showSubjectSubtitle)
-                      Text(
-                        conversation.subject,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.normal),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: _primaryColor.withValues(alpha: 0.15),
+                      child: titleAvatarUrl != null && titleAvatarUrl.isNotEmpty
+                          ? ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: titleAvatarUrl,
+                                width: 36,
+                                height: 36,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => Text(
+                                  titleInitial,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: _primaryColor,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Text(
+                              titleInitial,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _primaryColor,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(titleText,
+                              style: const TextStyle(fontSize: 16),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                          if (showSubjectSubtitle)
+                            Text(
+                              conversation.subject,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.normal),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
                 actions: [
@@ -286,6 +342,8 @@ class _ConversationDetailScreenState
                   messages: conversation.messages,
                   notifier: notifier,
                   readonly: _isReadonly,
+                  organizationLogoUrl: conversation.organization?.logoUrl
+                      ?? conversation.organization?.avatarUrl,
                 ),
               ),
               MessageComposer(
@@ -663,11 +721,13 @@ class _MessagesList extends StatefulWidget {
   final List<Message> messages;
   final ConversationDetailNotifier notifier;
   final bool readonly;
+  final String? organizationLogoUrl;
 
   const _MessagesList({
     required this.messages,
     required this.notifier,
     this.readonly = false,
+    this.organizationLogoUrl,
   });
 
   @override
@@ -749,6 +809,7 @@ class _MessagesListState extends State<_MessagesList> {
           key: ValueKey(msg.uuid),
           message: msg,
           isLastOwn: originalIndex == lastOwnIndex,
+          organizationLogoUrl: widget.organizationLogoUrl,
           onEdit: widget.readonly
               ? null
               : (uuid, content) => widget.notifier.editMessage(uuid, content),
@@ -761,7 +822,14 @@ class _MessagesListState extends State<_MessagesList> {
   }
 
   List<Object> _buildItems(List<Message> msgs) {
-    final reversed = msgs.reversed.toList();
+    // System messages sort before non-system ones so they always appear
+    // at the top of their day group, regardless of the backend timestamp.
+    final sorted = [...msgs]..sort((a, b) {
+      if (a.isSystem && !b.isSystem) return -1;
+      if (!a.isSystem && b.isSystem) return 1;
+      return a.createdAt.compareTo(b.createdAt);
+    });
+    final reversed = sorted.reversed.toList();
     final items = <Object>[];
 
     int i = 0;

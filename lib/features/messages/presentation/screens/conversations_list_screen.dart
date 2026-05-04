@@ -531,9 +531,18 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
 
   @override
   Widget build(BuildContext context) {
-    final stats = ref.watch(vendorStatsProvider);
-    final clientUnread = stats.valueOrNull?.clientUnread ?? 0;
-    final supportUnread = stats.valueOrNull?.supportUnread ?? 0;
+    final clientUnread = ref
+            .watch(vendorConversationsProvider)
+            .conversations
+            .valueOrNull
+            ?.fold<int>(0, (sum, c) => sum + c.unreadCount) ??
+        0;
+    final supportUnread = ref
+            .watch(vendorSupportProvider)
+            .conversations
+            .valueOrNull
+            ?.fold<int>(0, (sum, c) => sum + c.unreadCount) ??
+        0;
 
     return Scaffold(
       appBar: AppBar(
@@ -1022,34 +1031,78 @@ class _AdminReportsTab extends ConsumerWidget {
                   );
                 }
                 final report = reports[i];
-                final statusColor = switch (report.status) {
-                  'pending' => Colors.orange,
-                  'reviewed' => Colors.green,
-                  'dismissed' => Colors.grey,
-                  _ => Colors.red,
+                final (statusLabel, statusColor) = switch (report.status) {
+                  'pending' => ('En attente', Colors.orange),
+                  'reviewed' => ('Traité', Colors.green),
+                  'dismissed' => ('Ignoré', Colors.grey.shade600),
+                  'suspended' => ('Suspendu', Colors.red),
+                  _ => (report.status, Colors.grey.shade600),
+                };
+                final reasonLabel = switch (report.reason) {
+                  'inappropriate' => 'Contenu inapproprié',
+                  'harassment' => 'Harcèlement',
+                  'spam' => 'Spam',
+                  _ => 'Autre',
                 };
                 return ListTile(
-                  leading: const Icon(Icons.flag_outlined),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 4),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.flag, size: 18, color: statusColor),
+                  ),
                   title: Text(
                     report.conversationSubject ??
                         'Signalement ${report.uuid.substring(0, 8)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w500),
                   ),
-                  subtitle: Text(
-                    '${report.reporter?.name ?? ''} → ${report.againstWhom?.name ?? ''}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 2),
+                      Text(
+                        '${report.reporter?.name ?? '–'} → ${report.againstWhom?.name ?? '–'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          reasonLabel,
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
                   ),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                        horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: statusColor.withValues(alpha: 0.3)),
                     ),
                     child: Text(
-                      report.status,
+                      statusLabel,
                       style: TextStyle(
                           fontSize: 11,
                           color: statusColor,

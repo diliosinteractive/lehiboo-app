@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:developer' as dev;
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
@@ -68,13 +69,19 @@ class VendorOrgConversationsNotifier
         .events
         .listen((event) {
       if (!mounted) return;
-      if (event.conversationType != null &&
-          event.conversationType != 'organization_organization') {
+      final type = event.conversationType;
+      if (type != null && type != 'organization_organization') {
+        dev.log(
+          '[VendorOrg] skipping event type=${event.type.name} convType=$type (not organization_organization)',
+        );
         return;
       }
+      dev.log(
+        '[VendorOrg] handling event type=${event.type.name} conv=${event.conversationUuid} convType=$type',
+      );
       switch (event.type) {
         case RealtimeEventType.messageReceived:
-          refresh();
+          _applyNewMessage(event);
         case RealtimeEventType.conversationCreated:
           refresh();
         case RealtimeEventType.conversationClosed:
@@ -89,6 +96,26 @@ class VendorOrgConversationsNotifier
           break;
       }
     });
+  }
+
+  void _applyNewMessage(RealtimeEvent event) {
+    final uuid = event.conversationUuid;
+    final current = state.conversations.valueOrNull;
+    if (current == null || uuid == null) {
+      refresh();
+      return;
+    }
+    final idx = current.indexWhere((c) => c.uuid == uuid);
+    if (idx == -1) {
+      refresh();
+      return;
+    }
+    dev.log('[VendorOrg] applyNewMessage: conv=$uuid unread ${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
+    final updated = current[idx].copyWith(unreadCount: current[idx].unreadCount + 1);
+    final list = [...current];
+    list.removeAt(idx);
+    list.insert(0, updated);
+    state = state.copyWith(conversations: AsyncValue.data(list));
   }
 
   void _applyStatus(String convUuid, String status) {
@@ -117,11 +144,20 @@ class VendorOrgConversationsNotifier
         period: state.period,
         page: 1,
       );
+      final conversations = result.conversations;
       state = state.copyWith(
-        conversations: AsyncValue.data(result.conversations),
+        conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
       );
+      // Ensure org channel subscription even if vendorConversationsProvider
+      // hasn't loaded yet (e.g. vendor opens org tab first).
+      final orgId = conversations
+          .map((c) => c.organization?.id)
+          .firstWhere((id) => id != null && id > 0, orElse: () => null);
+      if (orgId != null) {
+        _ref.read(messagesRealtimeProvider.notifier).subscribeToOrganization(orgId);
+      }
     } catch (e, st) {
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }

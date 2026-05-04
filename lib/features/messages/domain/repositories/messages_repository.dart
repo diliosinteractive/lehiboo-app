@@ -87,7 +87,8 @@ abstract class MessagesRepository {
 
   Future<Message> sendSupportMessage({
     required String conversationUuid,
-    required String content,
+    String? content,
+    List<XFile>? attachments,
   });
 
   // Helpers

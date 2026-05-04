@@ -254,7 +254,15 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Impossible de charger les organisateurs : $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -722,16 +730,32 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
             child: Row(
               children: [
                 if (_selectedOrg != null)
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor:
-                        _primaryColor.withValues(alpha: 0.15),
-                    child: Text(
-                      _selectedOrg!.companyName[0].toUpperCase(),
-                      style: const TextStyle(
-                          color: _primaryColor, fontSize: 12),
-                    ),
-                  )
+                  () {
+                    final url = _selectedOrg!.logoUrl ?? _selectedOrg!.avatarUrl;
+                    return CircleAvatar(
+                      radius: 14,
+                      backgroundColor: _primaryColor.withValues(alpha: 0.15),
+                      child: url != null && url.isNotEmpty
+                          ? ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: url,
+                                width: 28,
+                                height: 28,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => Text(
+                                  _selectedOrg!.companyName[0].toUpperCase(),
+                                  style: const TextStyle(
+                                      color: _primaryColor, fontSize: 12),
+                                ),
+                              ),
+                            )
+                          : Text(
+                              _selectedOrg!.companyName[0].toUpperCase(),
+                              style: const TextStyle(
+                                  color: _primaryColor, fontSize: 12),
+                            ),
+                    );
+                  }()
                 else
                   Icon(Icons.business_outlined,
                       color: Colors.grey.shade500, size: 20),
@@ -797,21 +821,34 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: _primaryColor.withValues(alpha: 0.15),
-                  backgroundImage: selectedAvatarUrl != null &&
+                  child: selectedAvatarUrl != null &&
                           selectedAvatarUrl.isNotEmpty
-                      ? CachedNetworkImageProvider(selectedAvatarUrl)
-                      : null,
-                  child: selectedAvatarUrl == null ||
-                          selectedAvatarUrl.isEmpty
-                      ? Text(
+                      ? ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: selectedAvatarUrl,
+                            width: 32,
+                            height: 32,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Text(
+                              selectedName.isNotEmpty
+                                  ? selectedName[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                  color: _primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13),
+                            ),
+                          ),
+                        )
+                      : Text(
                           selectedName.isNotEmpty
                               ? selectedName[0].toUpperCase()
                               : '?',
                           style: const TextStyle(
                               color: _primaryColor,
                               fontWeight: FontWeight.bold,
-                              fontSize: 13))
-                      : null,
+                              fontSize: 13),
+                        ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -902,12 +939,26 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
               CircleAvatar(
                 radius: 16,
                 backgroundColor: color.withValues(alpha: 0.15),
-                backgroundImage:
-                    avatarUrl != null && avatarUrl.isNotEmpty
-                        ? CachedNetworkImageProvider(avatarUrl)
-                        : null,
-                child: avatarUrl == null || avatarUrl.isEmpty
-                    ? (icon ??
+                child: avatarUrl != null && avatarUrl.isNotEmpty
+                    ? ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: avatarUrl,
+                          width: 32,
+                          height: 32,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => icon ??
+                              Text(
+                                label.isNotEmpty
+                                    ? label[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                    color: color,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                        ),
+                      )
+                    : (icon ??
                         Text(
                           label.isNotEmpty
                               ? label[0].toUpperCase()
@@ -916,8 +967,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                               color: color,
                               fontSize: 13,
                               fontWeight: FontWeight.bold),
-                        ))
-                    : null,
+                        )),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1375,19 +1425,29 @@ class _OrgPickerSheetState extends State<_OrgPickerSheet> {
                             leading: CircleAvatar(
                               backgroundColor:
                                   _primaryColor.withValues(alpha: 0.15),
-                              backgroundImage: logoUrl != null &&
-                                      logoUrl.isNotEmpty
-                                  ? CachedNetworkImageProvider(logoUrl)
-                                  : null,
-                              child: logoUrl == null || logoUrl.isEmpty
-                                  ? Text(
+                              child: logoUrl != null && logoUrl.isNotEmpty
+                                  ? ClipOval(
+                                      child: CachedNetworkImage(
+                                        imageUrl: logoUrl,
+                                        width: 40,
+                                        height: 40,
+                                        fit: BoxFit.cover,
+                                        errorWidget: (_, __, ___) => Text(
+                                          org.companyName.isNotEmpty
+                                              ? org.companyName[0].toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                              color: _primaryColor),
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
                                       org.companyName.isNotEmpty
                                           ? org.companyName[0].toUpperCase()
                                           : '?',
                                       style: const TextStyle(
                                           color: _primaryColor),
-                                    )
-                                  : null,
+                                    ),
                             ),
                             title: Text(org.companyName),
                             subtitle: org.organizationName != org.companyName
@@ -1531,20 +1591,30 @@ class _AdminUserSearchSheetState extends State<_AdminUserSearchSheet> {
                                 leading: CircleAvatar(
                                   backgroundColor:
                                       _primaryColor.withValues(alpha: 0.15),
-                                  backgroundImage: user.avatarUrl != null &&
+                                  child: user.avatarUrl != null &&
                                           user.avatarUrl!.isNotEmpty
-                                      ? CachedNetworkImageProvider(user.avatarUrl!)
-                                      : null,
-                                  child: user.avatarUrl == null ||
-                                          user.avatarUrl!.isEmpty
-                                      ? Text(
+                                      ? ClipOval(
+                                          child: CachedNetworkImage(
+                                            imageUrl: user.avatarUrl!,
+                                            width: 40,
+                                            height: 40,
+                                            fit: BoxFit.cover,
+                                            errorWidget: (_, __, ___) => Text(
+                                              user.name.isNotEmpty
+                                                  ? user.name[0].toUpperCase()
+                                                  : '?',
+                                              style: const TextStyle(
+                                                  color: _primaryColor),
+                                            ),
+                                          ),
+                                        )
+                                      : Text(
                                           user.name.isNotEmpty
                                               ? user.name[0].toUpperCase()
                                               : '?',
                                           style: const TextStyle(
                                               color: _primaryColor),
-                                        )
-                                      : null,
+                                        ),
                                 ),
                                 title: Text(user.name),
                                 subtitle: Text(user.email),
@@ -1692,18 +1762,30 @@ class _AdminOrgSearchSheetState extends State<_AdminOrgSearchSheet> {
                                 leading: CircleAvatar(
                                   backgroundColor:
                                       _primaryColor.withValues(alpha: 0.15),
-                                  backgroundImage: orgImageUrl != null
-                                      ? CachedNetworkImageProvider(orgImageUrl)
-                                      : null,
-                                  child: orgImageUrl == null
-                                      ? Text(
+                                  child: orgImageUrl != null
+                                      ? ClipOval(
+                                          child: CachedNetworkImage(
+                                            imageUrl: orgImageUrl,
+                                            width: 40,
+                                            height: 40,
+                                            fit: BoxFit.cover,
+                                            errorWidget: (_, __, ___) => Text(
+                                              org.companyName.isNotEmpty
+                                                  ? org.companyName[0]
+                                                      .toUpperCase()
+                                                  : '?',
+                                              style: const TextStyle(
+                                                  color: _primaryColor),
+                                            ),
+                                          ),
+                                        )
+                                      : Text(
                                           org.companyName.isNotEmpty
                                               ? org.companyName[0].toUpperCase()
                                               : '?',
                                           style: const TextStyle(
                                               color: _primaryColor),
-                                        )
-                                      : null,
+                                        ),
                                 ),
                                 title: Text(org.companyName),
                                 onTap: () => Navigator.pop(context, org),
@@ -1854,20 +1936,30 @@ class _VendorParticipantSearchSheetState
                                 leading: CircleAvatar(
                                   backgroundColor:
                                       _primaryColor.withValues(alpha: 0.15),
-                                  backgroundImage: p.avatarUrl != null &&
+                                  child: p.avatarUrl != null &&
                                           p.avatarUrl!.isNotEmpty
-                                      ? CachedNetworkImageProvider(p.avatarUrl!)
-                                      : null,
-                                  child: p.avatarUrl == null ||
-                                          p.avatarUrl!.isEmpty
-                                      ? Text(
+                                      ? ClipOval(
+                                          child: CachedNetworkImage(
+                                            imageUrl: p.avatarUrl!,
+                                            width: 40,
+                                            height: 40,
+                                            fit: BoxFit.cover,
+                                            errorWidget: (_, __, ___) => Text(
+                                              p.name.isNotEmpty
+                                                  ? p.name[0].toUpperCase()
+                                                  : '?',
+                                              style: const TextStyle(
+                                                  color: _primaryColor),
+                                            ),
+                                          ),
+                                        )
+                                      : Text(
                                           p.name.isNotEmpty
                                               ? p.name[0].toUpperCase()
                                               : '?',
                                           style: const TextStyle(
                                               color: _primaryColor),
-                                        )
-                                      : null,
+                                        ),
                                 ),
                                 title: Text(p.name),
                                 subtitle: Text(p.email),
@@ -1980,20 +2072,30 @@ class _VendorPartnerSearchSheetState
                             leading: CircleAvatar(
                               backgroundColor:
                                   _primaryColor.withValues(alpha: 0.15),
-                              backgroundImage: logoUrl != null &&
-                                      logoUrl.isNotEmpty
-                                  ? CachedNetworkImageProvider(logoUrl)
-                                  : null,
-                              child: logoUrl == null || logoUrl.isEmpty
-                                  ? Text(
+                              child: logoUrl != null && logoUrl.isNotEmpty
+                                  ? ClipOval(
+                                      child: CachedNetworkImage(
+                                        imageUrl: logoUrl,
+                                        width: 40,
+                                        height: 40,
+                                        fit: BoxFit.cover,
+                                        errorWidget: (_, __, ___) => Text(
+                                          partner.companyName.isNotEmpty
+                                              ? partner.companyName[0]
+                                                  .toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                              color: _primaryColor),
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
                                       partner.companyName.isNotEmpty
-                                          ? partner.companyName[0]
-                                              .toUpperCase()
+                                          ? partner.companyName[0].toUpperCase()
                                           : '?',
                                       style: const TextStyle(
                                           color: _primaryColor),
-                                    )
-                                  : null,
+                                    ),
                             ),
                             title: Text(partner.companyName),
                             subtitle:

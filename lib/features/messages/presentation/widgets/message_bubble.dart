@@ -9,6 +9,9 @@ class MessageBubble extends StatefulWidget {
   final bool isLastOwn;
   final void Function(String messageUuid, String content)? onEdit;
   final void Function(String messageUuid)? onDelete;
+  /// Logo URL of the organisation involved in the conversation.
+  /// Used instead of the sender's personal avatar when senderType == 'organization'.
+  final String? organizationLogoUrl;
 
   const MessageBubble({
     super.key,
@@ -16,6 +19,7 @@ class MessageBubble extends StatefulWidget {
     this.isLastOwn = false,
     this.onEdit,
     this.onDelete,
+    this.organizationLogoUrl,
   });
 
   @override
@@ -151,7 +155,12 @@ class _MessageBubbleState extends State<MessageBubble> {
   }
 
   Widget _buildAvatar(Message msg, {required bool isMine}) {
-    final url = msg.sender?.avatarUrl;
+    // Organisation messages → prefer the org logo; personal messages → sender avatar.
+    final url = msg.senderType == 'organization'
+        ? (widget.organizationLogoUrl?.isNotEmpty == true
+            ? widget.organizationLogoUrl
+            : msg.sender?.avatarUrl)
+        : msg.sender?.avatarUrl;
     final name = msg.sender?.name ?? '';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     final bg = isMine
