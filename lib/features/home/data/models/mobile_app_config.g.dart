@@ -12,6 +12,9 @@ _$MobileAppConfigImpl _$$MobileAppConfigImplFromJson(
       hero: HeroConfig.fromJson(json['hero'] as Map<String, dynamic>),
       ads: AdsConfig.fromJson(json['ads'] as Map<String, dynamic>),
       texts: TextsConfig.fromJson(json['texts'] as Map<String, dynamic>),
+      media: json['media'] == null
+          ? const MediaConfig()
+          : MediaConfig.fromJson(json['media'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$$MobileAppConfigImplToJson(
@@ -20,6 +23,18 @@ Map<String, dynamic> _$$MobileAppConfigImplToJson(
       'hero': instance.hero,
       'ads': instance.ads,
       'texts': instance.texts,
+      'media': instance.media,
+    };
+
+_$MediaConfigImpl _$$MediaConfigImplFromJson(Map<String, dynamic> json) =>
+    _$MediaConfigImpl(
+      storyVideoMaxSeconds:
+          (json['story_video_max_seconds'] as num?)?.toInt() ?? 30,
+    );
+
+Map<String, dynamic> _$$MediaConfigImplToJson(_$MediaConfigImpl instance) =>
+    <String, dynamic>{
+      'story_video_max_seconds': instance.storyVideoMaxSeconds,
     };
 
 _$HeroConfigImpl _$$HeroConfigImplFromJson(Map<String, dynamic> json) =>

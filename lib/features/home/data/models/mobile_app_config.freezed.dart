@@ -23,6 +23,7 @@ mixin _$MobileAppConfig {
   HeroConfig get hero => throw _privateConstructorUsedError;
   AdsConfig get ads => throw _privateConstructorUsedError;
   TextsConfig get texts => throw _privateConstructorUsedError;
+  MediaConfig get media => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -36,11 +37,13 @@ abstract class $MobileAppConfigCopyWith<$Res> {
           MobileAppConfig value, $Res Function(MobileAppConfig) then) =
       _$MobileAppConfigCopyWithImpl<$Res, MobileAppConfig>;
   @useResult
-  $Res call({HeroConfig hero, AdsConfig ads, TextsConfig texts});
+  $Res call(
+      {HeroConfig hero, AdsConfig ads, TextsConfig texts, MediaConfig media});
 
   $HeroConfigCopyWith<$Res> get hero;
   $AdsConfigCopyWith<$Res> get ads;
   $TextsConfigCopyWith<$Res> get texts;
+  $MediaConfigCopyWith<$Res> get media;
 }
 
 /// @nodoc
@@ -59,6 +62,7 @@ class _$MobileAppConfigCopyWithImpl<$Res, $Val extends MobileAppConfig>
     Object? hero = null,
     Object? ads = null,
     Object? texts = null,
+    Object? media = null,
   }) {
     return _then(_value.copyWith(
       hero: null == hero
@@ -73,6 +77,10 @@ class _$MobileAppConfigCopyWithImpl<$Res, $Val extends MobileAppConfig>
           ? _value.texts
           : texts // ignore: cast_nullable_to_non_nullable
               as TextsConfig,
+      media: null == media
+          ? _value.media
+          : media // ignore: cast_nullable_to_non_nullable
+              as MediaConfig,
     ) as $Val);
   }
 
@@ -99,6 +107,14 @@ class _$MobileAppConfigCopyWithImpl<$Res, $Val extends MobileAppConfig>
       return _then(_value.copyWith(texts: value) as $Val);
     });
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $MediaConfigCopyWith<$Res> get media {
+    return $MediaConfigCopyWith<$Res>(_value.media, (value) {
+      return _then(_value.copyWith(media: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -109,7 +125,8 @@ abstract class _$$MobileAppConfigImplCopyWith<$Res>
       __$$MobileAppConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({HeroConfig hero, AdsConfig ads, TextsConfig texts});
+  $Res call(
+      {HeroConfig hero, AdsConfig ads, TextsConfig texts, MediaConfig media});
 
   @override
   $HeroConfigCopyWith<$Res> get hero;
@@ -117,6 +134,8 @@ abstract class _$$MobileAppConfigImplCopyWith<$Res>
   $AdsConfigCopyWith<$Res> get ads;
   @override
   $TextsConfigCopyWith<$Res> get texts;
+  @override
+  $MediaConfigCopyWith<$Res> get media;
 }
 
 /// @nodoc
@@ -133,6 +152,7 @@ class __$$MobileAppConfigImplCopyWithImpl<$Res>
     Object? hero = null,
     Object? ads = null,
     Object? texts = null,
+    Object? media = null,
   }) {
     return _then(_$MobileAppConfigImpl(
       hero: null == hero
@@ -147,6 +167,10 @@ class __$$MobileAppConfigImplCopyWithImpl<$Res>
           ? _value.texts
           : texts // ignore: cast_nullable_to_non_nullable
               as TextsConfig,
+      media: null == media
+          ? _value.media
+          : media // ignore: cast_nullable_to_non_nullable
+              as MediaConfig,
     ));
   }
 }
@@ -155,7 +179,10 @@ class __$$MobileAppConfigImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$MobileAppConfigImpl implements _MobileAppConfig {
   const _$MobileAppConfigImpl(
-      {required this.hero, required this.ads, required this.texts});
+      {required this.hero,
+      required this.ads,
+      required this.texts,
+      this.media = const MediaConfig()});
 
   factory _$MobileAppConfigImpl.fromJson(Map<String, dynamic> json) =>
       _$$MobileAppConfigImplFromJson(json);
@@ -166,10 +193,13 @@ class _$MobileAppConfigImpl implements _MobileAppConfig {
   final AdsConfig ads;
   @override
   final TextsConfig texts;
+  @override
+  @JsonKey()
+  final MediaConfig media;
 
   @override
   String toString() {
-    return 'MobileAppConfig(hero: $hero, ads: $ads, texts: $texts)';
+    return 'MobileAppConfig(hero: $hero, ads: $ads, texts: $texts, media: $media)';
   }
 
   @override
@@ -179,12 +209,13 @@ class _$MobileAppConfigImpl implements _MobileAppConfig {
             other is _$MobileAppConfigImpl &&
             (identical(other.hero, hero) || other.hero == hero) &&
             (identical(other.ads, ads) || other.ads == ads) &&
-            (identical(other.texts, texts) || other.texts == texts));
+            (identical(other.texts, texts) || other.texts == texts) &&
+            (identical(other.media, media) || other.media == media));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, hero, ads, texts);
+  int get hashCode => Object.hash(runtimeType, hero, ads, texts, media);
 
   @JsonKey(ignore: true)
   @override
@@ -205,7 +236,8 @@ abstract class _MobileAppConfig implements MobileAppConfig {
   const factory _MobileAppConfig(
       {required final HeroConfig hero,
       required final AdsConfig ads,
-      required final TextsConfig texts}) = _$MobileAppConfigImpl;
+      required final TextsConfig texts,
+      final MediaConfig media}) = _$MobileAppConfigImpl;
 
   factory _MobileAppConfig.fromJson(Map<String, dynamic> json) =
       _$MobileAppConfigImpl.fromJson;
@@ -217,8 +249,156 @@ abstract class _MobileAppConfig implements MobileAppConfig {
   @override
   TextsConfig get texts;
   @override
+  MediaConfig get media;
+  @override
   @JsonKey(ignore: true)
   _$$MobileAppConfigImplCopyWith<_$MobileAppConfigImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+MediaConfig _$MediaConfigFromJson(Map<String, dynamic> json) {
+  return _MediaConfig.fromJson(json);
+}
+
+/// @nodoc
+mixin _$MediaConfig {
+  @JsonKey(name: 'story_video_max_seconds')
+  int get storyVideoMaxSeconds => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $MediaConfigCopyWith<MediaConfig> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $MediaConfigCopyWith<$Res> {
+  factory $MediaConfigCopyWith(
+          MediaConfig value, $Res Function(MediaConfig) then) =
+      _$MediaConfigCopyWithImpl<$Res, MediaConfig>;
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'story_video_max_seconds') int storyVideoMaxSeconds});
+}
+
+/// @nodoc
+class _$MediaConfigCopyWithImpl<$Res, $Val extends MediaConfig>
+    implements $MediaConfigCopyWith<$Res> {
+  _$MediaConfigCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? storyVideoMaxSeconds = null,
+  }) {
+    return _then(_value.copyWith(
+      storyVideoMaxSeconds: null == storyVideoMaxSeconds
+          ? _value.storyVideoMaxSeconds
+          : storyVideoMaxSeconds // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$MediaConfigImplCopyWith<$Res>
+    implements $MediaConfigCopyWith<$Res> {
+  factory _$$MediaConfigImplCopyWith(
+          _$MediaConfigImpl value, $Res Function(_$MediaConfigImpl) then) =
+      __$$MediaConfigImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'story_video_max_seconds') int storyVideoMaxSeconds});
+}
+
+/// @nodoc
+class __$$MediaConfigImplCopyWithImpl<$Res>
+    extends _$MediaConfigCopyWithImpl<$Res, _$MediaConfigImpl>
+    implements _$$MediaConfigImplCopyWith<$Res> {
+  __$$MediaConfigImplCopyWithImpl(
+      _$MediaConfigImpl _value, $Res Function(_$MediaConfigImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? storyVideoMaxSeconds = null,
+  }) {
+    return _then(_$MediaConfigImpl(
+      storyVideoMaxSeconds: null == storyVideoMaxSeconds
+          ? _value.storyVideoMaxSeconds
+          : storyVideoMaxSeconds // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$MediaConfigImpl implements _MediaConfig {
+  const _$MediaConfigImpl(
+      {@JsonKey(name: 'story_video_max_seconds')
+      this.storyVideoMaxSeconds = 30});
+
+  factory _$MediaConfigImpl.fromJson(Map<String, dynamic> json) =>
+      _$$MediaConfigImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'story_video_max_seconds')
+  final int storyVideoMaxSeconds;
+
+  @override
+  String toString() {
+    return 'MediaConfig(storyVideoMaxSeconds: $storyVideoMaxSeconds)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$MediaConfigImpl &&
+            (identical(other.storyVideoMaxSeconds, storyVideoMaxSeconds) ||
+                other.storyVideoMaxSeconds == storyVideoMaxSeconds));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, storyVideoMaxSeconds);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$MediaConfigImplCopyWith<_$MediaConfigImpl> get copyWith =>
+      __$$MediaConfigImplCopyWithImpl<_$MediaConfigImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$MediaConfigImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _MediaConfig implements MediaConfig {
+  const factory _MediaConfig(
+      {@JsonKey(name: 'story_video_max_seconds')
+      final int storyVideoMaxSeconds}) = _$MediaConfigImpl;
+
+  factory _MediaConfig.fromJson(Map<String, dynamic> json) =
+      _$MediaConfigImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'story_video_max_seconds')
+  int get storyVideoMaxSeconds;
+  @override
+  @JsonKey(ignore: true)
+  _$$MediaConfigImplCopyWith<_$MediaConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
