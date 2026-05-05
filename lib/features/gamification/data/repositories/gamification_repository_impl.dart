@@ -2,12 +2,18 @@ import 'package:flutter/foundation.dart';
 
 import '../../domain/repositories/gamification_repository.dart';
 import '../datasources/gamification_api_datasource.dart';
+import '../models/earnings_by_pillar_entry.dart';
+import '../models/hibons_action_entry.dart';
+import '../models/hibons_balance.dart';
 import '../models/hibons_rank.dart';
 import '../models/hibons_wallet.dart';
 import '../models/hibon_transaction.dart';
 import '../models/daily_reward.dart';
 import '../models/gamification_items.dart';
+import '../models/transaction_context.dart';
+import '../models/transactions_list_result.dart';
 import '../models/wheel_models.dart';
+import '../models/hibons_api_dto.dart';
 
 class GamificationRepositoryImpl implements GamificationRepository {
   final GamificationApiDataSource _dataSource;
@@ -68,20 +74,99 @@ class GamificationRepositoryImpl implements GamificationRepository {
   }
 
   @override
-  Future<List<HibonTransaction>> getTransactions() async {
-    debugPrint('🎮 GamificationRepo: getTransactions()');
-    final dtos = await _dataSource.getTransactions();
+  Future<TransactionsListResult> getTransactions({
+    String? type,
+    String? pillar,
+  }) async {
+    debugPrint('🎮 GamificationRepo: getTransactions(type=$type, pillar=$pillar)');
+    final response = await _dataSource.getTransactions(
+      type: type,
+      pillar: pillar,
+    );
 
+    final items = response.items.map(_mapTransaction).toList();
+
+    final earningsByPillar = response.earningsByPillar
+        .map((e) => EarningsByPillarEntry(
+              pillar: e.pillar,
+              label: e.label,
+              color: e.color,
+              amount: e.amount,
+            ))
+        .toList();
+
+    return TransactionsListResult(
+      items: items,
+      currentBalance: response.currentBalance,
+      lifetimeEarned: response.lifetimeEarned,
+      earningsByPillar: earningsByPillar,
+    );
+  }
+
+  HibonTransaction _mapTransaction(TransactionDto dto) {
+    return HibonTransaction(
+      id: dto.id,
+      type: _parseTransactionType(dto.type),
+      typeLabel: dto.typeLabel,
+      amount: dto.amount,
+      formattedAmount: dto.formattedAmount,
+      description: dto.description,
+      timestamp: DateTime.parse(dto.createdAt),
+      source: _normalizeSource(dto.source),
+      pillar: dto.pillar,
+      pillarLabel: dto.pillarLabel,
+      pillarColor: dto.pillarColor,
+      title: dto.title,
+      subtitle: dto.subtitle,
+      context: dto.context == null
+          ? null
+          : TransactionContext(
+              type: dto.context!.type,
+              uuid: dto.context!.uuid,
+              slug: dto.context!.slug,
+              title: dto.context!.title,
+              imageUrl: dto.context!.imageUrl,
+              reference: dto.context!.reference,
+            ),
+      balanceAfter: dto.balanceAfter,
+    );
+  }
+
+  @override
+  Future<HibonsBalance> getBalance() async {
+    debugPrint('🎮 GamificationRepo: getBalance()');
+    final dto = await _dataSource.getBalance();
+    return HibonsBalance(
+      balance: dto.balance,
+      lifetimeEarned: dto.lifetimeEarned,
+      rank: dto.rank,
+      rankLabel: dto.rankLabel,
+      rankIcon: dto.rankIcon,
+    );
+  }
+
+  @override
+  Future<List<HibonsActionEntry>> getActionsCatalog() async {
+    debugPrint('🎮 GamificationRepo: getActionsCatalog()');
+    final dtos = await _dataSource.getActionsCatalog();
     return dtos
-        .map((dto) => HibonTransaction(
-              id: dto.id,
-              type: _parseTransactionType(dto.type),
-              amount: dto.amount,
+        .map((dto) => HibonsActionEntry(
+              action: dto.action,
+              title: dto.title,
               description: dto.description,
-              timestamp: DateTime.parse(dto.createdAt),
-              source: _normalizeSource(dto.source),
+              amount: dto.amount,
               pillar: dto.pillar,
-              balanceAfter: dto.balanceAfter,
+              pillarLabel: dto.pillarLabel,
+              pillarColor: dto.pillarColor,
+              icon: dto.icon,
+              capText: dto.capText,
+              reachable: dto.reachable,
+              completedThisWeek: dto.completedThisWeek,
+              remainingThisWeek: dto.remainingThisWeek,
+              completedToday: dto.completedToday,
+              remainingToday: dto.remainingToday,
+              completedLifetime: dto.completedLifetime,
+              remainingLifetime: dto.remainingLifetime,
             ))
         .toList();
   }

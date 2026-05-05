@@ -60,7 +60,7 @@ class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>
       );
 
       // Ajouter la nouvelle liste à l'état actuel
-      final currentLists = state.value ?? [];
+      final currentLists = state.valueOrNull ?? [];
       state = AsyncValue.data([...currentLists, newList]);
 
       return newList;
@@ -88,7 +88,7 @@ class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>
       );
 
       // Mettre à jour la liste dans l'état
-      final currentLists = state.value ?? [];
+      final currentLists = state.valueOrNull ?? [];
       final updatedLists = currentLists.map((l) {
         if (l.id == listId) return updatedList;
         return l;
@@ -109,7 +109,7 @@ class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>
       await _repository.deleteList(listId);
 
       // Retirer la liste de l'état
-      final currentLists = state.value ?? [];
+      final currentLists = state.valueOrNull ?? [];
       final updatedLists = currentLists.where((l) => l.id != listId).toList();
       state = AsyncValue.data(updatedLists);
 
@@ -123,7 +123,7 @@ class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>
   /// Réordonner les listes
   Future<bool> reorderLists(List<String> orderedIds) async {
     // Optimistic update
-    final currentLists = state.value ?? [];
+    final currentLists = state.valueOrNull ?? [];
     final reorderedLists = <FavoriteList>[];
 
     for (final id in orderedIds) {
@@ -149,7 +149,7 @@ class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>
 
   /// Obtenir une liste par son ID
   FavoriteList? getListById(String listId) {
-    return state.value?.firstWhere(
+    return state.valueOrNull?.firstWhere(
       (l) => l.id == listId,
       orElse: () => throw Exception('List not found'),
     );
@@ -157,7 +157,7 @@ class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>
 
   /// Incrémenter le compteur d'une liste
   void incrementListCount(String listId) {
-    final currentLists = state.value;
+    final currentLists = state.valueOrNull;
     if (currentLists == null) return;
 
     final updatedLists = currentLists.map((l) {
@@ -172,7 +172,7 @@ class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>
 
   /// Décrémenter le compteur d'une liste
   void decrementListCount(String listId) {
-    final currentLists = state.value;
+    final currentLists = state.valueOrNull;
     if (currentLists == null) return;
 
     final updatedLists = currentLists.map((l) {

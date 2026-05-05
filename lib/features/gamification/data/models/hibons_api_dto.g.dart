@@ -213,10 +213,20 @@ _$TransactionDtoImpl _$$TransactionDtoImplFromJson(Map<String, dynamic> json) =>
     _$TransactionDtoImpl(
       id: json['id'] as String,
       type: json['type'] as String,
+      typeLabel: json['type_label'] as String?,
       amount: (json['amount'] as num).toInt(),
+      formattedAmount: json['formatted_amount'] as String?,
       description: json['description'] as String,
       source: json['source'] as String?,
       pillar: json['pillar'] as String?,
+      pillarLabel: json['pillar_label'] as String?,
+      pillarColor: json['pillar_color'] as String?,
+      title: json['title'] as String?,
+      subtitle: json['subtitle'] as String?,
+      context: json['context'] == null
+          ? null
+          : TransactionContextDto.fromJson(
+              json['context'] as Map<String, dynamic>),
       balanceAfter: (json['balance_after'] as num?)?.toInt(),
       meta: json['meta'] as Map<String, dynamic>?,
       createdAt: json['created_at'] as String,
@@ -227,13 +237,174 @@ Map<String, dynamic> _$$TransactionDtoImplToJson(
     <String, dynamic>{
       'id': instance.id,
       'type': instance.type,
+      'type_label': instance.typeLabel,
       'amount': instance.amount,
+      'formatted_amount': instance.formattedAmount,
       'description': instance.description,
       'source': instance.source,
       'pillar': instance.pillar,
+      'pillar_label': instance.pillarLabel,
+      'pillar_color': instance.pillarColor,
+      'title': instance.title,
+      'subtitle': instance.subtitle,
+      'context': instance.context,
       'balance_after': instance.balanceAfter,
       'meta': instance.meta,
       'created_at': instance.createdAt,
+    };
+
+_$TransactionContextDtoImpl _$$TransactionContextDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$TransactionContextDtoImpl(
+      type: json['type'] as String,
+      uuid: json['uuid'] as String?,
+      slug: json['slug'] as String?,
+      title: json['title'] as String?,
+      imageUrl: json['image_url'] as String?,
+      reference: json['reference'] as String?,
+    );
+
+Map<String, dynamic> _$$TransactionContextDtoImplToJson(
+        _$TransactionContextDtoImpl instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'uuid': instance.uuid,
+      'slug': instance.slug,
+      'title': instance.title,
+      'image_url': instance.imageUrl,
+      'reference': instance.reference,
+    };
+
+_$EarningsByPillarEntryDtoImpl _$$EarningsByPillarEntryDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$EarningsByPillarEntryDtoImpl(
+      pillar: json['pillar'] as String,
+      label: json['label'] as String,
+      color: json['color'] as String,
+      amount: (json['amount'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$$EarningsByPillarEntryDtoImplToJson(
+        _$EarningsByPillarEntryDtoImpl instance) =>
+    <String, dynamic>{
+      'pillar': instance.pillar,
+      'label': instance.label,
+      'color': instance.color,
+      'amount': instance.amount,
+    };
+
+_$TransactionsListResponseDtoImpl _$$TransactionsListResponseDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$TransactionsListResponseDtoImpl(
+      items: (json['items'] as List<dynamic>)
+          .map((e) => TransactionDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      currentBalance: (json['current_balance'] as num?)?.toInt() ?? 0,
+      lifetimeEarned: (json['lifetime_earned'] as num?)?.toInt() ?? 0,
+      earningsByPillar: (json['earnings_by_pillar'] as List<dynamic>?)
+              ?.map((e) =>
+                  EarningsByPillarEntryDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <EarningsByPillarEntryDto>[],
+    );
+
+Map<String, dynamic> _$$TransactionsListResponseDtoImplToJson(
+        _$TransactionsListResponseDtoImpl instance) =>
+    <String, dynamic>{
+      'items': instance.items,
+      'current_balance': instance.currentBalance,
+      'lifetime_earned': instance.lifetimeEarned,
+      'earnings_by_pillar': instance.earningsByPillar,
+    };
+
+_$BalanceResponseDtoImpl _$$BalanceResponseDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$BalanceResponseDtoImpl(
+      balance: (json['balance'] as num).toInt(),
+      lifetimeEarned: (json['lifetime_earned'] as num?)?.toInt() ?? 0,
+      rank: json['rank'] as String,
+      rankLabel: json['rank_label'] as String,
+      rankIcon: json['rank_icon'] as String,
+    );
+
+Map<String, dynamic> _$$BalanceResponseDtoImplToJson(
+        _$BalanceResponseDtoImpl instance) =>
+    <String, dynamic>{
+      'balance': instance.balance,
+      'lifetime_earned': instance.lifetimeEarned,
+      'rank': instance.rank,
+      'rank_label': instance.rankLabel,
+      'rank_icon': instance.rankIcon,
+    };
+
+_$HibonsUpdateDtoImpl _$$HibonsUpdateDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$HibonsUpdateDtoImpl(
+      delta: (json['delta'] as num?)?.toInt() ?? 0,
+      newBalance: (json['new_balance'] as num?)?.toInt() ?? 0,
+      newLifetime: (json['new_lifetime'] as num?)?.toInt() ?? 0,
+      lifetimeDelta: (json['lifetime_delta'] as num?)?.toInt() ?? 0,
+      rankChanged: json['rank_changed'] as bool? ?? false,
+      newRank: json['new_rank'] as String?,
+      newRankLabel: json['new_rank_label'] as String?,
+      animationLabel: json['animation_label'] as String?,
+      pillar: json['pillar'] as String?,
+    );
+
+Map<String, dynamic> _$$HibonsUpdateDtoImplToJson(
+        _$HibonsUpdateDtoImpl instance) =>
+    <String, dynamic>{
+      'delta': instance.delta,
+      'new_balance': instance.newBalance,
+      'new_lifetime': instance.newLifetime,
+      'lifetime_delta': instance.lifetimeDelta,
+      'rank_changed': instance.rankChanged,
+      'new_rank': instance.newRank,
+      'new_rank_label': instance.newRankLabel,
+      'animation_label': instance.animationLabel,
+      'pillar': instance.pillar,
+    };
+
+_$ActionsCatalogEntryDtoImpl _$$ActionsCatalogEntryDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$ActionsCatalogEntryDtoImpl(
+      action: json['action'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      amount: (json['amount'] as num).toInt(),
+      pillar: json['pillar'] as String,
+      pillarLabel: json['pillar_label'] as String,
+      pillarColor: json['pillar_color'] as String,
+      icon: json['icon'] as String,
+      capText: json['cap_text'] as String,
+      reachable: json['reachable'] as bool? ?? true,
+      completedThisWeek: (json['completed_this_week'] as num?)?.toInt(),
+      remainingThisWeek: (json['remaining_this_week'] as num?)?.toInt(),
+      completedToday: (json['completed_today'] as num?)?.toInt(),
+      remainingToday: (json['remaining_today'] as num?)?.toInt(),
+      completedLifetime: (json['completed_lifetime'] as num?)?.toInt(),
+      remainingLifetime: (json['remaining_lifetime'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$$ActionsCatalogEntryDtoImplToJson(
+        _$ActionsCatalogEntryDtoImpl instance) =>
+    <String, dynamic>{
+      'action': instance.action,
+      'title': instance.title,
+      'description': instance.description,
+      'amount': instance.amount,
+      'pillar': instance.pillar,
+      'pillar_label': instance.pillarLabel,
+      'pillar_color': instance.pillarColor,
+      'icon': instance.icon,
+      'cap_text': instance.capText,
+      'reachable': instance.reachable,
+      'completed_this_week': instance.completedThisWeek,
+      'remaining_this_week': instance.remainingThisWeek,
+      'completed_today': instance.completedToday,
+      'remaining_today': instance.remainingToday,
+      'completed_lifetime': instance.completedLifetime,
+      'remaining_lifetime': instance.remainingLifetime,
     };
 
 _$HibonPackageDtoImpl _$$HibonPackageDtoImplFromJson(

@@ -1,8 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lehiboo/features/gamification/data/models/earnings_by_pillar_entry.dart';
+import 'package:lehiboo/features/gamification/data/models/hibons_action_entry.dart';
+import 'package:lehiboo/features/gamification/data/models/hibons_balance.dart';
+import 'package:lehiboo/features/gamification/data/models/hibons_rank.dart';
+import 'package:lehiboo/features/gamification/data/models/hibons_update.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_wallet.dart';
-import 'package:lehiboo/features/gamification/data/models/hibon_transaction.dart';
+import 'package:lehiboo/features/gamification/data/models/transactions_list_result.dart';
 import 'package:lehiboo/features/gamification/data/models/daily_reward.dart';
 import 'package:lehiboo/features/gamification/data/models/wheel_models.dart';
 import 'package:lehiboo/features/gamification/data/models/gamification_items.dart';
@@ -52,9 +57,30 @@ class GamificationNotifier extends AsyncNotifier<HibonsWallet> {
   /// wallet n'a jamais été chargé, no-op (le prochain `build()` récupérera
   /// la valeur fraîche côté serveur de toute façon).
   void setBalance(int newBalance) {
-    final current = state.value;
+    final current = state.valueOrNull;
     if (current == null) return;
     state = AsyncValue.data(current.copyWith(balance: newBalance));
+  }
+
+  /// Applique l'enveloppe `hibons_update` reçue par l'intercepteur Dio.
+  /// Met à jour balance, lifetime, et (si `rankChanged`) rank + rankLabel.
+  void applyUpdate(HibonsUpdate update) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final nextRankEnum = update.rankChanged && update.newRank != null
+        ? HibonsRank.fromString(update.newRank)
+        : current.rankEnum;
+
+    state = AsyncValue.data(current.copyWith(
+      balance: update.newBalance,
+      lifetimeEarned: update.newLifetime,
+      rank: update.rankChanged ? (update.newRank ?? current.rank) : current.rank,
+      rankEnum: nextRankEnum,
+      rankLabel: update.rankChanged
+          ? (update.newRankLabel ?? current.rankLabel)
+          : current.rankLabel,
+    ));
   }
 }
 
@@ -132,11 +158,35 @@ class WheelSpinNotifier extends StateNotifier<AsyncValue<WheelSpinResult?>> {
 
 // ==== Transactions Provider ====
 
-final hibonTransactionsProvider = FutureProvider<List<HibonTransaction>>((ref) async {
+/// Liste des transactions + agrégats meta. Param `pillar` (nullable) filtre.
+final hibonTransactionsProvider =
+    FutureProvider.family<TransactionsListResult, String?>((ref, pillar) async {
   final repository = ref.watch(gamificationRepositoryProvider);
   // Watch the wallet to refresh transactions when it changes
   ref.watch(gamificationNotifierProvider);
-  return repository.getTransactions();
+  return repository.getTransactions(pillar: pillar);
+});
+
+/// Breakdown des gains par pilier — dérivé du même appel `/transactions`,
+/// pas de round-trip supplémentaire.
+final earningsByPillarProvider = Provider<AsyncValue<List<EarningsByPillarEntry>>>((ref) {
+  return ref
+      .watch(hibonTransactionsProvider(null))
+      .whenData((r) => r.earningsByPillar);
+});
+
+// ==== Balance & Actions Catalog (Plan 05) ====
+
+/// Endpoint léger pour le badge header au cold start / pull-to-refresh.
+final hibonsBalanceProvider = FutureProvider<HibonsBalance>((ref) {
+  final repository = ref.watch(gamificationRepositoryProvider);
+  return repository.getBalance();
+});
+
+/// Catalogue dynamique des 15 actions Hibons (avec caps live).
+final actionsCatalogProvider = FutureProvider<List<HibonsActionEntry>>((ref) {
+  final repository = ref.watch(gamificationRepositoryProvider);
+  return repository.getActionsCatalog();
 });
 
 // ==== Achievements & Challenges Providers ====

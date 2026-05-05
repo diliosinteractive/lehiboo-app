@@ -92,12 +92,22 @@ class _AuthRouterRefresh extends ChangeNotifier {
 }
 
 
+/// Clé globale du navigateur racine — utilisée par `HibonsAnimationCoordinator`
+/// pour obtenir un BuildContext sous l'Overlay (les toasts/overlays Hibons
+/// sont montés depuis l'intercepteur Dio, hors hiérarchie de widgets).
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Clé globale du ScaffoldMessenger — permet d'afficher des SnackBar depuis
+/// n'importe où (ex: l'intercepteur Dio Hibons via le coordinateur).
+final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final prefs = ref.read(sharedPreferencesProvider);
   final refresh = _AuthRouterRefresh(ref);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/bootstrap',
     refreshListenable: refresh,
     redirect: (context, state) {

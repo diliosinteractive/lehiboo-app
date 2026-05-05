@@ -30,6 +30,23 @@ class GamificationApiDataSource {
     return WalletResponseDto.fromJson(payload);
   }
 
+  Future<BalanceResponseDto> getBalance() async {
+    debugPrint('🎮 GamificationAPI: GET /mobile/hibons/balance');
+    final response = await _dio.get('/mobile/hibons/balance');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return BalanceResponseDto.fromJson(payload);
+  }
+
+  Future<List<ActionsCatalogEntryDto>> getActionsCatalog() async {
+    debugPrint('🎮 GamificationAPI: GET /mobile/hibons/actions-catalog');
+    final response = await _dio.get('/mobile/hibons/actions-catalog');
+    final list = ApiResponseHandler.extractList(response.data);
+    return list
+        .map((item) =>
+            ActionsCatalogEntryDto.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<DailyClaimResponseDto> claimDailyReward() async {
     debugPrint('🎮 GamificationAPI: POST /mobile/hibons/daily');
     final response = await _dio.post('/mobile/hibons/daily');
@@ -55,8 +72,9 @@ class GamificationApiDataSource {
     return WheelSpinResponseDto.fromJson(payload);
   }
 
-  Future<List<TransactionDto>> getTransactions({
+  Future<TransactionsListResponseDto> getTransactions({
     String? type,
+    String? pillar,
     int? page,
     int? perPage,
   }) async {
@@ -64,6 +82,7 @@ class GamificationApiDataSource {
 
     final queryParams = <String, dynamic>{};
     if (type != null) queryParams['type'] = type;
+    if (pillar != null) queryParams['pillar'] = pillar;
     if (page != null) queryParams['page'] = page;
     if (perPage != null) queryParams['per_page'] = perPage;
 
@@ -73,7 +92,29 @@ class GamificationApiDataSource {
     );
 
     final list = ApiResponseHandler.extractList(response.data);
-    return list.map((item) => TransactionDto.fromJson(item as Map<String, dynamic>)).toList();
+    final items = list
+        .map((item) => TransactionDto.fromJson(item as Map<String, dynamic>))
+        .toList();
+
+    // Le `meta` est à la racine de la réponse — `extractList` ne l'expose pas.
+    final raw = response.data;
+    final metaRaw = raw is Map<String, dynamic> ? raw['meta'] : null;
+    final meta = metaRaw is Map<String, dynamic> ? metaRaw : const <String, dynamic>{};
+
+    final earningsByPillarRaw = meta['earnings_by_pillar'];
+    final earningsByPillar = earningsByPillarRaw is List
+        ? earningsByPillarRaw
+            .whereType<Map<String, dynamic>>()
+            .map(EarningsByPillarEntryDto.fromJson)
+            .toList()
+        : const <EarningsByPillarEntryDto>[];
+
+    return TransactionsListResponseDto(
+      items: items,
+      currentBalance: (meta['current_balance'] as num?)?.toInt() ?? 0,
+      lifetimeEarned: (meta['lifetime_earned'] as num?)?.toInt() ?? 0,
+      earningsByPillar: earningsByPillar,
+    );
   }
 
   Future<List<HibonPackageDto>> getPackages() async {

@@ -2420,10 +2420,21 @@ mixin _$TransactionDto {
   String get id => throw _privateConstructorUsedError;
   String get type =>
       throw _privateConstructorUsedError; // earn, spend, purchase, refund
+  @JsonKey(name: 'type_label')
+  String? get typeLabel => throw _privateConstructorUsedError;
   int get amount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'formatted_amount')
+  String? get formattedAmount => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   String? get source => throw _privateConstructorUsedError;
   String? get pillar => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pillar_label')
+  String? get pillarLabel => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pillar_color')
+  String? get pillarColor => throw _privateConstructorUsedError;
+  String? get title => throw _privateConstructorUsedError;
+  String? get subtitle => throw _privateConstructorUsedError;
+  TransactionContextDto? get context => throw _privateConstructorUsedError;
   @JsonKey(name: 'balance_after')
   int? get balanceAfter => throw _privateConstructorUsedError;
   Map<String, dynamic>? get meta => throw _privateConstructorUsedError;
@@ -2445,13 +2456,22 @@ abstract class $TransactionDtoCopyWith<$Res> {
   $Res call(
       {String id,
       String type,
+      @JsonKey(name: 'type_label') String? typeLabel,
       int amount,
+      @JsonKey(name: 'formatted_amount') String? formattedAmount,
       String description,
       String? source,
       String? pillar,
+      @JsonKey(name: 'pillar_label') String? pillarLabel,
+      @JsonKey(name: 'pillar_color') String? pillarColor,
+      String? title,
+      String? subtitle,
+      TransactionContextDto? context,
       @JsonKey(name: 'balance_after') int? balanceAfter,
       Map<String, dynamic>? meta,
       @JsonKey(name: 'created_at') String createdAt});
+
+  $TransactionContextDtoCopyWith<$Res>? get context;
 }
 
 /// @nodoc
@@ -2469,10 +2489,17 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
   $Res call({
     Object? id = null,
     Object? type = null,
+    Object? typeLabel = freezed,
     Object? amount = null,
+    Object? formattedAmount = freezed,
     Object? description = null,
     Object? source = freezed,
     Object? pillar = freezed,
+    Object? pillarLabel = freezed,
+    Object? pillarColor = freezed,
+    Object? title = freezed,
+    Object? subtitle = freezed,
+    Object? context = freezed,
     Object? balanceAfter = freezed,
     Object? meta = freezed,
     Object? createdAt = null,
@@ -2486,10 +2513,18 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
               as String,
+      typeLabel: freezed == typeLabel
+          ? _value.typeLabel
+          : typeLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
       amount: null == amount
           ? _value.amount
           : amount // ignore: cast_nullable_to_non_nullable
               as int,
+      formattedAmount: freezed == formattedAmount
+          ? _value.formattedAmount
+          : formattedAmount // ignore: cast_nullable_to_non_nullable
+              as String?,
       description: null == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
@@ -2502,6 +2537,26 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
           ? _value.pillar
           : pillar // ignore: cast_nullable_to_non_nullable
               as String?,
+      pillarLabel: freezed == pillarLabel
+          ? _value.pillarLabel
+          : pillarLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillarColor: freezed == pillarColor
+          ? _value.pillarColor
+          : pillarColor // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: freezed == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
+      subtitle: freezed == subtitle
+          ? _value.subtitle
+          : subtitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      context: freezed == context
+          ? _value.context
+          : context // ignore: cast_nullable_to_non_nullable
+              as TransactionContextDto?,
       balanceAfter: freezed == balanceAfter
           ? _value.balanceAfter
           : balanceAfter // ignore: cast_nullable_to_non_nullable
@@ -2516,6 +2571,18 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
               as String,
     ) as $Val);
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $TransactionContextDtoCopyWith<$Res>? get context {
+    if (_value.context == null) {
+      return null;
+    }
+
+    return $TransactionContextDtoCopyWith<$Res>(_value.context!, (value) {
+      return _then(_value.copyWith(context: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -2529,13 +2596,23 @@ abstract class _$$TransactionDtoImplCopyWith<$Res>
   $Res call(
       {String id,
       String type,
+      @JsonKey(name: 'type_label') String? typeLabel,
       int amount,
+      @JsonKey(name: 'formatted_amount') String? formattedAmount,
       String description,
       String? source,
       String? pillar,
+      @JsonKey(name: 'pillar_label') String? pillarLabel,
+      @JsonKey(name: 'pillar_color') String? pillarColor,
+      String? title,
+      String? subtitle,
+      TransactionContextDto? context,
       @JsonKey(name: 'balance_after') int? balanceAfter,
       Map<String, dynamic>? meta,
       @JsonKey(name: 'created_at') String createdAt});
+
+  @override
+  $TransactionContextDtoCopyWith<$Res>? get context;
 }
 
 /// @nodoc
@@ -2551,10 +2628,17 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? type = null,
+    Object? typeLabel = freezed,
     Object? amount = null,
+    Object? formattedAmount = freezed,
     Object? description = null,
     Object? source = freezed,
     Object? pillar = freezed,
+    Object? pillarLabel = freezed,
+    Object? pillarColor = freezed,
+    Object? title = freezed,
+    Object? subtitle = freezed,
+    Object? context = freezed,
     Object? balanceAfter = freezed,
     Object? meta = freezed,
     Object? createdAt = null,
@@ -2568,10 +2652,18 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
               as String,
+      typeLabel: freezed == typeLabel
+          ? _value.typeLabel
+          : typeLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
       amount: null == amount
           ? _value.amount
           : amount // ignore: cast_nullable_to_non_nullable
               as int,
+      formattedAmount: freezed == formattedAmount
+          ? _value.formattedAmount
+          : formattedAmount // ignore: cast_nullable_to_non_nullable
+              as String?,
       description: null == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
@@ -2584,6 +2676,26 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
           ? _value.pillar
           : pillar // ignore: cast_nullable_to_non_nullable
               as String?,
+      pillarLabel: freezed == pillarLabel
+          ? _value.pillarLabel
+          : pillarLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillarColor: freezed == pillarColor
+          ? _value.pillarColor
+          : pillarColor // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: freezed == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
+      subtitle: freezed == subtitle
+          ? _value.subtitle
+          : subtitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      context: freezed == context
+          ? _value.context
+          : context // ignore: cast_nullable_to_non_nullable
+              as TransactionContextDto?,
       balanceAfter: freezed == balanceAfter
           ? _value.balanceAfter
           : balanceAfter // ignore: cast_nullable_to_non_nullable
@@ -2606,10 +2718,17 @@ class _$TransactionDtoImpl implements _TransactionDto {
   const _$TransactionDtoImpl(
       {required this.id,
       required this.type,
+      @JsonKey(name: 'type_label') this.typeLabel,
       required this.amount,
+      @JsonKey(name: 'formatted_amount') this.formattedAmount,
       required this.description,
       this.source,
       this.pillar,
+      @JsonKey(name: 'pillar_label') this.pillarLabel,
+      @JsonKey(name: 'pillar_color') this.pillarColor,
+      this.title,
+      this.subtitle,
+      this.context,
       @JsonKey(name: 'balance_after') this.balanceAfter,
       final Map<String, dynamic>? meta,
       @JsonKey(name: 'created_at') required this.createdAt})
@@ -2624,13 +2743,31 @@ class _$TransactionDtoImpl implements _TransactionDto {
   final String type;
 // earn, spend, purchase, refund
   @override
+  @JsonKey(name: 'type_label')
+  final String? typeLabel;
+  @override
   final int amount;
+  @override
+  @JsonKey(name: 'formatted_amount')
+  final String? formattedAmount;
   @override
   final String description;
   @override
   final String? source;
   @override
   final String? pillar;
+  @override
+  @JsonKey(name: 'pillar_label')
+  final String? pillarLabel;
+  @override
+  @JsonKey(name: 'pillar_color')
+  final String? pillarColor;
+  @override
+  final String? title;
+  @override
+  final String? subtitle;
+  @override
+  final TransactionContextDto? context;
   @override
   @JsonKey(name: 'balance_after')
   final int? balanceAfter;
@@ -2650,7 +2787,7 @@ class _$TransactionDtoImpl implements _TransactionDto {
 
   @override
   String toString() {
-    return 'TransactionDto(id: $id, type: $type, amount: $amount, description: $description, source: $source, pillar: $pillar, balanceAfter: $balanceAfter, meta: $meta, createdAt: $createdAt)';
+    return 'TransactionDto(id: $id, type: $type, typeLabel: $typeLabel, amount: $amount, formattedAmount: $formattedAmount, description: $description, source: $source, pillar: $pillar, pillarLabel: $pillarLabel, pillarColor: $pillarColor, title: $title, subtitle: $subtitle, context: $context, balanceAfter: $balanceAfter, meta: $meta, createdAt: $createdAt)';
   }
 
   @override
@@ -2660,11 +2797,23 @@ class _$TransactionDtoImpl implements _TransactionDto {
             other is _$TransactionDtoImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.type, type) || other.type == type) &&
+            (identical(other.typeLabel, typeLabel) ||
+                other.typeLabel == typeLabel) &&
             (identical(other.amount, amount) || other.amount == amount) &&
+            (identical(other.formattedAmount, formattedAmount) ||
+                other.formattedAmount == formattedAmount) &&
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.source, source) || other.source == source) &&
             (identical(other.pillar, pillar) || other.pillar == pillar) &&
+            (identical(other.pillarLabel, pillarLabel) ||
+                other.pillarLabel == pillarLabel) &&
+            (identical(other.pillarColor, pillarColor) ||
+                other.pillarColor == pillarColor) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.subtitle, subtitle) ||
+                other.subtitle == subtitle) &&
+            (identical(other.context, context) || other.context == context) &&
             (identical(other.balanceAfter, balanceAfter) ||
                 other.balanceAfter == balanceAfter) &&
             const DeepCollectionEquality().equals(other._meta, _meta) &&
@@ -2678,10 +2827,17 @@ class _$TransactionDtoImpl implements _TransactionDto {
       runtimeType,
       id,
       type,
+      typeLabel,
       amount,
+      formattedAmount,
       description,
       source,
       pillar,
+      pillarLabel,
+      pillarColor,
+      title,
+      subtitle,
+      context,
       balanceAfter,
       const DeepCollectionEquality().hash(_meta),
       createdAt);
@@ -2705,10 +2861,17 @@ abstract class _TransactionDto implements TransactionDto {
   const factory _TransactionDto(
           {required final String id,
           required final String type,
+          @JsonKey(name: 'type_label') final String? typeLabel,
           required final int amount,
+          @JsonKey(name: 'formatted_amount') final String? formattedAmount,
           required final String description,
           final String? source,
           final String? pillar,
+          @JsonKey(name: 'pillar_label') final String? pillarLabel,
+          @JsonKey(name: 'pillar_color') final String? pillarColor,
+          final String? title,
+          final String? subtitle,
+          final TransactionContextDto? context,
           @JsonKey(name: 'balance_after') final int? balanceAfter,
           final Map<String, dynamic>? meta,
           @JsonKey(name: 'created_at') required final String createdAt}) =
@@ -2722,13 +2885,31 @@ abstract class _TransactionDto implements TransactionDto {
   @override
   String get type;
   @override // earn, spend, purchase, refund
+  @JsonKey(name: 'type_label')
+  String? get typeLabel;
+  @override
   int get amount;
+  @override
+  @JsonKey(name: 'formatted_amount')
+  String? get formattedAmount;
   @override
   String get description;
   @override
   String? get source;
   @override
   String? get pillar;
+  @override
+  @JsonKey(name: 'pillar_label')
+  String? get pillarLabel;
+  @override
+  @JsonKey(name: 'pillar_color')
+  String? get pillarColor;
+  @override
+  String? get title;
+  @override
+  String? get subtitle;
+  @override
+  TransactionContextDto? get context;
   @override
   @JsonKey(name: 'balance_after')
   int? get balanceAfter;
@@ -2741,6 +2922,1782 @@ abstract class _TransactionDto implements TransactionDto {
   @JsonKey(ignore: true)
   _$$TransactionDtoImplCopyWith<_$TransactionDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+TransactionContextDto _$TransactionContextDtoFromJson(
+    Map<String, dynamic> json) {
+  return _TransactionContextDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TransactionContextDto {
+  String get type =>
+      throw _privateConstructorUsedError; // event | organization | booking
+  String? get uuid => throw _privateConstructorUsedError;
+  String? get slug => throw _privateConstructorUsedError;
+  String? get title => throw _privateConstructorUsedError;
+  @JsonKey(name: 'image_url')
+  String? get imageUrl => throw _privateConstructorUsedError;
+  String? get reference => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $TransactionContextDtoCopyWith<TransactionContextDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TransactionContextDtoCopyWith<$Res> {
+  factory $TransactionContextDtoCopyWith(TransactionContextDto value,
+          $Res Function(TransactionContextDto) then) =
+      _$TransactionContextDtoCopyWithImpl<$Res, TransactionContextDto>;
+  @useResult
+  $Res call(
+      {String type,
+      String? uuid,
+      String? slug,
+      String? title,
+      @JsonKey(name: 'image_url') String? imageUrl,
+      String? reference});
+}
+
+/// @nodoc
+class _$TransactionContextDtoCopyWithImpl<$Res,
+        $Val extends TransactionContextDto>
+    implements $TransactionContextDtoCopyWith<$Res> {
+  _$TransactionContextDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? uuid = freezed,
+    Object? slug = freezed,
+    Object? title = freezed,
+    Object? imageUrl = freezed,
+    Object? reference = freezed,
+  }) {
+    return _then(_value.copyWith(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      slug: freezed == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: freezed == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reference: freezed == reference
+          ? _value.reference
+          : reference // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$TransactionContextDtoImplCopyWith<$Res>
+    implements $TransactionContextDtoCopyWith<$Res> {
+  factory _$$TransactionContextDtoImplCopyWith(
+          _$TransactionContextDtoImpl value,
+          $Res Function(_$TransactionContextDtoImpl) then) =
+      __$$TransactionContextDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String type,
+      String? uuid,
+      String? slug,
+      String? title,
+      @JsonKey(name: 'image_url') String? imageUrl,
+      String? reference});
+}
+
+/// @nodoc
+class __$$TransactionContextDtoImplCopyWithImpl<$Res>
+    extends _$TransactionContextDtoCopyWithImpl<$Res,
+        _$TransactionContextDtoImpl>
+    implements _$$TransactionContextDtoImplCopyWith<$Res> {
+  __$$TransactionContextDtoImplCopyWithImpl(_$TransactionContextDtoImpl _value,
+      $Res Function(_$TransactionContextDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? uuid = freezed,
+    Object? slug = freezed,
+    Object? title = freezed,
+    Object? imageUrl = freezed,
+    Object? reference = freezed,
+  }) {
+    return _then(_$TransactionContextDtoImpl(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      slug: freezed == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: freezed == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      reference: freezed == reference
+          ? _value.reference
+          : reference // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TransactionContextDtoImpl implements _TransactionContextDto {
+  const _$TransactionContextDtoImpl(
+      {required this.type,
+      this.uuid,
+      this.slug,
+      this.title,
+      @JsonKey(name: 'image_url') this.imageUrl,
+      this.reference});
+
+  factory _$TransactionContextDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TransactionContextDtoImplFromJson(json);
+
+  @override
+  final String type;
+// event | organization | booking
+  @override
+  final String? uuid;
+  @override
+  final String? slug;
+  @override
+  final String? title;
+  @override
+  @JsonKey(name: 'image_url')
+  final String? imageUrl;
+  @override
+  final String? reference;
+
+  @override
+  String toString() {
+    return 'TransactionContextDto(type: $type, uuid: $uuid, slug: $slug, title: $title, imageUrl: $imageUrl, reference: $reference)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TransactionContextDtoImpl &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.uuid, uuid) || other.uuid == uuid) &&
+            (identical(other.slug, slug) || other.slug == slug) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.imageUrl, imageUrl) ||
+                other.imageUrl == imageUrl) &&
+            (identical(other.reference, reference) ||
+                other.reference == reference));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, type, uuid, slug, title, imageUrl, reference);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TransactionContextDtoImplCopyWith<_$TransactionContextDtoImpl>
+      get copyWith => __$$TransactionContextDtoImplCopyWithImpl<
+          _$TransactionContextDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TransactionContextDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _TransactionContextDto implements TransactionContextDto {
+  const factory _TransactionContextDto(
+      {required final String type,
+      final String? uuid,
+      final String? slug,
+      final String? title,
+      @JsonKey(name: 'image_url') final String? imageUrl,
+      final String? reference}) = _$TransactionContextDtoImpl;
+
+  factory _TransactionContextDto.fromJson(Map<String, dynamic> json) =
+      _$TransactionContextDtoImpl.fromJson;
+
+  @override
+  String get type;
+  @override // event | organization | booking
+  String? get uuid;
+  @override
+  String? get slug;
+  @override
+  String? get title;
+  @override
+  @JsonKey(name: 'image_url')
+  String? get imageUrl;
+  @override
+  String? get reference;
+  @override
+  @JsonKey(ignore: true)
+  _$$TransactionContextDtoImplCopyWith<_$TransactionContextDtoImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+EarningsByPillarEntryDto _$EarningsByPillarEntryDtoFromJson(
+    Map<String, dynamic> json) {
+  return _EarningsByPillarEntryDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$EarningsByPillarEntryDto {
+  String get pillar => throw _privateConstructorUsedError;
+  String get label => throw _privateConstructorUsedError;
+  String get color => throw _privateConstructorUsedError;
+  int get amount => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $EarningsByPillarEntryDtoCopyWith<EarningsByPillarEntryDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $EarningsByPillarEntryDtoCopyWith<$Res> {
+  factory $EarningsByPillarEntryDtoCopyWith(EarningsByPillarEntryDto value,
+          $Res Function(EarningsByPillarEntryDto) then) =
+      _$EarningsByPillarEntryDtoCopyWithImpl<$Res, EarningsByPillarEntryDto>;
+  @useResult
+  $Res call({String pillar, String label, String color, int amount});
+}
+
+/// @nodoc
+class _$EarningsByPillarEntryDtoCopyWithImpl<$Res,
+        $Val extends EarningsByPillarEntryDto>
+    implements $EarningsByPillarEntryDtoCopyWith<$Res> {
+  _$EarningsByPillarEntryDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? pillar = null,
+    Object? label = null,
+    Object? color = null,
+    Object? amount = null,
+  }) {
+    return _then(_value.copyWith(
+      pillar: null == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String,
+      label: null == label
+          ? _value.label
+          : label // ignore: cast_nullable_to_non_nullable
+              as String,
+      color: null == color
+          ? _value.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$EarningsByPillarEntryDtoImplCopyWith<$Res>
+    implements $EarningsByPillarEntryDtoCopyWith<$Res> {
+  factory _$$EarningsByPillarEntryDtoImplCopyWith(
+          _$EarningsByPillarEntryDtoImpl value,
+          $Res Function(_$EarningsByPillarEntryDtoImpl) then) =
+      __$$EarningsByPillarEntryDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String pillar, String label, String color, int amount});
+}
+
+/// @nodoc
+class __$$EarningsByPillarEntryDtoImplCopyWithImpl<$Res>
+    extends _$EarningsByPillarEntryDtoCopyWithImpl<$Res,
+        _$EarningsByPillarEntryDtoImpl>
+    implements _$$EarningsByPillarEntryDtoImplCopyWith<$Res> {
+  __$$EarningsByPillarEntryDtoImplCopyWithImpl(
+      _$EarningsByPillarEntryDtoImpl _value,
+      $Res Function(_$EarningsByPillarEntryDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? pillar = null,
+    Object? label = null,
+    Object? color = null,
+    Object? amount = null,
+  }) {
+    return _then(_$EarningsByPillarEntryDtoImpl(
+      pillar: null == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String,
+      label: null == label
+          ? _value.label
+          : label // ignore: cast_nullable_to_non_nullable
+              as String,
+      color: null == color
+          ? _value.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as String,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$EarningsByPillarEntryDtoImpl implements _EarningsByPillarEntryDto {
+  const _$EarningsByPillarEntryDtoImpl(
+      {required this.pillar,
+      required this.label,
+      required this.color,
+      required this.amount});
+
+  factory _$EarningsByPillarEntryDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$EarningsByPillarEntryDtoImplFromJson(json);
+
+  @override
+  final String pillar;
+  @override
+  final String label;
+  @override
+  final String color;
+  @override
+  final int amount;
+
+  @override
+  String toString() {
+    return 'EarningsByPillarEntryDto(pillar: $pillar, label: $label, color: $color, amount: $amount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$EarningsByPillarEntryDtoImpl &&
+            (identical(other.pillar, pillar) || other.pillar == pillar) &&
+            (identical(other.label, label) || other.label == label) &&
+            (identical(other.color, color) || other.color == color) &&
+            (identical(other.amount, amount) || other.amount == amount));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, pillar, label, color, amount);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$EarningsByPillarEntryDtoImplCopyWith<_$EarningsByPillarEntryDtoImpl>
+      get copyWith => __$$EarningsByPillarEntryDtoImplCopyWithImpl<
+          _$EarningsByPillarEntryDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$EarningsByPillarEntryDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _EarningsByPillarEntryDto implements EarningsByPillarEntryDto {
+  const factory _EarningsByPillarEntryDto(
+      {required final String pillar,
+      required final String label,
+      required final String color,
+      required final int amount}) = _$EarningsByPillarEntryDtoImpl;
+
+  factory _EarningsByPillarEntryDto.fromJson(Map<String, dynamic> json) =
+      _$EarningsByPillarEntryDtoImpl.fromJson;
+
+  @override
+  String get pillar;
+  @override
+  String get label;
+  @override
+  String get color;
+  @override
+  int get amount;
+  @override
+  @JsonKey(ignore: true)
+  _$$EarningsByPillarEntryDtoImplCopyWith<_$EarningsByPillarEntryDtoImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+TransactionsListResponseDto _$TransactionsListResponseDtoFromJson(
+    Map<String, dynamic> json) {
+  return _TransactionsListResponseDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TransactionsListResponseDto {
+  List<TransactionDto> get items => throw _privateConstructorUsedError;
+  @JsonKey(name: 'current_balance')
+  int get currentBalance => throw _privateConstructorUsedError;
+  @JsonKey(name: 'lifetime_earned')
+  int get lifetimeEarned => throw _privateConstructorUsedError;
+  @JsonKey(name: 'earnings_by_pillar')
+  List<EarningsByPillarEntryDto> get earningsByPillar =>
+      throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $TransactionsListResponseDtoCopyWith<TransactionsListResponseDto>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TransactionsListResponseDtoCopyWith<$Res> {
+  factory $TransactionsListResponseDtoCopyWith(
+          TransactionsListResponseDto value,
+          $Res Function(TransactionsListResponseDto) then) =
+      _$TransactionsListResponseDtoCopyWithImpl<$Res,
+          TransactionsListResponseDto>;
+  @useResult
+  $Res call(
+      {List<TransactionDto> items,
+      @JsonKey(name: 'current_balance') int currentBalance,
+      @JsonKey(name: 'lifetime_earned') int lifetimeEarned,
+      @JsonKey(name: 'earnings_by_pillar')
+      List<EarningsByPillarEntryDto> earningsByPillar});
+}
+
+/// @nodoc
+class _$TransactionsListResponseDtoCopyWithImpl<$Res,
+        $Val extends TransactionsListResponseDto>
+    implements $TransactionsListResponseDtoCopyWith<$Res> {
+  _$TransactionsListResponseDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? items = null,
+    Object? currentBalance = null,
+    Object? lifetimeEarned = null,
+    Object? earningsByPillar = null,
+  }) {
+    return _then(_value.copyWith(
+      items: null == items
+          ? _value.items
+          : items // ignore: cast_nullable_to_non_nullable
+              as List<TransactionDto>,
+      currentBalance: null == currentBalance
+          ? _value.currentBalance
+          : currentBalance // ignore: cast_nullable_to_non_nullable
+              as int,
+      lifetimeEarned: null == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
+              as int,
+      earningsByPillar: null == earningsByPillar
+          ? _value.earningsByPillar
+          : earningsByPillar // ignore: cast_nullable_to_non_nullable
+              as List<EarningsByPillarEntryDto>,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$TransactionsListResponseDtoImplCopyWith<$Res>
+    implements $TransactionsListResponseDtoCopyWith<$Res> {
+  factory _$$TransactionsListResponseDtoImplCopyWith(
+          _$TransactionsListResponseDtoImpl value,
+          $Res Function(_$TransactionsListResponseDtoImpl) then) =
+      __$$TransactionsListResponseDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {List<TransactionDto> items,
+      @JsonKey(name: 'current_balance') int currentBalance,
+      @JsonKey(name: 'lifetime_earned') int lifetimeEarned,
+      @JsonKey(name: 'earnings_by_pillar')
+      List<EarningsByPillarEntryDto> earningsByPillar});
+}
+
+/// @nodoc
+class __$$TransactionsListResponseDtoImplCopyWithImpl<$Res>
+    extends _$TransactionsListResponseDtoCopyWithImpl<$Res,
+        _$TransactionsListResponseDtoImpl>
+    implements _$$TransactionsListResponseDtoImplCopyWith<$Res> {
+  __$$TransactionsListResponseDtoImplCopyWithImpl(
+      _$TransactionsListResponseDtoImpl _value,
+      $Res Function(_$TransactionsListResponseDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? items = null,
+    Object? currentBalance = null,
+    Object? lifetimeEarned = null,
+    Object? earningsByPillar = null,
+  }) {
+    return _then(_$TransactionsListResponseDtoImpl(
+      items: null == items
+          ? _value._items
+          : items // ignore: cast_nullable_to_non_nullable
+              as List<TransactionDto>,
+      currentBalance: null == currentBalance
+          ? _value.currentBalance
+          : currentBalance // ignore: cast_nullable_to_non_nullable
+              as int,
+      lifetimeEarned: null == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
+              as int,
+      earningsByPillar: null == earningsByPillar
+          ? _value._earningsByPillar
+          : earningsByPillar // ignore: cast_nullable_to_non_nullable
+              as List<EarningsByPillarEntryDto>,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TransactionsListResponseDtoImpl
+    implements _TransactionsListResponseDto {
+  const _$TransactionsListResponseDtoImpl(
+      {required final List<TransactionDto> items,
+      @JsonKey(name: 'current_balance') this.currentBalance = 0,
+      @JsonKey(name: 'lifetime_earned') this.lifetimeEarned = 0,
+      @JsonKey(name: 'earnings_by_pillar')
+      final List<EarningsByPillarEntryDto> earningsByPillar =
+          const <EarningsByPillarEntryDto>[]})
+      : _items = items,
+        _earningsByPillar = earningsByPillar;
+
+  factory _$TransactionsListResponseDtoImpl.fromJson(
+          Map<String, dynamic> json) =>
+      _$$TransactionsListResponseDtoImplFromJson(json);
+
+  final List<TransactionDto> _items;
+  @override
+  List<TransactionDto> get items {
+    if (_items is EqualUnmodifiableListView) return _items;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_items);
+  }
+
+  @override
+  @JsonKey(name: 'current_balance')
+  final int currentBalance;
+  @override
+  @JsonKey(name: 'lifetime_earned')
+  final int lifetimeEarned;
+  final List<EarningsByPillarEntryDto> _earningsByPillar;
+  @override
+  @JsonKey(name: 'earnings_by_pillar')
+  List<EarningsByPillarEntryDto> get earningsByPillar {
+    if (_earningsByPillar is EqualUnmodifiableListView)
+      return _earningsByPillar;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_earningsByPillar);
+  }
+
+  @override
+  String toString() {
+    return 'TransactionsListResponseDto(items: $items, currentBalance: $currentBalance, lifetimeEarned: $lifetimeEarned, earningsByPillar: $earningsByPillar)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TransactionsListResponseDtoImpl &&
+            const DeepCollectionEquality().equals(other._items, _items) &&
+            (identical(other.currentBalance, currentBalance) ||
+                other.currentBalance == currentBalance) &&
+            (identical(other.lifetimeEarned, lifetimeEarned) ||
+                other.lifetimeEarned == lifetimeEarned) &&
+            const DeepCollectionEquality()
+                .equals(other._earningsByPillar, _earningsByPillar));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_items),
+      currentBalance,
+      lifetimeEarned,
+      const DeepCollectionEquality().hash(_earningsByPillar));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TransactionsListResponseDtoImplCopyWith<_$TransactionsListResponseDtoImpl>
+      get copyWith => __$$TransactionsListResponseDtoImplCopyWithImpl<
+          _$TransactionsListResponseDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TransactionsListResponseDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _TransactionsListResponseDto
+    implements TransactionsListResponseDto {
+  const factory _TransactionsListResponseDto(
+          {required final List<TransactionDto> items,
+          @JsonKey(name: 'current_balance') final int currentBalance,
+          @JsonKey(name: 'lifetime_earned') final int lifetimeEarned,
+          @JsonKey(name: 'earnings_by_pillar')
+          final List<EarningsByPillarEntryDto> earningsByPillar}) =
+      _$TransactionsListResponseDtoImpl;
+
+  factory _TransactionsListResponseDto.fromJson(Map<String, dynamic> json) =
+      _$TransactionsListResponseDtoImpl.fromJson;
+
+  @override
+  List<TransactionDto> get items;
+  @override
+  @JsonKey(name: 'current_balance')
+  int get currentBalance;
+  @override
+  @JsonKey(name: 'lifetime_earned')
+  int get lifetimeEarned;
+  @override
+  @JsonKey(name: 'earnings_by_pillar')
+  List<EarningsByPillarEntryDto> get earningsByPillar;
+  @override
+  @JsonKey(ignore: true)
+  _$$TransactionsListResponseDtoImplCopyWith<_$TransactionsListResponseDtoImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+BalanceResponseDto _$BalanceResponseDtoFromJson(Map<String, dynamic> json) {
+  return _BalanceResponseDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$BalanceResponseDto {
+  int get balance => throw _privateConstructorUsedError;
+  @JsonKey(name: 'lifetime_earned')
+  int get lifetimeEarned => throw _privateConstructorUsedError;
+  String get rank => throw _privateConstructorUsedError;
+  @JsonKey(name: 'rank_label')
+  String get rankLabel => throw _privateConstructorUsedError;
+  @JsonKey(name: 'rank_icon')
+  String get rankIcon => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $BalanceResponseDtoCopyWith<BalanceResponseDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BalanceResponseDtoCopyWith<$Res> {
+  factory $BalanceResponseDtoCopyWith(
+          BalanceResponseDto value, $Res Function(BalanceResponseDto) then) =
+      _$BalanceResponseDtoCopyWithImpl<$Res, BalanceResponseDto>;
+  @useResult
+  $Res call(
+      {int balance,
+      @JsonKey(name: 'lifetime_earned') int lifetimeEarned,
+      String rank,
+      @JsonKey(name: 'rank_label') String rankLabel,
+      @JsonKey(name: 'rank_icon') String rankIcon});
+}
+
+/// @nodoc
+class _$BalanceResponseDtoCopyWithImpl<$Res, $Val extends BalanceResponseDto>
+    implements $BalanceResponseDtoCopyWith<$Res> {
+  _$BalanceResponseDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? balance = null,
+    Object? lifetimeEarned = null,
+    Object? rank = null,
+    Object? rankLabel = null,
+    Object? rankIcon = null,
+  }) {
+    return _then(_value.copyWith(
+      balance: null == balance
+          ? _value.balance
+          : balance // ignore: cast_nullable_to_non_nullable
+              as int,
+      lifetimeEarned: null == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
+              as int,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as String,
+      rankLabel: null == rankLabel
+          ? _value.rankLabel
+          : rankLabel // ignore: cast_nullable_to_non_nullable
+              as String,
+      rankIcon: null == rankIcon
+          ? _value.rankIcon
+          : rankIcon // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BalanceResponseDtoImplCopyWith<$Res>
+    implements $BalanceResponseDtoCopyWith<$Res> {
+  factory _$$BalanceResponseDtoImplCopyWith(_$BalanceResponseDtoImpl value,
+          $Res Function(_$BalanceResponseDtoImpl) then) =
+      __$$BalanceResponseDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {int balance,
+      @JsonKey(name: 'lifetime_earned') int lifetimeEarned,
+      String rank,
+      @JsonKey(name: 'rank_label') String rankLabel,
+      @JsonKey(name: 'rank_icon') String rankIcon});
+}
+
+/// @nodoc
+class __$$BalanceResponseDtoImplCopyWithImpl<$Res>
+    extends _$BalanceResponseDtoCopyWithImpl<$Res, _$BalanceResponseDtoImpl>
+    implements _$$BalanceResponseDtoImplCopyWith<$Res> {
+  __$$BalanceResponseDtoImplCopyWithImpl(_$BalanceResponseDtoImpl _value,
+      $Res Function(_$BalanceResponseDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? balance = null,
+    Object? lifetimeEarned = null,
+    Object? rank = null,
+    Object? rankLabel = null,
+    Object? rankIcon = null,
+  }) {
+    return _then(_$BalanceResponseDtoImpl(
+      balance: null == balance
+          ? _value.balance
+          : balance // ignore: cast_nullable_to_non_nullable
+              as int,
+      lifetimeEarned: null == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
+              as int,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as String,
+      rankLabel: null == rankLabel
+          ? _value.rankLabel
+          : rankLabel // ignore: cast_nullable_to_non_nullable
+              as String,
+      rankIcon: null == rankIcon
+          ? _value.rankIcon
+          : rankIcon // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$BalanceResponseDtoImpl implements _BalanceResponseDto {
+  const _$BalanceResponseDtoImpl(
+      {required this.balance,
+      @JsonKey(name: 'lifetime_earned') this.lifetimeEarned = 0,
+      required this.rank,
+      @JsonKey(name: 'rank_label') required this.rankLabel,
+      @JsonKey(name: 'rank_icon') required this.rankIcon});
+
+  factory _$BalanceResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BalanceResponseDtoImplFromJson(json);
+
+  @override
+  final int balance;
+  @override
+  @JsonKey(name: 'lifetime_earned')
+  final int lifetimeEarned;
+  @override
+  final String rank;
+  @override
+  @JsonKey(name: 'rank_label')
+  final String rankLabel;
+  @override
+  @JsonKey(name: 'rank_icon')
+  final String rankIcon;
+
+  @override
+  String toString() {
+    return 'BalanceResponseDto(balance: $balance, lifetimeEarned: $lifetimeEarned, rank: $rank, rankLabel: $rankLabel, rankIcon: $rankIcon)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BalanceResponseDtoImpl &&
+            (identical(other.balance, balance) || other.balance == balance) &&
+            (identical(other.lifetimeEarned, lifetimeEarned) ||
+                other.lifetimeEarned == lifetimeEarned) &&
+            (identical(other.rank, rank) || other.rank == rank) &&
+            (identical(other.rankLabel, rankLabel) ||
+                other.rankLabel == rankLabel) &&
+            (identical(other.rankIcon, rankIcon) ||
+                other.rankIcon == rankIcon));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, balance, lifetimeEarned, rank, rankLabel, rankIcon);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BalanceResponseDtoImplCopyWith<_$BalanceResponseDtoImpl> get copyWith =>
+      __$$BalanceResponseDtoImplCopyWithImpl<_$BalanceResponseDtoImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$BalanceResponseDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _BalanceResponseDto implements BalanceResponseDto {
+  const factory _BalanceResponseDto(
+          {required final int balance,
+          @JsonKey(name: 'lifetime_earned') final int lifetimeEarned,
+          required final String rank,
+          @JsonKey(name: 'rank_label') required final String rankLabel,
+          @JsonKey(name: 'rank_icon') required final String rankIcon}) =
+      _$BalanceResponseDtoImpl;
+
+  factory _BalanceResponseDto.fromJson(Map<String, dynamic> json) =
+      _$BalanceResponseDtoImpl.fromJson;
+
+  @override
+  int get balance;
+  @override
+  @JsonKey(name: 'lifetime_earned')
+  int get lifetimeEarned;
+  @override
+  String get rank;
+  @override
+  @JsonKey(name: 'rank_label')
+  String get rankLabel;
+  @override
+  @JsonKey(name: 'rank_icon')
+  String get rankIcon;
+  @override
+  @JsonKey(ignore: true)
+  _$$BalanceResponseDtoImplCopyWith<_$BalanceResponseDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+HibonsUpdateDto _$HibonsUpdateDtoFromJson(Map<String, dynamic> json) {
+  return _HibonsUpdateDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$HibonsUpdateDto {
+  int get delta => throw _privateConstructorUsedError;
+  @JsonKey(name: 'new_balance')
+  int get newBalance => throw _privateConstructorUsedError;
+  @JsonKey(name: 'new_lifetime')
+  int get newLifetime => throw _privateConstructorUsedError;
+  @JsonKey(name: 'lifetime_delta')
+  int get lifetimeDelta => throw _privateConstructorUsedError;
+  @JsonKey(name: 'rank_changed')
+  bool get rankChanged => throw _privateConstructorUsedError;
+  @JsonKey(name: 'new_rank')
+  String? get newRank => throw _privateConstructorUsedError;
+  @JsonKey(name: 'new_rank_label')
+  String? get newRankLabel => throw _privateConstructorUsedError;
+  @JsonKey(name: 'animation_label')
+  String? get animationLabel => throw _privateConstructorUsedError;
+  String? get pillar => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $HibonsUpdateDtoCopyWith<HibonsUpdateDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $HibonsUpdateDtoCopyWith<$Res> {
+  factory $HibonsUpdateDtoCopyWith(
+          HibonsUpdateDto value, $Res Function(HibonsUpdateDto) then) =
+      _$HibonsUpdateDtoCopyWithImpl<$Res, HibonsUpdateDto>;
+  @useResult
+  $Res call(
+      {int delta,
+      @JsonKey(name: 'new_balance') int newBalance,
+      @JsonKey(name: 'new_lifetime') int newLifetime,
+      @JsonKey(name: 'lifetime_delta') int lifetimeDelta,
+      @JsonKey(name: 'rank_changed') bool rankChanged,
+      @JsonKey(name: 'new_rank') String? newRank,
+      @JsonKey(name: 'new_rank_label') String? newRankLabel,
+      @JsonKey(name: 'animation_label') String? animationLabel,
+      String? pillar});
+}
+
+/// @nodoc
+class _$HibonsUpdateDtoCopyWithImpl<$Res, $Val extends HibonsUpdateDto>
+    implements $HibonsUpdateDtoCopyWith<$Res> {
+  _$HibonsUpdateDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? delta = null,
+    Object? newBalance = null,
+    Object? newLifetime = null,
+    Object? lifetimeDelta = null,
+    Object? rankChanged = null,
+    Object? newRank = freezed,
+    Object? newRankLabel = freezed,
+    Object? animationLabel = freezed,
+    Object? pillar = freezed,
+  }) {
+    return _then(_value.copyWith(
+      delta: null == delta
+          ? _value.delta
+          : delta // ignore: cast_nullable_to_non_nullable
+              as int,
+      newBalance: null == newBalance
+          ? _value.newBalance
+          : newBalance // ignore: cast_nullable_to_non_nullable
+              as int,
+      newLifetime: null == newLifetime
+          ? _value.newLifetime
+          : newLifetime // ignore: cast_nullable_to_non_nullable
+              as int,
+      lifetimeDelta: null == lifetimeDelta
+          ? _value.lifetimeDelta
+          : lifetimeDelta // ignore: cast_nullable_to_non_nullable
+              as int,
+      rankChanged: null == rankChanged
+          ? _value.rankChanged
+          : rankChanged // ignore: cast_nullable_to_non_nullable
+              as bool,
+      newRank: freezed == newRank
+          ? _value.newRank
+          : newRank // ignore: cast_nullable_to_non_nullable
+              as String?,
+      newRankLabel: freezed == newRankLabel
+          ? _value.newRankLabel
+          : newRankLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      animationLabel: freezed == animationLabel
+          ? _value.animationLabel
+          : animationLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillar: freezed == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$HibonsUpdateDtoImplCopyWith<$Res>
+    implements $HibonsUpdateDtoCopyWith<$Res> {
+  factory _$$HibonsUpdateDtoImplCopyWith(_$HibonsUpdateDtoImpl value,
+          $Res Function(_$HibonsUpdateDtoImpl) then) =
+      __$$HibonsUpdateDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {int delta,
+      @JsonKey(name: 'new_balance') int newBalance,
+      @JsonKey(name: 'new_lifetime') int newLifetime,
+      @JsonKey(name: 'lifetime_delta') int lifetimeDelta,
+      @JsonKey(name: 'rank_changed') bool rankChanged,
+      @JsonKey(name: 'new_rank') String? newRank,
+      @JsonKey(name: 'new_rank_label') String? newRankLabel,
+      @JsonKey(name: 'animation_label') String? animationLabel,
+      String? pillar});
+}
+
+/// @nodoc
+class __$$HibonsUpdateDtoImplCopyWithImpl<$Res>
+    extends _$HibonsUpdateDtoCopyWithImpl<$Res, _$HibonsUpdateDtoImpl>
+    implements _$$HibonsUpdateDtoImplCopyWith<$Res> {
+  __$$HibonsUpdateDtoImplCopyWithImpl(
+      _$HibonsUpdateDtoImpl _value, $Res Function(_$HibonsUpdateDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? delta = null,
+    Object? newBalance = null,
+    Object? newLifetime = null,
+    Object? lifetimeDelta = null,
+    Object? rankChanged = null,
+    Object? newRank = freezed,
+    Object? newRankLabel = freezed,
+    Object? animationLabel = freezed,
+    Object? pillar = freezed,
+  }) {
+    return _then(_$HibonsUpdateDtoImpl(
+      delta: null == delta
+          ? _value.delta
+          : delta // ignore: cast_nullable_to_non_nullable
+              as int,
+      newBalance: null == newBalance
+          ? _value.newBalance
+          : newBalance // ignore: cast_nullable_to_non_nullable
+              as int,
+      newLifetime: null == newLifetime
+          ? _value.newLifetime
+          : newLifetime // ignore: cast_nullable_to_non_nullable
+              as int,
+      lifetimeDelta: null == lifetimeDelta
+          ? _value.lifetimeDelta
+          : lifetimeDelta // ignore: cast_nullable_to_non_nullable
+              as int,
+      rankChanged: null == rankChanged
+          ? _value.rankChanged
+          : rankChanged // ignore: cast_nullable_to_non_nullable
+              as bool,
+      newRank: freezed == newRank
+          ? _value.newRank
+          : newRank // ignore: cast_nullable_to_non_nullable
+              as String?,
+      newRankLabel: freezed == newRankLabel
+          ? _value.newRankLabel
+          : newRankLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      animationLabel: freezed == animationLabel
+          ? _value.animationLabel
+          : animationLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pillar: freezed == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$HibonsUpdateDtoImpl implements _HibonsUpdateDto {
+  const _$HibonsUpdateDtoImpl(
+      {this.delta = 0,
+      @JsonKey(name: 'new_balance') this.newBalance = 0,
+      @JsonKey(name: 'new_lifetime') this.newLifetime = 0,
+      @JsonKey(name: 'lifetime_delta') this.lifetimeDelta = 0,
+      @JsonKey(name: 'rank_changed') this.rankChanged = false,
+      @JsonKey(name: 'new_rank') this.newRank,
+      @JsonKey(name: 'new_rank_label') this.newRankLabel,
+      @JsonKey(name: 'animation_label') this.animationLabel,
+      this.pillar});
+
+  factory _$HibonsUpdateDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$HibonsUpdateDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final int delta;
+  @override
+  @JsonKey(name: 'new_balance')
+  final int newBalance;
+  @override
+  @JsonKey(name: 'new_lifetime')
+  final int newLifetime;
+  @override
+  @JsonKey(name: 'lifetime_delta')
+  final int lifetimeDelta;
+  @override
+  @JsonKey(name: 'rank_changed')
+  final bool rankChanged;
+  @override
+  @JsonKey(name: 'new_rank')
+  final String? newRank;
+  @override
+  @JsonKey(name: 'new_rank_label')
+  final String? newRankLabel;
+  @override
+  @JsonKey(name: 'animation_label')
+  final String? animationLabel;
+  @override
+  final String? pillar;
+
+  @override
+  String toString() {
+    return 'HibonsUpdateDto(delta: $delta, newBalance: $newBalance, newLifetime: $newLifetime, lifetimeDelta: $lifetimeDelta, rankChanged: $rankChanged, newRank: $newRank, newRankLabel: $newRankLabel, animationLabel: $animationLabel, pillar: $pillar)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$HibonsUpdateDtoImpl &&
+            (identical(other.delta, delta) || other.delta == delta) &&
+            (identical(other.newBalance, newBalance) ||
+                other.newBalance == newBalance) &&
+            (identical(other.newLifetime, newLifetime) ||
+                other.newLifetime == newLifetime) &&
+            (identical(other.lifetimeDelta, lifetimeDelta) ||
+                other.lifetimeDelta == lifetimeDelta) &&
+            (identical(other.rankChanged, rankChanged) ||
+                other.rankChanged == rankChanged) &&
+            (identical(other.newRank, newRank) || other.newRank == newRank) &&
+            (identical(other.newRankLabel, newRankLabel) ||
+                other.newRankLabel == newRankLabel) &&
+            (identical(other.animationLabel, animationLabel) ||
+                other.animationLabel == animationLabel) &&
+            (identical(other.pillar, pillar) || other.pillar == pillar));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      delta,
+      newBalance,
+      newLifetime,
+      lifetimeDelta,
+      rankChanged,
+      newRank,
+      newRankLabel,
+      animationLabel,
+      pillar);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$HibonsUpdateDtoImplCopyWith<_$HibonsUpdateDtoImpl> get copyWith =>
+      __$$HibonsUpdateDtoImplCopyWithImpl<_$HibonsUpdateDtoImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$HibonsUpdateDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _HibonsUpdateDto implements HibonsUpdateDto {
+  const factory _HibonsUpdateDto(
+      {final int delta,
+      @JsonKey(name: 'new_balance') final int newBalance,
+      @JsonKey(name: 'new_lifetime') final int newLifetime,
+      @JsonKey(name: 'lifetime_delta') final int lifetimeDelta,
+      @JsonKey(name: 'rank_changed') final bool rankChanged,
+      @JsonKey(name: 'new_rank') final String? newRank,
+      @JsonKey(name: 'new_rank_label') final String? newRankLabel,
+      @JsonKey(name: 'animation_label') final String? animationLabel,
+      final String? pillar}) = _$HibonsUpdateDtoImpl;
+
+  factory _HibonsUpdateDto.fromJson(Map<String, dynamic> json) =
+      _$HibonsUpdateDtoImpl.fromJson;
+
+  @override
+  int get delta;
+  @override
+  @JsonKey(name: 'new_balance')
+  int get newBalance;
+  @override
+  @JsonKey(name: 'new_lifetime')
+  int get newLifetime;
+  @override
+  @JsonKey(name: 'lifetime_delta')
+  int get lifetimeDelta;
+  @override
+  @JsonKey(name: 'rank_changed')
+  bool get rankChanged;
+  @override
+  @JsonKey(name: 'new_rank')
+  String? get newRank;
+  @override
+  @JsonKey(name: 'new_rank_label')
+  String? get newRankLabel;
+  @override
+  @JsonKey(name: 'animation_label')
+  String? get animationLabel;
+  @override
+  String? get pillar;
+  @override
+  @JsonKey(ignore: true)
+  _$$HibonsUpdateDtoImplCopyWith<_$HibonsUpdateDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+ActionsCatalogEntryDto _$ActionsCatalogEntryDtoFromJson(
+    Map<String, dynamic> json) {
+  return _ActionsCatalogEntryDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ActionsCatalogEntryDto {
+  String get action => throw _privateConstructorUsedError;
+  String get title => throw _privateConstructorUsedError;
+  String get description => throw _privateConstructorUsedError;
+  int get amount => throw _privateConstructorUsedError;
+  String get pillar => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pillar_label')
+  String get pillarLabel => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pillar_color')
+  String get pillarColor => throw _privateConstructorUsedError;
+  String get icon => throw _privateConstructorUsedError;
+  @JsonKey(name: 'cap_text')
+  String get capText => throw _privateConstructorUsedError;
+  bool get reachable => throw _privateConstructorUsedError;
+  @JsonKey(name: 'completed_this_week')
+  int? get completedThisWeek => throw _privateConstructorUsedError;
+  @JsonKey(name: 'remaining_this_week')
+  int? get remainingThisWeek => throw _privateConstructorUsedError;
+  @JsonKey(name: 'completed_today')
+  int? get completedToday => throw _privateConstructorUsedError;
+  @JsonKey(name: 'remaining_today')
+  int? get remainingToday => throw _privateConstructorUsedError;
+  @JsonKey(name: 'completed_lifetime')
+  int? get completedLifetime => throw _privateConstructorUsedError;
+  @JsonKey(name: 'remaining_lifetime')
+  int? get remainingLifetime => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $ActionsCatalogEntryDtoCopyWith<ActionsCatalogEntryDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ActionsCatalogEntryDtoCopyWith<$Res> {
+  factory $ActionsCatalogEntryDtoCopyWith(ActionsCatalogEntryDto value,
+          $Res Function(ActionsCatalogEntryDto) then) =
+      _$ActionsCatalogEntryDtoCopyWithImpl<$Res, ActionsCatalogEntryDto>;
+  @useResult
+  $Res call(
+      {String action,
+      String title,
+      String description,
+      int amount,
+      String pillar,
+      @JsonKey(name: 'pillar_label') String pillarLabel,
+      @JsonKey(name: 'pillar_color') String pillarColor,
+      String icon,
+      @JsonKey(name: 'cap_text') String capText,
+      bool reachable,
+      @JsonKey(name: 'completed_this_week') int? completedThisWeek,
+      @JsonKey(name: 'remaining_this_week') int? remainingThisWeek,
+      @JsonKey(name: 'completed_today') int? completedToday,
+      @JsonKey(name: 'remaining_today') int? remainingToday,
+      @JsonKey(name: 'completed_lifetime') int? completedLifetime,
+      @JsonKey(name: 'remaining_lifetime') int? remainingLifetime});
+}
+
+/// @nodoc
+class _$ActionsCatalogEntryDtoCopyWithImpl<$Res,
+        $Val extends ActionsCatalogEntryDto>
+    implements $ActionsCatalogEntryDtoCopyWith<$Res> {
+  _$ActionsCatalogEntryDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? action = null,
+    Object? title = null,
+    Object? description = null,
+    Object? amount = null,
+    Object? pillar = null,
+    Object? pillarLabel = null,
+    Object? pillarColor = null,
+    Object? icon = null,
+    Object? capText = null,
+    Object? reachable = null,
+    Object? completedThisWeek = freezed,
+    Object? remainingThisWeek = freezed,
+    Object? completedToday = freezed,
+    Object? remainingToday = freezed,
+    Object? completedLifetime = freezed,
+    Object? remainingLifetime = freezed,
+  }) {
+    return _then(_value.copyWith(
+      action: null == action
+          ? _value.action
+          : action // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+      pillar: null == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String,
+      pillarLabel: null == pillarLabel
+          ? _value.pillarLabel
+          : pillarLabel // ignore: cast_nullable_to_non_nullable
+              as String,
+      pillarColor: null == pillarColor
+          ? _value.pillarColor
+          : pillarColor // ignore: cast_nullable_to_non_nullable
+              as String,
+      icon: null == icon
+          ? _value.icon
+          : icon // ignore: cast_nullable_to_non_nullable
+              as String,
+      capText: null == capText
+          ? _value.capText
+          : capText // ignore: cast_nullable_to_non_nullable
+              as String,
+      reachable: null == reachable
+          ? _value.reachable
+          : reachable // ignore: cast_nullable_to_non_nullable
+              as bool,
+      completedThisWeek: freezed == completedThisWeek
+          ? _value.completedThisWeek
+          : completedThisWeek // ignore: cast_nullable_to_non_nullable
+              as int?,
+      remainingThisWeek: freezed == remainingThisWeek
+          ? _value.remainingThisWeek
+          : remainingThisWeek // ignore: cast_nullable_to_non_nullable
+              as int?,
+      completedToday: freezed == completedToday
+          ? _value.completedToday
+          : completedToday // ignore: cast_nullable_to_non_nullable
+              as int?,
+      remainingToday: freezed == remainingToday
+          ? _value.remainingToday
+          : remainingToday // ignore: cast_nullable_to_non_nullable
+              as int?,
+      completedLifetime: freezed == completedLifetime
+          ? _value.completedLifetime
+          : completedLifetime // ignore: cast_nullable_to_non_nullable
+              as int?,
+      remainingLifetime: freezed == remainingLifetime
+          ? _value.remainingLifetime
+          : remainingLifetime // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$ActionsCatalogEntryDtoImplCopyWith<$Res>
+    implements $ActionsCatalogEntryDtoCopyWith<$Res> {
+  factory _$$ActionsCatalogEntryDtoImplCopyWith(
+          _$ActionsCatalogEntryDtoImpl value,
+          $Res Function(_$ActionsCatalogEntryDtoImpl) then) =
+      __$$ActionsCatalogEntryDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String action,
+      String title,
+      String description,
+      int amount,
+      String pillar,
+      @JsonKey(name: 'pillar_label') String pillarLabel,
+      @JsonKey(name: 'pillar_color') String pillarColor,
+      String icon,
+      @JsonKey(name: 'cap_text') String capText,
+      bool reachable,
+      @JsonKey(name: 'completed_this_week') int? completedThisWeek,
+      @JsonKey(name: 'remaining_this_week') int? remainingThisWeek,
+      @JsonKey(name: 'completed_today') int? completedToday,
+      @JsonKey(name: 'remaining_today') int? remainingToday,
+      @JsonKey(name: 'completed_lifetime') int? completedLifetime,
+      @JsonKey(name: 'remaining_lifetime') int? remainingLifetime});
+}
+
+/// @nodoc
+class __$$ActionsCatalogEntryDtoImplCopyWithImpl<$Res>
+    extends _$ActionsCatalogEntryDtoCopyWithImpl<$Res,
+        _$ActionsCatalogEntryDtoImpl>
+    implements _$$ActionsCatalogEntryDtoImplCopyWith<$Res> {
+  __$$ActionsCatalogEntryDtoImplCopyWithImpl(
+      _$ActionsCatalogEntryDtoImpl _value,
+      $Res Function(_$ActionsCatalogEntryDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? action = null,
+    Object? title = null,
+    Object? description = null,
+    Object? amount = null,
+    Object? pillar = null,
+    Object? pillarLabel = null,
+    Object? pillarColor = null,
+    Object? icon = null,
+    Object? capText = null,
+    Object? reachable = null,
+    Object? completedThisWeek = freezed,
+    Object? remainingThisWeek = freezed,
+    Object? completedToday = freezed,
+    Object? remainingToday = freezed,
+    Object? completedLifetime = freezed,
+    Object? remainingLifetime = freezed,
+  }) {
+    return _then(_$ActionsCatalogEntryDtoImpl(
+      action: null == action
+          ? _value.action
+          : action // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as int,
+      pillar: null == pillar
+          ? _value.pillar
+          : pillar // ignore: cast_nullable_to_non_nullable
+              as String,
+      pillarLabel: null == pillarLabel
+          ? _value.pillarLabel
+          : pillarLabel // ignore: cast_nullable_to_non_nullable
+              as String,
+      pillarColor: null == pillarColor
+          ? _value.pillarColor
+          : pillarColor // ignore: cast_nullable_to_non_nullable
+              as String,
+      icon: null == icon
+          ? _value.icon
+          : icon // ignore: cast_nullable_to_non_nullable
+              as String,
+      capText: null == capText
+          ? _value.capText
+          : capText // ignore: cast_nullable_to_non_nullable
+              as String,
+      reachable: null == reachable
+          ? _value.reachable
+          : reachable // ignore: cast_nullable_to_non_nullable
+              as bool,
+      completedThisWeek: freezed == completedThisWeek
+          ? _value.completedThisWeek
+          : completedThisWeek // ignore: cast_nullable_to_non_nullable
+              as int?,
+      remainingThisWeek: freezed == remainingThisWeek
+          ? _value.remainingThisWeek
+          : remainingThisWeek // ignore: cast_nullable_to_non_nullable
+              as int?,
+      completedToday: freezed == completedToday
+          ? _value.completedToday
+          : completedToday // ignore: cast_nullable_to_non_nullable
+              as int?,
+      remainingToday: freezed == remainingToday
+          ? _value.remainingToday
+          : remainingToday // ignore: cast_nullable_to_non_nullable
+              as int?,
+      completedLifetime: freezed == completedLifetime
+          ? _value.completedLifetime
+          : completedLifetime // ignore: cast_nullable_to_non_nullable
+              as int?,
+      remainingLifetime: freezed == remainingLifetime
+          ? _value.remainingLifetime
+          : remainingLifetime // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ActionsCatalogEntryDtoImpl implements _ActionsCatalogEntryDto {
+  const _$ActionsCatalogEntryDtoImpl(
+      {required this.action,
+      required this.title,
+      required this.description,
+      required this.amount,
+      required this.pillar,
+      @JsonKey(name: 'pillar_label') required this.pillarLabel,
+      @JsonKey(name: 'pillar_color') required this.pillarColor,
+      required this.icon,
+      @JsonKey(name: 'cap_text') required this.capText,
+      this.reachable = true,
+      @JsonKey(name: 'completed_this_week') this.completedThisWeek,
+      @JsonKey(name: 'remaining_this_week') this.remainingThisWeek,
+      @JsonKey(name: 'completed_today') this.completedToday,
+      @JsonKey(name: 'remaining_today') this.remainingToday,
+      @JsonKey(name: 'completed_lifetime') this.completedLifetime,
+      @JsonKey(name: 'remaining_lifetime') this.remainingLifetime});
+
+  factory _$ActionsCatalogEntryDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ActionsCatalogEntryDtoImplFromJson(json);
+
+  @override
+  final String action;
+  @override
+  final String title;
+  @override
+  final String description;
+  @override
+  final int amount;
+  @override
+  final String pillar;
+  @override
+  @JsonKey(name: 'pillar_label')
+  final String pillarLabel;
+  @override
+  @JsonKey(name: 'pillar_color')
+  final String pillarColor;
+  @override
+  final String icon;
+  @override
+  @JsonKey(name: 'cap_text')
+  final String capText;
+  @override
+  @JsonKey()
+  final bool reachable;
+  @override
+  @JsonKey(name: 'completed_this_week')
+  final int? completedThisWeek;
+  @override
+  @JsonKey(name: 'remaining_this_week')
+  final int? remainingThisWeek;
+  @override
+  @JsonKey(name: 'completed_today')
+  final int? completedToday;
+  @override
+  @JsonKey(name: 'remaining_today')
+  final int? remainingToday;
+  @override
+  @JsonKey(name: 'completed_lifetime')
+  final int? completedLifetime;
+  @override
+  @JsonKey(name: 'remaining_lifetime')
+  final int? remainingLifetime;
+
+  @override
+  String toString() {
+    return 'ActionsCatalogEntryDto(action: $action, title: $title, description: $description, amount: $amount, pillar: $pillar, pillarLabel: $pillarLabel, pillarColor: $pillarColor, icon: $icon, capText: $capText, reachable: $reachable, completedThisWeek: $completedThisWeek, remainingThisWeek: $remainingThisWeek, completedToday: $completedToday, remainingToday: $remainingToday, completedLifetime: $completedLifetime, remainingLifetime: $remainingLifetime)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ActionsCatalogEntryDtoImpl &&
+            (identical(other.action, action) || other.action == action) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.amount, amount) || other.amount == amount) &&
+            (identical(other.pillar, pillar) || other.pillar == pillar) &&
+            (identical(other.pillarLabel, pillarLabel) ||
+                other.pillarLabel == pillarLabel) &&
+            (identical(other.pillarColor, pillarColor) ||
+                other.pillarColor == pillarColor) &&
+            (identical(other.icon, icon) || other.icon == icon) &&
+            (identical(other.capText, capText) || other.capText == capText) &&
+            (identical(other.reachable, reachable) ||
+                other.reachable == reachable) &&
+            (identical(other.completedThisWeek, completedThisWeek) ||
+                other.completedThisWeek == completedThisWeek) &&
+            (identical(other.remainingThisWeek, remainingThisWeek) ||
+                other.remainingThisWeek == remainingThisWeek) &&
+            (identical(other.completedToday, completedToday) ||
+                other.completedToday == completedToday) &&
+            (identical(other.remainingToday, remainingToday) ||
+                other.remainingToday == remainingToday) &&
+            (identical(other.completedLifetime, completedLifetime) ||
+                other.completedLifetime == completedLifetime) &&
+            (identical(other.remainingLifetime, remainingLifetime) ||
+                other.remainingLifetime == remainingLifetime));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      action,
+      title,
+      description,
+      amount,
+      pillar,
+      pillarLabel,
+      pillarColor,
+      icon,
+      capText,
+      reachable,
+      completedThisWeek,
+      remainingThisWeek,
+      completedToday,
+      remainingToday,
+      completedLifetime,
+      remainingLifetime);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ActionsCatalogEntryDtoImplCopyWith<_$ActionsCatalogEntryDtoImpl>
+      get copyWith => __$$ActionsCatalogEntryDtoImplCopyWithImpl<
+          _$ActionsCatalogEntryDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ActionsCatalogEntryDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _ActionsCatalogEntryDto implements ActionsCatalogEntryDto {
+  const factory _ActionsCatalogEntryDto(
+          {required final String action,
+          required final String title,
+          required final String description,
+          required final int amount,
+          required final String pillar,
+          @JsonKey(name: 'pillar_label') required final String pillarLabel,
+          @JsonKey(name: 'pillar_color') required final String pillarColor,
+          required final String icon,
+          @JsonKey(name: 'cap_text') required final String capText,
+          final bool reachable,
+          @JsonKey(name: 'completed_this_week') final int? completedThisWeek,
+          @JsonKey(name: 'remaining_this_week') final int? remainingThisWeek,
+          @JsonKey(name: 'completed_today') final int? completedToday,
+          @JsonKey(name: 'remaining_today') final int? remainingToday,
+          @JsonKey(name: 'completed_lifetime') final int? completedLifetime,
+          @JsonKey(name: 'remaining_lifetime') final int? remainingLifetime}) =
+      _$ActionsCatalogEntryDtoImpl;
+
+  factory _ActionsCatalogEntryDto.fromJson(Map<String, dynamic> json) =
+      _$ActionsCatalogEntryDtoImpl.fromJson;
+
+  @override
+  String get action;
+  @override
+  String get title;
+  @override
+  String get description;
+  @override
+  int get amount;
+  @override
+  String get pillar;
+  @override
+  @JsonKey(name: 'pillar_label')
+  String get pillarLabel;
+  @override
+  @JsonKey(name: 'pillar_color')
+  String get pillarColor;
+  @override
+  String get icon;
+  @override
+  @JsonKey(name: 'cap_text')
+  String get capText;
+  @override
+  bool get reachable;
+  @override
+  @JsonKey(name: 'completed_this_week')
+  int? get completedThisWeek;
+  @override
+  @JsonKey(name: 'remaining_this_week')
+  int? get remainingThisWeek;
+  @override
+  @JsonKey(name: 'completed_today')
+  int? get completedToday;
+  @override
+  @JsonKey(name: 'remaining_today')
+  int? get remainingToday;
+  @override
+  @JsonKey(name: 'completed_lifetime')
+  int? get completedLifetime;
+  @override
+  @JsonKey(name: 'remaining_lifetime')
+  int? get remainingLifetime;
+  @override
+  @JsonKey(ignore: true)
+  _$$ActionsCatalogEntryDtoImplCopyWith<_$ActionsCatalogEntryDtoImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 HibonPackageDto _$HibonPackageDtoFromJson(Map<String, dynamic> json) {

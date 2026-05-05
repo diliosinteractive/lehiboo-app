@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../core/constants/app_constants.dart';
+import '../features/gamification/data/interceptors/hibons_update_interceptor.dart';
 import 'env_config.dart';
 
 final dioProvider = Provider<Dio>((ref) {
@@ -55,6 +56,7 @@ class DioClient {
     // Add interceptors
     _dio.interceptors.addAll([
       JwtAuthInterceptor(SharedSecureStorage.instance),
+      HibonsUpdateInterceptor(),
       if (kDebugMode)
         PrettyDioLogger(
           requestHeader: true,

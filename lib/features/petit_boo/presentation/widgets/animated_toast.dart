@@ -30,7 +30,25 @@ class PetitBooToast extends StatefulWidget {
     Color? color,
     Duration duration = const Duration(seconds: 3),
   }) {
-    final overlay = Overlay.of(context);
+    showOnOverlay(
+      Overlay.of(context),
+      message: message,
+      icon: icon,
+      color: color,
+      duration: duration,
+    );
+  }
+
+  /// Variante qui prend un [OverlayState] directement, utile quand on n'a
+  /// pas de descendant d'Overlay sous la main (ex: déclenché depuis un
+  /// intercepteur Dio via `rootNavigatorKey.currentState!.overlay!`).
+  static void showOnOverlay(
+    OverlayState overlay, {
+    required String message,
+    required IconData icon,
+    Color? color,
+    Duration duration = const Duration(seconds: 3),
+  }) {
     late OverlayEntry entry;
 
     entry = OverlayEntry(
@@ -126,6 +144,17 @@ class PetitBooToast extends StatefulWidget {
       message: '+$amount hibons 🪙 gagnés !',
       icon: Icons.monetization_on,
       color: const Color(0xFFFFB300), // or doré
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  /// Variante hibonsEarned qui prend un [OverlayState] directement (Plan 05).
+  static void hibonsEarnedOnOverlay(OverlayState overlay, {required int amount}) {
+    showOnOverlay(
+      overlay,
+      message: '+$amount hibons 🪙 gagnés !',
+      icon: Icons.monetization_on,
+      color: const Color(0xFFFFB300),
       duration: const Duration(seconds: 3),
     );
   }
