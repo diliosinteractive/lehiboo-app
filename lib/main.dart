@@ -52,6 +52,9 @@ import 'features/gamification/presentation/providers/session_heartbeat_provider.
 import 'features/gamification/application/hibons_service.dart';
 import 'features/gamification/presentation/widgets/hibons_animation_coordinator.dart';
 
+// Vendor check-in (rehydrate active org + clear on logout)
+import 'features/checkin/presentation/providers/active_organization_provider.dart';
+
 // Configuration flag - set to false to use fake data
 const bool useRealApi = true;
 
@@ -212,6 +215,12 @@ class LeHibooApp extends ConsumerWidget {
     // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après
     // 3 min en foreground si l'user est authentifié.
     ref.watch(sessionHeartbeatProvider);
+
+    // Vendor check-in: keep the active-org notifier alive for the whole app
+    // session so it can rehydrate from secure storage on launch and clear
+    // itself when the user logs out (its ref.listen on authProvider only
+    // fires while the provider is observed).
+    ref.watch(activeOrganizationProvider);
 
     return MaterialApp.router(
       title: 'Le Hiboo',

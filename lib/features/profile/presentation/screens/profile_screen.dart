@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../checkin/presentation/providers/vendor_eligibility_provider.dart';
 import '../../../messages/presentation/providers/unread_count_provider.dart';
 import '../../../reviews/presentation/providers/pending_count_provider.dart';
 import '../providers/profile_provider.dart';
@@ -238,6 +239,14 @@ class ProfileScreen extends ConsumerWidget {
           subtitle: 'Gérer vos recherches enregistrées',
           onTap: () => context.push('/notifications'),
         ),
+        if (ref.watch(vendorEligibilityProvider))
+          _buildMenuItem(
+            context,
+            icon: Icons.qr_code_scanner_outlined,
+            title: 'Scanner les billets',
+            subtitle: 'Mode vendeur — contrôle d\'accès',
+            onTap: () => context.push('/vendor/scan'),
+          ),
         _buildMenuItem(
           context,
           icon: Icons.settings_outlined,

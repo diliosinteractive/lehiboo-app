@@ -79,6 +79,8 @@ dependencies:
   flutter_stripe: ^11.5.0
   qr_flutter: ^4.1.0
   screen_brightness: ^1.0.1
+  # Vendor QR check-in (gate scanner) — MLKit-backed.
+  mobile_scanner: ^5.2.3
 
   # Content
   flutter_markdown: ^0.7.1

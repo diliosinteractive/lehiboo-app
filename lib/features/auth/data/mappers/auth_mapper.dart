@@ -3,6 +3,7 @@ import '../models/auth_response_dto.dart';
 
 class AuthMapper {
   static HbUser toUser(UserDto dto) {
+    final role = _parseRole(dto.role);
     return HbUser(
       id: dto.id.toString(),
       email: dto.email,
@@ -16,7 +17,7 @@ class AuthMapper {
       bio: dto.bio,
       birthDate: dto.birthDate != null ? DateTime.tryParse(dto.birthDate!) : null,
       membershipCity: dto.membershipCity,
-      role: _parseRole(dto.role),
+      role: role,
       registeredAt: dto.registeredAt != null ? DateTime.tryParse(dto.registeredAt!) : null,
       isVerified: dto.isVerified,
       newsletter: dto.newsletter,
@@ -27,7 +28,7 @@ class AuthMapper {
               canScanTickets: dto.capabilities!.canScanTickets,
               canManageEvents: dto.capabilities!.canManageEvents,
             )
-          : const UserCapabilities(),
+          : _capabilitiesFromRole(role),
     );
   }
 
@@ -45,6 +46,28 @@ class AuthMapper {
       case 'subscriber':
       default:
         return UserRole.subscriber;
+    }
+  }
+
+  /// Synthesizes capabilities from the auth role when the backend's auth
+  /// response doesn't include the `capabilities` block (current state of
+  /// `/auth/login` as of 2026-05-05). When the backend ships explicit
+  /// capabilities, the DTO branch above takes precedence.
+  ///
+  /// The mapping mirrors what the backend would return for each role:
+  /// vendors and admins can scan tickets and manage events; subscribers
+  /// can only book.
+  static UserCapabilities _capabilitiesFromRole(UserRole role) {
+    switch (role) {
+      case UserRole.partner:
+      case UserRole.admin:
+        return const UserCapabilities(
+          canBook: true,
+          canScanTickets: true,
+          canManageEvents: true,
+        );
+      case UserRole.subscriber:
+        return const UserCapabilities();
     }
   }
 }

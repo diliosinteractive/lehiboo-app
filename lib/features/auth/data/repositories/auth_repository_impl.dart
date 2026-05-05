@@ -193,6 +193,7 @@ class AuthRepositoryImpl implements AuthRepository {
         await _secureStorage.getUserPushNotificationsEnabled();
 
     if (userId != null) {
+      final parsedRole = _parseRole(role);
       _cachedUser = HbUser(
         id: userId,
         email: email ?? '',
@@ -201,16 +202,35 @@ class AuthRepositoryImpl implements AuthRepository {
         lastName: lastName,
         phone: phone,
         avatarUrl: avatarUrl,
-        role: _parseRole(role),
+        role: parsedRole,
         birthDate: birthDateStr != null ? DateTime.tryParse(birthDateStr) : null,
         membershipCity: membershipCity,
         newsletter: newsletter ?? false,
         pushNotificationsEnabled: pushNotifications ?? false,
+        // Capabilities aren't persisted to secure storage — derive them
+        // from the persisted role on cold start so the vendor scanner
+        // entry survives a relaunch. The login response refreshes the
+        // user object whenever the backend ships explicit capabilities.
+        capabilities: _capabilitiesFromRole(parsedRole),
       );
       return _cachedUser;
     }
 
     return null;
+  }
+
+  UserCapabilities _capabilitiesFromRole(UserRole role) {
+    switch (role) {
+      case UserRole.partner:
+      case UserRole.admin:
+        return const UserCapabilities(
+          canBook: true,
+          canScanTickets: true,
+          canManageEvents: true,
+        );
+      case UserRole.subscriber:
+        return const UserCapabilities();
+    }
   }
 
   @override

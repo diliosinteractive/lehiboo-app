@@ -35,7 +35,12 @@ mixin _$MembershipDto {
   @JsonKey(name: 'rejected_at', fromJson: _stringOrNull)
   String? get rejectedAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at', fromJson: _stringOrNull)
-  String? get createdAt => throw _privateConstructorUsedError;
+  String? get createdAt =>
+      throw _privateConstructorUsedError; // Vendor view (MOBILE_CHECKIN_SPEC §12.2). Null on customer rows.
+  @JsonKey(fromJson: _membershipRoleOrNull)
+  MembershipRole? get role => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_active', fromJson: _boolOrNull)
+  bool? get isActive => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -58,7 +63,9 @@ abstract class $MembershipDtoCopyWith<$Res> {
       String? requestedAt,
       @JsonKey(name: 'approved_at', fromJson: _stringOrNull) String? approvedAt,
       @JsonKey(name: 'rejected_at', fromJson: _stringOrNull) String? rejectedAt,
-      @JsonKey(name: 'created_at', fromJson: _stringOrNull) String? createdAt});
+      @JsonKey(name: 'created_at', fromJson: _stringOrNull) String? createdAt,
+      @JsonKey(fromJson: _membershipRoleOrNull) MembershipRole? role,
+      @JsonKey(name: 'is_active', fromJson: _boolOrNull) bool? isActive});
 
   $OrganizationSummaryDtoCopyWith<$Res>? get organization;
 }
@@ -84,6 +91,8 @@ class _$MembershipDtoCopyWithImpl<$Res, $Val extends MembershipDto>
     Object? approvedAt = freezed,
     Object? rejectedAt = freezed,
     Object? createdAt = freezed,
+    Object? role = freezed,
+    Object? isActive = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -118,6 +127,14 @@ class _$MembershipDtoCopyWithImpl<$Res, $Val extends MembershipDto>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as String?,
+      role: freezed == role
+          ? _value.role
+          : role // ignore: cast_nullable_to_non_nullable
+              as MembershipRole?,
+      isActive: freezed == isActive
+          ? _value.isActive
+          : isActive // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ) as $Val);
   }
 
@@ -151,7 +168,9 @@ abstract class _$$MembershipDtoImplCopyWith<$Res>
       String? requestedAt,
       @JsonKey(name: 'approved_at', fromJson: _stringOrNull) String? approvedAt,
       @JsonKey(name: 'rejected_at', fromJson: _stringOrNull) String? rejectedAt,
-      @JsonKey(name: 'created_at', fromJson: _stringOrNull) String? createdAt});
+      @JsonKey(name: 'created_at', fromJson: _stringOrNull) String? createdAt,
+      @JsonKey(fromJson: _membershipRoleOrNull) MembershipRole? role,
+      @JsonKey(name: 'is_active', fromJson: _boolOrNull) bool? isActive});
 
   @override
   $OrganizationSummaryDtoCopyWith<$Res>? get organization;
@@ -176,6 +195,8 @@ class __$$MembershipDtoImplCopyWithImpl<$Res>
     Object? approvedAt = freezed,
     Object? rejectedAt = freezed,
     Object? createdAt = freezed,
+    Object? role = freezed,
+    Object? isActive = freezed,
   }) {
     return _then(_$MembershipDtoImpl(
       id: null == id
@@ -210,6 +231,14 @@ class __$$MembershipDtoImplCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as String?,
+      role: freezed == role
+          ? _value.role
+          : role // ignore: cast_nullable_to_non_nullable
+              as MembershipRole?,
+      isActive: freezed == isActive
+          ? _value.isActive
+          : isActive // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ));
   }
 }
@@ -218,15 +247,17 @@ class __$$MembershipDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$MembershipDtoImpl implements _MembershipDto {
   const _$MembershipDtoImpl(
-      {@JsonKey(fromJson: _int) required this.id,
-      @JsonKey(fromJson: _membershipStatus) required this.status,
-      @JsonKey(name: 'status_label', fromJson: _string)
-      required this.statusLabel,
+      {@JsonKey(fromJson: _int) this.id = 0,
+      @JsonKey(fromJson: _membershipStatus)
+      this.status = MembershipStatus.active,
+      @JsonKey(name: 'status_label', fromJson: _string) this.statusLabel = '',
       this.organization,
       @JsonKey(name: 'requested_at', fromJson: _stringOrNull) this.requestedAt,
       @JsonKey(name: 'approved_at', fromJson: _stringOrNull) this.approvedAt,
       @JsonKey(name: 'rejected_at', fromJson: _stringOrNull) this.rejectedAt,
-      @JsonKey(name: 'created_at', fromJson: _stringOrNull) this.createdAt});
+      @JsonKey(name: 'created_at', fromJson: _stringOrNull) this.createdAt,
+      @JsonKey(fromJson: _membershipRoleOrNull) this.role,
+      @JsonKey(name: 'is_active', fromJson: _boolOrNull) this.isActive});
 
   factory _$MembershipDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$MembershipDtoImplFromJson(json);
@@ -254,10 +285,17 @@ class _$MembershipDtoImpl implements _MembershipDto {
   @override
   @JsonKey(name: 'created_at', fromJson: _stringOrNull)
   final String? createdAt;
+// Vendor view (MOBILE_CHECKIN_SPEC §12.2). Null on customer rows.
+  @override
+  @JsonKey(fromJson: _membershipRoleOrNull)
+  final MembershipRole? role;
+  @override
+  @JsonKey(name: 'is_active', fromJson: _boolOrNull)
+  final bool? isActive;
 
   @override
   String toString() {
-    return 'MembershipDto(id: $id, status: $status, statusLabel: $statusLabel, organization: $organization, requestedAt: $requestedAt, approvedAt: $approvedAt, rejectedAt: $rejectedAt, createdAt: $createdAt)';
+    return 'MembershipDto(id: $id, status: $status, statusLabel: $statusLabel, organization: $organization, requestedAt: $requestedAt, approvedAt: $approvedAt, rejectedAt: $rejectedAt, createdAt: $createdAt, role: $role, isActive: $isActive)';
   }
 
   @override
@@ -278,13 +316,26 @@ class _$MembershipDtoImpl implements _MembershipDto {
             (identical(other.rejectedAt, rejectedAt) ||
                 other.rejectedAt == rejectedAt) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.role, role) || other.role == role) &&
+            (identical(other.isActive, isActive) ||
+                other.isActive == isActive));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, status, statusLabel,
-      organization, requestedAt, approvedAt, rejectedAt, createdAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      status,
+      statusLabel,
+      organization,
+      requestedAt,
+      approvedAt,
+      rejectedAt,
+      createdAt,
+      role,
+      isActive);
 
   @JsonKey(ignore: true)
   @override
@@ -302,11 +353,10 @@ class _$MembershipDtoImpl implements _MembershipDto {
 
 abstract class _MembershipDto implements MembershipDto {
   const factory _MembershipDto(
-      {@JsonKey(fromJson: _int) required final int id,
-      @JsonKey(fromJson: _membershipStatus)
-      required final MembershipStatus status,
+      {@JsonKey(fromJson: _int) final int id,
+      @JsonKey(fromJson: _membershipStatus) final MembershipStatus status,
       @JsonKey(name: 'status_label', fromJson: _string)
-      required final String statusLabel,
+      final String statusLabel,
       final OrganizationSummaryDto? organization,
       @JsonKey(name: 'requested_at', fromJson: _stringOrNull)
       final String? requestedAt,
@@ -315,7 +365,10 @@ abstract class _MembershipDto implements MembershipDto {
       @JsonKey(name: 'rejected_at', fromJson: _stringOrNull)
       final String? rejectedAt,
       @JsonKey(name: 'created_at', fromJson: _stringOrNull)
-      final String? createdAt}) = _$MembershipDtoImpl;
+      final String? createdAt,
+      @JsonKey(fromJson: _membershipRoleOrNull) final MembershipRole? role,
+      @JsonKey(name: 'is_active', fromJson: _boolOrNull)
+      final bool? isActive}) = _$MembershipDtoImpl;
 
   factory _MembershipDto.fromJson(Map<String, dynamic> json) =
       _$MembershipDtoImpl.fromJson;
@@ -343,6 +396,12 @@ abstract class _MembershipDto implements MembershipDto {
   @override
   @JsonKey(name: 'created_at', fromJson: _stringOrNull)
   String? get createdAt;
+  @override // Vendor view (MOBILE_CHECKIN_SPEC §12.2). Null on customer rows.
+  @JsonKey(fromJson: _membershipRoleOrNull)
+  MembershipRole? get role;
+  @override
+  @JsonKey(name: 'is_active', fromJson: _boolOrNull)
+  bool? get isActive;
   @override
   @JsonKey(ignore: true)
   _$$MembershipDtoImplCopyWith<_$MembershipDtoImpl> get copyWith =>
@@ -363,7 +422,12 @@ mixin _$OrganizationSummaryDto {
   @JsonKey(fromJson: _stringOrNull)
   String? get slug => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _string)
-  String get name => throw _privateConstructorUsedError;
+  String get name =>
+      throw _privateConstructorUsedError; // Vendor /me/memberships shape (MOBILE_CHECKIN_SPEC §12.2) sends
+// `organization_name` instead of `name`. Kept as a separate field so
+// both shapes parse cleanly; [displayName] returns the first non-empty.
+  @JsonKey(name: 'organization_name', fromJson: _stringOrNull)
+  String? get organizationName => throw _privateConstructorUsedError;
   @JsonKey(name: 'logo_url', fromJson: _stringOrNull)
   String? get logoUrl => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _stringOrNull)
@@ -403,6 +467,8 @@ abstract class $OrganizationSummaryDtoCopyWith<$Res> {
       @JsonKey(fromJson: _stringOrNull) String? uuid,
       @JsonKey(fromJson: _stringOrNull) String? slug,
       @JsonKey(fromJson: _string) String name,
+      @JsonKey(name: 'organization_name', fromJson: _stringOrNull)
+      String? organizationName,
       @JsonKey(name: 'logo_url', fromJson: _stringOrNull) String? logoUrl,
       @JsonKey(fromJson: _stringOrNull) String? logo,
       @JsonKey(name: 'cover_url', fromJson: _stringOrNull) String? coverUrl,
@@ -433,6 +499,7 @@ class _$OrganizationSummaryDtoCopyWithImpl<$Res,
     Object? uuid = freezed,
     Object? slug = freezed,
     Object? name = null,
+    Object? organizationName = freezed,
     Object? logoUrl = freezed,
     Object? logo = freezed,
     Object? coverUrl = freezed,
@@ -460,6 +527,10 @@ class _$OrganizationSummaryDtoCopyWithImpl<$Res,
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
+      organizationName: freezed == organizationName
+          ? _value.organizationName
+          : organizationName // ignore: cast_nullable_to_non_nullable
+              as String?,
       logoUrl: freezed == logoUrl
           ? _value.logoUrl
           : logoUrl // ignore: cast_nullable_to_non_nullable
@@ -514,6 +585,8 @@ abstract class _$$OrganizationSummaryDtoImplCopyWith<$Res>
       @JsonKey(fromJson: _stringOrNull) String? uuid,
       @JsonKey(fromJson: _stringOrNull) String? slug,
       @JsonKey(fromJson: _string) String name,
+      @JsonKey(name: 'organization_name', fromJson: _stringOrNull)
+      String? organizationName,
       @JsonKey(name: 'logo_url', fromJson: _stringOrNull) String? logoUrl,
       @JsonKey(fromJson: _stringOrNull) String? logo,
       @JsonKey(name: 'cover_url', fromJson: _stringOrNull) String? coverUrl,
@@ -543,6 +616,7 @@ class __$$OrganizationSummaryDtoImplCopyWithImpl<$Res>
     Object? uuid = freezed,
     Object? slug = freezed,
     Object? name = null,
+    Object? organizationName = freezed,
     Object? logoUrl = freezed,
     Object? logo = freezed,
     Object? coverUrl = freezed,
@@ -570,6 +644,10 @@ class __$$OrganizationSummaryDtoImplCopyWithImpl<$Res>
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
+      organizationName: freezed == organizationName
+          ? _value.organizationName
+          : organizationName // ignore: cast_nullable_to_non_nullable
+              as String?,
       logoUrl: freezed == logoUrl
           ? _value.logoUrl
           : logoUrl // ignore: cast_nullable_to_non_nullable
@@ -618,6 +696,8 @@ class _$OrganizationSummaryDtoImpl implements _OrganizationSummaryDto {
       @JsonKey(fromJson: _stringOrNull) this.uuid,
       @JsonKey(fromJson: _stringOrNull) this.slug,
       @JsonKey(fromJson: _string) this.name = '',
+      @JsonKey(name: 'organization_name', fromJson: _stringOrNull)
+      this.organizationName,
       @JsonKey(name: 'logo_url', fromJson: _stringOrNull) this.logoUrl,
       @JsonKey(fromJson: _stringOrNull) this.logo,
       @JsonKey(name: 'cover_url', fromJson: _stringOrNull) this.coverUrl,
@@ -644,6 +724,12 @@ class _$OrganizationSummaryDtoImpl implements _OrganizationSummaryDto {
   @override
   @JsonKey(fromJson: _string)
   final String name;
+// Vendor /me/memberships shape (MOBILE_CHECKIN_SPEC §12.2) sends
+// `organization_name` instead of `name`. Kept as a separate field so
+// both shapes parse cleanly; [displayName] returns the first non-empty.
+  @override
+  @JsonKey(name: 'organization_name', fromJson: _stringOrNull)
+  final String? organizationName;
   @override
   @JsonKey(name: 'logo_url', fromJson: _stringOrNull)
   final String? logoUrl;
@@ -677,7 +763,7 @@ class _$OrganizationSummaryDtoImpl implements _OrganizationSummaryDto {
 
   @override
   String toString() {
-    return 'OrganizationSummaryDto(id: $id, uuid: $uuid, slug: $slug, name: $name, logoUrl: $logoUrl, logo: $logo, coverUrl: $coverUrl, cover: $cover, address: $address, city: $city, verified: $verified, membersCount: $membersCount, membersCountCamel: $membersCountCamel)';
+    return 'OrganizationSummaryDto(id: $id, uuid: $uuid, slug: $slug, name: $name, organizationName: $organizationName, logoUrl: $logoUrl, logo: $logo, coverUrl: $coverUrl, cover: $cover, address: $address, city: $city, verified: $verified, membersCount: $membersCount, membersCountCamel: $membersCountCamel)';
   }
 
   @override
@@ -689,6 +775,8 @@ class _$OrganizationSummaryDtoImpl implements _OrganizationSummaryDto {
             (identical(other.uuid, uuid) || other.uuid == uuid) &&
             (identical(other.slug, slug) || other.slug == slug) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.organizationName, organizationName) ||
+                other.organizationName == organizationName) &&
             (identical(other.logoUrl, logoUrl) || other.logoUrl == logoUrl) &&
             (identical(other.logo, logo) || other.logo == logo) &&
             (identical(other.coverUrl, coverUrl) ||
@@ -712,6 +800,7 @@ class _$OrganizationSummaryDtoImpl implements _OrganizationSummaryDto {
       uuid,
       slug,
       name,
+      organizationName,
       logoUrl,
       logo,
       coverUrl,
@@ -743,6 +832,8 @@ abstract class _OrganizationSummaryDto implements OrganizationSummaryDto {
       @JsonKey(fromJson: _stringOrNull) final String? uuid,
       @JsonKey(fromJson: _stringOrNull) final String? slug,
       @JsonKey(fromJson: _string) final String name,
+      @JsonKey(name: 'organization_name', fromJson: _stringOrNull)
+      final String? organizationName,
       @JsonKey(name: 'logo_url', fromJson: _stringOrNull) final String? logoUrl,
       @JsonKey(fromJson: _stringOrNull) final String? logo,
       @JsonKey(name: 'cover_url', fromJson: _stringOrNull)
@@ -771,6 +862,11 @@ abstract class _OrganizationSummaryDto implements OrganizationSummaryDto {
   @override
   @JsonKey(fromJson: _string)
   String get name;
+  @override // Vendor /me/memberships shape (MOBILE_CHECKIN_SPEC §12.2) sends
+// `organization_name` instead of `name`. Kept as a separate field so
+// both shapes parse cleanly; [displayName] returns the first non-empty.
+  @JsonKey(name: 'organization_name', fromJson: _stringOrNull)
+  String? get organizationName;
   @override
   @JsonKey(name: 'logo_url', fromJson: _stringOrNull)
   String? get logoUrl;

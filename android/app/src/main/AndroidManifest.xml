@@ -3,6 +3,12 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- Vendor ticket check-in (mobile_scanner). `required="false"` lets
+         the app install on tablets/phones without a rear camera; vendors
+         on those devices fall back to manual code entry. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
     <application
         android:label="lehiboo"
         android:name="${applicationName}"

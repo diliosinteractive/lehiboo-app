@@ -8,21 +8,41 @@ part 'membership_dto.g.dart';
 /// responses (controller filter excludes it) — see spec §18.
 enum MembershipStatus { pending, active, rejected }
 
+/// Role of the user inside an organization. Customer memberships are always
+/// `viewer`; vendor staff carry `owner`, `staff`, or `admin`. The ticket
+/// check-in feature filters on this — see MOBILE_CHECKIN_SPEC.md §12.2.
+enum MembershipRole { owner, staff, admin, viewer }
+
+extension MembershipRoleX on MembershipRole {
+  /// Roles that grant vendor capabilities (managing events, scanning
+  /// tickets) — the `viewer` role is read-only customer-side.
+  bool get isVendorRole =>
+      this == MembershipRole.owner ||
+      this == MembershipRole.staff ||
+      this == MembershipRole.admin;
+}
+
 /// One membership row from `GET /me/memberships` or the response body of
 /// `POST /organizations/{slug}/membership-request`.
 ///
-/// Spec: docs/MEMBERSHIPS_MOBILE_SPEC.md §3.4 / §5.2
+/// Spec: docs/MEMBERSHIPS_MOBILE_SPEC.md §3.4 / §5.2 (customer view) and
+/// docs/MOBILE_CHECKIN_SPEC.md §12.2 (vendor view). The same endpoint
+/// returns both shapes; vendor rows omit `id`/`status`/`status_label` and
+/// add `role`/`is_active`.
 @freezed
 class MembershipDto with _$MembershipDto {
   const factory MembershipDto({
-    @JsonKey(fromJson: _int) required int id,
-    @JsonKey(fromJson: _membershipStatus) required MembershipStatus status,
-    @JsonKey(name: 'status_label', fromJson: _string) required String statusLabel,
+    @JsonKey(fromJson: _int) @Default(0) int id,
+    @JsonKey(fromJson: _membershipStatus) @Default(MembershipStatus.active) MembershipStatus status,
+    @JsonKey(name: 'status_label', fromJson: _string) @Default('') String statusLabel,
     OrganizationSummaryDto? organization,
     @JsonKey(name: 'requested_at', fromJson: _stringOrNull) String? requestedAt,
     @JsonKey(name: 'approved_at', fromJson: _stringOrNull) String? approvedAt,
     @JsonKey(name: 'rejected_at', fromJson: _stringOrNull) String? rejectedAt,
     @JsonKey(name: 'created_at', fromJson: _stringOrNull) String? createdAt,
+    // Vendor view (MOBILE_CHECKIN_SPEC §12.2). Null on customer rows.
+    @JsonKey(fromJson: _membershipRoleOrNull) MembershipRole? role,
+    @JsonKey(name: 'is_active', fromJson: _boolOrNull) bool? isActive,
   }) = _MembershipDto;
 
   factory MembershipDto.fromJson(Map<String, dynamic> json) =>
@@ -42,6 +62,10 @@ class OrganizationSummaryDto with _$OrganizationSummaryDto {
     @JsonKey(fromJson: _stringOrNull) String? uuid,
     @JsonKey(fromJson: _stringOrNull) String? slug,
     @JsonKey(fromJson: _string) @Default('') String name,
+    // Vendor /me/memberships shape (MOBILE_CHECKIN_SPEC §12.2) sends
+    // `organization_name` instead of `name`. Kept as a separate field so
+    // both shapes parse cleanly; [displayName] returns the first non-empty.
+    @JsonKey(name: 'organization_name', fromJson: _stringOrNull) String? organizationName,
     @JsonKey(name: 'logo_url', fromJson: _stringOrNull) String? logoUrl,
     @JsonKey(fromJson: _stringOrNull) String? logo,
     @JsonKey(name: 'cover_url', fromJson: _stringOrNull) String? coverUrl,
@@ -68,6 +92,12 @@ extension OrganizationSummaryDtoX on OrganizationSummaryDto {
   /// Either snake or camelCase variant of members_count, whichever the
   /// backend sent. Null when the field is absent from the response.
   int? get membersCountOrNull => membersCount ?? membersCountCamel;
+  /// Customer rows expose `name`; vendor rows expose `organization_name`.
+  /// Returns the first non-empty value, or the empty string.
+  String get displayName {
+    if (name.isNotEmpty) return name;
+    return organizationName ?? '';
+  }
 }
 
 /// Page envelope for `GET /me/memberships` — spec §5.2.
@@ -127,10 +157,33 @@ bool _bool(dynamic v) {
   return false;
 }
 
+bool? _boolOrNull(dynamic v) {
+  if (v == null) return null;
+  if (v is bool) return v;
+  if (v is num) return v != 0;
+  if (v is String) return v == 'true' || v == '1';
+  return null;
+}
+
 MembershipStatus _membershipStatus(dynamic v) {
   final s = v?.toString() ?? '';
   return MembershipStatus.values.firstWhere(
     (e) => e.name == s,
     orElse: () => MembershipStatus.pending,
   );
+}
+
+/// Tolerant parser for the vendor `role` field. Unknown strings (or any
+/// future role we haven't shipped support for) collapse to `null` so the
+/// vendor filter excludes them. We deliberately don't fall back to
+/// `viewer` because that would silently treat an unknown role as a
+/// customer membership.
+MembershipRole? _membershipRoleOrNull(dynamic v) {
+  if (v == null) return null;
+  final s = v.toString().toLowerCase();
+  if (s.isEmpty) return null;
+  for (final r in MembershipRole.values) {
+    if (r.name == s) return r;
+  }
+  return null;
 }

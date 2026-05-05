@@ -46,6 +46,8 @@ import '../features/partners/presentation/screens/followed_organizers_screen.dar
 import '../features/memberships/presentation/screens/invitation_landing_screen.dart';
 import '../features/memberships/presentation/screens/memberships_screen.dart';
 import '../features/memberships/presentation/screens/private_events_screen.dart';
+import '../features/checkin/presentation/screens/checkin_scan_screen.dart';
+import '../features/checkin/presentation/screens/checkin_manual_entry_screen.dart';
 // Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
 // HibonShopScreen import retiré : route /hibons-shop redirigée vers
@@ -367,6 +369,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => ConversationDetailScreen(
           conversationUuid: state.pathParameters['conversationUuid']!,
         ),
+      ),
+
+      // ── Vendor check-in routes ────────────────────────────────────────────
+      // Outside the main shell — full-screen scanner, no bottom nav.
+      // Spec: docs/MOBILE_CHECKIN_SPEC.md.
+      GoRoute(
+        path: '/vendor/scan',
+        name: 'vendor-scan',
+        builder: (_, __) => const CheckinScanScreen(),
+        routes: [
+          GoRoute(
+            path: 'manual',
+            name: 'vendor-scan-manual',
+            builder: (_, __) => const CheckinManualEntryScreen(),
+          ),
+        ],
       ),
 
       // Auth routes
