@@ -11,6 +11,13 @@ final gamificationApiDataSourceProvider = Provider<GamificationApiDataSource>((r
   return GamificationApiDataSource(dio);
 });
 
+/// Levée quand un endpoint d'achat Hibons renvoie 404 (feature désactivée v1).
+class HibonsPurchaseDisabledException implements Exception {
+  const HibonsPurchaseDisabledException();
+  @override
+  String toString() => 'HibonsPurchaseDisabledException: feature disabled';
+}
+
 class GamificationApiDataSource {
   final Dio _dio;
 
@@ -71,28 +78,51 @@ class GamificationApiDataSource {
 
   Future<List<HibonPackageDto>> getPackages() async {
     debugPrint('🎮 GamificationAPI: GET /mobile/hibons/packages');
-    final response = await _dio.get('/mobile/hibons/packages');
-
-    final list = ApiResponseHandler.extractList(response.data);
-    return list.map((item) => HibonPackageDto.fromJson(item as Map<String, dynamic>)).toList();
+    try {
+      final response = await _dio.get('/mobile/hibons/packages');
+      final list = ApiResponseHandler.extractList(response.data);
+      return list.map((item) => HibonPackageDto.fromJson(item as Map<String, dynamic>)).toList();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        debugPrint('🎮 GamificationAPI: hibons purchase disabled (404)');
+        return const [];
+      }
+      rethrow;
+    }
   }
 
   Future<PurchaseResponseDto> createPurchase({required String packageId}) async {
     debugPrint('🎮 GamificationAPI: POST /mobile/hibons/purchase');
-    final response = await _dio.post(
-      '/mobile/hibons/purchase',
-      data: {'package_id': packageId},
-    );
-    final payload = ApiResponseHandler.extractObject(response.data);
-    return PurchaseResponseDto.fromJson(payload);
+    try {
+      final response = await _dio.post(
+        '/mobile/hibons/purchase',
+        data: {'package_id': packageId},
+      );
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return PurchaseResponseDto.fromJson(payload);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        debugPrint('🎮 GamificationAPI: hibons purchase disabled (404)');
+        throw const HibonsPurchaseDisabledException();
+      }
+      rethrow;
+    }
   }
 
   Future<void> confirmPurchase({required String paymentIntentId}) async {
     debugPrint('🎮 GamificationAPI: POST /mobile/hibons/purchase/confirm');
-    await _dio.post(
-      '/mobile/hibons/purchase/confirm',
-      data: {'payment_intent_id': paymentIntentId},
-    );
+    try {
+      await _dio.post(
+        '/mobile/hibons/purchase/confirm',
+        data: {'payment_intent_id': paymentIntentId},
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        debugPrint('🎮 GamificationAPI: hibons purchase disabled (404)');
+        throw const HibonsPurchaseDisabledException();
+      }
+      rethrow;
+    }
   }
 
   Future<void> unlockChatMessages() async {

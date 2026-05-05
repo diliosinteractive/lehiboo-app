@@ -45,7 +45,9 @@ import '../features/partners/presentation/screens/organizer_profile_screen.dart'
 import '../features/partners/presentation/screens/followed_organizers_screen.dart';
 // Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
-import '../features/gamification/presentation/screens/hibon_shop_screen.dart';
+// HibonShopScreen import retiré : route /hibons-shop redirigée vers
+// /hibons-dashboard (Plan 04 — achats Hibons désactivés). Le fichier source
+// est conservé pour réactivation v2.
 import '../features/gamification/presentation/screens/lucky_wheel_screen.dart';
 import '../features/gamification/presentation/screens/achievements_screen.dart';
 import '../features/gamification/presentation/screens/gamification_dashboard_screen.dart';
@@ -571,10 +573,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirect: (_, __) => '/petit-boo',
       ),
       // Gamification
+      // Plan 04: boutique de packs Hibons désactivée (404 backend).
+      // Le code de HibonShopScreen reste en place pour réactivation v2 ;
+      // on redirige les anciens deep-links vers le dashboard.
       GoRoute(
         path: '/hibons-shop',
         name: 'hibons-shop',
-        builder: (context, state) => const HibonShopScreen(),
+        redirect: (_, __) => '/hibons-dashboard',
       ),
       GoRoute(
         path: '/hibons-dashboard',

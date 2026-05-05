@@ -6,7 +6,10 @@ import 'package:lehiboo/features/gamification/data/models/hibon_transaction.dart
 import 'package:lehiboo/features/gamification/data/models/daily_reward.dart';
 import 'package:lehiboo/features/gamification/data/models/wheel_models.dart';
 import 'package:lehiboo/features/gamification/data/models/gamification_items.dart';
-import 'package:lehiboo/features/gamification/data/datasources/gamification_api_datasource.dart';
+import 'package:lehiboo/features/gamification/data/datasources/gamification_api_datasource.dart'
+    show
+        gamificationApiDataSourceProvider,
+        HibonsPurchaseDisabledException;
 import 'package:lehiboo/features/gamification/data/repositories/gamification_repository_impl.dart';
 import 'package:lehiboo/features/gamification/domain/repositories/gamification_repository.dart';
 
@@ -173,6 +176,10 @@ class PurchaseNotifier extends StateNotifier<AsyncValue<PurchaseResult?>> {
       final result = await repository.createPurchase(packageId);
       state = AsyncValue.data(result);
       return result;
+    } on HibonsPurchaseDisabledException {
+      debugPrint('🎮 PurchaseNotifier: purchase disabled, ignoring');
+      state = const AsyncValue.data(null);
+      return null;
     } catch (e, st) {
       debugPrint('🎮 PurchaseNotifier.createPurchase error: $e');
       state = AsyncValue.error(e, st);
@@ -190,6 +197,10 @@ class PurchaseNotifier extends StateNotifier<AsyncValue<PurchaseResult?>> {
 
       state = const AsyncValue.data(null);
       return true;
+    } on HibonsPurchaseDisabledException {
+      debugPrint('🎮 PurchaseNotifier: purchase disabled, ignoring');
+      state = const AsyncValue.data(null);
+      return false;
     } catch (e) {
       debugPrint('🎮 PurchaseNotifier.confirmPurchase error: $e');
       return false;

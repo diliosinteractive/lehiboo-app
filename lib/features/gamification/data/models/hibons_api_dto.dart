@@ -36,13 +36,17 @@ class WalletResponseDto with _$WalletResponseDto {
 @freezed
 class ChatQuotaDto with _$ChatQuotaDto {
   const factory ChatQuotaDto({
-    required int remaining,
-    required int limit,
-    required int used,
-    @JsonKey(name: 'resets_at') required String resetsAt,
-    @JsonKey(name: 'can_unlock') required bool canUnlock,
-    @JsonKey(name: 'unlock_cost') required int unlockCost,
-    @JsonKey(name: 'unlock_messages') required int unlockMessages,
+    @Default(0) int remaining,
+    @Default(3) int limit,
+    @Default(0) int used,
+    @JsonKey(name: 'resets_at') String? resetsAt,
+    @JsonKey(name: 'can_unlock') @Default(false) bool canUnlock,
+    @JsonKey(name: 'unlock_cost') @Default(100) int unlockCost,
+    @JsonKey(name: 'unlock_messages') @Default(2) int unlockMessages,
+    @JsonKey(name: 'base_limit') @Default(3) int baseLimit,
+    @JsonKey(name: 'rank_bonus') @Default(0) int rankBonus,
+    @JsonKey(name: 'unlocked_today') @Default(0) int unlockedToday,
+    @Default('curieux') String rank,
   }) = _ChatQuotaDto;
 
   factory ChatQuotaDto.fromJson(Map<String, dynamic> json) =>

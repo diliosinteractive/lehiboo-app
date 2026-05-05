@@ -630,13 +630,20 @@ mixin _$ChatQuotaDto {
   int get limit => throw _privateConstructorUsedError;
   int get used => throw _privateConstructorUsedError;
   @JsonKey(name: 'resets_at')
-  String get resetsAt => throw _privateConstructorUsedError;
+  String? get resetsAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'can_unlock')
   bool get canUnlock => throw _privateConstructorUsedError;
   @JsonKey(name: 'unlock_cost')
   int get unlockCost => throw _privateConstructorUsedError;
   @JsonKey(name: 'unlock_messages')
   int get unlockMessages => throw _privateConstructorUsedError;
+  @JsonKey(name: 'base_limit')
+  int get baseLimit => throw _privateConstructorUsedError;
+  @JsonKey(name: 'rank_bonus')
+  int get rankBonus => throw _privateConstructorUsedError;
+  @JsonKey(name: 'unlocked_today')
+  int get unlockedToday => throw _privateConstructorUsedError;
+  String get rank => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -654,10 +661,14 @@ abstract class $ChatQuotaDtoCopyWith<$Res> {
       {int remaining,
       int limit,
       int used,
-      @JsonKey(name: 'resets_at') String resetsAt,
+      @JsonKey(name: 'resets_at') String? resetsAt,
       @JsonKey(name: 'can_unlock') bool canUnlock,
       @JsonKey(name: 'unlock_cost') int unlockCost,
-      @JsonKey(name: 'unlock_messages') int unlockMessages});
+      @JsonKey(name: 'unlock_messages') int unlockMessages,
+      @JsonKey(name: 'base_limit') int baseLimit,
+      @JsonKey(name: 'rank_bonus') int rankBonus,
+      @JsonKey(name: 'unlocked_today') int unlockedToday,
+      String rank});
 }
 
 /// @nodoc
@@ -676,10 +687,14 @@ class _$ChatQuotaDtoCopyWithImpl<$Res, $Val extends ChatQuotaDto>
     Object? remaining = null,
     Object? limit = null,
     Object? used = null,
-    Object? resetsAt = null,
+    Object? resetsAt = freezed,
     Object? canUnlock = null,
     Object? unlockCost = null,
     Object? unlockMessages = null,
+    Object? baseLimit = null,
+    Object? rankBonus = null,
+    Object? unlockedToday = null,
+    Object? rank = null,
   }) {
     return _then(_value.copyWith(
       remaining: null == remaining
@@ -694,10 +709,10 @@ class _$ChatQuotaDtoCopyWithImpl<$Res, $Val extends ChatQuotaDto>
           ? _value.used
           : used // ignore: cast_nullable_to_non_nullable
               as int,
-      resetsAt: null == resetsAt
+      resetsAt: freezed == resetsAt
           ? _value.resetsAt
           : resetsAt // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       canUnlock: null == canUnlock
           ? _value.canUnlock
           : canUnlock // ignore: cast_nullable_to_non_nullable
@@ -710,6 +725,22 @@ class _$ChatQuotaDtoCopyWithImpl<$Res, $Val extends ChatQuotaDto>
           ? _value.unlockMessages
           : unlockMessages // ignore: cast_nullable_to_non_nullable
               as int,
+      baseLimit: null == baseLimit
+          ? _value.baseLimit
+          : baseLimit // ignore: cast_nullable_to_non_nullable
+              as int,
+      rankBonus: null == rankBonus
+          ? _value.rankBonus
+          : rankBonus // ignore: cast_nullable_to_non_nullable
+              as int,
+      unlockedToday: null == unlockedToday
+          ? _value.unlockedToday
+          : unlockedToday // ignore: cast_nullable_to_non_nullable
+              as int,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -726,10 +757,14 @@ abstract class _$$ChatQuotaDtoImplCopyWith<$Res>
       {int remaining,
       int limit,
       int used,
-      @JsonKey(name: 'resets_at') String resetsAt,
+      @JsonKey(name: 'resets_at') String? resetsAt,
       @JsonKey(name: 'can_unlock') bool canUnlock,
       @JsonKey(name: 'unlock_cost') int unlockCost,
-      @JsonKey(name: 'unlock_messages') int unlockMessages});
+      @JsonKey(name: 'unlock_messages') int unlockMessages,
+      @JsonKey(name: 'base_limit') int baseLimit,
+      @JsonKey(name: 'rank_bonus') int rankBonus,
+      @JsonKey(name: 'unlocked_today') int unlockedToday,
+      String rank});
 }
 
 /// @nodoc
@@ -746,10 +781,14 @@ class __$$ChatQuotaDtoImplCopyWithImpl<$Res>
     Object? remaining = null,
     Object? limit = null,
     Object? used = null,
-    Object? resetsAt = null,
+    Object? resetsAt = freezed,
     Object? canUnlock = null,
     Object? unlockCost = null,
     Object? unlockMessages = null,
+    Object? baseLimit = null,
+    Object? rankBonus = null,
+    Object? unlockedToday = null,
+    Object? rank = null,
   }) {
     return _then(_$ChatQuotaDtoImpl(
       remaining: null == remaining
@@ -764,10 +803,10 @@ class __$$ChatQuotaDtoImplCopyWithImpl<$Res>
           ? _value.used
           : used // ignore: cast_nullable_to_non_nullable
               as int,
-      resetsAt: null == resetsAt
+      resetsAt: freezed == resetsAt
           ? _value.resetsAt
           : resetsAt // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       canUnlock: null == canUnlock
           ? _value.canUnlock
           : canUnlock // ignore: cast_nullable_to_non_nullable
@@ -780,6 +819,22 @@ class __$$ChatQuotaDtoImplCopyWithImpl<$Res>
           ? _value.unlockMessages
           : unlockMessages // ignore: cast_nullable_to_non_nullable
               as int,
+      baseLimit: null == baseLimit
+          ? _value.baseLimit
+          : baseLimit // ignore: cast_nullable_to_non_nullable
+              as int,
+      rankBonus: null == rankBonus
+          ? _value.rankBonus
+          : rankBonus // ignore: cast_nullable_to_non_nullable
+              as int,
+      unlockedToday: null == unlockedToday
+          ? _value.unlockedToday
+          : unlockedToday // ignore: cast_nullable_to_non_nullable
+              as int,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -788,26 +843,33 @@ class __$$ChatQuotaDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ChatQuotaDtoImpl implements _ChatQuotaDto {
   const _$ChatQuotaDtoImpl(
-      {required this.remaining,
-      required this.limit,
-      required this.used,
-      @JsonKey(name: 'resets_at') required this.resetsAt,
-      @JsonKey(name: 'can_unlock') required this.canUnlock,
-      @JsonKey(name: 'unlock_cost') required this.unlockCost,
-      @JsonKey(name: 'unlock_messages') required this.unlockMessages});
+      {this.remaining = 0,
+      this.limit = 3,
+      this.used = 0,
+      @JsonKey(name: 'resets_at') this.resetsAt,
+      @JsonKey(name: 'can_unlock') this.canUnlock = false,
+      @JsonKey(name: 'unlock_cost') this.unlockCost = 100,
+      @JsonKey(name: 'unlock_messages') this.unlockMessages = 2,
+      @JsonKey(name: 'base_limit') this.baseLimit = 3,
+      @JsonKey(name: 'rank_bonus') this.rankBonus = 0,
+      @JsonKey(name: 'unlocked_today') this.unlockedToday = 0,
+      this.rank = 'curieux'});
 
   factory _$ChatQuotaDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$ChatQuotaDtoImplFromJson(json);
 
   @override
+  @JsonKey()
   final int remaining;
   @override
+  @JsonKey()
   final int limit;
   @override
+  @JsonKey()
   final int used;
   @override
   @JsonKey(name: 'resets_at')
-  final String resetsAt;
+  final String? resetsAt;
   @override
   @JsonKey(name: 'can_unlock')
   final bool canUnlock;
@@ -817,10 +879,22 @@ class _$ChatQuotaDtoImpl implements _ChatQuotaDto {
   @override
   @JsonKey(name: 'unlock_messages')
   final int unlockMessages;
+  @override
+  @JsonKey(name: 'base_limit')
+  final int baseLimit;
+  @override
+  @JsonKey(name: 'rank_bonus')
+  final int rankBonus;
+  @override
+  @JsonKey(name: 'unlocked_today')
+  final int unlockedToday;
+  @override
+  @JsonKey()
+  final String rank;
 
   @override
   String toString() {
-    return 'ChatQuotaDto(remaining: $remaining, limit: $limit, used: $used, resetsAt: $resetsAt, canUnlock: $canUnlock, unlockCost: $unlockCost, unlockMessages: $unlockMessages)';
+    return 'ChatQuotaDto(remaining: $remaining, limit: $limit, used: $used, resetsAt: $resetsAt, canUnlock: $canUnlock, unlockCost: $unlockCost, unlockMessages: $unlockMessages, baseLimit: $baseLimit, rankBonus: $rankBonus, unlockedToday: $unlockedToday, rank: $rank)';
   }
 
   @override
@@ -839,13 +913,31 @@ class _$ChatQuotaDtoImpl implements _ChatQuotaDto {
             (identical(other.unlockCost, unlockCost) ||
                 other.unlockCost == unlockCost) &&
             (identical(other.unlockMessages, unlockMessages) ||
-                other.unlockMessages == unlockMessages));
+                other.unlockMessages == unlockMessages) &&
+            (identical(other.baseLimit, baseLimit) ||
+                other.baseLimit == baseLimit) &&
+            (identical(other.rankBonus, rankBonus) ||
+                other.rankBonus == rankBonus) &&
+            (identical(other.unlockedToday, unlockedToday) ||
+                other.unlockedToday == unlockedToday) &&
+            (identical(other.rank, rank) || other.rank == rank));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, remaining, limit, used, resetsAt,
-      canUnlock, unlockCost, unlockMessages);
+  int get hashCode => Object.hash(
+      runtimeType,
+      remaining,
+      limit,
+      used,
+      resetsAt,
+      canUnlock,
+      unlockCost,
+      unlockMessages,
+      baseLimit,
+      rankBonus,
+      unlockedToday,
+      rank);
 
   @JsonKey(ignore: true)
   @override
@@ -863,14 +955,17 @@ class _$ChatQuotaDtoImpl implements _ChatQuotaDto {
 
 abstract class _ChatQuotaDto implements ChatQuotaDto {
   const factory _ChatQuotaDto(
-      {required final int remaining,
-      required final int limit,
-      required final int used,
-      @JsonKey(name: 'resets_at') required final String resetsAt,
-      @JsonKey(name: 'can_unlock') required final bool canUnlock,
-      @JsonKey(name: 'unlock_cost') required final int unlockCost,
-      @JsonKey(name: 'unlock_messages')
-      required final int unlockMessages}) = _$ChatQuotaDtoImpl;
+      {final int remaining,
+      final int limit,
+      final int used,
+      @JsonKey(name: 'resets_at') final String? resetsAt,
+      @JsonKey(name: 'can_unlock') final bool canUnlock,
+      @JsonKey(name: 'unlock_cost') final int unlockCost,
+      @JsonKey(name: 'unlock_messages') final int unlockMessages,
+      @JsonKey(name: 'base_limit') final int baseLimit,
+      @JsonKey(name: 'rank_bonus') final int rankBonus,
+      @JsonKey(name: 'unlocked_today') final int unlockedToday,
+      final String rank}) = _$ChatQuotaDtoImpl;
 
   factory _ChatQuotaDto.fromJson(Map<String, dynamic> json) =
       _$ChatQuotaDtoImpl.fromJson;
@@ -883,7 +978,7 @@ abstract class _ChatQuotaDto implements ChatQuotaDto {
   int get used;
   @override
   @JsonKey(name: 'resets_at')
-  String get resetsAt;
+  String? get resetsAt;
   @override
   @JsonKey(name: 'can_unlock')
   bool get canUnlock;
@@ -893,6 +988,17 @@ abstract class _ChatQuotaDto implements ChatQuotaDto {
   @override
   @JsonKey(name: 'unlock_messages')
   int get unlockMessages;
+  @override
+  @JsonKey(name: 'base_limit')
+  int get baseLimit;
+  @override
+  @JsonKey(name: 'rank_bonus')
+  int get rankBonus;
+  @override
+  @JsonKey(name: 'unlocked_today')
+  int get unlockedToday;
+  @override
+  String get rank;
   @override
   @JsonKey(ignore: true)
   _$$ChatQuotaDtoImplCopyWith<_$ChatQuotaDtoImpl> get copyWith =>

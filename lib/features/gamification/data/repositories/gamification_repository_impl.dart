@@ -43,10 +43,16 @@ class GamificationRepositoryImpl implements GamificationRepository {
         remaining: dto.chatQuota.remaining,
         limit: dto.chatQuota.limit,
         used: dto.chatQuota.used,
-        resetsAt: DateTime.parse(dto.chatQuota.resetsAt),
+        resetsAt: dto.chatQuota.resetsAt != null
+            ? DateTime.tryParse(dto.chatQuota.resetsAt!)
+            : null,
         canUnlock: dto.chatQuota.canUnlock,
         unlockCost: dto.chatQuota.unlockCost,
         unlockMessages: dto.chatQuota.unlockMessages,
+        baseLimit: dto.chatQuota.baseLimit,
+        rankBonus: dto.chatQuota.rankBonus,
+        unlockedToday: dto.chatQuota.unlockedToday,
+        rank: dto.chatQuota.rank,
       ),
       dailyRewards: dto.dailyRewards
           .map((d) => DailyRewardItem(

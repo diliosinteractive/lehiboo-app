@@ -59,13 +59,17 @@ Map<String, dynamic> _$$WalletResponseDtoImplToJson(
 
 _$ChatQuotaDtoImpl _$$ChatQuotaDtoImplFromJson(Map<String, dynamic> json) =>
     _$ChatQuotaDtoImpl(
-      remaining: (json['remaining'] as num).toInt(),
-      limit: (json['limit'] as num).toInt(),
-      used: (json['used'] as num).toInt(),
-      resetsAt: json['resets_at'] as String,
-      canUnlock: json['can_unlock'] as bool,
-      unlockCost: (json['unlock_cost'] as num).toInt(),
-      unlockMessages: (json['unlock_messages'] as num).toInt(),
+      remaining: (json['remaining'] as num?)?.toInt() ?? 0,
+      limit: (json['limit'] as num?)?.toInt() ?? 3,
+      used: (json['used'] as num?)?.toInt() ?? 0,
+      resetsAt: json['resets_at'] as String?,
+      canUnlock: json['can_unlock'] as bool? ?? false,
+      unlockCost: (json['unlock_cost'] as num?)?.toInt() ?? 100,
+      unlockMessages: (json['unlock_messages'] as num?)?.toInt() ?? 2,
+      baseLimit: (json['base_limit'] as num?)?.toInt() ?? 3,
+      rankBonus: (json['rank_bonus'] as num?)?.toInt() ?? 0,
+      unlockedToday: (json['unlocked_today'] as num?)?.toInt() ?? 0,
+      rank: json['rank'] as String? ?? 'curieux',
     );
 
 Map<String, dynamic> _$$ChatQuotaDtoImplToJson(_$ChatQuotaDtoImpl instance) =>
@@ -77,6 +81,10 @@ Map<String, dynamic> _$$ChatQuotaDtoImplToJson(_$ChatQuotaDtoImpl instance) =>
       'can_unlock': instance.canUnlock,
       'unlock_cost': instance.unlockCost,
       'unlock_messages': instance.unlockMessages,
+      'base_limit': instance.baseLimit,
+      'rank_bonus': instance.rankBonus,
+      'unlocked_today': instance.unlockedToday,
+      'rank': instance.rank,
     };
 
 _$DailyRewardItemDtoImpl _$$DailyRewardItemDtoImplFromJson(
