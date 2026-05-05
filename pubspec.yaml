@@ -80,7 +80,9 @@ dependencies:
   qr_flutter: ^4.1.0
   screen_brightness: ^1.0.1
   # Vendor QR check-in (gate scanner) — MLKit-backed.
-  mobile_scanner: ^5.2.3
+  # 6.x ships GoogleMLKit 7.x (GoogleUtilities ~> 8.0) which resolves
+  # cleanly with Firebase 11.x. Requires iOS 15.5 minimum (set in Podfile).
+  mobile_scanner: ^6.0.11
 
   # Content
   flutter_markdown: ^0.7.1

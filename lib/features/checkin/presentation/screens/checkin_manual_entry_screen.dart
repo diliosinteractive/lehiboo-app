@@ -15,7 +15,9 @@ import 'checkin_blocked_sheet.dart';
 import 'checkin_confirm_sheet.dart';
 
 /// Fallback for damaged QRs and devices without a camera. Sends the raw
-/// 12-char shortcode as `qr_code` (no `qr_secret` — see spec §7).
+/// shortcode as `qr_code` (no `qr_secret` — see spec §7). The spec
+/// documents 12 chars but staging tickets ship 16-char codes; we don't
+/// pin a length to avoid future drift.
 ///
 /// Manual entry is intentionally less secure than QR scanning: the secret
 /// half of the QR isn't transmitted, so any leaked shortcode would let
@@ -196,17 +198,19 @@ class _CheckinManualEntryScreenState
                 textCapitalization: TextCapitalization.characters,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-                  LengthLimitingTextInputFormatter(12),
+                  // Generous cap — current codes are 16 chars but the
+                  // server is the source of truth on length, not the app.
+                  LengthLimitingTextInputFormatter(32),
                 ],
                 style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 4,
+                  letterSpacing: 2,
                 ),
                 textAlign: TextAlign.center,
                 decoration: const InputDecoration(
-                  hintText: 'XXXXXXXXXXXX',
-                  helperText: 'Code à 12 caractères imprimé sur le billet',
+                  hintText: 'XXXXXXXXXXXXXXXX',
+                  helperText: 'Code imprimé sur le billet',
                   border: OutlineInputBorder(),
                 ),
                 onSubmitted: (_) => _submit(),

@@ -22,7 +22,9 @@ class CheckinApiDataSource {
   CheckinApiDataSource(this._dio);
 
   /// `POST /vendor/tickets/scan/peek` — read-only QR decode. Either
-  /// [qrData] (`code:secret`) or [qrCode] (12-char shortcode) is required.
+  /// [qrData] (`code:secret`) or [qrCode] (alphanumeric shortcode) is
+  /// required. Spec §7 documents the shortcode as 12 chars but staging
+  /// tickets ship 16-char codes — pass through verbatim.
   /// [eventId] optionally restricts the scan to a single event — the
   /// server returns 422 `wrong_event` if the ticket is for another event.
   ///
