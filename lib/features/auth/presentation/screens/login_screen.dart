@@ -5,7 +5,12 @@ import '../../../../core/themes/colors.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  /// Optional redirect target (e.g. `/invitations/<token>`). When set, the
+  /// screen navigates here on successful login instead of `/`. Used by
+  /// deep-link entry points so the user lands back where they started.
+  final String? redirectTo;
+
+  const LoginScreen({super.key, this.redirectTo});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -67,11 +72,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     // Login successful with direct auth. Defer to the next frame so any
     // in-flight rebuild (spinner overlay dismissal, listeners, etc.) settles
-    // first, then navigate explicitly to home.
+    // first, then navigate to either the explicit redirect target (deep-link
+    // entry points like /invitations/<token>) or the home tab.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      debugPrint('🔐 Login success - go(/)');
-      context.go('/');
+      final target = widget.redirectTo;
+      if (target != null && target.isNotEmpty) {
+        debugPrint('🔐 Login success - go($target)');
+        context.go(target);
+      } else {
+        debugPrint('🔐 Login success - go(/)');
+        context.go('/');
+      }
     });
   }
 

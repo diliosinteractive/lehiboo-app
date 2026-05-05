@@ -216,7 +216,7 @@ mixin _$UserDto {
   String? get birthDate => throw _privateConstructorUsedError;
   @JsonKey(name: 'membership_city')
   String? get membershipCity => throw _privateConstructorUsedError;
-  @JsonKey(name: 'avatar_url')
+  @JsonKey(name: 'avatar', readValue: _readAvatar)
   String? get avatarUrl => throw _privateConstructorUsedError;
   String get role => throw _privateConstructorUsedError;
   @JsonKey(name: 'registered_at')
@@ -250,7 +250,7 @@ abstract class $UserDtoCopyWith<$Res> {
       String? bio,
       @JsonKey(name: 'birth_date') String? birthDate,
       @JsonKey(name: 'membership_city') String? membershipCity,
-      @JsonKey(name: 'avatar_url') String? avatarUrl,
+      @JsonKey(name: 'avatar', readValue: _readAvatar) String? avatarUrl,
       String role,
       @JsonKey(name: 'registered_at') String? registeredAt,
       @JsonKey(name: 'is_verified') bool isVerified,
@@ -402,7 +402,7 @@ abstract class _$$UserDtoImplCopyWith<$Res> implements $UserDtoCopyWith<$Res> {
       String? bio,
       @JsonKey(name: 'birth_date') String? birthDate,
       @JsonKey(name: 'membership_city') String? membershipCity,
-      @JsonKey(name: 'avatar_url') String? avatarUrl,
+      @JsonKey(name: 'avatar', readValue: _readAvatar) String? avatarUrl,
       String role,
       @JsonKey(name: 'registered_at') String? registeredAt,
       @JsonKey(name: 'is_verified') bool isVerified,
@@ -537,7 +537,7 @@ class _$UserDtoImpl implements _UserDto {
       this.bio,
       @JsonKey(name: 'birth_date') this.birthDate,
       @JsonKey(name: 'membership_city') this.membershipCity,
-      @JsonKey(name: 'avatar_url') this.avatarUrl,
+      @JsonKey(name: 'avatar', readValue: _readAvatar) this.avatarUrl,
       required this.role,
       @JsonKey(name: 'registered_at') this.registeredAt,
       @JsonKey(name: 'is_verified') this.isVerified = false,
@@ -578,7 +578,7 @@ class _$UserDtoImpl implements _UserDto {
   @JsonKey(name: 'membership_city')
   final String? membershipCity;
   @override
-  @JsonKey(name: 'avatar_url')
+  @JsonKey(name: 'avatar', readValue: _readAvatar)
   final String? avatarUrl;
   @override
   final String role;
@@ -689,7 +689,7 @@ abstract class _UserDto implements UserDto {
       final String? bio,
       @JsonKey(name: 'birth_date') final String? birthDate,
       @JsonKey(name: 'membership_city') final String? membershipCity,
-      @JsonKey(name: 'avatar_url') final String? avatarUrl,
+      @JsonKey(name: 'avatar', readValue: _readAvatar) final String? avatarUrl,
       required final String role,
       @JsonKey(name: 'registered_at') final String? registeredAt,
       @JsonKey(name: 'is_verified') final bool isVerified,
@@ -728,7 +728,7 @@ abstract class _UserDto implements UserDto {
   @JsonKey(name: 'membership_city')
   String? get membershipCity;
   @override
-  @JsonKey(name: 'avatar_url')
+  @JsonKey(name: 'avatar', readValue: _readAvatar)
   String? get avatarUrl;
   @override
   String get role;

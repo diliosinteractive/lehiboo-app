@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../memberships/data/models/membership_dto.dart';
+import '../../../memberships/domain/exceptions/members_only_exception.dart';
 import '../models/event_dto.dart';
 import '../models/event_availability_dto.dart';
 import '../models/home_feed_response_dto.dart' show HomeFeedDataDto;
@@ -207,12 +209,28 @@ class EventsApiDataSource {
     }
   }
 
-  /// Fetch event by identifier (UUID or slug)
+  /// Fetch event by identifier (UUID or slug).
+  ///
+  /// On `403` with `error: members_only`, throws [MembersOnlyException]
+  /// (the spec-defined gate response from §20). The screen catches this
+  /// to render the "Rejoindre {Organization}" gate instead of an error.
   Future<EventDto> getEvent(String identifier) async {
-    final response = await _dio.get('/events/$identifier');
-
-    final payload = ApiResponseHandler.extractObject(response.data);
-    return EventDto.fromJson(payload);
+    try {
+      final response = await _dio.get('/events/$identifier');
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return EventDto.fromJson(payload);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 403) {
+        final body = e.response?.data;
+        if (body is Map<String, dynamic> && body['error'] == 'members_only') {
+          final org = body['organization'];
+          if (org is Map<String, dynamic>) {
+            throw MembersOnlyException(OrganizationSummaryDto.fromJson(org));
+          }
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<HomeFeedDataDto> getHomeFeed({

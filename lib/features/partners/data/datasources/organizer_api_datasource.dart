@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
 import '../../../events/data/models/event_dto.dart';
+import '../../../reviews/data/models/review_dto.dart';
 import '../models/organizer_profile_dto.dart';
 
 final organizerApiDataSourceProvider = Provider<OrganizerApiDataSource>((ref) {
@@ -120,6 +121,48 @@ class OrganizerApiDataSource {
       '/me/organizers/$identifier/follow',
     );
     return _parseFollowState(response.data ?? const {});
+  }
+
+  /// `GET /organizers/{slug_or_uuid}/reviews` — spec §6ter
+  ///
+  /// Paginated list of approved reviews aggregated across all events of the
+  /// organizer. Uses Laravel's verbose paginator (`meta.current_page`).
+  /// Reuses [ReviewsResponseDto] / [PaginationMetaDto] from the events
+  /// reviews feature — same envelope shape, the only addition is the
+  /// per-row `event` context wired into [ReviewDto] itself.
+  Future<ReviewsResponseDto> getOrganizerReviews(
+    String identifier, {
+    int? rating,
+    bool verifiedOnly = false,
+    String sortBy = 'helpful',
+    String sortOrder = 'desc',
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/organizers/$identifier/reviews',
+      queryParameters: {
+        if (rating != null) 'rating': rating,
+        if (verifiedOnly) 'verified_only': true,
+        'sort_by': sortBy,
+        'sort_order': sortOrder,
+        'page': page,
+        'per_page': perPage,
+      },
+    );
+    final body = response.data ?? const {};
+    return ReviewsResponseDto.fromJson(body);
+  }
+
+  /// `GET /organizers/{slug_or_uuid}/reviews/stats` — spec §6quater
+  ///
+  /// Aggregate distribution + percentages used to render the histogram at
+  /// the top of the reviews tab.
+  Future<ReviewStatsDto> getOrganizerReviewsStats(String identifier) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/organizers/$identifier/reviews/stats',
+    );
+    return ReviewStatsDto.fromJson(response.data ?? const {});
   }
 
   /// `GET /me/organizers/following` — spec §6bis

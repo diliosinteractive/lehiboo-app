@@ -29,6 +29,8 @@ import 'features/reviews/data/repositories/reviews_repository_impl.dart';
 import 'features/reviews/domain/repositories/reviews_repository.dart';
 import 'features/partners/data/repositories/organizer_repository_impl.dart';
 import 'features/partners/domain/repositories/organizer_repository.dart';
+import 'features/memberships/data/repositories/memberships_repository_impl.dart';
+import 'features/memberships/domain/repositories/memberships_repository.dart';
 
 // Fake Repositories (for offline testing)
 import 'data/repositories/fake_activity_repository_impl.dart';
@@ -41,6 +43,9 @@ import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 
 // Push Notifications
 import 'features/notifications/presentation/providers/push_notification_provider.dart';
+
+// Messages realtime (Pusher WebSocket — eagerly initialised at app boot)
+import 'features/messages/presentation/providers/messages_realtime_provider.dart';
 
 // Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
 import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
@@ -168,6 +173,10 @@ List<Override> _getRealApiOverrides() {
     organizerRepositoryProvider.overrideWith((ref) {
       return ref.read(organizerRepositoryImplProvider);
     }),
+    // Memberships Repository (join/leave + invitations)
+    membershipsRepositoryProvider.overrideWith((ref) {
+      return ref.read(membershipsRepositoryImplProvider);
+    }),
     // Keep activity repository for backward compatibility
     activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),
   ];
@@ -194,6 +203,11 @@ class LeHibooApp extends ConsumerWidget {
     // Watch push notification provider to initialize on auth state changes
     // The provider will auto-initialize when user logs in and unregister on logout
     ref.watch(pushNotificationProvider);
+
+    // Eagerly initialize the Pusher WebSocket so it connects as soon as the
+    // user authenticates — not lazily when they navigate to the messages screen.
+    // This mirrors the web frontend which subscribes globally at app boot.
+    ref.watch(messagesRealtimeProvider);
 
     // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après
     // 3 min en foreground si l'user est authentifié.

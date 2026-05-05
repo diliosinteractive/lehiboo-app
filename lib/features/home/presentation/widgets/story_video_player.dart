@@ -3,7 +3,7 @@ import 'package:video_player/video_player.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 
 /// Fullscreen video player for story viewer.
-/// Auto-plays muted, loops, and responds to pause/resume via [isPaused].
+/// Auto-plays with audio, loops, and responds to pause/resume via [isPaused].
 class StoryVideoPlayer extends StatefulWidget {
   final String videoUrl;
   final ValueNotifier<bool> isPaused;
@@ -27,7 +27,7 @@ class _StoryVideoPlayerState extends State<StoryVideoPlayer> {
   void initState() {
     super.initState();
     _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-      ..setVolume(0)
+      ..setVolume(1.0)
       ..setLooping(true)
       ..initialize().then((_) {
         if (mounted) {

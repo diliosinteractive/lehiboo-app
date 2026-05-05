@@ -43,10 +43,15 @@ class FollowedOrganizersController
     extends AsyncNotifier<FollowedOrganizersState> {
   static const _perPage = 20;
 
+  /// Current search query — empty means "show everything". Survives
+  /// rebuilds so loadMore() keeps filtering the same set.
+  String _searchQuery = '';
+
   @override
   Future<FollowedOrganizersState> build() async {
     final page =
         await ref.watch(organizerRepositoryProvider).getFollowing(
+              search: _searchQuery.isEmpty ? null : _searchQuery,
               page: 1,
               perPage: _perPage,
             );
@@ -66,6 +71,7 @@ class FollowedOrganizersController
 
     try {
       final next = await ref.read(organizerRepositoryProvider).getFollowing(
+            search: _searchQuery.isEmpty ? null : _searchQuery,
             page: current.page + 1,
             perPage: _perPage,
           );
@@ -86,6 +92,16 @@ class FollowedOrganizersController
   }
 
   Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+
+  /// Update the current search filter and reload from page 1. Callers
+  /// should debounce keystrokes — see `FollowedOrganizersScreen`.
+  Future<void> setSearch(String query) async {
+    final normalized = query.trim();
+    if (normalized == _searchQuery) return;
+    _searchQuery = normalized;
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => build());
   }

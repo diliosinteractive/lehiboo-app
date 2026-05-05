@@ -286,12 +286,41 @@ class PushNotificationService {
     }
   }
 
-  /// Navigate based on notification data
+  /// Navigate based on notification data.
+  ///
+  /// Membership push payloads (spec MEMBERSHIPS_MOBILE_SPEC.md §16) carry a
+  /// `data.action` value that is a **web URL** (`/dashboard/...`). Mobile
+  /// must not route to it directly — we map `data.type` to the equivalent
+  /// Flutter route instead. For all other types we keep the existing
+  /// `data.action` behavior (booking / reminder / favorite / etc.).
   void _navigateFromData(Map<String, dynamic> data) {
+    final mobileRoute = _membershipMobileRoute(data);
+    if (mobileRoute != null) {
+      _deepLinkService.navigate(mobileRoute);
+      return;
+    }
     final action = data['action'] as String?;
     if (action != null) {
       _deepLinkService.navigate(action);
     }
+  }
+
+  /// Maps `data.type` to a mobile route for membership push payloads.
+  /// Returns `null` when the type isn't membership-related.
+  String? _membershipMobileRoute(Map<String, dynamic> data) {
+    final type = data['type']?.toString();
+    if (type == null) return null;
+    final orgUuid = data['organization_uuid']?.toString();
+    final highlight =
+        (orgUuid != null && orgUuid.isNotEmpty) ? '&highlight=$orgUuid' : '';
+    return switch (type) {
+      'organization_join_approved' =>
+        '/me/memberships?tab=active$highlight',
+      'organization_join_rejected' => '/me/memberships?tab=rejected',
+      'organization_invitation_received' =>
+        '/me/memberships?tab=invitations',
+      _ => null,
+    };
   }
 
   /// Unregister push notifications

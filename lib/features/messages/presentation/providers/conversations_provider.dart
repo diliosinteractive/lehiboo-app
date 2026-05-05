@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:developer' as dev;
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../../data/datasources/messages_polling_datasource.dart';
 import 'unread_count_provider.dart';
+import 'messages_realtime_provider.dart';
 
 class ConversationsState {
   final AsyncValue<List<Conversation>> conversations;
@@ -13,6 +15,7 @@ class ConversationsState {
   final String? statusFilter;   // null = all, 'open', 'closed'
   final bool unreadOnly;
   final String? searchQuery;
+  final String? period;          // null = all, 'today', 'week', 'month', 'older'
 
   const ConversationsState({
     this.conversations = const AsyncValue.loading(),
@@ -21,17 +24,20 @@ class ConversationsState {
     this.statusFilter,
     this.unreadOnly = false,
     this.searchQuery,
+    this.period,
   });
 
   ConversationsState copyWith({
     AsyncValue<List<Conversation>>? conversations,
     int? currentPage,
     bool? hasMore,
-    String? statusFilter,       // pass null to clear filter
+    String? statusFilter,
     bool clearStatusFilter = false,
     bool? unreadOnly,
     String? searchQuery,
     bool clearSearchQuery = false,
+    String? period,
+    bool clearPeriod = false,
   }) {
     return ConversationsState(
       conversations: conversations ?? this.conversations,
@@ -40,6 +46,7 @@ class ConversationsState {
       statusFilter: clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
       unreadOnly: unreadOnly ?? this.unreadOnly,
       searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
+      period: clearPeriod ? null : (period ?? this.period),
     );
   }
 }
@@ -49,23 +56,98 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   final MessagesPollingDatasource _polling;
   final Ref _ref;
   Timer? _pollTimer;
+  StreamSubscription<RealtimeEvent>? _realtimeSub;
+  final Set<String> _readUuids = {};
 
   ConversationsNotifier(this._repo, this._polling, this._ref)
       : super(const ConversationsState()) {
     load();
     _startUnreadPolling();
+    _subscribeToRealtime();
   }
 
   void _startUnreadPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      // Skip when WebSocket is connected — WS events keep unread count current
+      if (_ref.read(messagesRealtimeProvider)) return;
       try {
         final count = await _polling.getTotalUnreadCount();
         _ref.read(unreadCountProvider.notifier).state = count;
-      } catch (_) {
-        // Ignore polling errors silently
+      } catch (_) {}
+    });
+  }
+
+  void _subscribeToRealtime() {
+    dev.log('[ParticipantConv] Subscribed to realtime events');
+    _realtimeSub = _ref
+        .read(messagesRealtimeProvider.notifier)
+        .events
+        .listen((event) {
+      if (!mounted) return;
+      final type = event.conversationType;
+      dev.log(
+        '[ParticipantConv] event received: type=${event.type.name} conv=${event.conversationUuid} convType=$type',
+      );
+      // Accept participant_vendor events, or events with no type (backend may omit it).
+      // Support conversations are handled by supportConversationsProvider.
+      if (type != null && type != 'participant_vendor') {
+        dev.log(
+          '[ParticipantConv] skipping — convType=$type is not participant_vendor',
+        );
+        return;
+      }
+      switch (event.type) {
+        case RealtimeEventType.messageReceived:
+          _applyNewMessage(event);
+        case RealtimeEventType.conversationCreated:
+          refresh();
+          _refreshUnreadCount();
+        case RealtimeEventType.conversationClosed:
+          if (event.conversationUuid != null) {
+            _applyConversationStatus(event.conversationUuid!, 'closed');
+          }
+        case RealtimeEventType.conversationReopened:
+          if (event.conversationUuid != null) {
+            _applyConversationStatus(event.conversationUuid!, 'open');
+          }
+        default:
+          break;
       }
     });
+  }
+
+  void _applyConversationStatus(String convUuid, String status) {
+    final current = state.conversations.valueOrNull;
+    if (current == null) return;
+    final updated = current
+        .map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c)
+        .toList();
+    state = state.copyWith(conversations: AsyncValue.data(updated));
+  }
+
+  void _applyNewMessage(RealtimeEvent event) {
+    final uuid = event.conversationUuid;
+    final current = state.conversations.valueOrNull;
+    if (current == null || uuid == null) {
+      dev.log('[ParticipantConv] applyNewMessage: no list loaded, refreshing');
+      refresh();
+      return;
+    }
+    final idx = current.indexWhere((c) => c.uuid == uuid);
+    if (idx == -1) {
+      dev.log('[ParticipantConv] applyNewMessage: conv=$uuid not in list (${current.length} items), refreshing');
+      refresh();
+      return;
+    }
+    dev.log('[ParticipantConv] applyNewMessage: conv=$uuid found at idx=$idx, unread=${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
+    final updated = current[idx].copyWith(
+      unreadCount: current[idx].unreadCount + 1,
+    );
+    final list = [...current];
+    list.removeAt(idx);
+    list.insert(0, updated);
+    state = state.copyWith(conversations: AsyncValue.data(list));
   }
 
   Future<void> load() async {
@@ -79,10 +161,20 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         status: state.statusFilter,
         unreadOnly: state.unreadOnly ? true : null,
         search: state.searchQuery,
+        period: state.period,
         page: 1,
       );
+      var conversations = result.conversations;
+      if (_readUuids.isNotEmpty) {
+        conversations = conversations.map((c) {
+          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
+            return c.copyWith(unreadCount: 0);
+          }
+          return c;
+        }).toList();
+      }
       state = state.copyWith(
-        conversations: AsyncValue.data(result.conversations),
+        conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
       );
@@ -103,6 +195,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         status: state.statusFilter,
         unreadOnly: state.unreadOnly ? true : null,
         search: state.searchQuery,
+        period: state.period,
         page: nextPage,
       );
       state = state.copyWith(
@@ -117,6 +210,17 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
 
   Future<void> refresh() async {
     await load();
+  }
+
+  void applyRead(String uuid) {
+    _readUuids.add(uuid);
+    final current = state.conversations.valueOrNull;
+    if (current == null) return;
+    final idx = current.indexWhere((c) => c.uuid == uuid);
+    if (idx == -1 || current[idx].unreadCount == 0) return;
+    final updated = [...current];
+    updated[idx] = current[idx].copyWith(unreadCount: 0);
+    state = state.copyWith(conversations: AsyncValue.data(updated));
   }
 
   void setStatusFilter(String? status) {
@@ -143,6 +247,15 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     load();
   }
 
+  void setPeriod(String? period) {
+    state = state.copyWith(
+      period: period,
+      clearPeriod: period == null,
+      currentPage: 1,
+    );
+    load();
+  }
+
   Future<void> _refreshUnreadCount() async {
     try {
       final count = await _polling.getTotalUnreadCount();
@@ -152,6 +265,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
 
   @override
   void dispose() {
+    _realtimeSub?.cancel();
     _pollTimer?.cancel();
     super.dispose();
   }

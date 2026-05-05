@@ -31,10 +31,13 @@ _$OrganizerProfileDtoImpl _$$OrganizerProfileDtoImplFromJson(
           json['events_count'] == null ? 0 : _int(json['events_count']),
       followersCount:
           json['followers_count'] == null ? 0 : _int(json['followers_count']),
+      membersCount:
+          json['members_count'] == null ? 0 : _int(json['members_count']),
       reviewsCount:
           json['reviews_count'] == null ? 0 : _int(json['reviews_count']),
       averageRating: _doubleOrNull(json['average_rating']),
       isFollowed: json['is_followed'] as bool?,
+      isOwner: json['is_owner'] as bool?,
       socialLinks: json['social_links'] == null
           ? null
           : SocialLinksDto.fromJson(
@@ -66,9 +69,11 @@ Map<String, dynamic> _$$OrganizerProfileDtoImplToJson(
       'allow_public_contact': instance.allowPublicContact,
       'events_count': instance.eventsCount,
       'followers_count': instance.followersCount,
+      'members_count': instance.membersCount,
       'reviews_count': instance.reviewsCount,
       'average_rating': instance.averageRating,
       'is_followed': instance.isFollowed,
+      'is_owner': instance.isOwner,
       'social_links': instance.socialLinks,
       'establishment_types': instance.establishmentTypes,
       'created_at': instance.createdAt,

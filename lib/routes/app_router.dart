@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_constants.dart';
 import '../core/providers/shared_preferences_provider.dart';
 import '../features/onboarding/presentation/screens/onboarding_screen.dart';
-import '../features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/city_detail_screen.dart';
@@ -43,6 +43,9 @@ import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
 import '../features/partners/presentation/screens/organizer_profile_screen.dart';
 import '../features/partners/presentation/screens/followed_organizers_screen.dart';
+import '../features/memberships/presentation/screens/invitation_landing_screen.dart';
+import '../features/memberships/presentation/screens/memberships_screen.dart';
+import '../features/memberships/presentation/screens/private_events_screen.dart';
 // Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
 // HibonShopScreen import retiré : route /hibons-shop redirigée vers
@@ -61,6 +64,10 @@ import '../features/messages/presentation/screens/conversations_list_screen.dart
 import '../features/messages/presentation/screens/conversation_detail_screen.dart';
 import '../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../features/messages/presentation/screens/support_detail_screen.dart';
+import '../features/messages/presentation/screens/vendor_new_conversation_screen.dart';
+import '../features/messages/presentation/screens/admin_new_conversation_screen.dart';
+import '../features/messages/presentation/screens/admin_report_detail_screen.dart';
+import '../features/messages/domain/entities/conversation_route.dart';
 import '../features/reviews/presentation/screens/event_reviews_full_screen.dart';
 import '../features/reviews/presentation/screens/my_reviews_screen.dart';
 /// ChangeNotifier that drives GoRouter.refreshListenable so redirect logic
@@ -180,6 +187,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       // the navigation stack (losing e.g. the EventDetail a guest guard was
       // invoked from).
 
+      // 4. Messages require authentication — redirect to login if not authenticated.
+      //    Covers direct navigation, deep links from FCM, and URL-bar entry.
+      // 4. Messages require authentication — handled via GuestGuard in UI entries
+      // for a better UX (modal instead of full-screen redirect).
+      if (state.matchedLocation.startsWith('/messages') &&
+          authState.status == AuthStatus.unauthenticated) {
+        return null;
+      }
+
       debugPrint('🔀 No redirect');
       return null;
     },
@@ -230,15 +246,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'my-bookings',
             builder: (context, state) => const BookingsListScreen(),
           ),
-          GoRoute(
-            path: '/messages',
-            name: 'messages',
-            builder: (_, __) => const ConversationsListScreen(),
-          ),
         ],
       ),
 
-      // Messages detail routes — outside ShellRoute so navbar is hidden
+      // Messages routes — outside ShellRoute so navbar is hidden
+      GoRoute(
+        path: '/messages',
+        name: 'messages',
+        builder: (_, __) => const ConversationsListScreen(),
+      ),
       GoRoute(
         path: '/messages/new',
         name: 'messages-new',
@@ -271,7 +287,80 @@ final routerProvider = Provider<GoRouter>((ref) {
           conversationUuid: state.pathParameters['conversationUuid']!,
         ),
       ),
-      // IMPORTANT: static sub-paths (new, support) must be declared before this wildcard
+
+      // ── Vendor routes (static before parameterized) ───────────────────────
+      GoRoute(
+        path: '/messages/vendor/new/participant',
+        name: 'messages-vendor-new-participant',
+        builder: (_, __) => const VendorNewConversationScreen(
+            mode: VendorConversationMode.toParticipant),
+      ),
+      GoRoute(
+        path: '/messages/vendor/new/partner',
+        name: 'messages-vendor-new-partner',
+        builder: (_, __) => const VendorNewConversationScreen(
+            mode: VendorConversationMode.toPartner),
+      ),
+      GoRoute(
+        path: '/messages/vendor/new/support',
+        name: 'messages-vendor-new-support',
+        builder: (_, __) => const VendorNewConversationScreen(
+            mode: VendorConversationMode.supportThread),
+      ),
+      GoRoute(
+        path: '/messages/vendor-org/:conversationUuid',
+        name: 'messages-vendor-org-detail',
+        builder: (_, state) => ConversationDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+          route: ConversationRoute.vendorOrgOrg,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/vendor/:conversationUuid',
+        name: 'messages-vendor-detail',
+        builder: (_, state) => ConversationDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+          route: ConversationRoute.vendor,
+        ),
+      ),
+
+      // ── Admin routes (static before parameterized) ────────────────────────
+      GoRoute(
+        path: '/messages/admin/new/user',
+        name: 'messages-admin-new-user',
+        builder: (_, __) => const AdminNewConversationScreen(
+            mode: AdminConversationMode.toUser),
+      ),
+      GoRoute(
+        path: '/messages/admin/new/organizer',
+        name: 'messages-admin-new-organizer',
+        builder: (_, __) => const AdminNewConversationScreen(
+            mode: AdminConversationMode.toOrganizer),
+      ),
+      GoRoute(
+        path: '/messages/admin/reports/:reportUuid',
+        name: 'messages-admin-report-detail',
+        builder: (_, state) => AdminReportDetailScreen(
+          reportUuid: state.pathParameters['reportUuid']!,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/admin/:conversationUuid',
+        name: 'messages-admin-detail',
+        builder: (_, state) {
+          final readonly =
+              state.uri.queryParameters['readonly'] == 'true';
+          return ConversationDetailScreen(
+            conversationUuid: state.pathParameters['conversationUuid']!,
+            route: readonly
+                ? ConversationRoute.adminReadonly
+                : ConversationRoute.admin,
+          );
+        },
+      ),
+
+      // IMPORTANT: static sub-paths (new, support, vendor, admin) must be
+      // declared before this wildcard
       GoRoute(
         path: '/messages/:conversationUuid',
         name: 'messages-detail',
@@ -284,7 +373,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => LoginScreen(
+          redirectTo: state.uri.queryParameters['redirect'],
+        ),
       ),
       // Main register route - shows type selection
       GoRoute(
@@ -382,6 +473,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/me/followed-organizers',
         name: 'followed-organizers',
         builder: (_, __) => const FollowedOrganizersScreen(),
+      ),
+      // Authed user's memberships (4 tabs: active / pending / rejected / invitations)
+      GoRoute(
+        path: '/me/memberships',
+        name: 'memberships',
+        builder: (_, state) => MembershipsScreen(
+          initialTab: state.uri.queryParameters['tab'],
+        ),
+      ),
+      // Private events visible to the user via active memberships
+      GoRoute(
+        path: '/me/private-events',
+        name: 'private-events',
+        builder: (_, state) => PrivateEventsScreen(
+          initialOrgFilter: state.uri.queryParameters['org'],
+        ),
+      ),
+      // Invitation deep-link landing — public preview before login
+      GoRoute(
+        path: '/invitations/:token',
+        name: 'invitation-landing',
+        builder: (_, state) => InvitationLandingScreen(
+          token: state.pathParameters['token']!,
+        ),
       ),
       // Backward-compat: legacy /partner/:id → /organizers/:id
       GoRoute(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/themes/colors.dart';
+import '../../../memberships/presentation/widgets/organizer_join_button.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import 'organizer_follow_button.dart';
 
@@ -25,29 +26,34 @@ class OrganizerIdentityCard extends StatelessWidget {
     final displayName = (organizer.displayName?.isNotEmpty ?? false)
         ? organizer.displayName!
         : organizer.name;
+    // is_owner is tri-state per MEMBERSHIPS spec §18 — null/false both keep
+    // the join button visible; only `true` hides it.
+    final showJoin = organizer.isOwner != true;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          // Wrap (rather than Row) so two pills next to the name flow to a
+          // second line on narrow screens or with long names instead of
+          // squeezing the title.
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Flexible(
-                child: Text(
-                  displayName,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A2E),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              Text(
+                displayName,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A2E),
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              if (organizer.verified) ...[
-                const SizedBox(width: 6),
+              if (organizer.verified)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: Image.asset(
@@ -56,9 +62,12 @@ class OrganizerIdentityCard extends StatelessWidget {
                     height: 22,
                   ),
                 ),
-              ],
-              const SizedBox(width: 8),
               OrganizerFollowButton(organizerUuid: organizer.uuid),
+              if (showJoin)
+                OrganizerJoinButton(
+                  organizerUuid: organizer.uuid,
+                  organizerName: displayName,
+                ),
             ],
           ),
           if (organizer.city != null && organizer.city!.isNotEmpty)
@@ -70,6 +79,7 @@ class OrganizerIdentityCard extends StatelessWidget {
           _StatsRow(
             eventsCount: organizer.eventsCount,
             followersCount: liveFollowersCount,
+            membersCount: organizer.membersCount,
             reviewsCount: organizer.reviewsCount,
             averageRating: organizer.averageRating,
           ),
@@ -113,12 +123,14 @@ class _CityChip extends StatelessWidget {
 class _StatsRow extends StatelessWidget {
   final int eventsCount;
   final int followersCount;
+  final int membersCount;
   final int reviewsCount;
   final double? averageRating;
 
   const _StatsRow({
     required this.eventsCount,
     required this.followersCount,
+    required this.membersCount,
     required this.reviewsCount,
     required this.averageRating,
   });
@@ -142,6 +154,11 @@ class _StatsRow extends StatelessWidget {
           iconColor: Colors.red.shade400,
           label: '${compact.format(followersCount)} '
               '${followersCount > 1 ? 'abonnés' : 'abonné'}',
+        ),
+        _stat(
+          icon: Icons.groups_outlined,
+          label: '${compact.format(membersCount)} '
+              '${membersCount > 1 ? 'membres' : 'membre'}',
         ),
         if (showRating)
           _stat(

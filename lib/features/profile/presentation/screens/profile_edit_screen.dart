@@ -464,10 +464,21 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     });
 
     try {
+      final previousAvatarUrl = ref.read(authProvider).user?.avatarUrl;
       final profileDataSource = ref.read(profileApiDataSourceProvider);
       final updatedUser = await profileDataSource.uploadAvatar(_selectedImage!);
 
-      // Update auth state with new user data
+      // Evict the old avatar from CachedNetworkImage's disk + memory caches
+      // so we don't keep showing the previous picture if the backend reuses
+      // the same URL for the new upload.
+      if (previousAvatarUrl != null && previousAvatarUrl.isNotEmpty) {
+        await CachedNetworkImage.evictFromCache(previousAvatarUrl);
+      }
+      if (updatedUser.avatarUrl != null && updatedUser.avatarUrl!.isNotEmpty) {
+        await CachedNetworkImage.evictFromCache(updatedUser.avatarUrl!);
+      }
+
+      // Update auth state and persist to secure storage
       ref.read(authProvider.notifier).updateUser(updatedUser);
 
       if (mounted) {

@@ -1,9 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/messages/presentation/widgets/new_conversation_form.dart';
 
 /// Organizer section that displays differently based on the event source:
 ///
@@ -56,14 +59,14 @@ class EventOrganizerCard extends StatelessWidget {
 // Vendor card
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _VendorOrganizerCard extends StatelessWidget {
+class _VendorOrganizerCard extends ConsumerWidget {
   final Event event;
   final VoidCallback? onOrganizerTap;
 
   const _VendorOrganizerCard({required this.event, this.onOrganizerTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -151,7 +154,7 @@ class _VendorOrganizerCard extends StatelessWidget {
               // Row 5: Contact button
               if (event.organizerAllowPublicContact) ...[
                 const SizedBox(height: 14),
-                _buildContactButton(context),
+                _buildContactButton(context, ref),
               ],
             ],
           ),
@@ -265,7 +268,7 @@ class _VendorOrganizerCard extends StatelessWidget {
           ),
           const SizedBox(width: 14),
         ],
-        Icon(Icons.favorite_border, size: 15, color: HbColors.brandPrimary),
+        const Icon(Icons.favorite_border, size: 15, color: HbColors.brandPrimary),
         const SizedBox(width: 5),
         Text(
           '$followers abonné${followers > 1 ? 's' : ''}',
@@ -278,17 +281,29 @@ class _VendorOrganizerCard extends StatelessWidget {
     );
   }
 
-  Widget _buildContactButton(BuildContext context) {
+  Widget _buildContactButton(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () {
+            onPressed: () async {
               HapticFeedback.lightImpact();
-              context.push(Uri(
-                path: '/messages/new/from-organizer/${event.organizerId}',
-                queryParameters: {'name': event.organizerName},
-              ).toString());
+              final allowed = await GuestGuard.check(
+                context: context,
+                ref: ref,
+                featureName: 'contacter un organisateur',
+              );
+              if (!allowed || !context.mounted) return;
+              NewConversationForm.show(
+                context,
+                conversationContext: FromOrganizerConversationContext(
+                  organizationUuid: event.organizerId,
+                  organizationName: event.organizerName,
+                  organizationLogoUrl: event.organizerLogo,
+                  prefilledEventId: event.id,
+                  prefilledEventTitle: event.title,
+                ),
+              );
             },
             icon: const Icon(Icons.mail_outline, size: 18),
             label: const Text('Contacter'),

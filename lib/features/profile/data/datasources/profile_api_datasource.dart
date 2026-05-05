@@ -134,7 +134,7 @@ class ProfileApiDataSource {
       firstName: userData['first_name']?.toString(),
       lastName: userData['last_name']?.toString(),
       phone: userData['phone']?.toString(),
-      avatarUrl: userData['avatar_url']?.toString(),
+      avatarUrl: (userData['avatar'] ?? userData['avatar_url'])?.toString(),
       birthDate: userData['birthDate']?.toString() ?? userData['birth_date']?.toString(),
       membershipCity: userData['membershipCity']?.toString() ?? userData['membership_city']?.toString(),
       role: userData['role']?.toString() ?? 'customer',

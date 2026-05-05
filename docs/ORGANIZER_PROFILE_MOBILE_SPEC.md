@@ -34,6 +34,8 @@ Mobile should reproduce all three blocks plus the activity tab. The reviews tab 
 | 4 | `DELETE` | `/api/v1/me/organizers/{slug_or_uuid}/follow` | Unfollow | required |
 | 5 | `POST` | `/api/v1/me/conversations/from-organization/{organizationUuid}` | Send a message via the contact form | required |
 | 6 | `GET` | `/api/v1/me/organizers/following` | List the user's followed organizers (paginated) — **powers a separate "Following" screen, not this profile screen** | required |
+| 7 | `GET` | `/api/v1/organizers/{slug_or_uuid}/reviews` | Paginated list of approved reviews aggregated across the organizer's events | optional (auth surfaces `userVote`) |
+| 8 | `GET` | `/api/v1/organizers/{slug_or_uuid}/reviews/stats` | Aggregate rating distribution for the organizer | none |
 
 > **Slug or UUID** — endpoints 1–4 accept either as the path parameter (recently aligned). Mobile should send `organization.uuid` since that's the field consistently exposed across the rest of the API. Route param is named `{slug}` in the route definition for legacy reasons; the controllers detect UUID format internally.
 >
@@ -88,6 +90,7 @@ The fields below are everything the mobile screen needs (the resource exposes mo
 | `allow_public_contact` / `allowPublicContact` | bool | **gate the Contact button** — hide when `false` |
 | `eventsCount` / `events_count` | int | **stats row** — "N activities" |
 | `followersCount` / `followers_count` | int | **stats row** — "N followers" |
+| `membersCount` / `members_count` | int | **stats row** — "N membres" (count of `active` organization memberships; excludes pending/rejected/suspended and the owner). |
 | `is_followed` / `isFollowed` | bool \| null | **Follow button state**. `null` = not authenticated (hide the button). `false` = show "Follow". `true` = show "Following". |
 | `reviews_count` | int | **stats row** — "(N reviews)" |
 | `average_rating` | float \| null | **stats row** — only render when `> 0` |
@@ -327,6 +330,7 @@ The list is automatically filtered to:
       "verified": true,
       "events_count": 24,           // published events only
       "followers_count": 1234,
+      "members_count": 42,
       "is_followed": true,           // always true on this endpoint
       "average_rating": 4.6,
       "reviews_count": 128,
@@ -415,6 +419,248 @@ Future<PaginatedFollowed> fetchFollowedOrganizers({
 | **Suspended orgs disappear** | If an organizer the user follows transitions from `verified` to `suspended`, that org will silently drop out of this list — even though the underlying `organizer_follows` row still exists. There's currently no UI signal for "you used to follow this org but it's suspended now"; if that's user-visible behavior is needed, it requires a backend change. |
 | **No cursor pagination** | Standard page/per_page pagination only. For very long lists (thousands), cursor pagination on `organizer_follows.created_at` would be more stable, but no user is anywhere near that scale today. |
 | **Cache invalidation** | Invalidate this list whenever the user follows or unfollows from any other screen (e.g. the profile screen's Follow button). Both follow endpoints return `is_followed` and `followers_count` for the affected org — but they don't tell you the new ordering, so refetching this list is safest. |
+
+---
+
+## 6ter. Endpoint 7 — Reviews list
+
+```
+GET /api/v1/organizers/{slug_or_uuid}/reviews
+```
+
+Returns approved `EventReview` rows aggregated across **all events** of the organizer. The data model has no organization-level review entity — reviews live on events, and this endpoint is the join. Each row identifies which event it was left on (`eventTitle`, `eventSlug`, `eventUuid`).
+
+The endpoint applies the same `status = 'verified'` filter as the profile endpoint — non-verified organizations 404 here too.
+
+### 6ter.1 Headers
+
+```
+GET /api/v1/organizers/{slug_or_uuid}/reviews HTTP/1.1
+Host: api.lehiboo.com
+Accept: application/json
+Authorization: Bearer <token>      # optional — surfaces userVote when present
+```
+
+### 6ter.2 Query params
+
+| Param | Type | Default | Constraints | Notes |
+|---|---|---|---|---|
+| `rating` | int | — | 1–5 | Filter to a single star rating. |
+| `verified_only` | bool | `false` | — | When `true`, restrict to reviews where `is_verified_purchase = true` (the user actually attended). |
+| `sort_by` | enum | `helpful` | `helpful` \| `rating` \| `created_at` | `helpful` orders by `helpful_count` then newest. `rating` orders by stars then newest. `created_at` orders strictly by recency. |
+| `sort_order` | enum | `desc` | `asc` \| `desc` | |
+| `per_page` | int | 10 | 1–50 | |
+| `page` | int | 1 | ≥ 1 | Standard Laravel pagination. |
+
+### 6ter.3 Path Param
+
+| Param | Type | Resolution |
+|---|---|---|
+| `slug_or_uuid` | string | Same dual-format support as endpoints 1–4. Send `organization.uuid` for consistency. |
+
+### 6ter.4 Response — `200 OK`
+
+The response uses Laravel's default `AnonymousResourceCollection` paginated envelope (matches the existing `/api/v1/events/{slug}/reviews` shape — mobile likely already parses it):
+
+```jsonc
+{
+  "data": [
+    {
+      "uuid": "019d35e0-...",
+      "rating": 5,
+      "title": "Soirée mémorable !",
+      "comment": "Vraiment top, je recommande.",
+      "status": "approved",
+      "is_verified_purchase": true,
+      "isVerifiedPurchase": true,
+      "is_featured": false,
+      "isFeatured": false,
+      "helpful_count": 12,
+      "not_helpful_count": 1,
+      "helpfulCount": 12,
+      "notHelpfulCount": 1,
+      "helpfulnessPercentage": 92,
+      "author": {
+        "name": "Alice D.",
+        "firstName": "Alice",
+        "lastName": "Doe",
+        "avatar": "https://...",
+        "initials": "AD"
+      },
+      "eventTitle": "Concert au Théâtre",
+      "eventSlug": "concert-au-theatre",
+      "eventUuid": "019dab79-...",
+      "event": {
+        "id": 42,
+        "uuid": "019dab79-...",
+        "title": "Concert au Théâtre",
+        "slug": "concert-au-theatre"
+      },
+      "response": { /* organizer reply, if any — see below */ },
+      "hasResponse": true,
+      "organizerResponse": "Merci Alice ! …",
+      "userVote": null,
+      "created_at": "2026-04-15T20:34:00+02:00",
+      "createdAt": "2026-04-15T20:34:00+02:00",
+      "createdAtFormatted": "il y a 2 semaines"
+    }
+  ],
+  "links": { /* Laravel default pagination links — ignore on mobile */ },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "to": 10,
+    "per_page": 10,
+    "last_page": 12,
+    "total": 118,
+    "path": "https://api.lehiboo.com/api/v1/organizers/.../reviews",
+    "links": [ /* numbered page links */ ]
+  }
+}
+```
+
+> **Note on `meta.current_page` vs `meta.page`** — this endpoint uses Laravel's verbose paginator output (with `current_page`, not `page`). It mirrors the existing `/api/v1/events/{slug}/reviews` shape. This is **inconsistent** with the simpler `meta: { page, per_page, total, last_page }` shape used by other lists like `/me/bookings` or `/me/organizers/following`. Mobile should expect `meta.current_page` here. If a future refactor unifies pagination shapes, this endpoint should follow.
+
+#### Per-row fields most relevant for the mobile reviews tab
+
+| Field | Use |
+|---|---|
+| `rating` | star count (1–5) |
+| `title`, `comment` | review body |
+| `author.name`, `author.avatar`, `author.initials` | reviewer identity (use initials when avatar is null) |
+| `eventTitle`, `eventSlug` | "review for *Event Name*" subtext, tap → event detail |
+| `is_verified_purchase` | "Achat vérifié" badge |
+| `helpful_count`, `helpfulnessPercentage` | engagement signal |
+| `hasResponse` / `organizerResponse` | inline organizer reply card under the review |
+| `created_at`, `createdAtFormatted` | "il y a 2 semaines" |
+| `userVote` | only present when authenticated AND `helpfulVotes` was eager-loaded — currently true here (auth path); render up/down state on the helpful button |
+
+### 6ter.5 Errors
+
+| Status | Cause |
+|---|---|
+| `404 Not Found` | Slug/UUID doesn't exist or the organization is not `verified`. |
+
+### 6ter.6 Sample call (Dio)
+
+```dart
+Future<PaginatedReviews> fetchOrganizerReviews(
+  String identifier, {
+  int? rating,
+  bool verifiedOnly = false,
+  String sortBy = 'helpful',
+  int page = 1,
+  int perPage = 20,
+}) async {
+  final response = await dio.get<Map<String, dynamic>>(
+    '/api/v1/organizers/$identifier/reviews',
+    queryParameters: {
+      if (rating != null) 'rating': rating,
+      if (verifiedOnly) 'verified_only': true,
+      'sort_by': sortBy,
+      'page': page,
+      'per_page': perPage,
+    },
+    options: Options(
+      headers: {
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    ),
+  );
+
+  final body = response.data!;
+  return PaginatedReviews(
+    items: (body['data'] as List)
+        .map((j) => OrganizerReview.fromJson(j))
+        .toList(),
+    page: body['meta']['current_page'] as int,        // note: current_page
+    perPage: body['meta']['per_page'] as int,
+    total: body['meta']['total'] as int,
+    lastPage: body['meta']['last_page'] as int,
+  );
+}
+```
+
+---
+
+## 6quater. Endpoint 8 — Reviews stats
+
+```
+GET /api/v1/organizers/{slug_or_uuid}/reviews/stats
+```
+
+Aggregate counts and rating distribution for the organizer's reviews. Use this to render the histogram bar chart at the top of the reviews tab without paginating through all reviews.
+
+### 6quater.1 Headers
+
+No auth required. Same path conventions as endpoint 7.
+
+### 6quater.2 Response — `200 OK`
+
+```jsonc
+{
+  "totalReviews": 118,
+  "averageRating": 4.6,
+  "verifiedCount": 102,
+  "distribution": {
+    "5": 78,
+    "4": 28,
+    "3": 8,
+    "2": 3,
+    "1": 1
+  },
+  "percentages": {
+    "5": 66,
+    "4": 24,
+    "3": 7,
+    "2": 3,
+    "1": 1
+  }
+}
+```
+
+When `totalReviews = 0`:
+
+```jsonc
+{
+  "totalReviews": 0,
+  "averageRating": 0,
+  "verifiedCount": 0,
+  "distribution": { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 },
+  "percentages":  { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 }
+}
+```
+
+### 6quater.3 Mapping to mobile UI
+
+| Field | Use |
+|---|---|
+| `averageRating` | large hero number with a star row |
+| `totalReviews` | "Sur N avis" subtitle |
+| `verifiedCount` | "dont N achats vérifiés" line |
+| `distribution.{1..5}` | counts next to each histogram row |
+| `percentages.{1..5}` | bar widths in the histogram (already rounded server-side) |
+
+### 6quater.4 Errors
+
+| Status | Cause |
+|---|---|
+| `404 Not Found` | Slug/UUID doesn't exist or org is not verified. |
+
+### 6quater.5 Sample call
+
+```dart
+Future<ReviewStats> fetchOrganizerReviewStats(String identifier) async {
+  final response = await dio.get<Map<String, dynamic>>(
+    '/api/v1/organizers/$identifier/reviews/stats',
+  );
+  return ReviewStats.fromJson(response.data!);
+}
+```
+
+### 6quater.6 Relation to the profile endpoint
+
+The profile endpoint (§3) also exposes `reviews_count` and `average_rating` — same numbers as this endpoint's `totalReviews` and `averageRating`. The profile endpoint is convenient for the header card; the stats endpoint is what you call when the user opens the reviews tab and you need the histogram breakdown.
 
 ---
 
@@ -517,7 +763,7 @@ After successful login, mobile should return to this screen and re-trigger the a
 | Web element | Mobile adaptation |
 |---|---|
 | Breadcrumb "Events > Organizers > [name]" | Replace with native back button in the AppBar (already in the SliverAppBar). |
-| Three-tab structure (Activities, About, Reviews) | Keep, but **omit the Reviews tab** on first iteration — web shows an empty placeholder anyway. Drop or hide until a reviews API exists. |
+| Three-tab structure (Activities, About, Reviews) | Keep all three. The reviews API (endpoints 7 + 8) is now available — the web's "Avis" tab is still an empty placeholder, but mobile can ship the full reviews UX (histogram + paginated list) ahead of web. |
 | Inner sub-tabs "Current & upcoming" vs "Past" | Keep as a single segmented toggle above the event list. |
 | Online-only filter (web filters `event_type == 'online'`) | **Drop on mobile** — that filter is a web-specific concern. Show all events of the organizer. |
 | Coordinates "click to reveal" (per-field) | Mobile pattern: tap the panel toggle once → all three buttons appear; tap each button → display its value as a `Chip` below. Identical UX is fine. |
@@ -529,72 +775,74 @@ After successful login, mobile should return to this screen and re-trigger the a
 
 ```dart
 class OrganizerProfile {
-  final String uuid;
-  final String slug;
-  final String displayName;
-  final String? description;
-  final String? logo;
-  final String? coverImage;
-  final String? city;
-  final String? website;
-  final String? email;
-  final String? phone;
-  final bool verified;
-  final bool allowPublicContact;
-  final int eventsCount;
-  final int followersCount;
-  final int reviewsCount;
-  final double? averageRating;
-  final bool? isFollowed;                       // null when unauthenticated
-  final SocialLinks? socialLinks;
-  final List<EstablishmentType> establishmentTypes;
+   final String uuid;
+   final String slug;
+   final String displayName;
+   final String? description;
+   final String? logo;
+   final String? coverImage;
+   final String? city;
+   final String? website;
+   final String? email;
+   final String? phone;
+   final bool verified;
+   final bool allowPublicContact;
+   final int eventsCount;
+   final int followersCount;
+   final int membersCount;
+   final int reviewsCount;
+   final double? averageRating;
+   final bool? isFollowed;                       // null when unauthenticated
+   final SocialLinks? socialLinks;
+   final List<EstablishmentType> establishmentTypes;
 
-  factory OrganizerProfile.fromJson(Map<String, dynamic> json) =>
-      OrganizerProfile(
-        uuid: json['uuid'] as String,
-        slug: json['slug'] as String,
-        displayName: (json['display_name'] ?? json['name']) as String,
-        description: json['description'] as String?,
-        logo: json['logo'] as String?,
-        coverImage: json['cover_image'] as String?,
-        city: json['city'] as String?,
-        website: json['website'] as String?,
-        email: json['email'] as String?,
-        phone: json['phone'] as String?,
-        verified: (json['verified'] ?? json['isVerified']) as bool? ?? false,
-        allowPublicContact: json['allow_public_contact'] as bool? ?? true,
-        eventsCount: (json['events_count'] ?? json['eventsCount']) as int? ?? 0,
-        followersCount: (json['followers_count'] ?? json['followersCount']) as int? ?? 0,
-        reviewsCount: json['reviews_count'] as int? ?? 0,
-        averageRating: (json['average_rating'] as num?)?.toDouble(),
-        isFollowed: json['is_followed'] as bool?,
-        socialLinks: json['social_links'] == null
-            ? null
-            : SocialLinks.fromJson(json['social_links']),
-        establishmentTypes: (json['establishment_types'] as List? ?? [])
-            .map((j) => EstablishmentType.fromJson(j))
-            .toList(),
-      );
+   factory OrganizerProfile.fromJson(Map<String, dynamic> json) =>
+           OrganizerProfile(
+              uuid: json['uuid'] as String,
+              slug: json['slug'] as String,
+              displayName: (json['display_name'] ?? json['name']) as String,
+              description: json['description'] as String?,
+              logo: json['logo'] as String?,
+              coverImage: json['cover_image'] as String?,
+              city: json['city'] as String?,
+              website: json['website'] as String?,
+              email: json['email'] as String?,
+              phone: json['phone'] as String?,
+              verified: (json['verified'] ?? json['isVerified']) as bool? ?? false,
+              allowPublicContact: json['allow_public_contact'] as bool? ?? true,
+              eventsCount: (json['events_count'] ?? json['eventsCount']) as int? ?? 0,
+              followersCount: (json['followers_count'] ?? json['followersCount']) as int? ?? 0,
+              membersCount: (json['members_count'] ?? json['membersCount']) as int? ?? 0,
+              reviewsCount: json['reviews_count'] as int? ?? 0,
+              averageRating: (json['average_rating'] as num?)?.toDouble(),
+              isFollowed: json['is_followed'] as bool?,
+              socialLinks: json['social_links'] == null
+                      ? null
+                      : SocialLinks.fromJson(json['social_links']),
+              establishmentTypes: (json['establishment_types'] as List? ?? [])
+                      .map((j) => EstablishmentType.fromJson(j))
+                      .toList(),
+           );
 }
 
 class SocialLinks {
-  final String? facebook, instagram, twitter, linkedin, youtube;
-  /* fromJson trivial */
+   final String? facebook, instagram, twitter, linkedin, youtube;
+/* fromJson trivial */
 }
 
 class EstablishmentType {
-  final String uuid, name, slug;
-  /* fromJson trivial */
+   final String uuid, name, slug;
+/* fromJson trivial */
 }
 
 class FollowState {
-  final bool isFollowed;
-  final int followersCount;
-  factory FollowState.fromJson(Map<String, dynamic> json) =>
-      FollowState(
-        isFollowed: json['is_followed'] as bool,
-        followersCount: json['followers_count'] as int,
-      );
+   final bool isFollowed;
+   final int followersCount;
+   factory FollowState.fromJson(Map<String, dynamic> json) =>
+           FollowState(
+              isFollowed: json['is_followed'] as bool,
+              followersCount: json['followers_count'] as int,
+           );
 }
 ```
 
@@ -629,7 +877,8 @@ class FollowState {
 
 | Topic | Note |
 |---|---|
-| **Reviews tab** | Currently empty placeholder on web. Backend has `reviews_count` and `average_rating` aggregates but no per-review fetching endpoint. Track the reviews API addition before implementing this tab on mobile. |
+| **Reviews tab parity on web** | Mobile now has the full reviews UX (endpoints 7 + 8); the web "Avis" tab is still a placeholder. When web catches up, both should consume the same endpoints. |
+| **Per-review helpful voting on organizer reviews** | Endpoint 7 surfaces `userVote` when authenticated, but the POST/DELETE vote routes currently live under `/v1/reviews/{uuid}/vote` (the EventReview-scoped path). Mobile can call those directly with the review's `uuid` — they're not organizer-scoped, but they work for any review surfaced via endpoint 7. |
 | **Block / report organizer** | Web doesn't expose this yet. Likely a future requirement for moderation. |
 | **Share link** | Web has no explicit share button. On mobile, an iOS/Android share sheet using the public URL `https://lehiboo.com/organizers/{slug}` would be a low-effort improvement. |
 | **Push notifications** | Following an organizer should subscribe the user to a notification channel. Backend support is present (`OrganizerFollow` model + alert pipeline) but the FCM topic name convention is not yet documented. |

@@ -53,13 +53,23 @@ mixin _$OrganizerProfileDto {
   @JsonKey(name: 'events_count', fromJson: _int)
   int get eventsCount => throw _privateConstructorUsedError;
   @JsonKey(name: 'followers_count', fromJson: _int)
-  int get followersCount => throw _privateConstructorUsedError;
+  int get followersCount =>
+      throw _privateConstructorUsedError; // members_count: count(active) on OrganizationMember for this org.
+// Excludes pending/rejected/suspended and the owner. Defaults to 0
+// when the backend response predates the addition.
+  @JsonKey(name: 'members_count', fromJson: _int)
+  int get membersCount => throw _privateConstructorUsedError;
   @JsonKey(name: 'reviews_count', fromJson: _int)
   int get reviewsCount => throw _privateConstructorUsedError;
   @JsonKey(name: 'average_rating', fromJson: _doubleOrNull)
   double? get averageRating => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_followed')
-  bool? get isFollowed => throw _privateConstructorUsedError;
+  bool? get isFollowed =>
+      throw _privateConstructorUsedError; // Tri-state per spec MEMBERSHIPS_MOBILE_SPEC.md §18: null when
+// unauthenticated, false for non-owner, true when the authed user owns
+// this org. Hides the Rejoindre button on the user's own org.
+  @JsonKey(name: 'is_owner')
+  bool? get isOwner => throw _privateConstructorUsedError;
   @JsonKey(name: 'social_links')
   SocialLinksDto? get socialLinks => throw _privateConstructorUsedError;
   @JsonKey(name: 'establishment_types')
@@ -101,10 +111,12 @@ abstract class $OrganizerProfileDtoCopyWith<$Res> {
       bool allowPublicContact,
       @JsonKey(name: 'events_count', fromJson: _int) int eventsCount,
       @JsonKey(name: 'followers_count', fromJson: _int) int followersCount,
+      @JsonKey(name: 'members_count', fromJson: _int) int membersCount,
       @JsonKey(name: 'reviews_count', fromJson: _int) int reviewsCount,
       @JsonKey(name: 'average_rating', fromJson: _doubleOrNull)
       double? averageRating,
       @JsonKey(name: 'is_followed') bool? isFollowed,
+      @JsonKey(name: 'is_owner') bool? isOwner,
       @JsonKey(name: 'social_links') SocialLinksDto? socialLinks,
       @JsonKey(name: 'establishment_types')
       List<EstablishmentTypeDto>? establishmentTypes,
@@ -144,9 +156,11 @@ class _$OrganizerProfileDtoCopyWithImpl<$Res, $Val extends OrganizerProfileDto>
     Object? allowPublicContact = null,
     Object? eventsCount = null,
     Object? followersCount = null,
+    Object? membersCount = null,
     Object? reviewsCount = null,
     Object? averageRating = freezed,
     Object? isFollowed = freezed,
+    Object? isOwner = freezed,
     Object? socialLinks = freezed,
     Object? establishmentTypes = freezed,
     Object? createdAt = freezed,
@@ -224,6 +238,10 @@ class _$OrganizerProfileDtoCopyWithImpl<$Res, $Val extends OrganizerProfileDto>
           ? _value.followersCount
           : followersCount // ignore: cast_nullable_to_non_nullable
               as int,
+      membersCount: null == membersCount
+          ? _value.membersCount
+          : membersCount // ignore: cast_nullable_to_non_nullable
+              as int,
       reviewsCount: null == reviewsCount
           ? _value.reviewsCount
           : reviewsCount // ignore: cast_nullable_to_non_nullable
@@ -235,6 +253,10 @@ class _$OrganizerProfileDtoCopyWithImpl<$Res, $Val extends OrganizerProfileDto>
       isFollowed: freezed == isFollowed
           ? _value.isFollowed
           : isFollowed // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      isOwner: freezed == isOwner
+          ? _value.isOwner
+          : isOwner // ignore: cast_nullable_to_non_nullable
               as bool?,
       socialLinks: freezed == socialLinks
           ? _value.socialLinks
@@ -293,10 +315,12 @@ abstract class _$$OrganizerProfileDtoImplCopyWith<$Res>
       bool allowPublicContact,
       @JsonKey(name: 'events_count', fromJson: _int) int eventsCount,
       @JsonKey(name: 'followers_count', fromJson: _int) int followersCount,
+      @JsonKey(name: 'members_count', fromJson: _int) int membersCount,
       @JsonKey(name: 'reviews_count', fromJson: _int) int reviewsCount,
       @JsonKey(name: 'average_rating', fromJson: _doubleOrNull)
       double? averageRating,
       @JsonKey(name: 'is_followed') bool? isFollowed,
+      @JsonKey(name: 'is_owner') bool? isOwner,
       @JsonKey(name: 'social_links') SocialLinksDto? socialLinks,
       @JsonKey(name: 'establishment_types')
       List<EstablishmentTypeDto>? establishmentTypes,
@@ -335,9 +359,11 @@ class __$$OrganizerProfileDtoImplCopyWithImpl<$Res>
     Object? allowPublicContact = null,
     Object? eventsCount = null,
     Object? followersCount = null,
+    Object? membersCount = null,
     Object? reviewsCount = null,
     Object? averageRating = freezed,
     Object? isFollowed = freezed,
+    Object? isOwner = freezed,
     Object? socialLinks = freezed,
     Object? establishmentTypes = freezed,
     Object? createdAt = freezed,
@@ -415,6 +441,10 @@ class __$$OrganizerProfileDtoImplCopyWithImpl<$Res>
           ? _value.followersCount
           : followersCount // ignore: cast_nullable_to_non_nullable
               as int,
+      membersCount: null == membersCount
+          ? _value.membersCount
+          : membersCount // ignore: cast_nullable_to_non_nullable
+              as int,
       reviewsCount: null == reviewsCount
           ? _value.reviewsCount
           : reviewsCount // ignore: cast_nullable_to_non_nullable
@@ -426,6 +456,10 @@ class __$$OrganizerProfileDtoImplCopyWithImpl<$Res>
       isFollowed: freezed == isFollowed
           ? _value.isFollowed
           : isFollowed // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      isOwner: freezed == isOwner
+          ? _value.isOwner
+          : isOwner // ignore: cast_nullable_to_non_nullable
               as bool?,
       socialLinks: freezed == socialLinks
           ? _value.socialLinks
@@ -466,10 +500,12 @@ class _$OrganizerProfileDtoImpl implements _OrganizerProfileDto {
       this.allowPublicContact = false,
       @JsonKey(name: 'events_count', fromJson: _int) this.eventsCount = 0,
       @JsonKey(name: 'followers_count', fromJson: _int) this.followersCount = 0,
+      @JsonKey(name: 'members_count', fromJson: _int) this.membersCount = 0,
       @JsonKey(name: 'reviews_count', fromJson: _int) this.reviewsCount = 0,
       @JsonKey(name: 'average_rating', fromJson: _doubleOrNull)
       this.averageRating,
       @JsonKey(name: 'is_followed') this.isFollowed,
+      @JsonKey(name: 'is_owner') this.isOwner,
       @JsonKey(name: 'social_links') this.socialLinks,
       @JsonKey(name: 'establishment_types')
       final List<EstablishmentTypeDto>? establishmentTypes,
@@ -531,6 +567,12 @@ class _$OrganizerProfileDtoImpl implements _OrganizerProfileDto {
   @override
   @JsonKey(name: 'followers_count', fromJson: _int)
   final int followersCount;
+// members_count: count(active) on OrganizationMember for this org.
+// Excludes pending/rejected/suspended and the owner. Defaults to 0
+// when the backend response predates the addition.
+  @override
+  @JsonKey(name: 'members_count', fromJson: _int)
+  final int membersCount;
   @override
   @JsonKey(name: 'reviews_count', fromJson: _int)
   final int reviewsCount;
@@ -540,6 +582,12 @@ class _$OrganizerProfileDtoImpl implements _OrganizerProfileDto {
   @override
   @JsonKey(name: 'is_followed')
   final bool? isFollowed;
+// Tri-state per spec MEMBERSHIPS_MOBILE_SPEC.md §18: null when
+// unauthenticated, false for non-owner, true when the authed user owns
+// this org. Hides the Rejoindre button on the user's own org.
+  @override
+  @JsonKey(name: 'is_owner')
+  final bool? isOwner;
   @override
   @JsonKey(name: 'social_links')
   final SocialLinksDto? socialLinks;
@@ -561,7 +609,7 @@ class _$OrganizerProfileDtoImpl implements _OrganizerProfileDto {
 
   @override
   String toString() {
-    return 'OrganizerProfileDto(uuid: $uuid, slug: $slug, name: $name, displayName: $displayName, description: $description, logo: $logo, coverImage: $coverImage, website: $website, email: $email, phone: $phone, address: $address, city: $city, zipCode: $zipCode, country: $country, verified: $verified, allowPublicContact: $allowPublicContact, eventsCount: $eventsCount, followersCount: $followersCount, reviewsCount: $reviewsCount, averageRating: $averageRating, isFollowed: $isFollowed, socialLinks: $socialLinks, establishmentTypes: $establishmentTypes, createdAt: $createdAt)';
+    return 'OrganizerProfileDto(uuid: $uuid, slug: $slug, name: $name, displayName: $displayName, description: $description, logo: $logo, coverImage: $coverImage, website: $website, email: $email, phone: $phone, address: $address, city: $city, zipCode: $zipCode, country: $country, verified: $verified, allowPublicContact: $allowPublicContact, eventsCount: $eventsCount, followersCount: $followersCount, membersCount: $membersCount, reviewsCount: $reviewsCount, averageRating: $averageRating, isFollowed: $isFollowed, isOwner: $isOwner, socialLinks: $socialLinks, establishmentTypes: $establishmentTypes, createdAt: $createdAt)';
   }
 
   @override
@@ -594,12 +642,15 @@ class _$OrganizerProfileDtoImpl implements _OrganizerProfileDto {
                 other.eventsCount == eventsCount) &&
             (identical(other.followersCount, followersCount) ||
                 other.followersCount == followersCount) &&
+            (identical(other.membersCount, membersCount) ||
+                other.membersCount == membersCount) &&
             (identical(other.reviewsCount, reviewsCount) ||
                 other.reviewsCount == reviewsCount) &&
             (identical(other.averageRating, averageRating) ||
                 other.averageRating == averageRating) &&
             (identical(other.isFollowed, isFollowed) ||
                 other.isFollowed == isFollowed) &&
+            (identical(other.isOwner, isOwner) || other.isOwner == isOwner) &&
             (identical(other.socialLinks, socialLinks) ||
                 other.socialLinks == socialLinks) &&
             const DeepCollectionEquality()
@@ -630,9 +681,11 @@ class _$OrganizerProfileDtoImpl implements _OrganizerProfileDto {
         allowPublicContact,
         eventsCount,
         followersCount,
+        membersCount,
         reviewsCount,
         averageRating,
         isFollowed,
+        isOwner,
         socialLinks,
         const DeepCollectionEquality().hash(_establishmentTypes),
         createdAt
@@ -677,10 +730,12 @@ abstract class _OrganizerProfileDto implements OrganizerProfileDto {
       @JsonKey(name: 'events_count', fromJson: _int) final int eventsCount,
       @JsonKey(name: 'followers_count', fromJson: _int)
       final int followersCount,
+      @JsonKey(name: 'members_count', fromJson: _int) final int membersCount,
       @JsonKey(name: 'reviews_count', fromJson: _int) final int reviewsCount,
       @JsonKey(name: 'average_rating', fromJson: _doubleOrNull)
       final double? averageRating,
       @JsonKey(name: 'is_followed') final bool? isFollowed,
+      @JsonKey(name: 'is_owner') final bool? isOwner,
       @JsonKey(name: 'social_links') final SocialLinksDto? socialLinks,
       @JsonKey(name: 'establishment_types')
       final List<EstablishmentTypeDto>? establishmentTypes,
@@ -742,6 +797,11 @@ abstract class _OrganizerProfileDto implements OrganizerProfileDto {
   @override
   @JsonKey(name: 'followers_count', fromJson: _int)
   int get followersCount;
+  @override // members_count: count(active) on OrganizationMember for this org.
+// Excludes pending/rejected/suspended and the owner. Defaults to 0
+// when the backend response predates the addition.
+  @JsonKey(name: 'members_count', fromJson: _int)
+  int get membersCount;
   @override
   @JsonKey(name: 'reviews_count', fromJson: _int)
   int get reviewsCount;
@@ -751,6 +811,11 @@ abstract class _OrganizerProfileDto implements OrganizerProfileDto {
   @override
   @JsonKey(name: 'is_followed')
   bool? get isFollowed;
+  @override // Tri-state per spec MEMBERSHIPS_MOBILE_SPEC.md §18: null when
+// unauthenticated, false for non-owner, true when the authed user owns
+// this org. Hides the Rejoindre button on the user's own org.
+  @JsonKey(name: 'is_owner')
+  bool? get isOwner;
   @override
   @JsonKey(name: 'social_links')
   SocialLinksDto? get socialLinks;

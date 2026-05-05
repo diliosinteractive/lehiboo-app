@@ -71,8 +71,12 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
           Navigator.pop(context);
           // Reset provider state
           ref.read(businessRegisterProvider.notifier).reset();
-          // Navigate to home
-          context.go('/');
+          // Skip the home redirect when a GuestRestrictionDialog is active
+          // so the dialog can pop pushed screens and the original gated
+          // action can resume.
+          if (!ref.read(guestGuardActiveProvider)) {
+            context.go('/');
+          }
         },
       ),
     );

@@ -90,6 +90,9 @@ class Event extends Equatable {
   final List<String> organizerVenueTypes;
   final bool organizerAllowPublicContact;
   final bool isFavorite;
+  /// Members-only event — drives the "Privé 🔒" badge on cards.
+  /// Spec: MEMBERSHIPS_MOBILE_SPEC.md §20.
+  final bool isMembersOnly;
   final bool isFeatured;
   final bool isRecommended;
   final EventStatus status;
@@ -185,6 +188,7 @@ class Event extends Equatable {
     this.organizerVenueTypes = const [],
     this.organizerAllowPublicContact = false,
     required this.isFavorite,
+    this.isMembersOnly = false,
     required this.isFeatured,
     required this.isRecommended,
     required this.status,
@@ -410,6 +414,7 @@ class Event extends Equatable {
     List<String>? organizerVenueTypes,
     bool? organizerAllowPublicContact,
     bool? isFavorite,
+    bool? isMembersOnly,
     bool? isFeatured,
     bool? isRecommended,
     EventStatus? status,
@@ -497,6 +502,7 @@ class Event extends Equatable {
       organizerVenueTypes: organizerVenueTypes ?? this.organizerVenueTypes,
       organizerAllowPublicContact: organizerAllowPublicContact ?? this.organizerAllowPublicContact,
       isFavorite: isFavorite ?? this.isFavorite,
+      isMembersOnly: isMembersOnly ?? this.isMembersOnly,
       isFeatured: isFeatured ?? this.isFeatured,
       isRecommended: isRecommended ?? this.isRecommended,
       status: status ?? this.status,
@@ -587,6 +593,7 @@ class Event extends Equatable {
         organizerVenueTypes,
         organizerAllowPublicContact,
         isFavorite,
+        isMembersOnly,
         isFeatured,
         isRecommended,
         status,

@@ -270,7 +270,13 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
         _showSuccess('Compte créé avec succès !');
         // Update auth state with the new user
         ref.read(authProvider.notifier).setAuthenticatedUser(result.authResult!.user);
-        context.go('/');
+        // If the registration was triggered from a GuestRestrictionDialog,
+        // skip the navigation reset — the dialog's auth-state listener
+        // will pop our pushed screens and the dialog itself, returning
+        // the user to the original screen so the gated action resumes.
+        if (!ref.read(guestGuardActiveProvider)) {
+          context.go('/');
+        }
       } else if (result.pendingVerification) {
         // This shouldn't happen with the new flow, but handle it just in case
         _showSuccess(result.message);

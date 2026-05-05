@@ -1,97 +1,151 @@
-# Messages Mobile — Implementation Spec
+# Messages Mobile — Spécification d'implémentation Flutter
 
-Ce document decrit comment implementer la fonctionnalite Messages dans l'app mobile Flutter, en miroir de l'implementation web. Il couvre l'architecture ecrans, les patterns UX, le temps reel, et les points d'attention.
-
+Ce document décrit comment implémenter la fonctionnalité Messages dans l'application mobile Flutter.
 Pour le contrat API (endpoints, payloads, erreurs), voir `MOBILE_MESSAGES_API.md`.
+
+---
 
 ## Scope
 
-**V1 (ce document)** : role `user` (participant) uniquement.
+**V1 (rôle participant uniquement)**
 
-| Fonctionnalite | Inclus |
-|---|---|
-| Conversations user ↔ organisateur | Oui |
-| Conversations user ↔ support LeHiboo | Oui |
-| Signalement de conversation | Oui |
-| Pieces jointes (images, PDF) | Oui |
-| Edition / suppression de messages | Oui |
-| Indicateurs de lecture et livraison | Oui |
-| Temps reel (WebSocket ou polling) | Oui |
-| Push FCM pour nouveaux messages | Non (gap backend, voir section dediee) |
-| Conversations vendor (vendor_admin, org_org) | Non (v2) |
-| Broadcasts | Non (v2) |
+| Fonctionnalité | Statut |
+|----------------|--------|
+| Conversations user ↔ organisateur (`participant_vendor`) | Implémenté |
+| Conversations user ↔ support LeHiboo (`user_support`) | Implémenté |
+| Signalement de conversation | Implémenté |
+| Pièces jointes (images, PDF) | Implémenté |
+| Édition / suppression de messages | Implémenté (vendor uniquement) |
+| Indicateurs de lecture et livraison | Implémenté |
+| Badge unread global dans BottomNav | Implémenté |
+| `NewConversationForm` — modal unifié (dashboard / organisateur / support) | Implémenté |
+| Sélecteur d'org avec recherche (nouveau message) | Implémenté (filtrage local, `NewConversationForm`) |
+| Protection routes `/messages` — accès réservé aux utilisateurs connectés | Implémenté |
+| Chat UI refresh (bulles asymétriques, avatars, composer pill) | Implémenté |
+| Groupement des conversations par organisation | À implémenter |
+| Preview pièces jointes dans ConversationTile | Implémenté |
+| Masquer bouton Signaler si déjà signalé | Implémenté |
+| Temps réel WebSocket | À implémenter (v2 active) |
+| Push FCM nouveaux messages | Backend prêt — voir section dédiée |
 
 ---
 
-## Architecture ecrans
+## Structure de fichiers
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                     NAVIGATION                               │
-│  Top right → icon "Messages" (avec badge unread global) next to favorites icon    │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│              INBOX (TabBar 2 onglets)                         │
-│                                                              │
-│  [Organisateurs]              [Support LeHiboo]              │
-│                                                              │
-│  ┌────────────────────┐      ┌────────────────────┐          │
-│  │ ConversationTile   │      │ ConversationTile   │          │
-│  │ ● org avatar       │      │ ● LeHiboo logo     │          │
-│  │ ● org name         │      │ ● subject          │          │
-│  │ ● last msg preview │      │ ● last msg preview │          │
-│  │ ● time ago         │      │ ● time ago         │          │
-│  │ ● unread badge     │      │ ● unread badge     │          │
-│  │ ● event chip       │      │ ● signalement tag  │          │
-│  └────────────────────┘      └────────────────────┘          │
-│                                                              │
-│  [+] FAB "Nouveau message"   [+] FAB "Contacter support"    │
-│                                                              │
-│  Filtres (collapsible) :                                     │
-│  ● status: all / open / closed                               │
-│  ● unread_only toggle                                        │
-│  ● search bar (debounce 300ms)                               │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ tap on tile
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│              THREAD DETAIL                                    │
-│                                                              │
-│  AppBar :                                                    │
-│  ● org avatar + name (tap → org public page)                 │
-│  ● status chip (open/closed)                                 │
-│  ● overflow menu: close, report                              │
-│                                                              │
-│  Message list (reverse ListView) :                           │
-│  ● own messages: right-aligned, primary color                │
-│  ● received messages: left-aligned, surface color            │
-│  ● system messages: centered pill                            │
-│  ● deleted messages: grey italic placeholder                 │
-│  ● attachments: inline image preview / PDF row               │
-│  ● long-press: edit / delete / copy                          │
-│  ● delivery ticks on last own message                        │
-│                                                              │
-│  Compose bar (bottom) :                                      │
-│  ● TextInput + send button                                   │
-│  ● attachment button (image picker + file picker)            │
-│  ● attachment preview row (removable chips)                  │
-│  ● disabled state if conversation is closed                  │
-└─────────────────────────────────────────────────────────────┘
+```
+lib/features/messages/
+├── domain/
+│   ├── entities/
+│   │   ├── conversation.dart
+│   │   ├── message.dart
+│   │   └── conversation_report.dart
+│   └── repositories/
+│       └── messages_repository.dart
+├── data/
+│   ├── datasources/
+│   │   ├── messages_api_datasource.dart
+│   │   └── messages_polling_datasource.dart
+│   ├── models/
+│   │   ├── conversation_dto.dart
+│   │   ├── message_dto.dart
+│   │   ├── attachment_dto.dart
+│   │   ├── conversation_organization_dto.dart
+│   │   └── unread_count_dto.dart
+│   └── repositories/
+│       └── messages_repository_impl.dart
+└── presentation/
+    ├── providers/
+    │   ├── conversations_provider.dart
+    │   ├── conversation_detail_provider.dart
+    │   ├── support_conversations_provider.dart
+    │   └── unread_count_provider.dart
+    ├── screens/
+    │   ├── conversations_list_screen.dart
+    │   ├── conversation_detail_screen.dart
+    │   ├── new_conversation_screen.dart
+    │   └── support_detail_screen.dart
+    └── widgets/
+        ├── conversation_tile.dart
+        ├── message_bubble.dart
+        ├── message_composer.dart
+        ├── attachment_preview.dart
+        ├── org_search_selector.dart        ← à créer
+        └── report_conversation_dialog.dart
 ```
 
-### Points d'entree depuis d'autres ecrans
+Routes dans `app_router.dart` :
 
-| Ecran source | Action | API |
-|---|---|---|
-| Detail reservation | Bouton "Contacter l'organisateur" | `POST /user/conversations/from-booking/{bookingUuid}` |
-| Page publique organisateur | Bouton "Envoyer un message" | `POST /user/conversations/from-organization/{orgUuid}` |
-| Notification in-app (type `new_message`) | Tap → ouvre le thread | Deep link `/messages/{conversationUuid}` |
+| Route | Écran | Note |
+|-------|-------|------|
+| `/messages` | `ConversationsListScreen` | BottomNav — onglet Organisateurs |
+| `/messages/new` | `NewConversationScreen` | Sélecteur org + formulaire |
+| `/messages/new/from-booking/:bookingUuid` | `NewConversationScreen` | Auto-select org via booking |
+| `/messages/new/from-organizer/:organizationUuid` | `NewConversationScreen` | Pre-sélectionne l'org |
+| `/messages/support/new` | `SupportDetailScreen(isNew: true)` | Formulaire sujet + message |
+| `/messages/support/:conversationUuid` | `SupportDetailScreen` | Thread support |
+| `/messages/:conversationUuid` | `ConversationDetailScreen` | Thread organisateur |
 
 ---
 
-## Modele de donnees Flutter (Dart DTOs)
+## Architecture écrans
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                 BOTTOM NAV — icône "Messages"                     │
+│                 Badge global = vendor_unread + support_unread     │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │
+                             ▼
+┌──────────────────────────────────────────────────────────────────┐
+│              INBOX  (TabBar 2 onglets)                            │
+│                                                                   │
+│  [Organisateurs]                   [Support LeHiboo]              │
+│  badge = unread vendor             badge = unread support         │
+│                                                                   │
+│  Barre de recherche (debounce 300ms, filtre local ou param API)   │
+│  Chips filtres : Tous / Non lus / Ouverts / Fermés               │
+│                                                                   │
+│  ┌─────────────────────────────┐                                  │
+│  │  ConversationTile           │                                  │
+│  │  [logo org]  Nom org        │  ← logo_url ou initiales coloré  │
+│  │             Sujet           │                                  │
+│  │             Preview msg     │  ← voir règles preview           │
+│  │             Temps relatif   │  [badge unread si > 0]           │
+│  │             Chip event      │  [chip "Fermé" si closed]        │
+│  └─────────────────────────────┘                                  │
+│                                                                   │
+│  [+] FAB                                                          │
+│  Organisateurs : "Nouveau message"                                │
+│  Support : "Contacter le support"                                 │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │ tap tile
+                             ▼
+┌──────────────────────────────────────────────────────────────────┐
+│              THREAD DETAIL                                        │
+│                                                                   │
+│  AppBar :                                                         │
+│  [logo org]  Nom org · chip statut                               │
+│  overflow menu : Fermer / Signaler                                │
+│                                                                   │
+│  ListView inversée (récents en bas) :                             │
+│  ● bulles right = is_mine, left = reçus                          │
+│  ● messages system : chip centré                                  │
+│  ● messages supprimés : placeholder italique                      │
+│  ● pièces jointes : inline images / PDF row                       │
+│  ● long-press (vendor seulement) : Modifier / Supprimer / Copier │
+│  ● ticks livraison/lecture sur dernier message propre             │
+│  ● séparateurs de date ("Aujourd'hui", "Hier", "22 avril 2026")  │
+│                                                                   │
+│  Compose bar :                                                    │
+│  TextField multi-lignes (max 2000) + bouton clip + bouton envoi   │
+│  Preview chips fichiers sélectionnés (removable)                  │
+│  Désactivé + banner si status = closed                            │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Modèle de données Dart
 
 ```dart
 enum ConversationType { participantVendor, userSupport }
@@ -107,11 +161,12 @@ class Conversation {
   final DateTime? lastMessageAt;
   final int unreadCount;
   final bool isSignalement;
+  final bool userHasReported;        // masquer/griser bouton Signaler
   final ConversationOrganization? organization;
   final ConversationParticipant? participant;
   final ConversationEvent? event;
   final Message? latestMessage;
-  final List<Message>? messages; // only populated on detail
+  final List<Message>? messages;     // uniquement sur le détail
   final DateTime createdAt;
 }
 
@@ -122,7 +177,7 @@ class Message {
   final String senderTypeLabel;
   final bool isSystem;
   final MessageSender? sender;
-  final String? content;        // null when is_deleted or attachment-only
+  final String? content;             // null si is_deleted ou attachments-only
   final bool isDeleted;
   final bool isEdited;
   final bool isRead;
@@ -140,8 +195,8 @@ class MessageAttachment {
   final String url;
   final String originalName;
   final String mimeType;
-  final int size;               // bytes
-  final bool isImage;
+  final int size;          // bytes
+  final bool isImage;      // true = jpg/png/webp, false = pdf etc.
   final bool isPdf;
 }
 
@@ -149,8 +204,8 @@ class ConversationOrganization {
   final String uuid;
   final String companyName;
   final String organizationName;
-  final String? logoUrl;
-  final String? avatarUrl;
+  final String? logoUrl;   // utiliser pour l'avatar dans tiles ET detail
+  final String? avatarUrl; // fallback si logoUrl est null
 }
 
 class MessageSender {
@@ -168,424 +223,879 @@ class ConversationEvent {
 
 ---
 
-## Ecrans detailles
+## Spécification — ConversationTile
 
-### 1. Inbox — onglet Organisateurs
+Le `ConversationTile` doit correspondre exactement au comportement du web (`conversation-item.tsx`).
 
-**API** : `GET /api/v1/user/conversations`
-
-**Comportement** :
-- Pagination infinie (scroll-to-load, `per_page=20`)
-- Tri serveur par `last_message_at` DESC (deja applique par le backend)
-- Pull-to-refresh invalide la liste + le unread count
-- Chaque tile affiche : avatar org, nom org, subject, dernier message (tronque ~80 chars), temps relatif, badge unread si > 0, chip event optionnel, chip "ferme" si `status = closed`
-- Tap → navigation vers thread detail
-
-**Filtres** :
-- Barre de recherche en haut (query param `search`, debounce 300ms)
-- Chips sous la barre : `Tous` / `Non lus` (toggle `unread_only=true`) / `Ouverts` / `Fermes`
-- Les filtres declenchent un nouveau fetch (page 1)
-
-**Etat vide** :
-- Aucune conversation : illustration + texte "Aucun message pour le moment" + bouton "Contacter un organisateur"
-
-**FAB "Nouveau message"** :
-- Ouvre un bottom sheet ou ecran de selection avec les organisateurs contactables
-- API : `GET /api/v1/user/conversations/contactable-organizations`
-- Apres selection : formulaire sujet + premier message + fichiers optionnels
-- API : `POST /api/v1/user/conversations`
-- Redirection vers le thread cree
-
----
-
-### 2. Inbox — onglet Support LeHiboo
-
-**API** : `GET /api/v1/user/support-conversations`
-
-**Comportement** :
-- Meme pattern que l'onglet Organisateurs
-- Pas de filtre par event (non pertinent)
-- Tile affiche : logo LeHiboo (fixe), subject, dernier message, temps relatif, badge unread
-- Si `is_signalement = true` : chip "Signalement" en rouge
-
-**FAB "Contacter le support"** :
-- Formulaire sujet + premier message
-- API : `POST /api/v1/user/support-conversations`
-- Redirection vers le thread cree
-
----
-
-### 3. Thread detail
-
-**API** : `GET /api/v1/user/conversations/{uuid}` (ou `support-conversations/{uuid}`)
-
-**Chargement** :
-- Le GET marque automatiquement les messages comme lus cote backend (pas besoin d'appel separe)
-- Apres chargement, invalider le cache du unread count global
-
-**Affichage des messages** :
-- `ListView` inverse (messages recents en bas, scroll vers le haut pour l'historique)
-- Grouper par date (separateur "Aujourd'hui", "Hier", "22 avril 2026")
-- Messages `system` : centrer dans un chip gris avec icone info
-
-**Bulles de message** :
-
-| Condition | Rendu |
-|---|---|
-| `is_mine = true` | Bulle droite, couleur primaire |
-| `is_mine = false` | Bulle gauche, couleur surface, avatar sender |
-| `is_deleted = true` | Bulle grise italique : "Message supprime" |
-| `is_system = true` | Chip centre, pas de bulle |
-| `is_edited = true` | Label "(modifie)" sous le timestamp |
-| Avec `attachments` | Images inline (tap → viewer plein ecran), PDF en row cliquable |
-
-**Indicateurs de livraison/lecture** (dernier message `is_mine = true` seulement) :
-
-| Etat | Icone |
-|---|---|
-| Envoye (pas encore `is_delivered`) | ✓ simple gris |
-| Livre (`is_delivered = true`, `is_read = false`) | ✓✓ double gris |
-| Lu (`is_read = true`) | ✓✓ double bleu/primaire |
-
-**Long-press sur un message propre** :
-- Menu contextuel : Modifier, Supprimer, Copier le texte
-- Modifier : remplace la bulle par un TextInput inline, bouton Annuler/Valider
-- API edit : `PATCH .../messages/{messageUuid}`
-- API delete : `DELETE .../messages/{messageUuid}` → remplacer la bulle par placeholder
-
-**Compose bar** :
-- `TextField` multi-lignes (max 2000 chars)
-- Bouton envoi desactive si texte vide ET pas de fichiers
-- Bouton clip : ouvre un bottom sheet avec "Photo/Video" (camera ou galerie) et "Document" (file picker)
-- Preview des fichiers selectionnes au-dessus du TextField (chips avec nom + bouton X)
-- Limites : max 3 fichiers, max 5 MB chacun, types : jpg, jpeg, png, webp, pdf
-- Envoi en `multipart/form-data` si fichiers, sinon `application/json`
-- API : `POST .../messages`
-- Si `status = closed` : composer desactive, banner "Cette conversation est fermee"
-
-**AppBar overflow menu** :
-- "Fermer la conversation" : dialog de confirmation → `POST .../close`
-- "Signaler" : dialog avec choix de raison + commentaire (min 10 chars) → `POST .../report`
-- Apres signalement : snackbar succes + optionnellement naviguer vers le thread support cree (`support_conversation_uuid` dans la reponse)
-
----
-
-### 4. Nouveau message depuis une reservation
-
-**Declenchement** : Bouton sur l'ecran detail de reservation
-
-**Flow** :
-1. `POST /api/v1/user/conversations/from-booking/{bookingUuid}`
-2. Reponse contient `created: true|false` et `uuid`
-3. Naviguer vers `/messages/{uuid}`
-4. Si `created = true` : le thread est vide, l'utilisateur ecrit le premier message
-5. Si `created = false` : le thread existant s'ouvre avec son historique
-
----
-
-### 5. Nouveau message depuis une page publique organisateur
-
-**Declenchement** : Bouton "Contacter" sur la page organisateur
-
-**Pre-condition** : L'organisateur doit avoir `allow_public_contact = true`. Si `false`, le bouton est masque ou desactive.
-
-**Flow** :
-1. Formulaire bottom sheet : sujet (requis) + message (requis) + event optionnel (select parmi les events de l'org) + fichiers optionnels
-2. `POST /api/v1/user/conversations/from-organization/{orgUuid}`
-3. Naviguer vers le thread cree
-
-**Erreur 403** : "Cet organisateur n'accepte pas les messages depuis sa page publique." → afficher un snackbar, ne pas naviguer.
-
----
-
-## Strategie temps reel
-
-### Etat actuel backend
-
-Le backend broadcast 3 events via Pusher/Reverb sur des channels prives :
-
-| Event | Channel | Payload cle |
-|---|---|---|
-| `message.received` | `private-user.{userId}` | `message_uuid`, `conversation_uuid`, `sender_name`, `content_preview` |
-| `message.delivered` | `private-user.{userId}` | `message_uuid`, `conversation_uuid`, `delivered_at` |
-| `conversation.read` | `private-user.{userId}` | `conversation_uuid`, `reader_name`, `messages_read_count`, `read_at` |
-
-### Option A — WebSocket (recommande si infra Pusher/Reverb deja active)
-
-Utiliser le package `pusher_channels_flutter` :
+### Avatar organisation
 
 ```dart
-// Auth channel: private-user.{userId}
-// Auth endpoint: POST /broadcasting/auth (avec Bearer token)
+// Priorité : logo_url → avatar_url → initiales colorées
+Widget buildOrgAvatar(ConversationOrganization? org) {
+  final logoUrl = org?.logoUrl ?? org?.avatarUrl;
+  if (logoUrl != null) {
+    return CircleAvatar(backgroundImage: NetworkImage(logoUrl));
+  }
+  final initials = (org?.companyName ?? 'O').substring(0, min(2, ...)).toUpperCase();
+  final color = avatarColorFromId(org?.id ?? 0); // palette deterministe par id
+  return CircleAvatar(backgroundColor: color, child: Text(initials));
+}
+```
+
+### Texte de preview du dernier message
+
+```dart
+String? buildPreviewText(Message? latest) {
+  if (latest == null) return null;
+  if (latest.content != null) return latest.content; // tronquer à 80 chars dans le widget
+
+  final attachments = latest.attachments;
+  if (attachments.isEmpty) return null;
+
+  final imageCount = attachments.where((a) => a.isImage).length;
+  final fileCount = attachments.length - imageCount;
+
+  if (fileCount == 0) {
+    return imageCount == 1 ? 'Une image envoyée' : '$imageCount images envoyées';
+  }
+  if (imageCount == 0) {
+    return fileCount == 1 ? 'Un fichier envoyé' : '$fileCount fichiers envoyés';
+  }
+  return '${attachments.length} pièces jointes';
+}
+// Si retourne null → n'afficher aucun texte de preview (pas "Aucun message")
+```
+
+### Affichage de l'icône paperclip
+
+Afficher l'icône `Icons.attach_file` (ou équivalent) devant le texte de preview **uniquement** quand `content == null && attachments.isNotEmpty`.
+
+### Badge statut de la conversation
+
+Le tile affiche **toujours** un badge de statut (aligné sur le web) :
+
+| État | Couleur Flutter équivalent | Icône | Label |
+|------|---------------------------|-------|-------|
+| Non lus (`unreadCount > 0`) | Orange clair — `orange.shade100` text `orange.shade700` | — | "En attente" |
+| Ouvert (`status == open`, 0 non lus) | Vert clair — `green.shade100` text `green.shade700` | — | "Ouvert" |
+| Fermé (`status == closed`) | Gris — `grey.shade100` text `grey.shade600` | `Icons.lock` petit | "Fermé" |
+
+### Badge compteur non lus
+
+```dart
+if (conversation.unreadCount > 0)
+  Badge(
+    label: conversation.unreadCount > 99 ? '99+' : '${conversation.unreadCount}',
+    backgroundColor: Colors.orange.shade500,
+    textColor: Colors.white,
+  )
+```
+
+### Chips contextuels
+
+| Condition | Chip | Visibilité |
+|-----------|------|-----------|
+| `event != null` | Titre de l'événement (tronqué) avec icône calendrier | Toujours (participant) |
+| `isSignalement == true` | Chip rouge "Signalement" + icône drapeau | **Admin uniquement** — le participant ne voit jamais ce chip |
+
+### Comportement unread
+
+- Fond du tile : `orange.shade50` + bordure `orange.shade200` quand `unreadCount > 0`
+- Nom de l'org et sujet : `FontWeight.w600` (semibold) quand `unreadCount > 0`, `FontWeight.w500` sinon
+- Point indicateur orange sur l'avatar quand `unreadCount > 0`
+- Fond neutre sans surbrillance quand `unreadCount == 0`
+
+---
+
+## Spécification — Groupement par organisation (recommandé)
+
+Le web regroupe les conversations `participant_vendor` par organisation dans un panneau gauche, puis affiche les conversations de l'org sélectionnée à droite.
+
+### Pattern recommandé pour mobile
+
+Sur mobile (écran unique), deux options :
+
+**Option A — Liste plate triée par `last_message_at`** (actuel — simple, standard)
+- Toutes les conversations d'un user avec différents orgs dans une seule liste
+- Avatar = logo de l'org, titre = nom de l'org, sous-titre = sujet de la conversation
+
+**Option B — Groupement par org (aligné avec le web)**
+- Section par org dans la liste (header "Le Hiboo Events — 3 conversations")
+- Ou écran intermédiaire : tap sur l'org → liste des conversations avec cette org
+- Utile quand un utilisateur a beaucoup de conversations avec le même organisateur (ex: achat multiple)
+
+**Recommandation** : implémenter l'Option B si un utilisateur peut avoir plus de 3 conversations avec le même organisateur. L'API retourne déjà tout ce qu'il faut (`organization.id`, `organization.company_name`, `organization.logo_url`).
+
+**Algorithme de groupement** (calqué sur le web) :
+
+```dart
+Map<int, OrgGroup> groupByOrg(List<Conversation> conversations) {
+  final groups = <int, OrgGroup>{};
+  for (final conv in conversations) {
+    final orgId = conv.organization?.id;
+    if (orgId == null) continue;
+    groups.putIfAbsent(orgId, () => OrgGroup(
+      id: orgId,
+      name: conv.organization!.companyName,
+      logo: conv.organization!.logoUrl ?? conv.organization!.avatarUrl,
+      conversations: [],
+      unreadCount: 0,
+      lastMessageAt: null,
+    ));
+    groups[orgId]!.conversations.add(conv);
+    groups[orgId]!.unreadCount += conv.unreadCount;
+    // garder la date la plus récente
+    final msgAt = conv.lastMessageAt;
+    if (msgAt != null) {
+      final current = groups[orgId]!.lastMessageAt;
+      if (current == null || msgAt.isAfter(current)) {
+        groups[orgId]!.lastMessageAt = msgAt;
+      }
+    }
+  }
+  // trier par last_message_at DESC
+  return groups;
+}
+```
+
+---
+
+## Spécification — Nouveau message (sélecteur d'organisateur)
+
+### Depuis le dashboard (FAB "Nouveau message")
+
+**Flow complet** :
+
+1. Appeler `GET /user/conversations/contactable-organizations` (une seule fois au montage)
+2. Afficher un dialog/bottom sheet avec `OrgSearchSelector`
+3. L'utilisateur tape dans le champ de recherche → filtrage **local** instantané sur `company_name`
+4. L'utilisateur sélectionne une org → le sélecteur est remplacé par un bloc destinataire fixe
+5. Remplir sujet + message + event optionnel + pièces jointes optionnelles
+6. `POST /user/conversations` (JSON ou multipart)
+7. Fermer le dialog et naviguer vers le thread créé
+
+### Widget `OrgSearchSelector`
+
+```
+┌──────────────────────────────────────────┐
+│  Nouveau message                         │  ← Titre du dialog
+│  Composez votre message ci-dessous.      │  ← Description
+├──────────────────────────────────────────┤
+│  🔍 Rechercher par nom...               │  ← TextField debounce 300ms
+├──────────────────────────────────────────┤
+│  [logo] Le Hiboo Events              ▼  │  ← Combobox avec liste déroulante
+│          Jazz Festival                  │
+│          Marché de Noël                 │
+└──────────────────────────────────────────┘
+```
+
+**Comportement du sélecteur** :
+
+- La liste complète est chargée une seule fois depuis `GET /contactable-organizations` — **aucun appel réseau** lors de la saisie
+- Filtrage **100% local** : `companyName.toLowerCase().contains(query.toLowerCase())`
+- Placeholder du champ : "Rechercher par nom..."
+- Chaque entrée affiche : avatar (logo_url → avatar_url → initiales colorées) + `company_name`
+- État vide si filtre sans résultat : "Aucun organisateur trouvé"
+- État vide si liste API vide : "Vous n'avez pas encore de relation avec un organisateur" + lien "Parcourir les événements"
+
+**Une fois l'org sélectionnée**, le sélecteur est remplacé par un bloc destinataire fixe :
+
+```
+┌──────────────────────────────────────────┐
+│  [🏢 logo]  Le Hiboo Events             │  ← Fond primary/10, texte primary
+└──────────────────────────────────────────┘
+```
+
+Puis le formulaire apparaît en dessous (sujet, message, pièces jointes).
+
+### Depuis la page publique d'un organisateur
+
+- L'org est pré-sélectionnée (`organizationUuid` passé en paramètre de route)
+- Le sélecteur `OrgSearchSelector` n'est **pas** affiché — le bloc destinataire fixe est affiché directement avec le nom/logo de l'org
+- Le champ "Événement" (optionnel) peut être pré-rempli si `eventId` est fourni
+- Endpoint : `POST /user/conversations/from-organization/{organizationUuid}`
+
+### Depuis la page de détail d'une réservation
+
+- Aucun formulaire affiché
+- Appel direct `POST /user/conversations/from-booking/{bookingUuid}`
+- Spinner pendant l'appel puis navigation vers le thread (qu'il soit créé ou existant)
+- Si `created = false` : le thread existant s'ouvre avec son historique complet
+
+### Champs du formulaire de création (organisateur)
+
+| Champ | Requis | Type | Note |
+|-------|--------|------|------|
+| Organisation | Oui | Sélecteur → bloc fixe une fois choisi | uuid |
+| Sujet | Oui | TextField, max **100** chars, avec compteur | |
+| Message | Oui* | TextField multi-lignes, max **2000** chars | *sauf si fichier |
+| Événement | Non | Dropdown des events de l'org | uuid ou integer |
+| Pièces jointes | Non | Max 3, 5 MB, `jpg/png/webp/pdf` | multipart si présent |
+
+### Formulaire de création support
+
+```text
+┌──────────────────────────────────────────┐
+│  Nouveau message support                  │
+│  Décrivez votre problème…                │
+├──────────────────────────────────────────┤
+│  Objet *                                 │
+│  [                          ] 0/255      │
+├──────────────────────────────────────────┤
+│  Message *                               │
+│  [                                    ]  │
+│  [  Textarea multi-lignes             ]  │
+│  [                          ] 0/10000    │
+├──────────────────────────────────────────┤
+│  Pièces jointes (optionnel)              │
+│  [📎 Ajouter un fichier]                 │
+│  photo.jpg ×   document.pdf ×            │
+├──────────────────────────────────────────┤
+│              [Annuler]  [Envoyer →]      │
+└──────────────────────────────────────────┘
+```
+
+| Champ | Requis | Contrainte |
+| ----- | ------ | ---------- |
+| Sujet | Oui | Libre, max **255** chars — les sujets prédéfinis sont des suggestions, pas une contrainte |
+| Message | Oui | Max **10 000** chars (limite backend) |
+| Pièces jointes | Non | Max 3, 5 MB, `jpg/png/webp/pdf` — supporté sur la création ET sur les envois dans le thread |
+
+---
+
+## Spécification — Thread detail
+
+### Chargement et mark-as-read
+
+```dart
+// À l'ouverture du thread :
+final detail = await repository.getConversation(uuid); // GET show — mark-as-read automatique
+// Après chargement :
+await unreadCountProvider.refresh(); // invalider le badge global
+```
+
+### Bulles de message
+
+```dart
+Widget buildMessageBubble(Message message) {
+  if (message.isSystem) return SystemMessageChip(message);
+  if (message.isDeleted) return DeletedMessageBubble(); // "Ce message a été supprimé"
+  
+  return Align(
+    alignment: message.isMine ? Alignment.centerRight : Alignment.centerLeft,
+    child: MessageBubble(
+      message: message,
+      showAvatar: !message.isMine && shouldShowAvatar(message), // voir grouping
+    ),
+  );
+}
+```
+
+### Groupement des avatars (aligner sur le web)
+
+Ne pas afficher l'avatar sur chaque bulle consécutive du même expéditeur :
+
+```dart
+bool shouldShowAvatar(int index, List<Message> messages) {
+  if (index == 0) return true;
+  final prev = messages[index - 1];
+  final curr = messages[index];
+  // clé composite : type + id (car id peut être null pour certains types)
+  final prevKey = '${prev.senderType}_${prev.sender?.id}';
+  final currKey = '${curr.senderType}_${curr.sender?.id}';
+  return prevKey != currKey;
+}
+```
+
+### Indicateurs de livraison/lecture
+
+Afficher **uniquement sur le dernier message `is_mine = true`** :
+
+| État | Rendu |
+|------|-------|
+| Envoyé (optimiste, pas encore `is_delivered`) | ✓ simple gris |
+| Livré (`is_delivered = true`, `is_read = false`) | ✓✓ double gris |
+| Lu (`is_read = true`) | ✓✓ double couleur primaire |
+
+### Séparateurs de date
+
+Insérer un chip de date centré entre les messages quand la date change :
+- Aujourd'hui → "Aujourd'hui"
+- Hier → "Hier"
+- Même année → "22 avril"
+- Autre année → "22 avril 2025"
+
+### Long-press menu contextuel
+
+**Uniquement pour les conversations `participant_vendor`** (pas pour `user_support`) :
+- Modifier (si `is_mine = true` et `!isDeleted`)
+- Supprimer (si `is_mine = true` et `!isDeleted`)
+- Copier le texte (si `content != null`)
+
+**Modifier** : remplacer la bulle par un `TextField` inline pré-rempli avec le contenu actuel. Bouton Annuler / Valider. `PATCH .../messages/{messageUuid}`.
+
+**Supprimer** : dialog de confirmation → `DELETE .../messages/{messageUuid}` → remplacer la bulle par le placeholder "Ce message a été supprimé".
+
+### Header AppBar — contenu complet
+
+```
+[← Retour]  [Avatar org]  Nom org
+             Sujet (tronqué)
+             [Badge statut]  [Chip événement si présent]
+                                          [🔄] [Fermer] [Signaler / 🚩Signalé]
+```
+
+- **Badge statut** : vert "Ouvert" / gris+lock "Fermé" (même logique que le tile)
+- **Chip événement** : si `conversation.event != null` → icône calendrier + titre de l'événement, tappable → ouvre la page de l'événement
+- **Bouton Rafraîchir** `🔄` : toujours visible, force un `GET show`
+- **Bouton Fermer** : visible uniquement si `status == open` → ouvre `CloseConversationDialog`
+- **Bouton Signaler** : visible si `conversationType != userSupport` ET `!userHasReported`
+- **Badge "Signalé"** `[🚩 Signalé]` : remplace le bouton Signaler quand `userHasReported == true` — non-interactif, style badge secondaire
+
+**Important** : `user_has_reported` est disponible dans la réponse `GET show` — ne pas faire d'appel supplémentaire.
+
+### Overflow menu AppBar
+
+| Option | Condition d'affichage | Action |
+|--------|----------------------|--------|
+| Fermer la conversation | `status == open` | Dialog confirmation → `POST .../close` |
+| Signaler | `conversationType != userSupport` et `!userHasReported` | Dialog signalement |
+| Badge "🚩 Signalé" | `userHasReported == true` | Non-interactif, remplace le bouton |
+
+### Conversation fermée
+
+- Compose bar entièrement remplacée par une bannière (fond `Colors.grey.shade100`, texte centré) :
+
+  > 🔒  Cette conversation est fermée
+
+  Non-focusable, aucun champ de saisie visible.
+- Bouton "Fermer" masqué dans le header
+- "Signaler" conservé si `!userHasReported` (on peut signaler une conv fermée)
+- Long-press edit/delete désactivés (les callbacks sont `null`)
+- Les messages restent lisibles et scrollables
+
+### Dialog de signalement
+
+Aucune pièce jointe dans ce dialog.
+
+```
+┌─────────────────────────────────────┐
+│ Signaler cette conversation         │
+├─────────────────────────────────────┤
+│ Raison :                            │
+│ ● (Dropdown)                        │
+│   - Contenu inapproprié             │
+│   - Harcèlement                     │
+│   - Spam                            │
+│   - Autre                           │
+├─────────────────────────────────────┤
+│ Commentaire * :                     │
+│ [                              ]    │
+│ [  Textarea 4 lignes, min 10   ]    │
+│ [  chars, max 2000 chars       ]    │
+├─────────────────────────────────────┤
+│          [Annuler] [Signaler]       │
+└─────────────────────────────────────┘
+```
+
+**Validation côté client** :
+
+- Raison : obligatoire
+- Commentaire : obligatoire, `comment.trim().length >= 10`
+
+**État de succès** (affiché dans le même dialog, remplace le formulaire) :
+
+```
+┌─────────────────────────────────────┐
+│           [🚩 icône]                │
+│   Signalement transmis              │
+│   Votre signalement a bien été      │
+│   transmis à l'équipe LeHiboo.      │
+│                                     │
+│              [OK]                   │
+└─────────────────────────────────────┘
+```
+
+Après fermeture du dialog de succès :
+
+- Le bouton "Signaler" dans l'overflow est remplacé par un **badge non-interactif** `[🚩 Signalé]`
+- Ce badge est permanent — `user_has_reported = true` persiste depuis la réponse API
+- Ne pas proposer de navigation vers le thread support (la réponse API retourne `support_conversation_uuid` mais le web ne redirige pas automatiquement)
+
+---
+
+## Spécification — Compose bar
+
+```
+┌──────────────────────────────────────────────┐
+│ [📎] [________________________] [Envoyer ➤]  │
+├──────────────────────────────────────────────┤
+│  photo.jpg ×    document.pdf ×               │  ← chips pièces jointes (si sélectionnées)
+└──────────────────────────────────────────────┘
+```
+
+| Règle | Valeur |
+|-------|--------|
+| Max 2000 chars | TextField avec compteur |
+| Bouton envoi | Désactivé si texte vide ET aucun fichier |
+| Bouton clip | Ouvre bottom sheet : "Photo/Vidéo" (image_picker) + "Document" (file_picker) |
+| Max fichiers | 3 |
+| Max taille | 5 MB par fichier |
+| Types | `jpg`, `jpeg`, `png`, `webp`, `pdf` |
+| Envoi | `multipart/form-data` si fichiers, `application/json` sinon |
+| Conversations `participant_vendor` | Bouton clip activé — pièces jointes supportées |
+| Conversations `user_support` | Bouton clip activé — pièces jointes **aussi supportées** (backend vérifié) |
+
+**Validation côté client** : toujours valider avant l'upload (taille, type, nombre) pour éviter un round-trip inutile.
+
+---
+
+## Envoi optimiste
+
+```dart
+// 1. Créer un message temporaire
+final tempMessage = Message(
+  uuid: 'temp-${DateTime.now().millisecondsSinceEpoch}',
+  content: content,
+  isMine: true,
+  isDelivered: false,
+  isRead: false,
+  sender: currentUser.toMessageSender(),
+  createdAt: DateTime.now(),
+  attachments: [],
+);
+
+// 2. Ajouter immédiatement à l'état local (spinner à la place du timestamp)
+state.addMessage(tempMessage);
+
+// 3. Appeler l'API en background
+try {
+  final realMessage = await repository.sendMessage(conversationUuid, content, files);
+  state.replaceMessage('temp-...', realMessage); // remplacer par la vraie réponse
+} catch (e) {
+  state.markMessageError('temp-...'); // icône erreur rouge + bouton "Réessayer"
+}
+```
+
+Pour les fichiers en cours d'upload : afficher un placeholder avec barre de progression dans la bulle.
+
+---
+
+## Badge unread global
+
+Le badge dans la BottomNav reflète **toutes** les conversations non lues.
+
+```dart
+int getTotalUnread(int vendorUnread, List<Conversation> supportConversations) {
+  final supportUnread = supportConversations.fold(0, (sum, c) => sum + c.unreadCount);
+  return vendorUnread + supportUnread;
+}
+```
+
+**Sources** :
+- Vendor : `GET /user/conversations/unread-count` → `count`
+- Support : sommer les `unread_count` de `GET /user/support-conversations` (pas d'endpoint dédié)
+
+**Rafraîchissement** :
+- Polling toutes les 30 secondes
+- Invalider immédiatement après `GET show` d'une conversation
+- Invalider après événement realtime `message.received`
+
+---
+
+## Temps réel — Stratégie
+
+### Polling (actuel)
+
+| Surface | Intervalle | Endpoint |
+|---------|------------|----------|
+| Thread actif | 10 secondes | `GET /user/conversations/{uuid}` |
+| Badge unread | 30 secondes | `GET /user/conversations/unread-count` + support |
+| Liste | Au retour sur l'écran | `GET /user/conversations` |
+
+### WebSocket (à implémenter — priorité haute)
+
+Package recommandé : `pusher_channels_flutter`.
+
+Auth channel : `POST /broadcasting/auth` avec `Authorization: Bearer {token}`.
+
+```dart
+// Se connecter au channel privé de l'utilisateur
+final channel = pusher.subscribe('private-user.$userId');
 
 channel.bind('message.received', (event) {
-  // 1. Si on est dans le thread concerne → append le message, faire GET detail pour refresh complet
-  // 2. Sinon → incrementer le unread count local, mettre a jour le latest_message dans la liste
-  // 3. Optionnel: afficher une notification locale si app en background
+  final data = jsonDecode(event.data);
+  if (currentConversationUuid == data['conversation_uuid']) {
+    // Thread ouvert : refetch detail pour obtenir le message complet
+    conversationDetailProvider.refresh();
+  } else {
+    // Thread fermé : incrémenter badge, maj latest_message dans la liste
+    unreadCountProvider.increment();
+    conversationsProvider.updateLatestMessage(data);
+  }
 });
 
 channel.bind('message.delivered', (event) {
-  // Mettre a jour is_delivered sur le message concerne dans le cache local
+  // Passer is_delivered = true sur le message → ticks gris simple → double
+  final data = jsonDecode(event.data);
+  conversationDetailProvider.markDelivered(data['message_uuid']);
+});
+
+channel.bind('message.edited', (event) {
+  final data = jsonDecode(event.data);
+  conversationDetailProvider.updateMessage(
+    data['message_uuid'],
+    content: data['content'],
+    isEdited: true,
+    editedAt: DateTime.parse(data['edited_at']),
+  );
+});
+
+channel.bind('message.deleted', (event) {
+  final data = jsonDecode(event.data);
+  conversationDetailProvider.markDeleted(data['message_uuid']);
 });
 
 channel.bind('conversation.read', (event) {
-  // Mettre a jour is_read sur les messages propres dans le cache local
-  // Passer les ticks de gris a bleu
+  // Ticks doubles gris → bleu/primaire
+  final data = jsonDecode(event.data);
+  conversationDetailProvider.markMessagesRead(data['conversation_uuid']);
+});
+
+channel.bind('conversation.created', (event) {
+  // Nouvelle conversation initiée par vendor ou admin
+  conversationsProvider.refresh();
+  unreadCountProvider.refresh();
+});
+
+channel.bind('conversation.closed', (event) {
+  // Verrouiller le composer
+  final data = jsonDecode(event.data);
+  conversationDetailProvider.markClosed(data['conversation_uuid']);
+  conversationsProvider.updateStatus(data['conversation_uuid'], 'closed');
+});
+
+channel.bind('conversation.reopened', (event) {
+  // Déverrouiller le composer (réouvert par admin)
+  final data = jsonDecode(event.data);
+  conversationDetailProvider.markReopened(data['conversation_uuid']);
+  conversationsProvider.updateStatus(data['conversation_uuid'], 'open');
 });
 ```
-
-**Auth WebSocket** : Le channel `private-user.{userId}` necessite une auth via `POST /broadcasting/auth` (standard Laravel Broadcasting). Le endpoint est deja configure dans `routes/channels.php` et verifie que `$user->id == $userId`.
-
-### Option B — Polling (fallback si pas de WebSocket)
-
-| Surface | Intervalle | Endpoint |
-|---|---|---|
-| Thread detail (ecran actif) | 10 secondes | `GET /user/conversations/{uuid}` |
-| Badge unread (global) | 30 secondes | `GET /user/conversations/unread-count` |
-| Liste conversations | Pas de poll, refresh au retour sur l'ecran | `GET /user/conversations` |
-
-**Important** : Le polling du detail thread marque automatiquement les messages comme lus (effet de bord du `GET show`). Pas besoin d'un appel `POST /read` separe — il n'existe d'ailleurs pas sur les routes participant.
-
-### Recommandation
-
-Commencer par le **polling** (simple, pas de dependance infra). Migrer vers **WebSocket** quand le volume de messages le justifie. Les deux approches sont compatibles avec le backend actuel.
 
 ---
 
 ## Push notifications (FCM)
 
-### Etat actuel
+### État actuel — backend implémenté
 
-`NewMessageNotification` envoie uniquement sur les channels `database` + `mail`. Il n'y a **pas de push FCM** pour les nouveaux messages. C'est un gap backend.
+`NewMessageNotification` envoie maintenant sur `database` + `mail` + **FCM** via `HasPushNotification` + `PushPayload::newMessage()`. Le canal FCM est conditionnel : il n'est ajouté que si `FCM_ENABLED=true` ET que l'utilisateur a au moins un `DeviceToken` actif.
 
-### Impact mobile
-
-Sans push FCM, l'utilisateur ne recoit pas de notification quand l'app est en arriere-plan ou fermee. Deux options :
-
-**Option 1 — Backend fix (recommande)** : Ajouter le trait `HasPushNotification` a `NewMessageNotification` et implementer `toFcm()`, comme c'est deja fait pour `DiscoveryEventReminderNotification`. Payload suggere :
+### Payload FCM reçu par l'app mobile
 
 ```json
 {
-  "title": "Nouveau message de {senderName}",
-  "body": "{contentPreview}",
+  "title": "Nouveau message de Le Hiboo Events",
+  "body": "Bonjour, voici la confirmation...",
   "data": {
     "type": "new_message",
-    "conversation_uuid": "...",
-    "action": "/messages/{conversationUuid}"
+    "conversation_uuid": "2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd",
+    "conversation_type": "participant_vendor",
+    "action": "/messages/2c83f27f-d6f7-4300-bfbf-9ee5f48e43fd"
   }
 }
 ```
 
-**Option 2 — Notification locale depuis WebSocket** : Si le WebSocket reste connecte en background, declencher une notification locale Flutter. Moins fiable (killed par l'OS).
+**Routing mobile depuis le payload FCM** :
 
-### Deep link
+```dart
+void handleFcmMessage(RemoteMessage message) {
+  final data = message.data;
+  if (data['type'] != 'new_message') return;
 
-Quel que soit le mecanisme, le payload `data.action` ou `data.conversation_uuid` permet de naviguer directement vers le thread au tap.
+  final uuid = data['conversation_uuid'] as String;
+  final type = data['conversation_type'] as String? ?? 'participant_vendor';
 
-### Notification in-app (database)
+  final route = type == 'user_support'
+      ? '/messages/support/$uuid'
+      : '/messages/$uuid';
 
-Les notifications `new_message` existent deja dans `GET /api/v1/notifications`. Payload :
+  router.push(route);
+}
+```
+
+`conversation_type` peut valoir `participant_vendor` ou `user_support` — utiliser ce champ pour router vers le bon écran.
+
+### Enregistrement du token device (requis)
+
+L'app doit enregistrer le token FCM après login :
+
+```http
+POST /api/v1/device-tokens
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+```json
+{
+  "token": "<FCM_DEVICE_TOKEN>",
+  "platform": "android",
+  "device_id": "unique-device-id",
+  "device_name": "Pixel 8",
+  "app_version": "1.0.0"
+}
+```
+
+`platform` : `android` | `ios` | `web`. Si `device_id + platform` existe déjà pour cet utilisateur, le token est mis à jour (pas de doublon).
+
+Supprimer le token au logout :
+
+```http
+DELETE /api/v1/device-tokens
+Authorization: Bearer {token}
+Content-Type: application/json
+{ "token": "<FCM_DEVICE_TOKEN>" }
+```
+
+### Variables d'environnement backend à configurer
+
+```env
+FCM_ENABLED=true
+FCM_PROJECT_ID=lehiboo-app
+# Soit le chemin vers le fichier JSON :
+FCM_CREDENTIALS_PATH=/var/www/storage/firebase/service-account.json
+# Soit le JSON encodé en base64 :
+FCM_CREDENTIALS_JSON=<base64_encoded_service_account_json>
+```
+
+### Notifications in-app (database — disponibles maintenant)
+
+Les notifications `new_message` existent dans `GET /api/v1/notifications`. Payload (inclut maintenant `conversation_type`) :
 
 ```json
 {
   "type": "new_message",
   "sender_name": "Le Hiboo Events",
-  "subject": "Question sur ma reservation",
+  "subject": "Question sur ma réservation",
   "conversation_uuid": "...",
+  "conversation_type": "participant_vendor",
   "content_preview": "Bonjour, voici la confirmation...",
   "message": "Nouveau message de Le Hiboo Events : Bonjour...",
   "received_at": "2026-04-23T10:31:00+00:00"
 }
 ```
 
-Le tap sur cette notification dans le centre de notifications in-app doit naviguer vers `/messages/{conversation_uuid}`.
+Tap sur cette notification → router via `conversation_type` vers `/messages/{uuid}` ou `/messages/support/{uuid}`.
 
 ---
 
-## Envoi optimiste
+## Protection — Accès réservé aux utilisateurs connectés
 
-Le web utilise un pattern d'envoi optimiste avec TanStack Query. Reproduire ce pattern en Flutter :
+Toutes les routes `/messages` sont protégées par le redirect global du `GoRouter`.
 
-```text
-1. User tape "Envoyer"
-2. Immediatement : ajouter le message au state local avec un uuid temporaire (ex: "temp-{timestamp}")
-   → afficher la bulle avec un spinner a la place du timestamp
-3. Appeler POST /messages en background
-4. Succes : remplacer le message temporaire par la reponse API (vrai uuid, timestamps)
-5. Echec : marquer la bulle en erreur (icone rouge, bouton "Reessayer")
+### Redirect router (`app_router.dart`)
+
+```dart
+// Dans le redirect global, après les vérifications onboarding / OTP :
+if (state.matchedLocation.startsWith('/messages') &&
+    authState.status == AuthStatus.unauthenticated) {
+  return '/login';
+}
 ```
 
-Pour les fichiers joints en cours d'upload, afficher un placeholder avec barre de progression au lieu de l'image/PDF.
+**Couverture** :
+- `/messages` (inbox)
+- `/messages/:conversationUuid` (thread)
+- `/messages/new`, `/messages/new/from-booking/:uuid`, `/messages/new/from-organizer/:uuid`
+- `/messages/support/new`, `/messages/support/:conversationUuid`
+- Deep links FCM → mêmes routes → redirect automatique
+
+### GuestGuard sur les points d'entrée modaux
+
+Les appels à `NewConversationForm.show()` depuis d'autres écrans (hors navigation) doivent être précédés d'un `GuestGuard.check()` pour éviter d'ouvrir un formulaire vide à un utilisateur non connecté.
+
+**Implémenté** :
+- `EventOrganizerCard._buildContactButton` — bouton "Contacter" sur la fiche organisateur
+
+**Pattern** :
+
+```dart
+onPressed: () async {
+  final allowed = await GuestGuard.check(
+    context: context,
+    ref: ref,
+    featureName: 'contacter un organisateur',
+  );
+  if (!allowed || !context.mounted) return;
+  NewConversationForm.show(context, conversationContext: ...);
+},
+```
+
+`GuestGuard.check()` affiche le `GuestRestrictionDialog` si l'utilisateur n'est pas connecté, et retourne `false`. Aucun appel API n'est effectué dans ce cas.
 
 ---
 
-## Badge unread global
+## Points d'entrée depuis d'autres écrans
 
-Le badge dans la barre de navigation doit refleter le total de messages non lus **toutes conversations confondues**.
-
-**Attention** : L'endpoint `GET /user/conversations/unread-count` ne compte que les conversations `participant_vendor`. Il n'inclut pas les `user_support`.
-
-Pour un badge global complet, deux options :
-1. Appeler les deux endpoints en parallele et sommer
-2. Accepter le gap (les conversations support sont rares)
-
-Recommandation : option 1, car le support peut envoyer des messages importants.
+| Écran source | Bouton | Flow |
+|---|---|---|
+| Détail réservation | "Contacter l'organisateur" | `POST /user/conversations/from-booking/{bookingUuid}` → thread |
+| Page publique organisateur | "Envoyer un message" | Bottom sheet formulaire → `POST /user/conversations/from-organization/{orgUuid}` |
+| Page publique événement | "Contacter l'organisateur" | Même flow que page organisateur, avec `event_id` pré-rempli |
+| Notification in-app (new_message) | Tap | Deep link `/messages/{conversationUuid}` |
+| Résultat signalement | "Voir le suivi" | `/messages/support/{supportConversationUuid}` |
 
 ---
 
-## Gestion des pieces jointes
+## Gestion des pièces jointes
 
-### Selection
+### Sélection
 
-Utiliser `image_picker` pour les images (camera + galerie) et `file_picker` pour les PDF.
+- `image_picker` pour les images (caméra + galerie)
+- `file_picker` pour les PDF
 
-### Validation cote client
-
-| Regle | Valeur |
-|---|---|
-| Nombre max | 3 fichiers par message |
-| Taille max | 5 MB par fichier |
-| Types acceptes | jpg, jpeg, png, webp, pdf |
-
-Valider AVANT l'upload pour eviter un round-trip inutile (le backend retourne `422` si les regles sont violees).
-
-### Envoi
-
-Utiliser `multipart/form-data` avec le champ `attachments[]` (array de fichiers). Le champ `content` reste un champ texte dans le meme form-data.
-
-### Affichage
+### Affichage dans les bulles
 
 | Type | Rendu |
-|---|---|
-| Image (jpg, png, webp) | Thumbnail inline dans la bulle (max ~220px largeur), tap → viewer plein ecran avec zoom/pan |
-| PDF | Row avec icone PDF + nom du fichier + taille, tap → ouvrir dans le viewer PDF in-app ou externe |
+|------|-------|
+| Image (jpg, png, webp) | Thumbnail inline (~220px largeur), tap → viewer plein écran |
+| PDF | Icône + nom + taille formatée, tap → viewer externe |
 
-### Telechargement
+### URLs MinIO
 
-Les URLs des fichiers pointent vers MinIO (`Storage::disk('minio')->url()`). Ces URLs sont publiques ou pre-signees selon la config. Si pre-signees, elles expirent — ne pas les mettre en cache longue duree.
+Les URLs pointent vers MinIO et peuvent être pré-signées (expiration). Ne pas mettre en cache longue durée.
 
 ---
 
-## Gestion des etats edge-case
+## Sujets prédéfinis pour le support
 
-### Conversation fermee
+Utiliser une liste locale (pas d'endpoint dédié) :
 
-- Le composer est desactive
-- Une banner en haut du thread indique "Cette conversation est fermee"
-- L'overflow menu n'affiche plus "Fermer"
-- L'utilisateur ne peut pas rouvrir (seul un admin peut rouvrir)
-- Les messages restent lisibles
-
-### Message supprime
-
-- `is_deleted = true` + `content = null`
-- Afficher : bulle grise avec texte italique "Ce message a ete supprime"
-- Les pieces jointes sont egalement masquees
-
-### Message modifie
-
-- `is_edited = true` + `edited_at` renseigne
-- Afficher : label "(modifie)" sous le timestamp de la bulle
-- Le contenu est deja le contenu mis a jour
-
-### Message sans texte (fichiers uniquement)
-
-- `content = null` mais `attachments` non vide
-- Afficher uniquement les fichiers dans la bulle, pas de texte
-
-### Signalement existant
-
-- Si l'utilisateur a deja signale cette conversation : le backend retourne `422` "Vous avez deja signale cette conversation"
-- Cote UI : griser le bouton ou le masquer si un signalement est en cours (verifier `is_signalement` du thread support lie)
-
-### Organisateur contact public desactive
-
-- `POST /user/conversations/from-organization/{uuid}` retourne `403`
-- Cote UI : masquer le bouton "Contacter" sur la page publique si l'info est disponible (champ `allow_public_contact` dans l'OrganizationResource)
+```dart
+const supportSubjects = [
+  'Problème de réservation',
+  'Question sur un événement',
+  'Problème de paiement',
+  'Demande de remboursement',
+  'Problème de compte',
+  'Signalement d\'un contenu',
+  'Autre',
+];
+```
 
 ---
 
 ## Navigation et deep links
 
-| Deep link | Ecran cible | Source |
-|---|---|---|
+| Deep link | Écran cible | Source |
+|-----------|-------------|--------|
 | `/messages` | Inbox onglet Organisateurs | BottomNav |
-| `/messages/{conversationUuid}` | Thread detail | Notification tap, liste conversations |
-| `/messages/support` | Inbox onglet Support | BottomNav (si onglet separe) |
-| `/messages/support/{conversationUuid}` | Thread detail support | Notification tap, liste support |
+| `/messages/{conversationUuid}` | Thread detail | Notification tap, liste |
+| `/messages/support` | Inbox onglet Support | BottomNav |
+| `/messages/support/{conversationUuid}` | Thread support | Notification tap, liste |
 
-**Depuis une notification push/locale** : Extraire `conversation_uuid` du payload, determiner le type (stocke localement ou via un fetch rapide), naviguer vers le bon ecran.
+Depuis une notification : extraire `conversation_uuid` + `conversation_type` du payload FCM ou in-app, router vers le bon écran.
 
 ---
 
-## Resume des endpoints utilises
+## Résumé des endpoints utilisés
 
 ### Conversations organisateur
 
-| Action | Methode | Endpoint |
-|---|---|---|
+| Action | Méthode | Endpoint |
+|--------|---------|----------|
 | Lister | GET | `/user/conversations` |
 | Badge non lus | GET | `/user/conversations/unread-count` |
-| Filtrer par event | GET | `/user/conversations/events` |
+| Filtrer par événement | GET | `/user/conversations/events` |
 | Orgs contactables | GET | `/user/conversations/contactable-organizations` |
-| Creer (depuis dashboard) | POST | `/user/conversations` |
-| Creer (depuis reservation) | POST | `/user/conversations/from-booking/{bookingUuid}` |
-| Creer (depuis page org) | POST | `/user/conversations/from-organization/{orgUuid}` |
-| Detail + mark as read | GET | `/user/conversations/{uuid}` |
+| Créer (dashboard) | POST | `/user/conversations` |
+| Créer (réservation) | POST | `/user/conversations/from-booking/{bookingUuid}` |
+| Créer (page org) | POST | `/user/conversations/from-organization/{orgUuid}` |
+| Détail + mark-as-read | GET | `/user/conversations/{uuid}` |
 | Envoyer message | POST | `/user/conversations/{uuid}/messages` |
-| Editer message | PATCH | `/user/conversations/{uuid}/messages/{messageUuid}` |
+| Éditer message | PATCH | `/user/conversations/{uuid}/messages/{messageUuid}` |
 | Supprimer message | DELETE | `/user/conversations/{uuid}/messages/{messageUuid}` |
 | Fermer | POST | `/user/conversations/{uuid}/close` |
 | Signaler | POST | `/user/conversations/{uuid}/report` |
 
 ### Conversations support
 
-| Action | Methode | Endpoint |
-|---|---|---|
+| Action | Méthode | Endpoint |
+|--------|---------|----------|
 | Lister | GET | `/user/support-conversations` |
-| Creer | POST | `/user/support-conversations` |
-| Detail + mark as read | GET | `/user/support-conversations/{uuid}` |
+| Créer | POST | `/user/support-conversations` |
+| Détail + mark-as-read | GET | `/user/support-conversations/{uuid}` |
 | Envoyer message | POST | `/user/support-conversations/{uuid}/messages` |
 
----
-
-## Hors scope V1
-
-Ces fonctionnalites existent sur le web mais ne sont pas couvertes dans cette spec mobile :
-
-| Fonctionnalite | Role web | Raison de l'exclusion |
-|---|---|---|
-| Conversations `vendor_admin` | Vendor | Pas de dashboard vendor mobile |
-| Conversations `organization_organization` | Vendor | Pas de dashboard vendor mobile |
-| Broadcasts (diffusion masse) | Vendor | Pas de dashboard vendor mobile |
-| Gestion des signalements | Admin | Pas de dashboard admin mobile |
-| Reouverture de conversation | Admin | Privilege admin uniquement |
-| Recherche participants interages | Vendor | Pas de dashboard vendor mobile |
+Note : pas d'édition, suppression, fermeture ou signalement disponibles pour le participant sur les conversations support.
 
 ---
 
-## Checklist avant livraison
+## Checklist de livraison
 
-- [ ] Inbox 2 onglets (Organisateurs + Support) avec pagination infinie
-- [ ] Badge unread dans la BottomNav (poll 30s ou WebSocket)
-- [ ] Filtres : status, unread_only, search
-- [ ] Thread detail avec bulles alignees par `is_mine`
-- [ ] Messages systeme centres
-- [ ] Messages supprimes : placeholder
-- [ ] Messages edites : label "(modifie)"
-- [ ] Indicateurs livraison/lecture (ticks) sur dernier message propre
-- [ ] Compose bar avec envoi texte + fichiers (multipart)
-- [ ] Validation fichiers cote client (3 max, 5 MB, types)
-- [ ] Images inline avec viewer plein ecran
-- [ ] PDF cliquable avec ouverture externe
-- [ ] Long-press : editer / supprimer / copier
-- [ ] Envoi optimiste avec spinner et gestion erreur
-- [ ] Etat ferme : composer desactive + banner
-- [ ] Creation depuis reservation (`from-booking`)
-- [ ] Creation depuis page organisateur (`from-organization`)
-- [ ] Creation depuis dashboard (selection org contactable)
-- [ ] Creation conversation support
-- [ ] Signalement avec choix raison + commentaire
-- [ ] Deep link depuis notifications in-app
-- [ ] Pull-to-refresh sur la liste
-- [ ] Etat vide avec illustration
+### Fonctionnalités de base
+- [x] Inbox 2 onglets (Organisateurs + Support) avec pagination infinie
+- [x] Badge unread dans la BottomNav (poll 30s)
+- [x] Filtres : status, unread_only, search
+- [x] Thread detail avec bulles alignées par `is_mine`
+- [x] Messages système centrés
+- [x] Messages supprimés : placeholder
+- [x] Messages édités : label "(modifié)"
+- [x] Indicateurs livraison/lecture (ticks) sur dernier message propre
+- [x] Compose bar avec envoi texte + fichiers (multipart)
+- [x] Validation fichiers côté client (3 max, 5 MB, types)
+- [x] Images inline avec viewer plein écran
+- [x] PDF cliquable avec ouverture externe
+- [x] Long-press : éditer / supprimer / copier (vendor uniquement)
+- [x] Envoi optimiste avec spinner et gestion erreur
+- [x] Conversation fermée : composer désactivé + banner
+- [x] Création depuis réservation (`from-booking`)
+- [x] Création depuis page organisateur (`from-organization`)
+- [x] Création depuis dashboard (sélection org contactable)
+- [x] Création conversation support avec sujets prédéfinis
+- [x] Deep link depuis notifications in-app
+- [x] Pull-to-refresh sur la liste
+- [x] État vide avec illustration
+
+### Sécurité / Auth
+- [x] **Router guard** : routes `/messages` redirigent vers `/login` si `status == unauthenticated`
+- [x] **GuestGuard** : bouton "Contacter" sur `EventOrganizerCard` vérifie l'auth avant d'ouvrir le formulaire
+
+### À corriger / compléter
+- [x] **ConversationTile** : afficher `organization.logo_url` dans l'avatar (actuellement initiales colorées uniquement)
+- [x] **ConversationTile** : preview pièces jointes avec comptage `is_image` ("Une image envoyée" etc.) au lieu de "(Fichier joint)" générique
+- [x] **ConversationTile** : ne rien afficher (pas "Aucun message") quand `latest_message == null`
+- [x] **ConversationTile** : badge statut 3 états — orange "En attente" / vert "Ouvert" / gris+lock "Fermé"
+- [x] **ConversationTile** : fond orange (`orange.shade50`) + sujet en gras quand `unreadCount > 0`
+- [x] **ConversationTile** : compteur non lus affiché en `99+` au lieu de `9+`
+- [x] **Bouton Signaler** : remplacé par badge non-interactif `🚩 Signalé` si `user_has_reported = true`
+- [x] **Dialog signalement** : commentaire requis (min 10 chars), état succès in-dialog avant fermeture
+- [x] **Thread header** : chip événement cliquable si `conversation.event != null`
+- [x] **Thread header** : bouton Fermer visible uniquement si `status == open`
+- [x] **Thread detail** : séparateurs de date positionnés au-dessus de leur groupe de messages (fix reverse ListView)
+- [ ] **Groupement par org** : implémenter le pattern Option B (sidebar org → liste conversations) pour aligner avec le web
+
+### WebSocket (v2 — priorité haute)
+- [x] Connexion au channel `private-user.{userId}` via pusher_channels_flutter
+- [x] Handler `message.received` → refetch ou append selon le thread actif
+- [x] Handler `message.delivered` → maj ticks
+- [x] Handler `message.edited` → maj bulle en local
+- [x] Handler `message.deleted` → placeholder en local
+- [x] Handler `conversation.read` → ticks bleus
+- [x] Handler `conversation.created` → invalider liste
+- [x] Handler `conversation.closed` → verrouiller composer
+- [x] Handler `conversation.reopened` → déverrouiller composer
+- [x] Désactiver le polling quand WebSocket connecté
+
+**Fichiers clés :**
+- `lib/features/messages/presentation/providers/messages_realtime_provider.dart` — `MessagesRealtimeNotifier` + `messagesRealtimeProvider` + `RealtimeEvent`
+- `PUSHER_APP_KEY` et `PUSHER_APP_CLUSTER` à configurer en `.env` (laisser vide → WS ignoré silencieusement)
+
+### Push FCM
+
+- [x] Backend : `NewMessageNotification` implémente `HasPushNotification` + `toFcm()` via `PushPayload::newMessage()`
+- [x] Backend : `conversationType` ajouté au payload database et FCM pour router correctement
+- [ ] Backend ops : configurer `FCM_ENABLED=true` + credentials Firebase en env
+- [ ] App mobile : enregistrer le token via `POST /api/v1/device-tokens` après login
+- [ ] App mobile : supprimer le token via `DELETE /api/v1/device-tokens` au logout
+- [ ] App mobile : handler FCM foreground/background → router via `conversation_type` vers le bon écran
