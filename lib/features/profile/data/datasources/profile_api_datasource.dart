@@ -56,6 +56,8 @@ class ProfileApiDataSource {
     String? jobTitle,
     String? birthDate,
     String? membershipCity,
+    bool? newsletter,
+    bool? pushNotificationsEnabled,
     bool clearBirthDate = false,
     bool clearMembershipCity = false,
   }) async {
@@ -70,6 +72,9 @@ class ProfileApiDataSource {
         if (clearBirthDate) 'birth_date': null,
         if (membershipCity != null) 'membership_city': membershipCity,
         if (clearMembershipCity) 'membership_city': null,
+        if (newsletter != null) 'newsletter': newsletter,
+        if (pushNotificationsEnabled != null)
+          'push_notifications_enabled': pushNotificationsEnabled,
       },
     );
 
@@ -129,12 +134,14 @@ class ProfileApiDataSource {
       firstName: userData['first_name']?.toString(),
       lastName: userData['last_name']?.toString(),
       phone: userData['phone']?.toString(),
-      avatarUrl: userData['avatar_url']?.toString(),
+      avatarUrl: (userData['avatar'] ?? userData['avatar_url'])?.toString(),
       birthDate: userData['birthDate']?.toString() ?? userData['birth_date']?.toString(),
       membershipCity: userData['membershipCity']?.toString() ?? userData['membership_city']?.toString(),
       role: userData['role']?.toString() ?? 'customer',
       registeredAt: userData['created_at']?.toString(),
       isVerified: userData['is_email_verified'] == true,
+      newsletter: userData['newsletter'] == true,
+      pushNotificationsEnabled: userData['push_notifications_enabled'] == true,
     );
   }
 }

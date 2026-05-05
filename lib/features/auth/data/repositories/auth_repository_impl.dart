@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/secure_storage_service.dart';
 import '../../../../domain/entities/user.dart';
@@ -188,8 +187,13 @@ class AuthRepositoryImpl implements AuthRepository {
     final birthDateStr = await _secureStorage.getUserBirthDate();
     final membershipCity = await _secureStorage.getUserMembershipCity();
     final phone = await _secureStorage.getUserPhone();
+    final avatarUrl = await _secureStorage.getUserAvatarUrl();
+    final newsletter = await _secureStorage.getUserNewsletter();
+    final pushNotifications =
+        await _secureStorage.getUserPushNotificationsEnabled();
 
     if (userId != null) {
+      final parsedRole = _parseRole(role);
       _cachedUser = HbUser(
         id: userId,
         email: email ?? '',
@@ -197,14 +201,63 @@ class AuthRepositoryImpl implements AuthRepository {
         firstName: firstName,
         lastName: lastName,
         phone: phone,
-        role: _parseRole(role),
+        avatarUrl: avatarUrl,
+        role: parsedRole,
         birthDate: birthDateStr != null ? DateTime.tryParse(birthDateStr) : null,
         membershipCity: membershipCity,
+        newsletter: newsletter ?? false,
+        pushNotificationsEnabled: pushNotifications ?? false,
+        // Capabilities aren't persisted to secure storage — derive them
+        // from the persisted role on cold start so the vendor scanner
+        // entry survives a relaunch. The login response refreshes the
+        // user object whenever the backend ships explicit capabilities.
+        capabilities: _capabilitiesFromRole(parsedRole),
       );
       return _cachedUser;
     }
 
     return null;
+  }
+
+  UserCapabilities _capabilitiesFromRole(UserRole role) {
+    switch (role) {
+      case UserRole.partner:
+      case UserRole.admin:
+        return const UserCapabilities(
+          canBook: true,
+          canScanTickets: true,
+          canManageEvents: true,
+        );
+      case UserRole.subscriber:
+        return const UserCapabilities();
+    }
+  }
+
+  @override
+  Future<void> persistUser(HbUser user) async {
+    await _persistUserFields(user);
+    _cachedUser = user;
+  }
+
+  /// Writes every persistable field of [user] to secure storage. Tokens are
+  /// not touched here — they have their own lifecycle.
+  Future<void> _persistUserFields(HbUser user) async {
+    await _secureStorage.saveUserId(user.id);
+    await _secureStorage.saveUserRole(user.role.name);
+    await _secureStorage.saveUserEmail(user.email);
+    await _secureStorage.saveUserDisplayName(user.displayName);
+    await _secureStorage.saveUserFirstName(user.firstName);
+    await _secureStorage.saveUserLastName(user.lastName);
+    await _secureStorage.saveUserPhone(user.phone);
+    await _secureStorage.saveUserBirthDate(
+      user.birthDate?.toIso8601String().substring(0, 10),
+    );
+    await _secureStorage.saveUserMembershipCity(user.membershipCity);
+    await _secureStorage.saveUserAvatarUrl(user.avatarUrl);
+    await _secureStorage.saveUserNewsletter(user.newsletter);
+    await _secureStorage.saveUserPushNotificationsEnabled(
+      user.pushNotificationsEnabled,
+    );
   }
 
   @override
@@ -218,17 +271,7 @@ class AuthRepositoryImpl implements AuthRepository {
     // Save tokens securely
     await _secureStorage.saveAccessToken(response.tokens.accessToken);
     await _secureStorage.saveRefreshToken(response.tokens.refreshToken);
-    await _secureStorage.saveUserId(user.id);
-    await _secureStorage.saveUserRole(user.role.name);
-    await _secureStorage.saveUserEmail(user.email);
-    await _secureStorage.saveUserDisplayName(user.displayName ?? '');
-    if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
-    if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
-    if (user.phone != null) await _secureStorage.saveUserPhone(user.phone!);
-    if (user.birthDate != null) await _secureStorage.saveUserBirthDate(user.birthDate!.toIso8601String().substring(0, 10));
-    if (user.membershipCity != null) await _secureStorage.saveUserMembershipCity(user.membershipCity!);
-
-    _cachedUser = user;
+    await persistUser(user);
 
     return AuthResult(
       user: user,
@@ -291,17 +334,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await _secureStorage.saveAccessToken(tokens.accessToken);
       await _secureStorage.saveRefreshToken(tokens.refreshToken);
-      await _secureStorage.saveUserId(user.id);
-      await _secureStorage.saveUserRole(user.role.name);
-      await _secureStorage.saveUserEmail(user.email);
-      await _secureStorage.saveUserDisplayName(user.displayName ?? '');
-      if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
-      if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
-      if (user.phone != null) await _secureStorage.saveUserPhone(user.phone!);
-      if (user.birthDate != null) await _secureStorage.saveUserBirthDate(user.birthDate!.toIso8601String().substring(0, 10));
-      if (user.membershipCity != null) await _secureStorage.saveUserMembershipCity(user.membershipCity!);
-
-      _cachedUser = user;
+      await persistUser(user);
 
       authResult = AuthResult(
         user: user,
@@ -336,15 +369,7 @@ class AuthRepositoryImpl implements AuthRepository {
     // Save auth data
     await _secureStorage.saveAccessToken(tokens.accessToken);
     await _secureStorage.saveRefreshToken(tokens.refreshToken);
-    await _secureStorage.saveUserId(user.id);
-    await _secureStorage.saveUserRole(user.role.name);
-    await _secureStorage.saveUserEmail(user.email);
-    await _secureStorage.saveUserDisplayName(user.displayName ?? '');
-    if (user.firstName != null) await _secureStorage.saveUserFirstName(user.firstName!);
-    if (user.lastName != null) await _secureStorage.saveUserLastName(user.lastName!);
-    if (user.phone != null) await _secureStorage.saveUserPhone(user.phone!);
-
-    _cachedUser = user;
+    await persistUser(user);
 
     final authResult = AuthResult(
       user: user,

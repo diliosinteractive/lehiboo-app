@@ -13,10 +13,10 @@ class QuotaDto with _$QuotaDto {
     @Default(0) int used,
 
     /// Maximum messages allowed in period
-    @Default(10) int limit,
+    @Default(3) int limit,
 
     /// Remaining messages
-    @Default(10) int remaining,
+    @Default(3) int remaining,
 
     /// When the quota resets (ISO 8601)
     @JsonKey(name: 'resets_at') String? resetsAt,

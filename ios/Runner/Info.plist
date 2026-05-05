@@ -31,7 +31,7 @@
 	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
 	<string>L'application a besoin d'ajouter vos réservations à votre calendrier.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>L'application a besoin d'accéder à la caméra pour vous permettre de prendre des photos de profil ou de partager des images dans le chat.</string>
+	<string>L'application a besoin d'accéder à la caméra pour scanner les billets à l'entrée des événements, prendre des photos de profil ou partager des images dans le chat.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>L'application utilise votre localisation pour vous suggérer des activités à proximité lors de vos discussions avec Petit Boo.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

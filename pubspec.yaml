@@ -79,6 +79,8 @@ dependencies:
   flutter_stripe: ^11.5.0
   qr_flutter: ^4.1.0
   screen_brightness: ^1.0.1
+  # Vendor QR check-in (gate scanner) — MLKit-backed.
+  mobile_scanner: ^5.2.3
 
   # Content
   flutter_markdown: ^0.7.1
@@ -98,6 +100,7 @@ dependencies:
   package_info_plus: ^8.1.1
   confetti: ^0.8.0
   path_provider: ^2.1.5
+  dart_pusher_channels: ^1.2.3
 
 dev_dependencies:
   flutter_test:

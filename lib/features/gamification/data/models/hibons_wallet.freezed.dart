@@ -21,14 +21,18 @@ HibonsWallet _$HibonsWalletFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$HibonsWallet {
   int get balance => throw _privateConstructorUsedError;
-  int get xp => throw _privateConstructorUsedError;
-  int get level => throw _privateConstructorUsedError;
+  int get lifetimeEarned => throw _privateConstructorUsedError;
   String get rank => throw _privateConstructorUsedError;
+  HibonsRank get rankEnum => throw _privateConstructorUsedError;
   String get rankLabel => throw _privateConstructorUsedError;
   String get rankIcon => throw _privateConstructorUsedError;
+  HibonsRank? get nextRank => throw _privateConstructorUsedError;
+  String? get nextRankLabel => throw _privateConstructorUsedError;
+  int? get hibonsToNextRank => throw _privateConstructorUsedError;
+  int get progressToNextRank => throw _privateConstructorUsedError;
+  int get petitBooBonus => throw _privateConstructorUsedError;
   int get currentStreak => throw _privateConstructorUsedError;
   int get maxStreak => throw _privateConstructorUsedError;
-  int get progressToNextLevel => throw _privateConstructorUsedError;
   bool get canClaimDaily => throw _privateConstructorUsedError;
   bool get canSpinWheel => throw _privateConstructorUsedError;
   ChatQuota? get chatQuota => throw _privateConstructorUsedError;
@@ -36,6 +40,12 @@ mixin _$HibonsWallet {
       throw _privateConstructorUsedError; // Champs legacy pour compatibilité (non utilisés par l'API)
   bool get streakShieldActive => throw _privateConstructorUsedError;
   DateTime? get lastActionDate => throw _privateConstructorUsedError;
+  @Deprecated('Use lifetimeEarned')
+  int? get xp => throw _privateConstructorUsedError;
+  @Deprecated('Use rankEnum')
+  int? get level => throw _privateConstructorUsedError;
+  @Deprecated('Use progressToNextRank')
+  int? get progressToNextLevel => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -51,20 +61,27 @@ abstract class $HibonsWalletCopyWith<$Res> {
   @useResult
   $Res call(
       {int balance,
-      int xp,
-      int level,
+      int lifetimeEarned,
       String rank,
+      HibonsRank rankEnum,
       String rankLabel,
       String rankIcon,
+      HibonsRank? nextRank,
+      String? nextRankLabel,
+      int? hibonsToNextRank,
+      int progressToNextRank,
+      int petitBooBonus,
       int currentStreak,
       int maxStreak,
-      int progressToNextLevel,
       bool canClaimDaily,
       bool canSpinWheel,
       ChatQuota? chatQuota,
       List<DailyRewardItem> dailyRewards,
       bool streakShieldActive,
-      DateTime? lastActionDate});
+      DateTime? lastActionDate,
+      @Deprecated('Use lifetimeEarned') int? xp,
+      @Deprecated('Use rankEnum') int? level,
+      @Deprecated('Use progressToNextRank') int? progressToNextLevel});
 
   $ChatQuotaCopyWith<$Res>? get chatQuota;
 }
@@ -83,38 +100,45 @@ class _$HibonsWalletCopyWithImpl<$Res, $Val extends HibonsWallet>
   @override
   $Res call({
     Object? balance = null,
-    Object? xp = null,
-    Object? level = null,
+    Object? lifetimeEarned = null,
     Object? rank = null,
+    Object? rankEnum = null,
     Object? rankLabel = null,
     Object? rankIcon = null,
+    Object? nextRank = freezed,
+    Object? nextRankLabel = freezed,
+    Object? hibonsToNextRank = freezed,
+    Object? progressToNextRank = null,
+    Object? petitBooBonus = null,
     Object? currentStreak = null,
     Object? maxStreak = null,
-    Object? progressToNextLevel = null,
     Object? canClaimDaily = null,
     Object? canSpinWheel = null,
     Object? chatQuota = freezed,
     Object? dailyRewards = null,
     Object? streakShieldActive = null,
     Object? lastActionDate = freezed,
+    Object? xp = freezed,
+    Object? level = freezed,
+    Object? progressToNextLevel = freezed,
   }) {
     return _then(_value.copyWith(
       balance: null == balance
           ? _value.balance
           : balance // ignore: cast_nullable_to_non_nullable
               as int,
-      xp: null == xp
-          ? _value.xp
-          : xp // ignore: cast_nullable_to_non_nullable
-              as int,
-      level: null == level
-          ? _value.level
-          : level // ignore: cast_nullable_to_non_nullable
+      lifetimeEarned: null == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
               as int,
       rank: null == rank
           ? _value.rank
           : rank // ignore: cast_nullable_to_non_nullable
               as String,
+      rankEnum: null == rankEnum
+          ? _value.rankEnum
+          : rankEnum // ignore: cast_nullable_to_non_nullable
+              as HibonsRank,
       rankLabel: null == rankLabel
           ? _value.rankLabel
           : rankLabel // ignore: cast_nullable_to_non_nullable
@@ -123,6 +147,26 @@ class _$HibonsWalletCopyWithImpl<$Res, $Val extends HibonsWallet>
           ? _value.rankIcon
           : rankIcon // ignore: cast_nullable_to_non_nullable
               as String,
+      nextRank: freezed == nextRank
+          ? _value.nextRank
+          : nextRank // ignore: cast_nullable_to_non_nullable
+              as HibonsRank?,
+      nextRankLabel: freezed == nextRankLabel
+          ? _value.nextRankLabel
+          : nextRankLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hibonsToNextRank: freezed == hibonsToNextRank
+          ? _value.hibonsToNextRank
+          : hibonsToNextRank // ignore: cast_nullable_to_non_nullable
+              as int?,
+      progressToNextRank: null == progressToNextRank
+          ? _value.progressToNextRank
+          : progressToNextRank // ignore: cast_nullable_to_non_nullable
+              as int,
+      petitBooBonus: null == petitBooBonus
+          ? _value.petitBooBonus
+          : petitBooBonus // ignore: cast_nullable_to_non_nullable
+              as int,
       currentStreak: null == currentStreak
           ? _value.currentStreak
           : currentStreak // ignore: cast_nullable_to_non_nullable
@@ -130,10 +174,6 @@ class _$HibonsWalletCopyWithImpl<$Res, $Val extends HibonsWallet>
       maxStreak: null == maxStreak
           ? _value.maxStreak
           : maxStreak // ignore: cast_nullable_to_non_nullable
-              as int,
-      progressToNextLevel: null == progressToNextLevel
-          ? _value.progressToNextLevel
-          : progressToNextLevel // ignore: cast_nullable_to_non_nullable
               as int,
       canClaimDaily: null == canClaimDaily
           ? _value.canClaimDaily
@@ -159,6 +199,18 @@ class _$HibonsWalletCopyWithImpl<$Res, $Val extends HibonsWallet>
           ? _value.lastActionDate
           : lastActionDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      xp: freezed == xp
+          ? _value.xp
+          : xp // ignore: cast_nullable_to_non_nullable
+              as int?,
+      level: freezed == level
+          ? _value.level
+          : level // ignore: cast_nullable_to_non_nullable
+              as int?,
+      progressToNextLevel: freezed == progressToNextLevel
+          ? _value.progressToNextLevel
+          : progressToNextLevel // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 
@@ -185,20 +237,27 @@ abstract class _$$HibonsWalletImplCopyWith<$Res>
   @useResult
   $Res call(
       {int balance,
-      int xp,
-      int level,
+      int lifetimeEarned,
       String rank,
+      HibonsRank rankEnum,
       String rankLabel,
       String rankIcon,
+      HibonsRank? nextRank,
+      String? nextRankLabel,
+      int? hibonsToNextRank,
+      int progressToNextRank,
+      int petitBooBonus,
       int currentStreak,
       int maxStreak,
-      int progressToNextLevel,
       bool canClaimDaily,
       bool canSpinWheel,
       ChatQuota? chatQuota,
       List<DailyRewardItem> dailyRewards,
       bool streakShieldActive,
-      DateTime? lastActionDate});
+      DateTime? lastActionDate,
+      @Deprecated('Use lifetimeEarned') int? xp,
+      @Deprecated('Use rankEnum') int? level,
+      @Deprecated('Use progressToNextRank') int? progressToNextLevel});
 
   @override
   $ChatQuotaCopyWith<$Res>? get chatQuota;
@@ -216,38 +275,45 @@ class __$$HibonsWalletImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? balance = null,
-    Object? xp = null,
-    Object? level = null,
+    Object? lifetimeEarned = null,
     Object? rank = null,
+    Object? rankEnum = null,
     Object? rankLabel = null,
     Object? rankIcon = null,
+    Object? nextRank = freezed,
+    Object? nextRankLabel = freezed,
+    Object? hibonsToNextRank = freezed,
+    Object? progressToNextRank = null,
+    Object? petitBooBonus = null,
     Object? currentStreak = null,
     Object? maxStreak = null,
-    Object? progressToNextLevel = null,
     Object? canClaimDaily = null,
     Object? canSpinWheel = null,
     Object? chatQuota = freezed,
     Object? dailyRewards = null,
     Object? streakShieldActive = null,
     Object? lastActionDate = freezed,
+    Object? xp = freezed,
+    Object? level = freezed,
+    Object? progressToNextLevel = freezed,
   }) {
     return _then(_$HibonsWalletImpl(
       balance: null == balance
           ? _value.balance
           : balance // ignore: cast_nullable_to_non_nullable
               as int,
-      xp: null == xp
-          ? _value.xp
-          : xp // ignore: cast_nullable_to_non_nullable
-              as int,
-      level: null == level
-          ? _value.level
-          : level // ignore: cast_nullable_to_non_nullable
+      lifetimeEarned: null == lifetimeEarned
+          ? _value.lifetimeEarned
+          : lifetimeEarned // ignore: cast_nullable_to_non_nullable
               as int,
       rank: null == rank
           ? _value.rank
           : rank // ignore: cast_nullable_to_non_nullable
               as String,
+      rankEnum: null == rankEnum
+          ? _value.rankEnum
+          : rankEnum // ignore: cast_nullable_to_non_nullable
+              as HibonsRank,
       rankLabel: null == rankLabel
           ? _value.rankLabel
           : rankLabel // ignore: cast_nullable_to_non_nullable
@@ -256,6 +322,26 @@ class __$$HibonsWalletImplCopyWithImpl<$Res>
           ? _value.rankIcon
           : rankIcon // ignore: cast_nullable_to_non_nullable
               as String,
+      nextRank: freezed == nextRank
+          ? _value.nextRank
+          : nextRank // ignore: cast_nullable_to_non_nullable
+              as HibonsRank?,
+      nextRankLabel: freezed == nextRankLabel
+          ? _value.nextRankLabel
+          : nextRankLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hibonsToNextRank: freezed == hibonsToNextRank
+          ? _value.hibonsToNextRank
+          : hibonsToNextRank // ignore: cast_nullable_to_non_nullable
+              as int?,
+      progressToNextRank: null == progressToNextRank
+          ? _value.progressToNextRank
+          : progressToNextRank // ignore: cast_nullable_to_non_nullable
+              as int,
+      petitBooBonus: null == petitBooBonus
+          ? _value.petitBooBonus
+          : petitBooBonus // ignore: cast_nullable_to_non_nullable
+              as int,
       currentStreak: null == currentStreak
           ? _value.currentStreak
           : currentStreak // ignore: cast_nullable_to_non_nullable
@@ -263,10 +349,6 @@ class __$$HibonsWalletImplCopyWithImpl<$Res>
       maxStreak: null == maxStreak
           ? _value.maxStreak
           : maxStreak // ignore: cast_nullable_to_non_nullable
-              as int,
-      progressToNextLevel: null == progressToNextLevel
-          ? _value.progressToNextLevel
-          : progressToNextLevel // ignore: cast_nullable_to_non_nullable
               as int,
       canClaimDaily: null == canClaimDaily
           ? _value.canClaimDaily
@@ -292,6 +374,18 @@ class __$$HibonsWalletImplCopyWithImpl<$Res>
           ? _value.lastActionDate
           : lastActionDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      xp: freezed == xp
+          ? _value.xp
+          : xp // ignore: cast_nullable_to_non_nullable
+              as int?,
+      level: freezed == level
+          ? _value.level
+          : level // ignore: cast_nullable_to_non_nullable
+              as int?,
+      progressToNextLevel: freezed == progressToNextLevel
+          ? _value.progressToNextLevel
+          : progressToNextLevel // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -301,20 +395,27 @@ class __$$HibonsWalletImplCopyWithImpl<$Res>
 class _$HibonsWalletImpl implements _HibonsWallet {
   const _$HibonsWalletImpl(
       {this.balance = 0,
-      this.xp = 0,
-      this.level = 1,
-      this.rank = 'explorateur',
-      this.rankLabel = 'Explorateur',
-      this.rankIcon = '🧭',
+      this.lifetimeEarned = 0,
+      this.rank = 'curieux',
+      this.rankEnum = HibonsRank.curieux,
+      this.rankLabel = 'Curieux',
+      this.rankIcon = '🔍',
+      this.nextRank,
+      this.nextRankLabel,
+      this.hibonsToNextRank,
+      this.progressToNextRank = 0,
+      this.petitBooBonus = 0,
       this.currentStreak = 0,
       this.maxStreak = 7,
-      this.progressToNextLevel = 0,
       this.canClaimDaily = true,
       this.canSpinWheel = true,
       this.chatQuota,
       final List<DailyRewardItem> dailyRewards = const [],
       this.streakShieldActive = false,
-      this.lastActionDate})
+      this.lastActionDate,
+      @Deprecated('Use lifetimeEarned') this.xp,
+      @Deprecated('Use rankEnum') this.level,
+      @Deprecated('Use progressToNextRank') this.progressToNextLevel})
       : _dailyRewards = dailyRewards;
 
   factory _$HibonsWalletImpl.fromJson(Map<String, dynamic> json) =>
@@ -325,13 +426,13 @@ class _$HibonsWalletImpl implements _HibonsWallet {
   final int balance;
   @override
   @JsonKey()
-  final int xp;
-  @override
-  @JsonKey()
-  final int level;
+  final int lifetimeEarned;
   @override
   @JsonKey()
   final String rank;
+  @override
+  @JsonKey()
+  final HibonsRank rankEnum;
   @override
   @JsonKey()
   final String rankLabel;
@@ -339,14 +440,23 @@ class _$HibonsWalletImpl implements _HibonsWallet {
   @JsonKey()
   final String rankIcon;
   @override
+  final HibonsRank? nextRank;
+  @override
+  final String? nextRankLabel;
+  @override
+  final int? hibonsToNextRank;
+  @override
+  @JsonKey()
+  final int progressToNextRank;
+  @override
+  @JsonKey()
+  final int petitBooBonus;
+  @override
   @JsonKey()
   final int currentStreak;
   @override
   @JsonKey()
   final int maxStreak;
-  @override
-  @JsonKey()
-  final int progressToNextLevel;
   @override
   @JsonKey()
   final bool canClaimDaily;
@@ -370,10 +480,19 @@ class _$HibonsWalletImpl implements _HibonsWallet {
   final bool streakShieldActive;
   @override
   final DateTime? lastActionDate;
+  @override
+  @Deprecated('Use lifetimeEarned')
+  final int? xp;
+  @override
+  @Deprecated('Use rankEnum')
+  final int? level;
+  @override
+  @Deprecated('Use progressToNextRank')
+  final int? progressToNextLevel;
 
   @override
   String toString() {
-    return 'HibonsWallet(balance: $balance, xp: $xp, level: $level, rank: $rank, rankLabel: $rankLabel, rankIcon: $rankIcon, currentStreak: $currentStreak, maxStreak: $maxStreak, progressToNextLevel: $progressToNextLevel, canClaimDaily: $canClaimDaily, canSpinWheel: $canSpinWheel, chatQuota: $chatQuota, dailyRewards: $dailyRewards, streakShieldActive: $streakShieldActive, lastActionDate: $lastActionDate)';
+    return 'HibonsWallet(balance: $balance, lifetimeEarned: $lifetimeEarned, rank: $rank, rankEnum: $rankEnum, rankLabel: $rankLabel, rankIcon: $rankIcon, nextRank: $nextRank, nextRankLabel: $nextRankLabel, hibonsToNextRank: $hibonsToNextRank, progressToNextRank: $progressToNextRank, petitBooBonus: $petitBooBonus, currentStreak: $currentStreak, maxStreak: $maxStreak, canClaimDaily: $canClaimDaily, canSpinWheel: $canSpinWheel, chatQuota: $chatQuota, dailyRewards: $dailyRewards, streakShieldActive: $streakShieldActive, lastActionDate: $lastActionDate, xp: $xp, level: $level, progressToNextLevel: $progressToNextLevel)';
   }
 
   @override
@@ -382,19 +501,29 @@ class _$HibonsWalletImpl implements _HibonsWallet {
         (other.runtimeType == runtimeType &&
             other is _$HibonsWalletImpl &&
             (identical(other.balance, balance) || other.balance == balance) &&
-            (identical(other.xp, xp) || other.xp == xp) &&
-            (identical(other.level, level) || other.level == level) &&
+            (identical(other.lifetimeEarned, lifetimeEarned) ||
+                other.lifetimeEarned == lifetimeEarned) &&
             (identical(other.rank, rank) || other.rank == rank) &&
+            (identical(other.rankEnum, rankEnum) ||
+                other.rankEnum == rankEnum) &&
             (identical(other.rankLabel, rankLabel) ||
                 other.rankLabel == rankLabel) &&
             (identical(other.rankIcon, rankIcon) ||
                 other.rankIcon == rankIcon) &&
+            (identical(other.nextRank, nextRank) ||
+                other.nextRank == nextRank) &&
+            (identical(other.nextRankLabel, nextRankLabel) ||
+                other.nextRankLabel == nextRankLabel) &&
+            (identical(other.hibonsToNextRank, hibonsToNextRank) ||
+                other.hibonsToNextRank == hibonsToNextRank) &&
+            (identical(other.progressToNextRank, progressToNextRank) ||
+                other.progressToNextRank == progressToNextRank) &&
+            (identical(other.petitBooBonus, petitBooBonus) ||
+                other.petitBooBonus == petitBooBonus) &&
             (identical(other.currentStreak, currentStreak) ||
                 other.currentStreak == currentStreak) &&
             (identical(other.maxStreak, maxStreak) ||
                 other.maxStreak == maxStreak) &&
-            (identical(other.progressToNextLevel, progressToNextLevel) ||
-                other.progressToNextLevel == progressToNextLevel) &&
             (identical(other.canClaimDaily, canClaimDaily) ||
                 other.canClaimDaily == canClaimDaily) &&
             (identical(other.canSpinWheel, canSpinWheel) ||
@@ -406,28 +535,40 @@ class _$HibonsWalletImpl implements _HibonsWallet {
             (identical(other.streakShieldActive, streakShieldActive) ||
                 other.streakShieldActive == streakShieldActive) &&
             (identical(other.lastActionDate, lastActionDate) ||
-                other.lastActionDate == lastActionDate));
+                other.lastActionDate == lastActionDate) &&
+            (identical(other.xp, xp) || other.xp == xp) &&
+            (identical(other.level, level) || other.level == level) &&
+            (identical(other.progressToNextLevel, progressToNextLevel) ||
+                other.progressToNextLevel == progressToNextLevel));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      balance,
-      xp,
-      level,
-      rank,
-      rankLabel,
-      rankIcon,
-      currentStreak,
-      maxStreak,
-      progressToNextLevel,
-      canClaimDaily,
-      canSpinWheel,
-      chatQuota,
-      const DeepCollectionEquality().hash(_dailyRewards),
-      streakShieldActive,
-      lastActionDate);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        balance,
+        lifetimeEarned,
+        rank,
+        rankEnum,
+        rankLabel,
+        rankIcon,
+        nextRank,
+        nextRankLabel,
+        hibonsToNextRank,
+        progressToNextRank,
+        petitBooBonus,
+        currentStreak,
+        maxStreak,
+        canClaimDaily,
+        canSpinWheel,
+        chatQuota,
+        const DeepCollectionEquality().hash(_dailyRewards),
+        streakShieldActive,
+        lastActionDate,
+        xp,
+        level,
+        progressToNextLevel
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -446,20 +587,28 @@ class _$HibonsWalletImpl implements _HibonsWallet {
 abstract class _HibonsWallet implements HibonsWallet {
   const factory _HibonsWallet(
       {final int balance,
-      final int xp,
-      final int level,
+      final int lifetimeEarned,
       final String rank,
+      final HibonsRank rankEnum,
       final String rankLabel,
       final String rankIcon,
+      final HibonsRank? nextRank,
+      final String? nextRankLabel,
+      final int? hibonsToNextRank,
+      final int progressToNextRank,
+      final int petitBooBonus,
       final int currentStreak,
       final int maxStreak,
-      final int progressToNextLevel,
       final bool canClaimDaily,
       final bool canSpinWheel,
       final ChatQuota? chatQuota,
       final List<DailyRewardItem> dailyRewards,
       final bool streakShieldActive,
-      final DateTime? lastActionDate}) = _$HibonsWalletImpl;
+      final DateTime? lastActionDate,
+      @Deprecated('Use lifetimeEarned') final int? xp,
+      @Deprecated('Use rankEnum') final int? level,
+      @Deprecated('Use progressToNextRank')
+      final int? progressToNextLevel}) = _$HibonsWalletImpl;
 
   factory _HibonsWallet.fromJson(Map<String, dynamic> json) =
       _$HibonsWalletImpl.fromJson;
@@ -467,21 +616,29 @@ abstract class _HibonsWallet implements HibonsWallet {
   @override
   int get balance;
   @override
-  int get xp;
-  @override
-  int get level;
+  int get lifetimeEarned;
   @override
   String get rank;
+  @override
+  HibonsRank get rankEnum;
   @override
   String get rankLabel;
   @override
   String get rankIcon;
   @override
+  HibonsRank? get nextRank;
+  @override
+  String? get nextRankLabel;
+  @override
+  int? get hibonsToNextRank;
+  @override
+  int get progressToNextRank;
+  @override
+  int get petitBooBonus;
+  @override
   int get currentStreak;
   @override
   int get maxStreak;
-  @override
-  int get progressToNextLevel;
   @override
   bool get canClaimDaily;
   @override
@@ -494,6 +651,15 @@ abstract class _HibonsWallet implements HibonsWallet {
   bool get streakShieldActive;
   @override
   DateTime? get lastActionDate;
+  @override
+  @Deprecated('Use lifetimeEarned')
+  int? get xp;
+  @override
+  @Deprecated('Use rankEnum')
+  int? get level;
+  @override
+  @Deprecated('Use progressToNextRank')
+  int? get progressToNextLevel;
   @override
   @JsonKey(ignore: true)
   _$$HibonsWalletImplCopyWith<_$HibonsWalletImpl> get copyWith =>
@@ -509,10 +675,14 @@ mixin _$ChatQuota {
   int get remaining => throw _privateConstructorUsedError;
   int get limit => throw _privateConstructorUsedError;
   int get used => throw _privateConstructorUsedError;
-  DateTime get resetsAt => throw _privateConstructorUsedError;
+  DateTime? get resetsAt => throw _privateConstructorUsedError;
   bool get canUnlock => throw _privateConstructorUsedError;
   int get unlockCost => throw _privateConstructorUsedError;
   int get unlockMessages => throw _privateConstructorUsedError;
+  int get baseLimit => throw _privateConstructorUsedError;
+  int get rankBonus => throw _privateConstructorUsedError;
+  int get unlockedToday => throw _privateConstructorUsedError;
+  String get rank => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -529,10 +699,14 @@ abstract class $ChatQuotaCopyWith<$Res> {
       {int remaining,
       int limit,
       int used,
-      DateTime resetsAt,
+      DateTime? resetsAt,
       bool canUnlock,
       int unlockCost,
-      int unlockMessages});
+      int unlockMessages,
+      int baseLimit,
+      int rankBonus,
+      int unlockedToday,
+      String rank});
 }
 
 /// @nodoc
@@ -551,10 +725,14 @@ class _$ChatQuotaCopyWithImpl<$Res, $Val extends ChatQuota>
     Object? remaining = null,
     Object? limit = null,
     Object? used = null,
-    Object? resetsAt = null,
+    Object? resetsAt = freezed,
     Object? canUnlock = null,
     Object? unlockCost = null,
     Object? unlockMessages = null,
+    Object? baseLimit = null,
+    Object? rankBonus = null,
+    Object? unlockedToday = null,
+    Object? rank = null,
   }) {
     return _then(_value.copyWith(
       remaining: null == remaining
@@ -569,10 +747,10 @@ class _$ChatQuotaCopyWithImpl<$Res, $Val extends ChatQuota>
           ? _value.used
           : used // ignore: cast_nullable_to_non_nullable
               as int,
-      resetsAt: null == resetsAt
+      resetsAt: freezed == resetsAt
           ? _value.resetsAt
           : resetsAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
       canUnlock: null == canUnlock
           ? _value.canUnlock
           : canUnlock // ignore: cast_nullable_to_non_nullable
@@ -585,6 +763,22 @@ class _$ChatQuotaCopyWithImpl<$Res, $Val extends ChatQuota>
           ? _value.unlockMessages
           : unlockMessages // ignore: cast_nullable_to_non_nullable
               as int,
+      baseLimit: null == baseLimit
+          ? _value.baseLimit
+          : baseLimit // ignore: cast_nullable_to_non_nullable
+              as int,
+      rankBonus: null == rankBonus
+          ? _value.rankBonus
+          : rankBonus // ignore: cast_nullable_to_non_nullable
+              as int,
+      unlockedToday: null == unlockedToday
+          ? _value.unlockedToday
+          : unlockedToday // ignore: cast_nullable_to_non_nullable
+              as int,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -601,10 +795,14 @@ abstract class _$$ChatQuotaImplCopyWith<$Res>
       {int remaining,
       int limit,
       int used,
-      DateTime resetsAt,
+      DateTime? resetsAt,
       bool canUnlock,
       int unlockCost,
-      int unlockMessages});
+      int unlockMessages,
+      int baseLimit,
+      int rankBonus,
+      int unlockedToday,
+      String rank});
 }
 
 /// @nodoc
@@ -621,10 +819,14 @@ class __$$ChatQuotaImplCopyWithImpl<$Res>
     Object? remaining = null,
     Object? limit = null,
     Object? used = null,
-    Object? resetsAt = null,
+    Object? resetsAt = freezed,
     Object? canUnlock = null,
     Object? unlockCost = null,
     Object? unlockMessages = null,
+    Object? baseLimit = null,
+    Object? rankBonus = null,
+    Object? unlockedToday = null,
+    Object? rank = null,
   }) {
     return _then(_$ChatQuotaImpl(
       remaining: null == remaining
@@ -639,10 +841,10 @@ class __$$ChatQuotaImplCopyWithImpl<$Res>
           ? _value.used
           : used // ignore: cast_nullable_to_non_nullable
               as int,
-      resetsAt: null == resetsAt
+      resetsAt: freezed == resetsAt
           ? _value.resetsAt
           : resetsAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
       canUnlock: null == canUnlock
           ? _value.canUnlock
           : canUnlock // ignore: cast_nullable_to_non_nullable
@@ -655,6 +857,22 @@ class __$$ChatQuotaImplCopyWithImpl<$Res>
           ? _value.unlockMessages
           : unlockMessages // ignore: cast_nullable_to_non_nullable
               as int,
+      baseLimit: null == baseLimit
+          ? _value.baseLimit
+          : baseLimit // ignore: cast_nullable_to_non_nullable
+              as int,
+      rankBonus: null == rankBonus
+          ? _value.rankBonus
+          : rankBonus // ignore: cast_nullable_to_non_nullable
+              as int,
+      unlockedToday: null == unlockedToday
+          ? _value.unlockedToday
+          : unlockedToday // ignore: cast_nullable_to_non_nullable
+              as int,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -663,35 +881,57 @@ class __$$ChatQuotaImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ChatQuotaImpl implements _ChatQuota {
   const _$ChatQuotaImpl(
-      {required this.remaining,
-      required this.limit,
-      required this.used,
-      required this.resetsAt,
-      required this.canUnlock,
-      required this.unlockCost,
-      required this.unlockMessages});
+      {this.remaining = 0,
+      this.limit = 3,
+      this.used = 0,
+      this.resetsAt,
+      this.canUnlock = false,
+      this.unlockCost = 100,
+      this.unlockMessages = 2,
+      this.baseLimit = 3,
+      this.rankBonus = 0,
+      this.unlockedToday = 0,
+      this.rank = 'curieux'});
 
   factory _$ChatQuotaImpl.fromJson(Map<String, dynamic> json) =>
       _$$ChatQuotaImplFromJson(json);
 
   @override
+  @JsonKey()
   final int remaining;
   @override
+  @JsonKey()
   final int limit;
   @override
+  @JsonKey()
   final int used;
   @override
-  final DateTime resetsAt;
+  final DateTime? resetsAt;
   @override
+  @JsonKey()
   final bool canUnlock;
   @override
+  @JsonKey()
   final int unlockCost;
   @override
+  @JsonKey()
   final int unlockMessages;
+  @override
+  @JsonKey()
+  final int baseLimit;
+  @override
+  @JsonKey()
+  final int rankBonus;
+  @override
+  @JsonKey()
+  final int unlockedToday;
+  @override
+  @JsonKey()
+  final String rank;
 
   @override
   String toString() {
-    return 'ChatQuota(remaining: $remaining, limit: $limit, used: $used, resetsAt: $resetsAt, canUnlock: $canUnlock, unlockCost: $unlockCost, unlockMessages: $unlockMessages)';
+    return 'ChatQuota(remaining: $remaining, limit: $limit, used: $used, resetsAt: $resetsAt, canUnlock: $canUnlock, unlockCost: $unlockCost, unlockMessages: $unlockMessages, baseLimit: $baseLimit, rankBonus: $rankBonus, unlockedToday: $unlockedToday, rank: $rank)';
   }
 
   @override
@@ -710,13 +950,31 @@ class _$ChatQuotaImpl implements _ChatQuota {
             (identical(other.unlockCost, unlockCost) ||
                 other.unlockCost == unlockCost) &&
             (identical(other.unlockMessages, unlockMessages) ||
-                other.unlockMessages == unlockMessages));
+                other.unlockMessages == unlockMessages) &&
+            (identical(other.baseLimit, baseLimit) ||
+                other.baseLimit == baseLimit) &&
+            (identical(other.rankBonus, rankBonus) ||
+                other.rankBonus == rankBonus) &&
+            (identical(other.unlockedToday, unlockedToday) ||
+                other.unlockedToday == unlockedToday) &&
+            (identical(other.rank, rank) || other.rank == rank));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, remaining, limit, used, resetsAt,
-      canUnlock, unlockCost, unlockMessages);
+  int get hashCode => Object.hash(
+      runtimeType,
+      remaining,
+      limit,
+      used,
+      resetsAt,
+      canUnlock,
+      unlockCost,
+      unlockMessages,
+      baseLimit,
+      rankBonus,
+      unlockedToday,
+      rank);
 
   @JsonKey(ignore: true)
   @override
@@ -734,13 +992,17 @@ class _$ChatQuotaImpl implements _ChatQuota {
 
 abstract class _ChatQuota implements ChatQuota {
   const factory _ChatQuota(
-      {required final int remaining,
-      required final int limit,
-      required final int used,
-      required final DateTime resetsAt,
-      required final bool canUnlock,
-      required final int unlockCost,
-      required final int unlockMessages}) = _$ChatQuotaImpl;
+      {final int remaining,
+      final int limit,
+      final int used,
+      final DateTime? resetsAt,
+      final bool canUnlock,
+      final int unlockCost,
+      final int unlockMessages,
+      final int baseLimit,
+      final int rankBonus,
+      final int unlockedToday,
+      final String rank}) = _$ChatQuotaImpl;
 
   factory _ChatQuota.fromJson(Map<String, dynamic> json) =
       _$ChatQuotaImpl.fromJson;
@@ -752,13 +1014,21 @@ abstract class _ChatQuota implements ChatQuota {
   @override
   int get used;
   @override
-  DateTime get resetsAt;
+  DateTime? get resetsAt;
   @override
   bool get canUnlock;
   @override
   int get unlockCost;
   @override
   int get unlockMessages;
+  @override
+  int get baseLimit;
+  @override
+  int get rankBonus;
+  @override
+  int get unlockedToday;
+  @override
+  String get rank;
   @override
   @JsonKey(ignore: true)
   _$$ChatQuotaImplCopyWith<_$ChatQuotaImpl> get copyWith =>

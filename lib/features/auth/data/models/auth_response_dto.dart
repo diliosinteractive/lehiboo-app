@@ -3,6 +3,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'auth_response_dto.freezed.dart';
 part 'auth_response_dto.g.dart';
 
+/// The Laravel backend returns the avatar under the key `avatar`, but earlier
+/// API revisions used `avatar_url`. Read both so the field survives either.
+Object? _readAvatar(Map<dynamic, dynamic> json, String _) =>
+    json['avatar'] ?? json['avatar_url'];
+
 @freezed
 class AuthResponseDto with _$AuthResponseDto {
   const factory AuthResponseDto({
@@ -29,10 +34,12 @@ class UserDto with _$UserDto {
     String? bio,
     @JsonKey(name: 'birth_date') String? birthDate,
     @JsonKey(name: 'membership_city') String? membershipCity,
-    @JsonKey(name: 'avatar_url') String? avatarUrl,
+    @JsonKey(name: 'avatar', readValue: _readAvatar) String? avatarUrl,
     required String role,
     @JsonKey(name: 'registered_at') String? registeredAt,
     @JsonKey(name: 'is_verified') @Default(false) bool isVerified,
+    @Default(false) bool newsletter,
+    @JsonKey(name: 'push_notifications_enabled') @Default(false) bool pushNotificationsEnabled,
     UserCapabilitiesDto? capabilities,
   }) = _UserDto;
 

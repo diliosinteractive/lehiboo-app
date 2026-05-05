@@ -9,8 +9,8 @@ part of 'quota_dto.dart';
 _$QuotaDtoImpl _$$QuotaDtoImplFromJson(Map<String, dynamic> json) =>
     _$QuotaDtoImpl(
       used: (json['used'] as num?)?.toInt() ?? 0,
-      limit: (json['limit'] as num?)?.toInt() ?? 10,
-      remaining: (json['remaining'] as num?)?.toInt() ?? 10,
+      limit: (json['limit'] as num?)?.toInt() ?? 3,
+      remaining: (json['remaining'] as num?)?.toInt() ?? 3,
       resetsAt: json['resets_at'] as String?,
       period: json['period'] as String? ?? 'daily',
     );

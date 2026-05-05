@@ -3,15 +3,22 @@ import 'package:video_player/video_player.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 
 /// Fullscreen video player for story viewer.
-/// Auto-plays muted, loops, and responds to pause/resume via [isPaused].
+/// Auto-plays with audio and responds to pause/resume via [isPaused].
+/// Reports the actual media duration via [onDurationLoaded] and signals
+/// natural end-of-playback via [onCompleted] so the parent can drive
+/// per-story timing off the real video length.
 class StoryVideoPlayer extends StatefulWidget {
   final String videoUrl;
   final ValueNotifier<bool> isPaused;
+  final ValueChanged<Duration>? onDurationLoaded;
+  final VoidCallback? onCompleted;
 
   const StoryVideoPlayer({
     super.key,
     required this.videoUrl,
     required this.isPaused,
+    this.onDurationLoaded,
+    this.onCompleted,
   });
 
   @override
@@ -22,19 +29,19 @@ class _StoryVideoPlayerState extends State<StoryVideoPlayer> {
   late VideoPlayerController _controller;
   bool _initialized = false;
   bool _hasError = false;
+  bool _completedNotified = false;
 
   @override
   void initState() {
     super.initState();
     _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-      ..setVolume(0)
-      ..setLooping(true)
+      ..setVolume(1.0)
       ..initialize().then((_) {
-        if (mounted) {
-          setState(() => _initialized = true);
-          if (!widget.isPaused.value) {
-            _controller.play();
-          }
+        if (!mounted) return;
+        setState(() => _initialized = true);
+        widget.onDurationLoaded?.call(_controller.value.duration);
+        if (!widget.isPaused.value) {
+          _controller.play();
         }
       }).catchError((e) {
         if (mounted) {
@@ -42,7 +49,21 @@ class _StoryVideoPlayerState extends State<StoryVideoPlayer> {
         }
       });
 
+    _controller.addListener(_onControllerTick);
     widget.isPaused.addListener(_onPauseChanged);
+  }
+
+  void _onControllerTick() {
+    if (!_initialized || _completedNotified) return;
+    final value = _controller.value;
+    final duration = value.duration;
+    if (duration <= Duration.zero) return;
+    // VideoPlayerController flips `isPlaying` to false at the end and the
+    // position reaches duration. Fire onCompleted exactly once.
+    if (!value.isPlaying && value.position >= duration) {
+      _completedNotified = true;
+      widget.onCompleted?.call();
+    }
   }
 
   void _onPauseChanged() {
@@ -57,6 +78,7 @@ class _StoryVideoPlayerState extends State<StoryVideoPlayer> {
   @override
   void dispose() {
     widget.isPaused.removeListener(_onPauseChanged);
+    _controller.removeListener(_onControllerTick);
     _controller.dispose();
     super.dispose();
   }

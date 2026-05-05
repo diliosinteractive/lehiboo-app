@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_constants.dart';
 import '../core/providers/shared_preferences_provider.dart';
 import '../features/onboarding/presentation/screens/onboarding_screen.dart';
-import '../features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/city_detail_screen.dart';
@@ -46,12 +46,17 @@ import '../features/partners/presentation/screens/followed_organizers_screen.dar
 import '../features/memberships/presentation/screens/invitation_landing_screen.dart';
 import '../features/memberships/presentation/screens/memberships_screen.dart';
 import '../features/memberships/presentation/screens/private_events_screen.dart';
+import '../features/checkin/presentation/screens/checkin_scan_screen.dart';
+import '../features/checkin/presentation/screens/checkin_manual_entry_screen.dart';
 // Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
-import '../features/gamification/presentation/screens/hibon_shop_screen.dart';
+// HibonShopScreen import retiré : route /hibons-shop redirigée vers
+// /hibons-dashboard (Plan 04 — achats Hibons désactivés). Le fichier source
+// est conservé pour réactivation v2.
 import '../features/gamification/presentation/screens/lucky_wheel_screen.dart';
 import '../features/gamification/presentation/screens/achievements_screen.dart';
 import '../features/gamification/presentation/screens/gamification_dashboard_screen.dart';
+import '../features/gamification/presentation/screens/how_to_earn_hibons_screen.dart';
 import '../features/petit_boo/presentation/screens/petit_boo_chat_screen.dart';
 import '../features/petit_boo/presentation/screens/petit_boo_brain_screen.dart';
 import '../features/petit_boo/presentation/screens/conversation_list_screen.dart';
@@ -61,6 +66,10 @@ import '../features/messages/presentation/screens/conversations_list_screen.dart
 import '../features/messages/presentation/screens/conversation_detail_screen.dart';
 import '../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../features/messages/presentation/screens/support_detail_screen.dart';
+import '../features/messages/presentation/screens/vendor_new_conversation_screen.dart';
+import '../features/messages/presentation/screens/admin_new_conversation_screen.dart';
+import '../features/messages/presentation/screens/admin_report_detail_screen.dart';
+import '../features/messages/domain/entities/conversation_route.dart';
 import '../features/reviews/presentation/screens/event_reviews_full_screen.dart';
 import '../features/reviews/presentation/screens/my_reviews_screen.dart';
 /// ChangeNotifier that drives GoRouter.refreshListenable so redirect logic
@@ -92,12 +101,22 @@ class _AuthRouterRefresh extends ChangeNotifier {
 }
 
 
+/// Clé globale du navigateur racine — utilisée par `HibonsAnimationCoordinator`
+/// pour obtenir un BuildContext sous l'Overlay (les toasts/overlays Hibons
+/// sont montés depuis l'intercepteur Dio, hors hiérarchie de widgets).
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Clé globale du ScaffoldMessenger — permet d'afficher des SnackBar depuis
+/// n'importe où (ex: l'intercepteur Dio Hibons via le coordinateur).
+final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final prefs = ref.read(sharedPreferencesProvider);
   final refresh = _AuthRouterRefresh(ref);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/bootstrap',
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -170,6 +189,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       // the navigation stack (losing e.g. the EventDetail a guest guard was
       // invoked from).
 
+      // 4. Messages require authentication — redirect to login if not authenticated.
+      //    Covers direct navigation, deep links from FCM, and URL-bar entry.
+      // 4. Messages require authentication — handled via GuestGuard in UI entries
+      // for a better UX (modal instead of full-screen redirect).
+      if (state.matchedLocation.startsWith('/messages') &&
+          authState.status == AuthStatus.unauthenticated) {
+        return null;
+      }
+
       debugPrint('🔀 No redirect');
       return null;
     },
@@ -220,15 +248,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'my-bookings',
             builder: (context, state) => const BookingsListScreen(),
           ),
-          GoRoute(
-            path: '/messages',
-            name: 'messages',
-            builder: (_, __) => const ConversationsListScreen(),
-          ),
         ],
       ),
 
-      // Messages detail routes — outside ShellRoute so navbar is hidden
+      // Messages routes — outside ShellRoute so navbar is hidden
+      GoRoute(
+        path: '/messages',
+        name: 'messages',
+        builder: (_, __) => const ConversationsListScreen(),
+      ),
       GoRoute(
         path: '/messages/new',
         name: 'messages-new',
@@ -261,13 +289,102 @@ final routerProvider = Provider<GoRouter>((ref) {
           conversationUuid: state.pathParameters['conversationUuid']!,
         ),
       ),
-      // IMPORTANT: static sub-paths (new, support) must be declared before this wildcard
+
+      // ── Vendor routes (static before parameterized) ───────────────────────
+      GoRoute(
+        path: '/messages/vendor/new/participant',
+        name: 'messages-vendor-new-participant',
+        builder: (_, __) => const VendorNewConversationScreen(
+            mode: VendorConversationMode.toParticipant),
+      ),
+      GoRoute(
+        path: '/messages/vendor/new/partner',
+        name: 'messages-vendor-new-partner',
+        builder: (_, __) => const VendorNewConversationScreen(
+            mode: VendorConversationMode.toPartner),
+      ),
+      GoRoute(
+        path: '/messages/vendor/new/support',
+        name: 'messages-vendor-new-support',
+        builder: (_, __) => const VendorNewConversationScreen(
+            mode: VendorConversationMode.supportThread),
+      ),
+      GoRoute(
+        path: '/messages/vendor-org/:conversationUuid',
+        name: 'messages-vendor-org-detail',
+        builder: (_, state) => ConversationDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+          route: ConversationRoute.vendorOrgOrg,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/vendor/:conversationUuid',
+        name: 'messages-vendor-detail',
+        builder: (_, state) => ConversationDetailScreen(
+          conversationUuid: state.pathParameters['conversationUuid']!,
+          route: ConversationRoute.vendor,
+        ),
+      ),
+
+      // ── Admin routes (static before parameterized) ────────────────────────
+      GoRoute(
+        path: '/messages/admin/new/user',
+        name: 'messages-admin-new-user',
+        builder: (_, __) => const AdminNewConversationScreen(
+            mode: AdminConversationMode.toUser),
+      ),
+      GoRoute(
+        path: '/messages/admin/new/organizer',
+        name: 'messages-admin-new-organizer',
+        builder: (_, __) => const AdminNewConversationScreen(
+            mode: AdminConversationMode.toOrganizer),
+      ),
+      GoRoute(
+        path: '/messages/admin/reports/:reportUuid',
+        name: 'messages-admin-report-detail',
+        builder: (_, state) => AdminReportDetailScreen(
+          reportUuid: state.pathParameters['reportUuid']!,
+        ),
+      ),
+      GoRoute(
+        path: '/messages/admin/:conversationUuid',
+        name: 'messages-admin-detail',
+        builder: (_, state) {
+          final readonly =
+              state.uri.queryParameters['readonly'] == 'true';
+          return ConversationDetailScreen(
+            conversationUuid: state.pathParameters['conversationUuid']!,
+            route: readonly
+                ? ConversationRoute.adminReadonly
+                : ConversationRoute.admin,
+          );
+        },
+      ),
+
+      // IMPORTANT: static sub-paths (new, support, vendor, admin) must be
+      // declared before this wildcard
       GoRoute(
         path: '/messages/:conversationUuid',
         name: 'messages-detail',
         builder: (_, state) => ConversationDetailScreen(
           conversationUuid: state.pathParameters['conversationUuid']!,
         ),
+      ),
+
+      // ── Vendor check-in routes ────────────────────────────────────────────
+      // Outside the main shell — full-screen scanner, no bottom nav.
+      // Spec: docs/MOBILE_CHECKIN_SPEC.md.
+      GoRoute(
+        path: '/vendor/scan',
+        name: 'vendor-scan',
+        builder: (_, __) => const CheckinScanScreen(),
+        routes: [
+          GoRoute(
+            path: 'manual',
+            name: 'vendor-scan-manual',
+            builder: (_, __) => const CheckinManualEntryScreen(),
+          ),
+        ],
       ),
 
       // Auth routes
@@ -599,10 +716,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirect: (_, __) => '/petit-boo',
       ),
       // Gamification
+      // Plan 04: boutique de packs Hibons désactivée (404 backend).
+      // Le code de HibonShopScreen reste en place pour réactivation v2 ;
+      // on redirige les anciens deep-links vers le dashboard.
       GoRoute(
         path: '/hibons-shop',
         name: 'hibons-shop',
-        builder: (context, state) => const HibonShopScreen(),
+        redirect: (_, __) => '/hibons-dashboard',
       ),
       GoRoute(
         path: '/hibons-dashboard',
@@ -618,6 +738,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/achievements',
         name: 'achievements',
         builder: (context, state) => const AchievementsScreen(),
+      ),
+      GoRoute(
+        path: '/hibons/how-to-earn',
+        name: 'hibons-how-to-earn',
+        builder: (context, state) => const HowToEarnHibonsScreen(),
       ),
       // Petit Boo AI Chat
       GoRoute(

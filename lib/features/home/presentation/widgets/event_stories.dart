@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/services/volume_routing.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/widgets/story_video_player.dart';
 import 'package:lehiboo/features/stories/domain/entities/story.dart';
 import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
@@ -541,7 +543,16 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
   int _currentIndex = 0;
   final ValueNotifier<bool> _isPaused = ValueNotifier(false);
 
-  static const _storyDuration = Duration(seconds: 5);
+  /// When the current story started displaying. Used to re-anchor the progress
+  /// bar when a video reports its actual duration mid-playback.
+  DateTime? _currentStoryStart;
+
+  /// Guards against advancing twice when the timer and the video's
+  /// onCompleted callback fire near-simultaneously.
+  bool _isAdvancing = false;
+
+  static const _imageStoryDuration = Duration(seconds: 5);
+  static const _videoFallbackCapSeconds = 30;
 
   @override
   void initState() {
@@ -551,21 +562,74 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
     _progressController = AnimationController(
       vsync: this,
-      duration: _storyDuration,
+      duration: _durationFor(widget.stories[widget.initialIndex]),
     )..addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           _goToNextStory();
         }
       });
 
+    // Route hardware volume buttons to media stream while the viewer is open.
+    VolumeRouting.useMediaStream();
+
     // Mark initial story as viewed, record impression, and start progress
     _markCurrentAsViewed();
     _recordCurrentImpression();
+    _currentStoryStart = DateTime.now();
     _progressController.forward();
+  }
+
+  /// Backend-configured cap for video stories, with a safe fallback when the
+  /// mobile config hasn't loaded yet.
+  int get _videoCapSeconds {
+    final config = ref.read(mobileAppConfigProvider).valueOrNull;
+    return config?.media.storyVideoMaxSeconds ?? _videoFallbackCapSeconds;
+  }
+
+  /// Initial timer duration for [story]. For videos this is the cap — it gets
+  /// refined by [_onVideoDurationLoaded] once the player initializes.
+  Duration _durationFor(Story story) {
+    if (story.mediaType == StoryMediaType.image) {
+      return _imageStoryDuration;
+    }
+    return Duration(seconds: _videoCapSeconds);
+  }
+
+  void _onVideoDurationLoaded(String storyUuid, Duration actualDuration) {
+    if (!mounted) return;
+    // Adjacent pages may also build a StoryVideoPlayer; ignore their callbacks.
+    if (widget.stories[_currentIndex].uuid != storyUuid) return;
+    if (actualDuration <= Duration.zero) return;
+
+    final cap = Duration(seconds: _videoCapSeconds);
+    final newDuration = actualDuration < cap ? actualDuration : cap;
+
+    // Keep the progress bar in sync with elapsed real time so it doesn't snap
+    // backwards when the duration shrinks.
+    final elapsed = _currentStoryStart != null
+        ? DateTime.now().difference(_currentStoryStart!)
+        : Duration.zero;
+    final newValue = newDuration.inMilliseconds == 0
+        ? 0.0
+        : (elapsed.inMilliseconds / newDuration.inMilliseconds).clamp(0.0, 1.0);
+
+    _progressController.stop();
+    _progressController.duration = newDuration;
+    _progressController.value = newValue;
+    if (!_isPaused.value && _progressController.value < 1.0) {
+      _progressController.forward();
+    }
+  }
+
+  void _onVideoCompleted(String storyUuid) {
+    if (!mounted) return;
+    if (widget.stories[_currentIndex].uuid != storyUuid) return;
+    _goToNextStory();
   }
 
   @override
   void dispose() {
+    VolumeRouting.restoreDefault();
     _isPaused.dispose();
     _pageController.dispose();
     _progressController.dispose();
@@ -583,6 +647,10 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
   }
 
   void _goToNextStory() {
+    // Both the progress timer and the video's onCompleted can race to advance
+    // the same story — guard so we only schedule one page transition.
+    if (_isAdvancing) return;
+    _isAdvancing = true;
     if (_currentIndex < widget.stories.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -613,7 +681,11 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
     });
     _markCurrentAsViewed();
     _recordCurrentImpression();
+    _progressController.stop();
+    _progressController.duration = _durationFor(widget.stories[index]);
     _progressController.reset();
+    _currentStoryStart = DateTime.now();
+    _isAdvancing = false;
     _progressController.forward();
   }
 
@@ -671,6 +743,8 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
                 return _StoryContent(
                   story: widget.stories[index],
                   isPaused: _isPaused,
+                  onVideoDurationLoaded: _onVideoDurationLoaded,
+                  onVideoCompleted: _onVideoCompleted,
                 );
               },
             ),
@@ -731,10 +805,15 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 class _StoryContent extends StatelessWidget {
   final Story story;
   final ValueNotifier<bool> isPaused;
+  final void Function(String storyUuid, Duration duration)?
+      onVideoDurationLoaded;
+  final void Function(String storyUuid)? onVideoCompleted;
 
   const _StoryContent({
     required this.story,
     required this.isPaused,
+    this.onVideoDurationLoaded,
+    this.onVideoCompleted,
   });
 
   @override
@@ -747,6 +826,8 @@ class _StoryContent extends StatelessWidget {
           StoryVideoPlayer(
             videoUrl: story.mediaUrl,
             isPaused: isPaused,
+            onDurationLoaded: (d) => onVideoDurationLoaded?.call(story.uuid, d),
+            onCompleted: () => onVideoCompleted?.call(story.uuid),
           )
         else
           CachedNetworkImage(

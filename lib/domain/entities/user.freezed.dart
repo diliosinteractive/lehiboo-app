@@ -30,6 +30,8 @@ mixin _$HbUser {
   UserRole get role => throw _privateConstructorUsedError;
   DateTime? get registeredAt => throw _privateConstructorUsedError;
   bool get isVerified => throw _privateConstructorUsedError;
+  bool get newsletter => throw _privateConstructorUsedError;
+  bool get pushNotificationsEnabled => throw _privateConstructorUsedError;
   UserCapabilities get capabilities =>
       throw _privateConstructorUsedError; // Legacy fields for backwards compatibility
   List<String>? get interestsCategoryIds => throw _privateConstructorUsedError;
@@ -58,6 +60,8 @@ abstract class $HbUserCopyWith<$Res> {
       UserRole role,
       DateTime? registeredAt,
       bool isVerified,
+      bool newsletter,
+      bool pushNotificationsEnabled,
       UserCapabilities capabilities,
       List<String>? interestsCategoryIds});
 
@@ -91,6 +95,8 @@ class _$HbUserCopyWithImpl<$Res, $Val extends HbUser>
     Object? role = null,
     Object? registeredAt = freezed,
     Object? isVerified = null,
+    Object? newsletter = null,
+    Object? pushNotificationsEnabled = null,
     Object? capabilities = null,
     Object? interestsCategoryIds = freezed,
   }) {
@@ -151,6 +157,14 @@ class _$HbUserCopyWithImpl<$Res, $Val extends HbUser>
           ? _value.isVerified
           : isVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      newsletter: null == newsletter
+          ? _value.newsletter
+          : newsletter // ignore: cast_nullable_to_non_nullable
+              as bool,
+      pushNotificationsEnabled: null == pushNotificationsEnabled
+          ? _value.pushNotificationsEnabled
+          : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
+              as bool,
       capabilities: null == capabilities
           ? _value.capabilities
           : capabilities // ignore: cast_nullable_to_non_nullable
@@ -193,6 +207,8 @@ abstract class _$$HbUserImplCopyWith<$Res> implements $HbUserCopyWith<$Res> {
       UserRole role,
       DateTime? registeredAt,
       bool isVerified,
+      bool newsletter,
+      bool pushNotificationsEnabled,
       UserCapabilities capabilities,
       List<String>? interestsCategoryIds});
 
@@ -225,6 +241,8 @@ class __$$HbUserImplCopyWithImpl<$Res>
     Object? role = null,
     Object? registeredAt = freezed,
     Object? isVerified = null,
+    Object? newsletter = null,
+    Object? pushNotificationsEnabled = null,
     Object? capabilities = null,
     Object? interestsCategoryIds = freezed,
   }) {
@@ -285,6 +303,14 @@ class __$$HbUserImplCopyWithImpl<$Res>
           ? _value.isVerified
           : isVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      newsletter: null == newsletter
+          ? _value.newsletter
+          : newsletter // ignore: cast_nullable_to_non_nullable
+              as bool,
+      pushNotificationsEnabled: null == pushNotificationsEnabled
+          ? _value.pushNotificationsEnabled
+          : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
+              as bool,
       capabilities: null == capabilities
           ? _value.capabilities
           : capabilities // ignore: cast_nullable_to_non_nullable
@@ -315,6 +341,8 @@ class _$HbUserImpl implements _HbUser {
       this.role = UserRole.subscriber,
       this.registeredAt,
       this.isVerified = false,
+      this.newsletter = false,
+      this.pushNotificationsEnabled = false,
       this.capabilities = const UserCapabilities(),
       final List<String>? interestsCategoryIds})
       : _interestsCategoryIds = interestsCategoryIds;
@@ -351,6 +379,12 @@ class _$HbUserImpl implements _HbUser {
   final bool isVerified;
   @override
   @JsonKey()
+  final bool newsletter;
+  @override
+  @JsonKey()
+  final bool pushNotificationsEnabled;
+  @override
+  @JsonKey()
   final UserCapabilities capabilities;
 // Legacy fields for backwards compatibility
   final List<String>? _interestsCategoryIds;
@@ -367,7 +401,7 @@ class _$HbUserImpl implements _HbUser {
 
   @override
   String toString() {
-    return 'HbUser(id: $id, email: $email, displayName: $displayName, firstName: $firstName, lastName: $lastName, phone: $phone, avatarUrl: $avatarUrl, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, capabilities: $capabilities, interestsCategoryIds: $interestsCategoryIds)';
+    return 'HbUser(id: $id, email: $email, displayName: $displayName, firstName: $firstName, lastName: $lastName, phone: $phone, avatarUrl: $avatarUrl, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, newsletter: $newsletter, pushNotificationsEnabled: $pushNotificationsEnabled, capabilities: $capabilities, interestsCategoryIds: $interestsCategoryIds)';
   }
 
   @override
@@ -397,6 +431,11 @@ class _$HbUserImpl implements _HbUser {
                 other.registeredAt == registeredAt) &&
             (identical(other.isVerified, isVerified) ||
                 other.isVerified == isVerified) &&
+            (identical(other.newsletter, newsletter) ||
+                other.newsletter == newsletter) &&
+            (identical(
+                    other.pushNotificationsEnabled, pushNotificationsEnabled) ||
+                other.pushNotificationsEnabled == pushNotificationsEnabled) &&
             (identical(other.capabilities, capabilities) ||
                 other.capabilities == capabilities) &&
             const DeepCollectionEquality()
@@ -420,6 +459,8 @@ class _$HbUserImpl implements _HbUser {
       role,
       registeredAt,
       isVerified,
+      newsletter,
+      pushNotificationsEnabled,
       capabilities,
       const DeepCollectionEquality().hash(_interestsCategoryIds));
 
@@ -446,6 +487,8 @@ abstract class _HbUser implements HbUser {
       final UserRole role,
       final DateTime? registeredAt,
       final bool isVerified,
+      final bool newsletter,
+      final bool pushNotificationsEnabled,
       final UserCapabilities capabilities,
       final List<String>? interestsCategoryIds}) = _$HbUserImpl;
 
@@ -477,6 +520,10 @@ abstract class _HbUser implements HbUser {
   DateTime? get registeredAt;
   @override
   bool get isVerified;
+  @override
+  bool get newsletter;
+  @override
+  bool get pushNotificationsEnabled;
   @override
   UserCapabilities get capabilities;
   @override // Legacy fields for backwards compatibility

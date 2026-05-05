@@ -33,10 +33,13 @@ _$UserDtoImpl _$$UserDtoImplFromJson(Map<String, dynamic> json) =>
       bio: json['bio'] as String?,
       birthDate: json['birth_date'] as String?,
       membershipCity: json['membership_city'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
+      avatarUrl: _readAvatar(json, 'avatar') as String?,
       role: json['role'] as String,
       registeredAt: json['registered_at'] as String?,
       isVerified: json['is_verified'] as bool? ?? false,
+      newsletter: json['newsletter'] as bool? ?? false,
+      pushNotificationsEnabled:
+          json['push_notifications_enabled'] as bool? ?? false,
       capabilities: json['capabilities'] == null
           ? null
           : UserCapabilitiesDto.fromJson(
@@ -56,10 +59,12 @@ Map<String, dynamic> _$$UserDtoImplToJson(_$UserDtoImpl instance) =>
       'bio': instance.bio,
       'birth_date': instance.birthDate,
       'membership_city': instance.membershipCity,
-      'avatar_url': instance.avatarUrl,
+      'avatar': instance.avatarUrl,
       'role': instance.role,
       'registered_at': instance.registeredAt,
       'is_verified': instance.isVerified,
+      'newsletter': instance.newsletter,
+      'push_notifications_enabled': instance.pushNotificationsEnabled,
       'capabilities': instance.capabilities,
     };
 

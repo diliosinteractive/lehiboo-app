@@ -162,8 +162,8 @@ class __$$QuotaDtoImplCopyWithImpl<$Res>
 class _$QuotaDtoImpl extends _QuotaDto {
   const _$QuotaDtoImpl(
       {this.used = 0,
-      this.limit = 10,
-      this.remaining = 10,
+      this.limit = 3,
+      this.remaining = 3,
       @JsonKey(name: 'resets_at') this.resetsAt,
       this.period = 'daily'})
       : super._();

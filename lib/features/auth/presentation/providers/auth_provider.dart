@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
@@ -284,23 +286,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _checkAuthStatus();
   }
 
-  /// Update user data in state (used after profile update)
+  /// Update user data in state and persist editable fields to secure storage
+  /// (used after profile edits, avatar upload, settings toggles).
   void updateUser(dynamic updatedUser) {
     if (state.user == null) return;
 
+    HbUser? next;
     if (updatedUser is UserDto) {
       final mapped = AuthMapper.toUser(updatedUser);
       final currentUser = state.user!;
       // AuthMapper may default role to subscriber if the profile endpoint
       // doesn't return it — preserve the current role in that case.
-      state = state.copyWith(
-        user: mapped.copyWith(
-          role: mapped.role != UserRole.subscriber ? mapped.role : currentUser.role,
-        ),
+      next = mapped.copyWith(
+        role: mapped.role != UserRole.subscriber
+            ? mapped.role
+            : currentUser.role,
       );
     } else if (updatedUser is HbUser) {
-      state = state.copyWith(user: updatedUser);
+      next = updatedUser;
     }
+
+    if (next == null) return;
+
+    state = state.copyWith(user: next);
+
+    // Fire-and-forget: keep the in-memory update synchronous so the UI rebuilds
+    // immediately. Disk I/O failures are non-fatal — the next login or
+    // /auth/me refresh will reconcile the state.
+    unawaited(_authRepository.persistUser(next));
   }
 
   String _parseError(dynamic e) {
@@ -383,3 +396,10 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
 final currentUserProvider = Provider<HbUser?>((ref) {
   return ref.watch(authProvider).user;
 });
+
+/// True while a [GuestRestrictionDialog] is on screen and listening for
+/// auth changes. Authentication screens (register, OTP) check this flag
+/// to suppress their own post-auth `context.go('/')` so the dialog can
+/// pop itself and let the original gated action resume on the screen
+/// underneath.
+final guestGuardActiveProvider = StateProvider<bool>((ref) => false);

@@ -138,18 +138,10 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     }
   }
 
-  /// Affiche un toast "+X hibons gagnés" si le backend a crédité une récompense.
-  /// Appelé APRÈS le toast de confirmation standard pour que l'utilisateur
-  /// voie d'abord la validation de son action, puis la gratification.
-  void _showRewardToastIfAny(ToggleFavoriteResult? result) {
-    if (!mounted || result == null || !result.hasReward) return;
-    final awarded = result.hibonsAwarded!;
-    // Léger décalage pour ne pas superposer visuellement les deux toasts.
-    Future.delayed(const Duration(milliseconds: 450), () {
-      if (!mounted) return;
-      PetitBooToast.hibonsEarned(context, amount: awarded);
-    });
-  }
+  /// Plan 05 : le toast `+X Hibons` est désormais déclenché globalement par
+  /// `HibonsAnimationCoordinator` via l'enveloppe `hibons_update`. Ce hook
+  /// reste pour rétro-compat de la signature mais n'émet plus de toast.
+  void _showRewardToastIfAny(ToggleFavoriteResult? result) {}
 
   Future<void> _showListPicker() async {
     // Check guest guard

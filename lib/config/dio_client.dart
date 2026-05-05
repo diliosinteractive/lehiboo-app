@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../core/constants/app_constants.dart';
+import '../features/checkin/presentation/providers/active_organization_provider.dart';
+import '../features/gamification/data/interceptors/hibons_update_interceptor.dart';
 import 'env_config.dart';
 
 final dioProvider = Provider<Dio>((ref) {
@@ -55,6 +57,8 @@ class DioClient {
     // Add interceptors
     _dio.interceptors.addAll([
       JwtAuthInterceptor(SharedSecureStorage.instance),
+      OrganizationHeaderInterceptor(),
+      HibonsUpdateInterceptor(),
       if (kDebugMode)
         PrettyDioLogger(
           requestHeader: true,
@@ -66,6 +70,40 @@ class DioClient {
           maxWidth: 90,
         ),
     ]);
+  }
+}
+
+/// Injects `X-Organization-Id` on vendor-scoped requests.
+///
+/// Spec: docs/MOBILE_CHECKIN_SPEC.md §6 — every `/vendor/...` call needs the
+/// active organization UUID. We source it from the synchronous in-memory
+/// cache populated by `ActiveOrganizationNotifier` (Riverpod can't be
+/// awaited from a Dio interceptor).
+///
+/// Customer-facing routes are not touched. If the active org isn't set when
+/// a vendor route is called, the request goes out without the header — the
+/// backend will return 403 and the UI surfaces the picker. We deliberately
+/// don't block the request here so failures stay observable rather than
+/// being silently swallowed by the interceptor.
+class OrganizationHeaderInterceptor extends Interceptor {
+  static const _vendorPrefix = '/vendor/';
+
+  @override
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) {
+    if (options.path.startsWith(_vendorPrefix)) {
+      final orgUuid = ActiveOrganizationCache.uuid;
+      if (orgUuid != null && orgUuid.isNotEmpty) {
+        options.headers['X-Organization-Id'] = orgUuid;
+      } else if (kDebugMode) {
+        debugPrint(
+          '⚠️ OrganizationHeaderInterceptor: no active org for ${options.path}',
+        );
+      }
+    }
+    handler.next(options);
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/petit_boo/presentation/providers/engagement_provider.dart';
 import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
+import 'package:lehiboo/features/gamification/data/datasources/gamification_api_datasource.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
@@ -51,6 +52,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
       if (widget.categorySlug != null) {
         filterNotifier.addCategory(widget.categorySlug!);
+        _trackCategoryView(widget.categorySlug!);
       }
       if (widget.city != null) {
         final cityName =
@@ -80,6 +82,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Crédite l'user (20 H, 1×/catégorie/lifetime, cap 5/jour) à la 1ère
+  /// ouverture de la page. Best-effort — silencieux en cas d'échec.
+  ///
+  /// Plan 05 : toast et update wallet sont gérés globalement par
+  /// HibonsUpdateInterceptor (enveloppe `hibons_update` à la racine).
+  Future<void> _trackCategoryView(String slug) async {
+    final api = ref.read(gamificationApiDataSourceProvider);
+    await api.trackCategoryView(slug);
   }
 
   void _onScroll() {

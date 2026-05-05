@@ -11,6 +11,13 @@ final gamificationApiDataSourceProvider = Provider<GamificationApiDataSource>((r
   return GamificationApiDataSource(dio);
 });
 
+/// Levée quand un endpoint d'achat Hibons renvoie 404 (feature désactivée v1).
+class HibonsPurchaseDisabledException implements Exception {
+  const HibonsPurchaseDisabledException();
+  @override
+  String toString() => 'HibonsPurchaseDisabledException: feature disabled';
+}
+
 class GamificationApiDataSource {
   final Dio _dio;
 
@@ -21,6 +28,23 @@ class GamificationApiDataSource {
     final response = await _dio.get('/mobile/hibons/wallet');
     final payload = ApiResponseHandler.extractObject(response.data);
     return WalletResponseDto.fromJson(payload);
+  }
+
+  Future<BalanceResponseDto> getBalance() async {
+    debugPrint('🎮 GamificationAPI: GET /mobile/hibons/balance');
+    final response = await _dio.get('/mobile/hibons/balance');
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return BalanceResponseDto.fromJson(payload);
+  }
+
+  Future<List<ActionsCatalogEntryDto>> getActionsCatalog() async {
+    debugPrint('🎮 GamificationAPI: GET /mobile/hibons/actions-catalog');
+    final response = await _dio.get('/mobile/hibons/actions-catalog');
+    final list = ApiResponseHandler.extractList(response.data);
+    return list
+        .map((item) =>
+            ActionsCatalogEntryDto.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   Future<DailyClaimResponseDto> claimDailyReward() async {
@@ -48,8 +72,9 @@ class GamificationApiDataSource {
     return WheelSpinResponseDto.fromJson(payload);
   }
 
-  Future<List<TransactionDto>> getTransactions({
+  Future<TransactionsListResponseDto> getTransactions({
     String? type,
+    String? pillar,
     int? page,
     int? perPage,
   }) async {
@@ -57,6 +82,7 @@ class GamificationApiDataSource {
 
     final queryParams = <String, dynamic>{};
     if (type != null) queryParams['type'] = type;
+    if (pillar != null) queryParams['pillar'] = pillar;
     if (page != null) queryParams['page'] = page;
     if (perPage != null) queryParams['per_page'] = perPage;
 
@@ -66,33 +92,78 @@ class GamificationApiDataSource {
     );
 
     final list = ApiResponseHandler.extractList(response.data);
-    return list.map((item) => TransactionDto.fromJson(item as Map<String, dynamic>)).toList();
+    final items = list
+        .map((item) => TransactionDto.fromJson(item as Map<String, dynamic>))
+        .toList();
+
+    // Le `meta` est à la racine de la réponse — `extractList` ne l'expose pas.
+    final raw = response.data;
+    final metaRaw = raw is Map<String, dynamic> ? raw['meta'] : null;
+    final meta = metaRaw is Map<String, dynamic> ? metaRaw : const <String, dynamic>{};
+
+    final earningsByPillarRaw = meta['earnings_by_pillar'];
+    final earningsByPillar = earningsByPillarRaw is List
+        ? earningsByPillarRaw
+            .whereType<Map<String, dynamic>>()
+            .map(EarningsByPillarEntryDto.fromJson)
+            .toList()
+        : const <EarningsByPillarEntryDto>[];
+
+    return TransactionsListResponseDto(
+      items: items,
+      currentBalance: (meta['current_balance'] as num?)?.toInt() ?? 0,
+      lifetimeEarned: (meta['lifetime_earned'] as num?)?.toInt() ?? 0,
+      earningsByPillar: earningsByPillar,
+    );
   }
 
   Future<List<HibonPackageDto>> getPackages() async {
     debugPrint('🎮 GamificationAPI: GET /mobile/hibons/packages');
-    final response = await _dio.get('/mobile/hibons/packages');
-
-    final list = ApiResponseHandler.extractList(response.data);
-    return list.map((item) => HibonPackageDto.fromJson(item as Map<String, dynamic>)).toList();
+    try {
+      final response = await _dio.get('/mobile/hibons/packages');
+      final list = ApiResponseHandler.extractList(response.data);
+      return list.map((item) => HibonPackageDto.fromJson(item as Map<String, dynamic>)).toList();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        debugPrint('🎮 GamificationAPI: hibons purchase disabled (404)');
+        return const [];
+      }
+      rethrow;
+    }
   }
 
   Future<PurchaseResponseDto> createPurchase({required String packageId}) async {
     debugPrint('🎮 GamificationAPI: POST /mobile/hibons/purchase');
-    final response = await _dio.post(
-      '/mobile/hibons/purchase',
-      data: {'package_id': packageId},
-    );
-    final payload = ApiResponseHandler.extractObject(response.data);
-    return PurchaseResponseDto.fromJson(payload);
+    try {
+      final response = await _dio.post(
+        '/mobile/hibons/purchase',
+        data: {'package_id': packageId},
+      );
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return PurchaseResponseDto.fromJson(payload);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        debugPrint('🎮 GamificationAPI: hibons purchase disabled (404)');
+        throw const HibonsPurchaseDisabledException();
+      }
+      rethrow;
+    }
   }
 
   Future<void> confirmPurchase({required String paymentIntentId}) async {
     debugPrint('🎮 GamificationAPI: POST /mobile/hibons/purchase/confirm');
-    await _dio.post(
-      '/mobile/hibons/purchase/confirm',
-      data: {'payment_intent_id': paymentIntentId},
-    );
+    try {
+      await _dio.post(
+        '/mobile/hibons/purchase/confirm',
+        data: {'payment_intent_id': paymentIntentId},
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        debugPrint('🎮 GamificationAPI: hibons purchase disabled (404)');
+        throw const HibonsPurchaseDisabledException();
+      }
+      rethrow;
+    }
   }
 
   Future<void> unlockChatMessages() async {
@@ -121,6 +192,58 @@ class GamificationApiDataSource {
       return list.map((item) => ChallengeDto.fromJson(item as Map<String, dynamic>)).toList();
     } on ApiFormatException {
       return [];
+    }
+  }
+
+  /// Heartbeat session : crédite l'user après 3 min en foreground (1×/jour).
+  /// Tolère 422 (too_short / already_today) en renvoyant `awarded: false`.
+  Future<HibonsRewardResponseDto> sendSessionHeartbeat(DateTime sessionStartedAt) async {
+    debugPrint('🎮 GamificationAPI: POST /mobile/hibons/session-heartbeat');
+    try {
+      final response = await _dio.post(
+        '/mobile/hibons/session-heartbeat',
+        data: {'session_started_at': sessionStartedAt.toUtc().toIso8601String()},
+      );
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return HibonsRewardResponseDto.fromJson(payload);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        final raw = e.response?.data;
+        final payload = raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>
+            ? raw['data'] as Map<String, dynamic>
+            : <String, dynamic>{};
+        return HibonsRewardResponseDto.fromJson(payload);
+      }
+      rethrow;
+    }
+  }
+
+  /// Track-view sur une catégorie. Crédite 20 H à la 1ère exploration (cap 5/jour).
+  Future<HibonsRewardResponseDto> trackCategoryView(String slug) async {
+    debugPrint('🎮 GamificationAPI: POST /categories/$slug/track-view');
+    try {
+      final response = await _dio.post('/categories/$slug/track-view');
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return HibonsRewardResponseDto.fromJson(payload);
+    } on DioException {
+      // Tolérer silencieusement (analytics best-effort)
+      return const HibonsRewardResponseDto();
+    }
+  }
+
+  /// Track-share sur un event. Crédite 10 H par event (cap 2/sem).
+  /// channel ∈ {whatsapp, facebook, twitter, native, email, link, other}.
+  Future<HibonsRewardResponseDto> trackEventShare(String slug, String channel) async {
+    debugPrint('🎮 GamificationAPI: POST /events/$slug/track-share (channel: $channel)');
+    try {
+      final response = await _dio.post(
+        '/events/$slug/track-share',
+        data: {'channel': channel},
+      );
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return HibonsRewardResponseDto.fromJson(payload);
+    } on DioException {
+      return const HibonsRewardResponseDto();
     }
   }
 }

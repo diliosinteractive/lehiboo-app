@@ -8,9 +8,12 @@ part of 'membership_dto.dart';
 
 _$MembershipDtoImpl _$$MembershipDtoImplFromJson(Map<String, dynamic> json) =>
     _$MembershipDtoImpl(
-      id: _int(json['id']),
-      status: _membershipStatus(json['status']),
-      statusLabel: _string(json['status_label']),
+      id: json['id'] == null ? 0 : _int(json['id']),
+      status: json['status'] == null
+          ? MembershipStatus.active
+          : _membershipStatus(json['status']),
+      statusLabel:
+          json['status_label'] == null ? '' : _string(json['status_label']),
       organization: json['organization'] == null
           ? null
           : OrganizationSummaryDto.fromJson(
@@ -19,6 +22,8 @@ _$MembershipDtoImpl _$$MembershipDtoImplFromJson(Map<String, dynamic> json) =>
       approvedAt: _stringOrNull(json['approved_at']),
       rejectedAt: _stringOrNull(json['rejected_at']),
       createdAt: _stringOrNull(json['created_at']),
+      role: _membershipRoleOrNull(json['role']),
+      isActive: _boolOrNull(json['is_active']),
     );
 
 Map<String, dynamic> _$$MembershipDtoImplToJson(_$MembershipDtoImpl instance) =>
@@ -31,12 +36,21 @@ Map<String, dynamic> _$$MembershipDtoImplToJson(_$MembershipDtoImpl instance) =>
       'approved_at': instance.approvedAt,
       'rejected_at': instance.rejectedAt,
       'created_at': instance.createdAt,
+      'role': _$MembershipRoleEnumMap[instance.role],
+      'is_active': instance.isActive,
     };
 
 const _$MembershipStatusEnumMap = {
   MembershipStatus.pending: 'pending',
   MembershipStatus.active: 'active',
   MembershipStatus.rejected: 'rejected',
+};
+
+const _$MembershipRoleEnumMap = {
+  MembershipRole.owner: 'owner',
+  MembershipRole.staff: 'staff',
+  MembershipRole.admin: 'admin',
+  MembershipRole.viewer: 'viewer',
 };
 
 _$OrganizationSummaryDtoImpl _$$OrganizationSummaryDtoImplFromJson(
@@ -46,6 +60,7 @@ _$OrganizationSummaryDtoImpl _$$OrganizationSummaryDtoImplFromJson(
       uuid: _stringOrNull(json['uuid']),
       slug: _stringOrNull(json['slug']),
       name: json['name'] == null ? '' : _string(json['name']),
+      organizationName: _stringOrNull(json['organization_name']),
       logoUrl: _stringOrNull(json['logo_url']),
       logo: _stringOrNull(json['logo']),
       coverUrl: _stringOrNull(json['cover_url']),
@@ -64,6 +79,7 @@ Map<String, dynamic> _$$OrganizationSummaryDtoImplToJson(
       'uuid': instance.uuid,
       'slug': instance.slug,
       'name': instance.name,
+      'organization_name': instance.organizationName,
       'logo_url': instance.logoUrl,
       'logo': instance.logo,
       'cover_url': instance.coverUrl,

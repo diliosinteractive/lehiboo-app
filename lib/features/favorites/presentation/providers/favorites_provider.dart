@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
-import 'package:lehiboo/features/gamification/presentation/providers/gamification_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/toggle_favorite_result.dart';
 import '../../domain/repositories/favorites_repository.dart';
@@ -79,7 +78,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     }
 
     // Optimistic update
-    final currentList = state.value ?? [];
+    final currentList = state.valueOrNull ?? [];
     final isFav = isFavorite(event.id);
     final wasAdding = !isFav;
 
@@ -107,8 +106,9 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         }
       }
 
-      // Sync du wallet si le backend a crédité une récompense
-      _syncWalletFromReward(result);
+      // Plan 05 : l'enveloppe `hibons_update` à la racine de la réponse est
+      // gérée globalement par HibonsUpdateInterceptor, qui met à jour le
+      // wallet et déclenche le toast +X Hibons. Pas de sync manuel ici.
 
       // Reload to ensure sync with server and get complete data
       await loadFavorites(listId: _currentListId);
@@ -133,15 +133,6 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
       return null;
     }
-  }
-
-  /// Met à jour le solde hibons local à partir de la réponse backend.
-  /// No-op si pas de récompense créditée (quota atteint / event déjà récompensé).
-  void _syncWalletFromReward(ToggleFavoriteResult result) {
-    if (!result.hasReward) return;
-    final newBalance = result.newHibonsBalance;
-    if (newBalance == null) return;
-    _ref.read(gamificationNotifierProvider.notifier).setBalance(newBalance);
   }
 
   /// Ajouter à une liste spécifique (pour les événements déjà favoris).
@@ -176,8 +167,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       // Mettre à jour les compteurs
       _ref.read(favoriteListsProvider.notifier).incrementListCount(listId);
 
-      // Sync du wallet si le backend a crédité une récompense
-      _syncWalletFromReward(result);
+      // Plan 05 : la mise à jour du wallet est faite via HibonsUpdateInterceptor.
 
       // Recharger
       await loadFavorites(listId: _currentListId);
@@ -228,13 +218,13 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     if (_favoriteIds.contains(eventId)) return true;
 
     // Fallback to list check (handles race conditions during loading)
-    return state.value?.any((e) => e.id == eventId) ?? false;
+    return state.valueOrNull?.any((e) => e.id == eventId) ?? false;
   }
 
   /// Check if an event is favorited by numeric ID
   bool isFavoriteById(int eventId) {
     return isFavorite(eventId.toString()) ||
-           state.value?.any((e) => e.additionalInfo?['internal_id'] == eventId) == true;
+           state.valueOrNull?.any((e) => e.additionalInfo?['internal_id'] == eventId) == true;
   }
 
   /// Obtenir l'ID de liste actuel d'un événement.
@@ -245,7 +235,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   ///
   /// Retourne `null` si l'event n'est pas favori OU est dans "Non classé".
   String? getEventListId(String eventId) {
-    final events = state.value;
+    final events = state.valueOrNull;
     if (events == null) return null;
     for (final event in events) {
       if (event.id == eventId) {

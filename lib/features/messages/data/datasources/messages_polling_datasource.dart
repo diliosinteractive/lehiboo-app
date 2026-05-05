@@ -10,7 +10,7 @@ class MessagesPollingDatasource {
     return _api.getConversation(uuid);
   }
 
-  // Returns total unread count: vendor conversations + support conversations
+  // Returns total unread count: subscriber conversations + support conversations
   Future<int> getTotalUnreadCount() async {
     final results = await Future.wait([
       _api.getUnreadCount(),
@@ -18,6 +18,10 @@ class MessagesPollingDatasource {
     ]);
     return results[0] + results[1];
   }
+
+  Future<int> getVendorUnreadCount() => _api.getVendorUnreadCount();
+
+  Future<int> getAdminUnreadCount() => _api.getAdminUnreadCount();
 }
 
 final messagesPollingDatasourceProvider = Provider<MessagesPollingDatasource>((ref) {

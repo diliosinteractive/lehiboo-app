@@ -1,9 +1,13 @@
 import 'dart:math';
 
+import 'package:lehiboo/features/gamification/data/models/hibons_action_entry.dart';
+import 'package:lehiboo/features/gamification/data/models/hibons_balance.dart';
+import 'package:lehiboo/features/gamification/data/models/hibons_rank.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_wallet.dart';
 import 'package:lehiboo/features/gamification/data/models/hibon_transaction.dart';
 import 'package:lehiboo/features/gamification/data/models/daily_reward.dart';
 import 'package:lehiboo/features/gamification/data/models/gamification_items.dart';
+import 'package:lehiboo/features/gamification/data/models/transactions_list_result.dart';
 import 'package:lehiboo/features/gamification/data/models/wheel_models.dart';
 import 'package:lehiboo/features/gamification/domain/repositories/gamification_repository.dart';
 
@@ -11,14 +15,18 @@ class MockGamificationRepository implements GamificationRepository {
   // --- Simulating Database State ---
   HibonsWallet _wallet = HibonsWallet(
     balance: 1530,
-    xp: 350,
-    level: 3,
-    rank: 'explorateur',
-    rankLabel: 'Petit Boo Aventurier',
-    rankIcon: '🦉',
+    lifetimeEarned: 1430,
+    rank: 'aventurier',
+    rankEnum: HibonsRank.aventurier,
+    rankLabel: 'Aventurier',
+    rankIcon: '🗺️',
+    nextRank: HibonsRank.legende,
+    nextRankLabel: 'Légende',
+    hibonsToNextRank: 3570,
+    progressToNextRank: 28,
+    petitBooBonus: 2,
     currentStreak: 4,
     maxStreak: 7,
-    progressToNextLevel: 50,
     canClaimDaily: true,
     canSpinWheel: true,
     chatQuota: ChatQuota(
@@ -96,9 +104,35 @@ class MockGamificationRepository implements GamificationRepository {
   }
 
   @override
-  Future<List<HibonTransaction>> getTransactions() async {
+  Future<TransactionsListResult> getTransactions({
+    String? type,
+    String? pillar,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    return _transactions;
+    return TransactionsListResult(
+      items: _transactions,
+      currentBalance: _wallet.balance,
+      lifetimeEarned: _wallet.lifetimeEarned,
+      earningsByPillar: const [],
+    );
+  }
+
+  @override
+  Future<HibonsBalance> getBalance() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return HibonsBalance(
+      balance: _wallet.balance,
+      lifetimeEarned: _wallet.lifetimeEarned,
+      rank: _wallet.rank,
+      rankLabel: _wallet.rankLabel,
+      rankIcon: _wallet.rankIcon,
+    );
+  }
+
+  @override
+  Future<List<HibonsActionEntry>> getActionsCatalog() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return const [];
   }
 
   @override

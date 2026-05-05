@@ -44,6 +44,17 @@ import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 // Push Notifications
 import 'features/notifications/presentation/providers/push_notification_provider.dart';
 
+// Messages realtime (Pusher WebSocket — eagerly initialised at app boot)
+import 'features/messages/presentation/providers/messages_realtime_provider.dart';
+
+// Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
+import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
+import 'features/gamification/application/hibons_service.dart';
+import 'features/gamification/presentation/widgets/hibons_animation_coordinator.dart';
+
+// Vendor check-in (rehydrate active org + clear on logout)
+import 'features/checkin/presentation/providers/active_organization_provider.dart';
+
 // Configuration flag - set to false to use fake data
 const bool useRealApi = true;
 
@@ -107,14 +118,20 @@ void main() async {
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
 
+  // Container Riverpod explicite pour permettre à HibonsService (singleton)
+  // de lire l'état depuis l'intercepteur Dio (qui n'a pas de Ref).
+  final container = ProviderContainer(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      ...(useRealApi ? _getRealApiOverrides() : _getFakeDataOverrides()),
+    ],
+  );
+
+  HibonsService.instance.attach(container);
+
   runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        ...(useRealApi
-            ? _getRealApiOverrides()
-            : _getFakeDataOverrides()),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const LeHibooApp(),
     ),
   );
@@ -190,6 +207,21 @@ class LeHibooApp extends ConsumerWidget {
     // The provider will auto-initialize when user logs in and unregister on logout
     ref.watch(pushNotificationProvider);
 
+    // Eagerly initialize the Pusher WebSocket so it connects as soon as the
+    // user authenticates — not lazily when they navigate to the messages screen.
+    // This mirrors the web frontend which subscribes globally at app boot.
+    ref.watch(messagesRealtimeProvider);
+
+    // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après
+    // 3 min en foreground si l'user est authentifié.
+    ref.watch(sessionHeartbeatProvider);
+
+    // Vendor check-in: keep the active-org notifier alive for the whole app
+    // session so it can rehydrate from secure storage on launch and clear
+    // itself when the user logs out (its ref.listen on authProvider only
+    // fires while the provider is observed).
+    ref.watch(activeOrganizationProvider);
+
     return MaterialApp.router(
       title: 'Le Hiboo',
       debugShowCheckedModeBanner: false,
@@ -197,6 +229,12 @@ class LeHibooApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
       routerConfig: router,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      // Le coordinateur écoute HibonsService et déclenche les SnackBars +X Hibons
+      // et l'overlay rank-up via les clés globales (rootNavigatorKey,
+      // scaffoldMessengerKey) — son BuildContext est au-dessus du Navigator.
+      builder: (context, child) =>
+          HibonsAnimationCoordinator(child: child ?? const SizedBox()),
     );
   }
 }

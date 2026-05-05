@@ -87,6 +87,11 @@ abstract class AuthRepository {
 
   Future<HbUser?> getCurrentUser();
 
+  /// Persist the user's editable fields to secure storage and refresh the
+  /// in-memory cache. Use this after profile edits, avatar upload, or any
+  /// other state mutation that should survive a cold start.
+  Future<void> persistUser(HbUser user);
+
   Future<bool> isAuthenticated();
 
   // ============================================================

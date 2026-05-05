@@ -8,12 +8,27 @@ import '../providers/gamification_provider.dart';
 import '../../data/models/hibon_transaction.dart';
 import '../widgets/hibon_counter_widget.dart';
 
-class HibonShopScreen extends ConsumerWidget {
+const _pillarFilters = <Map<String, String>>[
+  {'key': 'onboarding', 'label': 'Onboarding'},
+  {'key': 'engagement', 'label': 'Engagement'},
+  {'key': 'discovery', 'label': 'Découverte'},
+  {'key': 'participation', 'label': 'Participation'},
+  {'key': 'community', 'label': 'Communauté'},
+];
+
+class HibonShopScreen extends ConsumerStatefulWidget {
   const HibonShopScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final transactionsAsync = ref.watch(hibonTransactionsProvider);
+  ConsumerState<HibonShopScreen> createState() => _HibonShopScreenState();
+}
+
+class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
+  String? _pillarFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final transactionsAsync = ref.watch(hibonTransactionsProvider(_pillarFilter));
     final walletAsync = ref.watch(gamificationNotifierProvider);
 
     return Scaffold(
@@ -93,11 +108,11 @@ class HibonShopScreen extends ConsumerWidget {
                     context, 
                     ref,
                     title: 'Multiplicateur x1.5 (1h)',
-                    description: 'Gagnez plus d\'XP pendant 1h',
+                    description: 'Gagnez plus de Hibons pendant 1h',
                     price: 100,
                     icon: Icons.bolt,
                     color: Colors.amber,
-                    onTap: () => _buyItem(context, ref, 'Multiplicateur XP', 100),
+                    onTap: () => _buyItem(context, ref, 'Multiplicateur Hibons', 100),
                   ),
                   
                   const SizedBox(height: 24),
@@ -118,34 +133,89 @@ class HibonShopScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                   const Text('Historique', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  transactionsAsync.when(
-                    data: (transactions) => ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: min(transactions.length, 5), // Show last 5
-                      itemBuilder: (context, index) {
-                        final tx = transactions[index];
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: tx.type == TransactionType.earn ? Colors.green.shade100 : Colors.red.shade100,
-                            child: Icon(
-                              tx.type == TransactionType.earn ? Icons.arrow_downward : Icons.arrow_upward,
-                              color: tx.type == TransactionType.earn ? Colors.green : Colors.red,
-                              size: 20,
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        FilterChip(
+                          label: const Text('Tous'),
+                          selected: _pillarFilter == null,
+                          onSelected: (_) => setState(() => _pillarFilter = null),
+                        ),
+                        const SizedBox(width: 8),
+                        for (final p in _pillarFilters) ...[
+                          FilterChip(
+                            label: Text(p['label']!),
+                            selected: _pillarFilter == p['key'],
+                            onSelected: (selected) => setState(
+                              () => _pillarFilter = selected ? p['key'] : null,
                             ),
                           ),
-                          title: Text(tx.description),
-                          subtitle: Text(DateFormat('dd/MM/yyyy HH:mm').format(tx.timestamp)),
-                          trailing: Text(
-                            '${tx.type == TransactionType.earn ? '+' : '-'}${tx.amount}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: tx.type == TransactionType.earn ? Colors.green : Colors.red,
-                            ),
-                          ),
-                        );
-                      },
+                          const SizedBox(width: 8),
+                        ],
+                      ],
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  transactionsAsync.when(
+                    data: (result) {
+                      final txs = result.items;
+                      if (txs.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(child: Text('Aucune transaction')),
+                        );
+                      }
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: min(txs.length, 5),
+                        itemBuilder: (context, index) {
+                          final tx = txs[index];
+                          final pillarColor = _parsePillarColor(tx.pillarColor);
+                          final isEarn = tx.type == TransactionType.earn;
+                          return ListTile(
+                            leading: tx.context?.imageUrl != null
+                                ? CircleAvatar(
+                                    backgroundImage:
+                                        NetworkImage(tx.context!.imageUrl!),
+                                  )
+                                : CircleAvatar(
+                                    backgroundColor: pillarColor != null
+                                        ? pillarColor.withValues(alpha: 0.15)
+                                        : (isEarn
+                                            ? Colors.green.shade100
+                                            : Colors.red.shade100),
+                                    child: Icon(
+                                      isEarn
+                                          ? Icons.arrow_downward
+                                          : Icons.arrow_upward,
+                                      color: pillarColor ??
+                                          (isEarn ? Colors.green : Colors.red),
+                                      size: 20,
+                                    ),
+                                  ),
+                            title: Text(tx.title ?? tx.description),
+                            subtitle: Text(
+                              tx.subtitle != null
+                                  ? '${tx.subtitle} • ${DateFormat('dd/MM HH:mm').format(tx.timestamp)}'
+                                  : DateFormat('dd/MM/yyyy HH:mm')
+                                      .format(tx.timestamp),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: Text(
+                              tx.formattedAmount ??
+                                  '${isEarn ? '+' : '-'}${tx.amount}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isEarn ? Colors.green : Colors.red,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
                     loading: () => const Center(child: CircularProgressIndicator()),
                     error: (e, s) => Text('Erreur: $e'),
                   ),
@@ -183,6 +253,15 @@ class HibonShopScreen extends ConsumerWidget {
     );
   }
 
+  Color? _parsePillarColor(String? hex) {
+    if (hex == null) return null;
+    final cleaned = hex.replaceAll('#', '');
+    final value = int.tryParse(cleaned, radix: 16);
+    if (value == null) return null;
+    if (cleaned.length == 6) return Color(0xFF000000 | value);
+    return Color(value);
+  }
+
   void _buyItem(BuildContext context, WidgetRef ref, String itemName, int price) async {
     // Check balance first (Optimistic check)
     final wallet = ref.read(gamificationNotifierProvider).value;
@@ -202,7 +281,7 @@ class HibonShopScreen extends ConsumerWidget {
       }
       
       ref.invalidate(gamificationNotifierProvider);
-      ref.invalidate(hibonTransactionsProvider); // Refresh history
+      ref.invalidate(hibonTransactionsProvider); // Refresh all family combos
       
       if (context.mounted) {
          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Achat effectué : $itemName')));

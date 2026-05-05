@@ -2,142 +2,473 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/conversation.dart';
+import '../../domain/entities/message.dart';
 
 class ConversationTile extends StatelessWidget {
   final Conversation conversation;
   final VoidCallback onTap;
+  final bool showLehibooAvatar;
+  final VoidCallback? onReport;
 
   const ConversationTile({
     super.key,
     required this.conversation,
     required this.onTap,
+    this.showLehibooAvatar = false,
+    this.onReport,
   });
+
+  static const _primaryColor = Color(0xFFFF601F);
 
   @override
   Widget build(BuildContext context) {
-    final org = conversation.organization;
     final lastMsg = conversation.latestMessage;
-    final colorScheme = Theme.of(context).colorScheme;
-    const primaryColor = Color(0xFFFF601F);
+    final hasUnread = conversation.unreadCount > 0;
+    final previewText = _buildPreviewText(lastMsg);
+    final showAttachIcon = lastMsg != null &&
+        lastMsg.content == null &&
+        !lastMsg.isDeleted &&
+        lastMsg.attachments.isNotEmpty;
+    final displayName = _displayName();
+    final hasNameEntity = conversation.participant != null ||
+        conversation.organization != null ||
+        conversation.partnerOrganization != null;
 
-    return ListTile(
+    return InkWell(
       onTap: onTap,
-      leading: _buildAvatar(org),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              org?.companyName ?? conversation.subject,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: hasUnread ? Colors.orange.shade50 : null,
+          border: hasUnread
+              ? Border(
+                  left: BorderSide(color: Colors.orange.shade200, width: 3))
+              : null,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Avatar with unread dot
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _buildAvatar(),
+                if (hasUnread)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 11,
+                      height: 11,
+                      decoration: BoxDecoration(
+                        color: _primaryColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ),
-          if (conversation.unreadCount > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: primaryColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${conversation.unreadCount}',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Row 1: name + status | timestamp + report
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Left: name + status badge tight together
+                      Expanded(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                displayName,
+                                style: TextStyle(
+                                  fontWeight: hasUnread
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  fontSize: 15,
+                                  color: Colors.black87,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            if (conversation.isSignalement) ...[
+                              _signalementBadge(),
+                              const SizedBox(width: 4),
+                            ],
+                            _buildStatusBadge(),
+                          ],
+                        ),
+                      ),
+                      // Right: timestamp + report widget (far end)
+                      if (conversation.lastMessageAt != null) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatTime(conversation.lastMessageAt!),
+                          style: TextStyle(
+                              fontSize: 11, color: Colors.grey.shade500),
+                        ),
+                      ],
+                      if (onReport != null ||
+                          conversation.userHasReported) ...[
+                        const SizedBox(width: 6),
+                        _buildReportWidget(),
+                      ],
+                    ],
+                  ),
+                  // Row 2: subject subtitle (when there's a name entity)
+                  if (hasNameEntity) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      conversation.subject,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                        fontWeight:
+                            hasUnread ? FontWeight.w500 : FontWeight.normal,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  // Row 3: preview + unread counter
+                  if (previewText != null) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        if (showAttachIcon)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 3),
+                            child: Icon(Icons.attach_file,
+                                size: 12, color: Colors.grey.shade500),
+                          ),
+                        Expanded(
+                          child: Text(
+                            previewText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: hasUnread
+                                  ? Colors.grey.shade700
+                                  : Colors.grey.shade500,
+                              fontWeight: hasUnread
+                                  ? FontWeight.w500
+                                  : FontWeight.normal,
+                              fontStyle: lastMsg?.isDeleted == true
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
+                            ),
+                          ),
+                        ),
+                        if (hasUnread) ...[
+                          const SizedBox(width: 8),
+                          _buildUnreadBadge(),
+                        ],
+                      ],
+                    ),
+                  ],
+                  // Row 4: event chip
+                  if (conversation.event != null) ...[
+                    const SizedBox(height: 5),
+                    _buildEventChip(),
+                  ],
+                ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (lastMsg != null)
-            Text(
-              lastMsg.isDeleted
-                  ? 'Message supprimé'
-                  : (lastMsg.content ?? ''),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: conversation.unreadCount > 0
-                    ? colorScheme.onSurface
-                    : colorScheme.onSurface.withValues(alpha: 0.6),
-                fontWeight: conversation.unreadCount > 0
-                    ? FontWeight.w500
-                    : FontWeight.normal,
-              ),
-            ),
-          const SizedBox(height: 4),
-          _buildChips(context),
-        ],
-      ),
-      trailing: conversation.lastMessageAt != null
-          ? Text(
-              _formatTime(conversation.lastMessageAt!),
-              style: TextStyle(
-                  fontSize: 11, color: colorScheme.onSurface.withValues(alpha: 0.5)),
-            )
-          : null,
     );
   }
 
-  Widget _buildAvatar(ConversationOrganization? org) {
+  String _displayName() {
+    if (showLehibooAvatar) return 'Support LeHiboo';
+    switch (conversation.conversationType) {
+      case 'organization_organization':
+        return conversation.partnerOrganization?.companyName ??
+            conversation.subject;
+      case 'vendor_admin':
+        if (conversation.organization != null) {
+          return conversation.organization!.companyName;
+        }
+        return 'Support LeHiboo';
+      case 'participant_vendor':
+      case 'user_support':
+        if (conversation.participant != null) {
+          return conversation.participant!.name;
+        }
+        return conversation.organization?.companyName ?? conversation.subject;
+      default:
+        return conversation.organization?.companyName ?? conversation.subject;
+    }
+  }
+
+  Widget _buildAvatar() {
+    if (showLehibooAvatar) return _lehibooAvatar();
+    switch (conversation.conversationType) {
+      case 'organization_organization':
+        return _orgAvatar(conversation.partnerOrganization);
+      case 'vendor_admin':
+        if (conversation.organization != null) {
+          return _orgAvatar(conversation.organization);
+        }
+        return _lehibooAvatar();
+      case 'participant_vendor':
+      case 'user_support':
+        if (conversation.participant != null) {
+          return _participantAvatar(conversation.participant!);
+        }
+        return _orgAvatar(conversation.organization);
+      default:
+        return _orgAvatar(conversation.organization);
+    }
+  }
+
+  Widget _orgAvatar(ConversationOrganization? org) {
     final url = org?.logoUrl ?? org?.avatarUrl;
     if (url != null && url.isNotEmpty) {
       return CircleAvatar(
         radius: 24,
+        backgroundColor: Colors.grey.shade100,
         backgroundImage: CachedNetworkImageProvider(url),
       );
     }
-    final initials = org != null
-        ? org.companyName.isNotEmpty
-            ? org.companyName[0].toUpperCase()
-            : '?'
-        : 'S'; // S for Support
+    final initial = org != null && org.companyName.isNotEmpty
+        ? org.companyName[0].toUpperCase()
+        : 'S';
     return CircleAvatar(
       radius: 24,
-      backgroundColor: const Color(0xFFFF601F),
-      child: Text(initials,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold)),
+      backgroundColor: _primaryColor,
+      child: Text(
+        initial,
+        style: const TextStyle(
+            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+      ),
     );
   }
 
-  Widget _buildChips(BuildContext context) {
-    final chips = <Widget>[];
-    if (conversation.status == 'closed') {
-      chips.add(_chip('Fermé', Colors.grey));
+  Widget _participantAvatar(ConversationParticipant participant) {
+    final url = participant.avatarUrl;
+    if (url != null && url.isNotEmpty) {
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.grey.shade100,
+        backgroundImage: CachedNetworkImageProvider(url),
+      );
     }
-    if (conversation.isSignalement) {
-      chips.add(_chip('Signalement', Colors.red));
-    }
-    if (conversation.event != null) {
-      chips.add(_chip(conversation.event!.title, const Color(0xFFFF601F),
-          isOutlined: true));
-    }
-    if (chips.isEmpty) return const SizedBox.shrink();
-    return Wrap(spacing: 4, children: chips);
+    final initial = participant.name.isNotEmpty
+        ? participant.name[0].toUpperCase()
+        : '?';
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: _primaryColor,
+      child: Text(
+        initial,
+        style: const TextStyle(
+            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+      ),
+    );
   }
 
-  Widget _chip(String label, Color color, {bool isOutlined = false}) {
+  Widget _lehibooAvatar() {
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: _primaryColor.withValues(alpha: 0.12),
+      child: const Icon(Icons.support_agent, color: _primaryColor, size: 24),
+    );
+  }
+
+  Widget _buildReportWidget() {
+    if (conversation.userHasReported) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade100,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.flag, size: 10, color: Colors.orange.shade700),
+            const SizedBox(width: 3),
+            Text(
+              'Signalé',
+              style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.orange.shade700,
+                  fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    }
+    return GestureDetector(
+      onTap: onReport,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade400),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.flag_outlined, size: 10, color: Colors.grey.shade600),
+            const SizedBox(width: 3),
+            Text(
+              'Signaler',
+              style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _signalementBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.red.shade100,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        'Signalement',
+        style: TextStyle(
+            fontSize: 9, color: Colors.red.shade700, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    final isClosed = conversation.status == 'closed';
+    final hasUnread = conversation.unreadCount > 0;
+
+    if (isClosed) {
+      return _statusPill(
+        label: 'Fermé',
+        icon: Icons.lock_outline,
+        bg: Colors.grey.shade100,
+        fg: Colors.grey.shade600,
+      );
+    }
+    if (hasUnread) {
+      return _statusPill(
+        label: 'En attente',
+        bg: Colors.orange.shade100,
+        fg: Colors.orange.shade700,
+      );
+    }
+    return _statusPill(
+      label: 'Ouvert',
+      bg: Colors.green.shade100,
+      fg: Colors.green.shade700,
+    );
+  }
+
+  Widget _statusPill({
+    required String label,
+    required Color bg,
+    required Color fg,
+    IconData? icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 10, color: fg),
+            const SizedBox(width: 3),
+          ],
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10, color: fg, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnreadBadge() {
+    final count = conversation.unreadCount;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: isOutlined ? Colors.transparent : color.withValues(alpha: 0.15),
-        border: isOutlined ? Border.all(color: color, width: 1) : null,
+          color: _primaryColor, borderRadius: BorderRadius.circular(10)),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: const TextStyle(
+            color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildEventChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        border: Border.all(color: _primaryColor.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.calendar_today_outlined,
+              size: 10, color: _primaryColor),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              conversation.event!.title,
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: _primaryColor,
+                  fontWeight: FontWeight.w500),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  String? _buildPreviewText(Message? latest) {
+    if (latest == null) return null;
+    if (latest.isDeleted) return 'Message supprimé';
+    if (latest.content != null) return latest.content;
+
+    final attachments = latest.attachments;
+    if (attachments.isEmpty) return null;
+
+    final imageCount = attachments.where((a) => a.isImage).length;
+    final fileCount = attachments.length - imageCount;
+
+    if (fileCount == 0) {
+      return imageCount == 1 ? 'Une image envoyée' : '$imageCount images envoyées';
+    }
+    if (imageCount == 0) {
+      return fileCount == 1 ? 'Un fichier envoyé' : '$fileCount fichiers envoyés';
+    }
+    return '${attachments.length} pièces jointes';
   }
 
   String _formatTime(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return "À l'instant";
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}j';

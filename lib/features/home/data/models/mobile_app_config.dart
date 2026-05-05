@@ -9,6 +9,7 @@ class MobileAppConfig with _$MobileAppConfig {
     required HeroConfig hero,
     required AdsConfig ads,
     required TextsConfig texts,
+    @Default(MediaConfig()) MediaConfig media,
   }) = _MobileAppConfig;
 
   factory MobileAppConfig.fromJson(Map<String, dynamic> json) =>
@@ -34,7 +35,20 @@ class MobileAppConfig with _$MobileAppConfig {
           citiesSectionTitle: 'Événements par ville',
           exploreButtonText: 'Explorer les activités',
         ),
+        media: MediaConfig(),
       );
+}
+
+@freezed
+class MediaConfig with _$MediaConfig {
+  const factory MediaConfig({
+    @JsonKey(name: 'story_video_max_seconds')
+    @Default(30)
+    int storyVideoMaxSeconds,
+  }) = _MediaConfig;
+
+  factory MediaConfig.fromJson(Map<String, dynamic> json) =>
+      _$MediaConfigFromJson(json);
 }
 
 @freezed

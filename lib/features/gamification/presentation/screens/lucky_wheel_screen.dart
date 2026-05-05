@@ -61,22 +61,23 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
         return;
       }
 
-      // Calcul de l'angle de destination basé sur prizeIndex
+      // Calcul de l'angle de destination basé sur prizeIndex.
+      //
+      // Le painter dessine le segment i de `-π/2 + i*segmentAngle` à
+      // `-π/2 + (i+1)*segmentAngle`. Son centre est à `-π/2 + prizeAngle`
+      // où `prizeAngle = i*segmentAngle + segmentAngle/2`.
+      //
+      // Le pointeur est à -π/2 (en haut). On veut que le centre du segment
+      // gagnant atterrisse sous le pointeur après rotation R :
+      //   (-π/2 + prizeAngle) + R ≡ -π/2 (mod 2π)
+      //   R ≡ -prizeAngle (mod 2π)
       final prizeIndex = result.prizeIndex;
       final numPrizes = config.prizes.length;
       final segmentAngle = (2 * pi) / numPrizes;
-
-      // L'angle du centre du segment gagnant (depuis la position 0 = droite)
       final prizeAngle = prizeIndex * segmentAngle + segmentAngle / 2;
 
-      // Le pointeur est en HAUT, donc à -π/2 (ou 270°)
-      // On veut que le segment gagnant soit sous le pointeur
-      // Donc on doit tourner pour que: rotation + prizeAngle = -π/2 (mod 2π)
-      // => rotation = -π/2 - prizeAngle
-
-      // Calculer l'angle de destination (en ajoutant des tours complets)
       final extraRotations = (5 + Random().nextInt(4)) * 2 * pi; // 5-8 tours
-      final destinationAngle = -pi / 2 - prizeAngle;
+      final destinationAngle = -prizeAngle;
 
       // Normaliser pour avoir une rotation positive
       var targetRotation = _currentRotation + extraRotations;
