@@ -675,10 +675,14 @@ mixin _$ChatQuota {
   int get remaining => throw _privateConstructorUsedError;
   int get limit => throw _privateConstructorUsedError;
   int get used => throw _privateConstructorUsedError;
-  DateTime get resetsAt => throw _privateConstructorUsedError;
+  DateTime? get resetsAt => throw _privateConstructorUsedError;
   bool get canUnlock => throw _privateConstructorUsedError;
   int get unlockCost => throw _privateConstructorUsedError;
   int get unlockMessages => throw _privateConstructorUsedError;
+  int get baseLimit => throw _privateConstructorUsedError;
+  int get rankBonus => throw _privateConstructorUsedError;
+  int get unlockedToday => throw _privateConstructorUsedError;
+  String get rank => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -695,10 +699,14 @@ abstract class $ChatQuotaCopyWith<$Res> {
       {int remaining,
       int limit,
       int used,
-      DateTime resetsAt,
+      DateTime? resetsAt,
       bool canUnlock,
       int unlockCost,
-      int unlockMessages});
+      int unlockMessages,
+      int baseLimit,
+      int rankBonus,
+      int unlockedToday,
+      String rank});
 }
 
 /// @nodoc
@@ -717,10 +725,14 @@ class _$ChatQuotaCopyWithImpl<$Res, $Val extends ChatQuota>
     Object? remaining = null,
     Object? limit = null,
     Object? used = null,
-    Object? resetsAt = null,
+    Object? resetsAt = freezed,
     Object? canUnlock = null,
     Object? unlockCost = null,
     Object? unlockMessages = null,
+    Object? baseLimit = null,
+    Object? rankBonus = null,
+    Object? unlockedToday = null,
+    Object? rank = null,
   }) {
     return _then(_value.copyWith(
       remaining: null == remaining
@@ -735,10 +747,10 @@ class _$ChatQuotaCopyWithImpl<$Res, $Val extends ChatQuota>
           ? _value.used
           : used // ignore: cast_nullable_to_non_nullable
               as int,
-      resetsAt: null == resetsAt
+      resetsAt: freezed == resetsAt
           ? _value.resetsAt
           : resetsAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
       canUnlock: null == canUnlock
           ? _value.canUnlock
           : canUnlock // ignore: cast_nullable_to_non_nullable
@@ -751,6 +763,22 @@ class _$ChatQuotaCopyWithImpl<$Res, $Val extends ChatQuota>
           ? _value.unlockMessages
           : unlockMessages // ignore: cast_nullable_to_non_nullable
               as int,
+      baseLimit: null == baseLimit
+          ? _value.baseLimit
+          : baseLimit // ignore: cast_nullable_to_non_nullable
+              as int,
+      rankBonus: null == rankBonus
+          ? _value.rankBonus
+          : rankBonus // ignore: cast_nullable_to_non_nullable
+              as int,
+      unlockedToday: null == unlockedToday
+          ? _value.unlockedToday
+          : unlockedToday // ignore: cast_nullable_to_non_nullable
+              as int,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -767,10 +795,14 @@ abstract class _$$ChatQuotaImplCopyWith<$Res>
       {int remaining,
       int limit,
       int used,
-      DateTime resetsAt,
+      DateTime? resetsAt,
       bool canUnlock,
       int unlockCost,
-      int unlockMessages});
+      int unlockMessages,
+      int baseLimit,
+      int rankBonus,
+      int unlockedToday,
+      String rank});
 }
 
 /// @nodoc
@@ -787,10 +819,14 @@ class __$$ChatQuotaImplCopyWithImpl<$Res>
     Object? remaining = null,
     Object? limit = null,
     Object? used = null,
-    Object? resetsAt = null,
+    Object? resetsAt = freezed,
     Object? canUnlock = null,
     Object? unlockCost = null,
     Object? unlockMessages = null,
+    Object? baseLimit = null,
+    Object? rankBonus = null,
+    Object? unlockedToday = null,
+    Object? rank = null,
   }) {
     return _then(_$ChatQuotaImpl(
       remaining: null == remaining
@@ -805,10 +841,10 @@ class __$$ChatQuotaImplCopyWithImpl<$Res>
           ? _value.used
           : used // ignore: cast_nullable_to_non_nullable
               as int,
-      resetsAt: null == resetsAt
+      resetsAt: freezed == resetsAt
           ? _value.resetsAt
           : resetsAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
       canUnlock: null == canUnlock
           ? _value.canUnlock
           : canUnlock // ignore: cast_nullable_to_non_nullable
@@ -821,6 +857,22 @@ class __$$ChatQuotaImplCopyWithImpl<$Res>
           ? _value.unlockMessages
           : unlockMessages // ignore: cast_nullable_to_non_nullable
               as int,
+      baseLimit: null == baseLimit
+          ? _value.baseLimit
+          : baseLimit // ignore: cast_nullable_to_non_nullable
+              as int,
+      rankBonus: null == rankBonus
+          ? _value.rankBonus
+          : rankBonus // ignore: cast_nullable_to_non_nullable
+              as int,
+      unlockedToday: null == unlockedToday
+          ? _value.unlockedToday
+          : unlockedToday // ignore: cast_nullable_to_non_nullable
+              as int,
+      rank: null == rank
+          ? _value.rank
+          : rank // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -829,35 +881,57 @@ class __$$ChatQuotaImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ChatQuotaImpl implements _ChatQuota {
   const _$ChatQuotaImpl(
-      {required this.remaining,
-      required this.limit,
-      required this.used,
-      required this.resetsAt,
-      required this.canUnlock,
-      required this.unlockCost,
-      required this.unlockMessages});
+      {this.remaining = 0,
+      this.limit = 3,
+      this.used = 0,
+      this.resetsAt,
+      this.canUnlock = false,
+      this.unlockCost = 100,
+      this.unlockMessages = 2,
+      this.baseLimit = 3,
+      this.rankBonus = 0,
+      this.unlockedToday = 0,
+      this.rank = 'curieux'});
 
   factory _$ChatQuotaImpl.fromJson(Map<String, dynamic> json) =>
       _$$ChatQuotaImplFromJson(json);
 
   @override
+  @JsonKey()
   final int remaining;
   @override
+  @JsonKey()
   final int limit;
   @override
+  @JsonKey()
   final int used;
   @override
-  final DateTime resetsAt;
+  final DateTime? resetsAt;
   @override
+  @JsonKey()
   final bool canUnlock;
   @override
+  @JsonKey()
   final int unlockCost;
   @override
+  @JsonKey()
   final int unlockMessages;
+  @override
+  @JsonKey()
+  final int baseLimit;
+  @override
+  @JsonKey()
+  final int rankBonus;
+  @override
+  @JsonKey()
+  final int unlockedToday;
+  @override
+  @JsonKey()
+  final String rank;
 
   @override
   String toString() {
-    return 'ChatQuota(remaining: $remaining, limit: $limit, used: $used, resetsAt: $resetsAt, canUnlock: $canUnlock, unlockCost: $unlockCost, unlockMessages: $unlockMessages)';
+    return 'ChatQuota(remaining: $remaining, limit: $limit, used: $used, resetsAt: $resetsAt, canUnlock: $canUnlock, unlockCost: $unlockCost, unlockMessages: $unlockMessages, baseLimit: $baseLimit, rankBonus: $rankBonus, unlockedToday: $unlockedToday, rank: $rank)';
   }
 
   @override
@@ -876,13 +950,31 @@ class _$ChatQuotaImpl implements _ChatQuota {
             (identical(other.unlockCost, unlockCost) ||
                 other.unlockCost == unlockCost) &&
             (identical(other.unlockMessages, unlockMessages) ||
-                other.unlockMessages == unlockMessages));
+                other.unlockMessages == unlockMessages) &&
+            (identical(other.baseLimit, baseLimit) ||
+                other.baseLimit == baseLimit) &&
+            (identical(other.rankBonus, rankBonus) ||
+                other.rankBonus == rankBonus) &&
+            (identical(other.unlockedToday, unlockedToday) ||
+                other.unlockedToday == unlockedToday) &&
+            (identical(other.rank, rank) || other.rank == rank));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, remaining, limit, used, resetsAt,
-      canUnlock, unlockCost, unlockMessages);
+  int get hashCode => Object.hash(
+      runtimeType,
+      remaining,
+      limit,
+      used,
+      resetsAt,
+      canUnlock,
+      unlockCost,
+      unlockMessages,
+      baseLimit,
+      rankBonus,
+      unlockedToday,
+      rank);
 
   @JsonKey(ignore: true)
   @override
@@ -900,13 +992,17 @@ class _$ChatQuotaImpl implements _ChatQuota {
 
 abstract class _ChatQuota implements ChatQuota {
   const factory _ChatQuota(
-      {required final int remaining,
-      required final int limit,
-      required final int used,
-      required final DateTime resetsAt,
-      required final bool canUnlock,
-      required final int unlockCost,
-      required final int unlockMessages}) = _$ChatQuotaImpl;
+      {final int remaining,
+      final int limit,
+      final int used,
+      final DateTime? resetsAt,
+      final bool canUnlock,
+      final int unlockCost,
+      final int unlockMessages,
+      final int baseLimit,
+      final int rankBonus,
+      final int unlockedToday,
+      final String rank}) = _$ChatQuotaImpl;
 
   factory _ChatQuota.fromJson(Map<String, dynamic> json) =
       _$ChatQuotaImpl.fromJson;
@@ -918,13 +1014,21 @@ abstract class _ChatQuota implements ChatQuota {
   @override
   int get used;
   @override
-  DateTime get resetsAt;
+  DateTime? get resetsAt;
   @override
   bool get canUnlock;
   @override
   int get unlockCost;
   @override
   int get unlockMessages;
+  @override
+  int get baseLimit;
+  @override
+  int get rankBonus;
+  @override
+  int get unlockedToday;
+  @override
+  String get rank;
   @override
   @JsonKey(ignore: true)
   _$$ChatQuotaImplCopyWith<_$ChatQuotaImpl> get copyWith =>

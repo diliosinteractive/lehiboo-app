@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/gamification_api_datasource.dart';
-import 'gamification_provider.dart';
 
 /// Clé SharedPrefs : dernière date (yyyy-MM-dd) à laquelle le heartbeat
 /// a été crédité. Reset implicite quand on franchit minuit local.
@@ -84,10 +83,8 @@ class SessionHeartbeatNotifier extends StateNotifier<void>
       final result = await api.sendSessionHeartbeat(_sessionStartedAt!);
       if (result.awarded) {
         await prefs.setString(_kLastHeartbeatDateKey, today);
-        // Rafraîchir le wallet : la balance jumps from X to X+10, c'est le
-        // signal visible. Pas de toast (pas de BuildContext dispo en
-        // background ; le heartbeat est un reward "passif").
-        _ref.invalidate(gamificationNotifierProvider);
+        // Plan 05 : la balance est mise à jour par HibonsUpdateInterceptor
+        // (enveloppe `hibons_update` à la racine). Pas d'invalidation manuelle.
       } else if (result.reason == 'already_today') {
         // Le serveur sait que c'est déjà fait — synchroniser le cache local.
         await prefs.setString(_kLastHeartbeatDateKey, today);

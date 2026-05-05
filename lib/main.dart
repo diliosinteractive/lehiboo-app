@@ -49,6 +49,8 @@ import 'features/messages/presentation/providers/messages_realtime_provider.dart
 
 // Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
 import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
+import 'features/gamification/application/hibons_service.dart';
+import 'features/gamification/presentation/widgets/hibons_animation_coordinator.dart';
 
 // Configuration flag - set to false to use fake data
 const bool useRealApi = true;
@@ -113,14 +115,20 @@ void main() async {
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
 
+  // Container Riverpod explicite pour permettre à HibonsService (singleton)
+  // de lire l'état depuis l'intercepteur Dio (qui n'a pas de Ref).
+  final container = ProviderContainer(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      ...(useRealApi ? _getRealApiOverrides() : _getFakeDataOverrides()),
+    ],
+  );
+
+  HibonsService.instance.attach(container);
+
   runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        ...(useRealApi
-            ? _getRealApiOverrides()
-            : _getFakeDataOverrides()),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const LeHibooApp(),
     ),
   );
@@ -212,6 +220,12 @@ class LeHibooApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
       routerConfig: router,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      // Le coordinateur écoute HibonsService et déclenche les SnackBars +X Hibons
+      // et l'overlay rank-up via les clés globales (rootNavigatorKey,
+      // scaffoldMessengerKey) — son BuildContext est au-dessus du Navigator.
+      builder: (context, child) =>
+          HibonsAnimationCoordinator(child: child ?? const SizedBox()),
     );
   }
 }

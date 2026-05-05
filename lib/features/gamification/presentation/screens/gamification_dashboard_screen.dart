@@ -6,6 +6,7 @@ import '../../data/models/daily_reward.dart';
 import '../../data/models/hibons_wallet.dart';
 import '../providers/gamification_provider.dart';
 import '../widgets/daily_reward_widget.dart';
+import '../widgets/earnings_by_pillar_donut.dart';
 import '../widgets/hibon_counter_widget.dart';
 
 class GamificationDashboardScreen extends ConsumerWidget {
@@ -97,6 +98,9 @@ class GamificationDashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
+
+          // Donut "Répartition par pilier" (Plan 05)
+          const SliverToBoxAdapter(child: EarningsByPillarDonut()),
 
           // Body Stats & Menu
           SliverToBoxAdapter(

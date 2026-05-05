@@ -1,8 +1,13 @@
 import 'package:lehiboo/features/gamification/data/models/hibons_wallet.dart';
-import 'package:lehiboo/features/gamification/data/models/hibon_transaction.dart';
+import 'package:lehiboo/features/gamification/data/models/hibons_balance.dart';
+import 'package:lehiboo/features/gamification/data/models/hibons_action_entry.dart';
+import 'package:lehiboo/features/gamification/data/models/transactions_list_result.dart';
 import 'package:lehiboo/features/gamification/data/models/daily_reward.dart';
 import 'package:lehiboo/features/gamification/data/models/gamification_items.dart';
 import 'package:lehiboo/features/gamification/data/models/wheel_models.dart';
+
+// Re-export to avoid forcing every consumer to import the entity directly.
+export 'package:lehiboo/features/gamification/data/models/hibon_transaction.dart';
 
 /// Résultat du claim de la récompense quotidienne
 class DailyClaimResult {
@@ -56,7 +61,9 @@ class PurchaseResult {
 abstract class GamificationRepository {
   // Wallet
   Future<HibonsWallet> getWallet();
-  Future<List<HibonTransaction>> getTransactions();
+  Future<HibonsBalance> getBalance();
+  Future<List<HibonsActionEntry>> getActionsCatalog();
+  Future<TransactionsListResult> getTransactions({String? type, String? pillar});
 
   // Daily Rewards & Streaks
   Future<DailyRewardState> getDailyRewardState();

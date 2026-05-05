@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/themes/colors.dart';
+import '../../../gamification/data/models/hibons_wallet.dart';
 import '../../../gamification/presentation/providers/gamification_provider.dart';
 import '../providers/petit_boo_chat_provider.dart';
 import 'animated_toast.dart';
@@ -138,7 +138,7 @@ class LimitReachedDialog extends ConsumerWidget {
                           padding: const EdgeInsets.all(20),
                           child: Text('Erreur: $e'),
                         ),
-                        data: (wallet) => _buildWalletActions(context, ref, wallet.balance),
+                        data: (wallet) => _buildWalletActions(context, ref, wallet),
                       );
                     },
                   ),
@@ -151,7 +151,13 @@ class LimitReachedDialog extends ConsumerWidget {
     );
   }
 
-  Widget _buildWalletActions(BuildContext context, WidgetRef ref, int balance) {
+  Widget _buildWalletActions(BuildContext context, WidgetRef ref, HibonsWallet wallet) {
+    final balance = wallet.balance;
+    final quota = wallet.chatQuota;
+    final canUnlock = quota?.canUnlock ?? false;
+    final unlockCost = quota?.unlockCost ?? 100;
+    final unlockMessages = quota?.unlockMessages ?? 2;
+
     return Column(
       children: [
         // Balance display
@@ -179,8 +185,8 @@ class LimitReachedDialog extends ConsumerWidget {
           ),
         ),
 
-        // Option 1: Spend Hibons (if enough)
-        if (balance >= 10)
+        // Option 1: Spend Hibons (if eligible per backend)
+        if (canUnlock)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: SizedBox(
@@ -196,14 +202,14 @@ class LimitReachedDialog extends ConsumerWidget {
                   ),
                   elevation: 4,
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.chat_bubble_outline, color: Colors.white),
-                    SizedBox(width: 8),
+                    const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                    const SizedBox(width: 8),
                     Text(
-                      "Continuer pour 10 Hibons",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      "Continuer pour $unlockCost Hibons (+$unlockMessages msg)",
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -241,16 +247,14 @@ class LimitReachedDialog extends ConsumerWidget {
           ),
         ),
 
-        // Option 3: Buy more Hibons (if low balance)
-        if (balance < 10)
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.push('/hibons-shop');
-            },
-            child: const Text(
-              "Recharger mes Hibons",
-              style: TextStyle(color: Colors.grey),
+        // Hint when unlock not possible
+        if (!canUnlock)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              "Reviens demain pour de nouveaux messages !",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
             ),
           ),
 
@@ -272,6 +276,9 @@ class LimitReachedDialog extends ConsumerWidget {
       final success = await ref.read(chatUnlockProvider.notifier).unlock();
       if (success) {
         ref.read(petitBooChatProvider.notifier).resetLimit();
+        // Plan 04: les messages débloqués vivent dans `unlocked_today`
+        // (resetté chaque nuit), donc rafraîchir le quota Petit Boo aussi.
+        await ref.read(petitBooChatProvider.notifier).checkQuota();
         if (context.mounted) {
           Navigator.pop(context);
           PetitBooToast.success(context, 'Conversation débloquée !');

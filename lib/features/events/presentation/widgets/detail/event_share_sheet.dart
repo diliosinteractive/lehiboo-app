@@ -7,8 +7,6 @@ import 'package:http/http.dart' as http;
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/gamification/data/datasources/gamification_api_datasource.dart';
-import 'package:lehiboo/features/gamification/presentation/providers/gamification_provider.dart';
-import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -58,14 +56,12 @@ class _EventShareSheetState extends ConsumerState<EventShareSheet> {
   /// Crédite l'user (10 H, 1×/event/lifetime, cap 2/sem) au tap d'un bouton
   /// de partage. Best-effort — silencieux en cas d'échec serveur.
   /// channel ∈ {whatsapp, facebook, twitter, native, email, link, other}.
+  ///
+  /// Plan 05 : toast et update wallet sont gérés globalement par
+  /// HibonsUpdateInterceptor (enveloppe `hibons_update` à la racine).
   Future<void> _trackShare(String channel) async {
     final api = ref.read(gamificationApiDataSourceProvider);
-    final result = await api.trackEventShare(event.slug, channel);
-    if (!mounted) return;
-    if (result.awarded && result.amount > 0) {
-      PetitBooToast.hibonsEarned(context, amount: result.amount);
-      ref.invalidate(gamificationNotifierProvider);
-    }
+    await api.trackEventShare(event.slug, channel);
   }
 
   Event get event => widget.event;

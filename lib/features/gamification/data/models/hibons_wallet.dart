@@ -41,13 +41,17 @@ class HibonsWallet with _$HibonsWallet {
 @freezed
 class ChatQuota with _$ChatQuota {
   const factory ChatQuota({
-    required int remaining,
-    required int limit,
-    required int used,
-    required DateTime resetsAt,
-    required bool canUnlock,
-    required int unlockCost,
-    required int unlockMessages,
+    @Default(0) int remaining,
+    @Default(3) int limit,
+    @Default(0) int used,
+    DateTime? resetsAt,
+    @Default(false) bool canUnlock,
+    @Default(100) int unlockCost,
+    @Default(2) int unlockMessages,
+    @Default(3) int baseLimit,
+    @Default(0) int rankBonus,
+    @Default(0) int unlockedToday,
+    @Default('curieux') String rank,
   }) = _ChatQuota;
 
   factory ChatQuota.fromJson(Map<String, dynamic> json) =>

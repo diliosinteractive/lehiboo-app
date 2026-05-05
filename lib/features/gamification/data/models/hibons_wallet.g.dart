@@ -75,13 +75,19 @@ const _$HibonsRankEnumMap = {
 
 _$ChatQuotaImpl _$$ChatQuotaImplFromJson(Map<String, dynamic> json) =>
     _$ChatQuotaImpl(
-      remaining: (json['remaining'] as num).toInt(),
-      limit: (json['limit'] as num).toInt(),
-      used: (json['used'] as num).toInt(),
-      resetsAt: DateTime.parse(json['resetsAt'] as String),
-      canUnlock: json['canUnlock'] as bool,
-      unlockCost: (json['unlockCost'] as num).toInt(),
-      unlockMessages: (json['unlockMessages'] as num).toInt(),
+      remaining: (json['remaining'] as num?)?.toInt() ?? 0,
+      limit: (json['limit'] as num?)?.toInt() ?? 3,
+      used: (json['used'] as num?)?.toInt() ?? 0,
+      resetsAt: json['resetsAt'] == null
+          ? null
+          : DateTime.parse(json['resetsAt'] as String),
+      canUnlock: json['canUnlock'] as bool? ?? false,
+      unlockCost: (json['unlockCost'] as num?)?.toInt() ?? 100,
+      unlockMessages: (json['unlockMessages'] as num?)?.toInt() ?? 2,
+      baseLimit: (json['baseLimit'] as num?)?.toInt() ?? 3,
+      rankBonus: (json['rankBonus'] as num?)?.toInt() ?? 0,
+      unlockedToday: (json['unlockedToday'] as num?)?.toInt() ?? 0,
+      rank: json['rank'] as String? ?? 'curieux',
     );
 
 Map<String, dynamic> _$$ChatQuotaImplToJson(_$ChatQuotaImpl instance) =>
@@ -89,10 +95,14 @@ Map<String, dynamic> _$$ChatQuotaImplToJson(_$ChatQuotaImpl instance) =>
       'remaining': instance.remaining,
       'limit': instance.limit,
       'used': instance.used,
-      'resetsAt': instance.resetsAt.toIso8601String(),
+      'resetsAt': instance.resetsAt?.toIso8601String(),
       'canUnlock': instance.canUnlock,
       'unlockCost': instance.unlockCost,
       'unlockMessages': instance.unlockMessages,
+      'baseLimit': instance.baseLimit,
+      'rankBonus': instance.rankBonus,
+      'unlockedToday': instance.unlockedToday,
+      'rank': instance.rank,
     };
 
 _$DailyRewardItemImpl _$$DailyRewardItemImplFromJson(

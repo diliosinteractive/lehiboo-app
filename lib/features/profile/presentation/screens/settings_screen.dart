@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../gamification/presentation/providers/gamification_provider.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
 import '../../data/datasources/profile_api_datasource.dart';
 
@@ -42,8 +41,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     try {
       final api = ref.read(profileApiDataSourceProvider);
-      final balanceBefore =
-          ref.read(gamificationNotifierProvider).valueOrNull?.balance;
 
       final updatedDto = await api.updateProfile(
         newsletter: isPush ? null : newValue,
@@ -53,23 +50,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // Synchroniser l'auth state local
       ref.read(authProvider.notifier).updateUser(updatedDto);
 
-      // Si le toggle vient de passer false→true, le backend a peut-être crédité
-      // 30 H (1× lifetime). On repoll le wallet et compare le delta.
-      if (newValue) {
-        ref.invalidate(gamificationNotifierProvider);
-        await Future.delayed(const Duration(milliseconds: 400));
-        final balanceAfter =
-            ref.read(gamificationNotifierProvider).valueOrNull?.balance;
-        if (balanceBefore != null &&
-            balanceAfter != null &&
-            balanceAfter > balanceBefore &&
-            mounted) {
-          PetitBooToast.hibonsEarned(
-            context,
-            amount: balanceAfter - balanceBefore,
-          );
-        }
-      }
+      // Plan 05 : la mise à jour wallet et le toast `+30 H NotificationsOptIn`
+      // sont gérés globalement par HibonsUpdateInterceptor.
     } catch (e) {
       if (mounted) {
         PetitBooToast.error(context, 'Mise à jour impossible');
