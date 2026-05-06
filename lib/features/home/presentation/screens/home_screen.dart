@@ -11,6 +11,7 @@ import 'package:lehiboo/features/blog/presentation/widgets/blog_section.dart';
 import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_section.dart';
 import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/home/presentation/providers/hero_slides_provider.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/messages/presentation/providers/unread_count_provider.dart';
 import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
@@ -76,6 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(categoriesProvider.notifier).refresh(),
       ref.read(homeCitiesProvider.notifier).refresh(),
       ref.read(mobileAppConfigProvider.notifier).refresh(),
+      ref.read(heroSlidesProvider.notifier).refresh(),
     ]);
     ref.invalidate(alertsProvider);
     ref.invalidate(viewedStoriesProvider);
@@ -95,11 +97,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
-            // 1. Hero contextuel avec parallax + alertes sauvegardées
+            // 1. Hero contextuel avec parallax + alertes sauvegardées.
+            // Editorial hero slides (when present) drive the carousel
+            // background; on cold start / empty / error the static
+            // city-themed image renders instead — see ContextualHero.
             SliverToBoxAdapter(
               child: ContextualHero(
                 scrollOffset: _scrollOffset,
                 height: 420,
+                slides: ref.watch(heroSlidesProvider).valueOrNull,
               ),
             ),
 
