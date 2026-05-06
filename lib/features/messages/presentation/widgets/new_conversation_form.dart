@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../../domain/entities/accepted_partner.dart';
@@ -507,7 +508,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _submitError = e.toString().replaceFirst('Exception: ', '');
+          _submitError = ApiResponseHandler.extractError(e);
         });
       }
     }
@@ -1505,7 +1506,12 @@ class _AdminUserSearchSheetState extends State<_AdminUserSearchSheet> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = ApiResponseHandler.extractError(e);
+        });
+      }
     }
   }
 
@@ -1671,7 +1677,12 @@ class _AdminOrgSearchSheetState extends State<_AdminOrgSearchSheet> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = ApiResponseHandler.extractError(e);
+        });
+      }
     }
   }
 
@@ -1843,7 +1854,12 @@ class _VendorParticipantSearchSheetState
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = ApiResponseHandler.extractError(e);
+        });
+      }
     }
   }
 

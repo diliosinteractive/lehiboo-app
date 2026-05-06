@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/accepted_partner_dto.dart';
 import '../models/admin_report_stats_dto.dart';
 import '../models/conversation_dto.dart';
@@ -36,14 +37,16 @@ class MessagesApiDataSource {
   // 2. GET /user/conversations/unread-count
   Future<int> getUnreadCount() async {
     final r = await _dio.get('/user/conversations/unread-count');
-    return (r.data as Map<String, dynamic>)['count'] as int? ?? 0;
+    return ApiResponseHandler.extractObject(r.data, unwrapRoot: true)['count']
+            as int? ??
+        0;
   }
 
   // 3. GET /user/conversations/{uuid}
   Future<ConversationDto> getConversation(String uuid) async {
     final r = await _dio.get('/user/conversations/$uuid');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<void> markConversationAsRead(String uuid) async {
@@ -53,7 +56,7 @@ class MessagesApiDataSource {
   // 4. GET /user/conversations/contactable-organizations
   Future<List<ConversationOrganizationDto>> getContactableOrganizations() async {
     final r = await _dio.get('/user/conversations/contactable-organizations');
-    final list = (r.data as Map<String, dynamic>)['data'] as List;
+    final list = ApiResponseHandler.extractList(r.data);
     return list
         .map((e) =>
             ConversationOrganizationDto.fromJson(e as Map<String, dynamic>))
@@ -91,7 +94,7 @@ class MessagesApiDataSource {
       });
     }
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   // 6. POST /user/conversations/from-booking/{bookingUuid}
@@ -99,11 +102,14 @@ class MessagesApiDataSource {
       String bookingUuid) async {
     final r =
         await _dio.post('/user/conversations/from-booking/$bookingUuid');
-    final data = r.data as Map<String, dynamic>;
+    // Endpoint returns `{data: {...conversation}, created: bool}` —
+    // `extractObject` pulls the conversation, `created` lives on the
+    // root envelope so we keep a reference to it.
+    final root = r.data as Map<String, dynamic>;
     return (
-      conversation: ConversationDto.fromJson(
-          data['data'] as Map<String, dynamic>),
-      created: data['created'] as bool? ?? true,
+      conversation:
+          ConversationDto.fromJson(ApiResponseHandler.extractObject(root)),
+      created: root['created'] as bool? ?? true,
     );
   }
 
@@ -142,14 +148,14 @@ class MessagesApiDataSource {
       );
     }
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   // 8. POST /user/conversations/{uuid}/close
   Future<ConversationDto> closeConversation(String uuid) async {
     final r = await _dio.post('/user/conversations/$uuid/close');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   // 9. POST /user/conversations/{uuid}/messages
@@ -178,9 +184,12 @@ class MessagesApiDataSource {
         data: {'content': content},
       );
     }
-    final raw = r.data as Map<String, dynamic>;
-    final payload = raw.containsKey('data') ? raw['data'] as Map<String, dynamic> : raw;
-    return MessageDto.fromJson(payload);
+    // Some message endpoints return `{data: {...}}`, others return the
+    // raw message object — `unwrapRoot: true` collapses both into a
+    // single Map for `fromJson`.
+    return MessageDto.fromJson(
+      ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
+    );
   }
 
   // 10. PATCH /user/conversations/{uuid}/messages/{msgUuid}
@@ -194,7 +203,7 @@ class MessagesApiDataSource {
       data: {'content': content},
     );
     return MessageDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   // 11. DELETE /user/conversations/{uuid}/messages/{msgUuid}
@@ -221,8 +230,7 @@ class MessagesApiDataSource {
         if (comment != null && comment.isNotEmpty) 'comment': comment,
       },
     );
-    final data =
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
+    final data = ApiResponseHandler.extractObject(r.data);
     return (
       reportUuid: data['uuid'] as String,
       supportConversationUuid: data['support_conversation_uuid'] as String?,
@@ -252,7 +260,7 @@ class MessagesApiDataSource {
   Future<ConversationDto> getSupportConversation(String uuid) async {
     final r = await _dio.get('/user/support-conversations/$uuid');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   // 16. POST /user/support-conversations
@@ -282,7 +290,7 @@ class MessagesApiDataSource {
       });
     }
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   // 17. POST /user/support-conversations/{uuid}/messages
@@ -311,9 +319,12 @@ class MessagesApiDataSource {
         data: {'content': content},
       );
     }
-    final raw = r.data as Map<String, dynamic>;
-    final payload = raw.containsKey('data') ? raw['data'] as Map<String, dynamic> : raw;
-    return MessageDto.fromJson(payload);
+    // Some message endpoints return `{data: {...}}`, others return the
+    // raw message object — `unwrapRoot: true` collapses both into a
+    // single Map for `fromJson`.
+    return MessageDto.fromJson(
+      ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -343,13 +354,16 @@ class MessagesApiDataSource {
 
   Future<int> getVendorUnreadCount() async {
     final r = await _dio.get('/vendor/conversations/unread-count');
-    return (r.data as Map<String, dynamic>)['count'] as int? ?? 0;
+    return ApiResponseHandler.extractObject(r.data, unwrapRoot: true)['count']
+            as int? ??
+        0;
   }
 
   Future<VendorStatsDto> getVendorStats() async {
     final r = await _dio.get('/vendor/conversations/stats');
-    final data = (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>?
-        ?? r.data as Map<String, dynamic>;
+    // Stats endpoints alternate between `{data: {...}}` and raw root
+    // shapes — `unwrapRoot: true` accepts either.
+    final data = ApiResponseHandler.extractObject(r.data, unwrapRoot: true);
     return VendorStatsDto.fromJson(data);
   }
 
@@ -362,7 +376,7 @@ class MessagesApiDataSource {
         if (search != null && search.isNotEmpty) 'search': search,
       },
     );
-    final list = ((r.data as Map<String, dynamic>)['data'] as List?) ?? [];
+    final list = ApiResponseHandler.extractList(r.data);
     return list.map((e) {
       final json = Map<String, dynamic>.from(e as Map);
       json['id'] = int.tryParse(json['id'].toString()) ?? 0;
@@ -402,7 +416,7 @@ class MessagesApiDataSource {
       });
     }
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<ConversationDto> createVendorSupportThread({
@@ -431,13 +445,13 @@ class MessagesApiDataSource {
       });
     }
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<ConversationDto> getVendorConversation(String uuid) async {
     final r = await _dio.get('/vendor/conversations/$uuid');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<void> markVendorConversationAsRead(String uuid) async {
@@ -468,9 +482,9 @@ class MessagesApiDataSource {
         data: {'content': content},
       );
     }
-    final raw = r.data as Map<String, dynamic>;
     return MessageDto.fromJson(
-        raw.containsKey('data') ? raw['data'] as Map<String, dynamic> : raw);
+      ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
+    );
   }
 
   Future<MessageDto> editVendorMessage({
@@ -483,7 +497,7 @@ class MessagesApiDataSource {
       data: {'content': content},
     );
     return MessageDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<void> deleteVendorMessage({
@@ -497,7 +511,7 @@ class MessagesApiDataSource {
   Future<ConversationDto> closeVendorConversation(String uuid) async {
     final r = await _dio.post('/vendor/conversations/$uuid/close');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -506,7 +520,7 @@ class MessagesApiDataSource {
 
   Future<List<AcceptedPartnerDto>> getAcceptedPartners() async {
     final r = await _dio.get('/vendor/org-conversations/accepted-partners');
-    final list = ((r.data as Map<String, dynamic>)['data'] as List?) ?? [];
+    final list = ApiResponseHandler.extractList(r.data);
     return list.map((e) {
       final json = Map<String, dynamic>.from(e as Map);
       json['id'] = int.tryParse(json['id'].toString()) ?? 0;
@@ -562,13 +576,13 @@ class MessagesApiDataSource {
       });
     }
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<ConversationDto> getOrgConversation(String uuid) async {
     final r = await _dio.get('/vendor/org-conversations/$uuid');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<void> markOrgConversationAsRead(String uuid) async {
@@ -599,9 +613,9 @@ class MessagesApiDataSource {
         data: {'content': content},
       );
     }
-    final raw = r.data as Map<String, dynamic>;
     return MessageDto.fromJson(
-        raw.containsKey('data') ? raw['data'] as Map<String, dynamic> : raw);
+      ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
+    );
   }
 
   Future<MessageDto> editOrgMessage({
@@ -614,7 +628,7 @@ class MessagesApiDataSource {
       data: {'content': content},
     );
     return MessageDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<void> deleteOrgMessage({
@@ -628,7 +642,7 @@ class MessagesApiDataSource {
   Future<ConversationDto> closeOrgConversation(String uuid) async {
     final r = await _dio.post('/vendor/org-conversations/$uuid/close');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -658,7 +672,9 @@ class MessagesApiDataSource {
 
   Future<int> getAdminUnreadCount() async {
     final r = await _dio.get('/admin/conversations/unread-count');
-    return (r.data as Map<String, dynamic>)['count'] as int? ?? 0;
+    return ApiResponseHandler.extractObject(r.data, unwrapRoot: true)['count']
+            as int? ??
+        0;
   }
 
   Future<ConversationDto> createAdminUserThread({
@@ -693,7 +709,7 @@ class MessagesApiDataSource {
       });
     }
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<ConversationDto> createAdminSupportThread({
@@ -725,13 +741,13 @@ class MessagesApiDataSource {
       });
     }
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<ConversationDto> getAdminConversation(String uuid) async {
     final r = await _dio.get('/admin/conversations/$uuid');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<void> markAdminConversationAsRead(String uuid) async {
@@ -762,9 +778,9 @@ class MessagesApiDataSource {
         data: {'content': content},
       );
     }
-    final raw = r.data as Map<String, dynamic>;
     return MessageDto.fromJson(
-        raw.containsKey('data') ? raw['data'] as Map<String, dynamic> : raw);
+      ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
+    );
   }
 
   Future<MessageDto> editAdminMessage({
@@ -777,7 +793,7 @@ class MessagesApiDataSource {
       data: {'content': content},
     );
     return MessageDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<void> deleteAdminMessage({
@@ -791,13 +807,13 @@ class MessagesApiDataSource {
   Future<ConversationDto> closeAdminConversation(String uuid) async {
     final r = await _dio.post('/admin/conversations/$uuid/close');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   Future<ConversationDto> reopenAdminConversation(String uuid) async {
     final r = await _dio.post('/admin/conversations/$uuid/reopen');
     return ConversationDto.fromJson(
-        (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>);
+        ApiResponseHandler.extractObject(r.data));
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -822,8 +838,9 @@ class MessagesApiDataSource {
 
   Future<AdminReportStatsDto> getAdminConversationReportStats() async {
     final r = await _dio.get('/admin/conversation-reports/stats');
-    final data = (r.data as Map<String, dynamic>)['data'] as Map<String, dynamic>?
-        ?? r.data as Map<String, dynamic>;
+    // Stats endpoints alternate between `{data: {...}}` and raw root
+    // shapes — `unwrapRoot: true` accepts either.
+    final data = ApiResponseHandler.extractObject(r.data, unwrapRoot: true);
     return AdminReportStatsDto.fromJson(data);
   }
 
@@ -860,10 +877,8 @@ class MessagesApiDataSource {
       if (search != null && search.isNotEmpty) 'search': search,
       'per_page': perPage,
     });
-    final data = r.data;
-    if (data is List) return data.cast<Map<String, dynamic>>();
-    final list = (data as Map<String, dynamic>)['data'] as List? ?? [];
-    return list.cast<Map<String, dynamic>>();
+    return ApiResponseHandler.extractList(r.data)
+        .cast<Map<String, dynamic>>();
   }
 
   // GET /admin/organizations?search=xxx
@@ -875,10 +890,8 @@ class MessagesApiDataSource {
       if (search != null && search.isNotEmpty) 'search': search,
       'per_page': perPage,
     });
-    final data = r.data;
-    if (data is List) return data.cast<Map<String, dynamic>>();
-    final list = (data as Map<String, dynamic>)['data'] as List? ?? [];
-    return list.cast<Map<String, dynamic>>();
+    return ApiResponseHandler.extractList(r.data)
+        .cast<Map<String, dynamic>>();
   }
 }
 

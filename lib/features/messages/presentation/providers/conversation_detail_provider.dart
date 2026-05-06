@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/conversation_route.dart';
@@ -370,7 +371,10 @@ class ConversationDetailNotifier
         conversation:
             AsyncValue.data(conversation.copyWith(messages: reverted)),
         isSending: false,
-        sendError: e.toString(),
+        sendError: ApiResponseHandler.extractError(
+          e,
+          fallback: "Échec de l'envoi. Réessayez.",
+        ),
       );
     }
   }

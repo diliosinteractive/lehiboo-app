@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/utils/api_response_handler.dart';
 import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 
@@ -263,7 +264,7 @@ class _AdminNewConversationScreenState
       if (mounted) {
         setState(() {
           _submitting = false;
-          _error = 'Erreur : $e';
+          _error = 'Erreur : ${ApiResponseHandler.extractError(e)}';
         });
       }
     }
