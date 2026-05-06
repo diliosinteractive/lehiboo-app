@@ -52,15 +52,12 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint(
+      '🗺️ MapViewScreen.initState '
+      'initialLat=${widget.initialLat}, initialLng=${widget.initialLng}, '
+      'initialZoom=${widget.initialZoom}',
+    );
     _checkLocationPermission();
-
-    // If initial coordinates are provided, move there after build
-    if (widget.initialLat != null && widget.initialLng != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _mapController.move(LatLng(widget.initialLat!, widget.initialLng!),
-            widget.initialZoom ?? 13.0);
-      });
-    }
   }
 
   @override
@@ -150,13 +147,23 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   }
 
   void _onMapReady() {
-    if (widget.initialLat == null || widget.initialLng == null) {
-      _locateMe();
-    } else {
+    final hasInitialCoords =
+        widget.initialLat != null && widget.initialLng != null;
+
+    if (hasInitialCoords) {
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) _searchInArea();
       });
+      return;
     }
+
+    // Pas de coords initiales : si une ville est déjà filtrée
+    // (fallback citySlug depuis la home), on ne ré-écrase pas le contexte
+    // avec la position GPS — eventsProvider chargera via le slug.
+    final hasCityFilter = ref.read(eventFilterProvider).citySlug != null;
+    if (hasCityFilter) return;
+
+    _locateMe();
   }
 
   List<Marker> _buildMarkers(List<Event> events) {
@@ -432,8 +439,10 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: _kDefaultCenter,
-              initialZoom: _kDefaultZoom,
+              initialCenter: widget.initialLat != null && widget.initialLng != null
+                  ? LatLng(widget.initialLat!, widget.initialLng!)
+                  : _kDefaultCenter,
+              initialZoom: widget.initialZoom ?? _kDefaultZoom,
               onPositionChanged: _onPositionChanged,
               onMapReady: _onMapReady,
               interactionOptions: const InteractionOptions(
