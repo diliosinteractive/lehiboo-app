@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../config/dio_client.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -92,7 +91,11 @@ class PetitBooChatState {
 
   /// Check if user can send a message
   bool get canSendMessage =>
-      !isStreaming && !isLoading && isServiceAvailable && !isLimitReached;
+      !isStreaming &&
+      !isLoading &&
+      isServiceAvailable &&
+      !isLimitReached &&
+      !(quota?.isExhausted ?? false);
 
   /// Get combined tool results from current streaming
   bool get hasToolResults => currentToolResults.isNotEmpty;
@@ -113,12 +116,12 @@ final petitBooChatProvider =
 class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   final PetitBooRepository _repository;
   final PetitBooContextStorage _contextStorage;
-  final Ref _ref;
   StreamSubscription? _streamSubscription;
   String? _pendingMessage; // For auto-send after limit unlock
+  String? _activeMessage; // Message currently being streamed
   bool _isInitialized = false;
 
-  PetitBooChatNotifier(this._repository, this._contextStorage, this._ref)
+  PetitBooChatNotifier(this._repository, this._contextStorage, Ref _)
       : super(const PetitBooChatState(isLoading: true)) {
     _initialize();
   }
@@ -177,7 +180,8 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     );
 
     if (kDebugMode) {
-      debugPrint('🤖 PetitBoo: Loaded session UUID from storage: $savedSessionUuid');
+      debugPrint(
+          '🤖 PetitBoo: Loaded session UUID from storage: $savedSessionUuid');
     }
 
     if (savedSessionUuid != null && savedSessionUuid.isNotEmpty) {
@@ -211,7 +215,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   Future<void> checkQuota() async {
     try {
       final quota = await _repository.getQuota();
-      state = state.copyWith(quota: quota);
+      state = state.copyWith(
+        quota: quota,
+        isLimitReached: quota.isExhausted,
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('🤖 PetitBoo: Failed to load quota: $e');
@@ -221,13 +228,25 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Send a message and process streaming response
   Future<void> sendMessage(String message) async {
-    if (!state.canSendMessage || message.trim().isEmpty) return;
+    final trimmedMessage = message.trim();
+    if (trimmedMessage.isEmpty ||
+        state.isStreaming ||
+        state.isLoading ||
+        !state.isServiceAvailable) {
+      return;
+    }
 
     // Wait for initialization to complete (max 2 seconds)
     int waitCount = 0;
     while (!_isInitialized && waitCount < 20) {
       await Future.delayed(const Duration(milliseconds: 100));
       waitCount++;
+    }
+
+    final quota = state.quota;
+    if (state.isLimitReached || (quota?.isExhausted ?? false)) {
+      savePendingMessage(trimmedMessage);
+      return;
     }
 
     if (kDebugMode) {
@@ -238,7 +257,8 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     await _streamSubscription?.cancel();
 
     // Add user message
-    final userMessage = ChatMessageDto.user(message);
+    final userMessage = ChatMessageDto.user(trimmedMessage);
+    _activeMessage = trimmedMessage;
     state = state.copyWith(
       messages: [...state.messages, userMessage],
       currentStreamingText: '',
@@ -250,7 +270,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     try {
       final stream = _repository.sendMessage(
         sessionUuid: state.sessionUuid,
-        message: message,
+        message: trimmedMessage,
       );
 
       _streamSubscription = stream.listen(
@@ -277,8 +297,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
         // New session created, save the UUID
         if (event.sessionUuid != null) {
           if (kDebugMode) {
-            debugPrint('🤖 PetitBoo: Received NEW session UUID=${event.sessionUuid}');
-            debugPrint('🤖 PetitBoo: Previous session UUID was=${state.sessionUuid}');
+            debugPrint(
+                '🤖 PetitBoo: Received NEW session UUID=${event.sessionUuid}');
+            debugPrint(
+                '🤖 PetitBoo: Previous session UUID was=${state.sessionUuid}');
           }
           _saveSessionUuid(event.sessionUuid!);
           state = state.copyWith(sessionUuid: event.sessionUuid);
@@ -320,6 +342,20 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
       case 'error':
         // Error during processing
+        if (event.code == 'quota_exceeded') {
+          _saveActiveMessageAsPending();
+          state = state.copyWith(
+            messages: _withoutActiveOptimisticMessage(),
+            currentStreamingText: '',
+            currentToolResults: [],
+            error: event.error ?? 'Vous avez atteint votre limite de messages',
+            isStreaming: false,
+            isLimitReached: true,
+          );
+          _activeMessage = null;
+          checkQuota();
+          break;
+        }
         state = state.copyWith(
           error: event.error ?? 'An error occurred',
           isStreaming: false,
@@ -350,13 +386,20 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
         errorMessage = 'Connectez-vous pour discuter avec Petit Boo';
       } else if (error.code == 'quota_exceeded') {
         errorMessage = 'Vous avez atteint votre limite de messages';
+        _saveActiveMessageAsPending();
       }
     }
 
     state = state.copyWith(
+      messages: error is PetitBooSseException && error.code == 'quota_exceeded'
+          ? _withoutActiveOptimisticMessage()
+          : state.messages,
       error: errorMessage,
       isStreaming: false,
+      isLimitReached:
+          error is PetitBooSseException && error.code == 'quota_exceeded',
     );
+    _activeMessage = null;
 
     // Refresh quota after error
     checkQuota();
@@ -373,15 +416,18 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Finish streaming and create assistant message
   void _finishStreaming() {
-    if (state.currentStreamingText.isEmpty && state.currentToolResults.isEmpty) {
+    if (state.currentStreamingText.isEmpty &&
+        state.currentToolResults.isEmpty) {
       state = state.copyWith(isStreaming: false);
+      _activeMessage = null;
       return;
     }
 
     // Create assistant message with tool results
     final assistantMessage = ChatMessageDto.assistant(
       content: state.currentStreamingText,
-      toolResults: state.currentToolResults.isEmpty ? null : state.currentToolResults,
+      toolResults:
+          state.currentToolResults.isEmpty ? null : state.currentToolResults,
     );
 
     state = state.copyWith(
@@ -390,6 +436,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       currentToolResults: [],
       isStreaming: false,
     );
+    _activeMessage = null;
 
     // Refresh quota after message
     checkQuota();
@@ -407,13 +454,15 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       error: error.toString(),
       isStreaming: false,
     );
+    _activeMessage = null;
   }
 
   /// Save session UUID to secure storage
   Future<void> _saveSessionUuid(String uuid) async {
     try {
       final storage = SharedSecureStorage.instance;
-      await storage.write(key: AppConstants.keyPetitBooSessionUuid, value: uuid);
+      await storage.write(
+          key: AppConstants.keyPetitBooSessionUuid, value: uuid);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('🤖 PetitBoo: Failed to save session UUID: $e');
@@ -490,7 +539,13 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Reset the message limit (called after spending Hibons or watching ads)
   Future<void> resetLimit() async {
-    state = state.copyWith(isLimitReached: false, messageCount: 0);
+    state = state.copyWith(isLimitReached: false, messageCount: 0, error: null);
+    await checkQuota();
+
+    if (state.quota?.isExhausted ?? false) {
+      state = state.copyWith(isLimitReached: true);
+      return;
+    }
 
     // Auto-send pending message if any
     if (_pendingMessage != null) {
@@ -506,22 +561,36 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     state = state.copyWith(isLimitReached: true);
   }
 
+  void _saveActiveMessageAsPending() {
+    final activeMessage = _activeMessage;
+    if (activeMessage != null && activeMessage.trim().isNotEmpty) {
+      _pendingMessage = activeMessage;
+    }
+  }
+
+  List<ChatMessageDto> _withoutActiveOptimisticMessage() {
+    final activeMessage = _activeMessage;
+    if (activeMessage == null || state.messages.isEmpty) {
+      return state.messages;
+    }
+
+    final last = state.messages.last;
+    if (last.isUser && last.content == activeMessage) {
+      return state.messages.sublist(0, state.messages.length - 1);
+    }
+
+    return state.messages;
+  }
+
   /// Check if there's a pending message
   bool get hasPendingMessage => _pendingMessage != null;
 
   // ==================== Context Sync ====================
 
-  /// Update context from AI response
-  Future<void> _updateContextFromResponse(Map<String, dynamic>? newContext) async {
-    if (newContext == null || !state.isMemoryEnabled) return;
-
-    await _contextStorage.mergeContext(newContext);
-    state = state.copyWith(userContext: _contextStorage.getContext());
-  }
-
   /// Sync brain memory from tool result to local storage
   /// Called when getBrain or updateBrain tools return data
-  void _syncBrainMemoryFromToolResult(String toolName, Map<String, dynamic> result) {
+  void _syncBrainMemoryFromToolResult(
+      String toolName, Map<String, dynamic> result) {
     // Normalize tool name (snake_case or camelCase)
     final normalizedTool = toolName.toLowerCase().replaceAll('_', '');
 
@@ -551,7 +620,12 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       }
     } else {
       // Check if result directly contains brain sections
-      final knownSections = ['family', 'location', 'preferences', 'constraints'];
+      final knownSections = [
+        'family',
+        'location',
+        'preferences',
+        'constraints'
+      ];
       final hasKnownSections = knownSections.any((s) => result.containsKey(s));
       if (hasKnownSections) {
         memoryData = result;
@@ -570,7 +644,8 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   }
 
   /// Convert brain sections (family, preferences, etc.) to flat context keys
-  Future<void> _syncBrainSectionsToContext(Map<String, dynamic> memoryData) async {
+  Future<void> _syncBrainSectionsToContext(
+      Map<String, dynamic> memoryData) async {
     final flatContext = <String, dynamic>{};
 
     // Family section
@@ -624,7 +699,9 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
         // Check for budget constraints
         for (final item in constraints) {
           final itemStr = item.toString().toLowerCase();
-          if (itemStr.contains('budget') || itemStr.contains('argent') || itemStr.contains('économ')) {
+          if (itemStr.contains('budget') ||
+              itemStr.contains('argent') ||
+              itemStr.contains('économ')) {
             flatContext['budget_preference'] = 'low';
           }
         }
@@ -633,7 +710,8 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
     if (flatContext.isNotEmpty) {
       if (kDebugMode) {
-        debugPrint('🧠 PetitBoo: Saving ${flatContext.length} context keys to local storage');
+        debugPrint(
+            '🧠 PetitBoo: Saving ${flatContext.length} context keys to local storage');
       }
       await _contextStorage.mergeContext(flatContext);
       state = state.copyWith(userContext: _contextStorage.getContext());

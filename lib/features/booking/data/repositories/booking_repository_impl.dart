@@ -25,18 +25,26 @@ class BookingRepositoryImpl implements BookingRepository {
       data: {
         'activity_id': activityId,
         'slot_id': slotId,
-        'items': ticketSelections.map((ts) => {
-          'ticket_type_id': ts.ticketTypeId,
-          'quantity': ts.quantity,
-          'attendees': ts.attendees.map((a) => {
-            'first_name': a.firstName ?? '',
-            'last_name': a.lastName ?? '',
-            if (a.email != null) 'email': a.email,
-            if (a.phone != null) 'phone': a.phone,
-            if (a.birthDate != null) 'birth_date': a.birthDate,
-            if (a.age != null) 'age': a.age,
-          }).toList(),
-        }).toList(),
+        'items': ticketSelections
+            .map((ts) => {
+                  'ticket_type_id': ts.ticketTypeId,
+                  'quantity': ts.quantity,
+                  'attendees': ts.attendees
+                      .map((a) => {
+                            'first_name': a.firstName ?? '',
+                            'last_name': a.lastName ?? '',
+                            if (a.relationship != null)
+                              'relationship': a.relationship,
+                            if (a.email != null) 'email': a.email,
+                            if (a.phone != null) 'phone': a.phone,
+                            if (a.birthDate != null) 'birth_date': a.birthDate,
+                            if (a.age != null) 'age': a.age,
+                            if (a.membershipCity != null)
+                              'membership_city': a.membershipCity,
+                          })
+                      .toList(),
+                })
+            .toList(),
         'customer_email': buyer.email,
         'customer_first_name': buyer.firstName,
         'customer_last_name': buyer.lastName,

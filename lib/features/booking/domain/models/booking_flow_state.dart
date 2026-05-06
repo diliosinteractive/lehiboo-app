@@ -19,6 +19,7 @@ class ParticipantInfo with _$ParticipantInfo {
     String? lastName,
     String? email,
     String? phone,
+    String? relationship,
     String? birthDate, // "YYYY-MM-DD"
     int? age,
     String? city,

@@ -18,30 +18,11 @@ enum EventCategory {
   other
 }
 
-enum EventAudience {
-  all,
-  family,
-  children,
-  teenagers,
-  adults,
-  seniors
-}
+enum EventAudience { all, family, children, teenagers, adults, seniors }
 
-enum EventStatus {
-  upcoming,
-  ongoing,
-  completed,
-  cancelled,
-  postponed,
-  soldOut
-}
+enum EventStatus { upcoming, ongoing, completed, cancelled, postponed, soldOut }
 
-enum PriceType {
-  free,
-  paid,
-  donation,
-  variable
-}
+enum PriceType { free, paid, donation, variable }
 
 class Event extends Equatable {
   final String id;
@@ -90,6 +71,7 @@ class Event extends Equatable {
   final List<String> organizerVenueTypes;
   final bool organizerAllowPublicContact;
   final bool isFavorite;
+
   /// Members-only event — drives the "Privé 🔒" badge on cards.
   /// Spec: MEMBERSHIPS_MOBILE_SPEC.md §20.
   final bool isMembersOnly;
@@ -121,8 +103,10 @@ class Event extends Equatable {
   final SeatConfig? seatConfig;
   final ExternalBooking? externalBooking;
   final TaxonomyTerm? eventTypeTerm; // Maps to 'event_type' from API
-  final List<TaxonomyTerm> targetAudienceTerms; // Maps to 'target_audience' from API
-  final List<String> allCategoryNames; // All category names from API (including primary)
+  final List<TaxonomyTerm>
+      targetAudienceTerms; // Maps to 'target_audience' from API
+  final List<String>
+      allCategoryNames; // All category names from API (including primary)
   final String? thematiqueName; // Main thematique name from API
   final List<String> themeNames; // From API 'themes' array
   final List<String> emotionNames; // From API 'emotions' array
@@ -223,7 +207,6 @@ class Event extends Equatable {
     this.emotionNames = const [],
     this.locationDetails,
     this.coOrganizers = const [],
-
     this.socialMedia,
     this.rawCategorySlug,
     this.venueDetails,
@@ -231,13 +214,59 @@ class Event extends Equatable {
     this.originalOrganizerName,
   });
 
+  factory Event.minimal({
+    required String id,
+    required String slug,
+    required String title,
+    String venue = '',
+    String city = '',
+    List<String> images = const [],
+    String organizerId = '',
+    String organizerName = '',
+  }) {
+    final now = DateTime.now();
+
+    return Event(
+      id: id,
+      slug: slug,
+      title: title,
+      description: '',
+      shortDescription: '',
+      category: EventCategory.other,
+      targetAudiences: const [EventAudience.all],
+      startDate: now,
+      endDate: now,
+      venue: venue,
+      address: '',
+      city: city,
+      postalCode: '',
+      latitude: 0,
+      longitude: 0,
+      images: images,
+      priceType: PriceType.paid,
+      isIndoor: false,
+      isOutdoor: false,
+      tags: const [],
+      organizerId: organizerId,
+      organizerName: organizerName,
+      isFavorite: false,
+      isFeatured: false,
+      isRecommended: false,
+      status: EventStatus.upcoming,
+      hasDirectBooking: true,
+      createdAt: now,
+      updatedAt: now,
+      views: 0,
+    );
+  }
+
   bool get isFree => priceType == PriceType.free;
 
   bool get isToday {
     final now = DateTime.now();
     return startDate.year == now.year &&
-           startDate.month == now.month &&
-           startDate.day == now.day;
+        startDate.month == now.month &&
+        startDate.day == now.day;
   }
 
   bool get isThisWeek {
@@ -357,10 +386,10 @@ class Event extends Equatable {
     } else {
       diff = endDate.difference(startDate);
     }
-    
+
     final hours = diff.inHours;
     final minutes = diff.inMinutes.remainder(60);
-    
+
     if (hours > 0) {
       return '$hours h ${minutes > 0 ? '$minutes' : ''}';
     }
@@ -448,7 +477,6 @@ class Event extends Equatable {
     List<String>? emotionNames,
     LocationDetails? locationDetails,
     List<CoOrganizer>? coOrganizers,
-
     SocialMediaConfig? socialMedia,
     String? rawCategorySlug,
     EventVenue? venueDetails,
@@ -498,9 +526,11 @@ class Event extends Equatable {
       organizerIsPlatform: organizerIsPlatform ?? this.organizerIsPlatform,
       organizerVerified: organizerVerified ?? this.organizerVerified,
       organizerEventsCount: organizerEventsCount ?? this.organizerEventsCount,
-      organizerFollowersCount: organizerFollowersCount ?? this.organizerFollowersCount,
+      organizerFollowersCount:
+          organizerFollowersCount ?? this.organizerFollowersCount,
       organizerVenueTypes: organizerVenueTypes ?? this.organizerVenueTypes,
-      organizerAllowPublicContact: organizerAllowPublicContact ?? this.organizerAllowPublicContact,
+      organizerAllowPublicContact:
+          organizerAllowPublicContact ?? this.organizerAllowPublicContact,
       isFavorite: isFavorite ?? this.isFavorite,
       isMembersOnly: isMembersOnly ?? this.isMembersOnly,
       isFeatured: isFeatured ?? this.isFeatured,
@@ -536,12 +566,12 @@ class Event extends Equatable {
       emotionNames: emotionNames ?? this.emotionNames,
       locationDetails: locationDetails ?? this.locationDetails,
       coOrganizers: coOrganizers ?? this.coOrganizers,
-
       socialMedia: socialMedia ?? this.socialMedia,
       rawCategorySlug: rawCategorySlug ?? this.rawCategorySlug,
       venueDetails: venueDetails ?? this.venueDetails,
       creationSource: creationSource ?? this.creationSource,
-      originalOrganizerName: originalOrganizerName ?? this.originalOrganizerName,
+      originalOrganizerName:
+          originalOrganizerName ?? this.originalOrganizerName,
     );
   }
 

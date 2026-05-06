@@ -17,6 +17,7 @@ import '../features/favorites/presentation/screens/favorites_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/profile/presentation/screens/profile_edit_screen.dart';
 import '../features/profile/presentation/screens/settings_screen.dart';
+import '../features/profile/presentation/screens/saved_participants_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/auth_bootstrap_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
@@ -36,7 +37,10 @@ import '../features/booking/presentation/screens/booking_detail_screen.dart';
 import '../features/booking/presentation/screens/ticket_detail_screen.dart';
 import '../features/booking/presentation/screens/checkout_screen.dart';
 import '../features/booking/presentation/screens/booking_success_screen.dart';
+import '../features/booking/presentation/screens/order_cart_screen.dart';
+import '../features/booking/presentation/screens/order_success_screen.dart';
 import '../features/booking/domain/models/checkout_params.dart';
+import '../features/booking/data/models/order_api_dto.dart';
 import '../domain/entities/booking.dart' as booking_entity;
 import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
@@ -72,6 +76,7 @@ import '../features/messages/presentation/screens/admin_report_detail_screen.dar
 import '../features/messages/domain/entities/conversation_route.dart';
 import '../features/reviews/presentation/screens/event_reviews_full_screen.dart';
 import '../features/reviews/presentation/screens/my_reviews_screen.dart';
+
 /// ChangeNotifier that drives GoRouter.refreshListenable so redirect logic
 /// re-runs on auth state changes WITHOUT rebuilding the GoRouter instance
 /// (which would reset the navigation stack).
@@ -83,7 +88,8 @@ class _AuthRouterRefresh extends ChangeNotifier {
         // Only refresh when meaningful routing state changes. Ignore pure
         // errorMessage toggles — those must not reset the navigation stack.
         if (previous?.status != next.status) {
-          debugPrint('🔀 AuthRouterRefresh: ${previous?.status} → ${next.status}');
+          debugPrint(
+              '🔀 AuthRouterRefresh: ${previous?.status} → ${next.status}');
           notifyListeners();
         }
       },
@@ -99,7 +105,6 @@ class _AuthRouterRefresh extends ChangeNotifier {
     super.dispose();
   }
 }
-
 
 /// Clé globale du navigateur racine — utilisée par `HibonsAnimationCoordinator`
 /// pour obtenir un BuildContext sous l'Overlay (les toasts/overlays Hibons
@@ -350,8 +355,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/messages/admin/:conversationUuid',
         name: 'messages-admin-detail',
         builder: (_, state) {
-          final readonly =
-              state.uri.queryParameters['readonly'] == 'true';
+          final readonly = state.uri.queryParameters['readonly'] == 'true';
           return ConversationDetailScreen(
             conversationUuid: state.pathParameters['conversationUuid']!,
             route: readonly
@@ -652,6 +656,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           return CheckoutScreen(params: params);
         },
       ),
+      GoRoute(
+        path: '/cart',
+        name: 'cart',
+        builder: (context, state) => const OrderCartScreen(),
+      ),
+      GoRoute(
+        path: '/order-confirmation/:id',
+        name: 'order-confirmation',
+        builder: (context, state) {
+          final orderId = state.pathParameters['id']!;
+          final extra = state.extra as Map<String, dynamic>?;
+          return OrderSuccessScreen(
+            orderId: orderId,
+            order: extra?['order'] as CreateOrderResponseDto?,
+          );
+        },
+      ),
 
       // Confirmation après checkout
       GoRoute(
@@ -674,6 +695,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/account',
         name: 'account',
         builder: (context, state) => const ProfileEditScreen(),
+      ),
+      GoRoute(
+        path: '/participants',
+        name: 'saved-participants',
+        builder: (context, state) => const SavedParticipantsScreen(),
       ),
       GoRoute(
         path: '/profile/edit',
@@ -809,9 +835,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final slug = state.pathParameters['slug']!;
           final extra = state.extra;
-          final title = extra is Map<String, dynamic>
-              ? extra['title']?.toString()
-              : null;
+          final title =
+              extra is Map<String, dynamic> ? extra['title']?.toString() : null;
           return EventReviewsFullScreen(eventSlug: slug, eventTitle: title);
         },
       ),

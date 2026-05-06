@@ -3,6 +3,7 @@ import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart'
     as event_models;
+import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 
 import 'participant_form_card.dart';
 
@@ -24,6 +25,9 @@ class ParticipantFormsSection extends StatelessWidget {
   /// Current attendees map: ticketTypeId → List<ParticipantInfo>.
   final Map<String, List<ParticipantInfo>> attendeesMap;
 
+  /// Reusable participants saved in the customer's account.
+  final List<SavedParticipant> savedParticipants;
+
   /// Called when an attendee is updated.
   /// Parameters: ticketTypeId, attendeeIndex, updatedInfo.
   final void Function(String ticketTypeId, int index, ParticipantInfo info)
@@ -35,6 +39,7 @@ class ParticipantFormsSection extends StatelessWidget {
     required this.eventTickets,
     this.buyerInfo,
     required this.attendeesMap,
+    this.savedParticipants = const [],
     required this.onAttendeeChanged,
   });
 
@@ -46,9 +51,8 @@ class ParticipantFormsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeEntries = ticketQuantities.entries
-        .where((e) => e.value > 0)
-        .toList();
+    final activeEntries =
+        ticketQuantities.entries.where((e) => e.value > 0).toList();
 
     if (activeEntries.isEmpty) return const SizedBox.shrink();
 
@@ -73,6 +77,38 @@ class ParticipantFormsSection extends StatelessWidget {
             'Un formulaire par billet — renseignez chaque participant',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
           ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: HbColors.brandPrimary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: HbColors.brandPrimary.withValues(alpha: 0.18),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.auto_awesome_outlined,
+                  size: 18,
+                  color: HbColors.brandPrimary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Le prenom, la date de naissance, la ville et la relation aident l IA et l experience Le Hiboo a proposer les offres et evenements les plus pertinents.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           for (final entry in activeEntries) ...[
             for (int i = 0; i < entry.value; i++) ...[
@@ -92,8 +128,8 @@ class ParticipantFormsSection extends StatelessWidget {
                   showSameAsBuyer: showToggle,
                   buyerInfo: buyerInfo,
                   initialValue: initial,
-                  onChanged: (info) =>
-                      onAttendeeChanged(entry.key, i, info),
+                  savedParticipants: savedParticipants,
+                  onChanged: (info) => onAttendeeChanged(entry.key, i, info),
                 );
               }),
             ],

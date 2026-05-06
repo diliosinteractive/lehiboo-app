@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+// ignore_for_file: invalid_annotation_target
+
 part 'booking_api_dto.freezed.dart';
 part 'booking_api_dto.g.dart';
 
@@ -14,6 +16,7 @@ class AttendeeRequestDto with _$AttendeeRequestDto {
     @JsonKey(name: 'last_name') required String lastName,
     String? email,
     String? phone,
+    String? relationship,
     @JsonKey(name: 'birth_date') String? birthDate,
     int? age,
     String? city,
@@ -137,7 +140,6 @@ class DiscountDto with _$DiscountDto {
   factory DiscountDto.fromJson(Map<String, dynamic> json) =>
       _$DiscountDtoFromJson(json);
 }
-
 
 // List Bookings Response - Structure réelle de l'API Laravel
 @freezed

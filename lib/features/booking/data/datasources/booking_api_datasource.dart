@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../models/booking_api_dto.dart';
+import '../models/order_api_dto.dart';
 import '../models/ticket_pdf_download.dart';
 
 final bookingApiDataSourceProvider = Provider<BookingApiDataSource>((ref) {
@@ -57,8 +58,56 @@ class BookingApiDataSource {
           'customer_town': customerTown,
         if (customerAddress != null && customerAddress.isNotEmpty)
           'customer_address': customerAddress,
-        if (promoCode != null && promoCode.isNotEmpty)
-          'promo_code': promoCode,
+        if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
+        if (paymentMethod != null) 'payment_method': paymentMethod,
+        'accept_terms': acceptTerms,
+        'accept_newsletter': acceptNewsletter,
+      },
+    );
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return CreateBookingResponseDto.fromJson(payload);
+  }
+
+  /// Crée un brouillon de réservation.
+  ///
+  /// Contrairement à [createBooking], aucun Booking visible vendor/admin n'est
+  /// créé avant confirmation du paiement. Pour un événement gratuit, l'API
+  /// retourne directement le Booking confirmé.
+  Future<CreateBookingResponseDto> createBookingDraft({
+    required String eventId,
+    required String slotId,
+    required List<BookingTicketRequestDto> items,
+    required String customerEmail,
+    required String customerFirstName,
+    required String customerLastName,
+    String? customerPhone,
+    String? customerBirthDate,
+    String? customerTown,
+    String? customerAddress,
+    String? promoCode,
+    String? paymentMethod,
+    bool acceptTerms = false,
+    bool acceptNewsletter = false,
+  }) async {
+    final response = await _dio.post(
+      '/bookings/draft',
+      data: {
+        'event_id': eventId,
+        'slot_id': slotId,
+        'items': items.map((t) => t.toJson()).toList(),
+        'customer_email': customerEmail,
+        'customer_first_name': customerFirstName,
+        'customer_last_name': customerLastName,
+        if (customerPhone != null && customerPhone.isNotEmpty)
+          'customer_phone': customerPhone,
+        if (customerBirthDate != null && customerBirthDate.isNotEmpty)
+          'customer_birth_date': customerBirthDate,
+        if (customerTown != null && customerTown.isNotEmpty)
+          'customer_town': customerTown,
+        if (customerAddress != null && customerAddress.isNotEmpty)
+          'customer_address': customerAddress,
+        if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
         if (paymentMethod != null) 'payment_method': paymentMethod,
         'accept_terms': acceptTerms,
         'accept_newsletter': acceptNewsletter,
@@ -81,6 +130,17 @@ class BookingApiDataSource {
     return PaymentIntentResponseDto.fromJson(payload);
   }
 
+  /// Récupère le PaymentIntent Stripe pour un brouillon payant.
+  Future<PaymentIntentResponseDto> getDraftPaymentIntent({
+    required String draftUuid,
+  }) async {
+    final response =
+        await _dio.post('/bookings/draft/$draftUuid/payment-intent');
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return PaymentIntentResponseDto.fromJson(payload);
+  }
+
   /// Confirme un booking après paiement Stripe réussi
   Future<void> confirmBooking({
     required String bookingUuid,
@@ -92,6 +152,81 @@ class BookingApiDataSource {
         'payment_intent_id': paymentIntentId,
       },
     );
+  }
+
+  /// Confirme un brouillon après paiement Stripe réussi et retourne le Booking.
+  Future<CreateBookingResponseDto> confirmDraftBooking({
+    required String draftUuid,
+    required String paymentIntentId,
+  }) async {
+    final response = await _dio.post(
+      '/bookings/draft/$draftUuid/confirm',
+      data: {
+        'payment_intent_id': paymentIntentId,
+      },
+    );
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return CreateBookingResponseDto.fromJson(payload);
+  }
+
+  /// Crée une commande multi-evenements/multi-vendors.
+  Future<CreateOrderResponseDto> createOrder({
+    required List<Map<String, dynamic>> items,
+    required String customerEmail,
+    required String customerFirstName,
+    required String customerLastName,
+    String? customerPhone,
+    String? customerBirthDate,
+    String? customerTown,
+    String? source,
+  }) async {
+    final response = await _dio.post(
+      '/orders',
+      data: {
+        'items': items,
+        'customer_email': customerEmail,
+        'customer_first_name': customerFirstName,
+        'customer_last_name': customerLastName,
+        if (customerPhone != null && customerPhone.isNotEmpty)
+          'customer_phone': customerPhone,
+        if (customerBirthDate != null && customerBirthDate.isNotEmpty)
+          'customer_birth_date': customerBirthDate,
+        if (customerTown != null && customerTown.isNotEmpty)
+          'customer_town': customerTown,
+        'meta': {
+          'source': source ?? 'mobile_cart_checkout',
+        },
+      },
+    );
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return CreateOrderResponseDto.fromJson(payload);
+  }
+
+  Future<OrderPaymentIntentResponseDto> getOrderPaymentIntent({
+    required String orderUuid,
+  }) async {
+    final response = await _dio.post('/orders/$orderUuid/payment-intent');
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return OrderPaymentIntentResponseDto.fromJson(payload);
+  }
+
+  Future<CreateOrderResponseDto> confirmOrder({
+    required String orderUuid,
+    required String paymentIntentId,
+  }) async {
+    final response = await _dio.post(
+      '/orders/$orderUuid/confirm',
+      data: {
+        'payment_intent_id': paymentIntentId,
+        'paymentIntentId': paymentIntentId,
+      },
+    );
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return CreateOrderResponseDto.fromJson(payload);
   }
 
   /// Confirme un booking gratuit (sans paiement)
@@ -134,7 +269,8 @@ class BookingApiDataSource {
     };
     if (status != null && status != 'all') queryParams['status'] = status;
 
-    final response = await _dio.get('/me/bookings', queryParameters: queryParams);
+    final response =
+        await _dio.get('/me/bookings', queryParameters: queryParams);
 
     final data = response.data;
     if (data is Map<String, dynamic>) {
@@ -199,7 +335,8 @@ class BookingApiDataSource {
     if (status != null) queryParams['status'] = status;
     if (upcoming != null) queryParams['upcoming'] = upcoming;
 
-    final response = await _dio.get('/me/tickets', queryParameters: queryParams);
+    final response =
+        await _dio.get('/me/tickets', queryParameters: queryParams);
 
     final payload = ApiResponseHandler.extractObject(response.data);
     return TicketsListResponseDto.fromJson(payload);
