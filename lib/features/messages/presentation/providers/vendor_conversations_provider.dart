@@ -197,6 +197,7 @@ class VendorConversationsNotifier
         period: state.period,
         page: 1,
       );
+      if (!mounted) return;
       var conversations = result.conversations;
       if (_readUuids.isNotEmpty) {
         conversations = conversations.map((c) {
@@ -221,6 +222,7 @@ class VendorConversationsNotifier
         _ref.read(messagesRealtimeProvider.notifier).subscribeToOrganization(orgId);
       }
     } catch (e, st) {
+      if (!mounted) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -239,6 +241,7 @@ class VendorConversationsNotifier
         period: state.period,
         page: nextPage,
       );
+      if (!mounted) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
@@ -402,6 +405,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         conversationType: 'vendor_admin',
         page: 1,
       );
+      if (!mounted) return;
       var conversations = result.conversations;
       if (_readUuids.isNotEmpty) {
         conversations = conversations.map((c) {
@@ -417,6 +421,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         hasMore: result.hasMore,
       );
     } catch (e, st) {
+      if (!mounted) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -431,6 +436,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         conversationType: 'vendor_admin',
         page: nextPage,
       );
+      if (!mounted) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
