@@ -352,6 +352,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   slivers: _buildResultsSlivers(
                     activities: activities,
                     hasMore: paginatedData.hasMore,
+                    totalItems: paginatedData.totalItems,
                     filter: filter,
                     context: context,
                     ref: ref,
@@ -376,6 +377,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       hasMore:
                           true, // If loading, assumption is likely true or just show spinner
                       isLoadingMore: true,
+                      totalItems: previousData.totalItems,
                       filter: filter,
                       context: context,
                       ref: ref,
@@ -420,10 +422,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     required List<dynamic> activities,
     required bool hasMore,
     bool isLoadingMore = false,
+    required int totalItems,
     required EventFilter filter,
     required BuildContext context,
     required WidgetRef ref,
   }) {
+    final displayCount = totalItems > 0 ? totalItems : activities.length;
     return [
       // Results header
       SliverToBoxAdapter(
@@ -433,7 +437,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${activities.length} résultat${activities.length > 1 ? 's' : ''}',
+                '$displayCount résultat${displayCount > 1 ? 's' : ''}',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
