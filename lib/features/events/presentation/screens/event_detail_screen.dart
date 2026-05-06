@@ -148,20 +148,34 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       return true;
     }
 
-    // Hide if all slots are in the past
+    // No bookable date → no point showing the bar's "select a date" CTA.
+    return !_hasSelectableSlot(event);
+  }
+
+  /// Whether the event has at least one slot the customer could book
+  /// today or later. While availability is still loading, returns true
+  /// (optimistic) so the booking bar and ticket selectors stay live on
+  /// first paint. Once availability resolves and reveals zero future
+  /// slots, returns false — the screen then disables ticket selectors
+  /// and hides the sticky booking bar.
+  bool _hasSelectableSlot(Event event) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    if (_availableSlots.isNotEmpty) {
-      final allPassed =
-          _availableSlots.every((slot) => slot.date.isBefore(today));
-      if (allPassed) return true;
-    } else if (event.endDate.isBefore(today)) {
-      // No slots loaded yet, fall back to event end date
-      return true;
+    final id = _looksLikeUuid(event.id) ? event.id : widget.eventId;
+    final asyncAvail = ref.watch(eventAvailabilityProvider(id));
+
+    // Once availability has resolved (success or error), `_availableSlots`
+    // is the authoritative cache: the success branch fills it from the
+    // API and the error branch fills it from `event.calendar`.
+    if (asyncAvail.hasValue || asyncAvail.hasError) {
+      if (_availableSlots.isEmpty) return false;
+      return _availableSlots.any((s) => !s.date.isBefore(today));
     }
 
-    return false;
+    // Still loading — keep the optimistic UI; fall back to the event's
+    // own end date so a clearly-past event stays disabled.
+    return !event.endDate.isBefore(today);
   }
 
   /// Retourne le slot sélectionné
@@ -335,6 +349,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 right: 0,
                 child: _buildOverlayAppBar(event),
               ),
+
             ],
           ),
         ),
@@ -411,6 +426,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   EventTicketsSection(
                     tickets: event.tickets,
                     quantities: _ticketQuantities,
+                    enabled: _hasSelectableSlot(event),
                     onQuantityChanged: (entry) {
                       setState(() {
                         _ticketQuantities[entry.key] = entry.value;
@@ -449,6 +465,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 EventTicketsSection(
                   tickets: event.tickets,
                   quantities: _ticketQuantities,
+                  enabled: _hasSelectableSlot(event),
                   onQuantityChanged: (entry) {
                     setState(() {
                       _ticketQuantities[entry.key] = entry.value;
@@ -457,6 +474,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ),
                 const SizedBox(height: 24),
               ],
+
 
               // 8. Infos pratiques (grille 2x2)
               EventPracticalInfo(
@@ -631,7 +649,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           return const SizedBox.shrink();
         }
 
-        return _buildDateSelectorWidget(slots);
+        return _buildDateSelectorWidget(event, slots);
       },
     );
   }
@@ -684,10 +702,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       });
     }
 
-    return _buildDateSelectorWidget(slots);
+    return _buildDateSelectorWidget(event, slots);
   }
 
-  Widget _buildDateSelectorWidget(List<CalendarDateSlot> slots) {
+  Widget _buildDateSelectorWidget(Event event, List<CalendarDateSlot> slots) {
+    final isDiscovery = !event.hasDirectBooking;
+
     return EventDateSelector(
       slots: slots,
       selectedSlotId: _selectedSlotId,

@@ -46,6 +46,10 @@ class EventTicketCard extends StatefulWidget {
   final ValueChanged<int> onQuantityChanged;
   final bool isExpanded;
   final VoidCallback? onToggleExpand;
+  /// When false, both quantity buttons are inert. Used by the event
+  /// detail screen to lock the ticket selectors when no future slot is
+  /// available — there's nothing to book against.
+  final bool enabled;
 
   const EventTicketCard({
     super.key,
@@ -54,6 +58,7 @@ class EventTicketCard extends StatefulWidget {
     required this.onQuantityChanged,
     this.isExpanded = false,
     this.onToggleExpand,
+    this.enabled = true,
   });
 
   @override
@@ -374,7 +379,7 @@ class _EventTicketCardState extends State<EventTicketCard> {
           // Bouton moins
           _buildQuantityButton(
             icon: Icons.remove,
-            onPressed: widget.quantity > 0
+            onPressed: widget.enabled && widget.quantity > 0
                 ? () {
                     HapticFeedback.selectionClick();
                     widget.onQuantityChanged(widget.quantity - 1);
@@ -404,7 +409,7 @@ class _EventTicketCardState extends State<EventTicketCard> {
           // Bouton plus
           _buildQuantityButton(
             icon: Icons.add,
-            onPressed: widget.quantity < _maxQuantity
+            onPressed: widget.enabled && widget.quantity < _maxQuantity
                 ? () {
                     HapticFeedback.mediumImpact();
                     widget.onQuantityChanged(widget.quantity + 1);
@@ -444,12 +449,17 @@ class EventTicketsSection extends StatelessWidget {
   final List<Ticket> tickets;
   final Map<String, int> quantities;
   final ValueChanged<MapEntry<String, int>> onQuantityChanged;
+  /// Forwarded to each [EventTicketCard]. When false, no ticket can be
+  /// added or removed — used when the event has no future slot to book
+  /// against, so the customer can't reach a coherent booking state.
+  final bool enabled;
 
   const EventTicketsSection({
     super.key,
     required this.tickets,
     required this.quantities,
     required this.onQuantityChanged,
+    this.enabled = true,
   });
 
   @override
@@ -485,6 +495,7 @@ class EventTicketsSection extends StatelessWidget {
                 child: EventTicketCard(
                   ticket: ticket,
                   quantity: quantities[ticket.id] ?? 0,
+                  enabled: enabled,
                   onQuantityChanged: (qty) {
                     onQuantityChanged(MapEntry(ticket.id, qty));
                   },
