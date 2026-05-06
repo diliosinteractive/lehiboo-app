@@ -381,15 +381,15 @@ class EventCard extends ConsumerWidget {
                   ? activity.priceMin!
                   : activity.priceMax!;
               return Text(
-                compact
-                    ? 'Dès ${price.toStringAsFixed(0)}€'
-                    : 'À partir de ${price.toStringAsFixed(0)}€',
-                style: const TextStyle(
-                  color: Color(0xFFFF601F),
+                'À partir de ${price.toStringAsFixed(0)}€',
+                style: TextStyle(
+                  color: const Color(0xFFFF601F),
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: compact ? 12 : 14,
                   height: 1.1,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               );
             }),
         ],

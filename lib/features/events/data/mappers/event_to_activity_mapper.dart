@@ -74,6 +74,16 @@ class EventToActivityMapper {
       );
     }
 
+    // Booking-vs-discovery is the signal the cards use to decide whether
+    // to show a "À partir de …" price label. Without this, paid booking
+    // events on the home feed silently render no price at all because
+    // the EventCard's `isBooking` check defaults to false.
+    final ReservationMode? reservationMode = event.hasDirectBooking
+        ? (event.isFree
+            ? ReservationMode.lehibooFree
+            : ReservationMode.lehibooPaid)
+        : null;
+
     return Activity(
       id: event.id,
       title: event.title,
@@ -87,6 +97,7 @@ class EventToActivityMapper {
       priceMin: event.minPrice ?? event.price ?? 0,
       priceMax: event.maxPrice ?? event.price ?? 0,
       currency: 'EUR',
+      reservationMode: reservationMode,
       indoorOutdoor: event.isIndoor && event.isOutdoor
           ? IndoorOutdoor.both
           : event.isIndoor
