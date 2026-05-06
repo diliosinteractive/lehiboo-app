@@ -113,7 +113,6 @@ class ParticipantFormsSection extends StatelessWidget {
           for (final entry in activeEntries) ...[
             for (int i = 0; i < entry.value; i++) ...[
               Builder(builder: (context) {
-                final showToggle = isFirstGlobal;
                 if (isFirstGlobal) isFirstGlobal = false;
 
                 final attendees = attendeesMap[entry.key] ?? [];
@@ -125,7 +124,6 @@ class ParticipantFormsSection extends StatelessWidget {
                   ticketTypeName: _ticketName(entry.key),
                   participantIndex: i + 1,
                   totalForType: entry.value,
-                  showSameAsBuyer: showToggle,
                   buyerInfo: buyerInfo,
                   initialValue: initial,
                   savedParticipants: savedParticipants,

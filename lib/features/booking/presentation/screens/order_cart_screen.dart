@@ -10,11 +10,15 @@ import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
+import 'package:lehiboo/features/booking/domain/extensions/user_participant_extension.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/models/order_cart_item.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
+import 'package:lehiboo/features/booking/presentation/widgets/cart_summary_section.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_form_card.dart';
+import 'package:lehiboo/features/booking/presentation/widgets/participants_overview_block.dart';
+import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
 
 class OrderCartScreen extends ConsumerStatefulWidget {
@@ -69,6 +73,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------
+  // Buyer form prefill from logged-in user
+
   void _prefillForm() {
     final user = ref.read(authProvider).user;
     if (user == null) return;
@@ -96,6 +103,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       _townController.text = user.membershipCity!;
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Timers
 
   void _startReservationTimer(String? expiresAt) {
     _reservationTimer?.cancel();
@@ -151,7 +161,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       setState(() {
         _cartHoldRemaining = null;
         _errorMessage =
-            'Le délai du panier est dépassé. Ajoutez à nouveau vos billets pour continuer.';
+            'Le delai du panier est depasse. Ajoutez a nouveau vos billets pour continuer.';
       });
       return;
     }
@@ -165,7 +175,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     final totalSeconds = remaining.inSeconds;
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
-
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
@@ -184,6 +193,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       _clearReservationTimer();
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Cart actions
 
   Future<void> _confirmClearCart() async {
     final confirmed = await showDialog<bool>(
@@ -212,127 +224,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final items = ref.watch(orderCartProvider);
-    final totalQuantity =
-        items.fold<int>(0, (sum, item) => sum + item.quantity);
-    final totalAmount =
-        items.fold<double>(0, (sum, item) => sum + item.lineTotal);
-    _ensureAttendees(items);
-
-    return Scaffold(
-      backgroundColor: HbColors.backgroundLight,
-      appBar: AppBar(
-        title: const Text('Panier'),
-        backgroundColor: Colors.white,
-        foregroundColor: HbColors.textPrimary,
-        elevation: 0,
-        actions: [
-          if (items.isNotEmpty)
-            TextButton(
-              onPressed: _isLoading ? null : _confirmClearCart,
-              child: const Text('Vider'),
-            ),
-        ],
-      ),
-      body: items.isEmpty
-          ? _buildEmptyState()
-          : SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTimerNotice(),
-                  const SizedBox(height: 16),
-                  _buildCartSummary(items),
-                  const SizedBox(height: 16),
-                  _buildBuyerForm(),
-                  const SizedBox(height: 16),
-                  _buildParticipantsSection(items),
-                  const SizedBox(height: 16),
-                  _buildTermsSection(),
-                  if (_errorMessage != null) _buildError(),
-                ],
-              ),
-            ),
-      bottomNavigationBar: items.isEmpty
-          ? null
-          : _buildConfirmButton(
-              totalQuantity: totalQuantity, totalAmount: totalAmount),
-    );
-  }
-
-  Widget _buildTimerNotice() {
-    final reservationRemaining = _reservationRemaining;
-    if (_activeOrderUuid != null && reservationRemaining != null) {
-      return _buildNotice(
-        icon: Icons.timer_outlined,
-        title: 'Places réservées',
-        message:
-            'Vos places sont bloquées encore ${_formatRemaining(reservationRemaining)}. Passé ce délai, elles seront libérées.',
-      );
-    }
-
-    final cartHoldRemaining = _cartHoldRemaining;
-    if (cartHoldRemaining == null) {
-      return const SizedBox.shrink();
-    }
-
-    return _buildNotice(
-      icon: Icons.shopping_bag_outlined,
-      title: 'Panier conservé',
-      message:
-          'Votre sélection est conservée encore ${_formatRemaining(cartHoldRemaining)}. Les places seront bloquées à l\'étape paiement.',
-    );
-  }
-
-  Widget _buildNotice({
-    required IconData icon,
-    required String title,
-    required String message,
-  }) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF7ED),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFD7AA)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: HbColors.brandPrimary, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: HbColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.35,
-                    color: Colors.brown.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _ensureAttendees(List<OrderCartItem> items) {
     final activeIds = items.map((item) => item.id).toSet();
     _attendeesByCartItemId.removeWhere((key, _) => !activeIds.contains(key));
@@ -347,6 +238,269 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             index < current.length ? current[index] : const ParticipantInfo(),
       );
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Participant prefill helpers
+
+  void _updateAttendee(String itemId, int index, ParticipantInfo info) {
+    setState(() {
+      final next = <ParticipantInfo>[
+        ...?_attendeesByCartItemId[itemId],
+      ];
+      if (index < next.length) {
+        next[index] = info;
+      }
+      _attendeesByCartItemId[itemId] = next;
+    });
+  }
+
+  void _fillAllFromProfile() {
+    final user = ref.read(authProvider).user;
+    if (user == null) return;
+    final profileInfo = user.toParticipantInfo();
+
+    setState(() {
+      for (final entry in _attendeesByCartItemId.entries) {
+        final updated = <ParticipantInfo>[];
+        for (final attendee in entry.value) {
+          updated.add(attendee.isBlank
+              ? profileInfo.copyWith(saveForLater: false)
+              : attendee);
+        }
+        _attendeesByCartItemId[entry.key] = updated;
+      }
+    });
+  }
+
+  Future<void> _pickSavedForFirstEmpty(
+    List<SavedParticipant> savedParticipants,
+  ) async {
+    final selected = await _showSavedParticipantsBottomSheet(savedParticipants);
+    if (selected == null || !mounted) return;
+
+    // Find first blank slot across all items.
+    for (final entry in _attendeesByCartItemId.entries) {
+      for (var i = 0; i < entry.value.length; i++) {
+        if (entry.value[i].isBlank) {
+          final info = selected.toParticipantInfo();
+          _updateAttendee(entry.key, i, info);
+          return;
+        }
+      }
+    }
+
+    // No blank slot — replace the first one.
+    if (_attendeesByCartItemId.isNotEmpty) {
+      final firstEntry = _attendeesByCartItemId.entries.first;
+      _updateAttendee(firstEntry.key, 0, selected.toParticipantInfo());
+    }
+  }
+
+  Future<SavedParticipant?> _showSavedParticipantsBottomSheet(
+    List<SavedParticipant> participants,
+  ) {
+    return showModalBottomSheet<SavedParticipant>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: Text(
+                  'Choisir un participant enregistre',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+              ),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  itemBuilder: (_, index) {
+                    final p = participants[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor:
+                            HbColors.brandPrimary.withValues(alpha: 0.1),
+                        child: Text(
+                          p.displayName.isNotEmpty
+                              ? p.displayName
+                                  .trim()
+                                  .substring(0, 1)
+                                  .toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              color: HbColors.brandPrimary,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      title: Text(p.displayName),
+                      subtitle: Text(
+                        [
+                          p.birthDate,
+                          p.membershipCity,
+                        ]
+                            .whereType<String>()
+                            .where((v) => v.isNotEmpty)
+                            .join(' · '),
+                      ),
+                      onTap: () => Navigator.of(sheetContext).pop(p),
+                    );
+                  },
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemCount: participants.length,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _goToCompleteProfile() {
+    context.push('/profile/edit');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build
+
+  @override
+  Widget build(BuildContext context) {
+    final items = ref.watch(orderCartProvider);
+    final totalQuantity =
+        items.fold<int>(0, (sum, item) => sum + item.quantity);
+    final totalAmount =
+        items.fold<double>(0, (sum, item) => sum + item.lineTotal);
+    _ensureAttendees(items);
+
+    final user = ref.watch(authProvider).user;
+    final userParticipantInfo = user?.toParticipantInfo();
+    final userIsComplete = userParticipantInfo?.isComplete ?? false;
+    final savedParticipants =
+        ref.watch(savedParticipantsProvider).valueOrNull ?? const [];
+
+    final allAttendees =
+        _attendeesByCartItemId.values.expand((e) => e).toList();
+    final completedCount = allAttendees.where((a) => a.isComplete).length;
+    final totalParticipants = allAttendees.length;
+
+    final firstIncompleteIndex = allAttendees.indexWhere((a) => !a.isComplete);
+
+    return Scaffold(
+      backgroundColor: HbColors.backgroundLight,
+      appBar: AppBar(
+        title: const Text('Panier'),
+        backgroundColor: Colors.white,
+        foregroundColor: HbColors.textPrimary,
+        elevation: 0,
+        actions: [
+          if (_cartHoldRemaining != null && _activeOrderUuid == null)
+            _CartTimerChip(
+              label: 'Panier ${_formatRemaining(_cartHoldRemaining!)}',
+              onTap: _showCartHoldInfo,
+            ),
+          if (_activeOrderUuid != null && _reservationRemaining != null)
+            _CartTimerChip(
+              label: 'Places ${_formatRemaining(_reservationRemaining!)}',
+              onTap: _showCartHoldInfo,
+              highlight: true,
+            ),
+          if (items.isNotEmpty)
+            TextButton(
+              onPressed: _isLoading ? null : _confirmClearCart,
+              child: const Text('Vider'),
+            ),
+        ],
+      ),
+      body: items.isEmpty
+          ? _buildEmptyState()
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CartSummarySection(
+                    items: items,
+                    onUpdateQuantity:
+                        ref.read(orderCartProvider.notifier).updateQuantity,
+                    onRemove: ref.read(orderCartProvider.notifier).remove,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Participants',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: HbColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Choisissez une personne enregistree ou renseignez chaque billet.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 12),
+                  ParticipantsOverviewBlock(
+                    completedCount: completedCount,
+                    totalCount: totalParticipants,
+                    savedParticipants: savedParticipants,
+                    user: user,
+                    userIsComplete: userIsComplete,
+                    onFillFromProfile:
+                        user != null ? _fillAllFromProfile : null,
+                    onPickSavedParticipant: savedParticipants.isEmpty
+                        ? null
+                        : () => _pickSavedForFirstEmpty(savedParticipants),
+                    onCompleteProfile:
+                        user != null ? _goToCompleteProfile : null,
+                  ),
+                  const SizedBox(height: 16),
+                  ..._buildParticipantCards(
+                    items: items,
+                    savedParticipants: savedParticipants,
+                    firstIncompleteIndex: firstIncompleteIndex,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildBuyerForm(),
+                  const SizedBox(height: 12),
+                  _buildTermsSection(),
+                  if (_errorMessage != null) _buildError(),
+                ],
+              ),
+            ),
+      bottomNavigationBar: items.isEmpty
+          ? null
+          : _buildConfirmButton(
+              totalQuantity: totalQuantity, totalAmount: totalAmount),
+    );
+  }
+
+  void _showCartHoldInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Conservation du panier'),
+        content: const Text(
+          'Votre selection est conservee 15 minutes apres le dernier ajout. Au moment du paiement, les places sont bloquees pour le temps necessaire a la finalisation.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Compris'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEmptyState() {
@@ -408,221 +562,51 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         town: _townController.text.trim(),
       );
 
-  Widget _buildParticipantsSection(List<OrderCartItem> items) {
-    final savedParticipants =
-        ref.watch(savedParticipantsProvider).valueOrNull ?? const [];
+  List<Widget> _buildParticipantCards({
+    required List<OrderCartItem> items,
+    required List<SavedParticipant> savedParticipants,
+    required int firstIncompleteIndex,
+  }) {
+    final cards = <Widget>[];
+    var globalIndex = 0;
 
-    var firstGlobal = true;
-
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Participants',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Choisissez une personne enregistree ou renseignez chaque billet.',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: HbColors.brandPrimary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: HbColors.brandPrimary.withValues(alpha: 0.18),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.auto_awesome_outlined,
-                  size: 18,
-                  color: HbColors.brandPrimary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Le prénom, la date de naissance, la ville et la relation aident l\'IA et l\'expérience Le Hiboo à proposer les offres et événements les plus pertinents.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1.35,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          for (final item in items)
-            for (int i = 0; i < item.quantity; i++)
-              Builder(
-                builder: (context) {
-                  final showSameAsBuyer = firstGlobal;
-                  firstGlobal = false;
-                  final attendees = _attendeesByCartItemId[item.id] ?? [];
-                  final initial = i < attendees.length
-                      ? attendees[i]
-                      : const ParticipantInfo();
-
-                  return ParticipantFormCard(
-                    ticketTypeName: '${item.event.title} — ${item.ticket.name}',
-                    participantIndex: i + 1,
-                    totalForType: item.quantity,
-                    showSameAsBuyer: showSameAsBuyer,
-                    buyerInfo: _currentBuyerInfo,
-                    initialValue: initial,
-                    savedParticipants: savedParticipants,
-                    onChanged: (info) {
-                      setState(() {
-                        final next = <ParticipantInfo>[
-                          ...?_attendeesByCartItemId[item.id],
-                        ];
-                        if (i < next.length) {
-                          next[i] = info;
-                        }
-                        _attendeesByCartItemId[item.id] = next;
-                      });
-                    },
-                  );
-                },
-              ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCartSummary(List<OrderCartItem> items) {
-    final grouped = <String, List<OrderCartItem>>{};
     for (final item in items) {
-      grouped.putIfAbsent(item.event.organizerName, () => []).add(item);
+      final attendees = _attendeesByCartItemId[item.id] ?? const [];
+      for (var i = 0; i < item.quantity; i++) {
+        final initial =
+            i < attendees.length ? attendees[i] : const ParticipantInfo();
+        final cardIndex = globalIndex;
+
+        cards.add(
+          ParticipantFormCard(
+            key: ValueKey('${item.id}-$i'),
+            ticketTypeName: item.ticket.name,
+            participantIndex: cardIndex + 1,
+            totalForType: item.quantity,
+            buyerInfo: _currentBuyerInfo,
+            initialValue: initial,
+            savedParticipants: savedParticipants,
+            eventTitle: item.event.title,
+            slotLabel: _formatSlot(item),
+            initiallyExpanded: cardIndex == firstIncompleteIndex,
+            onChanged: (info) => _updateAttendee(item.id, i, info),
+          ),
+        );
+
+        globalIndex++;
+      }
     }
 
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Billets sélectionnés',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...grouped.entries.map((vendorEntry) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    vendorEntry.key.isEmpty ? 'Organisateur' : vendorEntry.key,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: HbColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...vendorEntry.value.map(_buildCartLine),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCartLine(OrderCartItem item) {
-    final notifier = ref.read(orderCartProvider.notifier);
-    final slotLabel = _formatSlot(item);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            item.event.title,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (slotLabel != null) ...[
-            const SizedBox(height: 4),
-            Text(slotLabel, style: TextStyle(color: Colors.grey.shade600)),
-          ],
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  item.ticket.name,
-                  style: TextStyle(color: Colors.grey.shade700),
-                ),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: () =>
-                    notifier.updateQuantity(item.id, item.quantity - 1),
-                icon: const Icon(Icons.remove_circle_outline),
-              ),
-              Text(
-                item.quantity.toString(),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: () =>
-                    notifier.updateQuantity(item.id, item.quantity + 1),
-                icon: const Icon(Icons.add_circle_outline),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: () => notifier.remove(item.id),
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-              ),
-            ],
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              _formatPrice(item.lineTotal),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: HbColors.brandPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return cards;
   }
 
   Widget _buildBuyerForm() {
     return Container(
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
@@ -630,39 +614,60 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Vos coordonnees',
+              'Coordonnees',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
                 color: HbColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _firstNameController,
-              decoration: _inputDecoration('Prenom *'),
-              textCapitalization: TextCapitalization.words,
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Le prenom est requis'
-                  : null,
+            const SizedBox(height: 4),
+            Text(
+              'Vous recevrez votre confirmation et vos billets a cette adresse.',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _lastNameController,
-              decoration: _inputDecoration('Nom *'),
-              textCapitalization: TextCapitalization.words,
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Le nom est requis'
-                  : null,
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            LayoutBuilder(builder: (context, constraints) {
+              final fieldWidth = (constraints.maxWidth - 10) / 2;
+              return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  SizedBox(
+                    width: fieldWidth,
+                    child: TextFormField(
+                      controller: _firstNameController,
+                      decoration: _inputDecoration('Prenom *'),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Le prenom est requis'
+                              : null,
+                    ),
+                  ),
+                  SizedBox(
+                    width: fieldWidth,
+                    child: TextFormField(
+                      controller: _lastNameController,
+                      decoration: _inputDecoration('Nom *'),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Le nom est requis'
+                              : null,
+                    ),
+                  ),
+                ],
+              );
+            }),
+            const SizedBox(height: 10),
             TextFormField(
               controller: _emailController,
               decoration: _inputDecoration('Email *'),
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'L email est requis';
+                  return 'L\'email est requis';
                 }
                 if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                   return 'Email invalide';
@@ -670,32 +675,32 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _phoneController,
-              decoration: _inputDecoration('Telephone'),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _ageController,
-              decoration: _inputDecoration('Age'),
-              keyboardType: TextInputType.number,
-              onChanged: (value) {
-                final age = int.tryParse(value);
-                if (age != null && age >= 1 && age < 150) {
-                  _customerBirthDate = ageToBirthDate(age);
-                } else if (value.isEmpty) {
-                  _customerBirthDate = null;
-                }
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _townController,
-              decoration: _inputDecoration('Ville d appartenance'),
-              textCapitalization: TextCapitalization.words,
-            ),
+            const SizedBox(height: 10),
+            LayoutBuilder(builder: (context, constraints) {
+              final fieldWidth = (constraints.maxWidth - 10) / 2;
+              return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  SizedBox(
+                    width: fieldWidth,
+                    child: TextFormField(
+                      controller: _phoneController,
+                      decoration: _inputDecoration('Telephone'),
+                      keyboardType: TextInputType.phone,
+                    ),
+                  ),
+                  SizedBox(
+                    width: fieldWidth,
+                    child: TextFormField(
+                      controller: _townController,
+                      decoration: _inputDecoration('Ville d\'appartenance'),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                  ),
+                ],
+              );
+            }),
           ],
         ),
       ),
@@ -704,8 +709,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
   Widget _buildTermsSection() {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      padding: const EdgeInsets.all(14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -715,12 +724,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             onChanged: (value) =>
                 setState(() => _acceptedTerms = value ?? false),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
               child: Text(
-                'J accepte les conditions generales de vente et la politique de confidentialite.',
+                'J\'accepte les conditions generales de vente et la politique de confidentialite.',
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
               ),
             ),
@@ -732,22 +741,22 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
   Widget _buildError() {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(top: 12),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.red.withValues(alpha: 0.1),
+          color: Colors.red.withValues(alpha: 0.08),
           border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.red),
+            const Icon(Icons.error_outline, color: Colors.red, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 _errorMessage!,
-                style: const TextStyle(color: Colors.red),
+                style: const TextStyle(color: Colors.red, fontSize: 13),
               ),
             ),
           ],
@@ -794,28 +803,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                       style:
                           TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
-                    if (_reservationRemaining != null && _isLoading) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.timer_outlined,
-                            size: 14,
-                            color: HbColors.brandPrimary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Places réservées ${_formatRemaining(_reservationRemaining!)}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: HbColors.brandPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -846,7 +833,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                           Icon(totalAmount == 0 ? Icons.check : Icons.lock,
                               size: 18),
                           const SizedBox(width: 8),
-                          Text(totalAmount == 0 ? 'Confirmer' : 'Payer'),
+                          Text(totalAmount == 0
+                              ? 'Confirmer'
+                              : 'Continuer vers le paiement'),
                         ],
                       ),
               ),
@@ -856,6 +845,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Submit
 
   Future<void> _submitOrder() async {
     FocusManager.instance.primaryFocus?.unfocus();
@@ -934,6 +926,10 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         );
       }
 
+      // Best-effort: persist any participant the user marked "Save to Mes participants".
+      // Failures here must not block the booking confirmation.
+      await _persistFlaggedParticipants();
+
       _clearReservationTimer();
       ref.read(orderCartProvider.notifier).clear();
       ref.invalidate(bookingsListControllerProvider);
@@ -965,6 +961,36 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     }
   }
 
+  Future<void> _persistFlaggedParticipants() async {
+    final actions = ref.read(savedParticipantsActionsProvider);
+    final flagged = _attendeesByCartItemId.values
+        .expand((list) => list)
+        .where((p) => p.saveForLater && p.isComplete)
+        .toList();
+
+    if (flagged.isEmpty) return;
+
+    for (final attendee in flagged) {
+      try {
+        final draft = SavedParticipant(
+          uuid: '',
+          relationship: attendee.relationship,
+          displayName:
+              '${attendee.firstName ?? ''} ${attendee.lastName ?? ''}'.trim(),
+          firstName: attendee.firstName ?? '',
+          lastName: attendee.lastName ?? '',
+          email: attendee.email,
+          phone: attendee.phone,
+          birthDate: attendee.birthDate,
+          membershipCity: attendee.membershipCity ?? attendee.city,
+        );
+        await actions.create(draft);
+      } catch (_) {
+        // Silent — user can retry from /profile/mes-participants.
+      }
+    }
+  }
+
   bool _validateParticipants(List<OrderCartItem> cartItems) {
     for (final item in cartItems) {
       final attendees = _attendeesByCartItemId[item.id] ?? [];
@@ -976,19 +1002,15 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       }
 
       for (final attendee in attendees) {
-        if ((attendee.firstName ?? '').trim().isEmpty ||
-            (attendee.relationship ?? '').trim().isEmpty ||
-            (attendee.birthDate ?? '').trim().isEmpty ||
-            (attendee.membershipCity ?? attendee.city ?? '').trim().isEmpty) {
+        if (!attendee.isComplete) {
           setState(() {
             _errorMessage =
-                'Veuillez renseigner le prénom, la date de naissance, la ville et la relation de chaque participant';
+                'Veuillez renseigner le prenom, la date de naissance, la ville et la relation de chaque participant';
           });
           return false;
         }
       }
     }
-
     return true;
   }
 
@@ -1024,17 +1046,21 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     return InputDecoration(
       labelText: label,
       filled: true,
+      isDense: true,
       fillColor: Colors.grey.shade50,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: Colors.grey.shade300),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: HbColors.brandPrimary, width: 1.6),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     );
   }
 
@@ -1045,11 +1071,64 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     return [
       '${slot.date.day.toString().padLeft(2, '0')}/${slot.date.month.toString().padLeft(2, '0')}/${slot.date.year}',
       slot.startTime,
-    ].whereType<String>().where((value) => value.isNotEmpty).join(' - ');
+    ].whereType<String>().where((value) => value.isNotEmpty).join(' · ');
   }
 
   String _formatPrice(double price) {
     if (price == price.roundToDouble()) return '${price.toInt()}€';
     return '${price.toStringAsFixed(2)}€';
+  }
+}
+
+class _CartTimerChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final bool highlight;
+
+  const _CartTimerChip({
+    required this.label,
+    required this.onTap,
+    this.highlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = highlight ? Colors.white : HbColors.brandPrimary;
+    final bg = highlight
+        ? HbColors.brandPrimary
+        : HbColors.brandPrimary.withValues(alpha: 0.1);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(99),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(
+              color: HbColors.brandPrimary.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.timer_outlined, size: 14, color: fg),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

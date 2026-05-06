@@ -14,6 +14,8 @@ class BookingStep with _$BookingStep {
 
 @freezed
 class ParticipantInfo with _$ParticipantInfo {
+  const ParticipantInfo._();
+
   const factory ParticipantInfo({
     String? firstName,
     String? lastName,
@@ -24,7 +26,38 @@ class ParticipantInfo with _$ParticipantInfo {
     int? age,
     String? city,
     String? membershipCity,
+    @Default(false) bool saveForLater,
   }) = _ParticipantInfo;
+
+  /// True when the four required fields are present and the birth date is in
+  /// the past — same rules used by `_validateParticipants` server-side.
+  bool get isComplete {
+    final fn = firstName?.trim() ?? '';
+    final rel = relationship?.trim() ?? '';
+    final dob = birthDate?.trim() ?? '';
+    final town = (membershipCity?.trim().isNotEmpty ?? false)
+        ? membershipCity!.trim()
+        : (city?.trim() ?? '');
+    if (fn.isEmpty || rel.isEmpty || dob.isEmpty || town.isEmpty) return false;
+    final parsed = DateTime.tryParse(dob);
+    if (parsed == null) return false;
+    final today = DateTime.now();
+    final todayMidnight = DateTime(today.year, today.month, today.day);
+    return parsed.isBefore(todayMidnight);
+  }
+
+  /// True when no required field is filled — used to know whether a slot is
+  /// still "empty" so prefill actions can target it without overwriting data.
+  bool get isBlank {
+    return (firstName?.trim().isEmpty ?? true) &&
+        (lastName?.trim().isEmpty ?? true) &&
+        (email?.trim().isEmpty ?? true) &&
+        (phone?.trim().isEmpty ?? true) &&
+        (relationship?.trim().isEmpty ?? true) &&
+        (birthDate?.trim().isEmpty ?? true) &&
+        (city?.trim().isEmpty ?? true) &&
+        (membershipCity?.trim().isEmpty ?? true);
+  }
 }
 
 @freezed
