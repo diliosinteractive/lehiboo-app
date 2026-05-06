@@ -235,71 +235,107 @@ class _CartLineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top row: ticket name + line total
+          Row(
             children: [
-              Text(
-                item.ticket.name,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: HbColors.textPrimary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.ticket.name,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: HbColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${formatPrice(item.ticket.price)} / billet',
+                      style:
+                          TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    ),
+                  ],
                 ),
               ),
               Text(
-                '${formatPrice(item.ticket.price)} / billet',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                formatPrice(item.lineTotal),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: HbColors.textPrimary,
+                ),
               ),
             ],
           ),
-        ),
-        if (onUpdateQuantity != null) ...[
-          _IconStepperButton(
-            icon: Icons.remove,
-            onTap: item.quantity <= 1
-                ? null
-                : () => onUpdateQuantity!(item.id, item.quantity - 1),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              '${item.quantity}',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: HbColors.textPrimary,
-              ),
+          if (onUpdateQuantity != null || onRemove != null) ...[
+            const SizedBox(height: 8),
+            // Bottom row: stepper on the left, delete button on the right
+            Row(
+              children: [
+                if (onUpdateQuantity != null) ...[
+                  _IconStepperButton(
+                    icon: Icons.remove,
+                    onTap: item.quantity <= 1
+                        ? null
+                        : () =>
+                            onUpdateQuantity!(item.id, item.quantity - 1),
+                  ),
+                  Container(
+                    constraints: const BoxConstraints(minWidth: 24),
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${item.quantity}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: HbColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  _IconStepperButton(
+                    icon: Icons.add,
+                    onTap: () =>
+                        onUpdateQuantity!(item.id, item.quantity + 1),
+                  ),
+                ],
+                const Spacer(),
+                if (onRemove != null)
+                  TextButton.icon(
+                    onPressed: () => onRemove!(item.id),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red.shade400,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 6),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: Size.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.delete_outline, size: 16),
+                    label: const Text(
+                      'Retirer',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ),
-          _IconStepperButton(
-            icon: Icons.add,
-            onTap: () => onUpdateQuantity!(item.id, item.quantity + 1),
-          ),
+          ],
         ],
-        const SizedBox(width: 6),
-        Text(
-          formatPrice(item.lineTotal),
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: HbColors.textPrimary,
-          ),
-        ),
-        if (onRemove != null) ...[
-          const SizedBox(width: 4),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.all(4),
-            onPressed: () => onRemove!(item.id),
-            icon: Icon(Icons.delete_outline,
-                size: 18, color: Colors.red.shade400),
-          ),
-        ],
-      ],
+      ),
     );
   }
 }
@@ -313,22 +349,25 @@ class _IconStepperButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disabled = onTap == null;
-    return InkResponse(
-      onTap: onTap,
-      radius: 16,
-      child: Container(
-        width: 26,
-        height: 26,
-        decoration: BoxDecoration(
-          color: disabled ? Colors.grey.shade100 : Colors.grey.shade50,
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 14,
-          color: disabled ? Colors.grey.shade400 : HbColors.textPrimary,
+    return Material(
+      color: disabled ? Colors.grey.shade100 : Colors.white,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            size: 16,
+            color: disabled ? Colors.grey.shade400 : HbColors.textPrimary,
+          ),
         ),
       ),
     );

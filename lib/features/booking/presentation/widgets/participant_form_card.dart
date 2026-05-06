@@ -333,7 +333,14 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
       children: [
         DropdownButtonFormField<String>(
           initialValue: _prefillSource,
-          decoration: _inputDecoration('Pre-remplir ce billet'),
+          decoration: _inputDecoration('Pre-remplir ce billet').copyWith(
+            // The compact (isDense) decoration clips the floating label.
+            // Use the default density + a bit more vertical padding here.
+            isDense: false,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          ),
+          isExpanded: true,
           items: [
             const DropdownMenuItem(
               value: 'manual',
