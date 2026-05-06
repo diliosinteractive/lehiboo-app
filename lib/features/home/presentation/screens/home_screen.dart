@@ -20,6 +20,8 @@ import '../../../../core/widgets/feedback/skeleton_event_card.dart';
 import '../widgets/home_cities_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
+import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 
@@ -246,6 +248,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   PreferredSizeWidget _buildAppBar() {
     // Calculate app bar opacity based on scroll
     final opacity = (_scrollOffset / 100).clamp(0.0, 1.0);
+    final cartCount = ref
+        .watch(orderCartProvider)
+        .fold<int>(0, (sum, item) => sum + item.quantity);
+    final user = ref.watch(authProvider).user;
+    final avatarUrl = user?.avatarUrl;
 
     return AppBar(
       backgroundColor: Color.lerp(
@@ -256,23 +263,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       elevation: 0,
       centerTitle: false,
       toolbarHeight: 60,
-      title: Image.asset(
-        'assets/images/logo_picto_lehiboo_old.png',
-        width: 30,
-        height: 35,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => const Text(
-          'Le Hiboo',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            'assets/images/logo_picto_lehiboo_old.png',
+            width: 30,
+            height: 35,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => const Text(
+              'Le Hiboo',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: () => context.push('/hibons-dashboard'),
+            child: const HibonCounterWidget(compact: true),
+          ),
+        ],
       ),
       titleSpacing: 8,
       actions: [
         IconButton(
-          icon: Icon(
-            Icons.favorite_border,
-            color: opacity > 0.5 ? Colors.white : Colors.white,
-          ),
+          icon: const Icon(Icons.favorite_border, color: Colors.white),
           onPressed: () async {
             final allowed = await GuestGuard.check(
               context: context,
@@ -291,7 +305,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: Badge(
                 isLabelVisible: unread > 0,
                 label: Text('$unread'),
-                child: Icon(
+                child: const Icon(
                   PhosphorIconsRegular.chatCircleDots,
                   color: Colors.white,
                 ),
@@ -310,33 +324,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         ),
         IconButton(
-          icon: Icon(
-            Icons.notifications_none,
-            color: opacity > 0.5 ? Colors.white : Colors.white,
-          ),
+          icon: const Icon(Icons.notifications_none, color: Colors.white),
           onPressed: () {},
         ),
         IconButton(
-          icon: Icon(
-            Icons.person_outline,
-            color: opacity > 0.5 ? Colors.white : Colors.white,
+          tooltip: 'Mon panier',
+          icon: Badge(
+            isLabelVisible: cartCount > 0,
+            label: Text('$cartCount'),
+            backgroundColor: HbColors.brandPrimary,
+            textColor: Colors.white,
+            child: const Icon(
+              Icons.shopping_bag_outlined,
+              color: Colors.white,
+            ),
           ),
-          onPressed: () async {
-            final allowed = await GuestGuard.check(
-              context: context,
-              ref: ref,
-              featureName: 'accéder à votre profil',
-            );
-            if (allowed && mounted) {
-              context.push('/profile');
-            }
-          },
+          onPressed: () => context.push('/cart'),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-          child: GestureDetector(
-            onTap: () => context.push('/hibons-dashboard'),
-            child: const HibonCounterWidget(compact: true),
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+            tooltip: 'Mon compte',
+            icon: avatarUrl != null && avatarUrl.isNotEmpty
+                ? CircleAvatar(
+                    radius: 14,
+                    backgroundColor: Colors.white,
+                    backgroundImage: NetworkImage(avatarUrl),
+                  )
+                : const Icon(Icons.person_outline, color: Colors.white),
+            onPressed: () async {
+              final allowed = await GuestGuard.check(
+                context: context,
+                ref: ref,
+                featureName: 'accéder à votre profil',
+              );
+              if (allowed && mounted) {
+                context.push('/profile');
+              }
+            },
           ),
         ),
       ],

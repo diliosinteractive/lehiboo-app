@@ -26,6 +26,7 @@ mixin _$AttendeeRequestDto {
   String get lastName => throw _privateConstructorUsedError;
   String? get email => throw _privateConstructorUsedError;
   String? get phone => throw _privateConstructorUsedError;
+  String? get relationship => throw _privateConstructorUsedError;
   @JsonKey(name: 'birth_date')
   String? get birthDate => throw _privateConstructorUsedError;
   int? get age => throw _privateConstructorUsedError;
@@ -50,6 +51,7 @@ abstract class $AttendeeRequestDtoCopyWith<$Res> {
       @JsonKey(name: 'last_name') String lastName,
       String? email,
       String? phone,
+      String? relationship,
       @JsonKey(name: 'birth_date') String? birthDate,
       int? age,
       String? city,
@@ -73,6 +75,7 @@ class _$AttendeeRequestDtoCopyWithImpl<$Res, $Val extends AttendeeRequestDto>
     Object? lastName = null,
     Object? email = freezed,
     Object? phone = freezed,
+    Object? relationship = freezed,
     Object? birthDate = freezed,
     Object? age = freezed,
     Object? city = freezed,
@@ -94,6 +97,10 @@ class _$AttendeeRequestDtoCopyWithImpl<$Res, $Val extends AttendeeRequestDto>
       phone: freezed == phone
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      relationship: freezed == relationship
+          ? _value.relationship
+          : relationship // ignore: cast_nullable_to_non_nullable
               as String?,
       birthDate: freezed == birthDate
           ? _value.birthDate
@@ -128,6 +135,7 @@ abstract class _$$AttendeeRequestDtoImplCopyWith<$Res>
       @JsonKey(name: 'last_name') String lastName,
       String? email,
       String? phone,
+      String? relationship,
       @JsonKey(name: 'birth_date') String? birthDate,
       int? age,
       String? city,
@@ -149,6 +157,7 @@ class __$$AttendeeRequestDtoImplCopyWithImpl<$Res>
     Object? lastName = null,
     Object? email = freezed,
     Object? phone = freezed,
+    Object? relationship = freezed,
     Object? birthDate = freezed,
     Object? age = freezed,
     Object? city = freezed,
@@ -170,6 +179,10 @@ class __$$AttendeeRequestDtoImplCopyWithImpl<$Res>
       phone: freezed == phone
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      relationship: freezed == relationship
+          ? _value.relationship
+          : relationship // ignore: cast_nullable_to_non_nullable
               as String?,
       birthDate: freezed == birthDate
           ? _value.birthDate
@@ -199,6 +212,7 @@ class _$AttendeeRequestDtoImpl implements _AttendeeRequestDto {
       @JsonKey(name: 'last_name') required this.lastName,
       this.email,
       this.phone,
+      this.relationship,
       @JsonKey(name: 'birth_date') this.birthDate,
       this.age,
       this.city,
@@ -218,6 +232,8 @@ class _$AttendeeRequestDtoImpl implements _AttendeeRequestDto {
   @override
   final String? phone;
   @override
+  final String? relationship;
+  @override
   @JsonKey(name: 'birth_date')
   final String? birthDate;
   @override
@@ -230,7 +246,7 @@ class _$AttendeeRequestDtoImpl implements _AttendeeRequestDto {
 
   @override
   String toString() {
-    return 'AttendeeRequestDto(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, birthDate: $birthDate, age: $age, city: $city, membershipCity: $membershipCity)';
+    return 'AttendeeRequestDto(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, relationship: $relationship, birthDate: $birthDate, age: $age, city: $city, membershipCity: $membershipCity)';
   }
 
   @override
@@ -244,6 +260,8 @@ class _$AttendeeRequestDtoImpl implements _AttendeeRequestDto {
                 other.lastName == lastName) &&
             (identical(other.email, email) || other.email == email) &&
             (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.relationship, relationship) ||
+                other.relationship == relationship) &&
             (identical(other.birthDate, birthDate) ||
                 other.birthDate == birthDate) &&
             (identical(other.age, age) || other.age == age) &&
@@ -255,7 +273,7 @@ class _$AttendeeRequestDtoImpl implements _AttendeeRequestDto {
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, firstName, lastName, email,
-      phone, birthDate, age, city, membershipCity);
+      phone, relationship, birthDate, age, city, membershipCity);
 
   @JsonKey(ignore: true)
   @override
@@ -278,6 +296,7 @@ abstract class _AttendeeRequestDto implements AttendeeRequestDto {
           @JsonKey(name: 'last_name') required final String lastName,
           final String? email,
           final String? phone,
+          final String? relationship,
           @JsonKey(name: 'birth_date') final String? birthDate,
           final int? age,
           final String? city,
@@ -297,6 +316,8 @@ abstract class _AttendeeRequestDto implements AttendeeRequestDto {
   String? get email;
   @override
   String? get phone;
+  @override
+  String? get relationship;
   @override
   @JsonKey(name: 'birth_date')
   String? get birthDate;

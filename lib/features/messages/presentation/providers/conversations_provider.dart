@@ -164,6 +164,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         period: state.period,
         page: 1,
       );
+      if (!mounted) return;
       var conversations = result.conversations;
       if (_readUuids.isNotEmpty) {
         conversations = conversations.map((c) {
@@ -181,6 +182,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
       // Refresh global unread count
       _refreshUnreadCount();
     } catch (e, st) {
+      if (!mounted) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -198,6 +200,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         period: state.period,
         page: nextPage,
       );
+      if (!mounted) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,

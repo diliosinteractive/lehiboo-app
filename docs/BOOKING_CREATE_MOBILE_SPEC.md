@@ -2,9 +2,11 @@
 
 **Endpoint** : `POST /api/v1/bookings`
 **Audience** : Mobile app (Flutter)
-**Status** : Stable contract
+**Status** : Legacy single-event contract
 
 This specification defines the strict contract between the mobile app and the booking creation endpoint. The backend accepts looser payloads for backward compatibility, but the mobile app MUST follow this spec.
+
+For the current multi-event / multi-vendor cart flow, use `docs/MOBILE_ORDER_CART_CHECKOUT.md` and the `Order` endpoints instead of extending this direct `Booking` flow.
 
 ---
 
@@ -53,13 +55,14 @@ Authentication is **optional**. When the user is logged in, the buyer fields are
       "attendees": [
         {
           "first_name":      "string (required)",
-          "last_name":       "string (required)",
+          "last_name":       "string (optional)",
+          "relationship":    "string (required)",
           "email":           "string (email, optional)",
           "phone":           "string (optional)",
-          "birth_date":      "string (YYYY-MM-DD, optional)",
+          "birth_date":      "string (YYYY-MM-DD, required)",
           "age":             "integer (0..120, optional)",
           "city":            "string (optional)",
-          "membership_city": "string (optional)"
+          "membership_city": "string (required)"
         }
       ]
     }
@@ -106,15 +109,16 @@ A participant represents **one ticket holder**. The mobile MUST send one entry p
 | Field | Type | Required | Notes |
 |---|---|:---:|---|
 | `first_name` | string ≤255 | **yes** | |
-| `last_name`  | string ≤255 | **yes** | |
+| `last_name`  | string ≤255 | no | |
+| `relationship` | enum | **yes** | `self`, `child`, `spouse`, `family`, `friend`, `other` |
 | `email`      | email ≤255 | no | Recommended for ticket transfer / per-attendee notifications |
 | `phone`      | string ≤30 | no | |
-| `birth_date` | date `YYYY-MM-DD` | conditional | Required if the event/`TicketType` enforces age verification |
+| `birth_date` | date `YYYY-MM-DD` | **yes** | Required for personalization and age-aware recommendations |
 | `age`        | int 0..120 | conditional | Alternative to `birth_date` when only age band matters |
 | `city`       | string ≤120 | no | |
-| `membership_city` | string ≤120 | no | For city-based loyalty programs |
+| `membership_city` | string ≤120 | **yes** | For personalization and city-based loyalty programs |
 
-**Mobile-side rule** : if either `birth_date` or `age` is required by the event, the mobile MUST collect and send it. The backend will reject the request otherwise.
+**Mobile-side rule** : the checkout MUST collect `first_name`, `relationship`, `birth_date`, and `membership_city` for every ticket participant. `last_name`, `email`, and `phone` are optional for the ticket participant.
 
 #### Buyer (customer)
 
@@ -171,8 +175,8 @@ If the user selects **2 adult tickets + 1 child ticket**, the UI MUST render **3
 - **Group forms by ticket type** with a section header (e.g. "Adult ticket — Participant 1 / 2").
 - **Number each participant** clearly (`Participant 1`, `Participant 2`, …) so users know how many remain to fill.
 - **Pre-fill the first participant** with the buyer's data when the buyer is also attending — but allow the user to edit or clear it.
-- **Required fields** (`first_name`, `last_name`) marked visibly; show inline validation as the user types.
-- **Conditional fields** (`birth_date`, `age`) appear only when the event/`TicketType` requires them; do not collect data the backend won't use.
+- **Required fields** (`first_name`, `relationship`, `birth_date`, `membership_city`) marked visibly; show inline validation as the user types.
+- Explain that these participant fields help personalize Le Hiboo, IA recommendations, offers, and event suggestions.
 - **Persist forms across navigation** within the booking flow (e.g. when going back to change the slot, do not lose participant data).
 - **Disable the submit button** until every participant form is valid AND `attendees.length === quantity` for every item.
 
@@ -195,7 +199,7 @@ The mobile app MUST run these checks **before** calling the API:
    }
    ```
 3. **Buyer email is valid** RFC 5322.
-4. **Each participant has `first_name` and `last_name`** non-empty.
+4. **Each participant has `first_name`, `relationship`, `birth_date`, and `membership_city`** non-empty.
 5. **Total quantity ≤ slot capacity** (use cached slot data).
 6. **Date constraints** : if the event collects `birth_date` / `age`, ensure the field is filled for every participant.
 7. **No duplicate participants** within the same booking (recommended UX check, not enforced server-side).

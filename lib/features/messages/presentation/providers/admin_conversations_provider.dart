@@ -172,6 +172,7 @@ class AdminConversationsNotifier
         period: state.period,
         page: 1,
       );
+      if (!mounted) return;
       var conversations = result.conversations;
       if (_readUuids.isNotEmpty) {
         conversations = conversations.map((c) {
@@ -188,6 +189,7 @@ class AdminConversationsNotifier
       );
       if (_conversationType == 'user_support') _refreshUnreadCount();
     } catch (e, st) {
+      if (!mounted) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -206,6 +208,7 @@ class AdminConversationsNotifier
         period: state.period,
         page: nextPage,
       );
+      if (!mounted) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
@@ -334,12 +337,14 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
         reason: state.reasonFilter,
         page: 1,
       );
+      if (!mounted) return;
       state = state.copyWith(
         reports: AsyncValue.data(result.reports),
         currentPage: 1,
         hasMore: result.hasMore,
       );
     } catch (e, st) {
+      if (!mounted) return;
       state = state.copyWith(reports: AsyncValue.error(e, st));
     }
   }
@@ -355,6 +360,7 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
         reason: state.reasonFilter,
         page: nextPage,
       );
+      if (!mounted) return;
       state = state.copyWith(
         reports: AsyncValue.data([...current, ...result.reports]),
         currentPage: nextPage,

@@ -32,6 +32,7 @@ import '../../../reviews/presentation/widgets/event_reviews_section.dart';
 import '../../../reviews/presentation/widgets/write_review_sheet.dart';
 import '../../../reminders/presentation/providers/reminders_provider.dart';
 import '../../../reminders/data/datasources/reminders_api_datasource.dart';
+import '../../../booking/presentation/providers/order_cart_provider.dart';
 
 /// Provider to fetch event details by identifier (UUID or slug)
 final eventDetailProvider =
@@ -152,7 +153,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final today = DateTime(now.year, now.month, now.day);
 
     if (_availableSlots.isNotEmpty) {
-      final allPassed = _availableSlots.every((slot) => slot.date.isBefore(today));
+      final allPassed =
+          _availableSlots.every((slot) => slot.date.isBefore(today));
       if (allPassed) return true;
     } else if (event.endDate.isBefore(today)) {
       // No slots loaded yet, fall back to event end date
@@ -333,7 +335,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 right: 0,
                 child: _buildOverlayAppBar(event),
               ),
-
             ],
           ),
         ),
@@ -456,7 +457,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ),
                 const SizedBox(height: 24),
               ],
-
 
               // 8. Infos pratiques (grille 2x2)
               EventPracticalInfo(
@@ -631,7 +631,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           return const SizedBox.shrink();
         }
 
-        return _buildDateSelectorWidget(event, slots);
+        return _buildDateSelectorWidget(slots);
       },
     );
   }
@@ -684,12 +684,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       });
     }
 
-    return _buildDateSelectorWidget(event, slots);
+    return _buildDateSelectorWidget(slots);
   }
 
-  Widget _buildDateSelectorWidget(Event event, List<CalendarDateSlot> slots) {
-    final isDiscovery = !event.hasDirectBooking;
-
+  Widget _buildDateSelectorWidget(List<CalendarDateSlot> slots) {
     return EventDateSelector(
       slots: slots,
       selectedSlotId: _selectedSlotId,
@@ -1013,31 +1011,34 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: chips.map((chip) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: chip.color.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: chip.color.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(chip.icon, size: 14, color: chip.color),
-                  const SizedBox(width: 5),
-                  Text(
-                    chip.label,
-                    style: TextStyle(
-                      color: chip.color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            )).toList(),
+            children: chips
+                .map((chip) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: chip.color.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: chip.color.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(chip.icon, size: 14, color: chip.color),
+                          const SizedBox(width: 5),
+                          Text(
+                            chip.label,
+                            style: TextStyle(
+                              color: chip.color,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ))
+                .toList(),
           ),
         ],
       ),
@@ -1094,9 +1095,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final keyContext = _dateSectionKey.currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final scrollableBox =
-          _scrollController.position.context.storageContext
-              .findRenderObject() as RenderBox;
+      final scrollableBox = _scrollController.position.context.storageContext
+          .findRenderObject() as RenderBox;
       final offset = box.localToGlobal(Offset.zero, ancestor: scrollableBox);
       final target = _scrollController.offset + offset.dy - 16;
 
@@ -1162,14 +1162,114 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       return;
     }
 
-    // Naviguer vers le checkout avec toutes les données
-    context.push('/checkout', extra: {
-      'event': event,
-      'slotId': _selectedSlotId,
-      'selectedSlot': _selectedSlot,
-      'ticketQuantities': Map<String, int>.from(_ticketQuantities),
-      'totalPrice': _totalPrice,
-    });
+    _showBookingChoiceSheet(event);
+  }
+
+  void _showBookingChoiceSheet(Event event) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 18),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  alignment: Alignment.center,
+                ),
+                const Text(
+                  'Que voulez-vous faire ?',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Ajoutez ces billets au panier pour les payer avec d autres evenements, ou finalisez maintenant.',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 18),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    // Capture the router + messenger before popping the sheet
+                    // so the SnackBar action keeps a valid reference even after
+                    // the sheet's BuildContext is gone.
+                    final router = GoRouter.of(context);
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    Navigator.of(sheetContext).pop();
+                    ref.read(orderCartProvider.notifier).addSelection(
+                          event: event,
+                          slotId: _selectedSlotId!,
+                          selectedSlot: _selectedSlot,
+                          ticketQuantities:
+                              Map<String, int>.from(_ticketQuantities),
+                        );
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: const Text('Billets ajoutes au panier'),
+                        duration: const Duration(seconds: 6),
+                        action: SnackBarAction(
+                          label: 'Voir',
+                          onPressed: () => router.push('/cart'),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add_shopping_cart),
+                  label: const Text('Ajouter au panier'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push('/checkout', extra: {
+                      'event': event,
+                      'slotId': _selectedSlotId,
+                      'selectedSlot': _selectedSlot,
+                      'ticketQuantities':
+                          Map<String, int>.from(_ticketQuantities),
+                      'totalPrice': _totalPrice,
+                    });
+                  },
+                  icon: const Icon(Icons.lock),
+                  label: const Text('Reserver maintenant'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HbColors.brandPrimary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showAllDatesModal(List<CalendarDateSlot> slots) {

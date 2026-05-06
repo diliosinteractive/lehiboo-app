@@ -144,6 +144,7 @@ class VendorOrgConversationsNotifier
         period: state.period,
         page: 1,
       );
+      if (!mounted) return;
       final conversations = result.conversations;
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -159,6 +160,7 @@ class VendorOrgConversationsNotifier
         _ref.read(messagesRealtimeProvider.notifier).subscribeToOrganization(orgId);
       }
     } catch (e, st) {
+      if (!mounted) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -176,6 +178,7 @@ class VendorOrgConversationsNotifier
         period: state.period,
         page: nextPage,
       );
+      if (!mounted) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,

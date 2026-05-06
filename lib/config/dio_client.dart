@@ -61,9 +61,13 @@ class DioClient {
       HibonsUpdateInterceptor(),
       if (kDebugMode)
         PrettyDioLogger(
-          requestHeader: true,
-          requestBody: true,
-          responseBody: true,
+          // Concise mode: only show method + URL + status + timing.
+          // Bodies/headers spammed thousands of lines per page.
+          // Flip back to true to debug a specific request.
+          request: true,
+          requestHeader: false,
+          requestBody: false,
+          responseBody: false,
           responseHeader: false,
           error: true,
           compact: true,
