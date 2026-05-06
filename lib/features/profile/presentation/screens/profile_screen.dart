@@ -25,7 +25,6 @@ class ProfileScreen extends ConsumerWidget {
     final isAuthenticated = authState.isAuthenticated;
 
     return Scaffold(
-
       appBar: AppBar(
         title: const Text('Profil'),
         backgroundColor: Colors.white,
@@ -84,7 +83,8 @@ class ProfileScreen extends ConsumerWidget {
                               strokeWidth: 2,
                             ),
                           ),
-                          errorWidget: (context, url, error) => _buildDefaultAvatar(displayName),
+                          errorWidget: (context, url, error) =>
+                              _buildDefaultAvatar(displayName),
                         ),
                       )
                     : _buildDefaultAvatar(displayName),
@@ -114,7 +114,8 @@ class ProfileScreen extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
+                          Icon(Icons.location_on,
+                              size: 14, color: Colors.grey[500]),
                           const SizedBox(width: 4),
                           Text(
                             user.city!,
@@ -129,7 +130,8 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 8),
                     // Badge role
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: _getRoleColor(user.role).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -166,6 +168,13 @@ class ProfileScreen extends ConsumerWidget {
           title: 'Mes Réservations',
           subtitle: 'Voir vos billets et réservations',
           onTap: () => context.push('/my-bookings'),
+        ),
+        _buildMenuItem(
+          context,
+          icon: Icons.person_add_alt_1_outlined,
+          title: 'Mes participants',
+          subtitle: 'Famille et proches pour attribuer les billets',
+          onTap: () => context.push('/participants'),
         ),
         _buildMenuItem(
           context,
@@ -234,7 +243,8 @@ class ProfileScreen extends ConsumerWidget {
         ),
         _buildMenuItem(
           context,
-          icon: Icons.notifications_none_rounded, // Slightly more modern icon if possible
+          icon: Icons
+              .notifications_none_rounded, // Slightly more modern icon if possible
           title: 'Mes Alertes & Recherches',
           subtitle: 'Gérer vos recherches enregistrées',
           onTap: () => context.push('/notifications'),
@@ -497,7 +507,8 @@ class ProfileScreen extends ConsumerWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFB300).withValues(alpha: 0.1),
+                            color:
+                                const Color(0xFFFFB300).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -718,7 +729,11 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildDefaultAvatar(String displayName) {
     final initials = displayName.isNotEmpty
-        ? displayName.split(' ').take(2).map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').join()
+        ? displayName
+            .split(' ')
+            .take(2)
+            .map((e) => e.isNotEmpty ? e[0].toUpperCase() : '')
+            .join()
         : 'U';
     return Center(
       child: Text(

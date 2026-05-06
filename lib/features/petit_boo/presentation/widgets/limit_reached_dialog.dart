@@ -30,7 +30,7 @@ class LimitReachedDialog extends ConsumerWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -43,8 +43,9 @@ class LimitReachedDialog extends ConsumerWidget {
             Container(
               height: 140,
               decoration: BoxDecoration(
-                color: HbColors.brandPrimary.withOpacity(0.1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               alignment: Alignment.center,
               child: Stack(
@@ -55,7 +56,7 @@ class LimitReachedDialog extends ConsumerWidget {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: HbColors.brandPrimary.withOpacity(0.2),
+                      color: HbColors.brandPrimary.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -69,7 +70,7 @@ class LimitReachedDialog extends ConsumerWidget {
                       errorBuilder: (_, __, ___) => Container(
                         width: 80,
                         height: 80,
-                        color: HbColors.brandPrimary.withOpacity(0.3),
+                        color: HbColors.brandPrimary.withValues(alpha: 0.3),
                         child: const Center(
                           child: Text('🦉', style: TextStyle(fontSize: 40)),
                         ),
@@ -85,9 +86,12 @@ class LimitReachedDialog extends ConsumerWidget {
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                        boxShadow: [
+                          BoxShadow(color: Colors.black12, blurRadius: 4)
+                        ],
                       ),
-                      child: const Icon(Icons.lock, color: HbColors.brandPrimary, size: 20),
+                      child: const Icon(Icons.lock,
+                          color: HbColors.brandPrimary, size: 20),
                     ),
                   ),
                 ],
@@ -125,7 +129,8 @@ class LimitReachedDialog extends ConsumerWidget {
                   // Wallet balance and actions
                   Consumer(
                     builder: (context, ref, child) {
-                      final walletAsync = ref.watch(gamificationNotifierProvider);
+                      final walletAsync =
+                          ref.watch(gamificationNotifierProvider);
 
                       return walletAsync.when(
                         loading: () => const Center(
@@ -138,7 +143,8 @@ class LimitReachedDialog extends ConsumerWidget {
                           padding: const EdgeInsets.all(20),
                           child: Text('Erreur: $e'),
                         ),
-                        data: (wallet) => _buildWalletActions(context, ref, wallet),
+                        data: (wallet) =>
+                            _buildWalletActions(context, ref, wallet),
                       );
                     },
                   ),
@@ -151,7 +157,8 @@ class LimitReachedDialog extends ConsumerWidget {
     );
   }
 
-  Widget _buildWalletActions(BuildContext context, WidgetRef ref, HibonsWallet wallet) {
+  Widget _buildWalletActions(
+      BuildContext context, WidgetRef ref, HibonsWallet wallet) {
     final balance = wallet.balance;
     final quota = wallet.chatQuota;
     final canUnlock = quota?.canUnlock ?? false;
@@ -209,7 +216,8 @@ class LimitReachedDialog extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       "Continuer pour $unlockCost Hibons (+$unlockMessages msg)",
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -275,17 +283,16 @@ class LimitReachedDialog extends ConsumerWidget {
       // Utiliser le nouveau provider pour débloquer les messages chat
       final success = await ref.read(chatUnlockProvider.notifier).unlock();
       if (success) {
-        ref.read(petitBooChatProvider.notifier).resetLimit();
-        // Plan 04: les messages débloqués vivent dans `unlocked_today`
-        // (resetté chaque nuit), donc rafraîchir le quota Petit Boo aussi.
-        await ref.read(petitBooChatProvider.notifier).checkQuota();
+        await ref.read(gamificationNotifierProvider.notifier).refresh();
+        await ref.read(petitBooChatProvider.notifier).resetLimit();
         if (context.mounted) {
           Navigator.pop(context);
           PetitBooToast.success(context, 'Conversation débloquée !');
         }
       } else {
         if (context.mounted) {
-          PetitBooToast.error(context, 'Impossible de débloquer la conversation');
+          PetitBooToast.error(
+              context, 'Impossible de débloquer la conversation');
         }
       }
     } catch (e) {

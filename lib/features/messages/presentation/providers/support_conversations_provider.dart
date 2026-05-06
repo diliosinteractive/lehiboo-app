@@ -115,12 +115,14 @@ class SupportConversationsNotifier
     );
     try {
       final result = await _repo.getSupportConversations(page: 1);
+      if (!mounted) return;
       state = state.copyWith(
         conversations: AsyncValue.data(result.conversations),
         currentPage: 1,
         hasMore: result.hasMore,
       );
     } catch (e, st) {
+      if (!mounted) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -132,6 +134,7 @@ class SupportConversationsNotifier
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repo.getSupportConversations(page: nextPage);
+      if (!mounted) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,

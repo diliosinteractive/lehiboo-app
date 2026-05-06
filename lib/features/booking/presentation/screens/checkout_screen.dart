@@ -17,6 +17,7 @@ import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_forms_section.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
+import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
 
 /// Écran de checkout unifié
 /// Combine: Récapitulatif + Formulaire acheteur + Paiement Stripe
@@ -49,7 +50,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // État
   bool _isLoading = false;
   bool _acceptedTerms = false;
-  bool _acceptNewsletter = false;
+  final bool _acceptNewsletter = false;
   String? _errorMessage;
 
   // Booking créé (pour le paiement - utilisé pour la navigation)
@@ -92,14 +93,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final user = authState.user;
 
     if (user != null) {
-      debugPrint('🔍 Checkout prefill: firstName=${user.firstName}, lastName=${user.lastName}, displayName=${user.displayName}');
+      debugPrint(
+          '🔍 Checkout prefill: firstName=${user.firstName}, lastName=${user.lastName}, displayName=${user.displayName}');
 
       // Utiliser firstName/lastName si disponibles
       String firstName = user.firstName ?? '';
       String lastName = user.lastName ?? '';
 
       // Fallback: extraire depuis displayName si firstName/lastName sont vides
-      if (firstName.isEmpty && lastName.isEmpty && user.displayName.isNotEmpty) {
+      if (firstName.isEmpty &&
+          lastName.isEmpty &&
+          user.displayName.isNotEmpty) {
         final parts = user.displayName.trim().split(' ');
         if (parts.length >= 2) {
           firstName = parts.first;
@@ -116,8 +120,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       // Birth date -> age
       if (user.birthDate != null) {
-        final birthDateStr =
-            user.birthDate!.toIso8601String().substring(0, 10);
+        final birthDateStr = user.birthDate!.toIso8601String().substring(0, 10);
         _customerBirthDate = birthDateStr;
         final age = computeAge(birthDateStr);
         if (age != null) {
@@ -176,7 +179,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -372,8 +376,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color:
-                      widget.params.isFree ? Colors.green : HbColors.brandPrimary,
+                  color: widget.params.isFree
+                      ? Colors.green
+                      : HbColors.brandPrimary,
                 ),
               ),
             ],
@@ -511,11 +516,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
 
   Widget _buildParticipantsSection() {
+    final savedParticipants =
+        ref.watch(savedParticipantsProvider).valueOrNull ?? const [];
+
     return ParticipantFormsSection(
       ticketQuantities: widget.params.ticketQuantities,
       eventTickets: widget.params.event.tickets,
       buyerInfo: _currentBuyerInfo,
       attendeesMap: _attendeesMap,
+      savedParticipants: savedParticipants,
       onAttendeeChanged: (ticketTypeId, index, info) {
         setState(() {
           _attendeesMap[ticketTypeId]?[index] = info;
@@ -552,7 +561,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 TextSpan(
                   text: 'J\'accepte les ',
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                  children: [
+                  children: const [
                     TextSpan(
                       text: 'conditions générales de vente',
                       style: TextStyle(
@@ -560,7 +569,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         decoration: TextDecoration.underline,
                       ),
                     ),
-                    const TextSpan(text: ' et la '),
+                    TextSpan(text: ' et la '),
                     TextSpan(
                       text: 'politique de confidentialité',
                       style: TextStyle(
@@ -604,7 +613,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      isFree ? 'Gratuit' : _formatPrice(widget.params.totalPrice),
+                      isFree
+                          ? 'Gratuit'
+                          : _formatPrice(widget.params.totalPrice),
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -727,10 +738,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
       for (final a in attendees) {
         if ((a.firstName ?? '').trim().isEmpty ||
-            (a.lastName ?? '').trim().isEmpty) {
+            (a.lastName ?? '').trim().isEmpty ||
+            (a.relationship ?? '').trim().isEmpty ||
+            (a.birthDate ?? '').trim().isEmpty ||
+            (a.membershipCity ?? a.city ?? '').trim().isEmpty) {
           setState(() {
             _errorMessage =
-                'Veuillez renseigner le prénom et le nom de chaque participant';
+                'Veuillez renseigner le prénom, le nom, la date de naissance, la ville et la relation de chaque participant';
           });
           return;
         }
@@ -757,6 +771,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           lastName: p.lastName ?? '',
                           email: p.email,
                           phone: p.phone,
+                          relationship: p.relationship,
                           birthDate: p.birthDate,
                           age: p.age,
                           city: p.city,
@@ -766,8 +781,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ))
           .toList();
 
-      // 1. Créer la réservation (status: pending)
-      final bookingResponse = await bookingDataSource.createBooking(
+      // 1. Créer un brouillon invisible côté vendor/admin jusqu'au paiement.
+      final bookingResponse = await bookingDataSource.createBookingDraft(
         eventId: widget.params.event.id,
         slotId: widget.params.slotId,
         items: items,
@@ -785,17 +800,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         acceptNewsletter: _acceptNewsletter,
       );
 
+      var confirmationBooking = bookingResponse;
       _bookingResponse = bookingResponse;
-      final bookingUuid = bookingResponse.uuid;
+      final draftOrBookingUuid = bookingResponse.uuid;
       final isFree = bookingResponse.totalAmount == 0;
 
       if (isFree) {
-        // 2a. Événement gratuit: confirmer directement
-        await bookingDataSource.confirmFreeBooking(bookingUuid: bookingUuid);
+        // 2a. Événement gratuit: l'API a déjà converti le draft en Booking.
       } else {
-        // 2b. Événement payant: récupérer le PaymentIntent
-        final paymentIntent = await bookingDataSource.getPaymentIntent(
-          bookingUuid: bookingUuid,
+        // 2b. Événement payant: récupérer le PaymentIntent du brouillon.
+        final paymentIntent = await bookingDataSource.getDraftPaymentIntent(
+          draftUuid: draftOrBookingUuid,
         );
 
         // 3. Configurer et afficher le Payment Sheet Stripe
@@ -823,9 +838,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         });
         await presentCompleter.future;
 
-        // 4. Confirmer la réservation après paiement réussi
-        await bookingDataSource.confirmBooking(
-          bookingUuid: bookingUuid,
+        // 4. Confirmer le brouillon après paiement réussi et récupérer le Booking.
+        confirmationBooking = await bookingDataSource.confirmDraftBooking(
+          draftUuid: draftOrBookingUuid,
           paymentIntentId: paymentIntent.paymentIntentId,
         );
       }
@@ -833,8 +848,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // 5. Naviguer vers la confirmation avec confettis
       HapticFeedback.heavyImpact();
       if (mounted) {
-        context.go('/booking-confirmation/$bookingUuid', extra: {
-          'booking': bookingResponse,
+        context.go('/booking-confirmation/${confirmationBooking.uuid}', extra: {
+          'booking': confirmationBooking,
           'event': widget.params.event,
           'selectedSlot': widget.params.selectedSlot,
         });

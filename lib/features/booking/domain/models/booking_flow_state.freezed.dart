@@ -548,10 +548,12 @@ mixin _$ParticipantInfo {
   String? get lastName => throw _privateConstructorUsedError;
   String? get email => throw _privateConstructorUsedError;
   String? get phone => throw _privateConstructorUsedError;
+  String? get relationship => throw _privateConstructorUsedError;
   String? get birthDate => throw _privateConstructorUsedError; // "YYYY-MM-DD"
   int? get age => throw _privateConstructorUsedError;
   String? get city => throw _privateConstructorUsedError;
   String? get membershipCity => throw _privateConstructorUsedError;
+  bool get saveForLater => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $ParticipantInfoCopyWith<ParticipantInfo> get copyWith =>
@@ -569,10 +571,12 @@ abstract class $ParticipantInfoCopyWith<$Res> {
       String? lastName,
       String? email,
       String? phone,
+      String? relationship,
       String? birthDate,
       int? age,
       String? city,
-      String? membershipCity});
+      String? membershipCity,
+      bool saveForLater});
 }
 
 /// @nodoc
@@ -592,10 +596,12 @@ class _$ParticipantInfoCopyWithImpl<$Res, $Val extends ParticipantInfo>
     Object? lastName = freezed,
     Object? email = freezed,
     Object? phone = freezed,
+    Object? relationship = freezed,
     Object? birthDate = freezed,
     Object? age = freezed,
     Object? city = freezed,
     Object? membershipCity = freezed,
+    Object? saveForLater = null,
   }) {
     return _then(_value.copyWith(
       firstName: freezed == firstName
@@ -614,6 +620,10 @@ class _$ParticipantInfoCopyWithImpl<$Res, $Val extends ParticipantInfo>
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
               as String?,
+      relationship: freezed == relationship
+          ? _value.relationship
+          : relationship // ignore: cast_nullable_to_non_nullable
+              as String?,
       birthDate: freezed == birthDate
           ? _value.birthDate
           : birthDate // ignore: cast_nullable_to_non_nullable
@@ -630,6 +640,10 @@ class _$ParticipantInfoCopyWithImpl<$Res, $Val extends ParticipantInfo>
           ? _value.membershipCity
           : membershipCity // ignore: cast_nullable_to_non_nullable
               as String?,
+      saveForLater: null == saveForLater
+          ? _value.saveForLater
+          : saveForLater // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -647,10 +661,12 @@ abstract class _$$ParticipantInfoImplCopyWith<$Res>
       String? lastName,
       String? email,
       String? phone,
+      String? relationship,
       String? birthDate,
       int? age,
       String? city,
-      String? membershipCity});
+      String? membershipCity,
+      bool saveForLater});
 }
 
 /// @nodoc
@@ -668,10 +684,12 @@ class __$$ParticipantInfoImplCopyWithImpl<$Res>
     Object? lastName = freezed,
     Object? email = freezed,
     Object? phone = freezed,
+    Object? relationship = freezed,
     Object? birthDate = freezed,
     Object? age = freezed,
     Object? city = freezed,
     Object? membershipCity = freezed,
+    Object? saveForLater = null,
   }) {
     return _then(_$ParticipantInfoImpl(
       firstName: freezed == firstName
@@ -690,6 +708,10 @@ class __$$ParticipantInfoImplCopyWithImpl<$Res>
           ? _value.phone
           : phone // ignore: cast_nullable_to_non_nullable
               as String?,
+      relationship: freezed == relationship
+          ? _value.relationship
+          : relationship // ignore: cast_nullable_to_non_nullable
+              as String?,
       birthDate: freezed == birthDate
           ? _value.birthDate
           : birthDate // ignore: cast_nullable_to_non_nullable
@@ -706,22 +728,29 @@ class __$$ParticipantInfoImplCopyWithImpl<$Res>
           ? _value.membershipCity
           : membershipCity // ignore: cast_nullable_to_non_nullable
               as String?,
+      saveForLater: null == saveForLater
+          ? _value.saveForLater
+          : saveForLater // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
 
 /// @nodoc
 
-class _$ParticipantInfoImpl implements _ParticipantInfo {
+class _$ParticipantInfoImpl extends _ParticipantInfo {
   const _$ParticipantInfoImpl(
       {this.firstName,
       this.lastName,
       this.email,
       this.phone,
+      this.relationship,
       this.birthDate,
       this.age,
       this.city,
-      this.membershipCity});
+      this.membershipCity,
+      this.saveForLater = false})
+      : super._();
 
   @override
   final String? firstName;
@@ -732,6 +761,8 @@ class _$ParticipantInfoImpl implements _ParticipantInfo {
   @override
   final String? phone;
   @override
+  final String? relationship;
+  @override
   final String? birthDate;
 // "YYYY-MM-DD"
   @override
@@ -740,10 +771,13 @@ class _$ParticipantInfoImpl implements _ParticipantInfo {
   final String? city;
   @override
   final String? membershipCity;
+  @override
+  @JsonKey()
+  final bool saveForLater;
 
   @override
   String toString() {
-    return 'ParticipantInfo(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, birthDate: $birthDate, age: $age, city: $city, membershipCity: $membershipCity)';
+    return 'ParticipantInfo(firstName: $firstName, lastName: $lastName, email: $email, phone: $phone, relationship: $relationship, birthDate: $birthDate, age: $age, city: $city, membershipCity: $membershipCity, saveForLater: $saveForLater)';
   }
 
   @override
@@ -757,17 +791,21 @@ class _$ParticipantInfoImpl implements _ParticipantInfo {
                 other.lastName == lastName) &&
             (identical(other.email, email) || other.email == email) &&
             (identical(other.phone, phone) || other.phone == phone) &&
+            (identical(other.relationship, relationship) ||
+                other.relationship == relationship) &&
             (identical(other.birthDate, birthDate) ||
                 other.birthDate == birthDate) &&
             (identical(other.age, age) || other.age == age) &&
             (identical(other.city, city) || other.city == city) &&
             (identical(other.membershipCity, membershipCity) ||
-                other.membershipCity == membershipCity));
+                other.membershipCity == membershipCity) &&
+            (identical(other.saveForLater, saveForLater) ||
+                other.saveForLater == saveForLater));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, firstName, lastName, email,
-      phone, birthDate, age, city, membershipCity);
+      phone, relationship, birthDate, age, city, membershipCity, saveForLater);
 
   @JsonKey(ignore: true)
   @override
@@ -777,16 +815,19 @@ class _$ParticipantInfoImpl implements _ParticipantInfo {
           this, _$identity);
 }
 
-abstract class _ParticipantInfo implements ParticipantInfo {
+abstract class _ParticipantInfo extends ParticipantInfo {
   const factory _ParticipantInfo(
       {final String? firstName,
       final String? lastName,
       final String? email,
       final String? phone,
+      final String? relationship,
       final String? birthDate,
       final int? age,
       final String? city,
-      final String? membershipCity}) = _$ParticipantInfoImpl;
+      final String? membershipCity,
+      final bool saveForLater}) = _$ParticipantInfoImpl;
+  const _ParticipantInfo._() : super._();
 
   @override
   String? get firstName;
@@ -797,6 +838,8 @@ abstract class _ParticipantInfo implements ParticipantInfo {
   @override
   String? get phone;
   @override
+  String? get relationship;
+  @override
   String? get birthDate;
   @override // "YYYY-MM-DD"
   int? get age;
@@ -804,6 +847,8 @@ abstract class _ParticipantInfo implements ParticipantInfo {
   String? get city;
   @override
   String? get membershipCity;
+  @override
+  bool get saveForLater;
   @override
   @JsonKey(ignore: true)
   _$$ParticipantInfoImplCopyWith<_$ParticipantInfoImpl> get copyWith =>
