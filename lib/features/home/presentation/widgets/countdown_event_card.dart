@@ -659,8 +659,9 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                     ),
                   ),
                 ),
-                // Places restantes badge
-                if (widget.remainingSpots != null)
+                // Places restantes badge — hidden when 0 (sold out) or
+                // null (unknown / non-bookable platform events).
+                if (widget.remainingSpots != null && widget.remainingSpots! > 0)
                   Positioned(
                     top: 10,
                     right: 10,
@@ -1200,7 +1201,12 @@ class UrgencySection extends ConsumerWidget {
                     width: 200,
                     child: _FullCountdownCard(
                       activity: activity,
-                      remainingSpots: (activity.id.hashCode % 10) + 1,
+                      // Real value from the API (event.availableSeats →
+                      // Slot.capacityRemaining via EventToActivityMapper).
+                      // Null means "unknown" (e.g. discovery / platform
+                      // events that don't manage bookable inventory) and
+                      // is handled downstream by hiding the badge.
+                      remainingSpots: activity.nextSlot?.capacityRemaining,
                     ),
                   );
                 },
