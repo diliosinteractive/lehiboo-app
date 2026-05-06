@@ -25,12 +25,14 @@ class CreateOrderResponseDto {
   final String uuid;
   final String status;
   final double totalAmount;
+  final String? expiresAt;
   final List<OrderBookingDto> bookings;
 
   const CreateOrderResponseDto({
     required this.uuid,
     required this.status,
     required this.totalAmount,
+    this.expiresAt,
     this.bookings = const [],
   });
 
@@ -43,6 +45,8 @@ class CreateOrderResponseDto {
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ??
           (json['total_amount'] as num?)?.toDouble() ??
           0,
+      expiresAt:
+          json['expiresAt']?.toString() ?? json['expires_at']?.toString(),
       bookings: bookingsRaw is List
           ? bookingsRaw
               .whereType<Map>()

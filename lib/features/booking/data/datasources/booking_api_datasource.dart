@@ -179,6 +179,7 @@ class BookingApiDataSource {
     String? customerPhone,
     String? customerBirthDate,
     String? customerTown,
+    String? expiresAt,
     String? source,
   }) async {
     final response = await _dio.post(
@@ -194,6 +195,7 @@ class BookingApiDataSource {
           'customer_birth_date': customerBirthDate,
         if (customerTown != null && customerTown.isNotEmpty)
           'customer_town': customerTown,
+        if (expiresAt != null && expiresAt.isNotEmpty) 'expires_at': expiresAt,
         'meta': {
           'source': source ?? 'mobile_cart_checkout',
         },
@@ -224,6 +226,15 @@ class BookingApiDataSource {
         'paymentIntentId': paymentIntentId,
       },
     );
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return CreateOrderResponseDto.fromJson(payload);
+  }
+
+  Future<CreateOrderResponseDto> cancelOrder({
+    required String orderUuid,
+  }) async {
+    final response = await _dio.post('/orders/$orderUuid/cancel');
 
     final payload = ApiResponseHandler.extractObject(response.data);
     return CreateOrderResponseDto.fromJson(payload);

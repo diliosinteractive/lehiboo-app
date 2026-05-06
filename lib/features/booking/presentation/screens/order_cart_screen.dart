@@ -38,11 +38,22 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   bool _acceptedTerms = false;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _activeOrderUuid;
+  DateTime? _activeOrderExpiresAt;
+  Duration? _reservationRemaining;
+  Timer? _reservationTimer;
+  Duration? _cartHoldRemaining;
+  Timer? _cartHoldTimer;
 
   @override
   void initState() {
     super.initState();
     _prefillForm();
+    _updateCartHoldRemaining();
+    _cartHoldTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _updateCartHoldRemaining(),
+    );
   }
 
   @override
@@ -53,6 +64,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     _phoneController.dispose();
     _ageController.dispose();
     _townController.dispose();
+    _reservationTimer?.cancel();
+    _cartHoldTimer?.cancel();
     super.dispose();
   }
 
@@ -81,6 +94,94 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     }
     if (user.membershipCity != null && user.membershipCity!.isNotEmpty) {
       _townController.text = user.membershipCity!;
+    }
+  }
+
+  void _startReservationTimer(String? expiresAt) {
+    _reservationTimer?.cancel();
+    _activeOrderExpiresAt =
+        expiresAt == null ? null : DateTime.tryParse(expiresAt)?.toLocal();
+
+    if (_activeOrderExpiresAt == null) {
+      _reservationRemaining = null;
+      return;
+    }
+
+    _updateReservationRemaining();
+    _reservationTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _updateReservationRemaining(),
+    );
+  }
+
+  void _updateReservationRemaining() {
+    final expiresAt = _activeOrderExpiresAt;
+    if (expiresAt == null || !mounted) return;
+
+    final remaining = expiresAt.difference(DateTime.now());
+    setState(() {
+      _reservationRemaining = remaining.isNegative ? Duration.zero : remaining;
+    });
+  }
+
+  void _clearReservationTimer() {
+    _reservationTimer?.cancel();
+    _reservationTimer = null;
+    _activeOrderUuid = null;
+    _activeOrderExpiresAt = null;
+    _reservationRemaining = null;
+  }
+
+  void _updateCartHoldRemaining() {
+    if (!mounted) return;
+
+    final expiresAt = ref.read(orderCartHoldProvider);
+    if (expiresAt == null) {
+      setState(() => _cartHoldRemaining = null);
+      return;
+    }
+
+    final remaining = expiresAt.difference(DateTime.now());
+    final normalized = remaining.isNegative ? Duration.zero : remaining;
+
+    if (normalized == Duration.zero &&
+        _activeOrderUuid == null &&
+        ref.read(orderCartProvider).isNotEmpty) {
+      ref.read(orderCartProvider.notifier).clear();
+      setState(() {
+        _cartHoldRemaining = null;
+        _errorMessage =
+            'Le délai du panier est dépassé. Ajoutez à nouveau vos billets pour continuer.';
+      });
+      return;
+    }
+
+    setState(() {
+      _cartHoldRemaining = normalized;
+    });
+  }
+
+  String _formatRemaining(Duration remaining) {
+    final totalSeconds = remaining.inSeconds;
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _cancelActiveOrderIfNeeded(
+    BookingApiDataSource dataSource,
+  ) async {
+    final orderUuid = _activeOrderUuid;
+    if (orderUuid == null || orderUuid.isEmpty) return;
+
+    try {
+      await dataSource.cancelOrder(orderUuid: orderUuid);
+    } catch (_) {
+      // The server expiration job remains the fallback if this best-effort
+      // release cannot complete from the device.
+    } finally {
+      _clearReservationTimer();
     }
   }
 
@@ -142,6 +243,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildTimerNotice(),
+                  const SizedBox(height: 16),
                   _buildCartSummary(items),
                   const SizedBox(height: 16),
                   _buildBuyerForm(),
@@ -157,6 +260,76 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
           ? null
           : _buildConfirmButton(
               totalQuantity: totalQuantity, totalAmount: totalAmount),
+    );
+  }
+
+  Widget _buildTimerNotice() {
+    final reservationRemaining = _reservationRemaining;
+    if (_activeOrderUuid != null && reservationRemaining != null) {
+      return _buildNotice(
+        icon: Icons.timer_outlined,
+        title: 'Places réservées',
+        message:
+            'Vos places sont bloquées encore ${_formatRemaining(reservationRemaining)}. Passé ce délai, elles seront libérées.',
+      );
+    }
+
+    final cartHoldRemaining = _cartHoldRemaining;
+    if (cartHoldRemaining == null) {
+      return const SizedBox.shrink();
+    }
+
+    return _buildNotice(
+      icon: Icons.shopping_bag_outlined,
+      title: 'Panier conservé',
+      message:
+          'Votre sélection est conservée encore ${_formatRemaining(cartHoldRemaining)}. Les places seront bloquées à l\'étape paiement.',
+    );
+  }
+
+  Widget _buildNotice({
+    required IconData icon,
+    required String title,
+    required String message,
+  }) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFD7AA)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: HbColors.brandPrimary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.35,
+                    color: Colors.brown.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -281,7 +454,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Le prenom, la date de naissance, la ville et la relation aident l IA et l experience Le Hiboo a proposer les offres et evenements les plus pertinents.',
+                    'Le prénom, la date de naissance, la ville et la relation aident l\'IA et l\'expérience Le Hiboo à proposer les offres et événements les plus pertinents.',
                     style: TextStyle(
                       fontSize: 12,
                       height: 1.35,
@@ -344,7 +517,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Billets selectionnes',
+            'Billets sélectionnés',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -621,6 +794,28 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                       style:
                           TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
+                    if (_reservationRemaining != null && _isLoading) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.timer_outlined,
+                            size: 14,
+                            color: HbColors.brandPrimary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Places réservées ${_formatRemaining(_reservationRemaining!)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: HbColors.brandPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -682,8 +877,11 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       _errorMessage = null;
     });
 
+    final dataSource = ref.read(bookingApiDataSourceProvider);
+    var shouldCancelOrderOnError = false;
+
     try {
-      final dataSource = ref.read(bookingApiDataSourceProvider);
+      final cartHoldExpiresAt = ref.read(orderCartHoldProvider);
       final order = await dataSource.createOrder(
         items: _buildOrderItemsPayload(cartItems),
         customerEmail: _emailController.text.trim(),
@@ -694,10 +892,18 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         customerTown: _townController.text.trim().isEmpty
             ? null
             : _townController.text.trim(),
+        expiresAt: cartHoldExpiresAt?.toUtc().toIso8601String(),
       );
 
       var confirmedOrder = order;
+      _activeOrderUuid = order.uuid;
+      ref
+          .read(orderCartHoldProvider.notifier)
+          .syncServerExpiration(order.expiresAt);
+      _startReservationTimer(order.expiresAt);
+
       if (order.totalAmount > 0) {
+        shouldCancelOrderOnError = true;
         final paymentIntent =
             await dataSource.getOrderPaymentIntent(orderUuid: order.uuid);
 
@@ -721,12 +927,14 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         });
         await presentCompleter.future;
 
+        shouldCancelOrderOnError = false;
         confirmedOrder = await dataSource.confirmOrder(
           orderUuid: order.uuid,
           paymentIntentId: paymentIntent.paymentIntentId,
         );
       }
 
+      _clearReservationTimer();
       ref.read(orderCartProvider.notifier).clear();
       ref.invalidate(bookingsListControllerProvider);
       HapticFeedback.heavyImpact();
@@ -737,11 +945,19 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         });
       }
     } on StripeException catch (e) {
+      await _cancelActiveOrderIfNeeded(dataSource);
+
       setState(() {
         _isLoading = false;
         _errorMessage = e.error.localizedMessage ?? 'Paiement annule';
       });
     } catch (e) {
+      if (shouldCancelOrderOnError) {
+        await _cancelActiveOrderIfNeeded(dataSource);
+      } else {
+        _clearReservationTimer();
+      }
+
       setState(() {
         _isLoading = false;
         _errorMessage = ApiResponseHandler.extractError(e);
@@ -761,13 +977,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
       for (final attendee in attendees) {
         if ((attendee.firstName ?? '').trim().isEmpty ||
-            (attendee.lastName ?? '').trim().isEmpty ||
             (attendee.relationship ?? '').trim().isEmpty ||
             (attendee.birthDate ?? '').trim().isEmpty ||
             (attendee.membershipCity ?? attendee.city ?? '').trim().isEmpty) {
           setState(() {
             _errorMessage =
-                'Veuillez renseigner le prenom, le nom, la date de naissance, la ville et la relation de chaque participant';
+                'Veuillez renseigner le prénom, la date de naissance, la ville et la relation de chaque participant';
           });
           return false;
         }

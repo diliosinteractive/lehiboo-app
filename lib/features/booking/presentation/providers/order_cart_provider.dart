@@ -5,18 +5,71 @@ import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+final orderCartHoldProvider =
+    StateNotifierProvider<OrderCartHoldNotifier, DateTime?>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return OrderCartHoldNotifier(prefs);
+});
+
 final orderCartProvider =
     StateNotifierProvider<OrderCartNotifier, List<OrderCartItem>>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return OrderCartNotifier(prefs);
+  return OrderCartNotifier(prefs, ref);
 });
+
+class OrderCartHoldNotifier extends StateNotifier<DateTime?> {
+  static const holdDuration = Duration(minutes: 15);
+  static const _storageKey = 'order_cart_hold_expires_at_v1';
+
+  final SharedPreferences _prefs;
+
+  OrderCartHoldNotifier(this._prefs)
+      : super(_decode(_prefs.getString(_storageKey)));
+
+  static DateTime? _decode(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw)?.toLocal();
+  }
+
+  void restart() {
+    final expiresAt = DateTime.now().add(holdDuration);
+    state = expiresAt;
+    _prefs.setString(_storageKey, expiresAt.toUtc().toIso8601String());
+  }
+
+  void ensureActive() {
+    final current = state;
+    if (current != null && current.isAfter(DateTime.now())) {
+      return;
+    }
+
+    restart();
+  }
+
+  void syncServerExpiration(String? expiresAt) {
+    final parsed = _decode(expiresAt);
+    if (parsed == null) {
+      clear();
+      return;
+    }
+
+    state = parsed;
+    _prefs.setString(_storageKey, parsed.toUtc().toIso8601String());
+  }
+
+  void clear() {
+    state = null;
+    _prefs.remove(_storageKey);
+  }
+}
 
 class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
   static const _storageKey = 'order_cart_items_v1';
 
   final SharedPreferences _prefs;
+  final Ref _ref;
 
-  OrderCartNotifier(this._prefs)
+  OrderCartNotifier(this._prefs, this._ref)
       : super(OrderCartItem.decodeList(_prefs.getString(_storageKey)));
 
   int get totalQuantity =>
@@ -31,7 +84,10 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
     required CalendarDateSlot? selectedSlot,
     required Map<String, int> ticketQuantities,
   }) {
-    final next = [...state];
+    final holdExpiresAt = _ref.read(orderCartHoldProvider);
+    final holdExpired =
+        holdExpiresAt != null && !holdExpiresAt.isAfter(DateTime.now());
+    final next = holdExpired ? <OrderCartItem>[] : [...state];
 
     for (final entry in ticketQuantities.entries) {
       if (entry.value <= 0) continue;
@@ -61,9 +117,18 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
     }
 
     _save(next);
+    if (next.isNotEmpty) {
+      _ref.read(orderCartHoldProvider.notifier).ensureActive();
+    }
   }
 
   void updateQuantity(String itemId, int quantity) {
+    final holdExpiresAt = _ref.read(orderCartHoldProvider);
+    if (holdExpiresAt != null && !holdExpiresAt.isAfter(DateTime.now())) {
+      clear();
+      return;
+    }
+
     final normalized = quantity < 0 ? 0 : quantity;
     final next = state
         .map((item) =>
@@ -72,14 +137,30 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
         .toList();
 
     _save(next);
+    if (next.isEmpty) {
+      _ref.read(orderCartHoldProvider.notifier).clear();
+    } else {
+      _ref.read(orderCartHoldProvider.notifier).ensureActive();
+    }
   }
 
   void remove(String itemId) {
-    _save(state.where((item) => item.id != itemId).toList());
+    final holdExpiresAt = _ref.read(orderCartHoldProvider);
+    if (holdExpiresAt != null && !holdExpiresAt.isAfter(DateTime.now())) {
+      clear();
+      return;
+    }
+
+    final next = state.where((item) => item.id != itemId).toList();
+    _save(next);
+    if (next.isEmpty) {
+      _ref.read(orderCartHoldProvider.notifier).clear();
+    }
   }
 
   void clear() {
     _save(const []);
+    _ref.read(orderCartHoldProvider.notifier).clear();
   }
 
   void _save(List<OrderCartItem> items) {

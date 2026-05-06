@@ -256,12 +256,10 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
           // Last name
           TextFormField(
             controller: _lastNameCtrl,
-            decoration: _inputDecoration('Nom *'),
+            decoration: _inputDecoration('Nom'),
             textCapitalization: TextCapitalization.words,
             readOnly: _sameAsBuyer,
             onChanged: (_) => _emitChange(),
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Le nom est requis' : null,
           ),
           const SizedBox(height: 10),
 
