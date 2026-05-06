@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lehiboo/features/gamification/data/models/earnings_by_pillar_entry.dart';
+import 'package:lehiboo/features/gamification/data/models/hibon_badge.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_action_entry.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_balance.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_rank.dart';
@@ -195,6 +196,15 @@ final actionsCatalogProvider = FutureProvider<List<HibonsActionEntry>>((ref) {
 final achievementsProvider = FutureProvider<List<Achievement>>((ref) {
   final repository = ref.watch(gamificationRepositoryProvider);
   return repository.getAchievements();
+});
+
+/// 4 paliers de rang HIBONs (Curieux/Explorateur/Aventurier/Légende) avec
+/// progression de l'utilisateur courant. Watch `gamificationNotifierProvider`
+/// pour rafraîchir automatiquement quand le wallet change (lifetime_earned).
+final hibonBadgesProvider = FutureProvider<HibonBadgesResult>((ref) {
+  ref.watch(gamificationNotifierProvider);
+  final repository = ref.watch(gamificationRepositoryProvider);
+  return repository.getBadges();
 });
 
 final challengesProvider = FutureProvider<List<Challenge>>((ref) {

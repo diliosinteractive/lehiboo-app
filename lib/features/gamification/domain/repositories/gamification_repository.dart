@@ -1,3 +1,4 @@
+import 'package:lehiboo/features/gamification/data/models/hibon_badge.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_wallet.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_balance.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_action_entry.dart';
@@ -73,6 +74,9 @@ abstract class GamificationRepository {
   // Gamification (Achievements, Challenges)
   Future<List<Achievement>> getAchievements();
   Future<List<Challenge>> getChallenges();
+
+  // Badges (4 paliers de rang HIBONs)
+  Future<HibonBadgesResult> getBadges();
 
   // Lucky Wheel
   Future<WheelConfig> getWheelConfig();
