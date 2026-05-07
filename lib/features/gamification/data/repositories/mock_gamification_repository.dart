@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:lehiboo/features/gamification/data/models/hibon_badge.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_action_entry.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_balance.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_rank.dart';
@@ -226,6 +227,73 @@ class MockGamificationRepository implements GamificationRepository {
         progressTarget: 10,
       ),
     ];
+  }
+
+  @override
+  Future<HibonBadgesResult> getBadges() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final lifetime = _wallet.lifetimeEarned;
+    int progressPercent(int threshold) {
+      if (threshold == 0) return 100;
+      final p = (lifetime / threshold * 100).clamp(0, 100).round();
+      return p;
+    }
+
+    final items = [
+      const HibonBadge(
+        code: 'curieux',
+        name: 'Curieux',
+        icon: '🔍',
+        hibonsThreshold: 0,
+        petitBooBonus: 0,
+        progress: 0,
+        progressPercent: 100,
+        isUnlocked: true,
+      ),
+      HibonBadge(
+        code: 'explorateur',
+        name: 'Explorateur',
+        icon: '🧭',
+        hibonsThreshold: 400,
+        petitBooBonus: 1,
+        progress: lifetime.clamp(0, 400),
+        progressPercent: progressPercent(400),
+        isUnlocked: lifetime >= 400,
+      ),
+      HibonBadge(
+        code: 'aventurier',
+        name: 'Aventurier',
+        icon: '🗺️',
+        hibonsThreshold: 1000,
+        petitBooBonus: 2,
+        progress: lifetime.clamp(0, 1000),
+        progressPercent: progressPercent(1000),
+        isUnlocked: lifetime >= 1000,
+      ),
+      HibonBadge(
+        code: 'legende',
+        name: 'Légende',
+        icon: '👑',
+        hibonsThreshold: 5000,
+        petitBooBonus: 5,
+        progress: lifetime.clamp(0, 5000),
+        progressPercent: progressPercent(5000),
+        isUnlocked: lifetime >= 5000,
+      ),
+    ];
+    final unlocked = items.where((b) => b.isUnlocked).length;
+
+    return HibonBadgesResult(
+      items: items,
+      meta: HibonBadgesMeta(
+        lifetimeEarned: lifetime,
+        currentRank: _wallet.rank,
+        currentRankLabel: _wallet.rankLabel,
+        total: items.length,
+        unlocked: unlocked,
+        locked: items.length - unlocked,
+      ),
+    );
   }
 
   @override
