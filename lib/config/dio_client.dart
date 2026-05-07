@@ -161,9 +161,15 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     }
 
     if (kDebugMode) {
+      // Debug-only: print the full bearer so requests can be replayed via
+      // curl/Postman. NEVER enable in release — exposes account credentials.
+      final hasToken = token != null && token.isNotEmpty;
       debugPrint(
-        '🔐 JwtAuthInterceptor: path=${options.path}, hasToken=${token != null && token.isNotEmpty}',
+        '🔐 JwtAuthInterceptor: path=${options.path}, hasToken=$hasToken',
       );
+      if (hasToken) {
+        debugPrint('🔐   Authorization: Bearer $token');
+      }
     }
 
     // Add API key if configured

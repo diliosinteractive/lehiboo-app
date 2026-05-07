@@ -170,8 +170,8 @@ class EventMapper {
       status: _determineStatus(startDate, endDate),
       hasDirectBooking: dto.bookingMode != 'discovery',
       discoveryPricingType: dto.discoveryPricingType,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: _tryParseDateTime(dto.createdAt) ?? DateTime.now(),
+      updatedAt: _tryParseDateTime(dto.updatedAt) ?? DateTime.now(),
       views: 0,
       rating: null,
       reviewsCount: null,
@@ -238,7 +238,43 @@ class EventMapper {
           : null,
       creationSource: dto.creationSource,
       originalOrganizerName: dto.originalOrganizerName,
+
+      // HOME_FEED §4 — surface raw spec fields for downstream UI.
+      version: dto.version,
+      timezone: dto.timezone,
+      calendarMode: dto.calendarMode,
+      eventTypeMode: dto.eventTypeMode,
+      country: dto.country ?? dto.location?.country,
+      addressSource: dto.addressSource,
+      venueId: dto.venueId,
+      capacityGlobal: dto.capacityGlobal,
+      availabilityStatus: dto.availability?.status,
+      saleStartAt: _tryParseDateTime(dto.saleStartAt),
+      saleEndAt: _tryParseDateTime(dto.saleEndAt),
+      allowCancellation: dto.allowCancellation,
+      cancelBeforeHours: dto.cancelBeforeHours,
+      generateQrCodes: dto.generateQrCodes,
+      publicationStatus: dto.status,
+      visibility: dto.visibility,
+      isPasswordProtected: dto.isPasswordProtected,
+      hasPassword: dto.hasPassword,
+      publishedAt: _tryParseDateTime(dto.publishedAt),
+      scheduledPublishAt: _tryParseDateTime(dto.scheduledPublishAt),
+      isActive: dto.isActive,
+      isOnSale: dto.isOnSale,
+      isLive: dto.isLive,
+      canAcceptBookings: dto.canAcceptBookings,
+      canAcceptDiscovery: dto.canAcceptDiscovery,
+      isDiscovery: dto.isDiscovery,
+      participationCount: dto.participationCount,
+      isParticipating: dto.isParticipating,
+      externalTicketingUrl: dto.externalTicketingUrl,
     );
+  }
+
+  static DateTime? _tryParseDateTime(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value);
   }
 
   static EventCategory _parseCategorySlug(String slug) {

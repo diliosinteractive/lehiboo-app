@@ -125,6 +125,59 @@ class Event extends Equatable {
   final String? creationSource;
   final String? originalOrganizerName;
 
+  // ---- HOME_FEED MobileEventResource fields (spec: docs/HOME_FEED_MOBILE_SPEC.md §4) ----
+
+  // §4.1 / §4.2 — identification & scheduling
+  final int? version;
+  final String? timezone;
+  final String? calendarMode;
+  /// Spec §4.2: "offline" | "online" | "hybrid". Distinct from the legacy
+  /// taxonomy term `eventTypeTerm`.
+  final String? eventTypeMode;
+
+  // §4.3 — flat venue fields (parallel to the existing `venue`/`address`/etc.)
+  final String? country;
+  final String? addressSource;
+  final String? venueId;
+
+  // §4.5 / §4.6 — pricing & capacity (top-level)
+  final int? capacityGlobal;
+  /// Spec §4.6: "available" | "unavailable". Drives Book CTA gating.
+  final String? availabilityStatus;
+
+  // §4.7 — sale window & cancellation policy
+  final DateTime? saleStartAt;
+  final DateTime? saleEndAt;
+  final bool allowCancellation;
+  final int? cancelBeforeHours;
+  final bool generateQrCodes;
+
+  // §4.8 — status & flags
+  /// Raw API value: "published" or "private". Distinct from the date-derived
+  /// `status: EventStatus`.
+  final String? publicationStatus;
+  final String? visibility;
+  /// Spec §4.8 caveat: gates the password modal. Not the same as
+  /// `hasPassword`, which is informational only.
+  final bool isPasswordProtected;
+  final bool hasPassword;
+  final DateTime? publishedAt;
+  final DateTime? scheduledPublishAt;
+  final bool isActive;
+  final bool isOnSale;
+  final bool isLive;
+
+  // §4.9 — booking capabilities
+  final bool canAcceptBookings;
+  final bool canAcceptDiscovery;
+  final bool isDiscovery;
+  /// Spec §4.9: only present when `bookingMode == "discovery"`.
+  final int? participationCount;
+  final bool isParticipating;
+  /// Spec §4.9: when set, the mobile UI opens this URL instead of the
+  /// in-app booking flow.
+  final String? externalTicketingUrl;
+
   const Event({
     required this.id,
     required this.slug,
@@ -212,6 +265,36 @@ class Event extends Equatable {
     this.venueDetails,
     this.creationSource,
     this.originalOrganizerName,
+    // HOME_FEED §4 fields
+    this.version,
+    this.timezone,
+    this.calendarMode,
+    this.eventTypeMode,
+    this.country,
+    this.addressSource,
+    this.venueId,
+    this.capacityGlobal,
+    this.availabilityStatus,
+    this.saleStartAt,
+    this.saleEndAt,
+    this.allowCancellation = false,
+    this.cancelBeforeHours,
+    this.generateQrCodes = false,
+    this.publicationStatus,
+    this.visibility,
+    this.isPasswordProtected = false,
+    this.hasPassword = false,
+    this.publishedAt,
+    this.scheduledPublishAt,
+    this.isActive = true,
+    this.isOnSale = false,
+    this.isLive = false,
+    this.canAcceptBookings = false,
+    this.canAcceptDiscovery = false,
+    this.isDiscovery = false,
+    this.participationCount,
+    this.isParticipating = false,
+    this.externalTicketingUrl,
   });
 
   factory Event.minimal({
@@ -482,6 +565,35 @@ class Event extends Equatable {
     EventVenue? venueDetails,
     String? creationSource,
     String? originalOrganizerName,
+    int? version,
+    String? timezone,
+    String? calendarMode,
+    String? eventTypeMode,
+    String? country,
+    String? addressSource,
+    String? venueId,
+    int? capacityGlobal,
+    String? availabilityStatus,
+    DateTime? saleStartAt,
+    DateTime? saleEndAt,
+    bool? allowCancellation,
+    int? cancelBeforeHours,
+    bool? generateQrCodes,
+    String? publicationStatus,
+    String? visibility,
+    bool? isPasswordProtected,
+    bool? hasPassword,
+    DateTime? publishedAt,
+    DateTime? scheduledPublishAt,
+    bool? isActive,
+    bool? isOnSale,
+    bool? isLive,
+    bool? canAcceptBookings,
+    bool? canAcceptDiscovery,
+    bool? isDiscovery,
+    int? participationCount,
+    bool? isParticipating,
+    String? externalTicketingUrl,
   }) {
     return Event(
       id: id ?? this.id,
@@ -572,6 +684,35 @@ class Event extends Equatable {
       creationSource: creationSource ?? this.creationSource,
       originalOrganizerName:
           originalOrganizerName ?? this.originalOrganizerName,
+      version: version ?? this.version,
+      timezone: timezone ?? this.timezone,
+      calendarMode: calendarMode ?? this.calendarMode,
+      eventTypeMode: eventTypeMode ?? this.eventTypeMode,
+      country: country ?? this.country,
+      addressSource: addressSource ?? this.addressSource,
+      venueId: venueId ?? this.venueId,
+      capacityGlobal: capacityGlobal ?? this.capacityGlobal,
+      availabilityStatus: availabilityStatus ?? this.availabilityStatus,
+      saleStartAt: saleStartAt ?? this.saleStartAt,
+      saleEndAt: saleEndAt ?? this.saleEndAt,
+      allowCancellation: allowCancellation ?? this.allowCancellation,
+      cancelBeforeHours: cancelBeforeHours ?? this.cancelBeforeHours,
+      generateQrCodes: generateQrCodes ?? this.generateQrCodes,
+      publicationStatus: publicationStatus ?? this.publicationStatus,
+      visibility: visibility ?? this.visibility,
+      isPasswordProtected: isPasswordProtected ?? this.isPasswordProtected,
+      hasPassword: hasPassword ?? this.hasPassword,
+      publishedAt: publishedAt ?? this.publishedAt,
+      scheduledPublishAt: scheduledPublishAt ?? this.scheduledPublishAt,
+      isActive: isActive ?? this.isActive,
+      isOnSale: isOnSale ?? this.isOnSale,
+      isLive: isLive ?? this.isLive,
+      canAcceptBookings: canAcceptBookings ?? this.canAcceptBookings,
+      canAcceptDiscovery: canAcceptDiscovery ?? this.canAcceptDiscovery,
+      isDiscovery: isDiscovery ?? this.isDiscovery,
+      participationCount: participationCount ?? this.participationCount,
+      isParticipating: isParticipating ?? this.isParticipating,
+      externalTicketingUrl: externalTicketingUrl ?? this.externalTicketingUrl,
     );
   }
 
@@ -662,5 +803,34 @@ class Event extends Equatable {
         venueDetails,
         creationSource,
         originalOrganizerName,
+        version,
+        timezone,
+        calendarMode,
+        eventTypeMode,
+        country,
+        addressSource,
+        venueId,
+        capacityGlobal,
+        availabilityStatus,
+        saleStartAt,
+        saleEndAt,
+        allowCancellation,
+        cancelBeforeHours,
+        generateQrCodes,
+        publicationStatus,
+        visibility,
+        isPasswordProtected,
+        hasPassword,
+        publishedAt,
+        scheduledPublishAt,
+        isActive,
+        isOnSale,
+        isLive,
+        canAcceptBookings,
+        canAcceptDiscovery,
+        isDiscovery,
+        participationCount,
+        isParticipating,
+        externalTicketingUrl,
       ];
 }

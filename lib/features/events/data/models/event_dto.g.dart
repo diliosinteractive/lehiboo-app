@@ -58,7 +58,9 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       coupons: _parseListOrNull(json['coupons']),
       seatConfig: _parseMapOrNull(json['seat_config']),
       externalBooking: _parseMapOrNull(json['external_booking']),
-      eventType: _parseMapOrNull(json['event_type']),
+      eventType: _parseMapOrNull(_readEventTypeMap(json, 'event_type')),
+      eventTypeMode:
+          _parseStringOrNull(_readEventTypeString(json, 'event_type')),
       eventTag: _parseMapOrNull(json['event_tag']),
       targetAudience: _parseListOrNull(json['target_audience']),
       targetAudiences: _parseListOrNull(json['target_audiences']),
@@ -83,6 +85,67 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       isMembersOnly: json['is_members_only'] == null
           ? false
           : _parseBool(json['is_members_only']),
+      version: _parseIntOrNull(json['version']),
+      calendarMode: _parseStringOrNull(json['calendar_mode']),
+      timezone: _parseStringOrNull(json['timezone']),
+      venueName: _parseStringOrNull(json['venue_name']),
+      venueAddress: _parseStringOrNull(json['venue_address']),
+      city: _parseStringOrNull(json['city']),
+      postalCode: _parseStringOrNull(json['postal_code']),
+      country: _parseStringOrNull(json['country']),
+      addressSource: _parseStringOrNull(json['address_source']),
+      venueId: _parseStringOrNull(json['venue_id']),
+      startDate: _parseStringOrNull(json['start_date']),
+      endDate: _parseStringOrNull(json['end_date']),
+      priceFrom: _parseDoubleOrNull(json['price_from']),
+      isFree: json['is_free'] == null ? false : _parseBool(json['is_free']),
+      capacityGlobal: _parseIntOrNull(json['capacity_global']),
+      saleStartAt: _parseStringOrNull(json['sale_start_at']),
+      saleEndAt: _parseStringOrNull(json['sale_end_at']),
+      allowCancellation: json['allow_cancellation'] == null
+          ? false
+          : _parseBool(json['allow_cancellation']),
+      cancelBeforeHours: _parseIntOrNull(json['cancel_before_hours']),
+      generateQrCodes: json['generate_qr_codes'] == null
+          ? false
+          : _parseBool(json['generate_qr_codes']),
+      status: _parseStringOrNull(json['status']),
+      visibility: _parseStringOrNull(json['visibility']),
+      isPasswordProtected: json['is_password_protected'] == null
+          ? false
+          : _parseBool(json['is_password_protected']),
+      hasPassword: json['has_password'] == null
+          ? false
+          : _parseBool(json['has_password']),
+      publishedAt: _parseStringOrNull(json['published_at']),
+      scheduledPublishAt: _parseStringOrNull(json['scheduled_publish_at']),
+      isActive:
+          json['is_active'] == null ? true : _parseBool(json['is_active']),
+      isOnSale:
+          json['is_on_sale'] == null ? false : _parseBool(json['is_on_sale']),
+      isLive: json['is_live'] == null ? false : _parseBool(json['is_live']),
+      canAcceptBookings: json['can_accept_bookings'] == null
+          ? false
+          : _parseBool(json['can_accept_bookings']),
+      canAcceptDiscovery: json['can_accept_discovery'] == null
+          ? false
+          : _parseBool(json['can_accept_discovery']),
+      isDiscovery: json['is_discovery'] == null
+          ? false
+          : _parseBool(json['is_discovery']),
+      participationCount: _parseIntOrNull(json['participation_count']),
+      isParticipating: json['is_participating'] == null
+          ? false
+          : _parseBool(json['is_participating']),
+      externalTicketingUrl: _parseStringOrNull(json['external_ticketing_url']),
+      otherServices: _parseMapOrNull(json['other_services']),
+      entryTypeId: _parseIntOrNull(json['entry_type_id']),
+      eventTagId: _parseIntOrNull(json['event_tag_id']),
+      metaTitle: _parseStringOrNull(json['meta_title']),
+      metaDescription: _parseStringOrNull(json['meta_description']),
+      meta: _parseMapOrNull(json['meta']),
+      createdAt: _parseStringOrNull(json['created_at']),
+      updatedAt: _parseStringOrNull(json['updated_at']),
     );
 
 Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
@@ -120,7 +183,6 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'coupons': instance.coupons,
       'seat_config': instance.seatConfig,
       'external_booking': instance.externalBooking,
-      'event_type': instance.eventType,
       'event_tag': instance.eventTag,
       'target_audience': instance.targetAudience,
       'target_audiences': instance.targetAudiences,
@@ -139,6 +201,49 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'emotions': instance.emotions,
       'is_favorite': instance.isFavorite,
       'is_members_only': instance.isMembersOnly,
+      'version': instance.version,
+      'calendar_mode': instance.calendarMode,
+      'timezone': instance.timezone,
+      'venue_name': instance.venueName,
+      'venue_address': instance.venueAddress,
+      'city': instance.city,
+      'postal_code': instance.postalCode,
+      'country': instance.country,
+      'address_source': instance.addressSource,
+      'venue_id': instance.venueId,
+      'start_date': instance.startDate,
+      'end_date': instance.endDate,
+      'price_from': instance.priceFrom,
+      'is_free': instance.isFree,
+      'capacity_global': instance.capacityGlobal,
+      'sale_start_at': instance.saleStartAt,
+      'sale_end_at': instance.saleEndAt,
+      'allow_cancellation': instance.allowCancellation,
+      'cancel_before_hours': instance.cancelBeforeHours,
+      'generate_qr_codes': instance.generateQrCodes,
+      'status': instance.status,
+      'visibility': instance.visibility,
+      'is_password_protected': instance.isPasswordProtected,
+      'has_password': instance.hasPassword,
+      'published_at': instance.publishedAt,
+      'scheduled_publish_at': instance.scheduledPublishAt,
+      'is_active': instance.isActive,
+      'is_on_sale': instance.isOnSale,
+      'is_live': instance.isLive,
+      'can_accept_bookings': instance.canAcceptBookings,
+      'can_accept_discovery': instance.canAcceptDiscovery,
+      'is_discovery': instance.isDiscovery,
+      'participation_count': instance.participationCount,
+      'is_participating': instance.isParticipating,
+      'external_ticketing_url': instance.externalTicketingUrl,
+      'other_services': instance.otherServices,
+      'entry_type_id': instance.entryTypeId,
+      'event_tag_id': instance.eventTagId,
+      'meta_title': instance.metaTitle,
+      'meta_description': instance.metaDescription,
+      'meta': instance.meta,
+      'created_at': instance.createdAt,
+      'updated_at': instance.updatedAt,
     };
 
 _$EventImageDtoImpl _$$EventImageDtoImplFromJson(Map<String, dynamic> json) =>
@@ -267,10 +372,11 @@ Map<String, dynamic> _$$EventPriceDtoImplToJson(_$EventPriceDtoImpl instance) =>
 _$EventLocationDtoImpl _$$EventLocationDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$EventLocationDtoImpl(
-      venueName: _parseStringOrNull(json['venue_name']),
+      venueName: _parseStringOrNull(_readLocationName(json, 'venue_name')),
       address: _parseStringOrNull(json['address']),
       city: _parseStringOrNull(json['city']),
       postalCode: _parseStringOrNull(json['postal_code']),
+      country: _parseStringOrNull(json['country']),
       lat: _parseDoubleOrNull(json['lat']),
       lng: _parseDoubleOrNull(json['lng']),
       distanceKm: _parseDoubleOrNull(json['distance_km']),
@@ -283,6 +389,7 @@ Map<String, dynamic> _$$EventLocationDtoImplToJson(
       'address': instance.address,
       'city': instance.city,
       'postal_code': instance.postalCode,
+      'country': instance.country,
       'lat': instance.lat,
       'lng': instance.lng,
       'distance_km': instance.distanceKm,

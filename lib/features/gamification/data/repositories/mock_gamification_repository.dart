@@ -431,4 +431,10 @@ class MockGamificationRepository implements GamificationRepository {
   Future<HibonsWallet> earnHibons(int amount, String description) async {
     throw UnimplementedError('Hibons are earned through daily rewards, wheel spins, etc.');
   }
+
+  @override
+  Future<HibonBadgesResult> getBadges() {
+    // TODO: implement getBadges
+    throw UnimplementedError();
+  }
 }

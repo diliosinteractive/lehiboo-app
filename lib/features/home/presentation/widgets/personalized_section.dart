@@ -249,7 +249,7 @@ class PersonalizedSection extends ConsumerWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 0.48,
+        mainAxisExtent: 420,
       ),
       itemCount: gridActivities.length,
       itemBuilder: (context, index) {
@@ -265,7 +265,6 @@ class PersonalizedSection extends ConsumerWidget {
           },
           child: EventCard(
             activity: scored.activity,
-            fillContainer: true,
             heroTagPrefix: 'personalized',
           ),
         );
