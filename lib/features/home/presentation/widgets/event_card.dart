@@ -143,48 +143,42 @@ class EventCard extends ConsumerWidget {
           ),
         ),
 
-        // Bottom-left: Category Badge (above) + Privé badge (stacked under).
-        if (activity.category != null ||
-            activity.isMembersOnly ||
-            forcePrivateBadge)
+        // Bottom-left: Category Badge.
+        if (activity.category != null)
           Positioned(
             bottom: 12,
             left: 12,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (activity.category != null)
-                  GestureDetector(
-                    onTap: () => context.push(
-                        '/search?categorySlug=${activity.category!.slug}'),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        activity.category!.name,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+            child: GestureDetector(
+              onTap: () => context.push(
+                  '/search?categorySlug=${activity.category!.slug}'),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  activity.category!.name,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
                   ),
-                // Render the badge when the entity flag says members-only
-                // (authoritative for events list / search) OR when the
-                // caller forces it via section attribution (personalized
-                // feed). The OR keeps existing call sites untouched.
-                if (activity.isMembersOnly || forcePrivateBadge) ...[
-                  if (activity.category != null) const SizedBox(height: 6),
-                  const _PrivateBadge(),
-                ],
-              ],
+                ),
+              ),
             ),
+          ),
+
+        // Bottom-right: Privé badge (opposite end of the same row as the
+        // category). Render when the entity flag says members-only
+        // (authoritative for events list / search) OR when the caller
+        // forces it via section attribution (personalized feed).
+        if (activity.isMembersOnly || forcePrivateBadge)
+          const Positioned(
+            bottom: 12,
+            right: 12,
+            child: _PrivateBadge(),
           ),
       ],
     );
