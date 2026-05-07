@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../models/badge_dto.dart';
 import '../models/hibons_api_dto.dart';
 
 final gamificationApiDataSourceProvider = Provider<GamificationApiDataSource>((ref) {
@@ -169,6 +170,31 @@ class GamificationApiDataSource {
   Future<void> unlockChatMessages() async {
     debugPrint('🎮 GamificationAPI: POST /mobile/chat/unlock');
     await _dio.post('/mobile/chat/unlock');
+  }
+
+  Future<BadgesResponseDto> getBadges() async {
+    debugPrint('🎮 GamificationAPI: GET /mobile/badges');
+    final response = await _dio.get('/mobile/badges');
+
+    final list = ApiResponseHandler.extractList(response.data);
+    final items = list
+        .map((item) => BadgeDto.fromJson(item as Map<String, dynamic>))
+        .toList();
+
+    final raw = response.data;
+    final metaRaw = raw is Map<String, dynamic> ? raw['meta'] : null;
+    final meta = metaRaw is Map<String, dynamic>
+        ? BadgesMetaDto.fromJson(metaRaw)
+        : const BadgesMetaDto(
+            lifetimeEarned: 0,
+            currentRank: 'curieux',
+            currentRankLabel: 'Curieux',
+            total: 0,
+            unlocked: 0,
+            locked: 0,
+          );
+
+    return BadgesResponseDto(items: items, meta: meta);
   }
 
   Future<List<AchievementDto>> getAchievements() async {

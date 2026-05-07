@@ -445,22 +445,26 @@ class PaginatedActivities {
   final List<Activity> activities;
   final bool hasMore;
   final bool isLoadingMore;
+  final int totalItems;
 
   const PaginatedActivities({
     required this.activities,
     required this.hasMore,
     this.isLoadingMore = false,
+    this.totalItems = 0,
   });
 
   PaginatedActivities copyWith({
     List<Activity>? activities,
     bool? hasMore,
     bool? isLoadingMore,
+    int? totalItems,
   }) {
     return PaginatedActivities(
       activities: activities ?? this.activities,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      totalItems: totalItems ?? this.totalItems,
     );
   }
 }
@@ -532,12 +536,14 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
         return PaginatedActivities(
           activities: newActivities,
           hasMore: hasMore,
+          totalItems: result.totalItems,
         );
       } else {
         // Load more: Append
         return PaginatedActivities(
           activities: [...previousActivities, ...newActivities],
           hasMore: hasMore,
+          totalItems: result.totalItems,
         );
       }
     } catch (e) {
@@ -547,6 +553,7 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
         return PaginatedActivities(
           activities: previousActivities,
           hasMore: false, // Prevent infinite error loops
+          totalItems: state.valueOrNull?.totalItems ?? previousActivities.length,
         );
       }
       rethrow;
