@@ -53,7 +53,13 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   void initState() {
     super.initState();
     _prefillForm();
-    _updateCartHoldRemaining();
+    // Defer past the current frame: _updateCartHoldRemaining may clear the
+    // cart provider when a stale hold has expired, and Riverpod forbids
+    // mutating providers during widget mount.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _updateCartHoldRemaining();
+    });
     _cartHoldTimer = Timer.periodic(
       const Duration(seconds: 1),
       (_) => _updateCartHoldRemaining(),
