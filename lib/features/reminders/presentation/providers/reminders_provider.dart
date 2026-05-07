@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../domain/entities/reminder.dart';
 import '../../data/repositories/reminders_repository_impl.dart';
 import '../../domain/repositories/reminders_repository.dart';
@@ -25,13 +26,14 @@ final remindersListProvider =
     StateNotifierProvider<RemindersListNotifier, AsyncValue<List<Reminder>>>(
         (ref) {
   final repo = ref.watch(remindersRepositoryProvider);
-  return RemindersListNotifier(repo);
+  return RemindersListNotifier(repo, ref);
 });
 
 class RemindersListNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
   final RemindersRepository _repository;
+  final Ref _ref;
 
-  RemindersListNotifier(this._repository)
+  RemindersListNotifier(this._repository, this._ref)
       : super(const AsyncValue.loading()) {
     loadReminders();
   }
@@ -61,6 +63,8 @@ class RemindersListNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
         eventUuid: eventUuid,
         slotUuid: slotUuid,
       );
+      // Reminder signal changed — drop the personalized feed (spec §7).
+      _ref.invalidate(personalizedFeedProvider);
     } catch (e, st) {
       // Rollback
       state = AsyncValue.data(previous);
@@ -76,6 +80,8 @@ class RemindersListNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
 
     try {
       await _repository.deleteAllReminders(eventUuid);
+      // Reminder signal changed — drop the personalized feed (spec §7).
+      _ref.invalidate(personalizedFeedProvider);
     } catch (e, st) {
       state = AsyncValue.data(previous);
       state = AsyncValue.error(e, st);

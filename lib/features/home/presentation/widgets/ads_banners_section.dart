@@ -24,7 +24,7 @@ class AdsBannersSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -65,7 +65,7 @@ class AdsBannersSection extends ConsumerWidget {
                   fullWidth: true,
                 ),
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
           ],
         );
       },

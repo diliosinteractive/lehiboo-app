@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,212 +14,145 @@ final deepLinkServiceProvider = Provider<DeepLinkService>((ref) {
 
 /// Deep Link Service
 ///
-/// Handles navigation from push notifications and external deep links.
-/// Maps notification data to app routes and navigates accordingly.
+/// Routes push-notification taps to mobile screens. Per
+/// `docs/PUSH_NOTIFICATIONS_MOBILE_SPEC.md` §5.2, mobile MUST route on
+/// `data.type` and never navigate to `data.action` (which is a web URL).
 class DeepLinkService {
   final GoRouter _router;
 
   DeepLinkService({required GoRouter router}) : _router = router;
 
-  /// Navigate to a path directly
-  ///
-  /// [path] should be a valid app route like '/event/123' or '/my-bookings'
+  /// Navigate to a path directly. Used by tests and for the local-notification
+  /// payload path that already carries a resolved mobile route.
   void navigate(String path) {
     debugPrint('DeepLinkService: Navigating to $path');
-
     try {
-      // Handle external URLs (http/https) - these should open in browser
       if (path.startsWith('http://') || path.startsWith('https://')) {
         debugPrint('DeepLinkService: External URL, ignoring');
         return;
       }
-
-      // Ensure path starts with /
       final normalizedPath = path.startsWith('/') ? path : '/$path';
-
       _router.go(normalizedPath);
     } catch (e) {
       debugPrint('DeepLinkService: Navigation failed - $e');
-      // Fallback to home
       _router.go('/');
     }
   }
 
-  /// Navigate from notification data map
+  /// Route a push notification by its `data.type` field.
   ///
-  /// Extracts 'type' and 'id' from the data to determine the route.
-  void navigateFromData(Map<String, dynamic> data) {
-    debugPrint('DeepLinkService: Processing notification data: $data');
-
-    final type = data['type'] as String?;
-    final action = data['action'] as String?;
-
-    // If action is provided, use it directly
-    if (action != null && action.isNotEmpty) {
-      navigate(action);
-      return;
-    }
-
-    // Otherwise, determine route from type
-    if (type == null) {
-      debugPrint('DeepLinkService: No type or action in data');
-      return;
-    }
-
-    final route = _getRouteForType(type, data);
-    if (route != null) {
-      navigate(route);
-    }
+  /// Falls back to `/notifications` for unknown or null types so the OS-level
+  /// tap never crashes when the backend ships a new type before the mobile
+  /// app knows about it (spec §5.3).
+  void navigateFromType(Map<String, dynamic> data) {
+    final type = data['type']?.toString();
+    final route = type == null ? null : routeForType(type, data);
+    navigate(route ?? '/notifications');
   }
 
-  /// Navigate from a payload string (typically from local notifications)
+  /// Route a payload string from a tapped local notification.
+  ///
+  /// Local notifications serialise the FCM `data` map via `toString()` (see
+  /// `PushNotificationService._showLocalNotification`). We try JSON first
+  /// (forward-compatible with future serializers), then the legacy
+  /// `{key: value, ...}` Dart-map format.
   void navigateToNotification(String payload) {
     debugPrint('DeepLinkService: Processing payload: $payload');
-
-    // Try to extract action from payload
-    // Payload format could be: {action: /bookings/123, type: booking_confirmed, ...}
-    try {
-      // Simple extraction - look for action pattern
-      final actionMatch = RegExp(r'action:\s*(/[^\s,}]+)').firstMatch(payload);
-      if (actionMatch != null) {
-        final action = actionMatch.group(1);
-        if (action != null) {
-          navigate(action);
-          return;
-        }
-      }
-
-      // Try type-based routing
-      final typeMatch = RegExp(r'type:\s*(\w+)').firstMatch(payload);
-      final idMatch = RegExp(r'(?:booking_id|event_id|id):\s*(\d+)').firstMatch(payload);
-
-      if (typeMatch != null) {
-        final type = typeMatch.group(1)!;
-        final id = idMatch?.group(1);
-        final route = _getRouteForType(type, {'id': id});
-        if (route != null) {
-          navigate(route);
-          return;
-        }
-      }
-    } catch (e) {
-      debugPrint('DeepLinkService: Failed to parse payload - $e');
+    final data = _parsePayload(payload);
+    if (data != null) {
+      navigateFromType(data);
+      return;
     }
-
-    // Fallback to notifications screen
     navigate('/notifications');
   }
 
-  /// Map notification type to app route
-  String? _getRouteForType(String type, Map<String, dynamic> data) {
-    // Booking notifications
-    if (type.contains('booking')) {
-      final bookingId = data['booking_id'] ?? data['id'];
-      if (bookingId != null) {
-        return '/my-bookings'; // Single booking detail not implemented, go to list
+  Map<String, dynamic>? _parsePayload(String payload) {
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } catch (_) {}
+    final typeMatch = RegExp(r'type:\s*(\w+)').firstMatch(payload);
+    if (typeMatch == null) return null;
+    final result = <String, dynamic>{'type': typeMatch.group(1)};
+    final pairPattern = RegExp(r'(\w+):\s*([^,}]+?)(?=,|\}|$)');
+    for (final match in pairPattern.allMatches(payload)) {
+      final key = match.group(1);
+      final value = match.group(2)?.trim();
+      if (key != null && value != null) {
+        result[key] = value;
       }
-      return '/my-bookings';
     }
-
-    // Event notifications
-    if (type.contains('event')) {
-      final eventId = data['event_id'] ?? data['id'];
-      if (eventId != null) {
-        return '/event/$eventId';
-      }
-      return '/';
-    }
-
-    // Check-in notifications
-    if (type.contains('check_in') || type.contains('checkin')) {
-      final eventId = data['event_id'];
-      if (eventId != null) {
-        return '/event/$eventId';
-      }
-      return '/my-bookings';
-    }
-
-    // Collaboration/invitation notifications
-    if (type.contains('collaboration') || type.contains('invitation')) {
-      return '/notifications';
-    }
-
-    // Reminder notifications
-    if (type.contains('reminder')) {
-      final eventSlug = data['event_slug'];
-      if (eventSlug != null) {
-        return '/event/$eventSlug';
-      }
-      final action = data['action'];
-      if (action is String && action.startsWith('/events/')) {
-        return '/event/${action.replaceFirst('/events/', '')}';
-      }
-      return '/my-reminders';
-    }
-
-    // Alert/saved search notifications
-    if (type.contains('alert') || type.contains('saved_search')) {
-      final alertUuid = data['alert_uuid'];
-      if (alertUuid != null) {
-        return '/search?alert=$alertUuid';
-      }
-      return '/notifications';
-    }
-
-    // Payout notifications (vendor)
-    if (type.contains('payout')) {
-      return '/profile'; // Or vendor dashboard when available
-    }
-
-    // Message notifications
-    if (type == 'new_message' || type.contains('message')) {
-      final conversationUuid = data['conversation_uuid'] ?? data['uuid'];
-      if (conversationUuid != null) {
-        return '/messages/$conversationUuid';
-      }
-      return '/messages';
-    }
-
-    // Review notifications (ReviewSubmitted/Approved/Rejected)
-    if (type.contains('review')) {
-      final reviewUuid = data['review_uuid'] ?? data['uuid'];
-      if (reviewUuid != null) {
-        return '/my-reviews?reviewUuid=$reviewUuid';
-      }
-      return '/my-reviews';
-    }
-
-    // Default to notifications screen
-    debugPrint('DeepLinkService: Unknown type "$type", using default route');
-    return '/notifications';
+    return result;
   }
 
-  /// Check if a route is valid
-  bool isValidRoute(String path) {
-    // Basic validation - more specific if needed
-    final validPrefixes = [
-      '/event/',
-      '/events/',
-      '/my-bookings',
-      '/my-reviews',
-      '/bookings/',
-      '/profile',
-      '/settings',
-      '/notifications',
-      '/favorites',
-      '/search',
-      '/explore',
-      '/partner/',
-      '/organizers/',
-      '/me/memberships',
-      '/me/private-events',
-      '/me/followed-organizers',
-      '/invitations/',
-      '/ai-',
-      '/hibons-',
-      '/',
-    ];
+  /// Maps a push `data.type` to a mobile route.
+  ///
+  /// Source of truth for spec §5.2 / §6 — switch is exhaustive over the 20
+  /// notification classes that wire FCM today. New types should be added
+  /// here; missing types fall back to `/notifications` via the caller.
+  @visibleForTesting
+  String? routeForType(String type, Map<String, dynamic> data) {
+    String? str(String key) => data[key]?.toString();
 
-    return validPrefixes.any((prefix) => path.startsWith(prefix));
+    switch (type) {
+      // -- Bookings --
+      case 'booking_confirmed':
+        final id = str('booking_id');
+        return id != null ? '/booking-detail/$id' : '/my-bookings';
+
+      // -- Messages --
+      case 'new_message':
+        final uuid = str('conversation_uuid');
+        return uuid != null ? '/messages/$uuid' : '/messages';
+
+      // -- Saved-search alerts --
+      case 'new_alert_events':
+        final alertUuid = str('alert_uuid');
+        return alertUuid != null ? '/search?alert=$alertUuid' : '/notifications';
+
+      // -- Followed-organisation events --
+      case 'new_event_from_followed_organization':
+        final identifier = str('event_slug') ?? str('event_uuid');
+        return identifier != null ? '/event/$identifier' : '/notifications';
+
+      // -- Organisations --
+      case 'organization_invitation_received':
+        return '/me/memberships?tab=invitations';
+      case 'organization_join_approved':
+        final orgId = str('organization_uuid') ?? str('organization_id');
+        final highlight = (orgId != null && orgId.isNotEmpty)
+            ? '&highlight=$orgId'
+            : '';
+        return '/me/memberships?tab=active$highlight';
+      case 'organization_join_rejected':
+        return '/me/memberships?tab=rejected';
+
+      // -- Vendor side: send to in-app notifications list (no dedicated screen) --
+      case 'new_booking':
+      case 'organization_join_requested':
+        return '/notifications';
+
+      // -- Generic-factory types (channel: general) --
+      // Spec §6 lists 12 review/question/discovery/membership types that go
+      // through PushPayload::generic and may not carry an `action`. They are
+      // informational, so the in-app list is the right destination.
+      case 'discovery_reminder':
+      case 'organization_invitation_accepted':
+      case 'organization_invitation_declined':
+      case 'organization_member_left':
+      case 'organizer_review_submitted':
+      case 'organizer_review_approved':
+      case 'review_submitted':
+      case 'review_approved':
+      case 'review_rejected':
+      case 'question_answered':
+      case 'question_approved':
+      case 'question_rejected':
+        return '/notifications';
+
+      default:
+        debugPrint('DeepLinkService: Unknown type "$type"');
+        return null;
+    }
   }
 }

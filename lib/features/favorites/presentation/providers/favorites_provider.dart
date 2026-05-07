@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../data/models/toggle_favorite_result.dart';
 import '../../domain/repositories/favorites_repository.dart';
 import '../../data/repositories/favorites_repository_impl.dart';
@@ -113,6 +114,9 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       // Reload to ensure sync with server and get complete data
       await loadFavorites(listId: _currentListId);
 
+      // Favourite signal changed — drop the personalized feed (spec §7).
+      _ref.invalidate(personalizedFeedProvider);
+
       return result;
     } catch (e) {
       debugPrint('Error toggling favorite: $e');
@@ -171,6 +175,13 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
       // Recharger
       await loadFavorites(listId: _currentListId);
+
+      // Favourite signal changed if a new favourite was added (spec §7);
+      // pure list moves don't change the set of favourited events but the
+      // server-side strata are cheap to invalidate.
+      if (!isFav) {
+        _ref.invalidate(personalizedFeedProvider);
+      }
 
       return result;
     } catch (e) {

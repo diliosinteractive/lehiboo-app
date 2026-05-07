@@ -17,6 +17,7 @@ import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_forms_section.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
 
 /// Écran de checkout unifié
@@ -847,6 +848,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       // 5. Naviguer vers la confirmation avec confettis
       HapticFeedback.heavyImpact();
+      // Booking signal changed — drop the personalized feed (spec §7).
+      ref.invalidate(personalizedFeedProvider);
       if (mounted) {
         context.go('/booking-confirmation/${confirmationBooking.uuid}', extra: {
           'booking': confirmationBooking,

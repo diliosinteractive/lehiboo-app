@@ -11,6 +11,7 @@ import 'package:lehiboo/features/blog/presentation/widgets/blog_section.dart';
 import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_section.dart';
 import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/home/presentation/providers/hero_slides_provider.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/messages/presentation/providers/unread_count_provider.dart';
 import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
@@ -29,7 +30,11 @@ import 'package:lehiboo/core/utils/api_response_handler.dart';
 import '../widgets/contextual_hero.dart';
 import '../widgets/event_stories.dart';
 import '../widgets/countdown_event_card.dart';
-import '../widgets/personalized_section.dart';
+// Legacy client-side "Pour vous" — superseded by the server-driven
+// PersonalizedFeedSection (PERSONALIZED_FEED_MOBILE_SPEC.md). Kept commented
+// for reference only.
+// import '../widgets/personalized_section.dart';
+import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../../memberships/presentation/widgets/personalized_feed_section.dart';
 // Les imports suivants sont commentés car les sections sont désactivées en attendant l'API backend
 // import '../widgets/native_ad_card.dart';
@@ -76,9 +81,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(categoriesProvider.notifier).refresh(),
       ref.read(homeCitiesProvider.notifier).refresh(),
       ref.read(mobileAppConfigProvider.notifier).refresh(),
+      ref.read(heroSlidesProvider.notifier).refresh(),
     ]);
     ref.invalidate(alertsProvider);
     ref.invalidate(viewedStoriesProvider);
+    // `personalizedFeedProvider` is a FutureProvider (not an
+    // AsyncNotifierProvider), so refresh via invalidate to actually
+    // re-trigger the fetch on pull-to-refresh.
+    ref.invalidate(personalizedFeedProvider);
   }
 
   @override
@@ -95,11 +105,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
-            // 1. Hero contextuel avec parallax + alertes sauvegardées
+            // 1. Hero contextuel avec parallax + alertes sauvegardées.
+            // Editorial hero slides (when present) drive the carousel
+            // background; on cold start / empty / error the static
+            // city-themed image renders instead — see ContextualHero.
             SliverToBoxAdapter(
               child: ContextualHero(
                 scrollOffset: _scrollOffset,
                 height: 420,
+                slides: ref.watch(heroSlidesProvider).valueOrNull,
               ),
             ),
 
@@ -116,9 +130,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: HomeCitiesSection(),
             ),
 
-            // 5. Section Urgency FOMO (événements qui commencent bientôt)
+            // 5. "Pour vous" — server-driven personalized carousel.
+            // Spec MEMBERSHIPS §11. Hidden when unauthenticated or empty.
             const SliverToBoxAdapter(
-              child: UrgencySection(),
+              child: PersonalizedFeedSection(),
             ),
 
             // 6. Section Publicités dynamiques
@@ -131,10 +146,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Spec MEMBERSHIPS §11: aggregated "Pour vous" carousel
-                  // surfaced above the daily sections. Hidden when
-                  // unauthenticated or when the response is empty.
-                  const PersonalizedFeedSection(),
+                  // Urgency FOMO — événements qui commencent bientôt.
+                  const UrgencySection(),
                   _buildActivitySection(
                     context,
                     ref,
@@ -164,7 +177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                       }
                       return SizedBox(
-                        height: 420,
+                        height: 360,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -197,10 +210,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // 8. Section "Pour vous" (personnalisée)
-            const SliverToBoxAdapter(
-              child: PersonalizedSection(),
-            ),
+            // 8. Section "Pour vous" (personnalisée) — legacy client-side
+            // scoring, replaced by server-driven PersonalizedFeedSection above.
+            // const SliverToBoxAdapter(
+            //   child: PersonalizedSection(),
+            // ),
 
             // 9. Section thématiques
             const SliverToBoxAdapter(
@@ -450,7 +464,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               return const SizedBox.shrink();
             }
             return SizedBox(
-              height: 420,
+              height: 360,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -475,14 +489,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           loading: () => _buildCarouselSkeleton(),
           error: (err, stack) => const SizedBox.shrink(),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 4),
       ],
     );
   }
 
   Widget _buildCarouselSkeleton() {
     return SizedBox(
-      height: 420,
+      height: 360,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),

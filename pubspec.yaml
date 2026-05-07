@@ -16,6 +16,9 @@ dependencies:
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10
   cached_network_image: ^3.4.1
+  # Used by the home hero carousel to pause its auto-rotate timer when
+  # the carousel scrolls offscreen.
+  visibility_detector: ^0.4.0+2
   shimmer: ^3.0.0
   flutter_animate: ^4.5.0
   video_player: ^2.9.2

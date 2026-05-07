@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../events/data/models/event_dto.dart';
 import '../../data/datasources/memberships_api_datasource.dart';
 import '../../data/models/invitation_dto.dart';
 import '../../data/models/membership_dto.dart';
+import '../../data/models/personalized_feed_dto.dart';
 
 /// Membership lifecycle (participant side) — spec §2 endpoints 1-8.
 ///
@@ -39,7 +39,7 @@ abstract class MembershipsRepository {
     int perPage,
   });
 
-  Future<List<EventDto>> getPersonalizedFeed({int limit});
+  Future<PersonalizedFeedDto> getPersonalizedFeed({int limit});
 }
 
 final membershipsRepositoryProvider = Provider<MembershipsRepository>((ref) {

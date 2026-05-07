@@ -173,44 +173,62 @@ class _GuestRestrictionDialogState
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-                  _buildTitle(),
-                  const SizedBox(height: 12),
-                  _buildSubtitle(),
-                  const SizedBox(height: 24),
-                  _buildEmailField(),
-                  const SizedBox(height: 12),
-                  _buildPasswordField(),
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 12),
-                    _buildError(_errorMessage!),
+          child: Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
                   ],
-                  const SizedBox(height: 24),
-                  _buildSubmitButton(),
-                  const SizedBox(height: 12),
-                  _buildSecondaryActions(),
-                ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: 24),
+                      _buildTitle(),
+                      const SizedBox(height: 12),
+                      _buildSubtitle(),
+                      const SizedBox(height: 24),
+                      _buildEmailField(),
+                      const SizedBox(height: 12),
+                      _buildPasswordField(),
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        _buildError(_errorMessage!),
+                      ],
+                      const SizedBox(height: 24),
+                      _buildSubmitButton(),
+                      const SizedBox(height: 16),
+                      _buildSecondaryActions(),
+                      const SizedBox(height: 6),
+                      _buildEncouragement(),
+                    ],
+                  ),
+                ),
               ),
-            ),
+              // Close X — top-right. Same dismissal semantics as the
+              // removed "Plus tard": pops the dialog with `false`,
+              // signalling "user dismissed without authenticating".
+              Positioned(
+                top: 4,
+                right: 4,
+                child: IconButton(
+                  tooltip: 'Fermer',
+                  icon: const Icon(Icons.close, color: Color(0xFF718096)),
+                  onPressed: _isSubmitting ? null : () => _safePop(false),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -265,18 +283,25 @@ class _GuestRestrictionDialogState
               color: Color(0xFF2D3748),
             ),
           ),
-          const TextSpan(text: '.\n'),
-          const TextSpan(
-            text: "Cela ne prend que 2 minutes et c'est gratuit !",
-            style: TextStyle(
-              fontStyle: FontStyle.italic,
-              fontSize: 13,
-              color: Color(0xFFFF601F),
-            ),
-          ),
+          const TextSpan(text: '.'),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms, duration: 400.ms).moveY(begin: 10, end: 0);
+  }
+
+  /// Encouragement line moved out of the subtitle and rendered below the
+  /// "Créer un compte" button so the layout reads top-to-bottom: gated
+  /// feature → login → register CTA → reassurance.
+  Widget _buildEncouragement() {
+    return const Text(
+      "Cela ne prend que 2 minutes et c'est gratuit !",
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontStyle: FontStyle.italic,
+        fontSize: 13,
+        color: Color(0xFFFF601F),
+      ),
+    ).animate().fadeIn(delay: 450.ms, duration: 400.ms);
   }
 
   Widget _buildEmailField() {
@@ -389,36 +414,25 @@ class _GuestRestrictionDialogState
   }
 
   Widget _buildSecondaryActions() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        TextButton(
-          // Push register on top of the dialog instead of popping it. When
-          // the user finishes registration and becomes authenticated, the
-          // auth-state listener in initState pops the dialog with `true`
-          // so the original gated action resumes.
-          onPressed: _isSubmitting ? null : () => context.push('/register'),
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFFFF601F),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          ),
-          child: const Text(
-            'Créer un compte',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
+    // Centered single-CTA. The "Plus tard" escape hatch moved to the
+    // close icon at the dialog's top-left so the primary alternative
+    // path ("Créer un compte") gets the visual focus.
+    return Center(
+      child: TextButton(
+        // Push register on top of the dialog instead of popping it. When
+        // the user finishes registration and becomes authenticated, the
+        // auth-state listener in initState pops the dialog with `true`
+        // so the original gated action resumes.
+        onPressed: _isSubmitting ? null : () => context.push('/register'),
+        style: TextButton.styleFrom(
+          foregroundColor: const Color(0xFFFF601F),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
-        TextButton(
-          onPressed: _isSubmitting ? null : () => _safePop(false),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.grey[500],
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          ),
-          child: const Text(
-            'Plus tard',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          ),
+        child: const Text(
+          'Créer un compte',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
-      ],
+      ),
     ).animate().fadeIn(delay: 400.ms, duration: 400.ms);
   }
 

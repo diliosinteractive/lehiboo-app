@@ -59,7 +59,7 @@ class EventStories extends ConsumerWidget {
           children: [
             // Section header "À la une"
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
               child: Row(
                 children: [
                   // Icône avec fond gradient
@@ -140,7 +140,7 @@ class EventStories extends ConsumerWidget {
         children: [
           // Skeleton header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: Row(
               children: [
                 Container(

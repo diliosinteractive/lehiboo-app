@@ -5,6 +5,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/invitation_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
 import 'membership_state_providers.dart';
+import 'personalized_feed_provider.dart';
 
 /// User's pending invitations — `GET /me/invitations` (spec §6).
 ///
@@ -53,6 +54,8 @@ class InvitationActionController
       await ref.read(membershipsRepositoryProvider).acceptInvitation(arg);
       ref.invalidate(myInvitationsProvider);
       ref.invalidate(myMembershipsListProvider);
+      // Membership signal changed — drop the personalized feed (spec §7).
+      ref.invalidate(personalizedFeedProvider);
       state = const AsyncData(InvitationAction());
       return true;
     } catch (e, st) {
@@ -73,6 +76,8 @@ class InvitationActionController
     try {
       await ref.read(membershipsRepositoryProvider).declineInvitation(arg);
       ref.invalidate(myInvitationsProvider);
+      // Membership signal changed — drop the personalized feed (spec §7).
+      ref.invalidate(personalizedFeedProvider);
       state = const AsyncData(InvitationAction());
       return true;
     } catch (e, st) {

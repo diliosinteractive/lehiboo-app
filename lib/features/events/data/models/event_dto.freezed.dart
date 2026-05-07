@@ -85,9 +85,22 @@ mixin _$EventDto {
   Map<String, dynamic>? get seatConfig => throw _privateConstructorUsedError;
   @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get externalBooking =>
-      throw _privateConstructorUsedError;
-  @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
-  Map<String, dynamic>? get eventType => throw _privateConstructorUsedError;
+      throw _privateConstructorUsedError; // Legacy taxonomy term shape (e.g. {id, name, slug}) from the /events API.
+// Coexists with `eventTypeMode` below — they share the JSON key
+// `event_type` and are disambiguated at parse time by value runtime type.
+  @JsonKey(
+      name: 'event_type',
+      readValue: _readEventTypeMap,
+      fromJson: _parseMapOrNull,
+      includeToJson: false)
+  Map<String, dynamic>? get eventType =>
+      throw _privateConstructorUsedError; // Spec HOME_FEED §4.2: string enum "offline" | "online" | "hybrid".
+  @JsonKey(
+      name: 'event_type',
+      readValue: _readEventTypeString,
+      fromJson: _parseStringOrNull,
+      includeToJson: false)
+  String? get eventTypeMode => throw _privateConstructorUsedError;
   @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get eventTag => throw _privateConstructorUsedError;
   @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
@@ -129,7 +142,106 @@ mixin _$EventDto {
 // (snake + camelCase) and MobileEventResource (snake_case only). When
 // true, drives a "Privé 🔒" badge on event cards across all listings.
   @JsonKey(name: 'is_members_only', fromJson: _parseBool)
-  bool get isMembersOnly => throw _privateConstructorUsedError;
+  bool get isMembersOnly =>
+      throw _privateConstructorUsedError; // ---- HOME_FEED MobileEventResource fields (spec: docs/HOME_FEED_MOBILE_SPEC.md §4) ----
+// §4.1 Identification
+  @JsonKey(fromJson: _parseIntOrNull)
+  int? get version => throw _privateConstructorUsedError; // §4.2 Scheduling
+  @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull)
+  String? get calendarMode => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get timezone =>
+      throw _privateConstructorUsedError; // §4.3 Flat venue/location (parallel to nested `location` object)
+  @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+  String? get venueName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull)
+  String? get venueAddress => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get city => throw _privateConstructorUsedError;
+  @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
+  String? get postalCode => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get country => throw _privateConstructorUsedError;
+  @JsonKey(name: 'address_source', fromJson: _parseStringOrNull)
+  String? get addressSource => throw _privateConstructorUsedError;
+  @JsonKey(name: 'venue_id', fromJson: _parseStringOrNull)
+  String? get venueId =>
+      throw _privateConstructorUsedError; // §4.4 Top-level dates (first slot mirror)
+  @JsonKey(name: 'start_date', fromJson: _parseStringOrNull)
+  String? get startDate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'end_date', fromJson: _parseStringOrNull)
+  String? get endDate =>
+      throw _privateConstructorUsedError; // §4.5 Top-level pricing
+  @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
+  double? get priceFrom => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_free', fromJson: _parseBool)
+  bool get isFree =>
+      throw _privateConstructorUsedError; // §4.6 Capacity (top-level cap)
+  @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
+  int? get capacityGlobal =>
+      throw _privateConstructorUsedError; // §4.7 Sale window & cancellation
+  @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull)
+  String? get saleStartAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull)
+  String? get saleEndAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'allow_cancellation', fromJson: _parseBool)
+  bool get allowCancellation => throw _privateConstructorUsedError;
+  @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
+  int? get cancelBeforeHours => throw _privateConstructorUsedError;
+  @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
+  bool get generateQrCodes =>
+      throw _privateConstructorUsedError; // §4.8 Status & flags
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get status => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get visibility =>
+      throw _privateConstructorUsedError; // Drives the password modal — see spec §4.8 caveat: not the same as `hasPassword`.
+  @JsonKey(name: 'is_password_protected', fromJson: _parseBool)
+  bool get isPasswordProtected => throw _privateConstructorUsedError;
+  @JsonKey(name: 'has_password', fromJson: _parseBool)
+  bool get hasPassword => throw _privateConstructorUsedError;
+  @JsonKey(name: 'published_at', fromJson: _parseStringOrNull)
+  String? get publishedAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull)
+  String? get scheduledPublishAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_active', fromJson: _parseBool)
+  bool get isActive => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_on_sale', fromJson: _parseBool)
+  bool get isOnSale => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_live', fromJson: _parseBool)
+  bool get isLive =>
+      throw _privateConstructorUsedError; // §4.9 Booking capabilities
+  @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool)
+  bool get canAcceptBookings => throw _privateConstructorUsedError;
+  @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool)
+  bool get canAcceptDiscovery => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_discovery', fromJson: _parseBool)
+  bool get isDiscovery =>
+      throw _privateConstructorUsedError; // §4.9: only present when bookingMode == "discovery".
+  @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull)
+  int? get participationCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_participating', fromJson: _parseBool)
+  bool get isParticipating => throw _privateConstructorUsedError;
+  @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull)
+  String? get externalTicketingUrl =>
+      throw _privateConstructorUsedError; // §4.10 Services & attributes
+  @JsonKey(name: 'other_services', fromJson: _parseMapOrNull)
+  Map<String, dynamic>? get otherServices => throw _privateConstructorUsedError;
+  @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull)
+  int? get entryTypeId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull)
+  int? get eventTagId =>
+      throw _privateConstructorUsedError; // §4.12 SEO & metadata
+  @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull)
+  String? get metaTitle => throw _privateConstructorUsedError;
+  @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull)
+  String? get metaDescription => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseMapOrNull)
+  Map<String, dynamic>? get meta => throw _privateConstructorUsedError;
+  @JsonKey(name: 'created_at', fromJson: _parseStringOrNull)
+  String? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull)
+  String? get updatedAt => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -186,8 +298,18 @@ abstract class $EventDtoCopyWith<$Res> {
       Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       Map<String, dynamic>? externalBooking,
-      @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
+      @JsonKey(
+          name: 'event_type',
+          readValue: _readEventTypeMap,
+          fromJson: _parseMapOrNull,
+          includeToJson: false)
       Map<String, dynamic>? eventType,
+      @JsonKey(
+          name: 'event_type',
+          readValue: _readEventTypeString,
+          fromJson: _parseStringOrNull,
+          includeToJson: false)
+      String? eventTypeMode,
       @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
       Map<String, dynamic>? eventTag,
       @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
@@ -219,7 +341,63 @@ abstract class $EventDtoCopyWith<$Res> {
       @JsonKey(fromJson: _parseNamedList) List<String> emotions,
       @JsonKey(name: 'is_favorite') bool isFavorite,
       @JsonKey(name: 'is_members_only', fromJson: _parseBool)
-      bool isMembersOnly});
+      bool isMembersOnly,
+      @JsonKey(fromJson: _parseIntOrNull) int? version,
+      @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull)
+      String? calendarMode,
+      @JsonKey(fromJson: _parseStringOrNull) String? timezone,
+      @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+      String? venueName,
+      @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull)
+      String? venueAddress,
+      @JsonKey(fromJson: _parseStringOrNull) String? city,
+      @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
+      String? postalCode,
+      @JsonKey(fromJson: _parseStringOrNull) String? country,
+      @JsonKey(name: 'address_source', fromJson: _parseStringOrNull)
+      String? addressSource,
+      @JsonKey(name: 'venue_id', fromJson: _parseStringOrNull) String? venueId,
+      @JsonKey(name: 'start_date', fromJson: _parseStringOrNull)
+      String? startDate,
+      @JsonKey(name: 'end_date', fromJson: _parseStringOrNull) String? endDate,
+      @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
+      double? priceFrom,
+      @JsonKey(name: 'is_free', fromJson: _parseBool) bool isFree,
+      @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
+      int? capacityGlobal,
+      @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull)
+      String? saleStartAt,
+      @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull)
+      String? saleEndAt,
+      @JsonKey(name: 'allow_cancellation', fromJson: _parseBool)
+      bool allowCancellation,
+      @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
+      int? cancelBeforeHours,
+      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
+      bool generateQrCodes,
+      @JsonKey(fromJson: _parseStringOrNull) String? status,
+      @JsonKey(fromJson: _parseStringOrNull) String? visibility,
+      @JsonKey(name: 'is_password_protected', fromJson: _parseBool) bool isPasswordProtected,
+      @JsonKey(name: 'has_password', fromJson: _parseBool) bool hasPassword,
+      @JsonKey(name: 'published_at', fromJson: _parseStringOrNull) String? publishedAt,
+      @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull) String? scheduledPublishAt,
+      @JsonKey(name: 'is_active', fromJson: _parseBool) bool isActive,
+      @JsonKey(name: 'is_on_sale', fromJson: _parseBool) bool isOnSale,
+      @JsonKey(name: 'is_live', fromJson: _parseBool) bool isLive,
+      @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool) bool canAcceptBookings,
+      @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool) bool canAcceptDiscovery,
+      @JsonKey(name: 'is_discovery', fromJson: _parseBool) bool isDiscovery,
+      @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull) int? participationCount,
+      @JsonKey(name: 'is_participating', fromJson: _parseBool) bool isParticipating,
+      @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull) String? externalTicketingUrl,
+      @JsonKey(name: 'other_services', fromJson: _parseMapOrNull) Map<String, dynamic>? otherServices,
+      @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull) int? entryTypeId,
+      @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull) int? eventTagId,
+      @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull) String? metaTitle,
+      @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull) String? metaDescription,
+      @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? meta,
+      @JsonKey(name: 'created_at', fromJson: _parseStringOrNull) String? createdAt,
+      @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull) String? updatedAt});
 
   $EventImageDtoCopyWith<$Res>? get featuredImage;
   $EventCategoryDtoCopyWith<$Res>? get category;
@@ -279,6 +457,7 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? seatConfig = freezed,
     Object? externalBooking = freezed,
     Object? eventType = freezed,
+    Object? eventTypeMode = freezed,
     Object? eventTag = freezed,
     Object? targetAudience = freezed,
     Object? targetAudiences = freezed,
@@ -297,6 +476,49 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? emotions = null,
     Object? isFavorite = null,
     Object? isMembersOnly = null,
+    Object? version = freezed,
+    Object? calendarMode = freezed,
+    Object? timezone = freezed,
+    Object? venueName = freezed,
+    Object? venueAddress = freezed,
+    Object? city = freezed,
+    Object? postalCode = freezed,
+    Object? country = freezed,
+    Object? addressSource = freezed,
+    Object? venueId = freezed,
+    Object? startDate = freezed,
+    Object? endDate = freezed,
+    Object? priceFrom = freezed,
+    Object? isFree = null,
+    Object? capacityGlobal = freezed,
+    Object? saleStartAt = freezed,
+    Object? saleEndAt = freezed,
+    Object? allowCancellation = null,
+    Object? cancelBeforeHours = freezed,
+    Object? generateQrCodes = null,
+    Object? status = freezed,
+    Object? visibility = freezed,
+    Object? isPasswordProtected = null,
+    Object? hasPassword = null,
+    Object? publishedAt = freezed,
+    Object? scheduledPublishAt = freezed,
+    Object? isActive = null,
+    Object? isOnSale = null,
+    Object? isLive = null,
+    Object? canAcceptBookings = null,
+    Object? canAcceptDiscovery = null,
+    Object? isDiscovery = null,
+    Object? participationCount = freezed,
+    Object? isParticipating = null,
+    Object? externalTicketingUrl = freezed,
+    Object? otherServices = freezed,
+    Object? entryTypeId = freezed,
+    Object? eventTagId = freezed,
+    Object? metaTitle = freezed,
+    Object? metaDescription = freezed,
+    Object? meta = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -435,6 +657,10 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.eventType
           : eventType // ignore: cast_nullable_to_non_nullable
               as Map<String, dynamic>?,
+      eventTypeMode: freezed == eventTypeMode
+          ? _value.eventTypeMode
+          : eventTypeMode // ignore: cast_nullable_to_non_nullable
+              as String?,
       eventTag: freezed == eventTag
           ? _value.eventTag
           : eventTag // ignore: cast_nullable_to_non_nullable
@@ -507,6 +733,178 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.isMembersOnly
           : isMembersOnly // ignore: cast_nullable_to_non_nullable
               as bool,
+      version: freezed == version
+          ? _value.version
+          : version // ignore: cast_nullable_to_non_nullable
+              as int?,
+      calendarMode: freezed == calendarMode
+          ? _value.calendarMode
+          : calendarMode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      timezone: freezed == timezone
+          ? _value.timezone
+          : timezone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      venueName: freezed == venueName
+          ? _value.venueName
+          : venueName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      venueAddress: freezed == venueAddress
+          ? _value.venueAddress
+          : venueAddress // ignore: cast_nullable_to_non_nullable
+              as String?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+      postalCode: freezed == postalCode
+          ? _value.postalCode
+          : postalCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      country: freezed == country
+          ? _value.country
+          : country // ignore: cast_nullable_to_non_nullable
+              as String?,
+      addressSource: freezed == addressSource
+          ? _value.addressSource
+          : addressSource // ignore: cast_nullable_to_non_nullable
+              as String?,
+      venueId: freezed == venueId
+          ? _value.venueId
+          : venueId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      startDate: freezed == startDate
+          ? _value.startDate
+          : startDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endDate: freezed == endDate
+          ? _value.endDate
+          : endDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      priceFrom: freezed == priceFrom
+          ? _value.priceFrom
+          : priceFrom // ignore: cast_nullable_to_non_nullable
+              as double?,
+      isFree: null == isFree
+          ? _value.isFree
+          : isFree // ignore: cast_nullable_to_non_nullable
+              as bool,
+      capacityGlobal: freezed == capacityGlobal
+          ? _value.capacityGlobal
+          : capacityGlobal // ignore: cast_nullable_to_non_nullable
+              as int?,
+      saleStartAt: freezed == saleStartAt
+          ? _value.saleStartAt
+          : saleStartAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      saleEndAt: freezed == saleEndAt
+          ? _value.saleEndAt
+          : saleEndAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      allowCancellation: null == allowCancellation
+          ? _value.allowCancellation
+          : allowCancellation // ignore: cast_nullable_to_non_nullable
+              as bool,
+      cancelBeforeHours: freezed == cancelBeforeHours
+          ? _value.cancelBeforeHours
+          : cancelBeforeHours // ignore: cast_nullable_to_non_nullable
+              as int?,
+      generateQrCodes: null == generateQrCodes
+          ? _value.generateQrCodes
+          : generateQrCodes // ignore: cast_nullable_to_non_nullable
+              as bool,
+      status: freezed == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String?,
+      visibility: freezed == visibility
+          ? _value.visibility
+          : visibility // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isPasswordProtected: null == isPasswordProtected
+          ? _value.isPasswordProtected
+          : isPasswordProtected // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasPassword: null == hasPassword
+          ? _value.hasPassword
+          : hasPassword // ignore: cast_nullable_to_non_nullable
+              as bool,
+      publishedAt: freezed == publishedAt
+          ? _value.publishedAt
+          : publishedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      scheduledPublishAt: freezed == scheduledPublishAt
+          ? _value.scheduledPublishAt
+          : scheduledPublishAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isActive: null == isActive
+          ? _value.isActive
+          : isActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isOnSale: null == isOnSale
+          ? _value.isOnSale
+          : isOnSale // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isLive: null == isLive
+          ? _value.isLive
+          : isLive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      canAcceptBookings: null == canAcceptBookings
+          ? _value.canAcceptBookings
+          : canAcceptBookings // ignore: cast_nullable_to_non_nullable
+              as bool,
+      canAcceptDiscovery: null == canAcceptDiscovery
+          ? _value.canAcceptDiscovery
+          : canAcceptDiscovery // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isDiscovery: null == isDiscovery
+          ? _value.isDiscovery
+          : isDiscovery // ignore: cast_nullable_to_non_nullable
+              as bool,
+      participationCount: freezed == participationCount
+          ? _value.participationCount
+          : participationCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      isParticipating: null == isParticipating
+          ? _value.isParticipating
+          : isParticipating // ignore: cast_nullable_to_non_nullable
+              as bool,
+      externalTicketingUrl: freezed == externalTicketingUrl
+          ? _value.externalTicketingUrl
+          : externalTicketingUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      otherServices: freezed == otherServices
+          ? _value.otherServices
+          : otherServices // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      entryTypeId: freezed == entryTypeId
+          ? _value.entryTypeId
+          : entryTypeId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      eventTagId: freezed == eventTagId
+          ? _value.eventTagId
+          : eventTagId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      metaTitle: freezed == metaTitle
+          ? _value.metaTitle
+          : metaTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      metaDescription: freezed == metaDescription
+          ? _value.metaDescription
+          : metaDescription // ignore: cast_nullable_to_non_nullable
+              as String?,
+      meta: freezed == meta
+          ? _value.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 
@@ -671,8 +1069,18 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       Map<String, dynamic>? externalBooking,
-      @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
+      @JsonKey(
+          name: 'event_type',
+          readValue: _readEventTypeMap,
+          fromJson: _parseMapOrNull,
+          includeToJson: false)
       Map<String, dynamic>? eventType,
+      @JsonKey(
+          name: 'event_type',
+          readValue: _readEventTypeString,
+          fromJson: _parseStringOrNull,
+          includeToJson: false)
+      String? eventTypeMode,
       @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
       Map<String, dynamic>? eventTag,
       @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
@@ -704,7 +1112,63 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       @JsonKey(fromJson: _parseNamedList) List<String> emotions,
       @JsonKey(name: 'is_favorite') bool isFavorite,
       @JsonKey(name: 'is_members_only', fromJson: _parseBool)
-      bool isMembersOnly});
+      bool isMembersOnly,
+      @JsonKey(fromJson: _parseIntOrNull) int? version,
+      @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull)
+      String? calendarMode,
+      @JsonKey(fromJson: _parseStringOrNull) String? timezone,
+      @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+      String? venueName,
+      @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull)
+      String? venueAddress,
+      @JsonKey(fromJson: _parseStringOrNull) String? city,
+      @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
+      String? postalCode,
+      @JsonKey(fromJson: _parseStringOrNull) String? country,
+      @JsonKey(name: 'address_source', fromJson: _parseStringOrNull)
+      String? addressSource,
+      @JsonKey(name: 'venue_id', fromJson: _parseStringOrNull) String? venueId,
+      @JsonKey(name: 'start_date', fromJson: _parseStringOrNull)
+      String? startDate,
+      @JsonKey(name: 'end_date', fromJson: _parseStringOrNull) String? endDate,
+      @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
+      double? priceFrom,
+      @JsonKey(name: 'is_free', fromJson: _parseBool) bool isFree,
+      @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
+      int? capacityGlobal,
+      @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull)
+      String? saleStartAt,
+      @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull)
+      String? saleEndAt,
+      @JsonKey(name: 'allow_cancellation', fromJson: _parseBool)
+      bool allowCancellation,
+      @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
+      int? cancelBeforeHours,
+      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
+      bool generateQrCodes,
+      @JsonKey(fromJson: _parseStringOrNull) String? status,
+      @JsonKey(fromJson: _parseStringOrNull) String? visibility,
+      @JsonKey(name: 'is_password_protected', fromJson: _parseBool) bool isPasswordProtected,
+      @JsonKey(name: 'has_password', fromJson: _parseBool) bool hasPassword,
+      @JsonKey(name: 'published_at', fromJson: _parseStringOrNull) String? publishedAt,
+      @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull) String? scheduledPublishAt,
+      @JsonKey(name: 'is_active', fromJson: _parseBool) bool isActive,
+      @JsonKey(name: 'is_on_sale', fromJson: _parseBool) bool isOnSale,
+      @JsonKey(name: 'is_live', fromJson: _parseBool) bool isLive,
+      @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool) bool canAcceptBookings,
+      @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool) bool canAcceptDiscovery,
+      @JsonKey(name: 'is_discovery', fromJson: _parseBool) bool isDiscovery,
+      @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull) int? participationCount,
+      @JsonKey(name: 'is_participating', fromJson: _parseBool) bool isParticipating,
+      @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull) String? externalTicketingUrl,
+      @JsonKey(name: 'other_services', fromJson: _parseMapOrNull) Map<String, dynamic>? otherServices,
+      @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull) int? entryTypeId,
+      @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull) int? eventTagId,
+      @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull) String? metaTitle,
+      @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull) String? metaDescription,
+      @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? meta,
+      @JsonKey(name: 'created_at', fromJson: _parseStringOrNull) String? createdAt,
+      @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull) String? updatedAt});
 
   @override
   $EventImageDtoCopyWith<$Res>? get featuredImage;
@@ -771,6 +1235,7 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? seatConfig = freezed,
     Object? externalBooking = freezed,
     Object? eventType = freezed,
+    Object? eventTypeMode = freezed,
     Object? eventTag = freezed,
     Object? targetAudience = freezed,
     Object? targetAudiences = freezed,
@@ -789,6 +1254,49 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? emotions = null,
     Object? isFavorite = null,
     Object? isMembersOnly = null,
+    Object? version = freezed,
+    Object? calendarMode = freezed,
+    Object? timezone = freezed,
+    Object? venueName = freezed,
+    Object? venueAddress = freezed,
+    Object? city = freezed,
+    Object? postalCode = freezed,
+    Object? country = freezed,
+    Object? addressSource = freezed,
+    Object? venueId = freezed,
+    Object? startDate = freezed,
+    Object? endDate = freezed,
+    Object? priceFrom = freezed,
+    Object? isFree = null,
+    Object? capacityGlobal = freezed,
+    Object? saleStartAt = freezed,
+    Object? saleEndAt = freezed,
+    Object? allowCancellation = null,
+    Object? cancelBeforeHours = freezed,
+    Object? generateQrCodes = null,
+    Object? status = freezed,
+    Object? visibility = freezed,
+    Object? isPasswordProtected = null,
+    Object? hasPassword = null,
+    Object? publishedAt = freezed,
+    Object? scheduledPublishAt = freezed,
+    Object? isActive = null,
+    Object? isOnSale = null,
+    Object? isLive = null,
+    Object? canAcceptBookings = null,
+    Object? canAcceptDiscovery = null,
+    Object? isDiscovery = null,
+    Object? participationCount = freezed,
+    Object? isParticipating = null,
+    Object? externalTicketingUrl = freezed,
+    Object? otherServices = freezed,
+    Object? entryTypeId = freezed,
+    Object? eventTagId = freezed,
+    Object? metaTitle = freezed,
+    Object? metaDescription = freezed,
+    Object? meta = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(_$EventDtoImpl(
       id: null == id
@@ -927,6 +1435,10 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value._eventType
           : eventType // ignore: cast_nullable_to_non_nullable
               as Map<String, dynamic>?,
+      eventTypeMode: freezed == eventTypeMode
+          ? _value.eventTypeMode
+          : eventTypeMode // ignore: cast_nullable_to_non_nullable
+              as String?,
       eventTag: freezed == eventTag
           ? _value._eventTag
           : eventTag // ignore: cast_nullable_to_non_nullable
@@ -999,6 +1511,178 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value.isMembersOnly
           : isMembersOnly // ignore: cast_nullable_to_non_nullable
               as bool,
+      version: freezed == version
+          ? _value.version
+          : version // ignore: cast_nullable_to_non_nullable
+              as int?,
+      calendarMode: freezed == calendarMode
+          ? _value.calendarMode
+          : calendarMode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      timezone: freezed == timezone
+          ? _value.timezone
+          : timezone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      venueName: freezed == venueName
+          ? _value.venueName
+          : venueName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      venueAddress: freezed == venueAddress
+          ? _value.venueAddress
+          : venueAddress // ignore: cast_nullable_to_non_nullable
+              as String?,
+      city: freezed == city
+          ? _value.city
+          : city // ignore: cast_nullable_to_non_nullable
+              as String?,
+      postalCode: freezed == postalCode
+          ? _value.postalCode
+          : postalCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      country: freezed == country
+          ? _value.country
+          : country // ignore: cast_nullable_to_non_nullable
+              as String?,
+      addressSource: freezed == addressSource
+          ? _value.addressSource
+          : addressSource // ignore: cast_nullable_to_non_nullable
+              as String?,
+      venueId: freezed == venueId
+          ? _value.venueId
+          : venueId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      startDate: freezed == startDate
+          ? _value.startDate
+          : startDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endDate: freezed == endDate
+          ? _value.endDate
+          : endDate // ignore: cast_nullable_to_non_nullable
+              as String?,
+      priceFrom: freezed == priceFrom
+          ? _value.priceFrom
+          : priceFrom // ignore: cast_nullable_to_non_nullable
+              as double?,
+      isFree: null == isFree
+          ? _value.isFree
+          : isFree // ignore: cast_nullable_to_non_nullable
+              as bool,
+      capacityGlobal: freezed == capacityGlobal
+          ? _value.capacityGlobal
+          : capacityGlobal // ignore: cast_nullable_to_non_nullable
+              as int?,
+      saleStartAt: freezed == saleStartAt
+          ? _value.saleStartAt
+          : saleStartAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      saleEndAt: freezed == saleEndAt
+          ? _value.saleEndAt
+          : saleEndAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      allowCancellation: null == allowCancellation
+          ? _value.allowCancellation
+          : allowCancellation // ignore: cast_nullable_to_non_nullable
+              as bool,
+      cancelBeforeHours: freezed == cancelBeforeHours
+          ? _value.cancelBeforeHours
+          : cancelBeforeHours // ignore: cast_nullable_to_non_nullable
+              as int?,
+      generateQrCodes: null == generateQrCodes
+          ? _value.generateQrCodes
+          : generateQrCodes // ignore: cast_nullable_to_non_nullable
+              as bool,
+      status: freezed == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String?,
+      visibility: freezed == visibility
+          ? _value.visibility
+          : visibility // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isPasswordProtected: null == isPasswordProtected
+          ? _value.isPasswordProtected
+          : isPasswordProtected // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasPassword: null == hasPassword
+          ? _value.hasPassword
+          : hasPassword // ignore: cast_nullable_to_non_nullable
+              as bool,
+      publishedAt: freezed == publishedAt
+          ? _value.publishedAt
+          : publishedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      scheduledPublishAt: freezed == scheduledPublishAt
+          ? _value.scheduledPublishAt
+          : scheduledPublishAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isActive: null == isActive
+          ? _value.isActive
+          : isActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isOnSale: null == isOnSale
+          ? _value.isOnSale
+          : isOnSale // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isLive: null == isLive
+          ? _value.isLive
+          : isLive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      canAcceptBookings: null == canAcceptBookings
+          ? _value.canAcceptBookings
+          : canAcceptBookings // ignore: cast_nullable_to_non_nullable
+              as bool,
+      canAcceptDiscovery: null == canAcceptDiscovery
+          ? _value.canAcceptDiscovery
+          : canAcceptDiscovery // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isDiscovery: null == isDiscovery
+          ? _value.isDiscovery
+          : isDiscovery // ignore: cast_nullable_to_non_nullable
+              as bool,
+      participationCount: freezed == participationCount
+          ? _value.participationCount
+          : participationCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      isParticipating: null == isParticipating
+          ? _value.isParticipating
+          : isParticipating // ignore: cast_nullable_to_non_nullable
+              as bool,
+      externalTicketingUrl: freezed == externalTicketingUrl
+          ? _value.externalTicketingUrl
+          : externalTicketingUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      otherServices: freezed == otherServices
+          ? _value._otherServices
+          : otherServices // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      entryTypeId: freezed == entryTypeId
+          ? _value.entryTypeId
+          : entryTypeId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      eventTagId: freezed == eventTagId
+          ? _value.eventTagId
+          : eventTagId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      metaTitle: freezed == metaTitle
+          ? _value.metaTitle
+          : metaTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      metaDescription: freezed == metaDescription
+          ? _value.metaDescription
+          : metaDescription // ignore: cast_nullable_to_non_nullable
+              as String?,
+      meta: freezed == meta
+          ? _value._meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -1051,8 +1735,18 @@ class _$EventDtoImpl implements _EventDto {
       final Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? externalBooking,
-      @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
+      @JsonKey(
+          name: 'event_type',
+          readValue: _readEventTypeMap,
+          fromJson: _parseMapOrNull,
+          includeToJson: false)
       final Map<String, dynamic>? eventType,
+      @JsonKey(
+          name: 'event_type',
+          readValue: _readEventTypeString,
+          fromJson: _parseStringOrNull,
+          includeToJson: false)
+      this.eventTypeMode,
       @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? eventTag,
       @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
@@ -1085,7 +1779,61 @@ class _$EventDtoImpl implements _EventDto {
       final List<String> emotions = const [],
       @JsonKey(name: 'is_favorite') this.isFavorite = false,
       @JsonKey(name: 'is_members_only', fromJson: _parseBool)
-      this.isMembersOnly = false})
+      this.isMembersOnly = false,
+      @JsonKey(fromJson: _parseIntOrNull) this.version,
+      @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull)
+      this.calendarMode,
+      @JsonKey(fromJson: _parseStringOrNull) this.timezone,
+      @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull) this.venueName,
+      @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull)
+      this.venueAddress,
+      @JsonKey(fromJson: _parseStringOrNull) this.city,
+      @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
+      this.postalCode,
+      @JsonKey(fromJson: _parseStringOrNull) this.country,
+      @JsonKey(name: 'address_source', fromJson: _parseStringOrNull)
+      this.addressSource,
+      @JsonKey(name: 'venue_id', fromJson: _parseStringOrNull) this.venueId,
+      @JsonKey(name: 'start_date', fromJson: _parseStringOrNull) this.startDate,
+      @JsonKey(name: 'end_date', fromJson: _parseStringOrNull) this.endDate,
+      @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull) this.priceFrom,
+      @JsonKey(name: 'is_free', fromJson: _parseBool) this.isFree = false,
+      @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
+      this.capacityGlobal,
+      @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull)
+      this.saleStartAt,
+      @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull)
+      this.saleEndAt,
+      @JsonKey(name: 'allow_cancellation', fromJson: _parseBool)
+      this.allowCancellation = false,
+      @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
+      this.cancelBeforeHours,
+      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
+      this.generateQrCodes = false,
+      @JsonKey(fromJson: _parseStringOrNull) this.status,
+      @JsonKey(fromJson: _parseStringOrNull) this.visibility,
+      @JsonKey(name: 'is_password_protected', fromJson: _parseBool)
+      this.isPasswordProtected = false,
+      @JsonKey(name: 'has_password', fromJson: _parseBool) this.hasPassword = false,
+      @JsonKey(name: 'published_at', fromJson: _parseStringOrNull) this.publishedAt,
+      @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull) this.scheduledPublishAt,
+      @JsonKey(name: 'is_active', fromJson: _parseBool) this.isActive = true,
+      @JsonKey(name: 'is_on_sale', fromJson: _parseBool) this.isOnSale = false,
+      @JsonKey(name: 'is_live', fromJson: _parseBool) this.isLive = false,
+      @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool) this.canAcceptBookings = false,
+      @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool) this.canAcceptDiscovery = false,
+      @JsonKey(name: 'is_discovery', fromJson: _parseBool) this.isDiscovery = false,
+      @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull) this.participationCount,
+      @JsonKey(name: 'is_participating', fromJson: _parseBool) this.isParticipating = false,
+      @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull) this.externalTicketingUrl,
+      @JsonKey(name: 'other_services', fromJson: _parseMapOrNull) final Map<String, dynamic>? otherServices,
+      @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull) this.entryTypeId,
+      @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull) this.eventTagId,
+      @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull) this.metaTitle,
+      @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull) this.metaDescription,
+      @JsonKey(fromJson: _parseMapOrNull) final Map<String, dynamic>? meta,
+      @JsonKey(name: 'created_at', fromJson: _parseStringOrNull) this.createdAt,
+      @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull) this.updatedAt})
       : _gallery = gallery,
         _tags = tags,
         _ticketTypes = ticketTypes,
@@ -1110,7 +1858,9 @@ class _$EventDtoImpl implements _EventDto {
         _slots = slots,
         _venueData = venueData,
         _themes = themes,
-        _emotions = emotions;
+        _emotions = emotions,
+        _otherServices = otherServices,
+        _meta = meta;
 
   factory _$EventDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$EventDtoImplFromJson(json);
@@ -1321,9 +2071,19 @@ class _$EventDtoImpl implements _EventDto {
     return EqualUnmodifiableMapView(value);
   }
 
+// Legacy taxonomy term shape (e.g. {id, name, slug}) from the /events API.
+// Coexists with `eventTypeMode` below — they share the JSON key
+// `event_type` and are disambiguated at parse time by value runtime type.
   final Map<String, dynamic>? _eventType;
+// Legacy taxonomy term shape (e.g. {id, name, slug}) from the /events API.
+// Coexists with `eventTypeMode` below — they share the JSON key
+// `event_type` and are disambiguated at parse time by value runtime type.
   @override
-  @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
+  @JsonKey(
+      name: 'event_type',
+      readValue: _readEventTypeMap,
+      fromJson: _parseMapOrNull,
+      includeToJson: false)
   Map<String, dynamic>? get eventType {
     final value = _eventType;
     if (value == null) return null;
@@ -1332,6 +2092,14 @@ class _$EventDtoImpl implements _EventDto {
     return EqualUnmodifiableMapView(value);
   }
 
+// Spec HOME_FEED §4.2: string enum "offline" | "online" | "hybrid".
+  @override
+  @JsonKey(
+      name: 'event_type',
+      readValue: _readEventTypeString,
+      fromJson: _parseStringOrNull,
+      includeToJson: false)
+  final String? eventTypeMode;
   final Map<String, dynamic>? _eventTag;
   @override
   @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
@@ -1476,10 +2244,170 @@ class _$EventDtoImpl implements _EventDto {
   @override
   @JsonKey(name: 'is_members_only', fromJson: _parseBool)
   final bool isMembersOnly;
+// ---- HOME_FEED MobileEventResource fields (spec: docs/HOME_FEED_MOBILE_SPEC.md §4) ----
+// §4.1 Identification
+  @override
+  @JsonKey(fromJson: _parseIntOrNull)
+  final int? version;
+// §4.2 Scheduling
+  @override
+  @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull)
+  final String? calendarMode;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  final String? timezone;
+// §4.3 Flat venue/location (parallel to nested `location` object)
+  @override
+  @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+  final String? venueName;
+  @override
+  @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull)
+  final String? venueAddress;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  final String? city;
+  @override
+  @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
+  final String? postalCode;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  final String? country;
+  @override
+  @JsonKey(name: 'address_source', fromJson: _parseStringOrNull)
+  final String? addressSource;
+  @override
+  @JsonKey(name: 'venue_id', fromJson: _parseStringOrNull)
+  final String? venueId;
+// §4.4 Top-level dates (first slot mirror)
+  @override
+  @JsonKey(name: 'start_date', fromJson: _parseStringOrNull)
+  final String? startDate;
+  @override
+  @JsonKey(name: 'end_date', fromJson: _parseStringOrNull)
+  final String? endDate;
+// §4.5 Top-level pricing
+  @override
+  @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
+  final double? priceFrom;
+  @override
+  @JsonKey(name: 'is_free', fromJson: _parseBool)
+  final bool isFree;
+// §4.6 Capacity (top-level cap)
+  @override
+  @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
+  final int? capacityGlobal;
+// §4.7 Sale window & cancellation
+  @override
+  @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull)
+  final String? saleStartAt;
+  @override
+  @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull)
+  final String? saleEndAt;
+  @override
+  @JsonKey(name: 'allow_cancellation', fromJson: _parseBool)
+  final bool allowCancellation;
+  @override
+  @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
+  final int? cancelBeforeHours;
+  @override
+  @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
+  final bool generateQrCodes;
+// §4.8 Status & flags
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  final String? status;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  final String? visibility;
+// Drives the password modal — see spec §4.8 caveat: not the same as `hasPassword`.
+  @override
+  @JsonKey(name: 'is_password_protected', fromJson: _parseBool)
+  final bool isPasswordProtected;
+  @override
+  @JsonKey(name: 'has_password', fromJson: _parseBool)
+  final bool hasPassword;
+  @override
+  @JsonKey(name: 'published_at', fromJson: _parseStringOrNull)
+  final String? publishedAt;
+  @override
+  @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull)
+  final String? scheduledPublishAt;
+  @override
+  @JsonKey(name: 'is_active', fromJson: _parseBool)
+  final bool isActive;
+  @override
+  @JsonKey(name: 'is_on_sale', fromJson: _parseBool)
+  final bool isOnSale;
+  @override
+  @JsonKey(name: 'is_live', fromJson: _parseBool)
+  final bool isLive;
+// §4.9 Booking capabilities
+  @override
+  @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool)
+  final bool canAcceptBookings;
+  @override
+  @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool)
+  final bool canAcceptDiscovery;
+  @override
+  @JsonKey(name: 'is_discovery', fromJson: _parseBool)
+  final bool isDiscovery;
+// §4.9: only present when bookingMode == "discovery".
+  @override
+  @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull)
+  final int? participationCount;
+  @override
+  @JsonKey(name: 'is_participating', fromJson: _parseBool)
+  final bool isParticipating;
+  @override
+  @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull)
+  final String? externalTicketingUrl;
+// §4.10 Services & attributes
+  final Map<String, dynamic>? _otherServices;
+// §4.10 Services & attributes
+  @override
+  @JsonKey(name: 'other_services', fromJson: _parseMapOrNull)
+  Map<String, dynamic>? get otherServices {
+    final value = _otherServices;
+    if (value == null) return null;
+    if (_otherServices is EqualUnmodifiableMapView) return _otherServices;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
+  @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull)
+  final int? entryTypeId;
+  @override
+  @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull)
+  final int? eventTagId;
+// §4.12 SEO & metadata
+  @override
+  @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull)
+  final String? metaTitle;
+  @override
+  @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull)
+  final String? metaDescription;
+  final Map<String, dynamic>? _meta;
+  @override
+  @JsonKey(fromJson: _parseMapOrNull)
+  Map<String, dynamic>? get meta {
+    final value = _meta;
+    if (value == null) return null;
+    if (_meta is EqualUnmodifiableMapView) return _meta;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
+  @JsonKey(name: 'created_at', fromJson: _parseStringOrNull)
+  final String? createdAt;
+  @override
+  @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull)
+  final String? updatedAt;
 
   @override
   String toString() {
-    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite, isMembersOnly: $isMembersOnly)';
+    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTypeMode: $eventTypeMode, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite, isMembersOnly: $isMembersOnly, version: $version, calendarMode: $calendarMode, timezone: $timezone, venueName: $venueName, venueAddress: $venueAddress, city: $city, postalCode: $postalCode, country: $country, addressSource: $addressSource, venueId: $venueId, startDate: $startDate, endDate: $endDate, priceFrom: $priceFrom, isFree: $isFree, capacityGlobal: $capacityGlobal, saleStartAt: $saleStartAt, saleEndAt: $saleEndAt, allowCancellation: $allowCancellation, cancelBeforeHours: $cancelBeforeHours, generateQrCodes: $generateQrCodes, status: $status, visibility: $visibility, isPasswordProtected: $isPasswordProtected, hasPassword: $hasPassword, publishedAt: $publishedAt, scheduledPublishAt: $scheduledPublishAt, isActive: $isActive, isOnSale: $isOnSale, isLive: $isLive, canAcceptBookings: $canAcceptBookings, canAcceptDiscovery: $canAcceptDiscovery, isDiscovery: $isDiscovery, participationCount: $participationCount, isParticipating: $isParticipating, externalTicketingUrl: $externalTicketingUrl, otherServices: $otherServices, entryTypeId: $entryTypeId, eventTagId: $eventTagId, metaTitle: $metaTitle, metaDescription: $metaDescription, meta: $meta, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -1540,6 +2468,8 @@ class _$EventDtoImpl implements _EventDto {
                 .equals(other._externalBooking, _externalBooking) &&
             const DeepCollectionEquality()
                 .equals(other._eventType, _eventType) &&
+            (identical(other.eventTypeMode, eventTypeMode) ||
+                other.eventTypeMode == eventTypeMode) &&
             const DeepCollectionEquality().equals(other._eventTag, _eventTag) &&
             const DeepCollectionEquality()
                 .equals(other._targetAudience, _targetAudience) &&
@@ -1571,7 +2501,58 @@ class _$EventDtoImpl implements _EventDto {
             (identical(other.isFavorite, isFavorite) ||
                 other.isFavorite == isFavorite) &&
             (identical(other.isMembersOnly, isMembersOnly) ||
-                other.isMembersOnly == isMembersOnly));
+                other.isMembersOnly == isMembersOnly) &&
+            (identical(other.version, version) || other.version == version) &&
+            (identical(other.calendarMode, calendarMode) ||
+                other.calendarMode == calendarMode) &&
+            (identical(other.timezone, timezone) ||
+                other.timezone == timezone) &&
+            (identical(other.venueName, venueName) ||
+                other.venueName == venueName) &&
+            (identical(other.venueAddress, venueAddress) ||
+                other.venueAddress == venueAddress) &&
+            (identical(other.city, city) || other.city == city) &&
+            (identical(other.postalCode, postalCode) ||
+                other.postalCode == postalCode) &&
+            (identical(other.country, country) || other.country == country) &&
+            (identical(other.addressSource, addressSource) ||
+                other.addressSource == addressSource) &&
+            (identical(other.venueId, venueId) || other.venueId == venueId) &&
+            (identical(other.startDate, startDate) ||
+                other.startDate == startDate) &&
+            (identical(other.endDate, endDate) || other.endDate == endDate) &&
+            (identical(other.priceFrom, priceFrom) ||
+                other.priceFrom == priceFrom) &&
+            (identical(other.isFree, isFree) || other.isFree == isFree) &&
+            (identical(other.capacityGlobal, capacityGlobal) || other.capacityGlobal == capacityGlobal) &&
+            (identical(other.saleStartAt, saleStartAt) || other.saleStartAt == saleStartAt) &&
+            (identical(other.saleEndAt, saleEndAt) || other.saleEndAt == saleEndAt) &&
+            (identical(other.allowCancellation, allowCancellation) || other.allowCancellation == allowCancellation) &&
+            (identical(other.cancelBeforeHours, cancelBeforeHours) || other.cancelBeforeHours == cancelBeforeHours) &&
+            (identical(other.generateQrCodes, generateQrCodes) || other.generateQrCodes == generateQrCodes) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.visibility, visibility) || other.visibility == visibility) &&
+            (identical(other.isPasswordProtected, isPasswordProtected) || other.isPasswordProtected == isPasswordProtected) &&
+            (identical(other.hasPassword, hasPassword) || other.hasPassword == hasPassword) &&
+            (identical(other.publishedAt, publishedAt) || other.publishedAt == publishedAt) &&
+            (identical(other.scheduledPublishAt, scheduledPublishAt) || other.scheduledPublishAt == scheduledPublishAt) &&
+            (identical(other.isActive, isActive) || other.isActive == isActive) &&
+            (identical(other.isOnSale, isOnSale) || other.isOnSale == isOnSale) &&
+            (identical(other.isLive, isLive) || other.isLive == isLive) &&
+            (identical(other.canAcceptBookings, canAcceptBookings) || other.canAcceptBookings == canAcceptBookings) &&
+            (identical(other.canAcceptDiscovery, canAcceptDiscovery) || other.canAcceptDiscovery == canAcceptDiscovery) &&
+            (identical(other.isDiscovery, isDiscovery) || other.isDiscovery == isDiscovery) &&
+            (identical(other.participationCount, participationCount) || other.participationCount == participationCount) &&
+            (identical(other.isParticipating, isParticipating) || other.isParticipating == isParticipating) &&
+            (identical(other.externalTicketingUrl, externalTicketingUrl) || other.externalTicketingUrl == externalTicketingUrl) &&
+            const DeepCollectionEquality().equals(other._otherServices, _otherServices) &&
+            (identical(other.entryTypeId, entryTypeId) || other.entryTypeId == entryTypeId) &&
+            (identical(other.eventTagId, eventTagId) || other.eventTagId == eventTagId) &&
+            (identical(other.metaTitle, metaTitle) || other.metaTitle == metaTitle) &&
+            (identical(other.metaDescription, metaDescription) || other.metaDescription == metaDescription) &&
+            const DeepCollectionEquality().equals(other._meta, _meta) &&
+            (identical(other.createdAt, createdAt) || other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
   }
 
   @JsonKey(ignore: true)
@@ -1612,6 +2593,7 @@ class _$EventDtoImpl implements _EventDto {
         const DeepCollectionEquality().hash(_seatConfig),
         const DeepCollectionEquality().hash(_externalBooking),
         const DeepCollectionEquality().hash(_eventType),
+        eventTypeMode,
         const DeepCollectionEquality().hash(_eventTag),
         const DeepCollectionEquality().hash(_targetAudience),
         const DeepCollectionEquality().hash(_targetAudiences),
@@ -1629,7 +2611,50 @@ class _$EventDtoImpl implements _EventDto {
         const DeepCollectionEquality().hash(_themes),
         const DeepCollectionEquality().hash(_emotions),
         isFavorite,
-        isMembersOnly
+        isMembersOnly,
+        version,
+        calendarMode,
+        timezone,
+        venueName,
+        venueAddress,
+        city,
+        postalCode,
+        country,
+        addressSource,
+        venueId,
+        startDate,
+        endDate,
+        priceFrom,
+        isFree,
+        capacityGlobal,
+        saleStartAt,
+        saleEndAt,
+        allowCancellation,
+        cancelBeforeHours,
+        generateQrCodes,
+        status,
+        visibility,
+        isPasswordProtected,
+        hasPassword,
+        publishedAt,
+        scheduledPublishAt,
+        isActive,
+        isOnSale,
+        isLive,
+        canAcceptBookings,
+        canAcceptDiscovery,
+        isDiscovery,
+        participationCount,
+        isParticipating,
+        externalTicketingUrl,
+        const DeepCollectionEquality().hash(_otherServices),
+        entryTypeId,
+        eventTagId,
+        metaTitle,
+        metaDescription,
+        const DeepCollectionEquality().hash(_meta),
+        createdAt,
+        updatedAt
       ]);
 
   @JsonKey(ignore: true)
@@ -1693,8 +2718,14 @@ abstract class _EventDto implements EventDto {
       final Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? externalBooking,
-      @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
+      @JsonKey(name: 'event_type', readValue: _readEventTypeMap, fromJson: _parseMapOrNull, includeToJson: false)
       final Map<String, dynamic>? eventType,
+      @JsonKey(
+          name: 'event_type',
+          readValue: _readEventTypeString,
+          fromJson: _parseStringOrNull,
+          includeToJson: false)
+      final String? eventTypeMode,
       @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? eventTag,
       @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
@@ -1726,7 +2757,77 @@ abstract class _EventDto implements EventDto {
       @JsonKey(fromJson: _parseNamedList) final List<String> emotions,
       @JsonKey(name: 'is_favorite') final bool isFavorite,
       @JsonKey(name: 'is_members_only', fromJson: _parseBool)
-      final bool isMembersOnly}) = _$EventDtoImpl;
+      final bool isMembersOnly,
+      @JsonKey(fromJson: _parseIntOrNull) final int? version,
+      @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull)
+      final String? calendarMode,
+      @JsonKey(fromJson: _parseStringOrNull) final String? timezone,
+      @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+      final String? venueName,
+      @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull)
+      final String? venueAddress,
+      @JsonKey(fromJson: _parseStringOrNull) final String? city,
+      @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
+      final String? postalCode,
+      @JsonKey(fromJson: _parseStringOrNull) final String? country,
+      @JsonKey(name: 'address_source', fromJson: _parseStringOrNull)
+      final String? addressSource,
+      @JsonKey(name: 'venue_id', fromJson: _parseStringOrNull)
+      final String? venueId,
+      @JsonKey(name: 'start_date', fromJson: _parseStringOrNull)
+      final String? startDate,
+      @JsonKey(name: 'end_date', fromJson: _parseStringOrNull)
+      final String? endDate,
+      @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
+      final double? priceFrom,
+      @JsonKey(name: 'is_free', fromJson: _parseBool) final bool isFree,
+      @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
+      final int? capacityGlobal,
+      @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull)
+      final String? saleStartAt,
+      @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull)
+      final String? saleEndAt,
+      @JsonKey(name: 'allow_cancellation', fromJson: _parseBool)
+      final bool allowCancellation,
+      @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
+      final int? cancelBeforeHours,
+      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
+      final bool generateQrCodes,
+      @JsonKey(fromJson: _parseStringOrNull) final String? status,
+      @JsonKey(fromJson: _parseStringOrNull) final String? visibility,
+      @JsonKey(name: 'is_password_protected', fromJson: _parseBool)
+      final bool isPasswordProtected,
+      @JsonKey(name: 'has_password', fromJson: _parseBool)
+      final bool hasPassword,
+      @JsonKey(name: 'published_at', fromJson: _parseStringOrNull)
+      final String? publishedAt,
+      @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull)
+      final String? scheduledPublishAt,
+      @JsonKey(name: 'is_active', fromJson: _parseBool) final bool isActive,
+      @JsonKey(name: 'is_on_sale', fromJson: _parseBool) final bool isOnSale,
+      @JsonKey(name: 'is_live', fromJson: _parseBool) final bool isLive,
+      @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool)
+      final bool canAcceptBookings,
+      @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool)
+      final bool canAcceptDiscovery,
+      @JsonKey(name: 'is_discovery', fromJson: _parseBool)
+      final bool isDiscovery,
+      @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull)
+      final int? participationCount,
+      @JsonKey(name: 'is_participating', fromJson: _parseBool)
+      final bool isParticipating,
+      @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull)
+      final String? externalTicketingUrl,
+      @JsonKey(name: 'other_services', fromJson: _parseMapOrNull)
+      final Map<String, dynamic>? otherServices,
+      @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull)
+      final int? entryTypeId,
+      @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull) final int? eventTagId,
+      @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull) final String? metaTitle,
+      @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull) final String? metaDescription,
+      @JsonKey(fromJson: _parseMapOrNull) final Map<String, dynamic>? meta,
+      @JsonKey(name: 'created_at', fromJson: _parseStringOrNull) final String? createdAt,
+      @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull) final String? updatedAt}) = _$EventDtoImpl;
 
   factory _EventDto.fromJson(Map<String, dynamic> json) =
       _$EventDtoImpl.fromJson;
@@ -1822,9 +2923,22 @@ abstract class _EventDto implements EventDto {
   @override
   @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get externalBooking;
-  @override
-  @JsonKey(name: 'event_type', fromJson: _parseMapOrNull)
+  @override // Legacy taxonomy term shape (e.g. {id, name, slug}) from the /events API.
+// Coexists with `eventTypeMode` below — they share the JSON key
+// `event_type` and are disambiguated at parse time by value runtime type.
+  @JsonKey(
+      name: 'event_type',
+      readValue: _readEventTypeMap,
+      fromJson: _parseMapOrNull,
+      includeToJson: false)
   Map<String, dynamic>? get eventType;
+  @override // Spec HOME_FEED §4.2: string enum "offline" | "online" | "hybrid".
+  @JsonKey(
+      name: 'event_type',
+      readValue: _readEventTypeString,
+      fromJson: _parseStringOrNull,
+      includeToJson: false)
+  String? get eventTypeMode;
   @override
   @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
   Map<String, dynamic>? get eventTag;
@@ -1881,6 +2995,136 @@ abstract class _EventDto implements EventDto {
 // true, drives a "Privé 🔒" badge on event cards across all listings.
   @JsonKey(name: 'is_members_only', fromJson: _parseBool)
   bool get isMembersOnly;
+  @override // ---- HOME_FEED MobileEventResource fields (spec: docs/HOME_FEED_MOBILE_SPEC.md §4) ----
+// §4.1 Identification
+  @JsonKey(fromJson: _parseIntOrNull)
+  int? get version;
+  @override // §4.2 Scheduling
+  @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull)
+  String? get calendarMode;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get timezone;
+  @override // §4.3 Flat venue/location (parallel to nested `location` object)
+  @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+  String? get venueName;
+  @override
+  @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull)
+  String? get venueAddress;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get city;
+  @override
+  @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
+  String? get postalCode;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get country;
+  @override
+  @JsonKey(name: 'address_source', fromJson: _parseStringOrNull)
+  String? get addressSource;
+  @override
+  @JsonKey(name: 'venue_id', fromJson: _parseStringOrNull)
+  String? get venueId;
+  @override // §4.4 Top-level dates (first slot mirror)
+  @JsonKey(name: 'start_date', fromJson: _parseStringOrNull)
+  String? get startDate;
+  @override
+  @JsonKey(name: 'end_date', fromJson: _parseStringOrNull)
+  String? get endDate;
+  @override // §4.5 Top-level pricing
+  @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
+  double? get priceFrom;
+  @override
+  @JsonKey(name: 'is_free', fromJson: _parseBool)
+  bool get isFree;
+  @override // §4.6 Capacity (top-level cap)
+  @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
+  int? get capacityGlobal;
+  @override // §4.7 Sale window & cancellation
+  @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull)
+  String? get saleStartAt;
+  @override
+  @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull)
+  String? get saleEndAt;
+  @override
+  @JsonKey(name: 'allow_cancellation', fromJson: _parseBool)
+  bool get allowCancellation;
+  @override
+  @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
+  int? get cancelBeforeHours;
+  @override
+  @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
+  bool get generateQrCodes;
+  @override // §4.8 Status & flags
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get status;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get visibility;
+  @override // Drives the password modal — see spec §4.8 caveat: not the same as `hasPassword`.
+  @JsonKey(name: 'is_password_protected', fromJson: _parseBool)
+  bool get isPasswordProtected;
+  @override
+  @JsonKey(name: 'has_password', fromJson: _parseBool)
+  bool get hasPassword;
+  @override
+  @JsonKey(name: 'published_at', fromJson: _parseStringOrNull)
+  String? get publishedAt;
+  @override
+  @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull)
+  String? get scheduledPublishAt;
+  @override
+  @JsonKey(name: 'is_active', fromJson: _parseBool)
+  bool get isActive;
+  @override
+  @JsonKey(name: 'is_on_sale', fromJson: _parseBool)
+  bool get isOnSale;
+  @override
+  @JsonKey(name: 'is_live', fromJson: _parseBool)
+  bool get isLive;
+  @override // §4.9 Booking capabilities
+  @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool)
+  bool get canAcceptBookings;
+  @override
+  @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool)
+  bool get canAcceptDiscovery;
+  @override
+  @JsonKey(name: 'is_discovery', fromJson: _parseBool)
+  bool get isDiscovery;
+  @override // §4.9: only present when bookingMode == "discovery".
+  @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull)
+  int? get participationCount;
+  @override
+  @JsonKey(name: 'is_participating', fromJson: _parseBool)
+  bool get isParticipating;
+  @override
+  @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull)
+  String? get externalTicketingUrl;
+  @override // §4.10 Services & attributes
+  @JsonKey(name: 'other_services', fromJson: _parseMapOrNull)
+  Map<String, dynamic>? get otherServices;
+  @override
+  @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull)
+  int? get entryTypeId;
+  @override
+  @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull)
+  int? get eventTagId;
+  @override // §4.12 SEO & metadata
+  @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull)
+  String? get metaTitle;
+  @override
+  @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull)
+  String? get metaDescription;
+  @override
+  @JsonKey(fromJson: _parseMapOrNull)
+  Map<String, dynamic>? get meta;
+  @override
+  @JsonKey(name: 'created_at', fromJson: _parseStringOrNull)
+  String? get createdAt;
+  @override
+  @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull)
+  String? get updatedAt;
   @override
   @JsonKey(ignore: true)
   _$$EventDtoImplCopyWith<_$EventDtoImpl> get copyWith =>
@@ -3408,7 +4652,11 @@ EventLocationDto _$EventLocationDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$EventLocationDto {
-  @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+// HOME_FEED §4.3 uses `name`; legacy /events used `venue_name`. Accept both.
+  @JsonKey(
+      name: 'venue_name',
+      readValue: _readLocationName,
+      fromJson: _parseStringOrNull)
   String? get venueName => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseStringOrNull)
   String? get address => throw _privateConstructorUsedError;
@@ -3416,6 +4664,8 @@ mixin _$EventLocationDto {
   String? get city => throw _privateConstructorUsedError;
   @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
   String? get postalCode => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get country => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseDoubleOrNull)
   double? get lat => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseDoubleOrNull)
@@ -3436,12 +4686,16 @@ abstract class $EventLocationDtoCopyWith<$Res> {
       _$EventLocationDtoCopyWithImpl<$Res, EventLocationDto>;
   @useResult
   $Res call(
-      {@JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+      {@JsonKey(
+          name: 'venue_name',
+          readValue: _readLocationName,
+          fromJson: _parseStringOrNull)
       String? venueName,
       @JsonKey(fromJson: _parseStringOrNull) String? address,
       @JsonKey(fromJson: _parseStringOrNull) String? city,
       @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
       String? postalCode,
+      @JsonKey(fromJson: _parseStringOrNull) String? country,
       @JsonKey(fromJson: _parseDoubleOrNull) double? lat,
       @JsonKey(fromJson: _parseDoubleOrNull) double? lng,
       @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
@@ -3465,6 +4719,7 @@ class _$EventLocationDtoCopyWithImpl<$Res, $Val extends EventLocationDto>
     Object? address = freezed,
     Object? city = freezed,
     Object? postalCode = freezed,
+    Object? country = freezed,
     Object? lat = freezed,
     Object? lng = freezed,
     Object? distanceKm = freezed,
@@ -3485,6 +4740,10 @@ class _$EventLocationDtoCopyWithImpl<$Res, $Val extends EventLocationDto>
       postalCode: freezed == postalCode
           ? _value.postalCode
           : postalCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      country: freezed == country
+          ? _value.country
+          : country // ignore: cast_nullable_to_non_nullable
               as String?,
       lat: freezed == lat
           ? _value.lat
@@ -3511,12 +4770,16 @@ abstract class _$$EventLocationDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {@JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+      {@JsonKey(
+          name: 'venue_name',
+          readValue: _readLocationName,
+          fromJson: _parseStringOrNull)
       String? venueName,
       @JsonKey(fromJson: _parseStringOrNull) String? address,
       @JsonKey(fromJson: _parseStringOrNull) String? city,
       @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
       String? postalCode,
+      @JsonKey(fromJson: _parseStringOrNull) String? country,
       @JsonKey(fromJson: _parseDoubleOrNull) double? lat,
       @JsonKey(fromJson: _parseDoubleOrNull) double? lng,
       @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
@@ -3538,6 +4801,7 @@ class __$$EventLocationDtoImplCopyWithImpl<$Res>
     Object? address = freezed,
     Object? city = freezed,
     Object? postalCode = freezed,
+    Object? country = freezed,
     Object? lat = freezed,
     Object? lng = freezed,
     Object? distanceKm = freezed,
@@ -3559,6 +4823,10 @@ class __$$EventLocationDtoImplCopyWithImpl<$Res>
           ? _value.postalCode
           : postalCode // ignore: cast_nullable_to_non_nullable
               as String?,
+      country: freezed == country
+          ? _value.country
+          : country // ignore: cast_nullable_to_non_nullable
+              as String?,
       lat: freezed == lat
           ? _value.lat
           : lat // ignore: cast_nullable_to_non_nullable
@@ -3579,12 +4847,16 @@ class __$$EventLocationDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$EventLocationDtoImpl implements _EventLocationDto {
   const _$EventLocationDtoImpl(
-      {@JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+      {@JsonKey(
+          name: 'venue_name',
+          readValue: _readLocationName,
+          fromJson: _parseStringOrNull)
       this.venueName,
       @JsonKey(fromJson: _parseStringOrNull) this.address,
       @JsonKey(fromJson: _parseStringOrNull) this.city,
       @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
       this.postalCode,
+      @JsonKey(fromJson: _parseStringOrNull) this.country,
       @JsonKey(fromJson: _parseDoubleOrNull) this.lat,
       @JsonKey(fromJson: _parseDoubleOrNull) this.lng,
       @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
@@ -3593,8 +4865,12 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
   factory _$EventLocationDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$EventLocationDtoImplFromJson(json);
 
+// HOME_FEED §4.3 uses `name`; legacy /events used `venue_name`. Accept both.
   @override
-  @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+  @JsonKey(
+      name: 'venue_name',
+      readValue: _readLocationName,
+      fromJson: _parseStringOrNull)
   final String? venueName;
   @override
   @JsonKey(fromJson: _parseStringOrNull)
@@ -3605,6 +4881,9 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
   @override
   @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
   final String? postalCode;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  final String? country;
   @override
   @JsonKey(fromJson: _parseDoubleOrNull)
   final double? lat;
@@ -3617,7 +4896,7 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
 
   @override
   String toString() {
-    return 'EventLocationDto(venueName: $venueName, address: $address, city: $city, postalCode: $postalCode, lat: $lat, lng: $lng, distanceKm: $distanceKm)';
+    return 'EventLocationDto(venueName: $venueName, address: $address, city: $city, postalCode: $postalCode, country: $country, lat: $lat, lng: $lng, distanceKm: $distanceKm)';
   }
 
   @override
@@ -3631,6 +4910,7 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
             (identical(other.city, city) || other.city == city) &&
             (identical(other.postalCode, postalCode) ||
                 other.postalCode == postalCode) &&
+            (identical(other.country, country) || other.country == country) &&
             (identical(other.lat, lat) || other.lat == lat) &&
             (identical(other.lng, lng) || other.lng == lng) &&
             (identical(other.distanceKm, distanceKm) ||
@@ -3639,8 +4919,8 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, venueName, address, city, postalCode, lat, lng, distanceKm);
+  int get hashCode => Object.hash(runtimeType, venueName, address, city,
+      postalCode, country, lat, lng, distanceKm);
 
   @JsonKey(ignore: true)
   @override
@@ -3659,12 +4939,16 @@ class _$EventLocationDtoImpl implements _EventLocationDto {
 
 abstract class _EventLocationDto implements EventLocationDto {
   const factory _EventLocationDto(
-      {@JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+      {@JsonKey(
+          name: 'venue_name',
+          readValue: _readLocationName,
+          fromJson: _parseStringOrNull)
       final String? venueName,
       @JsonKey(fromJson: _parseStringOrNull) final String? address,
       @JsonKey(fromJson: _parseStringOrNull) final String? city,
       @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
       final String? postalCode,
+      @JsonKey(fromJson: _parseStringOrNull) final String? country,
       @JsonKey(fromJson: _parseDoubleOrNull) final double? lat,
       @JsonKey(fromJson: _parseDoubleOrNull) final double? lng,
       @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
@@ -3673,8 +4957,11 @@ abstract class _EventLocationDto implements EventLocationDto {
   factory _EventLocationDto.fromJson(Map<String, dynamic> json) =
       _$EventLocationDtoImpl.fromJson;
 
-  @override
-  @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+  @override // HOME_FEED §4.3 uses `name`; legacy /events used `venue_name`. Accept both.
+  @JsonKey(
+      name: 'venue_name',
+      readValue: _readLocationName,
+      fromJson: _parseStringOrNull)
   String? get venueName;
   @override
   @JsonKey(fromJson: _parseStringOrNull)
@@ -3685,6 +4972,9 @@ abstract class _EventLocationDto implements EventLocationDto {
   @override
   @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
   String? get postalCode;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get country;
   @override
   @JsonKey(fromJson: _parseDoubleOrNull)
   double? get lat;

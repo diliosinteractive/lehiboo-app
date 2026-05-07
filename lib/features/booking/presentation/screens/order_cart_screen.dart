@@ -53,7 +53,13 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   void initState() {
     super.initState();
     _prefillForm();
-    _updateCartHoldRemaining();
+    // Defer past the current frame: _updateCartHoldRemaining may clear the
+    // cart provider when a stale hold has expired, and Riverpod forbids
+    // mutating providers during widget mount.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _updateCartHoldRemaining();
+    });
     _cartHoldTimer = Timer.periodic(
       const Duration(seconds: 1),
       (_) => _updateCartHoldRemaining(),
@@ -873,7 +879,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     var shouldCancelOrderOnError = false;
 
     try {
-      final cartHoldExpiresAt = ref.read(orderCartHoldProvider);
       final order = await dataSource.createOrder(
         items: _buildOrderItemsPayload(cartItems),
         customerEmail: _emailController.text.trim(),
@@ -884,7 +889,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         customerTown: _townController.text.trim().isEmpty
             ? null
             : _townController.text.trim(),
-        expiresAt: cartHoldExpiresAt?.toUtc().toIso8601String(),
       );
 
       var confirmedOrder = order;

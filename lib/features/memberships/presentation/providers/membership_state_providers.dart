@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/membership_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
+import 'personalized_feed_provider.dart';
 
 /// One fetch of `/me/memberships` covering all statuses; downstream selectors
 /// derive everything (per-org lookup, tab counters) from this single source
@@ -77,6 +78,8 @@ class MembershipActionController
     try {
       await ref.read(membershipsRepositoryProvider).requestMembership(arg);
       ref.invalidate(myMembershipsListProvider);
+      // Membership signal changed — drop the personalized feed (spec §7).
+      ref.invalidate(personalizedFeedProvider);
       state = const AsyncData(MembershipAction());
     } catch (e, st) {
       state = AsyncData(MembershipAction(error: _humanReadable(e)));
@@ -100,6 +103,8 @@ class MembershipActionController
     try {
       await ref.read(membershipsRepositoryProvider).cancelOrLeaveMembership(arg);
       ref.invalidate(myMembershipsListProvider);
+      // Membership signal changed — drop the personalized feed (spec §7).
+      ref.invalidate(personalizedFeedProvider);
       state = const AsyncData(MembershipAction());
     } catch (e, st) {
       state = AsyncData(MembershipAction(error: _humanReadable(e)));

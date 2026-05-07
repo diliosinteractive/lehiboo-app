@@ -40,7 +40,14 @@ class EventDto with _$EventDto {
     @JsonKey(fromJson: _parseListOrNull) List<dynamic>? coupons,
     @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull) Map<String, dynamic>? seatConfig,
     @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull) Map<String, dynamic>? externalBooking,
-    @JsonKey(name: 'event_type', fromJson: _parseMapOrNull) Map<String, dynamic>? eventType,
+    // Legacy taxonomy term shape (e.g. {id, name, slug}) from the /events API.
+    // Coexists with `eventTypeMode` below — they share the JSON key
+    // `event_type` and are disambiguated at parse time by value runtime type.
+    @JsonKey(name: 'event_type', readValue: _readEventTypeMap, fromJson: _parseMapOrNull, includeToJson: false)
+      Map<String, dynamic>? eventType,
+    // Spec HOME_FEED §4.2: string enum "offline" | "online" | "hybrid".
+    @JsonKey(name: 'event_type', readValue: _readEventTypeString, fromJson: _parseStringOrNull, includeToJson: false)
+      String? eventTypeMode,
     @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull) Map<String, dynamic>? eventTag,
     @JsonKey(name: 'target_audience', fromJson: _parseListOrNull) List<dynamic>? targetAudience,
     @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull) List<dynamic>? targetAudiences,
@@ -69,6 +76,75 @@ class EventDto with _$EventDto {
     // true, drives a "Privé 🔒" badge on event cards across all listings.
     @JsonKey(name: 'is_members_only', fromJson: _parseBool) @Default(false)
     bool isMembersOnly,
+
+    // ---- HOME_FEED MobileEventResource fields (spec: docs/HOME_FEED_MOBILE_SPEC.md §4) ----
+
+    // §4.1 Identification
+    @JsonKey(fromJson: _parseIntOrNull) int? version,
+
+    // §4.2 Scheduling
+    @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull) String? calendarMode,
+    @JsonKey(fromJson: _parseStringOrNull) String? timezone,
+
+    // §4.3 Flat venue/location (parallel to nested `location` object)
+    @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull) String? venueName,
+    @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull) String? venueAddress,
+    @JsonKey(fromJson: _parseStringOrNull) String? city,
+    @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull) String? postalCode,
+    @JsonKey(fromJson: _parseStringOrNull) String? country,
+    @JsonKey(name: 'address_source', fromJson: _parseStringOrNull) String? addressSource,
+    @JsonKey(name: 'venue_id', fromJson: _parseStringOrNull) String? venueId,
+
+    // §4.4 Top-level dates (first slot mirror)
+    @JsonKey(name: 'start_date', fromJson: _parseStringOrNull) String? startDate,
+    @JsonKey(name: 'end_date', fromJson: _parseStringOrNull) String? endDate,
+
+    // §4.5 Top-level pricing
+    @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull) double? priceFrom,
+    @JsonKey(name: 'is_free', fromJson: _parseBool) @Default(false) bool isFree,
+
+    // §4.6 Capacity (top-level cap)
+    @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull) int? capacityGlobal,
+
+    // §4.7 Sale window & cancellation
+    @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull) String? saleStartAt,
+    @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull) String? saleEndAt,
+    @JsonKey(name: 'allow_cancellation', fromJson: _parseBool) @Default(false) bool allowCancellation,
+    @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull) int? cancelBeforeHours,
+    @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool) @Default(false) bool generateQrCodes,
+
+    // §4.8 Status & flags
+    @JsonKey(fromJson: _parseStringOrNull) String? status,
+    @JsonKey(fromJson: _parseStringOrNull) String? visibility,
+    // Drives the password modal — see spec §4.8 caveat: not the same as `hasPassword`.
+    @JsonKey(name: 'is_password_protected', fromJson: _parseBool) @Default(false) bool isPasswordProtected,
+    @JsonKey(name: 'has_password', fromJson: _parseBool) @Default(false) bool hasPassword,
+    @JsonKey(name: 'published_at', fromJson: _parseStringOrNull) String? publishedAt,
+    @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull) String? scheduledPublishAt,
+    @JsonKey(name: 'is_active', fromJson: _parseBool) @Default(true) bool isActive,
+    @JsonKey(name: 'is_on_sale', fromJson: _parseBool) @Default(false) bool isOnSale,
+    @JsonKey(name: 'is_live', fromJson: _parseBool) @Default(false) bool isLive,
+
+    // §4.9 Booking capabilities
+    @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool) @Default(false) bool canAcceptBookings,
+    @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool) @Default(false) bool canAcceptDiscovery,
+    @JsonKey(name: 'is_discovery', fromJson: _parseBool) @Default(false) bool isDiscovery,
+    // §4.9: only present when bookingMode == "discovery".
+    @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull) int? participationCount,
+    @JsonKey(name: 'is_participating', fromJson: _parseBool) @Default(false) bool isParticipating,
+    @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull) String? externalTicketingUrl,
+
+    // §4.10 Services & attributes
+    @JsonKey(name: 'other_services', fromJson: _parseMapOrNull) Map<String, dynamic>? otherServices,
+    @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull) int? entryTypeId,
+    @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull) int? eventTagId,
+
+    // §4.12 SEO & metadata
+    @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull) String? metaTitle,
+    @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull) String? metaDescription,
+    @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? meta,
+    @JsonKey(name: 'created_at', fromJson: _parseStringOrNull) String? createdAt,
+    @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull) String? updatedAt,
   }) = _EventDto;
 
   factory EventDto.fromJson(Map<String, dynamic> json) =>
@@ -217,10 +293,13 @@ class EventPriceDto with _$EventPriceDto {
 @freezed
 class EventLocationDto with _$EventLocationDto {
   const factory EventLocationDto({
-    @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull) String? venueName,
+    // HOME_FEED §4.3 uses `name`; legacy /events used `venue_name`. Accept both.
+    @JsonKey(name: 'venue_name', readValue: _readLocationName, fromJson: _parseStringOrNull)
+      String? venueName,
     @JsonKey(fromJson: _parseStringOrNull) String? address,
     @JsonKey(fromJson: _parseStringOrNull) String? city,
     @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull) String? postalCode,
+    @JsonKey(fromJson: _parseStringOrNull) String? country,
     @JsonKey(fromJson: _parseDoubleOrNull) double? lat,
     @JsonKey(fromJson: _parseDoubleOrNull) double? lng,
     @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull) double? distanceKm,
@@ -272,6 +351,27 @@ int? _parseIntOrNull(dynamic value) {
   if (value is String) return int.tryParse(value);
   if (value is double) return value.toInt();
   return null;
+}
+
+/// HOME_FEED §4.2: pick the Map shape when `event_type` is the legacy taxonomy
+/// term object. Returns null for the spec's String enum so the sibling
+/// `eventTypeMode` field handles it.
+Object? _readEventTypeMap(Map map, Object key) {
+  final value = map['event_type'];
+  return value is Map ? value : null;
+}
+
+/// HOME_FEED §4.2: pick the String shape when `event_type` is the spec enum
+/// ("offline" | "online" | "hybrid"). Returns null for legacy Map payloads.
+Object? _readEventTypeString(Map map, Object key) {
+  final value = map['event_type'];
+  return value is String ? value : null;
+}
+
+/// HOME_FEED §4.3 location object uses `name`; legacy /events uses
+/// `venue_name`. Prefer the spec key, fall back to legacy.
+Object? _readLocationName(Map map, Object key) {
+  return map['name'] ?? map['venue_name'];
 }
 
 /// Helper to safely parse Map<String, dynamic>, handling empty Lists []

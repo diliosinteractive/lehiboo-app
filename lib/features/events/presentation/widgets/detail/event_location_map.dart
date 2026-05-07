@@ -253,15 +253,18 @@ class _EventLocationMapState extends State<EventLocationMap> {
           ],
         ),
         child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: HbColors.brandPrimary,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
             shape: BoxShape.circle,
           ),
-          child: const Icon(
-            Icons.place,
-            color: Colors.white,
-            size: 24,
+          child: ClipOval(
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Image.asset(
+                'assets/images/logo_picto_lehiboo_old.png',
+                colorBlendMode: BlendMode.srcATop,
+              ),
+            ),
           ),
         ),
       ),
@@ -302,21 +305,29 @@ class _EventLocationMapState extends State<EventLocationMap> {
   Widget _buildActionButtons() {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
+      child: TextButton(
         onPressed: () {
           HapticFeedback.lightImpact();
           _openMaps();
         },
-        icon: const Icon(Icons.directions, size: 20),
-        label: const Text('Ouvrir dans Google Maps'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: HbColors.brandPrimary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 0,
+        style: TextButton.styleFrom(
+          foregroundColor: HbColors.brandPrimary,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Voir sur Google Maps',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(width: 6),
+            Icon(Icons.open_in_new, size: 16),
+          ],
         ),
       ),
     );
@@ -330,22 +341,13 @@ class _EventLocationMapState extends State<EventLocationMap> {
       parts.add(widget.event.address!);
     }
 
-    // Combiner code postal + ville, en évitant les doublons
-    // (ex: "59300 Valenciennes" au lieu de "59300, Valenciennes, Valenciennes")
-    final cityParts = <String>[];
-    if (widget.event.postalCode != null && widget.event.postalCode!.isNotEmpty) {
-      cityParts.add(widget.event.postalCode!);
-    }
+    // Ville uniquement (le code postal est volontairement omis ici).
     if (widget.event.city != null && widget.event.city!.isNotEmpty) {
-      // Vérifier que la ville n'est pas déjà dans l'adresse
       final city = widget.event.city!;
       final addressLower = (widget.event.address ?? '').toLowerCase();
       if (!addressLower.contains(city.toLowerCase())) {
-        cityParts.add(city);
+        parts.add(city);
       }
-    }
-    if (cityParts.isNotEmpty) {
-      parts.add(cityParts.join(' '));
     }
 
     return parts.join(', ');

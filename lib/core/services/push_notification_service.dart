@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -15,7 +16,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 /// Provides the PushNotificationService
-final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) {
+final pushNotificationServiceProvider =
+    Provider<PushNotificationService>((ref) {
   return PushNotificationService(
     deepLinkService: ref.watch(deepLinkServiceProvider),
   );
@@ -36,6 +38,7 @@ class PushNotificationService {
 
   String? _fcmToken;
   bool _initialized = false;
+  bool _permissionDenied = false;
 
   /// Callback to register token with backend API
   Future<void> Function(String token)? onTokenReceived;
@@ -53,6 +56,9 @@ class PushNotificationService {
   /// Whether the service is initialized
   bool get isInitialized => _initialized;
 
+  /// Whether the OS-level notification permission was denied.
+  bool get permissionDenied => _permissionDenied;
+
   /// Initialize push notifications
   ///
   /// Call this after user login and Firebase initialization.
@@ -64,24 +70,23 @@ class PushNotificationService {
 
     try {
       // Set up background message handler
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
 
       // Request permissions
       final settings = await _requestPermissions();
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        _permissionDenied = true;
         debugPrint('Push notifications denied by user');
         return;
       }
+      _permissionDenied = false;
 
       // Initialize local notifications for foreground
       await _initializeLocalNotifications();
 
       // Get FCM token
-      _fcmToken = await _messaging.getToken();
-      if (_fcmToken != null) {
-        debugPrint('FCM Token: ${_fcmToken!.substring(0, 20)}...');
-        await onTokenReceived?.call(_fcmToken!);
-      }
+      await ensureFcmToken();
 
       // Listen for token refresh
       _messaging.onTokenRefresh.listen((newToken) async {
@@ -109,6 +114,34 @@ class PushNotificationService {
     }
   }
 
+  /// Ensure the current FCM token exists.
+  ///
+  /// iOS can need a short delay after permission before Firebase exposes an
+  /// APNs-backed FCM token. Retrying here avoids permanently initializing with
+  /// a null token on first launch.
+  Future<String?> ensureFcmToken() async {
+    if (_fcmToken == null) {
+      if (Platform.isIOS) {
+        await _waitForApnsToken();
+      }
+      _fcmToken = await _messaging.getToken();
+    }
+
+    if (_fcmToken != null) {
+      debugPrint('FCM Token: ${_fcmToken!.substring(0, 20)}...');
+    }
+
+    return _fcmToken;
+  }
+
+  Future<void> _waitForApnsToken() async {
+    for (var attempt = 0; attempt < 5; attempt++) {
+      final apnsToken = await _messaging.getAPNSToken();
+      if (apnsToken != null) return;
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+  }
+
   /// Request notification permissions
   Future<NotificationSettings> _requestPermissions() async {
     return await _messaging.requestPermission(
@@ -124,7 +157,8 @@ class PushNotificationService {
 
   /// Initialize local notifications for foreground display
   Future<void> _initializeLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -152,77 +186,70 @@ class PushNotificationService {
         _localNotifications.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
 
-    if (androidPlugin != null) {
-      // Bookings channel
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'bookings',
-          'Réservations',
-          description: 'Notifications de réservation',
-          importance: Importance.high,
-        ),
-      );
+    if (androidPlugin == null) return;
 
-      // Check-ins channel
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'check_ins',
-          'Check-ins',
-          description: 'Notifications de check-in',
-          importance: Importance.defaultImportance,
-        ),
-      );
+    // Channel set per spec PUSH_NOTIFICATIONS_MOBILE_SPEC.md §5.1.1.
+    // Live channels (have at least one notification class targeting them):
+    const liveChannels = <AndroidNotificationChannel>[
+      AndroidNotificationChannel(
+        'bookings',
+        'Réservations',
+        description: 'Notifications de réservation',
+        importance: Importance.high,
+      ),
+      AndroidNotificationChannel(
+        'alerts',
+        'Alertes & nouveautés',
+        description:
+            'Recherches sauvegardées et nouveautés des organisateurs suivis',
+        importance: Importance.high,
+      ),
+      AndroidNotificationChannel(
+        'messages',
+        'Messages',
+        description: 'Nouveaux messages dans vos conversations',
+        importance: Importance.high,
+      ),
+      AndroidNotificationChannel(
+        'organizations',
+        'Organisations',
+        description: 'Invitations et appartenances aux organisations',
+        importance: Importance.defaultImportance,
+      ),
+      AndroidNotificationChannel(
+        'general',
+        'Notifications générales',
+        description: 'Avis, questions, rappels et autres notifications',
+        importance: Importance.defaultImportance,
+      ),
+    ];
+    // Reserved channels — backend has the factories but no notification
+    // class wires them today (spec §6 "Defined PushPayload factories with
+    // no current consumer"). Pre-created so the OS uses the right defaults
+    // the moment they go live, without needing an app update.
+    const reservedChannels = <AndroidNotificationChannel>[
+      AndroidNotificationChannel(
+        'check_ins',
+        'Check-in',
+        description: 'Notifications de check-in (à venir)',
+        importance: Importance.high,
+      ),
+      AndroidNotificationChannel(
+        'reminders',
+        'Rappels',
+        description: 'Rappels d\'événements (à venir)',
+        importance: Importance.high,
+      ),
+      AndroidNotificationChannel(
+        'collaborations',
+        'Collaborations',
+        description: 'Invitations de collaboration (à venir)',
+        importance: Importance.defaultImportance,
+      ),
+    ];
 
-      // Reminders channel
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'reminders',
-          'Rappels',
-          description: 'Rappels d\'événements',
-          importance: Importance.high,
-        ),
-      );
-
-      // General channel
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'general',
-          'Général',
-          description: 'Notifications générales',
-          importance: Importance.defaultImportance,
-        ),
-      );
-
-      // Alerts channel (saved search alerts)
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'alerts',
-          'Alertes',
-          description: 'Notifications pour vos recherches sauvegardées',
-          importance: Importance.high,
-        ),
-      );
-
-      // Collaborations channel
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'collaborations',
-          'Collaborations',
-          description: 'Invitations et notifications de collaboration',
-          importance: Importance.high,
-        ),
-      );
-
-      // Reviews channel
-      await androidPlugin.createNotificationChannel(
-        const AndroidNotificationChannel(
-          'reviews',
-          'Avis',
-          description:
-              'Notifications sur la modération de vos avis (publié, refusé)',
-          importance: Importance.high,
-        ),
-      );
+    for (final channel in [...liveChannels, ...reservedChannels]) {
+      await androidPlugin.createNotificationChannel(channel);
     }
   }
 
@@ -232,12 +259,16 @@ class PushNotificationService {
 
     final notification = message.notification;
     if (notification != null) {
-      // Show local notification
+      // FCM puts the channel id in `notification.android.channelId`. Some
+      // payloads also stash it in the data block; read both.
+      final channelId = notification.android?.channelId ??
+          (message.data['channel_id'] as String?) ??
+          'general';
       _showLocalNotification(
         title: notification.title ?? 'Le Hiboo',
         body: notification.body ?? '',
-        payload: message.data.toString(),
-        channelId: message.data['channel_id'] ?? 'general',
+        payload: jsonEncode(message.data),
+        channelId: channelId,
       );
     }
   }
@@ -288,39 +319,11 @@ class PushNotificationService {
 
   /// Navigate based on notification data.
   ///
-  /// Membership push payloads (spec MEMBERSHIPS_MOBILE_SPEC.md §16) carry a
-  /// `data.action` value that is a **web URL** (`/dashboard/...`). Mobile
-  /// must not route to it directly — we map `data.type` to the equivalent
-  /// Flutter route instead. For all other types we keep the existing
-  /// `data.action` behavior (booking / reminder / favorite / etc.).
+  /// Per spec PUSH_NOTIFICATIONS_MOBILE_SPEC.md §5.2, mobile MUST route on
+  /// `data.type` and never on `data.action` (which is a web URL). The
+  /// type → mobile-route table lives in `DeepLinkService.routeForType`.
   void _navigateFromData(Map<String, dynamic> data) {
-    final mobileRoute = _membershipMobileRoute(data);
-    if (mobileRoute != null) {
-      _deepLinkService.navigate(mobileRoute);
-      return;
-    }
-    final action = data['action'] as String?;
-    if (action != null) {
-      _deepLinkService.navigate(action);
-    }
-  }
-
-  /// Maps `data.type` to a mobile route for membership push payloads.
-  /// Returns `null` when the type isn't membership-related.
-  String? _membershipMobileRoute(Map<String, dynamic> data) {
-    final type = data['type']?.toString();
-    if (type == null) return null;
-    final orgUuid = data['organization_uuid']?.toString();
-    final highlight =
-        (orgUuid != null && orgUuid.isNotEmpty) ? '&highlight=$orgUuid' : '';
-    return switch (type) {
-      'organization_join_approved' =>
-        '/me/memberships?tab=active$highlight',
-      'organization_join_rejected' => '/me/memberships?tab=rejected',
-      'organization_invitation_received' =>
-        '/me/memberships?tab=invitations',
-      _ => null,
-    };
+    _deepLinkService.navigateFromType(data);
   }
 
   /// Unregister push notifications

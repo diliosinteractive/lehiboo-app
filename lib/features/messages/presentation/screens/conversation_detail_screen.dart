@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
@@ -81,7 +82,7 @@ class _ConversationDetailScreenState
             children: [
               const Icon(Icons.error_outline, color: Colors.red, size: 40),
               const SizedBox(height: 8),
-              Text('Erreur : $e', style: const TextStyle(color: Colors.red)),
+              Text('Erreur : ${ApiResponseHandler.extractError(e)}', style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () =>
@@ -251,7 +252,7 @@ class _ConversationDetailScreenState
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                  content: Text('Erreur : $e'),
+                                  content: Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
                                   backgroundColor: Colors.red),
                             );
                           }
@@ -396,7 +397,7 @@ class _ConversationDetailScreenState
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content: Text('Erreur : $e'),
+                  content: Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
                   backgroundColor: Colors.red),
             );
           }
@@ -614,7 +615,7 @@ class _ConversationDetailScreenState
                                                     .showSnackBar(
                                                   SnackBar(
                                                       content:
-                                                          Text('Erreur : $e'),
+                                                          Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
                                                       backgroundColor:
                                                           Colors.red),
                                                 );

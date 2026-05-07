@@ -536,11 +536,9 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
 /// Card avec design complet + countdown pour carousel horizontal
 class _FullCountdownCard extends StatefulWidget {
   final Activity activity;
-  final int? remainingSpots;
 
   const _FullCountdownCard({
     required this.activity,
-    this.remainingSpots,
   });
 
   @override
@@ -612,9 +610,9 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image avec countdown badge
-          Expanded(
-            flex: 5,
+          // Image avec countdown badge — fixed 240 to match other home cards
+          SizedBox(
+            height: 240,
             child: Stack(
               children: [
                 ClipRRect(
@@ -659,27 +657,6 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                     ),
                   ),
                 ),
-                // Places restantes badge
-                if (widget.remainingSpots != null)
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${widget.remainingSpots}',
-                        style: TextStyle(
-                          color: widget.remainingSpots! <= 5 ? const Color(0xFFFF4444) : HbColors.textSlate,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
                 // Category badge (bottom left)
                 if (widget.activity.category != null)
                   Positioned(
@@ -706,7 +683,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   ),
                 // Favorite button
                 Positioned(
-                  bottom: 10,
+                  top: 10,
                   right: 10,
                   child: FavoriteButton(
                     event: _activityToEvent(),
@@ -718,8 +695,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
             ),
           ),
           // Contenu - même design que EventCard
-          Flexible(
-            flex: 4,
+          Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 4),
               child: Column(
@@ -780,24 +756,38 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                     ),
                   ],
                   const SizedBox(height: 2),
-                  // Location + Date/Time
-                  Text.rich(
-                    TextSpan(
+                  // Location
+                  Text(
+                    widget.activity.city?.name ?? 'France',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
+                  ),
+                  // Date below address — same style as recommendations cards
+                  if (widget.activity.nextSlot != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
                       children: [
-                        TextSpan(
-                          text: widget.activity.city?.name ?? 'France',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          size: 12,
+                          color: Colors.grey[600],
                         ),
-                        if (widget.activity.nextSlot != null) ...[
-                          const TextSpan(text: ' • '),
-                          TextSpan(
-                            text: _formatSlotDateTime(widget.activity.nextSlot!.startDateTime),
-                            style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            _formatSlotDateTime(widget.activity.nextSlot!.startDateTime),
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              height: 1.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
+                        ),
                       ],
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 4),
                   // Prix
                   if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
@@ -1147,7 +1137,7 @@ class UrgencySection extends ConsumerWidget {
           children: [
             // Title
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: Row(
                 children: [
                   Container(
@@ -1186,9 +1176,11 @@ class UrgencySection extends ConsumerWidget {
               ),
             ),
 
-            // Carousel horizontal - même taille que les autres sections
+            // Carousel horizontal — laisse ~21px de marge pour le contenu max
+            // (titre+organisateur+rating+ville+date+prix ≈ 140px) tout en
+            // resserrant l'espace vide sous les cartes.
             SizedBox(
-              height: 380,
+              height: 370,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1200,14 +1192,13 @@ class UrgencySection extends ConsumerWidget {
                     width: 200,
                     child: _FullCountdownCard(
                       activity: activity,
-                      remainingSpots: (activity.id.hashCode % 10) + 1,
                     ),
                   );
                 },
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
           ],
         );
       },

@@ -16,6 +16,7 @@ import 'package:lehiboo/features/booking/presentation/widgets/ticket_preview_car
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/presentation/utils/ticket_download_helper.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -373,6 +374,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       // Spec §3.6: replace local booking with the response — no re-fetch.
       // Refresh the list so the home/bookings tab reflects the new status.
       ref.read(bookingsListControllerProvider.notifier).refresh();
+      // Booking signal changed — drop the personalized feed (spec §7).
+      ref.invalidate(personalizedFeedProvider);
 
       if (!mounted) return;
       setState(() {

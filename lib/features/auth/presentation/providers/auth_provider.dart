@@ -8,6 +8,9 @@ import '../../data/mappers/auth_mapper.dart';
 import '../../data/models/auth_response_dto.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../../booking/presentation/providers/order_cart_provider.dart';
+import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
+import '../../../notifications/data/datasources/device_token_datasource.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, pendingVerification, pendingLoginOtp, error }
 
@@ -50,8 +53,9 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
+  final Ref _ref;
 
-  AuthNotifier(this._authRepository) : super(const AuthState()) {
+  AuthNotifier(this._authRepository, this._ref) : super(const AuthState()) {
     _checkAuthStatus();
   }
 
@@ -91,6 +95,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
           status: AuthStatus.authenticated,
           user: result.authResult!.user,
         );
+        // Personalized feed depends on identity — refetch on login (spec §7).
+        _ref.invalidate(personalizedFeedProvider);
         return result;
       }
 
@@ -161,6 +167,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingUserId: null,
         pendingEmail: null,
       );
+      // Personalized feed depends on identity — refetch on registration OTP
+      // success (spec §7).
+      _ref.invalidate(personalizedFeedProvider);
       return true;
     } catch (e) {
       final errorMessage = e.toString();
@@ -227,6 +236,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingUserId: null,
         pendingEmail: null,
       );
+      // Personalized feed depends on identity — refetch on login OTP
+      // success (spec §7).
+      _ref.invalidate(personalizedFeedProvider);
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -255,8 +267,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     state = state.copyWith(status: AuthStatus.loading);
+    // Deregister this device's push tokens BEFORE revoking the bearer
+    // (spec PUSH_NOTIFICATIONS_MOBILE_SPEC.md §7.4). Failure here must not
+    // block logout — branch #2 of §2.1 will eventually deactivate the row
+    // when another user signs in on the same device.
+    try {
+      await _ref.read(deviceTokenDataSourceProvider).unregisterAllTokens();
+    } catch (_) {}
     await _authRepository.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
+    // Personalized feed depends on identity — drop any cached strata so the
+    // next read returns PersonalizedFeedView.empty() (spec §7).
+    _ref.invalidate(personalizedFeedProvider);
+    // Cart is identity-bound and persisted to SharedPreferences; clear so the
+    // next user (or guest) doesn't inherit stale items + an expired hold.
+    _ref.read(orderCartProvider.notifier).clear();
   }
 
   /// Force logout without calling the API (used by 401 interceptor).
@@ -264,6 +289,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> forceLogout() async {
     await _authRepository.clearLocalAuthData();
     state = const AuthState(status: AuthStatus.unauthenticated);
+    // Personalized feed depends on identity — drop any cached strata so the
+    // next read returns PersonalizedFeedView.empty() (spec §7).
+    _ref.invalidate(personalizedFeedProvider);
+    _ref.read(orderCartProvider.notifier).clear();
   }
 
   void clearError() {
@@ -279,6 +308,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       pendingEmail: null,
       errorMessage: null,
     );
+    // Personalized feed depends on identity — refetch when an external auth
+    // path lands the user as authenticated (spec §7).
+    _ref.invalidate(personalizedFeedProvider);
   }
 
   /// Refresh auth status from repository (used after external auth changes)
@@ -386,7 +418,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final authRepository = ref.watch(authRepositoryImplProvider);
-  return AuthNotifier(authRepository);
+  return AuthNotifier(authRepository, ref);
 });
 
 final isAuthenticatedProvider = Provider<bool>((ref) {

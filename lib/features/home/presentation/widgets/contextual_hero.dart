@@ -10,7 +10,9 @@ import 'package:lehiboo/features/search/presentation/widgets/home_search_pill.da
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 
+import '../../data/models/hero_slide_dto.dart';
 import '../../data/models/mobile_app_config.dart';
+import 'hero_slides_carousel.dart';
 
 /// Images de villes pour le Hero (Unsplash - ambiances festives et colorées)
 const _cityImages = <String, String>{
@@ -52,10 +54,17 @@ class ContextualHero extends ConsumerWidget {
   /// Hauteur totale du hero
   final double height;
 
+  /// Editorial hero slides from `GET /hero-slides`. When non-empty, the
+  /// background layer becomes an auto-rotating carousel; otherwise the
+  /// hero falls back to the city-themed Unsplash / mobile-config image
+  /// (preserves pre-carousel behaviour).
+  final List<HeroSlideDto>? slides;
+
   const ContextualHero({
     super.key,
     this.scrollOffset = 0,
     this.height = 420,
+    this.slides,
   });
 
   @override
@@ -93,19 +102,30 @@ class ContextualHero extends ConsumerWidget {
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          // Layer 1: Background Image with Parallax Effect
+          // Layer 1: Background — either the editorial carousel (when
+          // slides are loaded) or the static city-themed image (initial
+          // load, empty, or any error). Both share the same parallax
+          // wrapper so vertical scroll feels identical regardless of
+          // which background variant is active.
           Positioned(
             top: -scrollOffset * 0.5, // Parallax: image moves at half speed
             left: 0,
             right: 0,
             child: SizedBox(
               height: height + 100, // Extra height for parallax movement
-              child: CachedNetworkImage(
-                imageUrl: heroImageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => _buildGradientBackground(),
-                errorWidget: (context, url, error) => _buildGradientBackground(),
-              ),
+              child: (slides != null && slides!.isNotEmpty)
+                  ? HeroSlidesCarousel(
+                      slides: slides!,
+                      placeholderColor: const Color(0xFF1E3A8A),
+                      errorPlaceholderColor: const Color(0xFF1E3A8A),
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: heroImageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => _buildGradientBackground(),
+                      errorWidget: (context, url, error) =>
+                          _buildGradientBackground(),
+                    ),
             ),
           ),
 
