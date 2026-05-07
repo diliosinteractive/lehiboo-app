@@ -873,7 +873,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     var shouldCancelOrderOnError = false;
 
     try {
-      final cartHoldExpiresAt = ref.read(orderCartHoldProvider);
       final order = await dataSource.createOrder(
         items: _buildOrderItemsPayload(cartItems),
         customerEmail: _emailController.text.trim(),
@@ -884,7 +883,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         customerTown: _townController.text.trim().isEmpty
             ? null
             : _townController.text.trim(),
-        expiresAt: cartHoldExpiresAt?.toUtc().toIso8601String(),
       );
 
       var confirmedOrder = order;
