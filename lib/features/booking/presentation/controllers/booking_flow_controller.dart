@@ -3,6 +3,7 @@ import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
 
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
   // This should be overridden in main.dart or via a core provider
@@ -15,6 +16,7 @@ final bookingFlowControllerProvider = StateNotifierProvider.autoDispose
   return BookingFlowController(
     bookingRepository: repo,
     activity: activity,
+    ref: ref,
   );
 });
 
@@ -22,7 +24,9 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
   BookingFlowController({
     required this.bookingRepository,
     required Activity activity,
-  }) : super(
+    Ref? ref,
+  })  : _ref = ref,
+        super(
           BookingFlowState(
             step: const BookingStep.selectSlot(),
             activity: activity,
@@ -34,6 +38,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
         );
 
   final BookingRepository bookingRepository;
+  final Ref? _ref;
 
   void selectSlot(Slot slot) {
     state = state.copyWith(selectedSlot: slot, errorMessage: null);
@@ -159,6 +164,8 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
         tickets: tickets,
         step: const BookingStep.confirmation(),
       );
+      // Booking signal changed — drop the personalized feed (spec §7).
+      _ref?.invalidate(personalizedFeedProvider);
     } catch (e) {
       state = state.copyWith(isSubmitting: false, errorMessage: e.toString());
     }

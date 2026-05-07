@@ -34,6 +34,7 @@ import '../widgets/countdown_event_card.dart';
 // PersonalizedFeedSection (PERSONALIZED_FEED_MOBILE_SPEC.md). Kept commented
 // for reference only.
 // import '../widgets/personalized_section.dart';
+import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../../memberships/presentation/widgets/personalized_feed_section.dart';
 // Les imports suivants sont commentés car les sections sont désactivées en attendant l'API backend
 // import '../widgets/native_ad_card.dart';
@@ -84,6 +85,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ]);
     ref.invalidate(alertsProvider);
     ref.invalidate(viewedStoriesProvider);
+    // `personalizedFeedProvider` is a FutureProvider (not an
+    // AsyncNotifierProvider), so refresh via invalidate to actually
+    // re-trigger the fetch on pull-to-refresh.
+    ref.invalidate(personalizedFeedProvider);
   }
 
   @override

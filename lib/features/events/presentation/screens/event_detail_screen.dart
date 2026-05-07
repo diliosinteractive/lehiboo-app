@@ -30,6 +30,7 @@ import '../../../memberships/domain/exceptions/members_only_exception.dart';
 import '../../../memberships/presentation/widgets/members_only_gate.dart';
 import '../../../reviews/presentation/widgets/event_reviews_section.dart';
 import '../../../reviews/presentation/widgets/write_review_sheet.dart';
+import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../../reminders/presentation/providers/reminders_provider.dart';
 import '../../../reminders/data/datasources/reminders_api_datasource.dart';
 import '../../../booking/presentation/providers/order_cart_provider.dart';
@@ -751,6 +752,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       }
       // Refresh the provider to reflect the change
       ref.invalidate(eventRemindersProvider(eventUuid));
+      // Reminder signal changed — drop the personalized feed (spec §7).
+      ref.invalidate(personalizedFeedProvider);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

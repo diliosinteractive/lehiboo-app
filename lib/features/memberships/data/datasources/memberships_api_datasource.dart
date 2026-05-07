@@ -5,6 +5,7 @@ import '../../../../config/dio_client.dart';
 import '../../../events/data/models/event_dto.dart';
 import '../models/invitation_dto.dart';
 import '../models/membership_dto.dart';
+import '../models/personalized_feed_dto.dart';
 
 final membershipsApiDataSourceProvider =
     Provider<MembershipsApiDataSource>((ref) {
@@ -148,20 +149,26 @@ class MembershipsApiDataSource {
     );
   }
 
-  /// `GET /me/personalized-feed` — spec §11. Aggregated "Pour vous" feed.
-  /// Not paginated; returns top N events combining 5 priority strata.
-  Future<List<EventDto>> getPersonalizedFeed({int limit = 8}) async {
+  /// `GET /me/personalized-feed` — spec
+  /// `docs/PERSONALIZED_FEED_MOBILE_SPEC.md` §3.1 (rev 2026-05).
+  ///
+  /// Aggregated "Pour vous" feed. Not paginated. The `data` body is now a
+  /// **grouped map** keyed by section (`favorites`, `reminders`, `private`,
+  /// `booked`, `upcoming`, `ongoing`, `followed`) — no legacy flat-list
+  /// fallback is supported. Cross-section overlap is intentional and is
+  /// the caller's job to dedup (see [PersonalizedFeedDto] +
+  /// `buildOrdered`).
+  Future<PersonalizedFeedDto> getPersonalizedFeed({int limit = 8}) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/me/personalized-feed',
       queryParameters: {'limit': limit},
     );
     final body = response.data ?? const {};
     final data = body['data'];
-    if (data is! List) return const [];
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(EventDto.fromJson)
-        .toList();
+    if (data is Map<String, dynamic>) {
+      return PersonalizedFeedDto.fromJson(data);
+    }
+    return PersonalizedFeedDto.empty();
   }
 
   /// `GET /me/private-events` — spec §10. Paginated event list filtered to

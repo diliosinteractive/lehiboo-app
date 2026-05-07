@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../events/data/models/event_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
 import '../datasources/memberships_api_datasource.dart';
 import '../models/invitation_dto.dart';
 import '../models/membership_dto.dart';
+import '../models/personalized_feed_dto.dart';
 
 final membershipsRepositoryImplProvider = Provider<MembershipsRepository>((ref) {
   return MembershipsRepositoryImpl(ref.watch(membershipsApiDataSourceProvider));
@@ -70,6 +70,6 @@ class MembershipsRepositoryImpl implements MembershipsRepository {
       );
 
   @override
-  Future<List<EventDto>> getPersonalizedFeed({int limit = 8}) =>
+  Future<PersonalizedFeedDto> getPersonalizedFeed({int limit = 8}) =>
       _api.getPersonalizedFeed(limit: limit);
 }

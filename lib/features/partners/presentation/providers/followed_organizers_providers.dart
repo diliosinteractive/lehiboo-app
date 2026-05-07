@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/organizer_profile_dto.dart';
 import '../../domain/repositories/organizer_repository.dart';
+import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import 'organizer_profile_providers.dart';
 
 /// State for the "Organisateurs suivis" screen.
@@ -130,6 +131,8 @@ class FollowedOrganizersController
       // this UUID is now stale. Invalidate so a navigation refetches.
       ref.invalidate(organizerProfileFutureProvider(uuid));
       ref.invalidate(followStateControllerProvider(uuid));
+      // Follow signal changed — drop the personalized feed (spec §7).
+      ref.invalidate(personalizedFeedProvider);
     } catch (e, st) {
       // Rollback at the original position so the list order stays stable.
       final restored = [...state.valueOrNull?.items ?? optimistic]

@@ -19,6 +19,21 @@ class EventCard extends ConsumerWidget {
   /// Hauteur d'image personnalisée (override le comportement par défaut)
   final double? imageHeight;
 
+  /// Force the favourite heart to render filled regardless of the
+  /// favourites provider state. Used by section-attribution-driven
+  /// surfaces (e.g. "Pour vous" carousel) where membership in the
+  /// `favorites` section is the source of truth — see
+  /// `docs/PERSONALIZED_FEED_MOBILE_SPEC.md` §3.3 / §4.3. Tap toggle
+  /// behaviour is unchanged; this only overrides the initial visual.
+  final bool forceFavoriteFilled;
+
+  /// Force the "Privé" badge to render even when the per-event
+  /// `is_members_only` flag is false. Same rationale as
+  /// [forceFavoriteFilled]: the personalized feed's `private` section
+  /// covers visibility states (Unlisted / PublicProtected / Private /
+  /// PrivateProtected) that aren't all reflected in `is_members_only`.
+  final bool forcePrivateBadge;
+
   const EventCard({
     super.key,
     required this.activity,
@@ -28,6 +43,8 @@ class EventCard extends ConsumerWidget {
     this.heroTagPrefix,
     this.fillContainer = false,
     this.imageHeight,
+    this.forceFavoriteFilled = false,
+    this.forcePrivateBadge = false,
   });
 
   String _formatSlotDateTime(DateTime dt) {
@@ -122,11 +139,14 @@ class EventCard extends ConsumerWidget {
             event: _activityToEvent(),
             iconSize: 18,
             containerSize: 32,
+            forceFilled: forceFavoriteFilled,
           ),
         ),
 
         // Bottom-left: Category Badge (above) + Privé badge (stacked under).
-        if (activity.category != null || activity.isMembersOnly)
+        if (activity.category != null ||
+            activity.isMembersOnly ||
+            forcePrivateBadge)
           Positioned(
             bottom: 12,
             left: 12,
@@ -155,7 +175,11 @@ class EventCard extends ConsumerWidget {
                       ),
                     ),
                   ),
-                if (activity.isMembersOnly) ...[
+                // Render the badge when the entity flag says members-only
+                // (authoritative for events list / search) OR when the
+                // caller forces it via section attribution (personalized
+                // feed). The OR keeps existing call sites untouched.
+                if (activity.isMembersOnly || forcePrivateBadge) ...[
                   if (activity.category != null) const SizedBox(height: 6),
                   const _PrivateBadge(),
                 ],

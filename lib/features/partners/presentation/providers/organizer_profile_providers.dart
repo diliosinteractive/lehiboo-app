@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import '../../domain/repositories/organizer_repository.dart';
 import '../../../events/data/models/event_dto.dart';
+import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import 'followed_organizers_providers.dart';
 
 /// Profile fetch — `FutureProvider.family` keyed by slug-or-uuid.
@@ -204,6 +205,8 @@ class FollowStateController
       // next visit to "Organisateurs suivis" refetches from `/me/organizers/following`.
       // Lazy invalidation — costs nothing if the list isn't currently mounted.
       ref.invalidate(followedOrganizersControllerProvider);
+      // Follow signal changed — drop the personalized feed (spec §7).
+      ref.invalidate(personalizedFeedProvider);
     } catch (e, st) {
       state = AsyncData(snapshot);
       if (kDebugMode) {

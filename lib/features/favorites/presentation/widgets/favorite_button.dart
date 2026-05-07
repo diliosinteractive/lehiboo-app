@@ -43,6 +43,15 @@ class FavoriteButton extends ConsumerStatefulWidget {
   /// Whether to enable long-press to select a list
   final bool enableLongPress;
 
+  /// Force the heart to render filled regardless of the favourites
+  /// provider state. Used by section-attribution-driven surfaces (e.g.
+  /// the "Pour vous" carousel) where membership in the `favorites`
+  /// section is the source of truth — see
+  /// `docs/PERSONALIZED_FEED_MOBILE_SPEC.md` §3.3 / §4.3. Tap behaviour
+  /// is unchanged: tapping still calls
+  /// `favoritesProvider.notifier.toggleFavorite(...)`.
+  final bool forceFilled;
+
   const FavoriteButton({
     super.key,
     required this.event,
@@ -53,6 +62,7 @@ class FavoriteButton extends ConsumerStatefulWidget {
     this.backgroundColor,
     this.onChanged,
     this.enableLongPress = true,
+    this.forceFilled = false,
   });
 
   @override
@@ -246,9 +256,15 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     // Watch favorites to rebuild when state changes
     final favoritesState = ref.watch(favoritesProvider);
 
-    bool isFavorite = false;
+    // Start from the caller-supplied override (used by the personalized
+    // feed where section attribution is authoritative — see
+    // docs/PERSONALIZED_FEED_MOBILE_SPEC.md §3.3 / §4.3). The provider
+    // state is then OR-ed in so locally-known favourites still light up
+    // the heart even when the override is false.
+    bool isFavorite = widget.forceFilled;
     if (favoritesState is AsyncData<List<Event>>) {
-      isFavorite = ref.read(favoritesProvider.notifier).isFavorite(widget.event.id);
+      isFavorite = isFavorite ||
+          ref.read(favoritesProvider.notifier).isFavorite(widget.event.id);
     }
 
     return GestureDetector(
