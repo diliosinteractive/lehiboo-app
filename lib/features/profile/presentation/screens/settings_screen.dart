@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../notifications/presentation/providers/push_notification_provider.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
 import '../../data/datasources/profile_api_datasource.dart';
 
@@ -49,6 +50,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       // Synchroniser l'auth state local
       ref.read(authProvider.notifier).updateUser(updatedDto);
+
+      if (isPush && newValue) {
+        final registered = await ref
+            .read(pushNotificationProvider.notifier)
+            .syncTokenWithBackend();
+        if (!registered && mounted) {
+          PetitBooToast.error(
+            context,
+            'Autorisation notifications requise',
+          );
+        }
+      }
 
       // Plan 05 : la mise à jour wallet et le toast `+30 H NotificationsOptIn`
       // sont gérés globalement par HibonsUpdateInterceptor.
@@ -199,7 +212,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               context.pop();
               _resetOnboarding(context);
             },
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF601F)),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFFF601F)),
             child: const Text('Redémarrer'),
           ),
         ],

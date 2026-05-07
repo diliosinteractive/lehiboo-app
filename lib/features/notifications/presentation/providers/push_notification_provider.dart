@@ -41,7 +41,8 @@ class PushNotificationState {
 
 /// Provider that manages push notification state
 final pushNotificationProvider =
-    StateNotifierProvider<PushNotificationNotifier, PushNotificationState>((ref) {
+    StateNotifierProvider<PushNotificationNotifier, PushNotificationState>(
+        (ref) {
   return PushNotificationNotifier(ref);
 });
 
@@ -93,17 +94,35 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       final pushService = _ref.read(pushNotificationServiceProvider);
       final tokenDataSource = _ref.read(deviceTokenDataSourceProvider);
 
-      // Set up callbacks for token management
-      pushService.onTokenReceived = (token) async {
-        await _registerTokenWithBackend(token, pushService, tokenDataSource);
-      };
-
-      pushService.onTokenRemoved = (token) async {
-        await tokenDataSource.unregisterToken(token);
-      };
+      _configureCallbacks(pushService, tokenDataSource);
 
       // Initialize the push service
       await pushService.initialize();
+
+      if (pushService.fcmToken == null) {
+        state = state.copyWith(
+          status: pushService.permissionDenied
+              ? PushNotificationStatus.disabled
+              : PushNotificationStatus.error,
+          errorMessage: pushService.permissionDenied
+              ? 'Notification permission denied'
+              : 'FCM token unavailable',
+        );
+        return;
+      }
+
+      final registered = await _registerTokenWithBackend(
+        pushService.fcmToken!,
+        pushService,
+        tokenDataSource,
+      );
+      if (!registered) {
+        state = state.copyWith(
+          status: PushNotificationStatus.error,
+          errorMessage: 'Backend token registration failed',
+        );
+        return;
+      }
 
       state = state.copyWith(
         status: PushNotificationStatus.initialized,
@@ -120,8 +139,84 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     }
   }
 
+  /// Force a fresh backend registration for the current token.
+  ///
+  /// Used after the user enables push in settings. Login normally initializes
+  /// the service, but this closes the gap where permission/APNs token was not
+  /// available during the earlier attempt.
+  Future<bool> syncTokenWithBackend() async {
+    if (state.status == PushNotificationStatus.initializing) {
+      return false;
+    }
+
+    state = state.copyWith(status: PushNotificationStatus.initializing);
+
+    try {
+      final pushService = _ref.read(pushNotificationServiceProvider);
+      final tokenDataSource = _ref.read(deviceTokenDataSourceProvider);
+      _configureCallbacks(pushService, tokenDataSource);
+
+      if (!pushService.isInitialized) {
+        await pushService.initialize();
+      } else {
+        await pushService.ensureFcmToken();
+      }
+
+      if (pushService.fcmToken == null) {
+        state = state.copyWith(
+          status: pushService.permissionDenied
+              ? PushNotificationStatus.disabled
+              : PushNotificationStatus.error,
+          errorMessage: pushService.permissionDenied
+              ? 'Notification permission denied'
+              : 'FCM token unavailable',
+        );
+        return false;
+      }
+
+      final registered = await _registerTokenWithBackend(
+        pushService.fcmToken!,
+        pushService,
+        tokenDataSource,
+      );
+      if (!registered) {
+        state = state.copyWith(
+          status: PushNotificationStatus.error,
+          errorMessage: 'Backend token registration failed',
+        );
+        return false;
+      }
+
+      state = state.copyWith(
+        status: PushNotificationStatus.initialized,
+        fcmToken: pushService.fcmToken,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('PushNotification: Failed to sync token - $e');
+      state = state.copyWith(
+        status: PushNotificationStatus.error,
+        errorMessage: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  void _configureCallbacks(
+    PushNotificationService pushService,
+    DeviceTokenDataSource tokenDataSource,
+  ) {
+    pushService.onTokenReceived = (token) async {
+      await _registerTokenWithBackend(token, pushService, tokenDataSource);
+    };
+
+    pushService.onTokenRemoved = (token) async {
+      await tokenDataSource.unregisterToken(token);
+    };
+  }
+
   /// Register FCM token with backend
-  Future<void> _registerTokenWithBackend(
+  Future<bool> _registerTokenWithBackend(
     String token,
     PushNotificationService pushService,
     DeviceTokenDataSource tokenDataSource,
@@ -144,8 +239,11 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       );
 
       debugPrint('PushNotification: Token registered with backend');
+      return true;
     } catch (e) {
-      debugPrint('PushNotification: Failed to register token with backend - $e');
+      debugPrint(
+          'PushNotification: Failed to register token with backend - $e');
+      return false;
     }
   }
 

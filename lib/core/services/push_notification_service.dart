@@ -16,7 +16,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 /// Provides the PushNotificationService
-final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) {
+final pushNotificationServiceProvider =
+    Provider<PushNotificationService>((ref) {
   return PushNotificationService(
     deepLinkService: ref.watch(deepLinkServiceProvider),
   );
@@ -37,6 +38,7 @@ class PushNotificationService {
 
   String? _fcmToken;
   bool _initialized = false;
+  bool _permissionDenied = false;
 
   /// Callback to register token with backend API
   Future<void> Function(String token)? onTokenReceived;
@@ -54,6 +56,9 @@ class PushNotificationService {
   /// Whether the service is initialized
   bool get isInitialized => _initialized;
 
+  /// Whether the OS-level notification permission was denied.
+  bool get permissionDenied => _permissionDenied;
+
   /// Initialize push notifications
   ///
   /// Call this after user login and Firebase initialization.
@@ -65,24 +70,23 @@ class PushNotificationService {
 
     try {
       // Set up background message handler
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
 
       // Request permissions
       final settings = await _requestPermissions();
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        _permissionDenied = true;
         debugPrint('Push notifications denied by user');
         return;
       }
+      _permissionDenied = false;
 
       // Initialize local notifications for foreground
       await _initializeLocalNotifications();
 
       // Get FCM token
-      _fcmToken = await _messaging.getToken();
-      if (_fcmToken != null) {
-        debugPrint('FCM Token: ${_fcmToken!.substring(0, 20)}...');
-        await onTokenReceived?.call(_fcmToken!);
-      }
+      await ensureFcmToken();
 
       // Listen for token refresh
       _messaging.onTokenRefresh.listen((newToken) async {
@@ -110,6 +114,34 @@ class PushNotificationService {
     }
   }
 
+  /// Ensure the current FCM token exists.
+  ///
+  /// iOS can need a short delay after permission before Firebase exposes an
+  /// APNs-backed FCM token. Retrying here avoids permanently initializing with
+  /// a null token on first launch.
+  Future<String?> ensureFcmToken() async {
+    if (_fcmToken == null) {
+      if (Platform.isIOS) {
+        await _waitForApnsToken();
+      }
+      _fcmToken = await _messaging.getToken();
+    }
+
+    if (_fcmToken != null) {
+      debugPrint('FCM Token: ${_fcmToken!.substring(0, 20)}...');
+    }
+
+    return _fcmToken;
+  }
+
+  Future<void> _waitForApnsToken() async {
+    for (var attempt = 0; attempt < 5; attempt++) {
+      final apnsToken = await _messaging.getAPNSToken();
+      if (apnsToken != null) return;
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+  }
+
   /// Request notification permissions
   Future<NotificationSettings> _requestPermissions() async {
     return await _messaging.requestPermission(
@@ -125,7 +157,8 @@ class PushNotificationService {
 
   /// Initialize local notifications for foreground display
   Future<void> _initializeLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,

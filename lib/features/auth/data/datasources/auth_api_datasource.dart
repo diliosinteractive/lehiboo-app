@@ -41,6 +41,7 @@ class LoginResult {
   final String? userId;
   final String? email;
   final String? message;
+
   /// When login succeeds without OTP, this contains the auth data
   final AuthResponseDto? authResponse;
 
@@ -144,7 +145,8 @@ class AuthApiDataSource {
     debugPrint('🔐 Login response received: ${response.data.runtimeType}');
 
     final responseData = ApiResponseHandler.extractObject(response.data);
-    debugPrint('🔐 Response data found: user=${responseData['user'] != null}, token=${responseData['token'] != null}');
+    debugPrint(
+        '🔐 Response data found: user=${responseData['user'] != null}, token=${responseData['token'] != null}');
 
     // Check if OTP is required (2FA)
     if (responseData['requires_otp'] == true) {
@@ -175,18 +177,26 @@ class AuthApiDataSource {
     // Laravel returns: { id, name, email, phone, role, ... }
     // Flutter expects: { id, email, display_name, first_name, last_name, role, ... }
     final user = UserDto(
-      id: userData['id'] is int ? userData['id'] : int.tryParse(userData['id'].toString()) ?? 0,
+      id: userData['id'] is int
+          ? userData['id']
+          : int.tryParse(userData['id'].toString()) ?? 0,
       email: userData['email']?.toString() ?? '',
       displayName: userData['name']?.toString() ?? '',
       firstName: userData['first_name']?.toString(),
       lastName: userData['last_name']?.toString(),
       phone: userData['phone']?.toString(),
       avatarUrl: (userData['avatar'] ?? userData['avatar_url'])?.toString(),
-      birthDate: userData['birthDate']?.toString() ?? userData['birth_date']?.toString(),
-      membershipCity: userData['membershipCity']?.toString() ?? userData['membership_city']?.toString(),
+      birthDate: userData['birthDate']?.toString() ??
+          userData['birth_date']?.toString(),
+      membershipCity: userData['membershipCity']?.toString() ??
+          userData['membership_city']?.toString(),
       role: userData['role']?.toString() ?? 'customer',
       registeredAt: userData['created_at']?.toString(),
       isVerified: userData['is_email_verified'] == true,
+      newsletter: userData['newsletter'] == true,
+      pushNotificationsEnabled:
+          userData['push_notifications_enabled'] == true ||
+              userData['pushNotificationsEnabled'] == true,
     );
 
     // Laravel Sanctum uses single token, no refresh token
@@ -304,13 +314,18 @@ class AuthApiDataSource {
 
     final responseData = ApiResponseHandler.extractObject(response.data);
     return CustomerRegisterResult(
-      user: responseData['user'] != null ? UserDto.fromJson(responseData['user']) : null,
+      user: responseData['user'] != null
+          ? UserDto.fromJson(responseData['user'])
+          : null,
       token: responseData['token']?.toString(),
-      emailVerificationRequired: responseData['email_verification_required'] ?? true,
+      emailVerificationRequired:
+          responseData['email_verification_required'] ?? true,
       pendingVerification: responseData['pending_verification'] ?? true,
-      userId: responseData['user_id']?.toString() ?? responseData['user']?['id']?.toString(),
+      userId: responseData['user_id']?.toString() ??
+          responseData['user']?['id']?.toString(),
       email: responseData['email'] ?? email,
-      message: responseData['message'] ?? 'Un code de vérification a été envoyé',
+      message:
+          responseData['message'] ?? 'Un code de vérification a été envoyé',
     );
   }
 
@@ -357,7 +372,8 @@ class AuthApiDataSource {
 
     debugPrint('📱 OTP send response: ${response.data}');
 
-    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    final payload =
+        ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
     return OtpSendResult(
       success: true,
       message: payload['message'] ?? 'Code envoyé',
@@ -384,8 +400,10 @@ class AuthApiDataSource {
 
     debugPrint('📱 OTP verify response: ${response.data}');
 
-    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
-    debugPrint('📱 OTP verified, token received: ${payload['verified_email_token'] != null}');
+    final payload =
+        ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    debugPrint(
+        '📱 OTP verified, token received: ${payload['verified_email_token'] != null}');
 
     return OtpVerifyResult(
       success: true,
@@ -415,7 +433,8 @@ class AuthApiDataSource {
 
     debugPrint('📱 OTP resend response: ${response.data}');
 
-    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    final payload =
+        ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
     return OtpSendResult(
       success: true,
       message: payload['message'] ?? 'Nouveau code envoyé',
@@ -440,7 +459,8 @@ class AuthApiDataSource {
 
     debugPrint('📱 OTP status response: ${response.data}');
 
-    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    final payload =
+        ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
     return OtpStatusResult(
       hasPendingOtp: payload['has_pending_otp'] ?? false,
       canResend: payload['can_resend'] ?? true,
@@ -522,8 +542,10 @@ class OtpVerifyResult {
   final bool success;
   final bool verified;
   final String message;
+
   /// Token for registration (received after email_verification OTP)
   final String? verifiedEmailToken;
+
   /// Token expiration in minutes
   final int? tokenExpiresInMinutes;
 
