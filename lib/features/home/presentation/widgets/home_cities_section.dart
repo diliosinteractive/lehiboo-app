@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/features/events/presentation/providers/cities_provider.dart';
+import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 import '../../../../domain/entities/city.dart';
 
 class HomeCitiesSection extends ConsumerWidget {
@@ -64,14 +65,41 @@ class HomeCitiesSection extends ConsumerWidget {
                   return _CityChip(
                     city: city,
                     onTap: () {
-                      context.pushNamed(
-                        'map', 
-                        queryParameters: {
-                          'lat': city.lat.toString(),
-                          'lng': city.lng.toString(),
-                          'zoom': '13',
-                        }
+                      final lat = city.lat;
+                      final lng = city.lng;
+                      final hasValidCoords = lat != null &&
+                          lng != null &&
+                          !(lat == 0.0 && lng == 0.0) &&
+                          lat >= -90 &&
+                          lat <= 90 &&
+                          lng >= -180 &&
+                          lng <= 180;
+
+                      debugPrint(
+                        '🏙️ City tap "${city.name}" '
+                        '(slug=${city.slug}, lat=$lat, lng=$lng) '
+                        '→ hasValidCoords=$hasValidCoords',
                       );
+
+                      // Toujours poser le filtre ville pour que le chip
+                      // s'affiche, même quand on a des coords (la map se
+                      // centrera via initialCenter).
+                      ref
+                          .read(eventFilterProvider.notifier)
+                          .setCity(city.slug, city.name);
+
+                      if (hasValidCoords) {
+                        context.pushNamed(
+                          'map',
+                          queryParameters: {
+                            'lat': lat.toString(),
+                            'lng': lng.toString(),
+                            'zoom': '13',
+                          },
+                        );
+                      } else {
+                        context.pushNamed('map');
+                      }
                     },
                   );
                 },

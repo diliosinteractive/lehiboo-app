@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../domain/repositories/gamification_repository.dart';
 import '../datasources/gamification_api_datasource.dart';
 import '../models/earnings_by_pillar_entry.dart';
+import '../models/hibon_badge.dart';
 import '../models/hibons_action_entry.dart';
 import '../models/hibons_balance.dart';
 import '../models/hibons_rank.dart';
@@ -271,6 +272,36 @@ class GamificationRepositoryImpl implements GamificationRepository {
       debugPrint('🎮 GamificationRepo: getAchievements() error: $e');
       return [];
     }
+  }
+
+  @override
+  Future<HibonBadgesResult> getBadges() async {
+    debugPrint('🎮 GamificationRepo: getBadges()');
+    final response = await _dataSource.getBadges();
+
+    final items = response.items
+        .map((dto) => HibonBadge(
+              code: dto.code,
+              name: dto.name,
+              icon: dto.icon,
+              hibonsThreshold: dto.hibonsThreshold,
+              petitBooBonus: dto.petitBooBonus,
+              progress: dto.progress,
+              progressPercent: dto.progressPercent,
+              isUnlocked: dto.isUnlocked,
+            ))
+        .toList();
+
+    final meta = HibonBadgesMeta(
+      lifetimeEarned: response.meta.lifetimeEarned,
+      currentRank: response.meta.currentRank,
+      currentRankLabel: response.meta.currentRankLabel,
+      total: response.meta.total,
+      unlocked: response.meta.unlocked,
+      locked: response.meta.locked,
+    );
+
+    return HibonBadgesResult(items: items, meta: meta);
   }
 
   @override
