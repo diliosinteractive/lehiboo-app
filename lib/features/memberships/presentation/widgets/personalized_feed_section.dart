@@ -29,7 +29,7 @@ class PersonalizedFeedSection extends ConsumerWidget {
         if (events.isEmpty) return const SizedBox.shrink();
 
         return Padding(
-          padding: const EdgeInsets.only(top: 12, bottom: 4),
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -46,7 +46,7 @@ class PersonalizedFeedSection extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               SizedBox(
-                height: 420,
+                height: 360,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -57,7 +57,7 @@ class PersonalizedFeedSection extends ConsumerWidget {
                       EventMapper.toEvent(events[index]),
                     );
                     return SizedBox(
-                      width: 240,
+                      width: 200,
                       child: EventCard(
                         activity: activity,
                         isCompact: true,

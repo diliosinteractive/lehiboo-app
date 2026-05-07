@@ -30,7 +30,10 @@ import 'package:lehiboo/core/utils/api_response_handler.dart';
 import '../widgets/contextual_hero.dart';
 import '../widgets/event_stories.dart';
 import '../widgets/countdown_event_card.dart';
-import '../widgets/personalized_section.dart';
+// Legacy client-side "Pour vous" — superseded by the server-driven
+// PersonalizedFeedSection (PERSONALIZED_FEED_MOBILE_SPEC.md). Kept commented
+// for reference only.
+// import '../widgets/personalized_section.dart';
 import '../../../memberships/presentation/widgets/personalized_feed_section.dart';
 // Les imports suivants sont commentés car les sections sont désactivées en attendant l'API backend
 // import '../widgets/native_ad_card.dart';
@@ -122,9 +125,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: HomeCitiesSection(),
             ),
 
-            // 5. Section Urgency FOMO (événements qui commencent bientôt)
+            // 5. "Pour vous" — server-driven personalized carousel.
+            // Spec MEMBERSHIPS §11. Hidden when unauthenticated or empty.
             const SliverToBoxAdapter(
-              child: UrgencySection(),
+              child: PersonalizedFeedSection(),
             ),
 
             // 6. Section Publicités dynamiques
@@ -137,10 +141,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Spec MEMBERSHIPS §11: aggregated "Pour vous" carousel
-                  // surfaced above the daily sections. Hidden when
-                  // unauthenticated or when the response is empty.
-                  const PersonalizedFeedSection(),
+                  // Urgency FOMO — événements qui commencent bientôt.
+                  const UrgencySection(),
                   _buildActivitySection(
                     context,
                     ref,
@@ -170,7 +172,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                       }
                       return SizedBox(
-                        height: 420,
+                        height: 360,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -203,10 +205,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // 8. Section "Pour vous" (personnalisée)
-            const SliverToBoxAdapter(
-              child: PersonalizedSection(),
-            ),
+            // 8. Section "Pour vous" (personnalisée) — legacy client-side
+            // scoring, replaced by server-driven PersonalizedFeedSection above.
+            // const SliverToBoxAdapter(
+            //   child: PersonalizedSection(),
+            // ),
 
             // 9. Section thématiques
             const SliverToBoxAdapter(
@@ -456,7 +459,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               return const SizedBox.shrink();
             }
             return SizedBox(
-              height: 420,
+              height: 360,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -481,14 +484,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           loading: () => _buildCarouselSkeleton(),
           error: (err, stack) => const SizedBox.shrink(),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 4),
       ],
     );
   }
 
   Widget _buildCarouselSkeleton() {
     return SizedBox(
-      height: 420,
+      height: 360,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),

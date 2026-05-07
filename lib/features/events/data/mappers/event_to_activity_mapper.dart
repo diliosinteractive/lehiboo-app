@@ -51,28 +51,27 @@ class EventToActivityMapper {
       );
     }
 
-    // Create slot from event dates
-    Slot? nextSlot;
-    if (event.startDate.isAfter(DateTime.now()) ||
-        event.startDate.day == DateTime.now().day) {
-      nextSlot = Slot(
-        id: '${event.id}_slot',
-        activityId: event.id,
-        startDateTime: event.startDate,
-        endDateTime: event.endDate,
-        capacityTotal: event.totalSeats,
-        capacityRemaining: event.availableSeats,
-        priceMin: event.minPrice ?? event.price,
-        priceMax: event.maxPrice ?? event.price,
-        currency: 'EUR',
-        indoorOutdoor: event.isIndoor && event.isOutdoor
-            ? IndoorOutdoor.both
-            : event.isIndoor
-                ? IndoorOutdoor.indoor
-                : IndoorOutdoor.outdoor,
-        status: _eventStatusToSlotStatus(event.status),
-      );
-    }
+    // Always populate from event dates. Used as the event's primary slot
+    // reference (date display, capacity, pricing) — not "next upcoming slot".
+    // Past events surface in the personalized feed (strata 3 & 4 — reminders
+    // and favourites have no future-slot filter) and need their date shown.
+    final nextSlot = Slot(
+      id: '${event.id}_slot',
+      activityId: event.id,
+      startDateTime: event.startDate,
+      endDateTime: event.endDate,
+      capacityTotal: event.totalSeats,
+      capacityRemaining: event.availableSeats,
+      priceMin: event.minPrice ?? event.price,
+      priceMax: event.maxPrice ?? event.price,
+      currency: 'EUR',
+      indoorOutdoor: event.isIndoor && event.isOutdoor
+          ? IndoorOutdoor.both
+          : event.isIndoor
+              ? IndoorOutdoor.indoor
+              : IndoorOutdoor.outdoor,
+      status: _eventStatusToSlotStatus(event.status),
+    );
 
     // Booking-vs-discovery is the signal the cards use to decide whether
     // to show a "À partir de …" price label. Without this, paid booking
@@ -94,8 +93,8 @@ class EventToActivityMapper {
       category: category,
       tags: tags,
       isFree: event.isFree,
-      priceMin: event.minPrice ?? event.price ?? 0,
-      priceMax: event.maxPrice ?? event.price ?? 0,
+      priceMin: event.minPrice ?? event.price,
+      priceMax: event.maxPrice ?? event.price,
       currency: 'EUR',
       reservationMode: reservationMode,
       indoorOutdoor: event.isIndoor && event.isOutdoor

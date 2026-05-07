@@ -114,47 +114,14 @@ class EventCard extends ConsumerWidget {
           ),
         ),
 
-        // Top row: Date badge (today/tomorrow only) + Favorite Button
+        // Top-right: Favorite Button
         Positioned(
           top: 12,
-          left: 12,
           right: 12,
-          child: Row(
-            children: [
-              if ((isToday || isTomorrow) && activity.nextSlot != null)
-                Expanded(
-                  flex: 4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _formatDateBadge(activity.nextSlot!.startDateTime),
-                      style: const TextStyle(
-                        color: Color(0xFFFF601F),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                const Expanded(flex: 4, child: SizedBox.shrink()),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 1,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: FavoriteButton(
-                    event: _activityToEvent(),
-                    iconSize: 18,
-                    containerSize: 32,
-                  ),
-                ),
-              ),
-            ],
+          child: FavoriteButton(
+            event: _activityToEvent(),
+            iconSize: 18,
+            containerSize: 32,
           ),
         ),
 
@@ -281,8 +248,8 @@ class EventCard extends ConsumerWidget {
                 height: 1.1,
               ),
             ),
-            // Date below address (skipped for today/tomorrow — they keep the poster badge)
-            if (activity.nextSlot != null && !isToday && !isTomorrow) ...[
+            // Date below address — uses friendly "Aujourd'hui / Demain à HH:MM" form via _formatDateBadge
+            if (activity.nextSlot != null) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
@@ -310,39 +277,32 @@ class EventCard extends ConsumerWidget {
             ],
             const SizedBox(height: 4),
           ] else ...[
-            // Compact mode: location + date
+            // Compact mode: location + date — same style as recommendations / countdown cards
             const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.location_on_outlined, size: 12, color: Colors.grey[500]),
-                const SizedBox(width: 3),
-                Expanded(
-                  child: Text(
-                    activity.city?.name ?? 'France',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+            Text(
+              activity.city?.name ?? 'France',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            if (activity.nextSlot != null && !isToday && !isTomorrow) ...[
-              const SizedBox(height: 3),
+            if (activity.nextSlot != null) ...[
+              const SizedBox(height: 4),
               Row(
                 children: [
                   Icon(
                     Icons.calendar_today_outlined,
-                    size: 11,
-                    color: Colors.grey[500],
+                    size: 12,
+                    color: Colors.grey[600],
                   ),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       _formatDateBadge(activity.nextSlot!.startDateTime),
                       style: TextStyle(
                         color: Colors.grey[700],
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
+                        height: 1.1,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -357,39 +317,55 @@ class EventCard extends ConsumerWidget {
           // Price
           if (activity.priceMin != null && activity.priceMin != -1)
             Builder(builder: (context) {
-              final isTrulyFree = activity.priceMin == 0 &&
-                  (activity.priceMax == null || activity.priceMax == 0);
-              if (isTrulyFree) {
+              final isBooking =
+                  activity.reservationMode == ReservationMode.lehibooFree ||
+                      activity.reservationMode == ReservationMode.lehibooPaid;
+
+              if (isBooking) {
+                final price = (activity.priceMin! > 0)
+                    ? activity.priceMin!
+                    : (activity.priceMax ?? 0);
+                if (price <= 0) {
+                  // Trust the API's `is_free` signal: a paid event arriving
+                  // with min/max=0 (observed on /me/personalized-feed for
+                  // some members-only events) should hide the price rather
+                  // than mislabel it as "Gratuit".
+                  if (activity.isFree != true) return const SizedBox.shrink();
+                  return Text(
+                    'Gratuit',
+                    style: TextStyle(
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.w600,
+                      fontSize: compact ? 12 : 14,
+                      height: 1.1,
+                    ),
+                  );
+                }
                 return Text(
-                  'Gratuit',
+                  'À partir de ${price.toStringAsFixed(0)}€',
                   style: TextStyle(
-                    color: Colors.green[700],
+                    color: const Color(0xFFFF601F),
                     fontWeight: FontWeight.w600,
                     fontSize: compact ? 12 : 14,
                     height: 1.1,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 );
               }
-              // Discovery activities: hide price for paid items.
-              final isBooking =
-                  activity.reservationMode == ReservationMode.lehibooFree ||
-                      activity.reservationMode == ReservationMode.lehibooPaid;
-              if (!isBooking) {
-                return const SizedBox.shrink();
-              }
-              final price = (activity.priceMin! > 0)
-                  ? activity.priceMin!
-                  : activity.priceMax!;
+
+              // Discovery: only label as "Gratuit" when truly free.
+              final isTrulyFree = activity.priceMin == 0 &&
+                  (activity.priceMax == null || activity.priceMax == 0);
+              if (!isTrulyFree) return const SizedBox.shrink();
               return Text(
-                'À partir de ${price.toStringAsFixed(0)}€',
+                'Gratuit',
                 style: TextStyle(
-                  color: const Color(0xFFFF601F),
+                  color: Colors.green[700],
                   fontWeight: FontWeight.w600,
                   fontSize: compact ? 12 : 14,
                   height: 1.1,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               );
             }),
         ],
