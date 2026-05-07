@@ -350,7 +350,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
             child: LargeQRCode(
               data: qrData,
               size: QRCodeSize.medium,
-              codeLabel: _extractCode(qrData),
+              codeLabel: qrData,
             ),
           ),
           const SizedBox(height: 24),
@@ -557,17 +557,4 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     );
   }
 
-  String _extractCode(String data) {
-    if (data.length <= 12) return data.toUpperCase();
-
-    if (data.contains('/')) {
-      final segments = data.split('/');
-      final last = segments.lastWhere((s) => s.isNotEmpty, orElse: () => '');
-      if (last.isNotEmpty && last.length <= 12) {
-        return last.toUpperCase();
-      }
-    }
-
-    return data.substring(0, 10).toUpperCase();
-  }
 }
