@@ -8,6 +8,7 @@ import '../../data/mappers/auth_mapper.dart';
 import '../../data/models/auth_response_dto.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../../notifications/data/datasources/device_token_datasource.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, pendingVerification, pendingLoginOtp, error }
 
@@ -50,8 +51,9 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
+  final Ref _ref;
 
-  AuthNotifier(this._authRepository) : super(const AuthState()) {
+  AuthNotifier(this._authRepository, this._ref) : super(const AuthState()) {
     _checkAuthStatus();
   }
 
@@ -255,6 +257,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     state = state.copyWith(status: AuthStatus.loading);
+    // Deregister this device's push tokens BEFORE revoking the bearer
+    // (spec PUSH_NOTIFICATIONS_MOBILE_SPEC.md §7.4). Failure here must not
+    // block logout — branch #2 of §2.1 will eventually deactivate the row
+    // when another user signs in on the same device.
+    try {
+      await _ref.read(deviceTokenDataSourceProvider).unregisterAllTokens();
+    } catch (_) {}
     await _authRepository.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
@@ -386,7 +395,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final authRepository = ref.watch(authRepositoryImplProvider);
-  return AuthNotifier(authRepository);
+  return AuthNotifier(authRepository, ref);
 });
 
 final isAuthenticatedProvider = Provider<bool>((ref) {
