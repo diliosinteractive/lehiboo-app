@@ -2,20 +2,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/blog_repository.dart';
 import '../../data/models/blog_post_dto.dart';
 
-/// Provider for latest blog posts (default: 3 posts for home screen)
+/// Provider for latest blog posts on the home screen.
 final latestBlogPostsProvider = FutureProvider<List<BlogPostDto>>((ref) async {
   final repository = ref.watch(blogRepositoryProvider);
 
   final result = await repository.getPosts(
     page: 1,
-    perPage: 3,
+    perPage: 5,
   );
 
   return result.posts;
 });
 
 /// Provider for blog posts with pagination
-final blogPostsProvider = FutureProvider.family<BlogPostsResult, BlogPostsParams>((ref, params) async {
+final blogPostsProvider =
+    FutureProvider.family<BlogPostsResult, BlogPostsParams>(
+        (ref, params) async {
   final repository = ref.watch(blogRepositoryProvider);
 
   return await repository.getPosts(
@@ -26,7 +28,8 @@ final blogPostsProvider = FutureProvider.family<BlogPostsResult, BlogPostsParams
 });
 
 /// Provider for single blog post
-final blogPostDetailProvider = FutureProvider.family<BlogPostDto, int>((ref, postId) async {
+final blogPostDetailProvider =
+    FutureProvider.family<BlogPostDto, int>((ref, postId) async {
   final repository = ref.watch(blogRepositoryProvider);
   return await repository.getPostById(postId);
 });

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/config/env_config.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/blog_providers.dart';
 import 'blog_post_card.dart';
 
@@ -28,9 +31,7 @@ class BlogSection extends ConsumerWidget {
                 ),
               ),
               TextButton(
-                onPressed: () {
-                  // TODO: Navigate to blog list
-                },
+                onPressed: _openBlogIndex,
                 child: const Text(
                   'Voir tout',
                   style: TextStyle(
@@ -104,7 +105,7 @@ class BlogSection extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -113,7 +114,7 @@ class BlogSection extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Erreur: $error',
+                      ApiResponseHandler.extractError(error),
                       style: const TextStyle(color: Colors.red),
                     ),
                   ),
@@ -128,5 +129,16 @@ class BlogSection extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _openBlogIndex() async {
+    final baseUrl = EnvConfig.websiteUrl.endsWith('/')
+        ? EnvConfig.websiteUrl.substring(0, EnvConfig.websiteUrl.length - 1)
+        : EnvConfig.websiteUrl;
+    final uri = Uri.parse('$baseUrl/blog');
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }

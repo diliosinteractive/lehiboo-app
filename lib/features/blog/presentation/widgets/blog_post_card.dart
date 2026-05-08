@@ -23,7 +23,7 @@ class BlogPostCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -105,9 +105,10 @@ class BlogPostCard extends StatelessWidget {
                 // Category
                 if (post.categories != null && post.categories!.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF601F).withOpacity(0.1),
+                      color: const Color(0xFFFF601F).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -156,7 +157,8 @@ class BlogPostCard extends StatelessWidget {
                     ],
                     const Spacer(),
                     if (post.readingTime != null) ...[
-                      Icon(Icons.access_time, size: 12, color: Colors.grey[500]),
+                      Icon(Icons.access_time,
+                          size: 12, color: Colors.grey[500]),
                       const SizedBox(width: 4),
                       Text(
                         '${post.readingTime} min',
@@ -183,7 +185,7 @@ class BlogPostCard extends StatelessWidget {
 
     if (imageUrl == null) {
       return Container(
-        color: const Color(0xFFFF601F).withOpacity(0.1),
+        color: const Color(0xFFFF601F).withValues(alpha: 0.1),
         child: const Center(
           child: Icon(
             Icons.article,
@@ -207,7 +209,7 @@ class BlogPostCard extends StatelessWidget {
         ),
       ),
       errorWidget: (context, url, error) => Container(
-        color: const Color(0xFFFF601F).withOpacity(0.1),
+        color: const Color(0xFFFF601F).withValues(alpha: 0.1),
         child: const Center(
           child: Icon(
             Icons.article,
