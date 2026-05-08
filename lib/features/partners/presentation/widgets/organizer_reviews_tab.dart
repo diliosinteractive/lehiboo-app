@@ -21,30 +21,16 @@ class OrganizerReviewsTab extends ConsumerStatefulWidget {
 }
 
 class _OrganizerReviewsTabState extends ConsumerState<OrganizerReviewsTab> {
-  final _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 240) {
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.depth == 0 &&
+        notification.metrics.axis == Axis.vertical &&
+        notification.metrics.extentAfter <= 240) {
       ref
           .read(organizerReviewsControllerProvider(widget.organizerIdentifier)
               .notifier)
           .loadMore();
     }
+    return false;
   }
 
   @override
@@ -70,39 +56,40 @@ class _OrganizerReviewsTabState extends ConsumerState<OrganizerReviewsTab> {
         ),
       ),
       data: (state) {
-        return ListView.separated(
-          controller: _scrollController,
-          padding: const EdgeInsets.only(top: 8, bottom: 80),
-          // +1 for the histogram header, +1 for the load-more spinner when active
-          itemCount:
-              1 + state.items.length + (state.isLoadingMore ? 1 : 0),
-          separatorBuilder: (_, index) {
-            if (index == 0) return const SizedBox.shrink();
-            return Divider(
-              height: 1,
-              thickness: 1,
-              color: Colors.grey[100],
-              indent: 20,
-              endIndent: 20,
-            );
-          },
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return _HistogramHeader(statsAsync: statsAsync);
-            }
-            final reviewIndex = index - 1;
-            if (reviewIndex == state.items.length) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: HbColors.brandPrimary,
-                  ),
-                ),
+        return NotificationListener<ScrollNotification>(
+          onNotification: _onScrollNotification,
+          child: ListView.separated(
+            padding: const EdgeInsets.only(top: 8, bottom: 80),
+            // +1 for the histogram header, +1 for the load-more spinner when active
+            itemCount: 1 + state.items.length + (state.isLoadingMore ? 1 : 0),
+            separatorBuilder: (_, index) {
+              if (index == 0) return const SizedBox.shrink();
+              return Divider(
+                height: 1,
+                thickness: 1,
+                color: Colors.grey[100],
+                indent: 20,
+                endIndent: 20,
               );
-            }
-            return OrganizerReviewRow(review: state.items[reviewIndex]);
-          },
+            },
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _HistogramHeader(statsAsync: statsAsync);
+              }
+              final reviewIndex = index - 1;
+              if (reviewIndex == state.items.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: HbColors.brandPrimary,
+                    ),
+                  ),
+                );
+              }
+              return OrganizerReviewRow(review: state.items[reviewIndex]);
+            },
+          ),
         );
       },
     );

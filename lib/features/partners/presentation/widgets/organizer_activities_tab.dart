@@ -26,31 +26,18 @@ class OrganizerActivitiesTab extends ConsumerStatefulWidget {
 
 class _OrganizerActivitiesTabState
     extends ConsumerState<OrganizerActivitiesTab> {
-  final _scrollController = ScrollController();
   EventTimingBucket _bucket = EventTimingBucket.currentUpcoming;
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 240) {
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.depth == 0 &&
+        notification.metrics.axis == Axis.vertical &&
+        notification.metrics.extentAfter <= 240) {
       ref
           .read(organizerEventsControllerProvider(widget.organizerIdentifier)
               .notifier)
           .loadMore();
     }
+    return false;
   }
 
   @override
@@ -95,44 +82,45 @@ class _OrganizerActivitiesTabState
           past = const [];
         }
 
-        final visible = _bucket == EventTimingBucket.currentUpcoming
-            ? current
-            : past;
+        final visible =
+            _bucket == EventTimingBucket.currentUpcoming ? current : past;
 
         if (events.isEmpty) {
           return _empty('Aucune activité publiée pour le moment.');
         }
 
-        return ListView(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
-          children: [
-            _SegmentedToggle(
-              bucket: _bucket,
-              currentCount: current.length,
-              pastCount: past.length,
-              onChanged: (b) => setState(() => _bucket = b),
-            ),
-            const SizedBox(height: 16),
-            if (visible.isEmpty)
-              _empty(_bucket == EventTimingBucket.currentUpcoming
-                  ? 'Pas d\'événement à venir.'
-                  : 'Pas d\'événement passé.')
-            else
-              ...visible.map((e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: _OrganizerEventTile(event: e),
-                  )),
-            if (state.isLoadingMore)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: HbColors.brandPrimary,
+        return NotificationListener<ScrollNotification>(
+          onNotification: _onScrollNotification,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
+            children: [
+              _SegmentedToggle(
+                bucket: _bucket,
+                currentCount: current.length,
+                pastCount: past.length,
+                onChanged: (b) => setState(() => _bucket = b),
+              ),
+              const SizedBox(height: 16),
+              if (visible.isEmpty)
+                _empty(_bucket == EventTimingBucket.currentUpcoming
+                    ? 'Pas d\'événement à venir.'
+                    : 'Pas d\'événement passé.')
+              else
+                ...visible.map((e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _OrganizerEventTile(event: e),
+                    )),
+              if (state.isLoadingMore)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: HbColors.brandPrimary,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         );
       },
     );

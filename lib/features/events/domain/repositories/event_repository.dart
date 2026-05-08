@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../entities/event.dart';
 import '../../data/models/event_dto.dart';
-import '../../data/models/event_availability_dto.dart';
 import '../../data/models/home_feed_response_dto.dart' show HomeFeedDataDto;
 
 import '../../../../domain/entities/city.dart';
@@ -16,13 +15,16 @@ abstract class EventRepository {
     String? categorySlug,
     String? thematique,
     String? city,
-    String? location, // event_loc taxonomy slug
+    String? location, // Mobile alias for city
     String? dateFrom,
     String? dateTo,
     double? priceMin,
     double? priceMax,
     bool? freeOnly,
     bool? familyFriendly,
+    bool? accessiblePmr,
+    bool? onlineOnly,
+    bool? inPersonOnly,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -34,6 +36,7 @@ abstract class EventRepository {
     double? southWestLat,
     double? southWestLng,
     bool? lightweight,
+    String? sort,
     String? orderBy,
     String? order,
     bool includePast = true,
@@ -44,8 +47,6 @@ abstract class EventRepository {
   Future<List<EventCategoryDto>> getCategories();
 
   Future<List<ThematiqueDto>> getThematiques();
-
-
 
   Future<HomeFeedDataDto> getHomeFeed({
     double? lat,

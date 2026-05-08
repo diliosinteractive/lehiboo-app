@@ -29,13 +29,16 @@ class EventsApiDataSource {
     String? categorySlug,
     String? thematique,
     String? city,
-    String? location, // event_loc taxonomy slug
+    String? location, // Mobile alias for city
     String? dateFrom,
     String? dateTo,
     double? priceMin,
     double? priceMax,
     bool? freeOnly,
     bool? familyFriendly,
+    bool? accessiblePmr,
+    bool? onlineOnly,
+    bool? inPersonOnly,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -47,6 +50,7 @@ class EventsApiDataSource {
     double? southWestLat,
     double? southWestLng,
     bool? lightweight,
+    String? sort,
     String? orderBy,
     String? order,
     bool includePast = true, // Include past events (preprod has incomplete date data)
@@ -61,14 +65,19 @@ class EventsApiDataSource {
     if (categoryId != null) queryParams['category'] = categoryId;
     if (categorySlug != null) queryParams['category'] = categorySlug;
     if (thematique != null) queryParams['thematique'] = thematique;
-    if (city != null) queryParams['city'] = city;
-    if (location != null) queryParams['location'] = location;
+    if (lat == null || lng == null) {
+      final cityAlias = location ?? city;
+      if (cityAlias != null) queryParams['location'] = cityAlias;
+    }
     if (dateFrom != null) queryParams['date_from'] = dateFrom;
     if (dateTo != null) queryParams['date_to'] = dateTo;
     if (priceMin != null) queryParams['price_min'] = priceMin;
     if (priceMax != null) queryParams['price_max'] = priceMax;
-    if (freeOnly == true) queryParams['free_only'] = true;
-    if (familyFriendly == true) queryParams['family_friendly'] = true;
+    if (freeOnly == true) queryParams['free_only'] = 1;
+    if (familyFriendly == true) queryParams['family_friendly'] = 1;
+    if (accessiblePmr == true) queryParams['accessible_pmr'] = 1;
+    if (onlineOnly == true) queryParams['online'] = 1;
+    if (inPersonOnly == true) queryParams['in_person'] = 1;
     if (indoor == true) queryParams['indoor'] = true;
     if (outdoor == true) queryParams['outdoor'] = true;
     if (ageMin != null) queryParams['age_min'] = ageMin;
@@ -77,18 +86,22 @@ class EventsApiDataSource {
       queryParams['lng'] = lng;
       if (radius != null) queryParams['radius'] = radius;
     }
-    
-    if (northEastLat != null && northEastLng != null && southWestLat != null && southWestLng != null) {
+
+    if (northEastLat != null &&
+        northEastLng != null &&
+        southWestLat != null &&
+        southWestLng != null) {
       queryParams['north_east_lat'] = northEastLat;
       queryParams['north_east_lng'] = northEastLng;
       queryParams['south_west_lat'] = southWestLat;
       queryParams['south_west_lng'] = southWestLng;
     }
-    
+
     if (lightweight == true) queryParams['lightweight'] = true;
 
-    if (orderBy != null) queryParams['orderby'] = orderBy;
-    if (order != null) queryParams['order'] = order;
+    if (sort != null && sort.isNotEmpty) queryParams['sort'] = sort;
+    if (orderBy != null) queryParams['sort_by'] = orderBy;
+    if (order != null) queryParams['sort_order'] = order;
 
     debugPrint('=== EventsApiDataSource.getEvents ===');
     debugPrint('Query params: $queryParams');
