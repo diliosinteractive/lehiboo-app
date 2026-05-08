@@ -52,6 +52,7 @@ import 'features/messages/presentation/providers/messages_realtime_provider.dart
 // Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
 import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
 import 'features/gamification/application/hibons_service.dart';
+import 'features/gamification/application/hibons_auth_sync.dart';
 import 'features/gamification/presentation/widgets/hibons_animation_coordinator.dart';
 
 // Vendor check-in (rehydrate active org + clear on logout)
@@ -235,6 +236,11 @@ class LeHibooApp extends ConsumerWidget {
     // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après
     // 3 min en foreground si l'user est authentifié.
     ref.watch(sessionHeartbeatProvider);
+
+    // Invalide les providers wallet/balance affichés sur la home dès qu'un
+    // login/logout survient — sinon HibonCounterWidget garde la valeur
+    // cachée du compte précédent.
+    ref.watch(hibonsAuthSyncProvider);
 
     // Vendor check-in: keep the active-org notifier alive for the whole app
     // session so it can rehydrate from secure storage on launch and clear

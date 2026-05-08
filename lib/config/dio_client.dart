@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../core/constants/app_constants.dart';
+import '../core/network/json_resilience.dart';
 import '../features/checkin/presentation/providers/active_organization_provider.dart';
 import '../features/gamification/data/interceptors/hibons_update_interceptor.dart';
 import 'env_config.dart';
@@ -46,6 +47,11 @@ class DioClient {
       ),
     );
 
+    // Décodeur JSON instrumenté : capture le contexte autour de l'offset
+    // fautif pour diagnostiquer les payloads malformés (ex: bug intermittent
+    // "Unexpected character at offset N" sur /events).
+    _dio.transformer = DiagnosticJsonTransformer();
+
     // Add Security Header (.htpasswd) if configured
     if (EnvConfig.htPassword.isNotEmpty) {
       final String username = EnvConfig.htUsername;
@@ -59,6 +65,9 @@ class DioClient {
       JwtAuthInterceptor(SharedSecureStorage.instance),
       OrganizationHeaderInterceptor(),
       HibonsUpdateInterceptor(),
+      // Retente une fois les GET qui échouent avec FormatException — absorbe
+      // l'intermittence du payload corrompu en attendant le fix backend.
+      JsonRetryInterceptor(_dio),
       if (kDebugMode)
         PrettyDioLogger(
           // Concise mode: only show method + URL + status + timing.

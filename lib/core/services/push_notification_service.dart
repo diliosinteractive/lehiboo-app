@@ -1,21 +1,29 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 import 'deep_link_service.dart';
 
-/// Background message handler - must be top-level function
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('Handling a background message: ${message.messageId}');
-  // Note: You cannot access providers here as this runs in a separate isolate
+// Cold-start state captured by the click listener registered in main.dart
+// before runApp(). The DeepLinkService isn't built yet at that point, so we
+// stash the payload and replay it from initialize().
+Map<String, dynamic>? _pendingClickData;
+bool _pendingClickConsumed = false;
+
+/// Click listener registered in `main.dart` BEFORE `runApp()` so the cold-start
+/// payload (app launched by tapping a notification) is not lost.
+void oneSignalColdStartClickListener(OSNotificationClickEvent event) {
+  if (_pendingClickConsumed) return;
+  final raw = event.notification.additionalData;
+  if (raw == null) return;
+  _pendingClickData = Map<String, dynamic>.from(raw);
+  debugPrint(
+      'OneSignal: cold-start click stashed (type=${_pendingClickData?['type']})');
 }
 
-/// Provides the PushNotificationService
 final pushNotificationServiceProvider =
     Provider<PushNotificationService>((ref) {
   return PushNotificationService(
@@ -23,45 +31,38 @@ final pushNotificationServiceProvider =
   );
 });
 
-/// Push Notification Service
+/// Push Notification Service backed by OneSignal.
 ///
-/// Handles Firebase Cloud Messaging (FCM) setup and notifications.
-/// - Requests permissions
-/// - Gets and refreshes FCM tokens
-/// - Handles foreground/background notifications
-/// - Delegates navigation to DeepLinkService
+/// Replaces the previous Firebase Cloud Messaging implementation. Notification
+/// routing is delegated to [DeepLinkService] which keeps the
+/// `data.type → mobile-route` table.
 class PushNotificationService {
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications =
-      FlutterLocalNotificationsPlugin();
   final DeepLinkService _deepLinkService;
 
-  String? _fcmToken;
+  String? _subscriptionId;
   bool _initialized = false;
   bool _permissionDenied = false;
 
-  /// Callback to register token with backend API
-  Future<void> Function(String token)? onTokenReceived;
+  /// Fired whenever a (new) push subscription id is available, so the provider
+  /// can sync it with the backend.
+  Future<void> Function(String subscriptionId)? onSubscriptionReceived;
 
-  /// Callback to unregister token with backend API
-  Future<void> Function(String token)? onTokenRemoved;
+  /// Fired when the local subscription is dropped (logout).
+  Future<void> Function(String subscriptionId)? onSubscriptionRemoved;
 
-  PushNotificationService({
-    required DeepLinkService deepLinkService,
-  }) : _deepLinkService = deepLinkService;
+  PushNotificationService({required DeepLinkService deepLinkService})
+      : _deepLinkService = deepLinkService;
 
-  /// Current FCM token
-  String? get fcmToken => _fcmToken;
+  /// Current OneSignal push subscription id (UUID). Analogous to the legacy
+  /// FCM token — opaque, used by the backend as the device handle.
+  String? get subscriptionId => _subscriptionId;
 
-  /// Whether the service is initialized
   bool get isInitialized => _initialized;
 
-  /// Whether the OS-level notification permission was denied.
   bool get permissionDenied => _permissionDenied;
 
-  /// Initialize push notifications
-  ///
-  /// Call this after user login and Firebase initialization.
+  /// Wires OneSignal listeners and resolves the current subscription id.
+  /// Idempotent.
   Future<void> initialize() async {
     if (_initialized) {
       debugPrint('PushNotificationService already initialized');
@@ -69,43 +70,46 @@ class PushNotificationService {
     }
 
     try {
-      // Set up background message handler
-      FirebaseMessaging.onBackgroundMessage(
-          _firebaseMessagingBackgroundHandler);
-
-      // Request permissions
-      final settings = await _requestPermissions();
-      if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        _permissionDenied = true;
-        debugPrint('Push notifications denied by user');
-        return;
-      }
-      _permissionDenied = false;
-
-      // Initialize local notifications for foreground
-      await _initializeLocalNotifications();
-
-      // Get FCM token
-      await ensureFcmToken();
-
-      // Listen for token refresh
-      _messaging.onTokenRefresh.listen((newToken) async {
-        debugPrint('FCM Token refreshed');
-        _fcmToken = newToken;
-        await onTokenReceived?.call(newToken);
+      OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+        debugPrint(
+            'OneSignal: foreground notification ${event.notification.notificationId}');
+        // Match the previous behaviour: surface the OS notification even when
+        // the app is foregrounded. Without this OneSignal silently drops it.
+        event.preventDefault();
+        event.notification.display();
       });
 
-      // Handle foreground messages
-      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+      OneSignal.Notifications.addClickListener(_handleClick);
 
-      // Handle notification tap when app is in background/terminated
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+      OneSignal.Notifications.addPermissionObserver((permission) async {
+        debugPrint('OneSignal: permission changed → $permission');
+        _permissionDenied = !permission;
+        if (permission) {
+          await ensureSubscriptionId();
+          final id = _subscriptionId;
+          if (id != null) await onSubscriptionReceived?.call(id);
+        }
+      });
 
-      // Check if app was opened from a notification
-      final initialMessage = await _messaging.getInitialMessage();
-      if (initialMessage != null) {
-        _handleNotificationTap(initialMessage);
+      OneSignal.User.pushSubscription.addObserver((state) async {
+        final id = state.current.id;
+        if (id == null || id.isEmpty) return;
+        if (id == _subscriptionId) return;
+        debugPrint('OneSignal: subscription id refreshed');
+        _subscriptionId = id;
+        await onSubscriptionReceived?.call(id);
+      });
+
+      // Request permission. Returns true when granted.
+      final granted = await OneSignal.Notifications.requestPermission(true);
+      _permissionDenied = !granted;
+      if (!granted) {
+        debugPrint('OneSignal: permission denied at initialize()');
       }
+
+      await ensureSubscriptionId();
+
+      _replayPendingClick();
 
       _initialized = true;
       debugPrint('PushNotificationService initialized successfully');
@@ -114,240 +118,87 @@ class PushNotificationService {
     }
   }
 
-  /// Ensure the current FCM token exists.
-  ///
-  /// iOS can need a short delay after permission before Firebase exposes an
-  /// APNs-backed FCM token. Retrying here avoids permanently initializing with
-  /// a null token on first launch.
-  Future<String?> ensureFcmToken() async {
-    if (_fcmToken == null) {
-      if (Platform.isIOS) {
-        await _waitForApnsToken();
-      }
-      _fcmToken = await _messaging.getToken();
+  /// Bind this device to a backend user uuid. Idempotent — safe to call on
+  /// every app start when an authenticated session is present.
+  Future<void> bindUser(String userUuid) async {
+    try {
+      await OneSignal.login(userUuid);
+      debugPrint('OneSignal.login($userUuid)');
+    } catch (e) {
+      debugPrint('OneSignal.login failed: $e');
     }
-
-    if (_fcmToken != null) {
-      debugPrint('FCM Token: ${_fcmToken!.substring(0, 20)}...');
-    }
-
-    return _fcmToken;
   }
 
-  Future<void> _waitForApnsToken() async {
-    for (var attempt = 0; attempt < 5; attempt++) {
-      final apnsToken = await _messaging.getAPNSToken();
-      if (apnsToken != null) return;
+  /// Detach the current external user id. Called on logout, AFTER the
+  /// backend DELETE /auth/device-tokens has happened so the bearer is still
+  /// valid for that call.
+  Future<void> unbindUser() async {
+    try {
+      await OneSignal.logout();
+      debugPrint('OneSignal.logout');
+    } catch (e) {
+      debugPrint('OneSignal.logout failed: $e');
+    }
+  }
+
+  /// Resolve and cache the current OneSignal push subscription id.
+  ///
+  /// On a fresh install / iOS-with-deferred-APNs the id can be null for a
+  /// short while after init. Polls a few times before giving up — the
+  /// subscription observer will pick the value up later anyway.
+  Future<String?> ensureSubscriptionId() async {
+    var id = OneSignal.User.pushSubscription.id;
+    for (var attempt = 0;
+        attempt < 5 && (id == null || id.isEmpty);
+        attempt++) {
       await Future<void>.delayed(const Duration(milliseconds: 500));
+      id = OneSignal.User.pushSubscription.id;
     }
-  }
-
-  /// Request notification permissions
-  Future<NotificationSettings> _requestPermissions() async {
-    return await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-      announcement: false,
-      carPlay: false,
-      criticalAlert: false,
-    );
-  }
-
-  /// Initialize local notifications for foreground display
-  Future<void> _initializeLocalNotifications() async {
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-
-    await _localNotifications.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
-
-    // Create notification channels for Android
-    if (Platform.isAndroid) {
-      await _createNotificationChannels();
+    if (id != null && id.isNotEmpty) {
+      _subscriptionId = id;
+      final preview = id.length >= 8 ? id.substring(0, 8) : id;
+      debugPrint('OneSignal subscription id: $preview...');
     }
+    return _subscriptionId;
   }
 
-  /// Create Android notification channels
-  Future<void> _createNotificationChannels() async {
-    final androidPlugin =
-        _localNotifications.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-
-    if (androidPlugin == null) return;
-
-    // Channel set per spec PUSH_NOTIFICATIONS_MOBILE_SPEC.md §5.1.1.
-    // Live channels (have at least one notification class targeting them):
-    const liveChannels = <AndroidNotificationChannel>[
-      AndroidNotificationChannel(
-        'bookings',
-        'Réservations',
-        description: 'Notifications de réservation',
-        importance: Importance.high,
-      ),
-      AndroidNotificationChannel(
-        'alerts',
-        'Alertes & nouveautés',
-        description:
-            'Recherches sauvegardées et nouveautés des organisateurs suivis',
-        importance: Importance.high,
-      ),
-      AndroidNotificationChannel(
-        'messages',
-        'Messages',
-        description: 'Nouveaux messages dans vos conversations',
-        importance: Importance.high,
-      ),
-      AndroidNotificationChannel(
-        'organizations',
-        'Organisations',
-        description: 'Invitations et appartenances aux organisations',
-        importance: Importance.defaultImportance,
-      ),
-      AndroidNotificationChannel(
-        'general',
-        'Notifications générales',
-        description: 'Avis, questions, rappels et autres notifications',
-        importance: Importance.defaultImportance,
-      ),
-    ];
-    // Reserved channels — backend has the factories but no notification
-    // class wires them today (spec §6 "Defined PushPayload factories with
-    // no current consumer"). Pre-created so the OS uses the right defaults
-    // the moment they go live, without needing an app update.
-    const reservedChannels = <AndroidNotificationChannel>[
-      AndroidNotificationChannel(
-        'check_ins',
-        'Check-in',
-        description: 'Notifications de check-in (à venir)',
-        importance: Importance.high,
-      ),
-      AndroidNotificationChannel(
-        'reminders',
-        'Rappels',
-        description: 'Rappels d\'événements (à venir)',
-        importance: Importance.high,
-      ),
-      AndroidNotificationChannel(
-        'collaborations',
-        'Collaborations',
-        description: 'Invitations de collaboration (à venir)',
-        importance: Importance.defaultImportance,
-      ),
-    ];
-
-    for (final channel in [...liveChannels, ...reservedChannels]) {
-      await androidPlugin.createNotificationChannel(channel);
-    }
-  }
-
-  /// Handle foreground messages
-  void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('Foreground message received: ${message.messageId}');
-
-    final notification = message.notification;
-    if (notification != null) {
-      // FCM puts the channel id in `notification.android.channelId`. Some
-      // payloads also stash it in the data block; read both.
-      final channelId = notification.android?.channelId ??
-          (message.data['channel_id'] as String?) ??
-          'general';
-      _showLocalNotification(
-        title: notification.title ?? 'Le Hiboo',
-        body: notification.body ?? '',
-        payload: jsonEncode(message.data),
-        channelId: channelId,
-      );
-    }
-  }
-
-  /// Show a local notification
-  Future<void> _showLocalNotification({
-    required String title,
-    required String body,
-    String? payload,
-    String channelId = 'general',
-  }) async {
-    await _localNotifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title,
-      body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          channelId,
-          channelId,
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: payload,
-    );
-  }
-
-  /// Handle notification tap (from background/terminated state)
-  void _handleNotificationTap(RemoteMessage message) {
-    debugPrint('Notification tapped: ${message.data}');
-    _navigateFromData(message.data);
-  }
-
-  /// Handle local notification tap
-  void _onNotificationTapped(NotificationResponse response) {
-    debugPrint('Local notification tapped: ${response.payload}');
-    if (response.payload != null) {
-      // Parse the payload string back to a map
-      // This is a simplified version - in production, use proper serialization
-      _deepLinkService.navigateToNotification(response.payload!);
-    }
-  }
-
-  /// Navigate based on notification data.
-  ///
-  /// Per spec PUSH_NOTIFICATIONS_MOBILE_SPEC.md §5.2, mobile MUST route on
-  /// `data.type` and never on `data.action` (which is a web URL). The
-  /// type → mobile-route table lives in `DeepLinkService.routeForType`.
-  void _navigateFromData(Map<String, dynamic> data) {
-    _deepLinkService.navigateFromType(data);
-  }
-
-  /// Unregister push notifications
-  ///
-  /// Call this on user logout to stop receiving notifications.
+  /// Stop tracking the current subscription. The backend DELETE is owned by
+  /// the auth provider (via DeviceTokenDataSource.unregisterAllTokens),
+  /// while OneSignal.logout() is invoked by [unbindUser].
   Future<void> unregister() async {
-    if (_fcmToken != null) {
-      await onTokenRemoved?.call(_fcmToken!);
-    }
-
-    // Delete the FCM token
-    await _messaging.deleteToken();
-    _fcmToken = null;
+    final previousId = _subscriptionId;
+    _subscriptionId = null;
     _initialized = false;
-
+    if (previousId != null) {
+      await onSubscriptionRemoved?.call(previousId);
+    }
     debugPrint('PushNotificationService unregistered');
   }
 
-  /// Get unique device identifier
-  ///
-  /// Used to identify the device when registering the FCM token.
+  void _handleClick(OSNotificationClickEvent event) {
+    final raw = event.notification.additionalData;
+    if (raw == null) {
+      debugPrint('OneSignal click: empty additionalData');
+      _deepLinkService.navigate('/notifications');
+      return;
+    }
+    final data = Map<String, dynamic>.from(raw);
+    debugPrint('OneSignal click: type=${data['type']}');
+    _deepLinkService.navigateFromType(data);
+  }
+
+  void _replayPendingClick() {
+    if (_pendingClickConsumed) return;
+    _pendingClickConsumed = true;
+    final pending = _pendingClickData;
+    _pendingClickData = null;
+    if (pending == null) return;
+    debugPrint('OneSignal: replaying cold-start click (type=${pending['type']})');
+    _deepLinkService.navigateFromType(pending);
+  }
+
   Future<String> getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
-
     if (Platform.isAndroid) {
       final android = await deviceInfo.androidInfo;
       return android.id;
@@ -355,14 +206,11 @@ class PushNotificationService {
       final ios = await deviceInfo.iosInfo;
       return ios.identifierForVendor ?? 'unknown';
     }
-
     return 'unknown';
   }
 
-  /// Get device name for display
   Future<String> getDeviceName() async {
     final deviceInfo = DeviceInfoPlugin();
-
     if (Platform.isAndroid) {
       final android = await deviceInfo.androidInfo;
       return '${android.manufacturer} ${android.model}';
@@ -370,11 +218,9 @@ class PushNotificationService {
       final ios = await deviceInfo.iosInfo;
       return ios.utsname.machine;
     }
-
     return 'Unknown Device';
   }
 
-  /// Get the current platform string
   String getPlatform() {
     if (Platform.isAndroid) return 'android';
     if (Platform.isIOS) return 'ios';
