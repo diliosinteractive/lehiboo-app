@@ -28,8 +28,21 @@ class CartSummarySection extends StatelessWidget {
     if (slot == null) return '';
     final date =
         '${slot.date.day.toString().padLeft(2, '0')}/${slot.date.month.toString().padLeft(2, '0')}/${slot.date.year}';
-    final start = slot.startTime ?? '';
+    final start = _formatTime(slot.startTime);
     return start.isEmpty ? date : '$date · $start';
+  }
+
+  String _formatTime(String? raw) {
+    final value = raw?.trim() ?? '';
+    if (value.isEmpty) return '';
+
+    final match =
+        RegExp(r'(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?').firstMatch(value);
+    if (match == null) return value;
+
+    final hour = match.group(1)!.padLeft(2, '0');
+    final minute = match.group(2)!;
+    return '$hour:$minute';
   }
 
   @override
@@ -288,8 +301,7 @@ class _CartLineRow extends StatelessWidget {
                     icon: Icons.remove,
                     onTap: item.quantity <= 1
                         ? null
-                        : () =>
-                            onUpdateQuantity!(item.id, item.quantity - 1),
+                        : () => onUpdateQuantity!(item.id, item.quantity - 1),
                   ),
                   Container(
                     constraints: const BoxConstraints(minWidth: 24),
@@ -306,8 +318,7 @@ class _CartLineRow extends StatelessWidget {
                   ),
                   _IconStepperButton(
                     icon: Icons.add,
-                    onTap: () =>
-                        onUpdateQuantity!(item.id, item.quantity + 1),
+                    onTap: () => onUpdateQuantity!(item.id, item.quantity + 1),
                   ),
                 ],
                 const Spacer(),

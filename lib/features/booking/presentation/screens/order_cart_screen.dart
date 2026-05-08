@@ -1074,8 +1074,21 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
     return [
       '${slot.date.day.toString().padLeft(2, '0')}/${slot.date.month.toString().padLeft(2, '0')}/${slot.date.year}',
-      slot.startTime,
+      _formatTime(slot.startTime),
     ].whereType<String>().where((value) => value.isNotEmpty).join(' · ');
+  }
+
+  String _formatTime(String? raw) {
+    final value = raw?.trim() ?? '';
+    if (value.isEmpty) return '';
+
+    final match =
+        RegExp(r'(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?').firstMatch(value);
+    if (match == null) return value;
+
+    final hour = match.group(1)!.padLeft(2, '0');
+    final minute = match.group(2)!;
+    return '$hour:$minute';
   }
 
   String _formatPrice(double price) {
