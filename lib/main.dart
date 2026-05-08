@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'firebase_options.dart';
 import 'core/themes/app_theme.dart';
+import 'core/services/push_notification_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'routes/app_router.dart';
 import 'config/dio_client.dart';
@@ -86,7 +88,8 @@ void main() async {
   // Initialize Dio client
   DioClient.initialize();
 
-  // Initialize Firebase
+  // Initialize Firebase (kept for analytics — push notifications are now
+  // handled by OneSignal below).
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -94,6 +97,23 @@ void main() async {
     debugPrint('Firebase initialized successfully');
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
+  }
+
+  // Initialize OneSignal BEFORE runApp() so the click listener is registered
+  // in time to capture cold-start payloads (app launched from a notification
+  // tap). The listener stashes the payload; PushNotificationService.initialize()
+  // replays it once the DeepLinkService is built.
+  final oneSignalAppId = EnvConfig.oneSignalAppId;
+  if (oneSignalAppId.isNotEmpty) {
+    try {
+      OneSignal.initialize(oneSignalAppId);
+      OneSignal.Notifications.addClickListener(oneSignalColdStartClickListener);
+      debugPrint('OneSignal initialized');
+    } catch (e) {
+      debugPrint('OneSignal initialization failed: $e');
+    }
+  } else {
+    debugPrint('Warning: ONESIGNAL_APP_ID not configured');
   }
 
   // Initialize Stripe
