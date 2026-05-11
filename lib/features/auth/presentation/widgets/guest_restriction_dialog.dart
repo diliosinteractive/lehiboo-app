@@ -202,6 +202,7 @@ class _GuestRestrictionDialogState
                       _buildEmailField(),
                       const SizedBox(height: 12),
                       _buildPasswordField(),
+                      _buildForgotPasswordLink(),
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 12),
                         _buildError(_errorMessage!),
@@ -411,6 +412,35 @@ class _GuestRestrictionDialogState
               ),
       ),
     ).animate().fadeIn(delay: 300.ms, duration: 400.ms).moveY(begin: 20, end: 0);
+  }
+
+  Widget _buildForgotPasswordLink() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: TextButton(
+        onPressed: _isSubmitting ? null : _onForgotPasswordTap,
+        style: TextButton.styleFrom(
+          foregroundColor: const Color(0xFFFF601F),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: const Text(
+          'Mot de passe oublié ?',
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
+  void _onForgotPasswordTap() {
+    if (_isSubmitting || _didPop) return;
+    final email = _emailController.text.trim();
+    final uri = email.isEmpty
+        ? '/forgot-password'
+        : '/forgot-password?email=${Uri.encodeComponent(email)}';
+    _safePop(false);
+    context.push(uri);
   }
 
   Widget _buildSecondaryActions() {

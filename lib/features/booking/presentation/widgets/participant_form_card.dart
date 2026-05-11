@@ -73,7 +73,8 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
   @override
   void initState() {
     super.initState();
-    _initFromInitial(widget.initialValue);
+    _initControllers(widget.initialValue);
+    _prefillSource = _resolvePrefillSource(widget.initialValue);
     _expanded = widget.initiallyExpanded || !widget.initialValue.isComplete;
     _saveForLater = widget.initialValue.saveForLater;
   }
@@ -84,21 +85,31 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
     // Parent-driven prefill (e.g. "Remplir tous avec mon profil") replaces
     // the initialValue. Sync the controllers if the data actually changed.
     if (oldWidget.initialValue != widget.initialValue) {
-      _initFromInitial(widget.initialValue);
-      setState(() {
-        _saveForLater = widget.initialValue.saveForLater;
-      });
+      _syncFieldsFromInitial(widget.initialValue);
+      _prefillSource = _resolvePrefillSource(widget.initialValue);
+      _saveForLater = widget.initialValue.saveForLater;
+    } else if ((oldWidget.savedParticipants != widget.savedParticipants ||
+            oldWidget.buyerInfo != widget.buyerInfo) &&
+        !_isPrefillSourceAvailable(_prefillSource)) {
+      _prefillSource = _resolvePrefillSource(widget.initialValue);
     }
   }
 
-  void _initFromInitial(ParticipantInfo info) {
-    _firstNameCtrl = TextEditingController(text: info.firstName ?? '');
-    _lastNameCtrl = TextEditingController(text: info.lastName ?? '');
-    _emailCtrl = TextEditingController(text: info.email ?? '');
-    _phoneCtrl = TextEditingController(text: info.phone ?? '');
-    _cityCtrl = TextEditingController(
-      text: info.membershipCity ?? info.city ?? '',
-    );
+  void _initControllers(ParticipantInfo info) {
+    _firstNameCtrl = TextEditingController();
+    _lastNameCtrl = TextEditingController();
+    _emailCtrl = TextEditingController();
+    _phoneCtrl = TextEditingController();
+    _cityCtrl = TextEditingController();
+    _syncFieldsFromInitial(info);
+  }
+
+  void _syncFieldsFromInitial(ParticipantInfo info) {
+    _firstNameCtrl.text = info.firstName ?? '';
+    _lastNameCtrl.text = info.lastName ?? '';
+    _emailCtrl.text = info.email ?? '';
+    _phoneCtrl.text = info.phone ?? '';
+    _cityCtrl.text = info.membershipCity ?? info.city ?? '';
     _birthDate = info.birthDate;
     _relationship = info.relationship;
   }
@@ -133,27 +144,92 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
     ));
   }
 
-  void _applyPrefill(String source) {
-    setState(() {
-      _prefillSource = source;
-    });
+  String _resolvePrefillSource(ParticipantInfo info) {
+    if (info.isBlank) return 'manual';
 
+    for (final participant in widget.savedParticipants) {
+      if (_matchesSavedParticipant(info, participant)) {
+        return participant.uuid;
+      }
+    }
+
+    if (_matchesBuyerInfo(info, widget.buyerInfo)) {
+      return 'self';
+    }
+
+    return 'manual';
+  }
+
+  bool _isPrefillSourceAvailable(String source) {
+    if (source == 'manual') return true;
+    if (source == 'self') return widget.buyerInfo != null;
+    return widget.savedParticipants.any((p) => p.uuid == source);
+  }
+
+  bool _matchesSavedParticipant(ParticipantInfo info, SavedParticipant saved) {
+    return _sameText(info.firstName, saved.firstName) &&
+        _sameText(info.lastName, saved.lastName) &&
+        _sameText(info.email, saved.email) &&
+        _sameText(info.phone, saved.phone) &&
+        _sameText(info.birthDate, saved.birthDate) &&
+        _sameText(_participantCity(info), saved.membershipCity) &&
+        _sameRelationship(info.relationship, saved.relationship);
+  }
+
+  bool _matchesBuyerInfo(ParticipantInfo info, BuyerInfo? buyer) {
+    if (buyer == null) return false;
+    return _sameText(info.firstName, buyer.firstName) &&
+        _sameText(info.lastName, buyer.lastName) &&
+        _sameText(info.email, buyer.email) &&
+        _sameText(info.phone, buyer.phone) &&
+        _sameText(info.birthDate, buyer.birthDate) &&
+        _sameText(_participantCity(info), buyer.town) &&
+        _normalize(info.relationship) == 'self';
+  }
+
+  String _participantCity(ParticipantInfo info) {
+    final membershipCity = _normalize(info.membershipCity);
+    return membershipCity.isNotEmpty ? membershipCity : _normalize(info.city);
+  }
+
+  bool _sameText(String? left, String? right) {
+    return _normalize(left) == _normalize(right);
+  }
+
+  bool _sameRelationship(String? infoRelationship, String? sourceRelationship) {
+    final info = _normalize(infoRelationship);
+    final source = _normalize(sourceRelationship);
+    if (source.isEmpty) {
+      return info.isEmpty || info == 'other';
+    }
+    return info == source;
+  }
+
+  String _normalize(String? value) => value?.trim() ?? '';
+
+  void _applyPrefill(String source) {
     if (source == 'manual') {
       // Don't wipe the user's input — manual just means "ne pas pré-remplir".
+      setState(() {
+        _prefillSource = source;
+      });
       _emitChange();
       return;
     }
 
     if (source == 'self' && widget.buyerInfo != null) {
       final buyer = widget.buyerInfo!;
-      _firstNameCtrl.text = buyer.firstName ?? '';
-      _lastNameCtrl.text = buyer.lastName ?? '';
-      _emailCtrl.text = buyer.email ?? '';
-      _phoneCtrl.text = buyer.phone ?? '';
-      _cityCtrl.text = buyer.town ?? '';
-      _birthDate = buyer.birthDate;
-      _relationship = 'self';
-      _saveForLater = false;
+      setState(() {
+        _prefillSource = source;
+        _firstNameCtrl.text = buyer.firstName ?? '';
+        _lastNameCtrl.text = buyer.lastName ?? '';
+        _emailCtrl.text = buyer.email ?? '';
+        _phoneCtrl.text = buyer.phone ?? '';
+        _cityCtrl.text = buyer.town ?? '';
+        _birthDate = buyer.birthDate;
+        _relationship = 'self';
+        _saveForLater = false;
+      });
       _emitChange();
       return;
     }
@@ -163,14 +239,17 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
         .cast<SavedParticipant?>()
         .firstWhere((_) => true, orElse: () => null);
     if (saved != null) {
-      _firstNameCtrl.text = saved.firstName;
-      _lastNameCtrl.text = saved.lastName;
-      _emailCtrl.text = saved.email ?? '';
-      _phoneCtrl.text = saved.phone ?? '';
-      _cityCtrl.text = saved.membershipCity ?? '';
-      _birthDate = saved.birthDate;
-      _relationship = saved.relationship ?? 'other';
-      _saveForLater = false;
+      setState(() {
+        _prefillSource = source;
+        _firstNameCtrl.text = saved.firstName;
+        _lastNameCtrl.text = saved.lastName;
+        _emailCtrl.text = saved.email ?? '';
+        _phoneCtrl.text = saved.phone ?? '';
+        _cityCtrl.text = saved.membershipCity ?? '';
+        _birthDate = saved.birthDate;
+        _relationship = saved.relationship ?? 'other';
+        _saveForLater = false;
+      });
       _emitChange();
     }
   }
@@ -332,6 +411,7 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
+          key: ValueKey('prefill-$_prefillSource'),
           initialValue: _prefillSource,
           decoration: _inputDecoration('Pre-remplir ce billet').copyWith(
             // The compact (isDense) decoration clips the floating label.
@@ -410,6 +490,7 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
               SizedBox(
                 width: constraints.maxWidth,
                 child: DropdownButtonFormField<String>(
+                  key: ValueKey('relationship-${_relationship ?? ''}'),
                   initialValue:
                       (_relationship != null && _relationship!.isNotEmpty)
                           ? _relationship

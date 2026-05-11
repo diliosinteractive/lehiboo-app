@@ -70,7 +70,7 @@ class BookingConfirmationScreen extends ConsumerWidget {
             child: HbButton.secondary(
                   label: 'Retour à l\'accueil',
               onTap: () {
-                ref.invalidate(eventDetailProvider(activity.id));
+                ref.invalidate(eventDetailControllerProvider(activity.id));
                 ref.invalidate(eventAvailabilityProvider(activity.id));
                 ref.invalidate(similarEventsProvider(activity.id));
                 ref.invalidate(homeFeedProvider);

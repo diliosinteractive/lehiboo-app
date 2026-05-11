@@ -25,6 +25,7 @@ import 'package:lehiboo/features/booking/presentation/providers/order_cart_provi
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/features/blog/presentation/providers/blog_providers.dart';
 
 // New components
 import '../widgets/contextual_hero.dart';
@@ -85,6 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ]);
     ref.invalidate(alertsProvider);
     ref.invalidate(viewedStoriesProvider);
+    ref.invalidate(latestBlogPostsProvider);
     // `personalizedFeedProvider` is a FutureProvider (not an
     // AsyncNotifierProvider), so refresh via invalidate to actually
     // re-trigger the fetch on pull-to-refresh.
@@ -238,12 +240,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             //   child: NativeAdSection(),
             // ),
 
-            // 13. Section Web/Retrouvez-nous (CTA)
-            SliverToBoxAdapter(
-              child: _buildWebCTASection(),
-            ),
+            // 13. Section Web/Retrouvez-nous (CTA) — temporarily hidden
+            // SliverToBoxAdapter(
+            //   child: _buildWebCTASection(),
+            // ),
 
             // 14. Section Villes populaires
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(
               child: _buildTopCitiesSection(),
             ),
@@ -269,12 +272,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final avatarUrl = user?.avatarUrl;
 
     return AppBar(
-      backgroundColor: Color.lerp(
-        Colors.transparent,
-        HbColors.brandPrimary,
-        opacity,
-      ),
+      backgroundColor: HbColors.brandPrimary.withValues(alpha: opacity),
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       centerTitle: false,
       toolbarHeight: 60,
       title: Row(
@@ -287,7 +288,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) => const Text(
               'Le Hiboo',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(width: 10),
@@ -330,7 +332,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ref: ref,
                   featureName: 'voir vos messages',
                 );
-                if (allowed && mounted) {
+                if (allowed && context.mounted) {
                   context.push('/messages');
                 }
               },
@@ -512,6 +514,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildWebCTASection() {
     return Container(
       margin: const EdgeInsets.all(20),

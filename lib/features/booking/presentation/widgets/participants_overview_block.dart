@@ -136,14 +136,17 @@ class ParticipantsOverviewBlock extends StatelessWidget {
           if (hasUser)
             OutlinedButton.icon(
               onPressed: onFillFromProfile,
-              icon: const Icon(Icons.person_outline, size: 18),
-              label: const Text('Remplir tous les billets avec mon profil'),
+              icon: const Icon(Icons.person_outline, size: 16),
+              label: const Text(
+                'Remplir tous les billets avec mon profil',
+                style: TextStyle(fontSize: 13),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: HbColors.brandPrimary,
                 side: BorderSide(
                   color: HbColors.brandPrimary.withValues(alpha: 0.4),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -154,12 +157,15 @@ class ParticipantsOverviewBlock extends StatelessWidget {
           if (savedParticipants.isNotEmpty)
             OutlinedButton.icon(
               onPressed: onPickSavedParticipant,
-              icon: const Icon(Icons.group_outlined, size: 18),
-              label: const Text('Choisir un participant enregistre'),
+              icon: const Icon(Icons.group_outlined, size: 16),
+              label: const Text(
+                'Choisir un participant enregistre',
+                style: TextStyle(fontSize: 13),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: HbColors.textPrimary,
                 side: BorderSide(color: Colors.grey.shade300),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),

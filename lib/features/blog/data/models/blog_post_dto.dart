@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_annotation_target
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'blog_post_dto.freezed.dart';
@@ -11,7 +13,8 @@ class BlogPostDto with _$BlogPostDto {
     required String slug,
     String? excerpt,
     String? content,
-    @JsonKey(name: 'featured_image') BlogImageDto? featuredImage,
+    @JsonKey(name: 'featured_image', fromJson: _blogImageFromJson)
+    BlogImageDto? featuredImage,
     List<BlogCategoryDto>? categories,
     List<BlogTagDto>? tags,
     BlogAuthorDto? author,
@@ -65,8 +68,8 @@ class BlogTagDto with _$BlogTagDto {
 @freezed
 class BlogAuthorDto with _$BlogAuthorDto {
   const factory BlogAuthorDto({
-    required int id,
-    required String name,
+    int? id,
+    @Default('Le Hiboo') String name,
     String? avatar,
   }) = _BlogAuthorDto;
 
@@ -98,4 +101,18 @@ class BlogPaginationDto with _$BlogPaginationDto {
 
   factory BlogPaginationDto.fromJson(Map<String, dynamic> json) =>
       _$BlogPaginationDtoFromJson(json);
+}
+
+BlogImageDto? _blogImageFromJson(dynamic value) {
+  if (value is Map<String, dynamic>) {
+    return BlogImageDto.fromJson(value);
+  }
+
+  if (value is Map) {
+    return BlogImageDto.fromJson(Map<String, dynamic>.from(value));
+  }
+
+  // Backend currently emits [] for "no image"; the mobile contract documents
+  // this as null. Treat any non-object value as absent.
+  return null;
 }

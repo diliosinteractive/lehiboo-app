@@ -40,6 +40,7 @@ _$UserDtoImpl _$$UserDtoImplFromJson(Map<String, dynamic> json) =>
       newsletter: json['newsletter'] as bool? ?? false,
       pushNotificationsEnabled:
           json['push_notifications_enabled'] as bool? ?? false,
+      onesignalId: json['onesignal_id'] as String?,
       capabilities: json['capabilities'] == null
           ? null
           : UserCapabilitiesDto.fromJson(
@@ -65,6 +66,7 @@ Map<String, dynamic> _$$UserDtoImplToJson(_$UserDtoImpl instance) =>
       'is_verified': instance.isVerified,
       'newsletter': instance.newsletter,
       'push_notifications_enabled': instance.pushNotificationsEnabled,
+      'onesignal_id': instance.onesignalId,
       'capabilities': instance.capabilities,
     };
 

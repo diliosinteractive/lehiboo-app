@@ -23,6 +23,12 @@ class HbUser with _$HbUser {
     @Default(false) bool isVerified,
     @Default(false) bool newsletter,
     @Default(false) bool pushNotificationsEnabled,
+    /// OneSignal external user id assigned by the backend.
+    /// Used as `external_id` for `OneSignal.login()` and as `external_user_id`
+    /// in the `POST /auth/device-tokens` payload. Nullable: legacy users may
+    /// not have one yet — in that case we skip the OneSignal binding and the
+    /// device-token is registered without `external_user_id`.
+    String? onesignalId,
     @Default(UserCapabilities()) UserCapabilities capabilities,
     // Legacy fields for backwards compatibility
     List<String>? interestsCategoryIds,

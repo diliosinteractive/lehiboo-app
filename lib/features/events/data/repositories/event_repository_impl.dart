@@ -34,6 +34,9 @@ class EventRepositoryImpl implements EventRepository {
     double? priceMax,
     bool? freeOnly,
     bool? familyFriendly,
+    bool? accessiblePmr,
+    bool? onlineOnly,
+    bool? inPersonOnly,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -45,6 +48,7 @@ class EventRepositoryImpl implements EventRepository {
     double? southWestLat,
     double? southWestLng,
     bool? lightweight,
+    String? sort,
     String? orderBy,
     String? order,
     bool includePast = true,
@@ -64,6 +68,9 @@ class EventRepositoryImpl implements EventRepository {
       priceMax: priceMax,
       freeOnly: freeOnly,
       familyFriendly: familyFriendly,
+      accessiblePmr: accessiblePmr,
+      onlineOnly: onlineOnly,
+      inPersonOnly: inPersonOnly,
       indoor: indoor,
       outdoor: outdoor,
       ageMin: ageMin,
@@ -75,6 +82,7 @@ class EventRepositoryImpl implements EventRepository {
       southWestLat: southWestLat,
       southWestLng: southWestLng,
       lightweight: lightweight,
+      sort: sort,
       orderBy: orderBy,
       order: order,
       includePast: includePast,
@@ -108,8 +116,24 @@ class EventRepositoryImpl implements EventRepository {
     try {
       return EventMapper.toEvent(dto);
     } catch (e, stack) {
-      print('EventRepositoryImpl: Error mapping DTO to Event for $identifier: $e');
-      print(stack);
+      debugPrint(
+        'EventRepositoryImpl: Error mapping DTO to Event for $identifier: $e',
+      );
+      debugPrint('$stack');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Event> verifyEventPassword(String identifier, String password) async {
+    final dto = await _apiDataSource.verifyEventPassword(identifier, password);
+    try {
+      return EventMapper.toEvent(dto);
+    } catch (e, stack) {
+      debugPrint(
+        'EventRepositoryImpl: Error mapping unlocked DTO for $identifier: $e',
+      );
+      debugPrint('$stack');
       rethrow;
     }
   }
@@ -133,6 +157,7 @@ class EventRepositoryImpl implements EventRepository {
   Future<FiltersResponseDto> getFilters() async {
     return await _apiDataSource.getFilters();
   }
+
   @override
   Future<HomeFeedDataDto> getHomeFeed({
     double? lat,

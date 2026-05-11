@@ -17,7 +17,7 @@ class BlogApiDataSource {
   /// Get list of blog posts
   Future<BlogPostsResponseDto> getPosts({
     int page = 1,
-    int perPage = 3,
+    int perPage = 5,
     String? category,
   }) async {
     final queryParams = <String, dynamic>{
@@ -29,14 +29,38 @@ class BlogApiDataSource {
       queryParams['category'] = category;
     }
 
-    final response = await _dio.get('/posts', queryParameters: queryParams);
-    final payload = ApiResponseHandler.extractObject(response.data);
-    return BlogPostsResponseDto.fromJson(payload);
+    final response = await _dio.get(
+      '/posts',
+      queryParameters: queryParams,
+      options: Options(headers: {'Accept-Language': 'fr'}),
+    );
+    final postList = ApiResponseHandler.extractList(response.data)
+        .whereType<Map<String, dynamic>>()
+        .map(BlogPostDto.fromJson)
+        .toList(growable: false);
+    final meta = ApiResponseHandler.extractMeta(response.data);
+    final currentPage = meta?.currentPage ?? page;
+    final totalPages = meta?.lastPage ?? 1;
+
+    return BlogPostsResponseDto(
+      posts: postList,
+      pagination: BlogPaginationDto(
+        currentPage: currentPage,
+        perPage: meta?.perPage ?? perPage,
+        totalItems: meta?.total ?? postList.length,
+        totalPages: totalPages,
+        hasNext: currentPage < totalPages,
+        hasPrev: currentPage > 1,
+      ),
+    );
   }
 
   /// Get single blog post by ID
   Future<BlogPostDto> getPostById(int id) async {
-    final response = await _dio.get('/posts/$id');
+    final response = await _dio.get(
+      '/posts/$id',
+      options: Options(headers: {'Accept-Language': 'fr'}),
+    );
     final payload = ApiResponseHandler.extractObject(response.data);
     final postData = payload['post'];
     if (postData is Map<String, dynamic>) {

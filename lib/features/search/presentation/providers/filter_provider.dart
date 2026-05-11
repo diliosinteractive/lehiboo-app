@@ -9,6 +9,43 @@ import 'package:lehiboo/features/thematiques/presentation/providers/thematiques_
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 
 const _filterPersistenceKey = 'event_filter_state';
+const _defaultPriceMax = 500.0;
+
+T? _enumByName<T extends Enum>(List<T> values, Object? name) {
+  if (name is! String) return null;
+
+  for (final value in values) {
+    if (value.name == name) return value;
+  }
+
+  return null;
+}
+
+String? _dateParam(DateTime? date) {
+  if (date == null) return null;
+  return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+}
+
+double? _priceMinParam(EventFilter filter) {
+  if (filter.onlyFree) return null;
+  if (filter.priceFilterType == PriceFilterType.paid) return 0.01;
+  if (_hasPriceRangeFilter(filter)) return filter.priceMin;
+  return null;
+}
+
+double? _priceMaxParam(EventFilter filter) {
+  if (filter.onlyFree || filter.priceFilterType == PriceFilterType.paid) {
+    return null;
+  }
+  if (_hasPriceRangeFilter(filter)) return filter.priceMax;
+  return null;
+}
+
+bool _hasPriceRangeFilter(EventFilter filter) {
+  return filter.priceFilterType == PriceFilterType.range ||
+      filter.priceMin > 0 ||
+      filter.priceMax < _defaultPriceMax;
+}
 
 /// Main filter state provider
 final eventFilterProvider =
@@ -57,8 +94,12 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       'onlyFree': filter.onlyFree,
       'priceMin': filter.priceMin,
       'priceMax': filter.priceMax,
+      'priceFilterType': filter.priceFilterType?.name,
       'familyFriendly': filter.familyFriendly,
       'accessiblePMR': filter.accessiblePMR,
+      'onlineOnly': filter.onlineOnly,
+      'inPersonOnly': filter.inPersonOnly,
+      'sortBy': filter.sortBy.name,
       // Don't persist: search query, dates, location (temporary filters)
     };
   }
@@ -74,9 +115,17 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
           (json['categoriesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
       onlyFree: json['onlyFree'] as bool? ?? false,
       priceMin: (json['priceMin'] as num?)?.toDouble() ?? 0,
-      priceMax: (json['priceMax'] as num?)?.toDouble() ?? 1000,
+      priceMax: (json['priceMax'] as num?)?.toDouble() ?? _defaultPriceMax,
+      priceFilterType: _enumByName(
+        PriceFilterType.values,
+        json['priceFilterType'],
+      ),
       familyFriendly: json['familyFriendly'] as bool? ?? false,
       accessiblePMR: json['accessiblePMR'] as bool? ?? false,
+      onlineOnly: json['onlineOnly'] as bool? ?? false,
+      inPersonOnly: json['inPersonOnly'] as bool? ?? false,
+      sortBy: _enumByName(SortOption.values, json['sortBy']) ??
+          SortOption.relevance,
     );
   }
 
@@ -160,7 +209,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     state = state.copyWith(
       priceFilterType: type,
       priceMin: min ?? 0,
-      priceMax: max ?? 1000,
+      priceMax: max ?? _defaultPriceMax,
       onlyFree: type == PriceFilterType.free,
     );
   }
@@ -187,7 +236,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     state = state.copyWith(
       priceFilterType: null,
       priceMin: 0,
-      priceMax: 1000,
+      priceMax: _defaultPriceMax,
       onlyFree: false,
     );
     _persistFilters();
@@ -366,6 +415,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       onlineOnly: value,
       inPersonOnly: value ? false : state.inPersonOnly,
     );
+    _persistFilters();
   }
 
   void setInPersonOnly(bool value) {
@@ -373,11 +423,13 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       inPersonOnly: value,
       onlineOnly: value ? false : state.onlineOnly,
     );
+    _persistFilters();
   }
 
   // Sort
   void setSortOption(SortOption option) {
     state = state.copyWith(sortBy: option);
+    _persistFilters();
   }
 
   // Pagination
@@ -395,7 +447,8 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
 
   // Apply multiple filters at once
   void applyFilters(EventFilter newFilter) {
-    state = newFilter;
+    state = newFilter.copyWith(page: 1);
+    _persistFilters();
   }
 
   // Remove a specific filter by type
@@ -494,29 +547,27 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
     final previousActivities = state.valueOrNull?.activities ?? [];
 
     try {
-      // Prepare query params
-      String? dateFromStr;
-      String? dateToStr;
-      if (filter.startDate != null) {
-        dateFromStr =
-            '${filter.startDate!.year}-${filter.startDate!.month.toString().padLeft(2, '0')}-${filter.startDate!.day.toString().padLeft(2, '0')}';
-      }
-      if (filter.endDate != null) {
-        dateToStr =
-            '${filter.endDate!.year}-${filter.endDate!.month.toString().padLeft(2, '0')}-${filter.endDate!.day.toString().padLeft(2, '0')}';
-      }
+      final dateFromStr = _dateParam(filter.effectiveStartDate);
+      final dateToStr = _dateParam(filter.effectiveEndDate);
 
       final result = await eventRepository.getEvents(
         search: filter.searchQuery.isNotEmpty ? filter.searchQuery : null,
         thematique: filter.thematiquesSlugs.isNotEmpty
-            ? filter.thematiquesSlugs.first
+            ? filter.thematiquesSlugs.join(',')
             : null,
         categorySlug: filter.categoriesSlugs.isNotEmpty
-            ? filter.categoriesSlugs.first
+            ? filter.categoriesSlugs.join(',')
             : null,
         location: filter.citySlug,
         dateFrom: dateFromStr,
         dateTo: dateToStr,
+        priceMin: _priceMinParam(filter),
+        priceMax: _priceMaxParam(filter),
+        freeOnly: filter.onlyFree ? true : null,
+        familyFriendly: filter.familyFriendly ? true : null,
+        accessiblePmr: filter.accessiblePMR ? true : null,
+        onlineOnly: filter.onlineOnly ? true : null,
+        inPersonOnly: filter.inPersonOnly ? true : null,
         lat: filter.latitude,
         lng: filter.longitude,
         radius: filter.latitude != null ? filter.radiusKm.toInt() : null,
@@ -524,6 +575,7 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
         northEastLng: filter.northEastLng,
         southWestLat: filter.southWestLat,
         southWestLng: filter.southWestLng,
+        sort: sortOptionToApiValue(filter.sortBy),
         perPage: filter.perPage,
         page: filter.page,
       );
@@ -553,7 +605,8 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
         return PaginatedActivities(
           activities: previousActivities,
           hasMore: false, // Prevent infinite error loops
-          totalItems: state.valueOrNull?.totalItems ?? previousActivities.length,
+          totalItems:
+              state.valueOrNull?.totalItems ?? previousActivities.length,
         );
       }
       rethrow;

@@ -8,11 +8,14 @@ import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/event_detail_state.dart';
 import '../../domain/entities/event_submodels.dart';
+import '../../domain/exceptions/event_password_exceptions.dart';
 import '../../domain/repositories/event_repository.dart';
 import '../../data/datasources/events_api_datasource.dart';
 import '../../data/models/event_availability_dto.dart';
 import '../widgets/detail/event_hero_gallery.dart';
+import '../widgets/detail/event_locked_view.dart';
 import '../widgets/detail/event_gallery_fullscreen.dart';
 import '../widgets/detail/event_compact_header.dart';
 import '../widgets/detail/event_social_proof.dart';
@@ -35,12 +38,46 @@ import '../../../reminders/presentation/providers/reminders_provider.dart';
 import '../../../reminders/data/datasources/reminders_api_datasource.dart';
 import '../../../booking/presentation/providers/order_cart_provider.dart';
 
-/// Provider to fetch event details by identifier (UUID or slug)
-final eventDetailProvider =
-    FutureProvider.family<Event, String>((ref, identifier) async {
-  final repository = ref.watch(eventRepositoryProvider);
-  return repository.getEvent(identifier);
-});
+/// Provider to fetch event details by identifier (UUID or slug).
+///
+/// Wraps the repository fetch in an [EventDetailState] sealed union so the
+/// screen can distinguish a fully loaded [Event] from a locked-shell preview
+/// (`403 password_required`). The controller exposes [seed] for callers that
+/// already have a verified [Event] (list-side unlock path) and [unlock] for
+/// the password sheet to submit a password and transition into `.loaded`.
+final eventDetailControllerProvider = AsyncNotifierProviderFamily<
+    EventDetailController, EventDetailState, String>(
+  EventDetailController.new,
+);
+
+class EventDetailController
+    extends FamilyAsyncNotifier<EventDetailState, String> {
+  @override
+  Future<EventDetailState> build(String identifier) async {
+    try {
+      final event = await ref.read(eventRepositoryProvider).getEvent(identifier);
+      return EventDetailState.loaded(event);
+    } on EventPasswordRequiredException catch (e) {
+      return EventDetailState.locked(e.shell);
+    }
+  }
+
+  /// Pre-seed the cache with an already-unlocked event (list-side unlock).
+  void seed(Event event) {
+    state = AsyncData(EventDetailState.loaded(event));
+  }
+
+  /// Submit a password to the verify endpoint. On success the state flips to
+  /// `loaded(event)` and the returned event is handed back to the sheet.
+  /// Typed exceptions propagate so the sheet can surface them (shake,
+  /// countdown, members-only swap).
+  Future<Event> unlock(String password) async {
+    final event =
+        await ref.read(eventRepositoryProvider).verifyEventPassword(arg, password);
+    state = AsyncData(EventDetailState.loaded(event));
+    return event;
+  }
+}
 
 /// Provider to fetch event availability (slots & tickets)
 final eventAvailabilityProvider =
@@ -80,8 +117,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   static const int _maxDescriptionLength = 250;
 
+  /// Read the currently-loaded [Event] from cache, or null if the state is
+  /// loading, errored, or still in the `locked(shell)` branch.
+  Event? _currentEvent() {
+    final async = ref.read(eventDetailControllerProvider(widget.eventId));
+    final state = async.valueOrNull;
+    if (state is EventDetailLoaded) return state.event;
+    return null;
+  }
+
   double get _totalPrice {
-    final event = ref.read(eventDetailProvider(widget.eventId)).valueOrNull;
+    final event = _currentEvent();
     if (event == null) return 0.0;
 
     double total = 0.0;
@@ -209,13 +255,30 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final eventAsync = ref.watch(eventDetailProvider(widget.eventId));
+    final stateAsync =
+        ref.watch(eventDetailControllerProvider(widget.eventId));
+
+    // Sticky booking bar is only meaningful when an Event is loaded — never
+    // show it on top of the locked shell, the loading spinner, or an error.
+    final loadedEvent = stateAsync.valueOrNull is EventDetailLoaded
+        ? (stateAsync.value as EventDetailLoaded).event
+        : null;
 
     return Scaffold(
       // Flat design : fond gris clair pour créer hiérarchie avec cards blanches
       backgroundColor: HbColors.backgroundLight,
-      body: eventAsync.when(
-        data: (event) => _buildContent(event),
+      body: stateAsync.when(
+        data: (state) {
+          switch (state) {
+            case EventDetailLoaded(:final event):
+              return _buildContent(event);
+            case EventDetailLocked(:final shell):
+              return EventLockedView(
+                shell: shell,
+                identifier: widget.eventId,
+              );
+          }
+        },
         loading: () => const Center(
           child: CircularProgressIndicator(color: HbColors.brandPrimary),
         ),
@@ -228,10 +291,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           return _buildErrorState(error);
         },
       ),
-      bottomNavigationBar: eventAsync.valueOrNull != null &&
-              !_shouldHideBookingBar(eventAsync.value!)
-          ? _buildStickyBar(eventAsync.value!)
-          : null,
+      bottomNavigationBar:
+          loadedEvent != null && !_shouldHideBookingBar(loadedEvent)
+              ? _buildStickyBar(loadedEvent)
+              : null,
     );
   }
 
@@ -305,8 +368,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
-                  onPressed: () =>
-                      ref.invalidate(eventDetailProvider(widget.eventId)),
+                  onPressed: () => ref.invalidate(
+                      eventDetailControllerProvider(widget.eventId)),
                   icon: const Icon(Icons.refresh, size: 18),
                   label: const Text('Réessayer'),
                   style: ElevatedButton.styleFrom(
@@ -1141,7 +1204,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (!mounted) return;
 
     HapticFeedback.mediumImpact();
-    final event = ref.read(eventDetailProvider(widget.eventId)).valueOrNull;
+    final event = _currentEvent();
     if (event == null) return;
 
     final externalUrl = event.externalBooking?.url;
@@ -1263,6 +1326,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
+                // "Réserver maintenant" temporarily hidden — cart flow only.
+                /*
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   onPressed: () {
@@ -1287,6 +1352,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
+                */
               ],
             ),
           ),

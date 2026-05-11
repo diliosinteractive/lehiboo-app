@@ -1,9 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/events/presentation/utils/open_event.dart';
 
 /// Carousel horizontal d'événements similaires
 ///
@@ -90,7 +91,7 @@ class EventSimilarCarousel extends StatelessWidget {
   }
 }
 
-class _SimilarEventCard extends StatelessWidget {
+class _SimilarEventCard extends ConsumerWidget {
   final Event event;
   final int index;
 
@@ -100,7 +101,7 @@ class _SimilarEventCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 300 + (index * 50)),
@@ -117,7 +118,7 @@ class _SimilarEventCard extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
-          context.push('/event/${event.id}');
+          openEvent(context, ref, event);
         },
         child: Container(
           width: 160,
@@ -178,15 +179,30 @@ class _SimilarEventCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Titre
-                      Text(
-                        event.title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: HbColors.textPrimary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              event.title,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: HbColors.textPrimary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (event.isPasswordProtected) ...[
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.lock_outline,
+                              size: 14,
+                              color: HbColors.brandPrimary,
+                            ),
+                          ],
+                        ],
                       ),
                       const Spacer(),
                       // Lieu + Distance

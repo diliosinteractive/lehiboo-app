@@ -309,6 +309,7 @@ class AuthRepositoryImpl implements AuthRepository {
     String? birthDate,
     String? membershipCity,
     required bool acceptTerms,
+    bool acceptMarketing = false,
   }) async {
     final response = await _apiDataSource.registerCustomer(
       verifiedEmailToken: verifiedEmailToken,
@@ -321,6 +322,7 @@ class AuthRepositoryImpl implements AuthRepository {
       birthDate: birthDate,
       membershipCity: membershipCity,
       acceptTerms: acceptTerms,
+      acceptMarketing: acceptMarketing,
     );
 
     // If we have a token and user, save and return auth result

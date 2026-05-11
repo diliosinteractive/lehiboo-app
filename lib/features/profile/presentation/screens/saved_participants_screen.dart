@@ -6,6 +6,9 @@ import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
 
+const _participantPersonalizationNoticeText =
+    'Le prénom, la date de naissance, la ville et la relation aident Petit Boo et LeHiboo Expériences à vous proposer des offres et des événements plus pertinents.';
+
 class SavedParticipantsScreen extends ConsumerStatefulWidget {
   const SavedParticipantsScreen({super.key});
 
@@ -35,47 +38,62 @@ class _SavedParticipantsScreenState
         icon: const Icon(Icons.add),
         label: const Text('Ajouter'),
       ),
-      body: participantsAsync.when(
-        data: (participants) {
-          if (participants.isEmpty) {
-            return _EmptyParticipantsState(
-              onAdd: () => _openParticipantForm(context),
-            );
-          }
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: _ParticipantPersonalizationNotice(),
+          ),
+          Expanded(
+            child: participantsAsync.when(
+              data: (participants) {
+                if (participants.isEmpty) {
+                  return _EmptyParticipantsState(
+                    onAdd: () => _openParticipantForm(context),
+                  );
+                }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemBuilder: (context, index) {
-              final participant = participants[index];
-              return _ParticipantTile(
-                participant: participant,
-                onEdit: () => _openParticipantForm(context, participant),
-                onDelete: () => _deleteParticipant(participant),
-              );
-            },
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemCount: participants.length,
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 42),
-                const SizedBox(height: 12),
-                const Text('Impossible de charger vos participants'),
-                const SizedBox(height: 16),
-                OutlinedButton(
-                  onPressed: () => ref.invalidate(savedParticipantsProvider),
-                  child: const Text('Reessayer'),
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                  itemBuilder: (context, index) {
+                    final participant = participants[index];
+                    return _ParticipantTile(
+                      participant: participant,
+                      onEdit: () => _openParticipantForm(context, participant),
+                      onDelete: () => _deleteParticipant(participant),
+                    );
+                  },
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemCount: participants.length,
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (_, __) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 42,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('Impossible de charger vos participants'),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: () =>
+                            ref.invalidate(savedParticipantsProvider),
+                        child: const Text('Reessayer'),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -137,6 +155,47 @@ class _SavedParticipantsScreenState
         ),
       );
     }
+  }
+}
+
+class _ParticipantPersonalizationNotice extends StatelessWidget {
+  const _ParticipantPersonalizationNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    const noticeColor = Color(0xFF9A3412);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFED7AA)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.auto_awesome_outlined,
+            size: 18,
+            color: noticeColor,
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _participantPersonalizationNoticeText,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+                color: noticeColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -371,37 +430,7 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: HbColors.brandPrimary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: HbColors.brandPrimary.withValues(alpha: 0.18),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome_outlined,
-                      size: 18,
-                      color: HbColors.brandPrimary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Le prenom, la date de naissance, la ville et la relation aident l IA et l experience Le Hiboo a proposer les offres et evenements les plus pertinents.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.35,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const _ParticipantPersonalizationNotice(),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _firstNameCtrl,

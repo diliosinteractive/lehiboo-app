@@ -72,7 +72,7 @@ class EventFilter with _$EventFilter {
     double? latitude,
     double? longitude,
     @Default(50) double radiusKm,
-    
+
     // Bounding Box (Search this area)
     double? northEastLat,
     double? northEastLng,
@@ -181,6 +181,52 @@ class EventFilter with _$EventFilter {
     }
   }
 
+  DateTime? get effectiveStartDate {
+    if (startDate != null) return startDate;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    switch (dateFilterType) {
+      case DateFilterType.today:
+      case DateFilterType.thisWeek:
+      case DateFilterType.thisMonth:
+        return today;
+      case DateFilterType.tomorrow:
+        return today.add(const Duration(days: 1));
+      case DateFilterType.thisWeekend:
+        final daysUntilSaturday = (DateTime.saturday - today.weekday) % 7;
+        return today.add(Duration(days: daysUntilSaturday));
+      case DateFilterType.custom:
+      case null:
+        return null;
+    }
+  }
+
+  DateTime? get effectiveEndDate {
+    if (endDate != null) return endDate;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    switch (dateFilterType) {
+      case DateFilterType.today:
+        return today;
+      case DateFilterType.tomorrow:
+        return today.add(const Duration(days: 1));
+      case DateFilterType.thisWeek:
+        return today.add(const Duration(days: 7));
+      case DateFilterType.thisWeekend:
+        final daysUntilSaturday = (DateTime.saturday - today.weekday) % 7;
+        return today.add(Duration(days: daysUntilSaturday + 1));
+      case DateFilterType.thisMonth:
+        return DateTime(now.year, now.month + 1, 0);
+      case DateFilterType.custom:
+      case null:
+        return null;
+    }
+  }
+
   /// Convert to API query parameters
   Map<String, dynamic> toQueryParams() {
     final params = <String, dynamic>{};
@@ -190,33 +236,41 @@ class EventFilter with _$EventFilter {
     }
 
     // Date params
-    if (startDate != null) {
-      params['start_date'] = startDate!.toIso8601String().split('T')[0];
+    final resolvedStartDate = effectiveStartDate;
+    final resolvedEndDate = effectiveEndDate;
+    if (resolvedStartDate != null) {
+      params['date_from'] = resolvedStartDate.toIso8601String().split('T')[0];
     }
-    if (endDate != null) {
-      params['end_date'] = endDate!.toIso8601String().split('T')[0];
+    if (resolvedEndDate != null) {
+      params['date_to'] = resolvedEndDate.toIso8601String().split('T')[0];
     }
 
     // Price params
     if (onlyFree) {
-      params['free'] = 'true';
-    } else if (priceFilterType == PriceFilterType.range) {
+      params['free_only'] = 1;
+    } else if (priceFilterType == PriceFilterType.paid) {
+      params['price_min'] = 0.01;
+    } else if (priceFilterType == PriceFilterType.range ||
+        priceMin > 0 ||
+        priceMax < 500) {
       params['price_min'] = priceMin.toString();
       params['price_max'] = priceMax.toString();
     }
 
     // Location
-    if (citySlug != null) {
-      params['location'] = citySlug;
-    }
     if (latitude != null && longitude != null) {
       params['lat'] = latitude.toString();
       params['lng'] = longitude.toString();
       params['radius'] = radiusKm.toString();
+    } else if (citySlug != null) {
+      params['location'] = citySlug;
     }
-    
+
     // Bounding Box
-    if (northEastLat != null && northEastLng != null && southWestLat != null && southWestLng != null) {
+    if (northEastLat != null &&
+        northEastLng != null &&
+        southWestLat != null &&
+        southWestLng != null) {
       params['north_east_lat'] = northEastLat.toString();
       params['north_east_lng'] = northEastLng.toString();
       params['south_west_lat'] = southWestLat.toString();
@@ -243,22 +297,22 @@ class EventFilter with _$EventFilter {
 
     // Audience
     if (familyFriendly) {
-      params['family_friendly'] = 'true';
+      params['family_friendly'] = 1;
     }
     if (accessiblePMR) {
-      params['accessible_pmr'] = 'true';
+      params['accessible_pmr'] = 1;
     }
 
     // Online/In-person
     if (onlineOnly) {
-      params['online'] = 'true';
+      params['online'] = 1;
     }
     if (inPersonOnly) {
-      params['in_person'] = 'true';
+      params['in_person'] = 1;
     }
 
     // Sort
-    params['sort'] = _sortOptionToString(sortBy);
+    params['sort'] = sortOptionToApiValue(sortBy);
 
     // Pagination
     params['page'] = page.toString();
@@ -266,24 +320,24 @@ class EventFilter with _$EventFilter {
 
     return params;
   }
+}
 
-  String _sortOptionToString(SortOption option) {
-    switch (option) {
-      case SortOption.relevance:
-        return 'relevance';
-      case SortOption.dateAsc:
-        return 'date_asc';
-      case SortOption.dateDesc:
-        return 'date_desc';
-      case SortOption.priceAsc:
-        return 'price_asc';
-      case SortOption.priceDesc:
-        return 'price_desc';
-      case SortOption.popularity:
-        return 'popularity';
-      case SortOption.distance:
-        return 'distance';
-    }
+String sortOptionToApiValue(SortOption option) {
+  switch (option) {
+    case SortOption.relevance:
+      return 'relevance';
+    case SortOption.dateAsc:
+      return 'date_asc';
+    case SortOption.dateDesc:
+      return 'date_desc';
+    case SortOption.priceAsc:
+      return 'price_asc';
+    case SortOption.priceDesc:
+      return 'price_desc';
+    case SortOption.popularity:
+      return 'popularity';
+    case SortOption.distance:
+      return 'distance';
   }
 }
 

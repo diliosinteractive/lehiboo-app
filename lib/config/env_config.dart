@@ -35,6 +35,9 @@ class EnvConfig {
   static String get firebaseMessagingSenderId => dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '';
   static String get firebaseAppId => dotenv.env['FIREBASE_APP_ID'] ?? '';
 
+  // OneSignal Push Notifications
+  static String get oneSignalAppId => dotenv.env['ONESIGNAL_APP_ID'] ?? '';
+
   // Google Maps
   static String get googleMapsApiKey => dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
 

@@ -144,7 +144,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   void _invalidateEventData() {
     if (widget.event != null) {
       final eventId = widget.event!.id;
-      ref.invalidate(eventDetailProvider(eventId));
+      ref.invalidate(eventDetailControllerProvider(eventId));
       ref.invalidate(eventAvailabilityProvider(eventId));
       ref.invalidate(similarEventsProvider(eventId));
     }

@@ -46,6 +46,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _acceptTerms = false;
+  bool _acceptMarketing = false;
   bool _isLoading = false;
 
   // OTP state
@@ -261,6 +262,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             : null,
         membershipCity: _membershipCityController.text.trim().isNotEmpty ? _membershipCityController.text.trim() : null,
         acceptTerms: _acceptTerms,
+        acceptMarketing: _acceptMarketing,
       );
 
       if (!mounted) return;
@@ -934,6 +936,36 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               },
             ),
             const SizedBox(height: 20),
+
+            // Marketing-consent checkbox (opt-in, optional).
+            // Sent to backend as the `newsletter` field on /auth/register.
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: _acceptMarketing,
+                    onChanged: (value) {
+                      setState(() => _acceptMarketing = value ?? false);
+                    },
+                    activeColor: HbColors.brandPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Je souhaite recevoir les actualités et offres du Hiboo par e-mail.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
 
             // Terms checkbox
             Row(
