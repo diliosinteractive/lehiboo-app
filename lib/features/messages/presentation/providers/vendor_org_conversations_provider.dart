@@ -70,6 +70,12 @@ class VendorOrgConversationsNotifier
         .listen((event) {
       if (!mounted) return;
       final type = event.conversationType;
+      // messageReceived: validate by UUID in _applyNewMessage — not by type.
+      if (event.type == RealtimeEventType.messageReceived) {
+        _applyNewMessage(event);
+        return;
+      }
+      // For all other events keep the type guard.
       if (type != null && type != 'organization_organization') {
         dev.log(
           '[VendorOrg] skipping event type=${event.type.name} convType=$type (not organization_organization)',
@@ -80,8 +86,6 @@ class VendorOrgConversationsNotifier
         '[VendorOrg] handling event type=${event.type.name} conv=${event.conversationUuid} convType=$type',
       );
       switch (event.type) {
-        case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
         case RealtimeEventType.conversationCreated:
           refresh();
         case RealtimeEventType.conversationClosed:
@@ -100,22 +104,39 @@ class VendorOrgConversationsNotifier
 
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
+    if (uuid == null) return;
     final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
-      refresh();
+    if (current == null) {
+      _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
-    if (idx == -1) {
-      refresh();
-      return;
-    }
+    if (idx == -1) return; // not in this list — skip silently
     dev.log('[VendorOrg] applyNewMessage: conv=$uuid unread ${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
     final updated = current[idx].copyWith(unreadCount: current[idx].unreadCount + 1);
     final list = [...current];
     list.removeAt(idx);
     list.insert(0, updated);
     state = state.copyWith(conversations: AsyncValue.data(list));
+    _silentRefresh();
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final result = await _repo.getOrgConversations(
+        status: state.statusFilter,
+        unreadOnly: state.unreadOnly ? true : null,
+        search: state.searchQuery,
+        period: state.period,
+        page: 1,
+      );
+      if (!mounted) return;
+      state = state.copyWith(
+        conversations: AsyncValue.data(result.conversations),
+        currentPage: 1,
+        hasMore: result.hasMore,
+      );
+    } catch (_) {}
   }
 
   void _applyStatus(String convUuid, String status) {

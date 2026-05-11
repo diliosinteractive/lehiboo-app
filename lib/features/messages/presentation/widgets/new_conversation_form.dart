@@ -1,16 +1,15 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
+import '../providers/support_conversations_provider.dart';
 
 // ── Context sealed class ────────────────────────────────────────────────────
 
@@ -87,11 +86,12 @@ class NewConversationForm extends ConsumerStatefulWidget {
   const NewConversationForm({super.key, required this.conversationContext});
 
   /// Present as a modal bottom sheet from any BuildContext.
-  static Future<void> show(
+  /// Returns true if a conversation was successfully created, null if cancelled.
+  static Future<bool?> show(
     BuildContext context, {
     required NewConversationContext conversationContext,
   }) {
-    return showModalBottomSheet(
+    return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -112,9 +112,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   static const _primaryColor = Color(0xFFFF601F);
   static const _subjectMax = 100;
   static const _messageMax = 2000;
-  static const _maxFiles = 3;
-  static const _maxFileBytes = 5 * 1024 * 1024;
-  static const _allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
   static const _supportSubjects = [
     'Problème de réservation',
     'Question sur un événement',
@@ -132,8 +129,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   final _subjectCtrl = TextEditingController();
   final _messageCtrl = TextEditingController();
   String? _selectedSupportSubject;
-  final List<XFile> _files = [];
-  String? _fileError;
   bool _orgError = false;
   bool _isLoading = false;
   String? _submitError;
@@ -340,75 +335,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     }
   }
 
-  // ── File helpers ────────────────────────────────────────────────────────────
-
-  Future<void> _pickAttachment() async {
-    setState(() => _fileError = null);
-    if (_files.length >= _maxFiles) {
-      setState(() =>
-          _fileError = 'Maximum $_maxFiles fichiers par message.');
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Photo / Vidéo'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final picker = ImagePicker();
-                final picked = await picker.pickMultiImage();
-                await _addFiles(
-                    picked.map((x) => XFile(x.path, name: x.name)).toList());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf),
-              title: const Text('Document (PDF)'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final result = await FilePicker.platform.pickFiles(
-                  type: FileType.custom,
-                  allowedExtensions: ['pdf'],
-                  allowMultiple: false,
-                );
-                if (result == null || result.files.isEmpty) return;
-                final path = result.files.single.path;
-                final name = result.files.single.name;
-                if (path != null) await _addFiles([XFile(path, name: name)]);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _addFiles(List<XFile> candidates) async {
-    for (final f in candidates) {
-      if (_files.length >= _maxFiles) {
-        setState(() =>
-            _fileError = 'Maximum $_maxFiles fichiers par message.');
-        break;
-      }
-      final ext = f.name.split('.').last.toLowerCase();
-      if (!_allowedExtensions.contains(ext)) {
-        setState(() => _fileError = 'Type non supporté : .$ext');
-        continue;
-      }
-      final size = await f.length();
-      if (size > _maxFileBytes) {
-        setState(() => _fileError = '${f.name} dépasse 5 Mo.');
-        continue;
-      }
-      setState(() => _files.add(f));
-    }
-  }
-
   // ── Submit ──────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
@@ -421,7 +347,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       final repo = ref.read(messagesRepositoryImplProvider);
       final subject = _subjectCtrl.text.trim();
       final message = _messageCtrl.text.trim();
-      final files = List<XFile>.from(_files);
       final ctx = widget.conversationContext;
 
       String uuid;
@@ -432,7 +357,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           organizationUuid: _selectedOrg!.uuid,
           subject: subject,
           message: message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/$uuid';
@@ -442,7 +366,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           subject: subject,
           message: message,
           eventId: _eventId,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/$uuid';
@@ -451,7 +374,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           userId: _selectedAdminUser!.id,
           subject: subject.isEmpty ? null : subject,
           message: message.isEmpty ? null : message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/admin/${conv.uuid}';
@@ -460,7 +382,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           organizationUuid: _selectedAdminOrg!.uuid,
           subject: subject.isEmpty ? null : subject,
           message: message.isEmpty ? null : message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/admin/${conv.uuid}';
@@ -469,7 +390,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           participantId: _selectedVendorParticipant!.id,
           subject: subject,
           message: message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/vendor/${conv.uuid}';
@@ -478,7 +398,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           partnerOrganizationId: _selectedPartner!.id,
           subject: subject,
           message: message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/vendor-org/${conv.uuid}';
@@ -486,7 +405,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         final conv = await repo.createVendorSupportThread(
           subject: subject.isEmpty ? 'Support' : subject,
           message: message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/vendor/${conv.uuid}';
@@ -495,15 +413,23 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         final conv = await repo.createSupportConversation(
           subject: subject,
           message: message,
-          attachments: _files.isNotEmpty ? _files : null,
         );
         uuid = conv.uuid;
         route = '/messages/support/$uuid';
       }
 
       if (!mounted) return;
-      Navigator.of(context).pop();
-      context.push(route);
+      if (ctx is SupportConversationContext) {
+        ref.invalidate(supportConversationsProvider);
+      }
+      Navigator.of(context).pop(true);
+      // SupportConversationContext is opened from /messages/support/new — replace
+      // that route so pressing back goes to the messages screen, not the spinner.
+      if (ctx is SupportConversationContext) {
+        context.pushReplacement(route);
+      } else {
+        context.push(route);
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -600,8 +526,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                         _buildSubjectField(),
                         const SizedBox(height: 16),
                         _buildMessageField(),
-                        const SizedBox(height: 16),
-                        _buildAttachmentsSection(),
                         if (_submitError != null) ...[
                           const SizedBox(height: 12),
                           Container(
@@ -1223,85 +1147,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     );
   }
 
-  Widget _buildAttachmentsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionLabel('Pièces jointes (optionnel)'),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed:
-              _files.length >= _maxFiles ? null : _pickAttachment,
-          icon: const Icon(Icons.upload_outlined, size: 16),
-          label: const Text('Ajouter un fichier'),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(
-              color: _files.length >= _maxFiles
-                  ? Colors.grey.shade300
-                  : Colors.grey.shade400,
-            ),
-          ),
-        ),
-        if (_fileError != null) ...[
-          const SizedBox(height: 4),
-          Text(_fileError!,
-              style: TextStyle(
-                  fontSize: 11, color: Colors.red.shade600)),
-        ],
-        if (_files.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          ..._files.map(_buildFileRow),
-        ],
-        const SizedBox(height: 4),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            '${_files.length}/$_maxFiles · Max 5 Mo chacun',
-            style: TextStyle(
-                fontSize: 11, color: Colors.grey.shade500),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFileRow(XFile f) {
-    final isPdf = f.name.toLowerCase().endsWith('.pdf');
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isPdf
-                ? Icons.picture_as_pdf
-                : Icons.image_outlined,
-            size: 20,
-            color: isPdf
-                ? Colors.red.shade400
-                : Colors.blue.shade400,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(f.name,
-                style: const TextStyle(fontSize: 12),
-                overflow: TextOverflow.ellipsis),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _files.remove(f)),
-            child: Icon(Icons.close,
-                size: 16, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildActions() {
     return Row(
       children: [
@@ -1332,7 +1177,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                     size: 16, color: Colors.white),
             label: Text(
               (_isSupport || _isVendorSupport)
-                  ? 'Envoyer au support'
+                  ? 'Envoyer'
                   : 'Envoyer',
               style: const TextStyle(
                   color: Colors.white,

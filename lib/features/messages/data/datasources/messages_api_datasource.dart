@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../config/dio_client.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../models/accepted_partner_dto.dart';
@@ -69,30 +68,13 @@ class MessagesApiDataSource {
     required String subject,
     required String message,
     String? eventId,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      final formData = FormData.fromMap({
-        'organization_uuid': organizationUuid,
-        'subject': subject,
-        'message': message,
-        if (eventId != null) 'event_id': eventId,
-        'attachments[]': files,
-      });
-      r = await _dio.post('/user/conversations', data: formData);
-    } else {
-      r = await _dio.post('/user/conversations', data: {
-        'organization_uuid': organizationUuid,
-        'subject': subject,
-        'message': message,
-        if (eventId != null) 'event_id': eventId,
-      });
-    }
+    final r = await _dio.post('/user/conversations', data: {
+      'organization_uuid': organizationUuid,
+      'subject': subject,
+      'message': message,
+      if (eventId != null) 'event_id': eventId,
+    });
     return ConversationDto.fromJson(
         ApiResponseHandler.extractObject(r.data));
   }
@@ -119,34 +101,15 @@ class MessagesApiDataSource {
     required String subject,
     required String message,
     String? eventId,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      final formData = FormData.fromMap({
+    final r = await _dio.post(
+      '/user/conversations/from-organization/$organizationUuid',
+      data: {
         'subject': subject,
         'message': message,
         if (eventId != null) 'event_id': eventId,
-        'attachments[]': files,
-      });
-      r = await _dio.post(
-        '/user/conversations/from-organization/$organizationUuid',
-        data: formData,
-      );
-    } else {
-      r = await _dio.post(
-        '/user/conversations/from-organization/$organizationUuid',
-        data: {
-          'subject': subject,
-          'message': message,
-          if (eventId != null) 'event_id': eventId,
-        },
-      );
-    }
+      },
+    );
     return ConversationDto.fromJson(
         ApiResponseHandler.extractObject(r.data));
   }
@@ -162,31 +125,11 @@ class MessagesApiDataSource {
   Future<MessageDto> sendMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      final formData = FormData.fromMap({
-        if (content != null && content.isNotEmpty) 'content': content,
-        'attachments[]': files,
-      });
-      r = await _dio.post(
-        '/user/conversations/$conversationUuid/messages',
-        data: formData,
-      );
-    } else {
-      r = await _dio.post(
-        '/user/conversations/$conversationUuid/messages',
-        data: {'content': content},
-      );
-    }
-    // Some message endpoints return `{data: {...}}`, others return the
-    // raw message object — `unwrapRoot: true` collapses both into a
-    // single Map for `fromJson`.
+    final r = await _dio.post(
+      '/user/conversations/$conversationUuid/messages',
+      data: {'content': content},
+    );
     return MessageDto.fromJson(
       ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
     );
@@ -267,61 +210,31 @@ class MessagesApiDataSource {
   Future<ConversationDto> createSupportConversation({
     required String subject,
     required String message,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      r = await _dio.post(
-        '/user/support-conversations',
-        data: FormData.fromMap({
-          'subject': subject,
-          'message': message,
-          'attachments[]': files,
-        }),
-      );
-    } else {
-      r = await _dio.post('/user/support-conversations', data: {
-        'subject': subject,
-        'message': message,
-      });
-    }
+    final r = await _dio.post('/user/support-conversations', data: {
+      'subject': subject,
+      'message': message,
+    });
     return ConversationDto.fromJson(
         ApiResponseHandler.extractObject(r.data));
   }
 
-  // 17. POST /user/support-conversations/{uuid}/messages
+  // 17. POST /user/support-conversations/{uuid}/close
+  Future<ConversationDto> closeSupportConversation(String uuid) async {
+    final r = await _dio.post('/user/support-conversations/$uuid/close');
+    return ConversationDto.fromJson(
+        ApiResponseHandler.extractObject(r.data));
+  }
+
+  // 18. POST /user/support-conversations/{uuid}/messages
   Future<MessageDto> sendSupportMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      final formData = FormData.fromMap({
-        if (content != null && content.isNotEmpty) 'content': content,
-        'attachments[]': files,
-      });
-      r = await _dio.post(
-        '/user/support-conversations/$conversationUuid/messages',
-        data: formData,
-      );
-    } else {
-      r = await _dio.post(
-        '/user/support-conversations/$conversationUuid/messages',
-        data: {'content': content},
-      );
-    }
-    // Some message endpoints return `{data: {...}}`, others return the
-    // raw message object — `unwrapRoot: true` collapses both into a
-    // single Map for `fromJson`.
+    final r = await _dio.post(
+      '/user/support-conversations/$conversationUuid/messages',
+      data: {'content': content},
+    );
     return MessageDto.fromJson(
       ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
     );
@@ -389,32 +302,13 @@ class MessagesApiDataSource {
     required String subject,
     required String message,
     int? eventId,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      r = await _dio.post(
-        '/vendor/conversations/to-participant',
-        data: FormData.fromMap({
-          'participant_id': participantId,
-          'subject': subject,
-          'message': message,
-          if (eventId != null) 'event_id': eventId,
-          'attachments[]': files,
-        }),
-      );
-    } else {
-      r = await _dio.post('/vendor/conversations/to-participant', data: {
-        'participant_id': participantId,
-        'subject': subject,
-        'message': message,
-        if (eventId != null) 'event_id': eventId,
-      });
-    }
+    final r = await _dio.post('/vendor/conversations/to-participant', data: {
+      'participant_id': participantId,
+      'subject': subject,
+      'message': message,
+      if (eventId != null) 'event_id': eventId,
+    });
     return ConversationDto.fromJson(
         ApiResponseHandler.extractObject(r.data));
   }
@@ -422,28 +316,11 @@ class MessagesApiDataSource {
   Future<ConversationDto> createVendorSupportThread({
     required String subject,
     required String message,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      r = await _dio.post(
-        '/vendor/conversations/support-thread',
-        data: FormData.fromMap({
-          'subject': subject,
-          'message': message,
-          'attachments[]': files,
-        }),
-      );
-    } else {
-      r = await _dio.post('/vendor/conversations/support-thread', data: {
-        'subject': subject,
-        'message': message,
-      });
-    }
+    final r = await _dio.post('/vendor/conversations/support-thread', data: {
+      'subject': subject,
+      'message': message,
+    });
     return ConversationDto.fromJson(
         ApiResponseHandler.extractObject(r.data));
   }
@@ -461,27 +338,11 @@ class MessagesApiDataSource {
   Future<MessageDto> sendVendorMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      r = await _dio.post(
-        '/vendor/conversations/$conversationUuid/messages',
-        data: FormData.fromMap({
-          if (content != null && content.isNotEmpty) 'content': content,
-          'attachments[]': files,
-        }),
-      );
-    } else {
-      r = await _dio.post(
-        '/vendor/conversations/$conversationUuid/messages',
-        data: {'content': content},
-      );
-    }
+    final r = await _dio.post(
+      '/vendor/conversations/$conversationUuid/messages',
+      data: {'content': content},
+    );
     return MessageDto.fromJson(
       ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
     );
@@ -551,30 +412,12 @@ class MessagesApiDataSource {
     required int partnerOrganizationId,
     required String subject,
     required String message,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      r = await _dio.post(
-        '/vendor/org-conversations',
-        data: FormData.fromMap({
-          'partner_organization_id': partnerOrganizationId,
-          'subject': subject,
-          'message': message,
-          'attachments[]': files,
-        }),
-      );
-    } else {
-      r = await _dio.post('/vendor/org-conversations', data: {
-        'partner_organization_id': partnerOrganizationId,
-        'subject': subject,
-        'message': message,
-      });
-    }
+    final r = await _dio.post('/vendor/org-conversations', data: {
+      'partner_organization_id': partnerOrganizationId,
+      'subject': subject,
+      'message': message,
+    });
     return ConversationDto.fromJson(
         ApiResponseHandler.extractObject(r.data));
   }
@@ -592,27 +435,11 @@ class MessagesApiDataSource {
   Future<MessageDto> sendOrgMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      r = await _dio.post(
-        '/vendor/org-conversations/$conversationUuid/messages',
-        data: FormData.fromMap({
-          if (content != null && content.isNotEmpty) 'content': content,
-          'attachments[]': files,
-        }),
-      );
-    } else {
-      r = await _dio.post(
-        '/vendor/org-conversations/$conversationUuid/messages',
-        data: {'content': content},
-      );
-    }
+    final r = await _dio.post(
+      '/vendor/org-conversations/$conversationUuid/messages',
+      data: {'content': content},
+    );
     return MessageDto.fromJson(
       ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
     );
@@ -682,32 +509,13 @@ class MessagesApiDataSource {
     String? userUuid,
     String? subject,
     String? message,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      r = await _dio.post(
-        '/admin/conversations/user-thread',
-        data: FormData.fromMap({
-          if (userId != null) 'user_id': userId,
-          if (userUuid != null) 'user_uuid': userUuid,
-          if (subject != null) 'subject': subject,
-          if (message != null) 'message': message,
-          'attachments[]': files,
-        }),
-      );
-    } else {
-      r = await _dio.post('/admin/conversations/user-thread', data: {
-        if (userId != null) 'user_id': userId,
-        if (userUuid != null) 'user_uuid': userUuid,
-        if (subject != null) 'subject': subject,
-        if (message != null) 'message': message,
-      });
-    }
+    final r = await _dio.post('/admin/conversations/user-thread', data: {
+      if (userId != null) 'user_id': userId,
+      if (userUuid != null) 'user_uuid': userUuid,
+      if (subject != null) 'subject': subject,
+      if (message != null) 'message': message,
+    });
     return ConversationDto.fromJson(
         ApiResponseHandler.extractObject(r.data));
   }
@@ -716,30 +524,12 @@ class MessagesApiDataSource {
     required String organizationUuid,
     String? subject,
     String? message,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      r = await _dio.post(
-        '/admin/conversations/support-thread',
-        data: FormData.fromMap({
-          'organization_uuid': organizationUuid,
-          if (subject != null) 'subject': subject,
-          if (message != null) 'message': message,
-          'attachments[]': files,
-        }),
-      );
-    } else {
-      r = await _dio.post('/admin/conversations/support-thread', data: {
-        'organization_uuid': organizationUuid,
-        if (subject != null) 'subject': subject,
-        if (message != null) 'message': message,
-      });
-    }
+    final r = await _dio.post('/admin/conversations/support-thread', data: {
+      'organization_uuid': organizationUuid,
+      if (subject != null) 'subject': subject,
+      if (message != null) 'message': message,
+    });
     return ConversationDto.fromJson(
         ApiResponseHandler.extractObject(r.data));
   }
@@ -757,27 +547,11 @@ class MessagesApiDataSource {
   Future<MessageDto> sendAdminMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
-    late Response<dynamic> r;
-    if (attachments != null && attachments.isNotEmpty) {
-      final files = <MultipartFile>[];
-      for (final f in attachments) {
-        files.add(await MultipartFile.fromFile(f.path, filename: f.name));
-      }
-      r = await _dio.post(
-        '/admin/conversations/$conversationUuid/messages',
-        data: FormData.fromMap({
-          if (content != null && content.isNotEmpty) 'content': content,
-          'attachments[]': files,
-        }),
-      );
-    } else {
-      r = await _dio.post(
-        '/admin/conversations/$conversationUuid/messages',
-        data: {'content': content},
-      );
-    }
+    final r = await _dio.post(
+      '/admin/conversations/$conversationUuid/messages',
+      data: {'content': content},
+    );
     return MessageDto.fromJson(
       ApiResponseHandler.extractObject(r.data, unwrapRoot: true),
     );

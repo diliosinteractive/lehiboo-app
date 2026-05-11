@@ -1,11 +1,9 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
@@ -27,13 +25,9 @@ class VendorNewConversationScreen extends ConsumerStatefulWidget {
 class _VendorNewConversationScreenState
     extends ConsumerState<VendorNewConversationScreen> {
   static const _primaryColor = Color(0xFFFF601F);
-  static const _maxFiles = 3;
-  static const _maxFileBytes = 5 * 1024 * 1024;
-  static const _allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
 
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
-  final List<XFile> _attachments = [];
 
   ConversationParticipant? _selectedParticipant;
   AcceptedPartner? _selectedPartner;
@@ -71,79 +65,6 @@ class _VendorNewConversationScreenState
       });
     } catch (_) {
       setState(() => _loadingPartners = false);
-    }
-  }
-
-  // ── Attachments ──────────────────────────────────────────────────────────────
-
-  Future<void> _pickAttachment() async {
-    if (_attachments.length >= _maxFiles) {
-      _showSnack('Maximum $_maxFiles fichiers par message.');
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Photo / Image'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await _pickImages();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf),
-              title: const Text('Document (PDF)'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await _pickPdf();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickImages() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickMultiImage();
-    await _addFiles(picked.map((x) => XFile(x.path, name: x.name)).toList());
-  }
-
-  Future<void> _pickPdf() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-      allowMultiple: false,
-    );
-    if (result == null || result.files.isEmpty) return;
-    final path = result.files.single.path;
-    final name = result.files.single.name;
-    if (path != null) await _addFiles([XFile(path, name: name)]);
-  }
-
-  Future<void> _addFiles(List<XFile> files) async {
-    for (final file in files) {
-      if (_attachments.length >= _maxFiles) {
-        _showSnack('Maximum $_maxFiles fichiers.');
-        break;
-      }
-      final ext = file.name.split('.').last.toLowerCase();
-      if (!_allowedExtensions.contains(ext)) {
-        _showSnack('Type non supporté : .$ext');
-        continue;
-      }
-      final size = await file.length();
-      if (size > _maxFileBytes) {
-        _showSnack('${file.name} dépasse 5 Mo.');
-        continue;
-      }
-      setState(() => _attachments.add(file));
     }
   }
 
@@ -200,7 +121,6 @@ class _VendorNewConversationScreenState
 
     try {
       final repo = ref.read(messagesRepositoryProvider);
-      final files = _attachments.isNotEmpty ? _attachments : null;
       late final String convUuid;
       late final bool isOrgRoute;
 
@@ -217,7 +137,6 @@ class _VendorNewConversationScreenState
             participantId: _selectedParticipant!.id,
             subject: subject,
             message: message,
-            attachments: files,
           );
           convUuid = conv.uuid;
           isOrgRoute = false;
@@ -234,7 +153,6 @@ class _VendorNewConversationScreenState
             partnerOrganizationId: _selectedPartner!.id,
             subject: subject,
             message: message,
-            attachments: files,
           );
           convUuid = conv.uuid;
           isOrgRoute = true;
@@ -243,7 +161,6 @@ class _VendorNewConversationScreenState
           final conv = await repo.createVendorSupportThread(
             subject: subject.isEmpty ? 'Support' : subject,
             message: message,
-            attachments: files,
           );
           convUuid = conv.uuid;
           isOrgRoute = false;
@@ -321,8 +238,6 @@ class _VendorNewConversationScreenState
                 alignLabelWithHint: true,
               ),
             ),
-            const SizedBox(height: 8),
-            _buildAttachmentsSection(),
             if (_error != null) ...[
               const SizedBox(height: 8),
               Text(_error!, style: const TextStyle(color: Colors.red)),
@@ -406,60 +321,6 @@ class _VendorNewConversationScreenState
     );
   }
 
-  Widget _buildAttachmentsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Pièces jointes',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(width: 6),
-            Text('(max 3 • 5 Mo)',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-            const Spacer(),
-            if (_attachments.length < _maxFiles)
-              TextButton.icon(
-                onPressed: _pickAttachment,
-                icon: const Icon(Icons.attach_file, size: 16),
-                label: const Text('Ajouter', style: TextStyle(fontSize: 13)),
-                style: TextButton.styleFrom(foregroundColor: _primaryColor),
-              ),
-          ],
-        ),
-        if (_attachments.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: _attachments.map((f) {
-              final isPdf = f.name.toLowerCase().endsWith('.pdf');
-              return Chip(
-                avatar: Icon(
-                  isPdf ? Icons.picture_as_pdf : Icons.image_outlined,
-                  size: 14,
-                  color: isPdf ? Colors.red.shade400 : Colors.blue.shade400,
-                ),
-                label: Text(f.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11)),
-                deleteIcon: const Icon(Icons.close, size: 14),
-                onDeleted: () => setState(() => _attachments.remove(f)),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              );
-            }).toList(),
-          ),
-        ],
-      ],
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
@@ -31,11 +32,12 @@ class _SupportDetailScreenState extends ConsumerState<SupportDetailScreen> {
     super.initState();
     if (widget.isNew) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await NewConversationForm.show(
+        final created = await NewConversationForm.show(
           context,
           conversationContext: SupportConversationContext(),
         );
-        if (mounted) {
+        // Only navigate back if the user cancelled (form already navigates on success)
+        if (mounted && created != true) {
           context.canPop() ? context.pop() : context.go('/messages');
         }
       });
@@ -53,18 +55,63 @@ class _SupportDetailScreenState extends ConsumerState<SupportDetailScreen> {
   }
 }
 
-class _SupportThreadView extends ConsumerWidget {
+class _SupportThreadView extends ConsumerStatefulWidget {
   final String conversationUuid;
 
   const _SupportThreadView({required this.conversationUuid});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final providerKey = (uuid: conversationUuid, route: ConversationRoute.participantSupport);
-    final state = ref.watch(conversationDetailProvider(providerKey));
-    final notifier = ref.read(conversationDetailProvider(providerKey).notifier);
+  ConsumerState<_SupportThreadView> createState() => _SupportThreadViewState();
+}
 
-    ref.listen(conversationDetailProvider(providerKey), (prev, next) {
+class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
+  ({String uuid, ConversationRoute route}) get _pk => (
+        uuid: widget.conversationUuid,
+        route: ConversationRoute.participantSupport,
+      );
+
+  Future<void> _handleClose(ConversationDetailNotifier notifier) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Fermer la conversation'),
+        content: const Text(
+            'Voulez-vous fermer cette conversation ? Vous ne pourrez plus envoyer de messages.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Fermer',
+                style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      try {
+        await notifier.closeConversation();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(conversationDetailProvider(_pk));
+    final notifier = ref.read(conversationDetailProvider(_pk).notifier);
+
+    ref.listen(conversationDetailProvider(_pk), (prev, next) {
       if (next.sendError != null && prev?.sendError != next.sendError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -90,7 +137,8 @@ class _SupportThreadView extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline, color: Colors.red, size: 40),
               const SizedBox(height: 8),
-              Text('Erreur : $e', style: const TextStyle(color: Colors.red)),
+              Text('Erreur : ${ApiResponseHandler.extractError(e)}',
+                  style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: notifier.load,
@@ -128,6 +176,26 @@ class _SupportThreadView extends ConsumerWidget {
                     ),
                   ],
                 ),
+                actions: [
+                  if (!isClosed)
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'close') _handleClose(notifier);
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'close',
+                          child: Row(
+                            children: [
+                              Icon(Icons.lock_outline, size: 18),
+                              SizedBox(width: 8),
+                              Text('Fermer la conversation'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
               ),
               if (isClosed)
                 MaterialBanner(
@@ -149,11 +217,10 @@ class _SupportThreadView extends ConsumerWidget {
                 ),
               ),
               MessageComposer(
-                conversationUuid: conversationUuid,
+                conversationUuid: widget.conversationUuid,
                 disabled: isClosed,
-                onSend: (content, attachments) => notifier.sendMessage(
+                onSend: (content) => notifier.sendMessage(
                   content: content,
-                  attachments: attachments,
                 ),
               ),
             ],

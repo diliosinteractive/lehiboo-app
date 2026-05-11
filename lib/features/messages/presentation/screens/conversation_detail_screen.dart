@@ -352,9 +352,8 @@ class _ConversationDetailScreenState
                 disabled: isClosed || _isReadonly,
                 isSupport:
                     widget.route == ConversationRoute.participantSupport,
-                onSend: (content, attachments) => notifier.sendMessage(
+                onSend: (content) => notifier.sendMessage(
                   content: content,
-                  attachments: attachments,
                 ),
               ),
             ],

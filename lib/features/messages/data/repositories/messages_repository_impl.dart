@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/admin_report_stats.dart';
 import '../../domain/entities/conversation.dart';
@@ -10,7 +9,6 @@ import '../../domain/repositories/messages_repository.dart';
 import '../datasources/messages_api_datasource.dart';
 import '../models/accepted_partner_dto.dart';
 import '../models/admin_report_stats_dto.dart';
-import '../models/attachment_dto.dart';
 import '../models/conversation_dto.dart';
 import '../models/conversation_report_dto.dart';
 import '../models/message_dto.dart';
@@ -22,16 +20,6 @@ class MessagesRepositoryImpl implements MessagesRepository {
   MessagesRepositoryImpl(this._api);
 
   // ===== Mapping helpers =====
-
-  MessageAttachment _mapAttachment(AttachmentDto dto) => MessageAttachment(
-        uuid: dto.uuid,
-        url: dto.url,
-        originalName: dto.originalName,
-        mimeType: dto.mimeType,
-        size: dto.size,
-        isImage: dto.isImage,
-        isPdf: dto.isPdf,
-      );
 
   MessageSender? _mapSender(MessageSenderDto? dto) {
     if (dto == null) return null;
@@ -49,7 +37,6 @@ class MessagesRepositoryImpl implements MessagesRepository {
         isRead: dto.isRead,
         isDelivered: dto.isDelivered,
         isMine: dto.isMine,
-        attachments: dto.attachments.map(_mapAttachment).toList(),
         createdAt: DateTime.parse(dto.createdAt),
         editedAt: dto.editedAt != null ? DateTime.parse(dto.editedAt!) : null,
         readAt: dto.readAt != null ? DateTime.parse(dto.readAt!) : null,
@@ -215,14 +202,12 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createConversation(
       organizationUuid: organizationUuid,
       subject: subject,
       message: message,
       eventId: eventId,
-      attachments: attachments,
     ));
   }
 
@@ -241,14 +226,12 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createFromOrganization(
       organizationUuid: organizationUuid,
       subject: subject,
       message: message,
       eventId: eventId,
-      attachments: attachments,
     ));
   }
 
@@ -261,12 +244,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Message> sendMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 
@@ -333,25 +314,26 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Conversation> createSupportConversation({
     required String subject,
     required String message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createSupportConversation(
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
+  }
+
+  @override
+  Future<Conversation> closeSupportConversation(String uuid) async {
+    return _mapConversation(await _api.closeSupportConversation(uuid));
   }
 
   @override
   Future<Message> sendSupportMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendSupportMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 
@@ -407,14 +389,12 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String subject,
     required String message,
     int? eventId,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createVendorConversationToParticipant(
       participantId: participantId,
       subject: subject,
       message: message,
       eventId: eventId,
-      attachments: attachments,
     ));
   }
 
@@ -422,12 +402,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Conversation> createVendorSupportThread({
     required String subject,
     required String message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createVendorSupportThread(
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
   }
 
@@ -445,12 +423,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Message> sendVendorMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendVendorMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 
@@ -516,13 +492,11 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required int partnerOrganizationId,
     required String subject,
     required String message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createOrgConversation(
       partnerOrganizationId: partnerOrganizationId,
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
   }
 
@@ -540,12 +514,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Message> sendOrgMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendOrgMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 
@@ -611,14 +583,12 @@ class MessagesRepositoryImpl implements MessagesRepository {
     String? userUuid,
     String? subject,
     String? message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createAdminUserThread(
       userId: userId,
       userUuid: userUuid,
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
   }
 
@@ -627,13 +597,11 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String organizationUuid,
     String? subject,
     String? message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createAdminSupportThread(
       organizationUuid: organizationUuid,
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
   }
 
@@ -651,12 +619,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Message> sendAdminMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendAdminMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 

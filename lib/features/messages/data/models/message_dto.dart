@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'attachment_dto.dart';
 
 part 'message_dto.freezed.dart';
 part 'message_dto.g.dart';
@@ -32,7 +31,6 @@ class MessageDto with _$MessageDto {
     @JsonKey(name: 'is_read') @Default(false) bool isRead,
     @JsonKey(name: 'is_delivered') @Default(false) bool isDelivered,
     @JsonKey(name: 'is_mine') @Default(false) bool isMine,
-    @Default([]) List<AttachmentDto> attachments,
     @JsonKey(name: 'created_at') required String createdAt,
     @JsonKey(name: 'edited_at') String? editedAt,
     @JsonKey(name: 'read_at') String? readAt,

@@ -35,11 +35,21 @@ class SupportConversationsNotifier
   final MessagesRepository _repo;
   final Ref _ref;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
+  Timer? _pollTimer;
 
   SupportConversationsNotifier(this._repo, this._ref)
       : super(const SupportConversationsState()) {
     load();
     _subscribeToRealtime();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      if (_ref.read(messagesRealtimeProvider)) return;
+      await _silentRefresh();
+    });
   }
 
   void _subscribeToRealtime() {
@@ -53,14 +63,18 @@ class SupportConversationsNotifier
       dev.log(
         '[SupportConv] event received: type=${event.type.name} conv=${event.conversationUuid} convType=$type',
       );
-      // Only handle user_support conversations (or null type as fallback).
+      // messageReceived: validate by UUID in _applyNewMessage — not by type,
+      // because the backend may send a different convType string.
+      if (event.type == RealtimeEventType.messageReceived) {
+        _applyNewMessage(event);
+        return;
+      }
+      // For all other events keep the type guard.
       if (type != null && type != 'user_support') {
         dev.log('[SupportConv] skipping — convType=$type is not user_support');
         return;
       }
       switch (event.type) {
-        case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
         case RealtimeEventType.conversationCreated:
           refresh();
         case RealtimeEventType.conversationClosed:
@@ -79,16 +93,14 @@ class SupportConversationsNotifier
 
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
+    if (uuid == null) return;
     final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
-      refresh();
+    if (current == null) {
+      _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
-    if (idx == -1) {
-      refresh();
-      return;
-    }
+    if (idx == -1) return; // not in this list — another provider handles it
     dev.log('[SupportConv] applyNewMessage: conv=$uuid unread ${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
     final updated = current[idx].copyWith(
       unreadCount: current[idx].unreadCount + 1,
@@ -97,6 +109,7 @@ class SupportConversationsNotifier
     list.removeAt(idx);
     list.insert(0, updated);
     state = state.copyWith(conversations: AsyncValue.data(list));
+    _silentRefresh();
   }
 
   void _applyStatus(String convUuid, String status) {
@@ -149,6 +162,18 @@ class SupportConversationsNotifier
     await load();
   }
 
+  Future<void> _silentRefresh() async {
+    try {
+      final result = await _repo.getSupportConversations(page: 1);
+      if (!mounted) return;
+      state = state.copyWith(
+        conversations: AsyncValue.data(result.conversations),
+        currentPage: 1,
+        hasMore: result.hasMore,
+      );
+    } catch (_) {}
+  }
+
   void applyRead(String uuid) {
     final current = state.conversations.valueOrNull;
     if (current == null) return;
@@ -162,6 +187,7 @@ class SupportConversationsNotifier
   @override
   void dispose() {
     _realtimeSub?.cancel();
+    _pollTimer?.cancel();
     super.dispose();
   }
 }

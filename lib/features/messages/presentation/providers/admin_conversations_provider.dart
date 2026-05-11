@@ -100,13 +100,17 @@ class AdminConversationsNotifier
         .events
         .listen((event) {
       if (!mounted) return;
+      // messageReceived: validate by UUID in _applyNewMessage — not by type.
+      if (event.type == RealtimeEventType.messageReceived) {
+        _applyNewMessage(event);
+        return;
+      }
+      // For all other events keep the type guard.
       if (event.conversationType != null &&
           event.conversationType != _conversationType) {
         return;
       }
       switch (event.type) {
-        case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
         case RealtimeEventType.conversationCreated:
           refresh();
           if (_conversationType == 'user_support') _refreshUnreadCount();
@@ -138,16 +142,14 @@ class AdminConversationsNotifier
 
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
+    if (uuid == null) return;
     final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
-      refresh();
+    if (current == null) {
+      _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
-    if (idx == -1) {
-      refresh();
-      return;
-    }
+    if (idx == -1) return; // not in this list — skip silently
     final updated = current[idx].copyWith(
       unreadCount: current[idx].unreadCount + 1,
     );
@@ -155,6 +157,35 @@ class AdminConversationsNotifier
     list.removeAt(idx);
     list.insert(0, updated);
     state = state.copyWith(conversations: AsyncValue.data(list));
+    _silentRefresh();
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final result = await _repo.getAdminConversations(
+        conversationType: _conversationType,
+        status: state.statusFilter,
+        unreadOnly: state.unreadOnly ? true : null,
+        search: state.searchQuery,
+        period: state.period,
+        page: 1,
+      );
+      if (!mounted) return;
+      var conversations = result.conversations;
+      if (_readUuids.isNotEmpty) {
+        conversations = conversations.map((c) {
+          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
+            return c.copyWith(unreadCount: 0);
+          }
+          return c;
+        }).toList();
+      }
+      state = state.copyWith(
+        conversations: AsyncValue.data(conversations),
+        currentPage: 1,
+        hasMore: result.hasMore,
+      );
+    } catch (_) {}
   }
 
   Future<void> load() async {
