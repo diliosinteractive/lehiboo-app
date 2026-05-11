@@ -111,6 +111,7 @@ abstract class AuthRepository {
     String? birthDate,
     String? membershipCity,
     required bool acceptTerms,
+    bool acceptMarketing = false,
   });
 
   /// Register a business account (multi-step registration)

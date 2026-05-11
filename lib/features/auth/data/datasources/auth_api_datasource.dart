@@ -294,6 +294,7 @@ class AuthApiDataSource {
     String? birthDate,
     String? membershipCity,
     required bool acceptTerms,
+    bool acceptMarketing = false,
   }) async {
     final response = await _dio.post(
       '/auth/register',
@@ -308,6 +309,7 @@ class AuthApiDataSource {
         if (birthDate != null) 'birth_date': birthDate,
         if (membershipCity != null) 'membership_city': membershipCity,
         'accept_terms': acceptTerms,
+        'newsletter': acceptMarketing,
       },
     );
 
