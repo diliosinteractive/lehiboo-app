@@ -482,6 +482,7 @@ class _SupportTab extends ConsumerWidget {
         onLoadMore: notifier.loadMore,
         onRefresh: notifier.refresh,
         routeFor: (conv) => '/messages/support/${conv.uuid}',
+        showLehibooAvatar: true,
         emptyWidget: const Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
