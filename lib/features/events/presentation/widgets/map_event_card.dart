@@ -22,6 +22,8 @@ class MapEventCard extends ConsumerWidget {
     }
 
     return GestureDetector(
+      // Activity-based surface: password gate handled by detail screen's
+      // locked-state fallback (no isPasswordProtected on Activity).
       onTap: () => context.push('/event/${activity.id}', extra: activity),
       child: Container(
         // remove fixed width, parent controls it via PageView

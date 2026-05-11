@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
+import '../../../events/presentation/utils/open_event.dart';
 import '../../data/models/membership_dto.dart';
 import '../providers/membership_state_providers.dart';
 import '../providers/private_events_provider.dart';
@@ -268,15 +269,15 @@ class _OrgFilterDropdown extends StatelessWidget {
   }
 }
 
-class _PrivateEventTile extends StatelessWidget {
+class _PrivateEventTile extends ConsumerWidget {
   final Event event;
 
   const _PrivateEventTile({required this.event});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () => context.push('/event/${event.id}'),
+      onTap: () => openEvent(context, ref, event),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
@@ -319,16 +320,31 @@ class _PrivateEventTile extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      event.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.montserrat(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: HbColors.textPrimary,
-                        height: 1.25,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            event.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: HbColors.textPrimary,
+                              height: 1.25,
+                            ),
+                          ),
+                        ),
+                        if (event.isPasswordProtected) ...[
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.lock_outline,
+                            size: 14,
+                            color: HbColors.brandPrimary,
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
