@@ -61,6 +61,8 @@ class SupportConversationsNotifier
       switch (event.type) {
         case RealtimeEventType.messageReceived:
           _applyNewMessage(event);
+        case RealtimeEventType.conversationCreated:
+          refresh();
         case RealtimeEventType.conversationClosed:
           if (event.conversationUuid != null) {
             _applyStatus(event.conversationUuid!, 'closed');
