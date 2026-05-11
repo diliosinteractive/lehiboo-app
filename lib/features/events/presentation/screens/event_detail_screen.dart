@@ -1263,6 +1263,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
+                // "Réserver maintenant" temporarily hidden — cart flow only.
+                /*
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   onPressed: () {
@@ -1287,6 +1289,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
+                */
               ],
             ),
           ),
