@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/services/push_notification_service.dart';
+import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/device_token_datasource.dart';
 
@@ -63,10 +64,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     // with a session already loaded from storage.
     final authState = _ref.read(authProvider);
     if (authState.isAuthenticated) {
-      final uuid = authState.user?.id;
-      if (uuid != null) {
-        _ref.read(pushNotificationServiceProvider).bindUser(uuid);
-      }
+      _bindOneSignalIfPossible(authState.user);
       initialize();
     }
   }
@@ -77,10 +75,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     if (previous?.status != AuthStatus.authenticated &&
         next.status == AuthStatus.authenticated) {
       debugPrint('PushNotification: User logged in, initializing');
-      final uuid = next.user?.id;
-      if (uuid != null) {
-        _ref.read(pushNotificationServiceProvider).bindUser(uuid);
-      }
+      _bindOneSignalIfPossible(next.user);
       initialize();
     }
 
@@ -90,6 +85,30 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       debugPrint('PushNotification: User logged out, unregistering');
       unregister();
     }
+  }
+
+  /// Bind the device to the user's OneSignal external id, when available.
+  ///
+  /// The backend exposes `users.onesignal_id` (nullable). Legacy users may
+  /// not have one yet — in that case we skip the binding and the device
+  /// will only receive broadcasts, not user-targeted notifications.
+  void _bindOneSignalIfPossible(HbUser? user) {
+    final onesignalId = user?.onesignalId;
+    if (user == null) {
+      debugPrint('PushNotification: bind skipped — no user');
+      return;
+    }
+    if (onesignalId == null || onesignalId.isEmpty) {
+      debugPrint(
+          'PushNotification: bind skipped — user.onesignal_id is null '
+          '(user.id=${user.id}). User-targeted pushes will not route until '
+          'the backend assigns one.');
+      return;
+    }
+    debugPrint(
+        'PushNotification: binding OneSignal external_id=$onesignalId '
+        '(user.id=${user.id})');
+    _ref.read(pushNotificationServiceProvider).bindUser(onesignalId);
   }
 
   /// Initialize push notifications
@@ -239,15 +258,27 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       appVersion = packageInfo.version;
     } catch (_) {}
 
-    final externalUserId = _ref.read(authProvider).user?.id;
+    // `external_user_id` is the OneSignal external id assigned by the backend.
+    // It can be null for legacy users — the field is then omitted from the
+    // payload and the backend just won't be able to fan out by external id.
+    final user = _ref.read(authProvider).user;
+    final externalUserId = user?.onesignalId;
     final deviceId = await pushService.getDeviceId();
     final deviceName = await pushService.getDeviceName();
     final platform = pushService.getPlatform();
 
+    debugPrint(
+        'PushNotification → POST /auth/device-tokens payload: '
+        'provider=$_oneSignalProvider, platform=$platform, '
+        'subscription_id=$subscriptionId, '
+        'external_user_id=${externalUserId ?? "<null>"}, '
+        'user.id=${user?.id ?? "<null>"}, '
+        'device_id=$deviceId, device_name=$deviceName, app_version=$appVersion');
+
     const maxAttempts = 3;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        await tokenDataSource.registerToken(
+        final result = await tokenDataSource.registerToken(
           token: subscriptionId,
           provider: _oneSignalProvider,
           platform: platform,
@@ -257,7 +288,8 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
           deviceName: deviceName,
           appVersion: appVersion,
         );
-        debugPrint('PushNotification: Token registered with backend');
+        debugPrint(
+            'PushNotification: Token registered (server uuid=${result.uuid}, active=${result.isActive})');
         return true;
       } on DioException catch (e) {
         final status = e.response?.statusCode ?? 0;
@@ -270,7 +302,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
           continue;
         }
         debugPrint(
-            'PushNotification: Failed to register token with backend (status=$status) - $e');
+            'PushNotification: Failed to register token with backend (status=$status, body=${e.response?.data}) - $e');
         return false;
       } catch (e) {
         debugPrint(

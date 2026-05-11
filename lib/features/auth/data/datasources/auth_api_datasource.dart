@@ -194,6 +194,7 @@ class AuthApiDataSource {
       registeredAt: userData['created_at']?.toString(),
       isVerified: userData['is_email_verified'] == true,
       newsletter: userData['newsletter'] == true,
+      onesignalId: userData['onesignal_id']?.toString(),
       pushNotificationsEnabled:
           userData['push_notifications_enabled'] == true ||
               userData['pushNotificationsEnabled'] == true,

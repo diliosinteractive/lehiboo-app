@@ -103,11 +103,12 @@ class PushNotificationService {
       // Request permission. Returns true when granted.
       final granted = await OneSignal.Notifications.requestPermission(true);
       _permissionDenied = !granted;
-      if (!granted) {
-        debugPrint('OneSignal: permission denied at initialize()');
-      }
+      debugPrint(
+          'OneSignal: permission ${granted ? "GRANTED" : "DENIED"} at initialize()');
 
       await ensureSubscriptionId();
+      debugPrint(
+          'OneSignal: subscriptionId=${_subscriptionId ?? "<null>"} after ensureSubscriptionId()');
 
       _replayPendingClick();
 
@@ -118,14 +119,15 @@ class PushNotificationService {
     }
   }
 
-  /// Bind this device to a backend user uuid. Idempotent — safe to call on
-  /// every app start when an authenticated session is present.
-  Future<void> bindUser(String userUuid) async {
+  /// Bind this device to the OneSignal external id assigned by the backend
+  /// (`users.onesignal_id`). Idempotent — safe to call on every app start
+  /// when an authenticated session with an external id is present.
+  Future<void> bindUser(String externalId) async {
     try {
-      await OneSignal.login(userUuid);
-      debugPrint('OneSignal.login($userUuid)');
+      await OneSignal.login(externalId);
+      debugPrint('OneSignal.login(external_id=$externalId) → success');
     } catch (e) {
-      debugPrint('OneSignal.login failed: $e');
+      debugPrint('OneSignal.login(external_id=$externalId) failed: $e');
     }
   }
 
@@ -135,7 +137,7 @@ class PushNotificationService {
   Future<void> unbindUser() async {
     try {
       await OneSignal.logout();
-      debugPrint('OneSignal.logout');
+      debugPrint('OneSignal.logout → success');
     } catch (e) {
       debugPrint('OneSignal.logout failed: $e');
     }
@@ -156,8 +158,9 @@ class PushNotificationService {
     }
     if (id != null && id.isNotEmpty) {
       _subscriptionId = id;
-      final preview = id.length >= 8 ? id.substring(0, 8) : id;
-      debugPrint('OneSignal subscription id: $preview...');
+      debugPrint('OneSignal subscription id resolved: $id');
+    } else {
+      debugPrint('OneSignal subscription id still null after polling');
     }
     return _subscriptionId;
   }

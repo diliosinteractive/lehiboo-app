@@ -40,6 +40,7 @@ class UserDto with _$UserDto {
     @JsonKey(name: 'is_verified') @Default(false) bool isVerified,
     @Default(false) bool newsletter,
     @JsonKey(name: 'push_notifications_enabled') @Default(false) bool pushNotificationsEnabled,
+    @JsonKey(name: 'onesignal_id') String? onesignalId,
     UserCapabilitiesDto? capabilities,
   }) = _UserDto;
 

@@ -226,6 +226,8 @@ mixin _$UserDto {
   bool get newsletter => throw _privateConstructorUsedError;
   @JsonKey(name: 'push_notifications_enabled')
   bool get pushNotificationsEnabled => throw _privateConstructorUsedError;
+  @JsonKey(name: 'onesignal_id')
+  String? get onesignalId => throw _privateConstructorUsedError;
   UserCapabilitiesDto? get capabilities => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -257,6 +259,7 @@ abstract class $UserDtoCopyWith<$Res> {
       bool newsletter,
       @JsonKey(name: 'push_notifications_enabled')
       bool pushNotificationsEnabled,
+      @JsonKey(name: 'onesignal_id') String? onesignalId,
       UserCapabilitiesDto? capabilities});
 
   $UserCapabilitiesDtoCopyWith<$Res>? get capabilities;
@@ -292,6 +295,7 @@ class _$UserDtoCopyWithImpl<$Res, $Val extends UserDto>
     Object? isVerified = null,
     Object? newsletter = null,
     Object? pushNotificationsEnabled = null,
+    Object? onesignalId = freezed,
     Object? capabilities = freezed,
   }) {
     return _then(_value.copyWith(
@@ -363,6 +367,10 @@ class _$UserDtoCopyWithImpl<$Res, $Val extends UserDto>
           ? _value.pushNotificationsEnabled
           : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
               as bool,
+      onesignalId: freezed == onesignalId
+          ? _value.onesignalId
+          : onesignalId // ignore: cast_nullable_to_non_nullable
+              as String?,
       capabilities: freezed == capabilities
           ? _value.capabilities
           : capabilities // ignore: cast_nullable_to_non_nullable
@@ -409,6 +417,7 @@ abstract class _$$UserDtoImplCopyWith<$Res> implements $UserDtoCopyWith<$Res> {
       bool newsletter,
       @JsonKey(name: 'push_notifications_enabled')
       bool pushNotificationsEnabled,
+      @JsonKey(name: 'onesignal_id') String? onesignalId,
       UserCapabilitiesDto? capabilities});
 
   @override
@@ -443,6 +452,7 @@ class __$$UserDtoImplCopyWithImpl<$Res>
     Object? isVerified = null,
     Object? newsletter = null,
     Object? pushNotificationsEnabled = null,
+    Object? onesignalId = freezed,
     Object? capabilities = freezed,
   }) {
     return _then(_$UserDtoImpl(
@@ -514,6 +524,10 @@ class __$$UserDtoImplCopyWithImpl<$Res>
           ? _value.pushNotificationsEnabled
           : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
               as bool,
+      onesignalId: freezed == onesignalId
+          ? _value.onesignalId
+          : onesignalId // ignore: cast_nullable_to_non_nullable
+              as String?,
       capabilities: freezed == capabilities
           ? _value.capabilities
           : capabilities // ignore: cast_nullable_to_non_nullable
@@ -544,6 +558,7 @@ class _$UserDtoImpl implements _UserDto {
       this.newsletter = false,
       @JsonKey(name: 'push_notifications_enabled')
       this.pushNotificationsEnabled = false,
+      @JsonKey(name: 'onesignal_id') this.onesignalId,
       this.capabilities});
 
   factory _$UserDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -595,11 +610,14 @@ class _$UserDtoImpl implements _UserDto {
   @JsonKey(name: 'push_notifications_enabled')
   final bool pushNotificationsEnabled;
   @override
+  @JsonKey(name: 'onesignal_id')
+  final String? onesignalId;
+  @override
   final UserCapabilitiesDto? capabilities;
 
   @override
   String toString() {
-    return 'UserDto(id: $id, email: $email, displayName: $displayName, name: $name, firstName: $firstName, lastName: $lastName, phone: $phone, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, avatarUrl: $avatarUrl, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, newsletter: $newsletter, pushNotificationsEnabled: $pushNotificationsEnabled, capabilities: $capabilities)';
+    return 'UserDto(id: $id, email: $email, displayName: $displayName, name: $name, firstName: $firstName, lastName: $lastName, phone: $phone, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, avatarUrl: $avatarUrl, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, newsletter: $newsletter, pushNotificationsEnabled: $pushNotificationsEnabled, onesignalId: $onesignalId, capabilities: $capabilities)';
   }
 
   @override
@@ -635,32 +653,36 @@ class _$UserDtoImpl implements _UserDto {
             (identical(
                     other.pushNotificationsEnabled, pushNotificationsEnabled) ||
                 other.pushNotificationsEnabled == pushNotificationsEnabled) &&
+            (identical(other.onesignalId, onesignalId) ||
+                other.onesignalId == onesignalId) &&
             (identical(other.capabilities, capabilities) ||
                 other.capabilities == capabilities));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      email,
-      displayName,
-      name,
-      firstName,
-      lastName,
-      phone,
-      city,
-      bio,
-      birthDate,
-      membershipCity,
-      avatarUrl,
-      role,
-      registeredAt,
-      isVerified,
-      newsletter,
-      pushNotificationsEnabled,
-      capabilities);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        email,
+        displayName,
+        name,
+        firstName,
+        lastName,
+        phone,
+        city,
+        bio,
+        birthDate,
+        membershipCity,
+        avatarUrl,
+        role,
+        registeredAt,
+        isVerified,
+        newsletter,
+        pushNotificationsEnabled,
+        onesignalId,
+        capabilities
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -696,6 +718,7 @@ abstract class _UserDto implements UserDto {
       final bool newsletter,
       @JsonKey(name: 'push_notifications_enabled')
       final bool pushNotificationsEnabled,
+      @JsonKey(name: 'onesignal_id') final String? onesignalId,
       final UserCapabilitiesDto? capabilities}) = _$UserDtoImpl;
 
   factory _UserDto.fromJson(Map<String, dynamic> json) = _$UserDtoImpl.fromJson;
@@ -743,6 +766,9 @@ abstract class _UserDto implements UserDto {
   @override
   @JsonKey(name: 'push_notifications_enabled')
   bool get pushNotificationsEnabled;
+  @override
+  @JsonKey(name: 'onesignal_id')
+  String? get onesignalId;
   @override
   UserCapabilitiesDto? get capabilities;
   @override

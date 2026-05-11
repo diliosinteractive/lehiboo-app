@@ -1,9 +1,14 @@
+import 'package:flutter/material.dart';
+
 import '../../../../domain/entities/user.dart';
 import '../models/auth_response_dto.dart';
 
 class AuthMapper {
   static HbUser toUser(UserDto dto) {
     final role = _parseRole(dto.role);
+
+    debugPrint("user onesignalId: ${dto.toJson()}");
+
     return HbUser(
       id: dto.id.toString(),
       email: dto.email,
@@ -22,6 +27,7 @@ class AuthMapper {
       isVerified: dto.isVerified,
       newsletter: dto.newsletter,
       pushNotificationsEnabled: dto.pushNotificationsEnabled,
+      onesignalId: dto.onesignalId,
       capabilities: dto.capabilities != null
           ? UserCapabilities(
               canBook: dto.capabilities!.canBook,

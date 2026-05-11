@@ -109,12 +109,12 @@ void main() async {
     try {
       OneSignal.initialize(oneSignalAppId);
       OneSignal.Notifications.addClickListener(oneSignalColdStartClickListener);
-      debugPrint('OneSignal initialized');
+      debugPrint('OneSignal initialized (app_id=$oneSignalAppId)');
     } catch (e) {
       debugPrint('OneSignal initialization failed: $e');
     }
   } else {
-    debugPrint('Warning: ONESIGNAL_APP_ID not configured');
+    debugPrint('Warning: ONESIGNAL_APP_ID not configured — push disabled');
   }
 
   // Initialize Stripe
