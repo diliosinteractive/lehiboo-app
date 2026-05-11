@@ -432,9 +432,4 @@ class MockGamificationRepository implements GamificationRepository {
     throw UnimplementedError('Hibons are earned through daily rewards, wheel spins, etc.');
   }
 
-  @override
-  Future<HibonBadgesResult> getBadges() {
-    // TODO: implement getBadges
-    throw UnimplementedError();
-  }
 }

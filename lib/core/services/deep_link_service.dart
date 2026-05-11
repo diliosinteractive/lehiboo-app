@@ -100,6 +100,25 @@ class DeepLinkService {
         final id = str('booking_id');
         return id != null ? '/booking-detail/$id' : '/my-bookings';
 
+      // -- Reminders (J-7, J-1) — same destination as the booking detail. --
+      case 'event_reminder':
+        final id = str('booking_id');
+        return id != null ? '/booking-detail/$id' : '/my-bookings';
+
+      // -- Vendor: scan ticket / check-in --
+      case 'ticket_checked_in':
+        final eventId = str('event_id');
+        return eventId != null
+            ? '/vendor/events/$eventId/check-in'
+            : '/notifications';
+
+      // -- Collaboration invites --
+      case 'collaboration_invite':
+        final invitationId = str('invitation_id');
+        return invitationId != null
+            ? '/collaborations/invitations/$invitationId'
+            : '/notifications';
+
       // -- Messages --
       case 'new_message':
         final uuid = str('conversation_uuid');

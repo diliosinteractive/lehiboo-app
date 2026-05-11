@@ -32,6 +32,13 @@ mixin _$HbUser {
   bool get isVerified => throw _privateConstructorUsedError;
   bool get newsletter => throw _privateConstructorUsedError;
   bool get pushNotificationsEnabled => throw _privateConstructorUsedError;
+
+  /// OneSignal external user id assigned by the backend.
+  /// Used as `external_id` for `OneSignal.login()` and as `external_user_id`
+  /// in the `POST /auth/device-tokens` payload. Nullable: legacy users may
+  /// not have one yet — in that case we skip the OneSignal binding and the
+  /// device-token is registered without `external_user_id`.
+  String? get onesignalId => throw _privateConstructorUsedError;
   UserCapabilities get capabilities =>
       throw _privateConstructorUsedError; // Legacy fields for backwards compatibility
   List<String>? get interestsCategoryIds => throw _privateConstructorUsedError;
@@ -62,6 +69,7 @@ abstract class $HbUserCopyWith<$Res> {
       bool isVerified,
       bool newsletter,
       bool pushNotificationsEnabled,
+      String? onesignalId,
       UserCapabilities capabilities,
       List<String>? interestsCategoryIds});
 
@@ -97,6 +105,7 @@ class _$HbUserCopyWithImpl<$Res, $Val extends HbUser>
     Object? isVerified = null,
     Object? newsletter = null,
     Object? pushNotificationsEnabled = null,
+    Object? onesignalId = freezed,
     Object? capabilities = null,
     Object? interestsCategoryIds = freezed,
   }) {
@@ -165,6 +174,10 @@ class _$HbUserCopyWithImpl<$Res, $Val extends HbUser>
           ? _value.pushNotificationsEnabled
           : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
               as bool,
+      onesignalId: freezed == onesignalId
+          ? _value.onesignalId
+          : onesignalId // ignore: cast_nullable_to_non_nullable
+              as String?,
       capabilities: null == capabilities
           ? _value.capabilities
           : capabilities // ignore: cast_nullable_to_non_nullable
@@ -209,6 +222,7 @@ abstract class _$$HbUserImplCopyWith<$Res> implements $HbUserCopyWith<$Res> {
       bool isVerified,
       bool newsletter,
       bool pushNotificationsEnabled,
+      String? onesignalId,
       UserCapabilities capabilities,
       List<String>? interestsCategoryIds});
 
@@ -243,6 +257,7 @@ class __$$HbUserImplCopyWithImpl<$Res>
     Object? isVerified = null,
     Object? newsletter = null,
     Object? pushNotificationsEnabled = null,
+    Object? onesignalId = freezed,
     Object? capabilities = null,
     Object? interestsCategoryIds = freezed,
   }) {
@@ -311,6 +326,10 @@ class __$$HbUserImplCopyWithImpl<$Res>
           ? _value.pushNotificationsEnabled
           : pushNotificationsEnabled // ignore: cast_nullable_to_non_nullable
               as bool,
+      onesignalId: freezed == onesignalId
+          ? _value.onesignalId
+          : onesignalId // ignore: cast_nullable_to_non_nullable
+              as String?,
       capabilities: null == capabilities
           ? _value.capabilities
           : capabilities // ignore: cast_nullable_to_non_nullable
@@ -343,6 +362,7 @@ class _$HbUserImpl implements _HbUser {
       this.isVerified = false,
       this.newsletter = false,
       this.pushNotificationsEnabled = false,
+      this.onesignalId,
       this.capabilities = const UserCapabilities(),
       final List<String>? interestsCategoryIds})
       : _interestsCategoryIds = interestsCategoryIds;
@@ -383,6 +403,14 @@ class _$HbUserImpl implements _HbUser {
   @override
   @JsonKey()
   final bool pushNotificationsEnabled;
+
+  /// OneSignal external user id assigned by the backend.
+  /// Used as `external_id` for `OneSignal.login()` and as `external_user_id`
+  /// in the `POST /auth/device-tokens` payload. Nullable: legacy users may
+  /// not have one yet — in that case we skip the OneSignal binding and the
+  /// device-token is registered without `external_user_id`.
+  @override
+  final String? onesignalId;
   @override
   @JsonKey()
   final UserCapabilities capabilities;
@@ -401,7 +429,7 @@ class _$HbUserImpl implements _HbUser {
 
   @override
   String toString() {
-    return 'HbUser(id: $id, email: $email, displayName: $displayName, firstName: $firstName, lastName: $lastName, phone: $phone, avatarUrl: $avatarUrl, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, newsletter: $newsletter, pushNotificationsEnabled: $pushNotificationsEnabled, capabilities: $capabilities, interestsCategoryIds: $interestsCategoryIds)';
+    return 'HbUser(id: $id, email: $email, displayName: $displayName, firstName: $firstName, lastName: $lastName, phone: $phone, avatarUrl: $avatarUrl, city: $city, bio: $bio, birthDate: $birthDate, membershipCity: $membershipCity, role: $role, registeredAt: $registeredAt, isVerified: $isVerified, newsletter: $newsletter, pushNotificationsEnabled: $pushNotificationsEnabled, onesignalId: $onesignalId, capabilities: $capabilities, interestsCategoryIds: $interestsCategoryIds)';
   }
 
   @override
@@ -436,6 +464,8 @@ class _$HbUserImpl implements _HbUser {
             (identical(
                     other.pushNotificationsEnabled, pushNotificationsEnabled) ||
                 other.pushNotificationsEnabled == pushNotificationsEnabled) &&
+            (identical(other.onesignalId, onesignalId) ||
+                other.onesignalId == onesignalId) &&
             (identical(other.capabilities, capabilities) ||
                 other.capabilities == capabilities) &&
             const DeepCollectionEquality()
@@ -443,26 +473,28 @@ class _$HbUserImpl implements _HbUser {
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      email,
-      displayName,
-      firstName,
-      lastName,
-      phone,
-      avatarUrl,
-      city,
-      bio,
-      birthDate,
-      membershipCity,
-      role,
-      registeredAt,
-      isVerified,
-      newsletter,
-      pushNotificationsEnabled,
-      capabilities,
-      const DeepCollectionEquality().hash(_interestsCategoryIds));
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        email,
+        displayName,
+        firstName,
+        lastName,
+        phone,
+        avatarUrl,
+        city,
+        bio,
+        birthDate,
+        membershipCity,
+        role,
+        registeredAt,
+        isVerified,
+        newsletter,
+        pushNotificationsEnabled,
+        onesignalId,
+        capabilities,
+        const DeepCollectionEquality().hash(_interestsCategoryIds)
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -489,6 +521,7 @@ abstract class _HbUser implements HbUser {
       final bool isVerified,
       final bool newsletter,
       final bool pushNotificationsEnabled,
+      final String? onesignalId,
       final UserCapabilities capabilities,
       final List<String>? interestsCategoryIds}) = _$HbUserImpl;
 
@@ -524,6 +557,14 @@ abstract class _HbUser implements HbUser {
   bool get newsletter;
   @override
   bool get pushNotificationsEnabled;
+  @override
+
+  /// OneSignal external user id assigned by the backend.
+  /// Used as `external_id` for `OneSignal.login()` and as `external_user_id`
+  /// in the `POST /auth/device-tokens` payload. Nullable: legacy users may
+  /// not have one yet — in that case we skip the OneSignal binding and the
+  /// device-token is registered without `external_user_id`.
+  String? get onesignalId;
   @override
   UserCapabilities get capabilities;
   @override // Legacy fields for backwards compatibility
