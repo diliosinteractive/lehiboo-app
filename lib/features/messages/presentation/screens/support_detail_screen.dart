@@ -198,17 +198,20 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                 ],
               ),
               if (isClosed)
-                MaterialBanner(
-                  content: const Text('Cette conversation est fermée.'),
-                  leading: const Icon(Icons.lock_outline),
-                  backgroundColor: Colors.grey.shade100,
-                  actions: [
-                    TextButton(
-                      onPressed: () => ScaffoldMessenger.of(context)
-                          .hideCurrentMaterialBanner(),
-                      child: const Text('OK'),
-                    ),
-                  ],
+                Container(
+                  width: double.infinity,
+                  color: Colors.grey.shade100,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Cette conversation est fermée.',
+                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                      ),
+                    ],
+                  ),
                 ),
               Expanded(
                 child: _MessagesList(

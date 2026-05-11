@@ -483,6 +483,7 @@ class ConversationDetailNotifier
 
   Future<void> closeConversation() async {
     final closed = await _closeConversationForRoute();
+    if (!mounted) return;
     state = state.copyWith(conversation: AsyncValue.data(closed));
     _invalidateList();
   }
