@@ -426,7 +426,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         name: 'forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        builder: (context, state) => ForgotPasswordScreen(
+          initialEmail: state.uri.queryParameters['email'],
+        ),
       ),
       GoRoute(
         path: '/verify-otp',

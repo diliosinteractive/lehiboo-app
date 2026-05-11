@@ -1,12 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../checkin/presentation/providers/vendor_eligibility_provider.dart';
 import '../../../messages/presentation/providers/unread_count_provider.dart';
 import '../../../reviews/presentation/providers/pending_count_provider.dart';
+import '../../../gamification/presentation/providers/gamification_provider.dart';
+import '../../data/datasources/profile_api_datasource.dart';
 import '../providers/profile_provider.dart';
 
 class _ProfileField {
@@ -62,32 +67,11 @@ class ProfileScreen extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              // Avatar
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: HbColors.brandPrimary.withValues(alpha: 0.1),
-                ),
-                child: avatarUrl != null && avatarUrl.isNotEmpty
-                    ? ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: avatarUrl,
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: CircularProgressIndicator(
-                              color: HbColors.brandPrimary,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          errorWidget: (context, url, error) =>
-                              _buildDefaultAvatar(displayName),
-                        ),
-                      )
-                    : _buildDefaultAvatar(displayName),
+              // Avatar (tap to change — same flow as Mon Compte)
+              _EditableAvatar(
+                avatarUrl: avatarUrl,
+                displayName: displayName,
+                size: 80,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -128,23 +112,8 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: 8),
-                    // Badge role
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getRoleColor(user.role).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _getRoleLabel(user.role),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: _getRoleColor(user.role),
-                        ),
-                      ),
-                    ),
+                    // Badge rang HIBONs
+                    _buildRankBadge(ref),
                   ],
                 ),
               ),
@@ -727,46 +696,47 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDefaultAvatar(String displayName) {
-    final initials = displayName.isNotEmpty
-        ? displayName
-            .split(' ')
-            .take(2)
-            .map((e) => e.isNotEmpty ? e[0].toUpperCase() : '')
-            .join()
-        : 'U';
-    return Center(
-      child: Text(
-        initials,
-        style: const TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: HbColors.brandPrimary,
-        ),
+  /// Pill displaying the user's HIBONs rank (e.g. "🔍 Curieux").
+  ///
+  /// Prefers the full `gamificationNotifierProvider` wallet; falls back to
+  /// the lightweight `hibonsBalanceProvider` during cold-start (same trick
+  /// as `HibonCounterWidget`). Hidden entirely if neither source has data
+  /// yet — better than briefly flashing a stale "Membre"-style label.
+  Widget _buildRankBadge(WidgetRef ref) {
+    final wallet = ref.watch(gamificationNotifierProvider).valueOrNull;
+    final balance = ref.watch(hibonsBalanceProvider).valueOrNull;
+
+    final rankLabel = wallet?.rankLabel ?? balance?.rankLabel;
+    final rankIcon = wallet?.rankIcon ?? balance?.rankIcon;
+
+    if (rankLabel == null || rankLabel.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: HbColors.brandPrimary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (rankIcon != null && rankIcon.isNotEmpty) ...[
+            Text(rankIcon, style: const TextStyle(fontSize: 12)),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            rankLabel,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: HbColors.brandPrimary,
+            ),
+          ),
+        ],
       ),
     );
-  }
-
-  Color _getRoleColor(role) {
-    switch (role.toString()) {
-      case 'UserRole.partner':
-        return Colors.purple;
-      case 'UserRole.admin':
-        return Colors.red;
-      default:
-        return HbColors.brandPrimary;
-    }
-  }
-
-  String _getRoleLabel(role) {
-    switch (role.toString()) {
-      case 'UserRole.partner':
-        return 'Partenaire';
-      case 'UserRole.admin':
-        return 'Administrateur';
-      default:
-        return 'Membre';
-    }
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
@@ -803,6 +773,187 @@ class ProfileScreen extends ConsumerWidget {
       await ref.read(authProvider.notifier).logout();
       if (context.mounted) {
         context.go('/');
+      }
+    }
+  }
+}
+
+class _EditableAvatar extends ConsumerStatefulWidget {
+  final String? avatarUrl;
+  final String displayName;
+  final double size;
+
+  const _EditableAvatar({
+    required this.avatarUrl,
+    required this.displayName,
+    this.size = 80,
+  });
+
+  @override
+  ConsumerState<_EditableAvatar> createState() => _EditableAvatarState();
+}
+
+class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
+  File? _selectedImage;
+  bool _isUploading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.size;
+    final badgeSize = (size * 0.32).clamp(24.0, 36.0);
+    final badgeIconSize = badgeSize * 0.55;
+
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: _isUploading ? null : _pickImage,
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: HbColors.brandPrimary.withValues(alpha: 0.1),
+            ),
+            child: _isUploading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: HbColors.brandPrimary,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : _selectedImage != null
+                    ? ClipOval(
+                        child: Image.file(
+                          _selectedImage!,
+                          width: size,
+                          height: size,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty
+                        ? ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: widget.avatarUrl!,
+                              width: size,
+                              height: size,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(
+                                  color: HbColors.brandPrimary,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  _buildDefaultAvatar(),
+                            ),
+                          )
+                        : _buildDefaultAvatar(),
+          ),
+        ),
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: GestureDetector(
+            onTap: _isUploading ? null : _pickImage,
+            child: Container(
+              width: badgeSize,
+              height: badgeSize,
+              decoration: BoxDecoration(
+                color: HbColors.brandPrimary,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: Icon(
+                Icons.camera_alt,
+                color: Colors.white,
+                size: badgeIconSize,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDefaultAvatar() {
+    final initials = widget.displayName.isNotEmpty
+        ? widget.displayName
+            .split(' ')
+            .take(2)
+            .map((e) => e.isNotEmpty ? e[0].toUpperCase() : '')
+            .join()
+        : 'U';
+    return Center(
+      child: Text(
+        initials,
+        style: TextStyle(
+          fontSize: widget.size * 0.35,
+          fontWeight: FontWeight.bold,
+          color: HbColors.brandPrimary,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+      await _uploadAvatar();
+    }
+  }
+
+  Future<void> _uploadAvatar() async {
+    if (_selectedImage == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final previousAvatarUrl = ref.read(authProvider).user?.avatarUrl;
+      final profileDataSource = ref.read(profileApiDataSourceProvider);
+      final updatedUser =
+          await profileDataSource.uploadAvatar(_selectedImage!);
+
+      if (previousAvatarUrl != null && previousAvatarUrl.isNotEmpty) {
+        await CachedNetworkImage.evictFromCache(previousAvatarUrl);
+      }
+      if (updatedUser.avatarUrl != null &&
+          updatedUser.avatarUrl!.isNotEmpty) {
+        await CachedNetworkImage.evictFromCache(updatedUser.avatarUrl!);
+      }
+
+      ref.read(authProvider.notifier).updateUser(updatedUser);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo de profil mise à jour'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _selectedImage = null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'upload: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
       }
     }
   }

@@ -240,12 +240,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             //   child: NativeAdSection(),
             // ),
 
-            // 13. Section Web/Retrouvez-nous (CTA)
-            SliverToBoxAdapter(
-              child: _buildWebCTASection(),
-            ),
+            // 13. Section Web/Retrouvez-nous (CTA) — temporarily hidden
+            // SliverToBoxAdapter(
+            //   child: _buildWebCTASection(),
+            // ),
 
             // 14. Section Villes populaires
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(
               child: _buildTopCitiesSection(),
             ),
@@ -271,12 +272,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final avatarUrl = user?.avatarUrl;
 
     return AppBar(
-      backgroundColor: Color.lerp(
-        Colors.transparent,
-        HbColors.brandPrimary,
-        opacity,
-      ),
+      backgroundColor: HbColors.brandPrimary.withValues(alpha: opacity),
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       centerTitle: false,
       toolbarHeight: 60,
       title: Row(
@@ -515,6 +514,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildWebCTASection() {
     return Container(
       margin: const EdgeInsets.all(20),
