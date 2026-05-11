@@ -5,9 +5,11 @@ import '../../../../config/dio_client.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../memberships/data/models/membership_dto.dart';
 import '../../../memberships/domain/exceptions/members_only_exception.dart';
+import '../../domain/exceptions/event_password_exceptions.dart';
 import '../models/event_dto.dart';
 import '../models/event_availability_dto.dart';
 import '../models/home_feed_response_dto.dart' show HomeFeedDataDto;
+import '../models/locked_event_shell_dto.dart';
 import '../../../../domain/entities/city.dart';
 import '../models/city_with_coordinates_dto.dart';
 
@@ -235,14 +237,78 @@ class EventsApiDataSource {
     } on DioException catch (e) {
       if (e.response?.statusCode == 403) {
         final body = e.response?.data;
-        if (body is Map<String, dynamic> && body['error'] == 'members_only') {
-          final org = body['organization'];
-          if (org is Map<String, dynamic>) {
-            throw MembersOnlyException(OrganizationSummaryDto.fromJson(org));
+        if (body is Map<String, dynamic>) {
+          if (body['error'] == 'password_required') {
+            final shell = body['data'];
+            if (shell is Map<String, dynamic>) {
+              throw EventPasswordRequiredException(
+                LockedEventShellDto.fromJson(shell).toEntity(),
+              );
+            }
+          }
+          if (body['error'] == 'members_only') {
+            final org = body['organization'];
+            if (org is Map<String, dynamic>) {
+              throw MembersOnlyException(OrganizationSummaryDto.fromJson(org));
+            }
           }
         }
       }
       rethrow;
+    }
+  }
+
+  /// Unlock a password-protected event in a single round-trip.
+  ///
+  /// On `200` the API returns the full `MobileEventResource` — callers
+  /// don't need a follow-up `GET /events/{id}`. Status codes map to the
+  /// typed exceptions in `event_password_exceptions.dart` (and reuse
+  /// [MembersOnlyException] for `403 + members_only`). Spec §5.
+  Future<EventDto> verifyEventPassword(
+    String identifier,
+    String password,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/events/$identifier/verify-password',
+        data: {'password': password},
+        options: Options(headers: {'Accept-Language': 'fr'}),
+      );
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return EventDto.fromJson(payload);
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final body = e.response?.data;
+      switch (status) {
+        case 400:
+          throw const EventNotProtectedException();
+        case 403:
+          if (body is Map<String, dynamic>) {
+            if (body['error'] == 'members_only') {
+              final org = body['organization'];
+              if (org is Map<String, dynamic>) {
+                throw MembersOnlyException(
+                  OrganizationSummaryDto.fromJson(org),
+                );
+              }
+            }
+            if (body['error'] == 'invalid_password') {
+              throw const InvalidEventPasswordException();
+            }
+          }
+          throw const InvalidEventPasswordException();
+        case 404:
+          throw const EventNotFoundException();
+        case 422:
+          throw const EventValidationException();
+        case 429:
+          final retry =
+              int.tryParse(e.response?.headers.value('retry-after') ?? '') ??
+                  60;
+          throw EventPasswordRateLimitedException(Duration(seconds: retry));
+        default:
+          rethrow;
+      }
     }
   }
 

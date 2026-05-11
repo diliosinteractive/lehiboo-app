@@ -65,6 +65,8 @@ class EventCard extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         debugPrint('Tapped activity: ${activity.id} - ${activity.title}');
+        // Activity-based surface: password gate handled by detail screen's
+        // locked-state fallback (no isPasswordProtected on Activity).
         context.push('/event/${activity.id}', extra: activity);
       },
       child: Container(

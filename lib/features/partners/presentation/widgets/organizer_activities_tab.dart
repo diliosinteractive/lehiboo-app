@@ -1,12 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/themes/colors.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
+import '../../../events/presentation/utils/open_event.dart';
 import '../providers/organizer_profile_providers.dart';
 import '../utils/event_timing_bucket.dart';
 
@@ -220,14 +220,14 @@ class _SegmentedToggle extends StatelessWidget {
   }
 }
 
-class _OrganizerEventTile extends StatelessWidget {
+class _OrganizerEventTile extends ConsumerWidget {
   final Event event;
   const _OrganizerEventTile({required this.event});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () => context.push('/event/${event.id}'),
+      onTap: () => openEvent(context, ref, event),
       borderRadius: BorderRadius.circular(12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,16 +254,31 @@ class _OrganizerEventTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    event.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: Color(0xFF1A1A2E),
-                      height: 1.25,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: Color(0xFF1A1A2E),
+                            height: 1.25,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (event.isPasswordProtected) ...[
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.lock_outline,
+                          size: 14,
+                          color: HbColors.brandPrimary,
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Row(

@@ -125,6 +125,20 @@ class EventRepositoryImpl implements EventRepository {
   }
 
   @override
+  Future<Event> verifyEventPassword(String identifier, String password) async {
+    final dto = await _apiDataSource.verifyEventPassword(identifier, password);
+    try {
+      return EventMapper.toEvent(dto);
+    } catch (e, stack) {
+      debugPrint(
+        'EventRepositoryImpl: Error mapping unlocked DTO for $identifier: $e',
+      );
+      debugPrint('$stack');
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<EventCategoryDto>> getCategories() async {
     return await _apiDataSource.getCategories();
   }
