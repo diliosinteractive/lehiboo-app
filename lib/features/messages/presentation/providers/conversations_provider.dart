@@ -68,13 +68,12 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
 
   void _startUnreadPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      // Skip when WebSocket is connected — WS events keep unread count current
+    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      // Skip when WebSocket is connected — WS events keep data current
       if (_ref.read(messagesRealtimeProvider)) return;
-      try {
-        final count = await _polling.getTotalUnreadCount();
-        _ref.read(unreadCountProvider.notifier).state = count;
-      } catch (_) {}
+      // Refresh list + badge (mirrors support conversations polling behaviour)
+      await _silentRefresh();
+      await _refreshUnreadCount();
     });
   }
 
@@ -139,8 +138,9 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
     if (idx == -1) {
-      dev.log('[ParticipantConv] applyNewMessage: conv=$uuid not in this list — skip');
-      return; // not our conversation
+      dev.log('[ParticipantConv] applyNewMessage: conv=$uuid not in list — refreshing');
+      _silentRefresh();
+      return;
     }
     dev.log('[ParticipantConv] applyNewMessage: conv=$uuid found at idx=$idx, unread=${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
     final updated = current[idx].copyWith(

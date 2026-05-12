@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/repositories/messages_repository_impl.dart';
+import '../providers/conversations_provider.dart';
 import '../widgets/new_conversation_form.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
@@ -65,6 +66,7 @@ class _NewConversationScreenState
       final result =
           await repo.createFromBooking(widget.fromBookingUuid!);
       if (!mounted) return;
+      ref.read(conversationsProvider.notifier).refresh();
       context.pushReplacement('/messages/${result.conversation.uuid}');
     } catch (e) {
       if (!mounted) return;

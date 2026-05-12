@@ -9,6 +9,7 @@ import '../../data/repositories/messages_repository_impl.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
+import '../providers/conversations_provider.dart';
 import '../providers/support_conversations_provider.dart';
 
 // ── Context sealed class ────────────────────────────────────────────────────
@@ -421,6 +422,9 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       if (!mounted) return;
       if (ctx is SupportConversationContext) {
         ref.invalidate(supportConversationsProvider);
+      } else if (ctx is DashboardConversationContext ||
+          ctx is FromOrganizerConversationContext) {
+        ref.read(conversationsProvider.notifier).refresh();
       }
       Navigator.of(context).pop(true);
       // SupportConversationContext is opened from /messages/support/new — replace

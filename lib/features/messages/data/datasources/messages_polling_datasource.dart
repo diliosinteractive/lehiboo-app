@@ -10,11 +10,12 @@ class MessagesPollingDatasource {
     return _api.getConversation(uuid);
   }
 
-  // Returns total unread count: subscriber conversations + support conversations
+  // Returns total unread count: subscriber conversations + support conversations.
+  // Each source is isolated — a failure in one does not zero out the other.
   Future<int> getTotalUnreadCount() async {
     final results = await Future.wait([
-      _api.getUnreadCount(),
-      _api.getSupportUnreadCount(),
+      _api.getUnreadCount().catchError((_) => 0),
+      _api.getSupportUnreadCount().catchError((_) => 0),
     ]);
     return results[0] + results[1];
   }

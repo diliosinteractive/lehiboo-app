@@ -48,6 +48,8 @@ import 'features/notifications/presentation/providers/push_notification_provider
 
 // Messages realtime (Pusher WebSocket — eagerly initialised at app boot)
 import 'features/messages/presentation/providers/messages_realtime_provider.dart';
+// Conversation list (eagerly initialised to sync badge count and realtime events)
+import 'features/messages/presentation/providers/conversations_provider.dart';
 
 // Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
 import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
@@ -232,6 +234,15 @@ class LeHibooApp extends ConsumerWidget {
     // user authenticates — not lazily when they navigate to the messages screen.
     // This mirrors the web frontend which subscribes globally at app boot.
     ref.watch(messagesRealtimeProvider);
+
+    // Eagerly initialize the participant conversation list when authenticated
+    // so that: (1) the unread badge shows the correct server count from app
+    // start, (2) realtime events update the list even when the user is on
+    // another tab, and (3) the list is ready instantly when navigating to messages.
+    final authState = ref.watch(authProvider);
+    if (authState.status == AuthStatus.authenticated) {
+      ref.watch(conversationsProvider);
+    }
 
     // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après
     // 3 min en foreground si l'user est authentifié.
