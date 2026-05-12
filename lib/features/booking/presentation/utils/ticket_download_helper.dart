@@ -35,13 +35,17 @@ Future<TicketSaveResult> shareTicketPdf(TicketPdfDownload download) async {
     final tempDir = await getTemporaryDirectory();
     final tempFile = File('${tempDir.path}/${download.filename}');
     await tempFile.writeAsBytes(download.bytes, flush: true);
-    await Share.shareXFiles([
-      XFile(
-        tempFile.path,
-        mimeType: 'application/pdf',
-        name: download.filename,
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [
+          XFile(
+            tempFile.path,
+            mimeType: 'application/pdf',
+            name: download.filename,
+          ),
+        ],
       ),
-    ]);
+    );
   } catch (e) {
     // Persisting succeeded; the share sheet is a nice-to-have.
     debugPrint('🎫 share sheet failed (non-fatal): $e');
