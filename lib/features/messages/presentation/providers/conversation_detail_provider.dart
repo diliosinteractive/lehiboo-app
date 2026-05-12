@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/conversation.dart';
@@ -203,9 +202,10 @@ class ConversationDetailNotifier
 
   Future<Conversation> _fetchConversation() async {
     return switch (_route) {
-      ConversationRoute.participant => _repo
-          .markConversationAsRead(_uuid)
-          .then((_) => _repo.getConversation(_uuid)),
+      ConversationRoute.participant => _repo.getConversation(_uuid).then((conv) {
+          _repo.markConversationAsRead(_uuid).catchError((_) {});
+          return conv;
+        }),
       ConversationRoute.participantSupport =>
         _repo.getSupportConversation(_uuid),
       ConversationRoute.vendor => _repo
@@ -322,7 +322,7 @@ class ConversationDetailNotifier
     }
   }
 
-  Future<void> sendMessage({String? content, List<XFile>? attachments}) async {
+  Future<void> sendMessage({String? content}) async {
     if (_route == ConversationRoute.adminReadonly) return;
     final conversation = state.conversation.valueOrNull;
     if (conversation == null) return;
@@ -339,7 +339,6 @@ class ConversationDetailNotifier
       isRead: false,
       isDelivered: false,
       isMine: true,
-      attachments: const [],
       createdAt: DateTime.now(),
     );
 
@@ -352,7 +351,7 @@ class ConversationDetailNotifier
     );
 
     try {
-      final sentMessage = await _sendMessageForRoute(content, attachments);
+      final sentMessage = await _sendMessageForRoute(content);
       if (!mounted) return;
       final updated = optimisticMessages
           .map((m) => m.uuid == tempUuid ? sentMessage : m)
@@ -379,33 +378,27 @@ class ConversationDetailNotifier
     }
   }
 
-  Future<Message> _sendMessageForRoute(
-      String? content, List<XFile>? attachments) {
+  Future<Message> _sendMessageForRoute(String? content) {
     return switch (_route) {
       ConversationRoute.participant => _repo.sendMessage(
           conversationUuid: _uuid,
           content: content,
-          attachments: attachments,
         ),
       ConversationRoute.participantSupport => _repo.sendSupportMessage(
           conversationUuid: _uuid,
           content: content,
-          attachments: attachments,
         ),
       ConversationRoute.vendor => _repo.sendVendorMessage(
           conversationUuid: _uuid,
           content: content,
-          attachments: attachments,
         ),
       ConversationRoute.vendorOrgOrg => _repo.sendOrgMessage(
           conversationUuid: _uuid,
           content: content,
-          attachments: attachments,
         ),
       ConversationRoute.admin => _repo.sendAdminMessage(
           conversationUuid: _uuid,
           content: content,
-          attachments: attachments,
         ),
       ConversationRoute.adminReadonly => throw UnsupportedError(
           'Cannot send messages in read-only mode',
@@ -490,6 +483,7 @@ class ConversationDetailNotifier
 
   Future<void> closeConversation() async {
     final closed = await _closeConversationForRoute();
+    if (!mounted) return;
     state = state.copyWith(conversation: AsyncValue.data(closed));
     _invalidateList();
   }
@@ -497,7 +491,7 @@ class ConversationDetailNotifier
   Future<Conversation> _closeConversationForRoute() {
     return switch (_route) {
       ConversationRoute.participant => _repo.closeConversation(_uuid),
-      ConversationRoute.participantSupport => _repo.closeConversation(_uuid),
+      ConversationRoute.participantSupport => _repo.closeSupportConversation(_uuid),
       ConversationRoute.vendor => _repo.closeVendorConversation(_uuid),
       ConversationRoute.vendorOrgOrg => _repo.closeOrgConversation(_uuid),
       ConversationRoute.admin => _repo.closeAdminConversation(_uuid),

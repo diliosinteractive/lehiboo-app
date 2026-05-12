@@ -476,25 +476,48 @@ class _SupportTab extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: notifier.refresh,
       color: const Color(0xFFFF601F),
-      child: _buildConversationList(
-        asyncConversations: state.conversations,
-        hasMore: state.hasMore,
-        onLoadMore: notifier.loadMore,
-        onRefresh: notifier.refresh,
-        routeFor: (conv) => '/messages/support/${conv.uuid}',
-        emptyWidget: const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.support_agent, size: 56, color: Colors.grey),
-              SizedBox(height: 12),
-              Text(
-                'Aucune conversation avec le support',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ],
+      child: Column(
+        children: [
+          ConversationFiltersBar(
+            showSearch: true,
+            showStatus: true,
+            showPeriod: true,
+            showUnreadOnly: true,
+            showReason: false,
+            searchQuery: state.searchQuery,
+            statusFilter: state.statusFilter,
+            periodFilter: state.period,
+            unreadOnly: state.unreadOnly,
+            onSearchChanged: notifier.setSearchQuery,
+            onStatusChanged: notifier.setStatusFilter,
+            onPeriodChanged: notifier.setPeriod,
+            onUnreadOnlyChanged: notifier.setUnreadOnly,
+            onReasonChanged: (_) {},
           ),
-        ),
+          Expanded(
+            child: _buildConversationList(
+              asyncConversations: state.conversations,
+              hasMore: state.hasMore,
+              onLoadMore: notifier.loadMore,
+              onRefresh: notifier.refresh,
+              routeFor: (conv) => '/messages/support/${conv.uuid}',
+              showLehibooAvatar: true,
+              emptyWidget: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.support_agent, size: 56, color: Colors.grey),
+                    SizedBox(height: 12),
+                    Text(
+                      'Aucune conversation avec le support',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,12 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:lehiboo/config/env_config.dart';
 import 'package:lehiboo/core/constants/app_constants.dart';
+import 'package:lehiboo/core/services/deep_link_service.dart';
 import 'dart:developer' as dev;
+import 'package:lehiboo/features/notifications/data/models/in_app_notification_dto.dart';
+import 'package:lehiboo/features/notifications/domain/entities/in_app_notification.dart';
+import 'package:lehiboo/features/notifications/presentation/providers/in_app_notifications_provider.dart';
+import 'package:lehiboo/routes/app_router.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'conversations_provider.dart';
 import 'support_conversations_provider.dart';
@@ -220,7 +226,8 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     if (_client == null) {
       // Client not yet created; _orgId is stored and will be used in
       // onConnectionEstablished once _connect() runs.
-      dev.log('[Pusher] subscribeToOrganization: client not ready, queued orgId=$orgId');
+      dev.log(
+          '[Pusher] subscribeToOrganization: client not ready, queued orgId=$orgId');
       return;
     }
     _subscribeOrgChannel(orgId);
@@ -316,7 +323,8 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'conversation.closed':
         if (convUuid == null) {
-          dev.log('[Pusher] conversation.closed dropped — no conversation_uuid');
+          dev.log(
+              '[Pusher] conversation.closed dropped — no conversation_uuid');
           return;
         }
         _emit(RealtimeEvent(
@@ -326,7 +334,8 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'conversation.reopened':
         if (convUuid == null) {
-          dev.log('[Pusher] conversation.reopened dropped — no conversation_uuid');
+          dev.log(
+              '[Pusher] conversation.reopened dropped — no conversation_uuid');
           return;
         }
         _emit(RealtimeEvent(
@@ -334,9 +343,60 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           conversationUuid: convUuid,
           conversationType: convType,
         ));
+      case 'notification.created':
+        _handleNotificationCreated(data);
       default:
         dev.log('[Pusher] ⚠ unhandled event="${event.name}" data=$data');
     }
+  }
+
+  void _handleNotificationCreated(Map<String, dynamic> data) {
+    final rawNotification = data['notification'];
+    if (rawNotification is! Map) {
+      dev.log('[Pusher] notification.created dropped — missing notification');
+      return;
+    }
+
+    final json = rawNotification.map(
+      (key, value) => MapEntry(key.toString(), value),
+    );
+    final notification = InAppNotificationDto.fromJson(json).toDomain();
+    final unreadCount = _int(data['unread_count']);
+
+    _ref.read(inAppNotificationsProvider.notifier).handleRealtimeNotification(
+          notification,
+          unreadCount: unreadCount,
+        );
+    _showForegroundNotification(notification);
+  }
+
+  void _showForegroundNotification(InAppNotification notification) {
+    final messenger = scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: _NotificationSnackContent(notification: notification),
+        action: SnackBarAction(
+          label: 'Ouvrir',
+          onPressed: () {
+            _ref.read(deepLinkServiceProvider).navigateFromNotification(
+                  actionUrl: notification.actionUrl,
+                  type: notification.type,
+                  data: notification.data,
+                );
+          },
+        ),
+      ),
+    );
+  }
+
+  int? _int(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   void _emit(RealtimeEvent event) {
@@ -358,3 +418,31 @@ final messagesRealtimeProvider =
     StateNotifierProvider<MessagesRealtimeNotifier, bool>((ref) {
   return MessagesRealtimeNotifier(ref);
 });
+
+class _NotificationSnackContent extends StatelessWidget {
+  final InAppNotification notification;
+
+  const _NotificationSnackContent({required this.notification});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          notification.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        if (notification.message.isNotEmpty)
+          Text(
+            notification.message,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+      ],
+    );
+  }
+}

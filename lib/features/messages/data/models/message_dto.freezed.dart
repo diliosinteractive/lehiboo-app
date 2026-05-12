@@ -224,7 +224,6 @@ mixin _$MessageDto {
   bool get isDelivered => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_mine')
   bool get isMine => throw _privateConstructorUsedError;
-  List<AttachmentDto> get attachments => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   String get createdAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'edited_at')
@@ -260,7 +259,6 @@ abstract class $MessageDtoCopyWith<$Res> {
       @JsonKey(name: 'is_read') bool isRead,
       @JsonKey(name: 'is_delivered') bool isDelivered,
       @JsonKey(name: 'is_mine') bool isMine,
-      List<AttachmentDto> attachments,
       @JsonKey(name: 'created_at') String createdAt,
       @JsonKey(name: 'edited_at') String? editedAt,
       @JsonKey(name: 'read_at') String? readAt,
@@ -295,7 +293,6 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
     Object? isRead = null,
     Object? isDelivered = null,
     Object? isMine = null,
-    Object? attachments = null,
     Object? createdAt = null,
     Object? editedAt = freezed,
     Object? readAt = freezed,
@@ -354,10 +351,6 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
           ? _value.isMine
           : isMine // ignore: cast_nullable_to_non_nullable
               as bool,
-      attachments: null == attachments
-          ? _value.attachments
-          : attachments // ignore: cast_nullable_to_non_nullable
-              as List<AttachmentDto>,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -412,7 +405,6 @@ abstract class _$$MessageDtoImplCopyWith<$Res>
       @JsonKey(name: 'is_read') bool isRead,
       @JsonKey(name: 'is_delivered') bool isDelivered,
       @JsonKey(name: 'is_mine') bool isMine,
-      List<AttachmentDto> attachments,
       @JsonKey(name: 'created_at') String createdAt,
       @JsonKey(name: 'edited_at') String? editedAt,
       @JsonKey(name: 'read_at') String? readAt,
@@ -446,7 +438,6 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
     Object? isRead = null,
     Object? isDelivered = null,
     Object? isMine = null,
-    Object? attachments = null,
     Object? createdAt = null,
     Object? editedAt = freezed,
     Object? readAt = freezed,
@@ -505,10 +496,6 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
           ? _value.isMine
           : isMine // ignore: cast_nullable_to_non_nullable
               as bool,
-      attachments: null == attachments
-          ? _value._attachments
-          : attachments // ignore: cast_nullable_to_non_nullable
-              as List<AttachmentDto>,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -546,12 +533,10 @@ class _$MessageDtoImpl implements _MessageDto {
       @JsonKey(name: 'is_read') this.isRead = false,
       @JsonKey(name: 'is_delivered') this.isDelivered = false,
       @JsonKey(name: 'is_mine') this.isMine = false,
-      final List<AttachmentDto> attachments = const [],
       @JsonKey(name: 'created_at') required this.createdAt,
       @JsonKey(name: 'edited_at') this.editedAt,
       @JsonKey(name: 'read_at') this.readAt,
-      @JsonKey(name: 'delivered_at') this.deliveredAt})
-      : _attachments = attachments;
+      @JsonKey(name: 'delivered_at') this.deliveredAt});
 
   factory _$MessageDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$MessageDtoImplFromJson(json);
@@ -592,15 +577,6 @@ class _$MessageDtoImpl implements _MessageDto {
   @override
   @JsonKey(name: 'is_mine')
   final bool isMine;
-  final List<AttachmentDto> _attachments;
-  @override
-  @JsonKey()
-  List<AttachmentDto> get attachments {
-    if (_attachments is EqualUnmodifiableListView) return _attachments;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_attachments);
-  }
-
   @override
   @JsonKey(name: 'created_at')
   final String createdAt;
@@ -616,7 +592,7 @@ class _$MessageDtoImpl implements _MessageDto {
 
   @override
   String toString() {
-    return 'MessageDto(id: $id, uuid: $uuid, conversationId: $conversationId, senderType: $senderType, senderTypeLabel: $senderTypeLabel, isSystem: $isSystem, sender: $sender, content: $content, isDeleted: $isDeleted, isEdited: $isEdited, isRead: $isRead, isDelivered: $isDelivered, isMine: $isMine, attachments: $attachments, createdAt: $createdAt, editedAt: $editedAt, readAt: $readAt, deliveredAt: $deliveredAt)';
+    return 'MessageDto(id: $id, uuid: $uuid, conversationId: $conversationId, senderType: $senderType, senderTypeLabel: $senderTypeLabel, isSystem: $isSystem, sender: $sender, content: $content, isDeleted: $isDeleted, isEdited: $isEdited, isRead: $isRead, isDelivered: $isDelivered, isMine: $isMine, createdAt: $createdAt, editedAt: $editedAt, readAt: $readAt, deliveredAt: $deliveredAt)';
   }
 
   @override
@@ -644,8 +620,6 @@ class _$MessageDtoImpl implements _MessageDto {
             (identical(other.isDelivered, isDelivered) ||
                 other.isDelivered == isDelivered) &&
             (identical(other.isMine, isMine) || other.isMine == isMine) &&
-            const DeepCollectionEquality()
-                .equals(other._attachments, _attachments) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.editedAt, editedAt) ||
@@ -672,7 +646,6 @@ class _$MessageDtoImpl implements _MessageDto {
       isRead,
       isDelivered,
       isMine,
-      const DeepCollectionEquality().hash(_attachments),
       createdAt,
       editedAt,
       readAt,
@@ -707,7 +680,6 @@ abstract class _MessageDto implements MessageDto {
           @JsonKey(name: 'is_read') final bool isRead,
           @JsonKey(name: 'is_delivered') final bool isDelivered,
           @JsonKey(name: 'is_mine') final bool isMine,
-          final List<AttachmentDto> attachments,
           @JsonKey(name: 'created_at') required final String createdAt,
           @JsonKey(name: 'edited_at') final String? editedAt,
           @JsonKey(name: 'read_at') final String? readAt,
@@ -752,8 +724,6 @@ abstract class _MessageDto implements MessageDto {
   @override
   @JsonKey(name: 'is_mine')
   bool get isMine;
-  @override
-  List<AttachmentDto> get attachments;
   @override
   @JsonKey(name: 'created_at')
   String get createdAt;

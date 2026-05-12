@@ -45,9 +45,12 @@ import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 
 // Push Notifications
 import 'features/notifications/presentation/providers/push_notification_provider.dart';
+import 'features/notifications/presentation/providers/in_app_notifications_provider.dart';
 
 // Messages realtime (Pusher WebSocket — eagerly initialised at app boot)
 import 'features/messages/presentation/providers/messages_realtime_provider.dart';
+// Conversation list (eagerly initialised to sync badge count and realtime events)
+import 'features/messages/presentation/providers/conversations_provider.dart';
 
 // Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
 import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
@@ -67,13 +70,14 @@ void main() async {
 
   // Load environment variables
   // Use dart-define to specify environment: --dart-define=ENV=production or --dart-define=ENV=staging
-  const String environment = String.fromEnvironment('ENV', defaultValue: 'development');
+  const String environment =
+      String.fromEnvironment('ENV', defaultValue: 'development');
   final String envFile = switch (environment) {
     'production' => '.env.production',
     'staging' => '.env.staging',
     _ => '.env.development',
   };
-  
+
   try {
     await dotenv.load(fileName: envFile);
     debugPrint('Loaded environment: $environment from $envFile');
@@ -222,16 +226,27 @@ class LeHibooApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     // Wire force logout so the 401 interceptor can trigger auth state change.
-    DioClient.onForceLogout = () => ref.read(authProvider.notifier).forceLogout();
+    DioClient.onForceLogout =
+        () => ref.read(authProvider.notifier).forceLogout();
 
     // Watch push notification provider to initialize on auth state changes
     // The provider will auto-initialize when user logs in and unregister on logout
     ref.watch(pushNotificationProvider);
+    ref.watch(inAppNotificationsProvider);
 
     // Eagerly initialize the Pusher WebSocket so it connects as soon as the
     // user authenticates — not lazily when they navigate to the messages screen.
     // This mirrors the web frontend which subscribes globally at app boot.
     ref.watch(messagesRealtimeProvider);
+
+    // Eagerly initialize the participant conversation list when authenticated
+    // so that: (1) the unread badge shows the correct server count from app
+    // start, (2) realtime events update the list even when the user is on
+    // another tab, and (3) the list is ready instantly when navigating to messages.
+    final authState = ref.watch(authProvider);
+    if (authState.status == AuthStatus.authenticated) {
+      ref.watch(conversationsProvider);
+    }
 
     // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après
     // 3 min en foreground si l'user est authentifié.

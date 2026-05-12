@@ -120,8 +120,13 @@ class VendorConversationsNotifier
         .events
         .listen((event) {
       if (!mounted) return;
-      // Accept events that explicitly match OR have no type (backend may omit it)
       final type = event.conversationType;
+      // messageReceived: validate by UUID in _applyNewMessage — not by type.
+      if (event.type == RealtimeEventType.messageReceived) {
+        _applyNewMessage(event);
+        return;
+      }
+      // For all other events keep the type guard.
       if (type != null && type != 'participant_vendor') {
         dev.log(
           '[VendorConv] skipping event type=${event.type.name} convType=$type (not participant_vendor)',
@@ -132,8 +137,6 @@ class VendorConversationsNotifier
         '[VendorConv] handling event type=${event.type.name} conv=${event.conversationUuid} convType=$type',
       );
       switch (event.type) {
-        case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
         case RealtimeEventType.conversationCreated:
           refresh();
           _refreshUnreadCount();
@@ -163,16 +166,14 @@ class VendorConversationsNotifier
 
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
+    if (uuid == null) return;
     final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
-      refresh();
+    if (current == null) {
+      _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
-    if (idx == -1) {
-      refresh();
-      return;
-    }
+    if (idx == -1) return; // not in this list — skip silently
     final updated = current[idx].copyWith(
       unreadCount: current[idx].unreadCount + 1,
     );
@@ -180,6 +181,7 @@ class VendorConversationsNotifier
     list.removeAt(idx);
     list.insert(0, updated);
     state = state.copyWith(conversations: AsyncValue.data(list));
+    _silentRefresh();
   }
 
   Future<void> load() async {
@@ -251,6 +253,34 @@ class VendorConversationsNotifier
   }
 
   Future<void> refresh() async => load();
+
+  Future<void> _silentRefresh() async {
+    try {
+      final result = await _repo.getVendorConversations(
+        conversationType: 'participant_vendor',
+        status: state.statusFilter,
+        unreadOnly: state.unreadOnly ? true : null,
+        search: state.searchQuery,
+        period: state.period,
+        page: 1,
+      );
+      if (!mounted) return;
+      var conversations = result.conversations;
+      if (_readUuids.isNotEmpty) {
+        conversations = conversations.map((c) {
+          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
+            return c.copyWith(unreadCount: 0);
+          }
+          return c;
+        }).toList();
+      }
+      state = state.copyWith(
+        conversations: AsyncValue.data(conversations),
+        currentPage: 1,
+        hasMore: result.hasMore,
+      );
+    } catch (_) {}
+  }
 
   void applyRead(String uuid) {
     _readUuids.add(uuid);
@@ -335,6 +365,12 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         .listen((event) {
       if (!mounted) return;
       final type = event.conversationType;
+      // messageReceived: validate by UUID in _applyNewMessage — not by type.
+      if (event.type == RealtimeEventType.messageReceived) {
+        _applyNewMessage(event);
+        return;
+      }
+      // For all other events keep the type guard.
       if (type != null && type != 'vendor_admin') {
         dev.log(
           '[VendorSupport] skipping event type=${event.type.name} convType=$type (not vendor_admin)',
@@ -345,8 +381,6 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         '[VendorSupport] handling event type=${event.type.name} conv=${event.conversationUuid} convType=$type',
       );
       switch (event.type) {
-        case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
         case RealtimeEventType.conversationCreated:
           refresh();
         case RealtimeEventType.conversationClosed:
@@ -365,16 +399,14 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
 
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
+    if (uuid == null) return;
     final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
-      refresh();
+    if (current == null) {
+      _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
-    if (idx == -1) {
-      refresh();
-      return;
-    }
+    if (idx == -1) return; // not in this list — skip silently
     final updated = current[idx].copyWith(
       unreadCount: current[idx].unreadCount + 1,
     );
@@ -382,6 +414,31 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
     list.removeAt(idx);
     list.insert(0, updated);
     state = state.copyWith(conversations: AsyncValue.data(list));
+    _silentRefresh();
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final result = await _repo.getVendorConversations(
+        conversationType: 'vendor_admin',
+        page: 1,
+      );
+      if (!mounted) return;
+      var conversations = result.conversations;
+      if (_readUuids.isNotEmpty) {
+        conversations = conversations.map((c) {
+          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
+            return c.copyWith(unreadCount: 0);
+          }
+          return c;
+        }).toList();
+      }
+      state = state.copyWith(
+        conversations: AsyncValue.data(conversations),
+        currentPage: 1,
+        hasMore: result.hasMore,
+      );
+    } catch (_) {}
   }
 
   void _applyStatus(String convUuid, String status) {

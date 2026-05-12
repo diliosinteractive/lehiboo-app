@@ -82,6 +82,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
   int _expandedPanel = 0;
 
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   final GlobalKey _panel0Key = GlobalKey();
   final GlobalKey _panel1Key = GlobalKey();
   final GlobalKey _panel2Key = GlobalKey();
@@ -92,6 +93,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
   @override
   void initState() {
     super.initState();
+    _searchController.text = ref.read(eventFilterProvider).searchQuery;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 350),
       vsync: this,
@@ -103,6 +105,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
   void dispose() {
     _animationController.dispose();
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -131,6 +134,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
   int get _activeFilterCount {
     final filter = ref.read(eventFilterProvider);
     int count = 0;
+    if (filter.searchQuery.isNotEmpty) count++;
     if (filter.dateFilterType != null || filter.startDate != null) count++;
     if (filter.citySlug != null) count++;
     if (filter.latitude != null) count++;
@@ -190,7 +194,8 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
           backgroundColor: Colors.red[400],
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -217,9 +222,15 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
                   // Header
                   _buildHeader(topPadding),
 
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    child: _buildSearchInput(filter, filterNotifier),
+                  ),
+
                   // Accordion panels
                   Padding(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 120 + bottomPadding),
+                    padding:
+                        EdgeInsets.fromLTRB(16, 8, 16, 120 + bottomPadding),
                     child: Column(
                       children: [
                         // Panel 0: Où ?
@@ -282,7 +293,11 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
               hasFilters: filter.hasActiveFilters,
               bottomPadding: bottomPadding,
               onPressed: widget.onSearch ?? () {},
-              onClear: () => filterNotifier.resetAll(),
+              onClear: () {
+                filterNotifier.resetAll();
+                _searchController.clear();
+                setState(() {});
+              },
             ),
           ),
         ],
@@ -339,6 +354,57 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     );
   }
 
+  Widget _buildSearchInput(
+    EventFilter filter,
+    EventFilterNotifier filterNotifier,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(14),
+      child: TextField(
+        controller: _searchController,
+        textInputAction: TextInputAction.search,
+        onChanged: (value) {
+          filterNotifier.setSearchQuery(value);
+          setState(() {});
+        },
+        onSubmitted: (_) => widget.onSearch?.call(),
+        decoration: InputDecoration(
+          hintText: 'Événement ou organisation',
+          prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
+          suffixIcon: filter.searchQuery.isEmpty
+              ? null
+              : IconButton(
+                  icon: Icon(Icons.close, color: Colors.grey.shade500),
+                  onPressed: () {
+                    _searchController.clear();
+                    filterNotifier.clearSearchQuery();
+                    setState(() {});
+                  },
+                ),
+          filled: true,
+          fillColor: HbColors.surfaceInput,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        ),
+      ),
+    );
+  }
+
   String _getWhereSubtitle(EventFilter filter) {
     if (filter.cityName != null) return filter.cityName!;
     if (filter.latitude != null) return 'À ${filter.radiusKm.toInt()} km';
@@ -359,6 +425,9 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
   String _getWhatSubtitle(EventFilter filter) {
     final parts = <String>[];
+    if (filter.searchQuery.isNotEmpty) {
+      parts.add('"${filter.searchQuery}"');
+    }
     if (filter.categoriesSlugs.isNotEmpty) {
       parts.add('${filter.categoriesSlugs.length} cat.');
     }
@@ -461,9 +530,8 @@ class _AccordionPanel extends StatelessWidget {
                             color: isExpanded
                                 ? HbColors.brandPrimary
                                 : Colors.grey.shade600,
-                            fontWeight: isExpanded
-                                ? FontWeight.w600
-                                : FontWeight.w400,
+                            fontWeight:
+                                isExpanded ? FontWeight.w600 : FontWeight.w400,
                           ),
                         ),
                       ],
@@ -487,8 +555,9 @@ class _AccordionPanel extends StatelessWidget {
           // Content (animated)
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 300),
-            crossFadeState:
-                isExpanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+            crossFadeState: isExpanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
             firstChild: Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: child,
@@ -537,7 +606,8 @@ class _WhereContent extends ConsumerWidget {
                   : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
+                color:
+                    hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
                 width: hasLocation ? 2 : 1,
               ),
             ),
@@ -596,7 +666,8 @@ class _WhereContent extends ConsumerWidget {
                 if (hasLocation)
                   IconButton(
                     onPressed: () => filterNotifier.clearLocation(),
-                    icon: Icon(Icons.close, size: 18, color: Colors.grey.shade500),
+                    icon: Icon(Icons.close,
+                        size: 18, color: Colors.grey.shade500),
                   ),
               ],
             ),
@@ -680,7 +751,8 @@ class _WhereContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildFallbackCities(EventFilter filter, EventFilterNotifier filterNotifier) {
+  Widget _buildFallbackCities(
+      EventFilter filter, EventFilterNotifier filterNotifier) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -764,7 +836,8 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
             DateQuickChip(
               label: 'Demain',
               subtitle: DateFormat('d MMM', 'fr_FR').format(tomorrow),
-              isSelected: widget.filter.dateFilterType == DateFilterType.tomorrow,
+              isSelected:
+                  widget.filter.dateFilterType == DateFilterType.tomorrow,
               onTap: () {
                 if (widget.filter.dateFilterType == DateFilterType.tomorrow) {
                   filterNotifier.clearDateFilter();
@@ -777,9 +850,11 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
               label: 'Ce week-end',
               subtitle:
                   '${DateFormat('d').format(saturday)}-${DateFormat('d MMM', 'fr_FR').format(sunday)}',
-              isSelected: widget.filter.dateFilterType == DateFilterType.thisWeekend,
+              isSelected:
+                  widget.filter.dateFilterType == DateFilterType.thisWeekend,
               onTap: () {
-                if (widget.filter.dateFilterType == DateFilterType.thisWeekend) {
+                if (widget.filter.dateFilterType ==
+                    DateFilterType.thisWeekend) {
                   filterNotifier.clearDateFilter();
                 } else {
                   filterNotifier.setDateFilter(DateFilterType.thisWeekend);
@@ -788,7 +863,8 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
             ),
             DateQuickChip(
               label: 'Cette semaine',
-              isSelected: widget.filter.dateFilterType == DateFilterType.thisWeek,
+              isSelected:
+                  widget.filter.dateFilterType == DateFilterType.thisWeek,
               onTap: () {
                 if (widget.filter.dateFilterType == DateFilterType.thisWeek) {
                   filterNotifier.clearDateFilter();
@@ -799,7 +875,8 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
             ),
             DateQuickChip(
               label: 'Ce mois',
-              isSelected: widget.filter.dateFilterType == DateFilterType.thisMonth,
+              isSelected:
+                  widget.filter.dateFilterType == DateFilterType.thisMonth,
               onTap: () {
                 if (widget.filter.dateFilterType == DateFilterType.thisMonth) {
                   filterNotifier.clearDateFilter();
@@ -845,14 +922,17 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
                     style: GoogleFonts.montserrat(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: widget.filter.dateFilterType == DateFilterType.custom
-                          ? HbColors.brandPrimary
-                          : Colors.grey.shade700,
+                      color:
+                          widget.filter.dateFilterType == DateFilterType.custom
+                              ? HbColors.brandPrimary
+                              : Colors.grey.shade700,
                     ),
                   ),
                 ),
                 Icon(
-                  _showCalendar ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  _showCalendar
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
                   color: Colors.grey.shade500,
                 ),
               ],
@@ -863,8 +943,9 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
         // Mini Calendar
         AnimatedCrossFade(
           duration: const Duration(milliseconds: 300),
-          crossFadeState:
-              _showCalendar ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+          crossFadeState: _showCalendar
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
           firstChild: Padding(
             padding: const EdgeInsets.only(top: 12),
             child: MiniCalendar(

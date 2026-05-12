@@ -25,10 +25,6 @@ class ConversationTile extends StatelessWidget {
     final lastMsg = conversation.latestMessage;
     final hasUnread = conversation.unreadCount > 0;
     final previewText = _buildPreviewText(lastMsg);
-    final showAttachIcon = lastMsg != null &&
-        lastMsg.content == null &&
-        !lastMsg.isDeleted &&
-        lastMsg.attachments.isNotEmpty;
     final displayName = _displayName();
     final hasNameEntity = conversation.participant != null ||
         conversation.organization != null ||
@@ -142,12 +138,6 @@ class ConversationTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        if (showAttachIcon)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 3),
-                            child: Icon(Icons.attach_file,
-                                size: 12, color: Colors.grey.shade500),
-                          ),
                         Expanded(
                           child: Text(
                             previewText,
@@ -448,21 +438,7 @@ class ConversationTile extends StatelessWidget {
   String? _buildPreviewText(Message? latest) {
     if (latest == null) return null;
     if (latest.isDeleted) return 'Message supprimé';
-    if (latest.content != null) return latest.content;
-
-    final attachments = latest.attachments;
-    if (attachments.isEmpty) return null;
-
-    final imageCount = attachments.where((a) => a.isImage).length;
-    final fileCount = attachments.length - imageCount;
-
-    if (fileCount == 0) {
-      return imageCount == 1 ? 'Une image envoyée' : '$imageCount images envoyées';
-    }
-    if (imageCount == 0) {
-      return fileCount == 1 ? 'Un fichier envoyé' : '$fileCount fichiers envoyés';
-    }
-    return '${attachments.length} pièces jointes';
+    return latest.content;
   }
 
   String _formatTime(DateTime dt) {

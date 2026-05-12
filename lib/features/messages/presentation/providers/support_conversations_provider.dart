@@ -10,22 +10,41 @@ class SupportConversationsState {
   final AsyncValue<List<Conversation>> conversations;
   final int currentPage;
   final bool hasMore;
+  final String? statusFilter;
+  final bool unreadOnly;
+  final String? searchQuery;
+  final String? period;
 
   const SupportConversationsState({
     this.conversations = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
+    this.statusFilter,
+    this.unreadOnly = false,
+    this.searchQuery,
+    this.period,
   });
 
   SupportConversationsState copyWith({
     AsyncValue<List<Conversation>>? conversations,
     int? currentPage,
     bool? hasMore,
+    String? statusFilter,
+    bool clearStatusFilter = false,
+    bool? unreadOnly,
+    String? searchQuery,
+    bool clearSearchQuery = false,
+    String? period,
+    bool clearPeriod = false,
   }) {
     return SupportConversationsState(
       conversations: conversations ?? this.conversations,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
+      statusFilter: clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
+      unreadOnly: unreadOnly ?? this.unreadOnly,
+      searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
+      period: clearPeriod ? null : (period ?? this.period),
     );
   }
 }
@@ -35,11 +54,21 @@ class SupportConversationsNotifier
   final MessagesRepository _repo;
   final Ref _ref;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
+  Timer? _pollTimer;
 
   SupportConversationsNotifier(this._repo, this._ref)
       : super(const SupportConversationsState()) {
     load();
     _subscribeToRealtime();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      if (_ref.read(messagesRealtimeProvider)) return;
+      await _silentRefresh();
+    });
   }
 
   void _subscribeToRealtime() {
@@ -53,14 +82,17 @@ class SupportConversationsNotifier
       dev.log(
         '[SupportConv] event received: type=${event.type.name} conv=${event.conversationUuid} convType=$type',
       );
-      // Only handle user_support conversations (or null type as fallback).
+      if (event.type == RealtimeEventType.messageReceived) {
+        _applyNewMessage(event);
+        return;
+      }
       if (type != null && type != 'user_support') {
         dev.log('[SupportConv] skipping — convType=$type is not user_support');
         return;
       }
       switch (event.type) {
-        case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
+        case RealtimeEventType.conversationCreated:
+          refresh();
         case RealtimeEventType.conversationClosed:
           if (event.conversationUuid != null) {
             _applyStatus(event.conversationUuid!, 'closed');
@@ -77,14 +109,15 @@ class SupportConversationsNotifier
 
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
+    if (uuid == null) return;
     final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
-      refresh();
+    if (current == null) {
+      _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
     if (idx == -1) {
-      refresh();
+      _silentRefresh();
       return;
     }
     dev.log('[SupportConv] applyNewMessage: conv=$uuid unread ${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
@@ -95,6 +128,7 @@ class SupportConversationsNotifier
     list.removeAt(idx);
     list.insert(0, updated);
     state = state.copyWith(conversations: AsyncValue.data(list));
+    _silentRefresh();
   }
 
   void _applyStatus(String convUuid, String status) {
@@ -114,7 +148,13 @@ class SupportConversationsNotifier
       hasMore: false,
     );
     try {
-      final result = await _repo.getSupportConversations(page: 1);
+      final result = await _repo.getSupportConversations(
+        page: 1,
+        status: state.statusFilter,
+        unreadOnly: state.unreadOnly ? true : null,
+        search: state.searchQuery,
+        period: state.period,
+      );
       if (!mounted) return;
       state = state.copyWith(
         conversations: AsyncValue.data(result.conversations),
@@ -133,7 +173,13 @@ class SupportConversationsNotifier
     if (current == null) return;
     try {
       final nextPage = state.currentPage + 1;
-      final result = await _repo.getSupportConversations(page: nextPage);
+      final result = await _repo.getSupportConversations(
+        page: nextPage,
+        status: state.statusFilter,
+        unreadOnly: state.unreadOnly ? true : null,
+        search: state.searchQuery,
+        period: state.period,
+      );
       if (!mounted) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
@@ -147,6 +193,24 @@ class SupportConversationsNotifier
     await load();
   }
 
+  Future<void> _silentRefresh() async {
+    try {
+      final result = await _repo.getSupportConversations(
+        page: 1,
+        status: state.statusFilter,
+        unreadOnly: state.unreadOnly ? true : null,
+        search: state.searchQuery,
+        period: state.period,
+      );
+      if (!mounted) return;
+      state = state.copyWith(
+        conversations: AsyncValue.data(result.conversations),
+        currentPage: 1,
+        hasMore: result.hasMore,
+      );
+    } catch (_) {}
+  }
+
   void applyRead(String uuid) {
     final current = state.conversations.valueOrNull;
     if (current == null) return;
@@ -157,9 +221,43 @@ class SupportConversationsNotifier
     state = state.copyWith(conversations: AsyncValue.data(updated));
   }
 
+  void setStatusFilter(String? status) {
+    state = state.copyWith(
+      statusFilter: status,
+      clearStatusFilter: status == null,
+      currentPage: 1,
+    );
+    load();
+  }
+
+  void setUnreadOnly(bool value) {
+    state = state.copyWith(unreadOnly: value, currentPage: 1);
+    load();
+  }
+
+  void setSearchQuery(String? query) {
+    final trimmed = query?.trim();
+    state = state.copyWith(
+      searchQuery: trimmed,
+      clearSearchQuery: trimmed == null || trimmed.isEmpty,
+      currentPage: 1,
+    );
+    load();
+  }
+
+  void setPeriod(String? period) {
+    state = state.copyWith(
+      period: period,
+      clearPeriod: period == null,
+      currentPage: 1,
+    );
+    load();
+  }
+
   @override
   void dispose() {
     _realtimeSub?.cancel();
+    _pollTimer?.cancel();
     super.dispose();
   }
 }

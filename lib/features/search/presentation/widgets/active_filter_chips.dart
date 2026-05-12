@@ -64,7 +64,8 @@ class ActiveFilterChips extends ConsumerWidget {
               return _ActiveChip(
                 chip: chip,
                 onRemove: () {
-                  filterNotifier.removeFilterByType(chip.type, value: chip.value);
+                  filterNotifier.removeFilterByType(chip.type,
+                      value: chip.value);
                 },
               );
             }).toList(),
@@ -154,6 +155,18 @@ class _ActiveChip extends StatelessWidget {
         return const Color(0xFFF59E0B);
       case FilterChipType.tag:
         return const Color(0xFF14B8A6);
+      case FilterChipType.eventTag:
+        return const Color(0xFF14B8A6);
+      case FilterChipType.targetAudience:
+        return const Color(0xFFEF4444);
+      case FilterChipType.specialEvent:
+        return const Color(0xFFF97316);
+      case FilterChipType.emotion:
+        return const Color(0xFFEC4899);
+      case FilterChipType.availability:
+        return const Color(0xFF10B981);
+      case FilterChipType.locationType:
+        return const Color(0xFF64748B);
       case FilterChipType.audience:
         return const Color(0xFFEF4444);
       case FilterChipType.format:
@@ -181,6 +194,18 @@ class _ActiveChip extends StatelessWidget {
         return Icons.business;
       case FilterChipType.tag:
         return Icons.label;
+      case FilterChipType.eventTag:
+        return Icons.local_activity;
+      case FilterChipType.targetAudience:
+        return Icons.groups;
+      case FilterChipType.specialEvent:
+        return Icons.celebration;
+      case FilterChipType.emotion:
+        return Icons.mood;
+      case FilterChipType.availability:
+        return Icons.event_available;
+      case FilterChipType.locationType:
+        return Icons.place;
       case FilterChipType.audience:
         return Icons.people;
       case FilterChipType.format:
@@ -190,7 +215,12 @@ class _ActiveChip extends StatelessWidget {
 
   String _formatLabel(ActiveFilterChip chip) {
     // Format thematique/category slugs to readable names
-    if (chip.type == FilterChipType.thematique || chip.type == FilterChipType.category) {
+    if (chip.type == FilterChipType.thematique ||
+        chip.type == FilterChipType.category ||
+        chip.type == FilterChipType.eventTag ||
+        chip.type == FilterChipType.targetAudience ||
+        chip.type == FilterChipType.specialEvent ||
+        chip.type == FilterChipType.emotion) {
       return _slugToName(chip.label);
     }
     return chip.label;
@@ -324,7 +354,12 @@ class _CompactActiveChip extends StatelessWidget {
   }
 
   String _formatLabel(ActiveFilterChip chip) {
-    if (chip.type == FilterChipType.thematique || chip.type == FilterChipType.category) {
+    if (chip.type == FilterChipType.thematique ||
+        chip.type == FilterChipType.category ||
+        chip.type == FilterChipType.eventTag ||
+        chip.type == FilterChipType.targetAudience ||
+        chip.type == FilterChipType.specialEvent ||
+        chip.type == FilterChipType.emotion) {
       return _slugToName(chip.label);
     }
     return chip.label;

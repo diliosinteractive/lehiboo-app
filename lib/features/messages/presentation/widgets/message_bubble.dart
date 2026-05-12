@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../domain/entities/message.dart';
-import 'attachment_preview.dart';
 
 class MessageBubble extends StatefulWidget {
   final Message message;
@@ -221,14 +220,6 @@ class _MessageBubbleState extends State<MessageBubble> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Attachments
-          if (msg.attachments.isNotEmpty)
-            ...msg.attachments.map(
-              (a) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: AttachmentPreview(attachment: a),
-              ),
-            ),
           // Text content
           if (msg.content != null && msg.content!.isNotEmpty)
             Text(

@@ -11,6 +11,7 @@ import '../features/home/presentation/screens/city_detail_screen.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart'; // Corrected import
 import 'package:lehiboo/features/events/presentation/screens/event_list_screen.dart'; // Re-added for /recommended route
 import 'package:lehiboo/features/events/presentation/screens/event_questions_screen.dart';
+import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/search/presentation/screens/search_screen.dart';
 import '../features/search/presentation/screens/filter_screen.dart';
 import '../features/favorites/presentation/screens/favorites_screen.dart';
@@ -54,6 +55,7 @@ import '../features/checkin/presentation/screens/checkin_scan_screen.dart';
 import '../features/checkin/presentation/screens/checkin_manual_entry_screen.dart';
 // Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
+import '../features/notifications/presentation/screens/notifications_inbox_screen.dart';
 // HibonShopScreen import retiré : route /hibons-shop redirigée vers
 // /hibons-dashboard (Plan 04 — achats Hibons désactivés). Le fichier source
 // est conservé pour réactivation v2.
@@ -237,9 +239,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final categorySlug = state.uri.queryParameters['categorySlug'];
               final city = state.uri.queryParameters['city'];
+              final initialFilter = state.uri.queryParameters.isEmpty
+                  ? null
+                  : eventFilterFromQueryParams(state.uri.queryParameters);
               return SearchScreen(
                 categorySlug: categorySlug,
                 city: city,
+                initialFilter: initialFilter,
               );
             },
           ),
@@ -569,10 +575,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           final city = state.uri.queryParameters['city'];
           final dateFilter = state.uri.queryParameters['date'];
           final openFilter = state.uri.queryParameters['openFilter'] == 'true';
+          final filterParams =
+              Map<String, String>.from(state.uri.queryParameters)
+                ..remove('openFilter');
+          final initialFilter = filterParams.isEmpty
+              ? null
+              : eventFilterFromQueryParams(filterParams);
           return SearchScreen(
             categorySlug: categorySlug,
             city: city,
             dateFilter: dateFilter,
+            initialFilter: initialFilter,
             autoOpenFilter: openFilter,
           );
         },
@@ -726,10 +739,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Notifications (Now Alerts & Saved Searches)
+      // In-app notifications inbox
       GoRoute(
         path: '/notifications',
         name: 'notifications',
+        builder: (context, state) => const NotificationsInboxScreen(),
+      ),
+      // Saved searches and search alerts
+      GoRoute(
+        path: '/alerts',
+        name: 'alerts',
         builder: (context, state) => const AlertsListScreen(),
       ),
       // AI Chat (Legacy redirects to Petit Boo)

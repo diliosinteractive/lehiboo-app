@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../domain/repositories/alerts_repository.dart';
 import '../../data/repositories/alerts_repository_impl.dart';
@@ -6,14 +7,32 @@ import '../../../search/domain/models/event_filter.dart';
 
 final alertsProvider = StateNotifierProvider<AlertsNotifier, AsyncValue<List<Alert>>>((ref) {
   final repository = ref.watch(alertsRepositoryImplProvider);
-  return AlertsNotifier(repository);
+  return AlertsNotifier(repository, ref);
 });
 
 class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
   final AlertsRepository _repository;
+  final Ref _ref;
 
-  AlertsNotifier(this._repository) : super(const AsyncValue.loading()) {
+  AlertsNotifier(this._repository, this._ref)
+      : super(const AsyncValue.loading()) {
     loadAlerts();
+    // Saved searches are user-scoped; reset on real auth transitions.
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = next == AuthStatus.unauthenticated &&
+            previous == AuthStatus.authenticated;
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          state = const AsyncValue.data([]);
+        } else if (loggedIn) {
+          loadAlerts();
+        }
+      },
+    );
   }
 
   Future<void> loadAlerts() async {

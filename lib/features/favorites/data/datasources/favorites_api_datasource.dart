@@ -165,6 +165,10 @@ class FavoriteEventDto {
   final String? thumbnail;
   final String date;
   final String? time;
+  // Full ISO datetimes including time component — preferred over `date`+`time`
+  // when present. Backend ships these on `/me/favorites` since the time-fix.
+  final String? startDatetime;
+  final String? endDatetime;
   final String? venue;
   final String? city;
   final EventPriceDto? price;
@@ -186,6 +190,8 @@ class FavoriteEventDto {
     this.thumbnail,
     required this.date,
     this.time,
+    this.startDatetime,
+    this.endDatetime,
     this.venue,
     this.city,
     this.price,
@@ -239,7 +245,9 @@ class FavoriteEventDto {
       slug: _parseString(json['slug']) ?? '',
       thumbnail: _parseString(json['thumbnail']) ?? _parseString(json['cover_image']),
       date: _parseString(json['date']) ?? _parseString(json['start_date']) ?? '',
-      time: _parseString(json['time']),
+      time: _parseString(json['time']) ?? _parseString(json['start_time']),
+      startDatetime: _parseString(json['start_datetime']),
+      endDatetime: _parseString(json['end_datetime']),
       venue: _parseString(json['venue']),
       city: _parseString(json['city']),
       price: json['price'] != null ? EventPriceDto.fromJson(json['price']) : null,

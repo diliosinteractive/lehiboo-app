@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lehiboo/config/env_config.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
@@ -628,7 +629,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           // Bouton partage (ouvre le nouveau sheet)
           ShareButton(
             event: event,
-            shareUrl: 'https://lehiboo.com/events/${event.slug}',
+            shareUrl: EnvConfig.eventShareUrl(event.slug),
             backgroundColor:
                 opacity < 0.5 ? Colors.white : Colors.grey.shade100,
             iconColor: HbColors.textPrimary,
@@ -1171,7 +1172,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       images: event.images,
       initialIndex: initialIndex,
       eventTitle: event.title,
-      shareUrl: 'https://lehiboo.com/events/${event.slug}',
+      shareUrl: EnvConfig.eventShareUrl(event.slug),
     );
   }
 
@@ -1326,20 +1327,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
-                // "Réserver maintenant" temporarily hidden — cart flow only.
-                /*
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   onPressed: () {
+                    // Capture router before pop — sheetContext is disposed by
+                    // Navigator.pop() and the navigation call would otherwise
+                    // dereference a dead context (same trap as the
+                    // "Ajouter au panier" button above).
+                    final router = GoRouter.of(context);
                     Navigator.of(sheetContext).pop();
-                    context.push('/checkout', extra: {
-                      'event': event,
-                      'slotId': _selectedSlotId,
-                      'selectedSlot': _selectedSlot,
-                      'ticketQuantities':
-                          Map<String, int>.from(_ticketQuantities),
-                      'totalPrice': _totalPrice,
-                    });
+                    ref.read(orderCartProvider.notifier).addSelection(
+                          event: event,
+                          slotId: _selectedSlotId!,
+                          selectedSlot: _selectedSlot,
+                          ticketQuantities:
+                              Map<String, int>.from(_ticketQuantities),
+                        );
+                    router.push('/cart');
                   },
                   icon: const Icon(Icons.lock),
                   label: const Text('Reserver maintenant'),
@@ -1352,7 +1356,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
-                */
               ],
             ),
           ),

@@ -68,13 +68,12 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
 
   void _startUnreadPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      // Skip when WebSocket is connected — WS events keep unread count current
+    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      // Skip when WebSocket is connected — WS events keep data current
       if (_ref.read(messagesRealtimeProvider)) return;
-      try {
-        final count = await _polling.getTotalUnreadCount();
-        _ref.read(unreadCountProvider.notifier).state = count;
-      } catch (_) {}
+      // Refresh list + badge (mirrors support conversations polling behaviour)
+      await _silentRefresh();
+      await _refreshUnreadCount();
     });
   }
 
@@ -89,8 +88,12 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
       dev.log(
         '[ParticipantConv] event received: type=${event.type.name} conv=${event.conversationUuid} convType=$type',
       );
-      // Accept participant_vendor events, or events with no type (backend may omit it).
-      // Support conversations are handled by supportConversationsProvider.
+      // messageReceived: validate by UUID in _applyNewMessage — not by type.
+      if (event.type == RealtimeEventType.messageReceived) {
+        _applyNewMessage(event);
+        return;
+      }
+      // For all other events keep the type guard.
       if (type != null && type != 'participant_vendor') {
         dev.log(
           '[ParticipantConv] skipping — convType=$type is not participant_vendor',
@@ -98,8 +101,6 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         return;
       }
       switch (event.type) {
-        case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
         case RealtimeEventType.conversationCreated:
           refresh();
           _refreshUnreadCount();
@@ -128,16 +129,17 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
 
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
+    if (uuid == null) return;
     final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
+    if (current == null) {
       dev.log('[ParticipantConv] applyNewMessage: no list loaded, refreshing');
-      refresh();
+      _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
     if (idx == -1) {
-      dev.log('[ParticipantConv] applyNewMessage: conv=$uuid not in list (${current.length} items), refreshing');
-      refresh();
+      dev.log('[ParticipantConv] applyNewMessage: conv=$uuid not in list — refreshing');
+      _silentRefresh();
       return;
     }
     dev.log('[ParticipantConv] applyNewMessage: conv=$uuid found at idx=$idx, unread=${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
@@ -148,6 +150,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     list.removeAt(idx);
     list.insert(0, updated);
     state = state.copyWith(conversations: AsyncValue.data(list));
+    _silentRefresh();
   }
 
   Future<void> load() async {
@@ -213,6 +216,33 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
 
   Future<void> refresh() async {
     await load();
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final result = await _repo.getConversations(
+        status: state.statusFilter,
+        unreadOnly: state.unreadOnly ? true : null,
+        search: state.searchQuery,
+        period: state.period,
+        page: 1,
+      );
+      if (!mounted) return;
+      var conversations = result.conversations;
+      if (_readUuids.isNotEmpty) {
+        conversations = conversations.map((c) {
+          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
+            return c.copyWith(unreadCount: 0);
+          }
+          return c;
+        }).toList();
+      }
+      state = state.copyWith(
+        conversations: AsyncValue.data(conversations),
+        currentPage: 1,
+        hasMore: result.hasMore,
+      );
+    } catch (_) {}
   }
 
   void applyRead(String uuid) {

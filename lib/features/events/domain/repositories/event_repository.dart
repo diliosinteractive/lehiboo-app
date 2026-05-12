@@ -1,12 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../entities/event.dart';
+import '../entities/popular_city.dart';
 import '../../data/models/event_dto.dart';
+import '../../data/models/event_reference_data_dto.dart';
 import '../../data/models/home_feed_response_dto.dart' show HomeFeedDataDto;
 
 import '../../../../domain/entities/city.dart';
 
 abstract class EventRepository {
   Future<List<City>> getCities();
+
+  /// Curated cities for the home "Villes populaires" section.
+  /// Pass `fallback: true` for the spec §5 fallback query (no `featured_only`).
+  Future<List<PopularCity>> getFeaturedCities({bool fallback = false});
   Future<EventsResult> getEvents({
     int page = 1,
     int perPage = 20,
@@ -21,10 +27,17 @@ abstract class EventRepository {
     double? priceMin,
     double? priceMax,
     bool? freeOnly,
+    int? cityRadiusKm,
     bool? familyFriendly,
     bool? accessiblePmr,
     bool? onlineOnly,
     bool? inPersonOnly,
+    String? targetAudiences,
+    String? eventTag,
+    String? specialEvents,
+    String? emotions,
+    bool? availableOnly,
+    String? locationType,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -58,6 +71,10 @@ abstract class EventRepository {
   });
 
   Future<FiltersResponseDto> getFilters();
+
+  Future<EventReferenceDataDto> getEventReferenceData({
+    bool onlyOnline = true,
+  });
 }
 
 class EventsResult {

@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
+import '../providers/conversations_provider.dart';
+import '../providers/support_conversations_provider.dart';
 
 // ── Context sealed class ────────────────────────────────────────────────────
 
@@ -87,19 +87,29 @@ class NewConversationForm extends ConsumerStatefulWidget {
   const NewConversationForm({super.key, required this.conversationContext});
 
   /// Present as a modal bottom sheet from any BuildContext.
-  static Future<void> show(
+  /// Returns true if a conversation was successfully created, null if cancelled.
+  static Future<bool?> show(
     BuildContext context, {
     required NewConversationContext conversationContext,
   }) {
-    return showModalBottomSheet(
+    return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) =>
-          NewConversationForm(conversationContext: conversationContext),
+      // Keyboard insets MUST be read from the builder's ctx, not from the
+      // form widget's own context. Using the form's context can lag or miss
+      // updates, leaving the action bar hidden behind the keyboard.
+      builder: (ctx) => AnimatedPadding(
+        duration: const Duration(milliseconds: 130),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+        ),
+        child: NewConversationForm(conversationContext: conversationContext),
+      ),
     );
   }
 
@@ -112,9 +122,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   static const _primaryColor = Color(0xFFFF601F);
   static const _subjectMax = 100;
   static const _messageMax = 2000;
-  static const _maxFiles = 3;
-  static const _maxFileBytes = 5 * 1024 * 1024;
-  static const _allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
   static const _supportSubjects = [
     'Problème de réservation',
     'Question sur un événement',
@@ -132,8 +139,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   final _subjectCtrl = TextEditingController();
   final _messageCtrl = TextEditingController();
   String? _selectedSupportSubject;
-  final List<XFile> _files = [];
-  String? _fileError;
   bool _orgError = false;
   bool _isLoading = false;
   String? _submitError;
@@ -148,6 +153,10 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   List<AcceptedPartner> _allPartners = [];
   // Shared error flag for new contexts
   bool _recipientError = false;
+
+  // Contactable orgs for DashboardContext (loaded eagerly)
+  List<ConversationOrganization>? _contactableOrgs;
+  bool _orgsLoading = false;
 
   // Existing getters
   bool get _isSupport =>
@@ -188,6 +197,19 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           if (mounted) setState(() => _allPartners = partners);
         } catch (_) {}
       });
+    }
+    if (widget.conversationContext is DashboardConversationContext) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadContactableOrgs());
+    }
+  }
+
+  Future<void> _loadContactableOrgs() async {
+    setState(() => _orgsLoading = true);
+    try {
+      final orgs = await ref.read(messagesRepositoryImplProvider).getContactableOrganizations();
+      if (mounted) setState(() { _contactableOrgs = orgs; _orgsLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() { _contactableOrgs = []; _orgsLoading = false; });
     }
   }
 
@@ -233,37 +255,22 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   // ── Org picker (DashboardContext only) ─────────────────────────────────────
 
   Future<void> _openOrgPicker() async {
-    setState(() => _isLoading = true);
-    try {
-      final repo = ref.read(messagesRepositoryImplProvider);
-      final orgs = await repo.getContactableOrganizations();
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      final picked = await showModalBottomSheet<ConversationOrganization>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (_) => _OrgPickerSheet(orgs: orgs),
-      );
-      if (picked != null && mounted) {
-        setState(() {
-          _selectedOrg = picked;
-          _orgError = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Impossible de charger les organisateurs : $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    final orgs = _contactableOrgs;
+    if (orgs == null || orgs.isEmpty) return;
+    final picked = await showModalBottomSheet<ConversationOrganization>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _OrgPickerSheet(orgs: orgs),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _selectedOrg = picked;
+        _orgError = false;
+      });
     }
   }
 
@@ -340,75 +347,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     }
   }
 
-  // ── File helpers ────────────────────────────────────────────────────────────
-
-  Future<void> _pickAttachment() async {
-    setState(() => _fileError = null);
-    if (_files.length >= _maxFiles) {
-      setState(() =>
-          _fileError = 'Maximum $_maxFiles fichiers par message.');
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Photo / Vidéo'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final picker = ImagePicker();
-                final picked = await picker.pickMultiImage();
-                await _addFiles(
-                    picked.map((x) => XFile(x.path, name: x.name)).toList());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf),
-              title: const Text('Document (PDF)'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final result = await FilePicker.platform.pickFiles(
-                  type: FileType.custom,
-                  allowedExtensions: ['pdf'],
-                  allowMultiple: false,
-                );
-                if (result == null || result.files.isEmpty) return;
-                final path = result.files.single.path;
-                final name = result.files.single.name;
-                if (path != null) await _addFiles([XFile(path, name: name)]);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _addFiles(List<XFile> candidates) async {
-    for (final f in candidates) {
-      if (_files.length >= _maxFiles) {
-        setState(() =>
-            _fileError = 'Maximum $_maxFiles fichiers par message.');
-        break;
-      }
-      final ext = f.name.split('.').last.toLowerCase();
-      if (!_allowedExtensions.contains(ext)) {
-        setState(() => _fileError = 'Type non supporté : .$ext');
-        continue;
-      }
-      final size = await f.length();
-      if (size > _maxFileBytes) {
-        setState(() => _fileError = '${f.name} dépasse 5 Mo.');
-        continue;
-      }
-      setState(() => _files.add(f));
-    }
-  }
-
   // ── Submit ──────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
@@ -421,7 +359,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       final repo = ref.read(messagesRepositoryImplProvider);
       final subject = _subjectCtrl.text.trim();
       final message = _messageCtrl.text.trim();
-      final files = List<XFile>.from(_files);
       final ctx = widget.conversationContext;
 
       String uuid;
@@ -432,7 +369,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           organizationUuid: _selectedOrg!.uuid,
           subject: subject,
           message: message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/$uuid';
@@ -442,7 +378,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           subject: subject,
           message: message,
           eventId: _eventId,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/$uuid';
@@ -451,7 +386,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           userId: _selectedAdminUser!.id,
           subject: subject.isEmpty ? null : subject,
           message: message.isEmpty ? null : message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/admin/${conv.uuid}';
@@ -460,7 +394,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           organizationUuid: _selectedAdminOrg!.uuid,
           subject: subject.isEmpty ? null : subject,
           message: message.isEmpty ? null : message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/admin/${conv.uuid}';
@@ -469,7 +402,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           participantId: _selectedVendorParticipant!.id,
           subject: subject,
           message: message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/vendor/${conv.uuid}';
@@ -478,7 +410,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           partnerOrganizationId: _selectedPartner!.id,
           subject: subject,
           message: message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/vendor-org/${conv.uuid}';
@@ -486,7 +417,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         final conv = await repo.createVendorSupportThread(
           subject: subject.isEmpty ? 'Support' : subject,
           message: message,
-          attachments: files.isEmpty ? null : files,
         );
         uuid = conv.uuid;
         route = '/messages/vendor/${conv.uuid}';
@@ -495,15 +425,29 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         final conv = await repo.createSupportConversation(
           subject: subject,
           message: message,
-          attachments: _files.isNotEmpty ? _files : null,
         );
         uuid = conv.uuid;
         route = '/messages/support/$uuid';
       }
 
       if (!mounted) return;
-      Navigator.of(context).pop();
-      context.push(route);
+      if (ctx is SupportConversationContext) {
+        ref.invalidate(supportConversationsProvider);
+      } else if (ctx is DashboardConversationContext ||
+          ctx is FromOrganizerConversationContext) {
+        ref.read(conversationsProvider.notifier).refresh();
+      }
+      Navigator.of(context).pop(true);
+      // Use pushReplacement for contexts that are opened from a dedicated
+      // "new conversation" screen (/messages/new, /messages/support/new,
+      // /messages/new/from-organizer/…) so pressing back skips the spinner.
+      if (ctx is SupportConversationContext ||
+          ctx is DashboardConversationContext ||
+          ctx is FromOrganizerConversationContext) {
+        context.pushReplacement(route);
+      } else {
+        context.push(route);
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -518,127 +462,108 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
 
   @override
   Widget build(BuildContext context) {
-    // Wrapping the sheet in AnimatedPadding shrinks the parent
-    // constraints by the keyboard height. DraggableScrollableSheet
-    // recomputes its child size against the smaller available space,
-    // so the entire sheet — including the pinned action bar — lifts
-    // above the keyboard. Without this, the sheet keeps its full
-    // screen-height footprint and the bottom sits behind the keyboard.
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: DraggableScrollableSheet(
-        // Locked to 1.0 so the sheet always fills the available height
-        // (capped by `useSafeArea: true` on showModalBottomSheet). Min,
-        // initial, and max are equal — the user can't drag it shorter,
-        // matching the "full-screen new message composer" pattern.
-        initialChildSize: 1.0,
-        maxChildSize: 1.0,
-        minChildSize: 1.0,
-        expand: false,
-        builder: (_, scrollCtrl) => Column(
-          children: [
-            // Drag handle
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 4),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Header row
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Nouveau message',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 2),
-                        Text(_subtitle,
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade600)),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-          const Divider(height: 1),
-          // Scrollable body
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    controller: scrollCtrl,
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding:
-                        const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildRecipientSection(),
-                        if (_isFromOrg && _eventId != null) ...[
-                          const SizedBox(height: 16),
-                          _buildEventChip(),
-                        ],
-                        const SizedBox(height: 16),
-                        if (_isSupport) _buildSupportSubjectChips(),
-                        _buildSubjectField(),
-                        const SizedBox(height: 16),
-                        _buildMessageField(),
-                        const SizedBox(height: 16),
-                        _buildAttachmentsSection(),
-                        if (_submitError != null) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: Colors.red.shade200),
-                            ),
-                            child: Text(_submitError!,
-                                style: TextStyle(
-                                    color: Colors.red.shade700,
-                                    fontSize: 13)),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+    // Simple Column fills the height provided by AnimatedPadding (in show()).
+    // DraggableScrollableSheet is not needed — the sheet is always full-height
+    // and the keyboard lift is handled at the builder level.
+    return Column(
+      children: [
+        // Drag handle
+        Container(
+          margin: const EdgeInsets.only(top: 12, bottom: 4),
+          width: 36,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(2),
           ),
-          // Pinned action bar at the bottom of the sheet. Keyboard
-          // accommodation is handled by the outer AnimatedPadding —
-          // this container only needs its own visual padding.
-          if (!_isLoading)
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade200),
+        ),
+        // Header row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Nouveau message',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    Text(_subtitle,
+                        style: TextStyle(
+                            fontSize: 13, color: Colors.grey.shade600)),
+                  ],
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-              child: _buildActions(),
-            ),
-        ],
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
         ),
-      ),
+        const Divider(height: 1),
+        // Scrollable body — grows to fill remaining space between header and
+        // the pinned action bar below.
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildRecipientSection(),
+                      if (_isFromOrg && _eventId != null) ...[
+                        const SizedBox(height: 16),
+                        _buildEventChip(),
+                      ],
+                      const SizedBox(height: 16),
+                      if (_isSupport) _buildSupportSubjectChips(),
+                      _buildSubjectField(),
+                      const SizedBox(height: 16),
+                      _buildMessageField(),
+                      if (_submitError != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border:
+                                Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Text(_submitError!,
+                              style: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontSize: 13)),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+        ),
+        // Pinned action bar — always visible, lifted above the keyboard by
+        // the AnimatedPadding wrapping the whole sheet in show().
+        if (!_isLoading)
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.07),
+                  blurRadius: 12,
+                  offset: const Offset(0, -3),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            child: _buildActions(),
+          ),
+      ],
     );
   }
 
@@ -736,23 +661,23 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       );
     }
 
-    // DashboardContext — tappable picker row
+    // DashboardContext — tappable picker row (greyed out when no orgs available)
+    final orgsEmpty = !_orgsLoading && _contactableOrgs != null && _contactableOrgs!.isEmpty;
+    final pickerEnabled = !_orgsLoading && (_contactableOrgs?.isNotEmpty ?? false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionLabel('Destinataire', required: true),
         const SizedBox(height: 6),
         InkWell(
-          onTap: _openOrgPicker,
+          onTap: pickerEnabled ? _openOrgPicker : null,
           borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
+              color: orgsEmpty ? Colors.grey.shade100 : null,
               border: Border.all(
-                color: _orgError
-                    ? Colors.red
-                    : Colors.grey.shade300,
+                color: _orgError ? Colors.red : Colors.grey.shade300,
                 width: _orgError ? 1.5 : 1,
               ),
               borderRadius: BorderRadius.circular(10),
@@ -788,33 +713,55 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                   }()
                 else
                   Icon(Icons.business_outlined,
-                      color: Colors.grey.shade500, size: 20),
+                      color: orgsEmpty ? Colors.grey.shade400 : Colors.grey.shade500,
+                      size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     _selectedOrg?.companyName ??
-                        'Sélectionner un organisateur…',
+                        (orgsEmpty
+                            ? 'Aucun organisateur disponible'
+                            : 'Sélectionner un organisateur…'),
                     style: TextStyle(
                       color: _selectedOrg != null
                           ? Colors.black87
-                          : Colors.grey.shade500,
+                          : orgsEmpty
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade500,
                       fontSize: 14,
                     ),
                   ),
                 ),
-                Icon(Icons.expand_more,
-                    color: Colors.grey.shade500),
+                if (_orgsLoading)
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.grey.shade400),
+                  )
+                else
+                  Icon(Icons.expand_more,
+                      color: orgsEmpty
+                          ? Colors.grey.shade300
+                          : Colors.grey.shade500),
               ],
             ),
           ),
         ),
+        if (orgsEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              'Parcourez les événements pour trouver un organisateur à contacter.',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            ),
+          ),
         if (_orgError)
           Padding(
             padding: const EdgeInsets.only(top: 4, left: 4),
             child: Text(
               'Veuillez sélectionner un organisateur.',
-              style: TextStyle(
-                  fontSize: 11, color: Colors.red.shade600),
+              style: TextStyle(fontSize: 11, color: Colors.red.shade600),
             ),
           ),
       ],
@@ -1223,85 +1170,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     );
   }
 
-  Widget _buildAttachmentsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionLabel('Pièces jointes (optionnel)'),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed:
-              _files.length >= _maxFiles ? null : _pickAttachment,
-          icon: const Icon(Icons.upload_outlined, size: 16),
-          label: const Text('Ajouter un fichier'),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(
-              color: _files.length >= _maxFiles
-                  ? Colors.grey.shade300
-                  : Colors.grey.shade400,
-            ),
-          ),
-        ),
-        if (_fileError != null) ...[
-          const SizedBox(height: 4),
-          Text(_fileError!,
-              style: TextStyle(
-                  fontSize: 11, color: Colors.red.shade600)),
-        ],
-        if (_files.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          ..._files.map(_buildFileRow),
-        ],
-        const SizedBox(height: 4),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            '${_files.length}/$_maxFiles · Max 5 Mo chacun',
-            style: TextStyle(
-                fontSize: 11, color: Colors.grey.shade500),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFileRow(XFile f) {
-    final isPdf = f.name.toLowerCase().endsWith('.pdf');
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isPdf
-                ? Icons.picture_as_pdf
-                : Icons.image_outlined,
-            size: 20,
-            color: isPdf
-                ? Colors.red.shade400
-                : Colors.blue.shade400,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(f.name,
-                style: const TextStyle(fontSize: 12),
-                overflow: TextOverflow.ellipsis),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _files.remove(f)),
-            child: Icon(Icons.close,
-                size: 16, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildActions() {
     return Row(
       children: [
@@ -1332,7 +1200,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                     size: 16, color: Colors.white),
             label: Text(
               (_isSupport || _isVendorSupport)
-                  ? 'Envoyer au support'
+                  ? 'Envoyer'
                   : 'Envoyer',
               style: const TextStyle(
                   color: Colors.white,

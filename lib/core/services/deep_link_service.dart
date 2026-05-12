@@ -39,6 +39,24 @@ class DeepLinkService {
     }
   }
 
+  /// Push a path on top of the current stack. Used for in-app foreground
+  /// navigation where the user expects the back button to return to where
+  /// they were.
+  void push(String path) {
+    debugPrint('DeepLinkService: Pushing $path');
+    try {
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        debugPrint('DeepLinkService: External URL, ignoring');
+        return;
+      }
+      final normalizedPath = path.startsWith('/') ? path : '/$path';
+      _router.push(normalizedPath);
+    } catch (e) {
+      debugPrint('DeepLinkService: Push failed - $e');
+      navigate(path);
+    }
+  }
+
   /// Route a push notification by its `data.type` field.
   ///
   /// Falls back to `/notifications` for unknown or null types so the OS-level
@@ -48,6 +66,33 @@ class DeepLinkService {
     final type = data['type']?.toString();
     final route = type == null ? null : routeForType(type, data);
     navigate(route ?? '/notifications');
+  }
+
+  /// Route an in-app notification. Unlike lock-screen push payloads, the
+  /// in-app API explicitly exposes `action_url`; use it first when it can be
+  /// normalized into an app route, then fall back to the type/data table.
+  void navigateFromNotification({
+    String? actionUrl,
+    required String type,
+    required Map<String, dynamic> data,
+  }) {
+    final actionRoute = _routeFromActionUrl(actionUrl);
+    push(actionRoute ?? routeForType(type, data) ?? '/notifications');
+  }
+
+  String? _routeFromActionUrl(String? actionUrl) {
+    if (actionUrl == null || actionUrl.trim().isEmpty) return null;
+    final trimmed = actionUrl.trim();
+    if (trimmed.startsWith('/')) return trimmed;
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null) return null;
+    if (!uri.hasScheme) return trimmed.startsWith('/') ? trimmed : '/$trimmed';
+
+    final host = uri.host.toLowerCase();
+    if (!host.contains('lehiboo')) return null;
+    final query = uri.hasQuery ? '?${uri.query}' : '';
+    return '${uri.path.isEmpty ? '/' : uri.path}$query';
   }
 
   /// Route a payload string from a tapped local notification.
@@ -93,6 +138,92 @@ class DeepLinkService {
   @visibleForTesting
   String? routeForType(String type, Map<String, dynamic> data) {
     String? str(String key) => data[key]?.toString();
+    String? firstPresent(List<String> keys) {
+      for (final key in keys) {
+        final value = str(key);
+        if (value != null && value.isNotEmpty) return value;
+      }
+      return null;
+    }
+
+    final normalized = type.toLowerCase();
+
+    if (normalized == 'new_message') {
+      final uuid = firstPresent(['conversation_uuid', 'conversation_id']);
+      return uuid != null ? '/messages/$uuid' : '/messages';
+    }
+
+    if (normalized.startsWith('booking_')) {
+      final id = firstPresent(['booking_uuid', 'booking_id']);
+      return id != null ? '/booking-detail/$id' : '/my-bookings';
+    }
+
+    if (normalized == 'event_reminder') {
+      final bookingId = firstPresent(['booking_uuid', 'booking_id']);
+      if (bookingId != null) return '/booking-detail/$bookingId';
+      final event = firstPresent(['event_slug', 'event_uuid', 'event_id']);
+      return event != null ? '/event/$event' : '/my-bookings';
+    }
+
+    if (normalized == 'ticket_checked_in') {
+      final ticketId = firstPresent(['ticket_uuid', 'ticket_id']);
+      final bookingId = firstPresent(['booking_uuid', 'booking_id']);
+      if (ticketId != null) return '/ticket/$ticketId';
+      if (bookingId != null) return '/booking-detail/$bookingId';
+      return '/vendor/scan';
+    }
+
+    if (normalized == 'tickets_ready' || normalized.startsWith('ticket_')) {
+      final ticketId = firstPresent(['ticket_uuid', 'ticket_id']);
+      final bookingId = firstPresent(['booking_uuid', 'booking_id']);
+      if (ticketId != null) return '/ticket/$ticketId';
+      return bookingId != null ? '/booking-detail/$bookingId' : '/my-bookings';
+    }
+
+    if (normalized.startsWith('event_') ||
+        normalized.startsWith('new_event_') ||
+        normalized.startsWith('new_slots_') ||
+        normalized.startsWith('discovery_')) {
+      final identifier = firstPresent(['event_slug', 'event_uuid', 'event_id']);
+      return identifier != null ? '/event/$identifier' : '/notifications';
+    }
+
+    if (normalized.startsWith('question_')) {
+      final event = firstPresent(['event_slug', 'event_uuid', 'event_id']);
+      return event != null ? '/event/$event/questions' : '/my-questions';
+    }
+
+    if (normalized.startsWith('review_')) {
+      final reviewUuid = firstPresent(['review_uuid', 'review_id']);
+      final event = firstPresent(['event_slug', 'event_uuid', 'event_id']);
+      if (reviewUuid != null) return '/my-reviews?reviewUuid=$reviewUuid';
+      return event != null ? '/event/$event/reviews' : '/my-reviews';
+    }
+
+    if (normalized.startsWith('organization_')) {
+      if (normalized.contains('invitation')) {
+        return '/me/memberships?tab=invitations';
+      }
+      if (normalized.contains('approved')) return '/me/memberships?tab=active';
+      if (normalized.contains('rejected')) {
+        return '/me/memberships?tab=rejected';
+      }
+      final orgId = firstPresent(['organization_uuid', 'organization_id']);
+      return orgId != null ? '/organizers/$orgId' : '/me/memberships';
+    }
+
+    if (normalized.startsWith('vendor_')) {
+      return '/notifications';
+    }
+
+    if (normalized.startsWith('payment_') ||
+        normalized.startsWith('payout_') ||
+        normalized == 'refund') {
+      final bookingId = firstPresent(['booking_uuid', 'booking_id']);
+      return bookingId != null
+          ? '/booking-detail/$bookingId'
+          : '/notifications';
+    }
 
     switch (type) {
       // -- Bookings --
@@ -127,7 +258,9 @@ class DeepLinkService {
       // -- Saved-search alerts --
       case 'new_alert_events':
         final alertUuid = str('alert_uuid');
-        return alertUuid != null ? '/search?alert=$alertUuid' : '/notifications';
+        return alertUuid != null
+            ? '/search?alert=$alertUuid'
+            : '/notifications';
 
       // -- Followed-organisation events --
       case 'new_event_from_followed_organization':
@@ -139,9 +272,8 @@ class DeepLinkService {
         return '/me/memberships?tab=invitations';
       case 'organization_join_approved':
         final orgId = str('organization_uuid') ?? str('organization_id');
-        final highlight = (orgId != null && orgId.isNotEmpty)
-            ? '&highlight=$orgId'
-            : '';
+        final highlight =
+            (orgId != null && orgId.isNotEmpty) ? '&highlight=$orgId' : '';
         return '/me/memberships?tab=active$highlight';
       case 'organization_join_rejected':
         return '/me/memberships?tab=rejected';

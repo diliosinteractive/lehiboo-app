@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:image_picker/image_picker.dart';
 import '../entities/accepted_partner.dart';
 import '../entities/admin_report_stats.dart';
 import '../entities/conversation.dart';
@@ -30,7 +29,6 @@ abstract class MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
-    List<XFile>? attachments,
   });
 
   Future<CreateFromBookingResult> createFromBooking(String bookingUuid);
@@ -40,7 +38,6 @@ abstract class MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
-    List<XFile>? attachments,
   });
 
   Future<Conversation> closeConversation(String uuid);
@@ -48,7 +45,6 @@ abstract class MessagesRepository {
   Future<Message> sendMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   });
 
   Future<Message> editMessage({
@@ -73,6 +69,10 @@ abstract class MessagesRepository {
   Future<ConversationsListResult> getSupportConversations({
     int page = 1,
     int perPage = 15,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
   });
 
   Future<int> getSupportUnreadCount();
@@ -82,13 +82,13 @@ abstract class MessagesRepository {
   Future<Conversation> createSupportConversation({
     required String subject,
     required String message,
-    List<XFile>? attachments,
   });
+
+  Future<Conversation> closeSupportConversation(String uuid);
 
   Future<Message> sendSupportMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   });
 
   // Helpers
@@ -120,13 +120,11 @@ abstract class MessagesRepository {
     required String subject,
     required String message,
     int? eventId,
-    List<XFile>? attachments,
   });
 
   Future<Conversation> createVendorSupportThread({
     required String subject,
     required String message,
-    List<XFile>? attachments,
   });
 
   Future<Conversation> getVendorConversation(String uuid);
@@ -136,7 +134,6 @@ abstract class MessagesRepository {
   Future<Message> sendVendorMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   });
 
   Future<Message> editVendorMessage({
@@ -169,7 +166,6 @@ abstract class MessagesRepository {
     required int partnerOrganizationId,
     required String subject,
     required String message,
-    List<XFile>? attachments,
   });
 
   Future<Conversation> getOrgConversation(String uuid);
@@ -179,7 +175,6 @@ abstract class MessagesRepository {
   Future<Message> sendOrgMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   });
 
   Future<Message> editOrgMessage({
@@ -214,14 +209,12 @@ abstract class MessagesRepository {
     String? userUuid,
     String? subject,
     String? message,
-    List<XFile>? attachments,
   });
 
   Future<Conversation> createAdminSupportThread({
     required String organizationUuid,
     String? subject,
     String? message,
-    List<XFile>? attachments,
   });
 
   Future<Conversation> getAdminConversation(String uuid);
@@ -231,7 +224,6 @@ abstract class MessagesRepository {
   Future<Message> sendAdminMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   });
 
   Future<Message> editAdminMessage({

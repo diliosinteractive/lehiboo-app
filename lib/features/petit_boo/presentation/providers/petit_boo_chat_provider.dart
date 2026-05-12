@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/providers/shared_preferences_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/petit_boo_context_storage.dart';
 import '../../data/datasources/petit_boo_sse_datasource.dart';
 import '../../data/models/chat_message_dto.dart';
@@ -116,14 +117,39 @@ final petitBooChatProvider =
 class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   final PetitBooRepository _repository;
   final PetitBooContextStorage _contextStorage;
+  final Ref _ref;
   StreamSubscription? _streamSubscription;
   String? _pendingMessage; // For auto-send after limit unlock
   String? _activeMessage; // Message currently being streamed
   bool _isInitialized = false;
 
-  PetitBooChatNotifier(this._repository, this._contextStorage, Ref _)
+  PetitBooChatNotifier(this._repository, this._contextStorage, this._ref)
       : super(const PetitBooChatState(isLoading: true)) {
     _initialize();
+    // Petit Boo holds the user's name, kids' ages, and chat history in
+    // memory. Persisted copies are wiped by AuthNotifier._clearPersistedUserData
+    // — we still need to drop the in-memory mirror so the previous user's
+    // messages don't render until next pull.
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = next == AuthStatus.unauthenticated &&
+            previous == AuthStatus.authenticated;
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          _streamSubscription?.cancel();
+          _pendingMessage = null;
+          _activeMessage = null;
+          _isInitialized = false;
+          state = const PetitBooChatState();
+        } else if (loggedIn) {
+          _isInitialized = false;
+          _initialize();
+        }
+      },
+    );
   }
 
   // ==================== Getters for Brain Screen ====================
