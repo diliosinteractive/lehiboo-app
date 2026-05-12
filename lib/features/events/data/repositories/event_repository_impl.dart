@@ -6,6 +6,7 @@ import '../../domain/repositories/event_repository.dart';
 import '../datasources/events_api_datasource.dart';
 import '../mappers/event_mapper.dart';
 import '../models/event_dto.dart';
+import '../models/event_reference_data_dto.dart';
 import '../models/home_feed_response_dto.dart' show HomeFeedDataDto;
 import '../../../../domain/entities/city.dart';
 
@@ -34,10 +35,17 @@ class EventRepositoryImpl implements EventRepository {
     double? priceMin,
     double? priceMax,
     bool? freeOnly,
+    int? cityRadiusKm,
     bool? familyFriendly,
     bool? accessiblePmr,
     bool? onlineOnly,
     bool? inPersonOnly,
+    String? targetAudiences,
+    String? eventTag,
+    String? specialEvents,
+    String? emotions,
+    bool? availableOnly,
+    String? locationType,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -68,10 +76,17 @@ class EventRepositoryImpl implements EventRepository {
       priceMin: priceMin,
       priceMax: priceMax,
       freeOnly: freeOnly,
+      cityRadiusKm: cityRadiusKm,
       familyFriendly: familyFriendly,
       accessiblePmr: accessiblePmr,
       onlineOnly: onlineOnly,
       inPersonOnly: inPersonOnly,
+      targetAudiences: targetAudiences,
+      eventTag: eventTag,
+      specialEvents: specialEvents,
+      emotions: emotions,
+      availableOnly: availableOnly,
+      locationType: locationType,
       indoor: indoor,
       outdoor: outdoor,
       ageMin: ageMin,
@@ -96,8 +111,10 @@ class EventRepositoryImpl implements EventRepository {
       debugPrint('🗺️ Repository: Transformed ${events.length} events');
       for (var i = 0; i < events.length && i < 5; i++) {
         final e = events[i];
-        debugPrint('🗺️ Event[$i] "${e.title}": lat=${e.latitude}, lng=${e.longitude}');
-        debugPrint('🖼️ Event[$i] "${e.title}": coverImage=${e.coverImage}, images=${e.images.length}');
+        debugPrint(
+            '🗺️ Event[$i] "${e.title}": lat=${e.latitude}, lng=${e.longitude}');
+        debugPrint(
+            '🖼️ Event[$i] "${e.title}": coverImage=${e.coverImage}, images=${e.images.length}');
       }
     }
 
@@ -163,6 +180,13 @@ class EventRepositoryImpl implements EventRepository {
   @override
   Future<FiltersResponseDto> getFilters() async {
     return await _apiDataSource.getFilters();
+  }
+
+  @override
+  Future<EventReferenceDataDto> getEventReferenceData({
+    bool onlyOnline = true,
+  }) async {
+    return await _apiDataSource.getEventReferenceData(onlyOnline: onlyOnline);
   }
 
   @override

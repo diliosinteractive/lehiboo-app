@@ -42,9 +42,10 @@ _$EventFilterImpl _$$EventFilterImplFromJson(Map<String, dynamic> json) =>
       onlyFree: json['onlyFree'] as bool? ?? false,
       citySlug: json['citySlug'] as String?,
       cityName: json['cityName'] as String?,
+      cityRadiusKm: (json['cityRadiusKm'] as num?)?.toDouble() ?? 10,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
-      radiusKm: (json['radiusKm'] as num?)?.toDouble() ?? 50,
+      radiusKm: (json['radiusKm'] as num?)?.toDouble() ?? 10,
       northEastLat: (json['northEastLat'] as num?)?.toDouble(),
       northEastLng: (json['northEastLng'] as num?)?.toDouble(),
       southWestLat: (json['southWestLat'] as num?)?.toDouble(),
@@ -63,12 +64,29 @@ _$EventFilterImpl _$$EventFilterImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      targetAudienceSlugs: (json['targetAudienceSlugs'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      eventTagSlug: json['eventTagSlug'] as String?,
+      specialEventSlugs: (json['specialEventSlugs'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      emotionSlugs: (json['emotionSlugs'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      availableOnly: json['availableOnly'] as bool? ?? false,
+      locationType: $enumDecodeNullable(
+          _$LocationTypeFilterEnumMap, json['locationType']),
       familyFriendly: json['familyFriendly'] as bool? ?? false,
       accessiblePMR: json['accessiblePMR'] as bool? ?? false,
       onlineOnly: json['onlineOnly'] as bool? ?? false,
       inPersonOnly: json['inPersonOnly'] as bool? ?? false,
       sortBy: $enumDecodeNullable(_$SortOptionEnumMap, json['sortBy']) ??
-          SortOption.relevance,
+          SortOption.dateAsc,
+      hasExplicitSort: json['hasExplicitSort'] as bool? ?? false,
       page: (json['page'] as num?)?.toInt() ?? 1,
       perPage: (json['perPage'] as num?)?.toInt() ?? 20,
     );
@@ -85,6 +103,7 @@ Map<String, dynamic> _$$EventFilterImplToJson(_$EventFilterImpl instance) =>
       'onlyFree': instance.onlyFree,
       'citySlug': instance.citySlug,
       'cityName': instance.cityName,
+      'cityRadiusKm': instance.cityRadiusKm,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'radiusKm': instance.radiusKm,
@@ -97,11 +116,18 @@ Map<String, dynamic> _$$EventFilterImplToJson(_$EventFilterImpl instance) =>
       'organizerSlug': instance.organizerSlug,
       'organizerName': instance.organizerName,
       'tagsSlugs': instance.tagsSlugs,
+      'targetAudienceSlugs': instance.targetAudienceSlugs,
+      'eventTagSlug': instance.eventTagSlug,
+      'specialEventSlugs': instance.specialEventSlugs,
+      'emotionSlugs': instance.emotionSlugs,
+      'availableOnly': instance.availableOnly,
+      'locationType': _$LocationTypeFilterEnumMap[instance.locationType],
       'familyFriendly': instance.familyFriendly,
       'accessiblePMR': instance.accessiblePMR,
       'onlineOnly': instance.onlineOnly,
       'inPersonOnly': instance.inPersonOnly,
       'sortBy': _$SortOptionEnumMap[instance.sortBy]!,
+      'hasExplicitSort': instance.hasExplicitSort,
       'page': instance.page,
       'perPage': instance.perPage,
     };
@@ -119,6 +145,13 @@ const _$PriceFilterTypeEnumMap = {
   PriceFilterType.free: 'free',
   PriceFilterType.paid: 'paid',
   PriceFilterType.range: 'range',
+};
+
+const _$LocationTypeFilterEnumMap = {
+  LocationTypeFilter.physical: 'physical',
+  LocationTypeFilter.offline: 'offline',
+  LocationTypeFilter.online: 'online',
+  LocationTypeFilter.hybrid: 'hybrid',
 };
 
 const _$SortOptionEnumMap = {

@@ -8,6 +8,7 @@ import '../../../memberships/domain/exceptions/members_only_exception.dart';
 import '../../domain/exceptions/event_password_exceptions.dart';
 import '../models/event_dto.dart';
 import '../models/event_availability_dto.dart';
+import '../models/event_reference_data_dto.dart';
 import '../models/home_feed_response_dto.dart' show HomeFeedDataDto;
 import '../models/locked_event_shell_dto.dart';
 import '../../../../domain/entities/city.dart';
@@ -38,10 +39,17 @@ class EventsApiDataSource {
     double? priceMin,
     double? priceMax,
     bool? freeOnly,
+    int? cityRadiusKm,
     bool? familyFriendly,
     bool? accessiblePmr,
     bool? onlineOnly,
     bool? inPersonOnly,
+    String? targetAudiences,
+    String? eventTag,
+    String? specialEvents,
+    String? emotions,
+    bool? availableOnly,
+    String? locationType,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -56,7 +64,8 @@ class EventsApiDataSource {
     String? sort,
     String? orderBy,
     String? order,
-    bool includePast = true, // Include past events (preprod has incomplete date data)
+    bool includePast =
+        true, // Include past events (preprod has incomplete date data)
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,
@@ -71,6 +80,9 @@ class EventsApiDataSource {
     if (lat == null || lng == null) {
       final cityAlias = location ?? city;
       if (cityAlias != null) queryParams['location'] = cityAlias;
+      if (cityAlias != null && cityRadiusKm != null) {
+        queryParams['radius_km'] = cityRadiusKm;
+      }
     }
     if (dateFrom != null) queryParams['date_from'] = dateFrom;
     if (dateTo != null) queryParams['date_to'] = dateTo;
@@ -81,6 +93,22 @@ class EventsApiDataSource {
     if (accessiblePmr == true) queryParams['accessible_pmr'] = 1;
     if (onlineOnly == true) queryParams['online'] = 1;
     if (inPersonOnly == true) queryParams['in_person'] = 1;
+    if (targetAudiences != null && targetAudiences.isNotEmpty) {
+      queryParams['target_audiences'] = targetAudiences;
+    }
+    if (eventTag != null && eventTag.isNotEmpty) {
+      queryParams['event_tag'] = eventTag;
+    }
+    if (specialEvents != null && specialEvents.isNotEmpty) {
+      queryParams['special_events'] = specialEvents;
+    }
+    if (emotions != null && emotions.isNotEmpty) {
+      queryParams['emotions'] = emotions;
+    }
+    if (availableOnly == true) queryParams['available_only'] = 1;
+    if (locationType != null && locationType.isNotEmpty) {
+      queryParams['location_type'] = locationType;
+    }
     if (indoor == true) queryParams['indoor'] = true;
     if (outdoor == true) queryParams['outdoor'] = true;
     if (ageMin != null) queryParams['age_min'] = ageMin;
@@ -126,11 +154,13 @@ class EventsApiDataSource {
         eventsData = {
           'events': innerData,
           'pagination': {
-            'current_page': data['meta']?['page'] ?? data['meta']?['current_page'] ?? 1,
+            'current_page':
+                data['meta']?['page'] ?? data['meta']?['current_page'] ?? 1,
             'per_page': data['meta']?['per_page'] ?? perPage,
             'total_items': data['meta']?['total'] ?? innerData.length,
             'total_pages': data['meta']?['last_page'] ?? 1,
-            'has_next': (data['meta']?['page'] ?? 1) < (data['meta']?['last_page'] ?? 1),
+            'has_next': (data['meta']?['page'] ?? 1) <
+                (data['meta']?['last_page'] ?? 1),
             'has_prev': (data['meta']?['page'] ?? 1) > 1,
           },
         };
@@ -170,7 +200,8 @@ class EventsApiDataSource {
       // Debug: log pin coordinates
       for (var i = 0; i < pins.length && i < 5; i++) {
         final pin = pins[i];
-        debugPrint('📍 Pin[$i] id=${pin['id']}, lat=${pin['lat']}, lng=${pin['lng']}');
+        debugPrint(
+            '📍 Pin[$i] id=${pin['id']}, lat=${pin['lat']}, lng=${pin['lng']}');
       }
 
       // Map pins to EventDto structure
@@ -212,11 +243,13 @@ class EventsApiDataSource {
       }
     }
 
-    debugPrint('Events count in response: ${(eventsData['events'] as List?)?.length ?? 0}');
+    debugPrint(
+        'Events count in response: ${(eventsData['events'] as List?)?.length ?? 0}');
 
     try {
       final result = EventsResponseDto.fromJson(eventsData);
-      debugPrint('Successfully parsed EventsResponseDto with ${result.events.length} events');
+      debugPrint(
+          'Successfully parsed EventsResponseDto with ${result.events.length} events');
       return result;
     } catch (parseError, parseStack) {
       debugPrint('Error parsing EventsResponseDto: $parseError');
@@ -342,7 +375,8 @@ class EventsApiDataSource {
   }
 
   /// Fetch availability (slots & tickets) for an event
-  Future<EventAvailabilityResponseDto> getEventAvailability(String eventId, {String? date}) async {
+  Future<EventAvailabilityResponseDto> getEventAvailability(String eventId,
+      {String? date}) async {
     final queryParams = <String, dynamic>{};
     if (date != null && date.isNotEmpty) queryParams['date'] = date;
 
@@ -356,15 +390,18 @@ class EventsApiDataSource {
       final rawSlots = ApiResponseHandler.extractList(response.data);
       debugPrint('getEventAvailability: ${rawSlots.length} slots for $eventId');
 
-      final transformedSlots = rawSlots.map((slot) => {
-        'id': slot['id']?.toString() ?? '',
-        'date': slot['slot_date'] ?? slot['date'] ?? '',
-        'start_time': slot['start_time'],
-        'end_time': slot['end_time'],
-        'spots_total': slot['total_capacity'] ?? slot['spots_total'],
-        'spots_remaining': slot['available_count'] ?? slot['spots_remaining'],
-        'is_available': slot['is_available'] ?? true,
-      }).toList();
+      final transformedSlots = rawSlots
+          .map((slot) => {
+                'id': slot['id']?.toString() ?? '',
+                'date': slot['slot_date'] ?? slot['date'] ?? '',
+                'start_time': slot['start_time'],
+                'end_time': slot['end_time'],
+                'spots_total': slot['total_capacity'] ?? slot['spots_total'],
+                'spots_remaining':
+                    slot['available_count'] ?? slot['spots_remaining'],
+                'is_available': slot['is_available'] ?? true,
+              })
+          .toList();
 
       return EventAvailabilityResponseDto.fromJson({
         'event_id': 0,
@@ -388,7 +425,8 @@ class EventsApiDataSource {
     };
     if (parentOnly) queryParams['parent_only'] = true;
 
-    final response = await _dio.get('/categories', queryParameters: queryParams);
+    final response =
+        await _dio.get('/categories', queryParameters: queryParams);
 
     final categoriesJson = ApiResponseHandler.extractList(
       response.data,
@@ -414,7 +452,12 @@ class EventsApiDataSource {
   }
 
   Future<List<City>> getCities() async {
-    final response = await _dio.get('/cities');
+    final response = await _dio.get(
+      '/cities',
+      queryParameters: const {
+        'only_with_upcoming_slots': '1',
+      },
+    );
 
     final citiesJson = ApiResponseHandler.extractList(
       response.data,
@@ -442,7 +485,8 @@ class EventsApiDataSource {
   /// (`featured_only=1`). When the curated set is empty, callers should
   /// retry with `fallback: true` per spec §5 to display "where it's
   /// happening" instead of an empty section.
-  Future<List<PopularCityDto>> getFeaturedCities({bool fallback = false}) async {
+  Future<List<PopularCityDto>> getFeaturedCities(
+      {bool fallback = false}) async {
     final response = await _dio.get(
       '/cities',
       queryParameters: {
@@ -467,5 +511,19 @@ class EventsApiDataSource {
 
     final payload = ApiResponseHandler.extractObject(response.data);
     return FiltersResponseDto.fromJson(payload);
+  }
+
+  Future<EventReferenceDataDto> getEventReferenceData({
+    bool onlyOnline = true,
+  }) async {
+    final response = await _dio.get(
+      '/events/reference-data',
+      queryParameters: {
+        if (onlyOnline) 'only_online': '1',
+      },
+    );
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return EventReferenceDataDto.fromJson(payload);
   }
 }

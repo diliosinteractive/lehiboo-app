@@ -19,7 +19,8 @@ import '../../../events/data/mappers/event_mapper.dart';
 // Home Feed
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeFeedProvider = AutoDisposeAsyncNotifierProvider<HomeFeedNotifier, HomeFeedDataDto>(
+final homeFeedProvider =
+    AutoDisposeAsyncNotifierProvider<HomeFeedNotifier, HomeFeedDataDto>(
   HomeFeedNotifier.new,
 );
 
@@ -50,11 +51,13 @@ class HomeFeedNotifier extends AutoDisposeAsyncNotifier<HomeFeedDataDto> {
 // Today's Activities (derived from Feed)
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeTodayActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeTodayActivitiesNotifier, List<Activity>>(
+final homeTodayActivitiesProvider = AutoDisposeAsyncNotifierProvider<
+    HomeTodayActivitiesNotifier, List<Activity>>(
   HomeTodayActivitiesNotifier.new,
 );
 
-class HomeTodayActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
+class HomeTodayActivitiesNotifier
+    extends AutoDisposeAsyncNotifier<List<Activity>> {
   @override
   Future<List<Activity>> build() async {
     final feed = await ref.watch(homeFeedProvider.future);
@@ -79,11 +82,13 @@ class HomeTodayActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity
 // Tomorrow's Activities (derived from Feed)
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeTomorrowActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeTomorrowActivitiesNotifier, List<Activity>>(
+final homeTomorrowActivitiesProvider = AutoDisposeAsyncNotifierProvider<
+    HomeTomorrowActivitiesNotifier, List<Activity>>(
   HomeTomorrowActivitiesNotifier.new,
 );
 
-class HomeTomorrowActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
+class HomeTomorrowActivitiesNotifier
+    extends AutoDisposeAsyncNotifier<List<Activity>> {
   @override
   Future<List<Activity>> build() async {
     final feed = await ref.watch(homeFeedProvider.future);
@@ -108,11 +113,13 @@ class HomeTomorrowActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activ
 // Event Categories
 // ──────────────────────────────────────────────────────────────────────────────
 
-final categoriesProvider = AutoDisposeAsyncNotifierProvider<CategoriesNotifier, List<EventCategoryInfo>>(
+final categoriesProvider = AutoDisposeAsyncNotifierProvider<CategoriesNotifier,
+    List<EventCategoryInfo>>(
   CategoriesNotifier.new,
 );
 
-class CategoriesNotifier extends AutoDisposeAsyncNotifier<List<EventCategoryInfo>> {
+class CategoriesNotifier
+    extends AutoDisposeAsyncNotifier<List<EventCategoryInfo>> {
   @override
   Future<List<EventCategoryInfo>> build() async {
     final eventRepository = ref.watch(eventRepositoryProvider);
@@ -140,7 +147,8 @@ class CategoriesNotifier extends AutoDisposeAsyncNotifier<List<EventCategoryInfo
 // Cities
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeCitiesProvider = AutoDisposeAsyncNotifierProvider<HomeCitiesNotifier, List<City>>(
+final homeCitiesProvider =
+    AutoDisposeAsyncNotifierProvider<HomeCitiesNotifier, List<City>>(
   HomeCitiesNotifier.new,
 );
 
@@ -155,23 +163,20 @@ class HomeCitiesNotifier extends AutoDisposeAsyncNotifier<List<City>> {
       ..sort((a, b) => (b.eventCount ?? 0).compareTo(a.eventCount ?? 0));
 
     ref.keepAlive();
-    return sortedCities
-        .take(6)
-        .map((city) {
-          final imageUrl = city.imageUrl ?? _getCityImageUrl(city.name);
-          return City(
-            id: city.id,
-            name: city.name,
-            slug: city.slug,
-            lat: city.lat,
-            lng: city.lng,
-            region: city.region,
-            description: city.description,
-            eventCount: city.eventCount,
-            imageUrl: imageUrl,
-          );
-        })
-        .toList();
+    return sortedCities.map((city) {
+      final imageUrl = city.imageUrl ?? _getCityImageUrl(city.name);
+      return City(
+        id: city.id,
+        name: city.name,
+        slug: city.slug,
+        lat: city.lat,
+        lng: city.lng,
+        region: city.region,
+        description: city.description,
+        eventCount: city.eventCount,
+        imageUrl: imageUrl,
+      );
+    }).toList();
   }
 
   Future<void> refresh() async {
@@ -199,8 +204,8 @@ class PopularCitiesResult {
   });
 }
 
-final popularCitiesProvider =
-    AutoDisposeAsyncNotifierProvider<PopularCitiesNotifier, PopularCitiesResult>(
+final popularCitiesProvider = AutoDisposeAsyncNotifierProvider<
+    PopularCitiesNotifier, PopularCitiesResult>(
   PopularCitiesNotifier.new,
 );
 
@@ -241,20 +246,30 @@ class PopularCitiesNotifier
 String _getCityImageUrl(String cityName) {
   // Map of known cities to image URLs
   final cityImages = {
-    'paris': 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400',
-    'lyon': 'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=400',
-    'marseille': 'https://images.unsplash.com/photo-1589640512757-e2894e3f9e54?w=400',
-    'toulouse': 'https://images.unsplash.com/photo-1557687790-902ede7ab58c?w=400',
-    'nice': 'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=400',
+    'paris':
+        'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400',
+    'lyon':
+        'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=400',
+    'marseille':
+        'https://images.unsplash.com/photo-1589640512757-e2894e3f9e54?w=400',
+    'toulouse':
+        'https://images.unsplash.com/photo-1557687790-902ede7ab58c?w=400',
+    'nice':
+        'https://images.unsplash.com/photo-1504214208698-ea1916a2195a?w=400',
     'nantes': 'https://images.unsplash.com/photo-1551952237-954e52747c69?w=400',
-    'bordeaux': 'https://images.unsplash.com/photo-1563166423-482a4b3a9996?w=400',
-    'lille': 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400',
-    'strasbourg': 'https://images.unsplash.com/photo-1547996160-81dfa63595aa?w=400',
-    'rennes': 'https://images.unsplash.com/photo-1610508903813-83e64dfb0f62?w=400',
+    'bordeaux':
+        'https://images.unsplash.com/photo-1563166423-482a4b3a9996?w=400',
+    'lille':
+        'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400',
+    'strasbourg':
+        'https://images.unsplash.com/photo-1547996160-81dfa63595aa?w=400',
+    'rennes':
+        'https://images.unsplash.com/photo-1610508903813-83e64dfb0f62?w=400',
   };
 
   final key = cityName.toLowerCase();
-  return cityImages[key] ?? 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400';
+  return cityImages[key] ??
+      'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400';
 }
 
 /// Simple class to hold category info
@@ -278,11 +293,13 @@ class EventCategoryInfo {
 // Mobile App Config
 // ──────────────────────────────────────────────────────────────────────────────
 
-final mobileAppConfigProvider = AutoDisposeAsyncNotifierProvider<MobileAppConfigNotifier, MobileAppConfig>(
+final mobileAppConfigProvider =
+    AutoDisposeAsyncNotifierProvider<MobileAppConfigNotifier, MobileAppConfig>(
   MobileAppConfigNotifier.new,
 );
 
-class MobileAppConfigNotifier extends AutoDisposeAsyncNotifier<MobileAppConfig> {
+class MobileAppConfigNotifier
+    extends AutoDisposeAsyncNotifier<MobileAppConfig> {
   @override
   Future<MobileAppConfig> build() async {
     final dataSource = ref.watch(mobileConfigDataSourceProvider);
@@ -346,15 +363,15 @@ class SavedSearch {
     if (displayName != null && displayName!.isNotEmpty) {
       return displayName!;
     }
-    
+
     final parts = <String>[];
     if (query.isNotEmpty) parts.add('"$query"');
     if (cityName != null) parts.add(cityName!);
     if (thematiqueName != null) parts.add(thematiqueName!);
-    
+
     if (parts.isEmpty && hasAlert) return 'Alerte personnalisée';
     if (parts.isEmpty) return 'Recherche sauvegardée';
-    
+
     return parts.join(' • ');
   }
 }
@@ -391,13 +408,17 @@ class SavedSearchesNotifier extends StateNotifier<List<SavedSearch>> {
   Future<void> addSearch(SavedSearch search) async {
     // Remove duplicate if exists (check by name or criteria)
     state = state.where((s) {
-       // unique by custom name if provided
-       if (search.displayName != null && s.displayName == search.displayName) return false;
-       // or unique by criteria if no name provided (fallback)
-       if (search.displayName == null && s.displayLabel == search.displayLabel) return false;
-       return true;
+      // unique by custom name if provided
+      if (search.displayName != null && s.displayName == search.displayName) {
+        return false;
+      }
+      // or unique by criteria if no name provided (fallback)
+      if (search.displayName == null && s.displayLabel == search.displayLabel) {
+        return false;
+      }
+      return true;
     }).toList();
-    
+
     // Add to beginning
     state = [search, ...state].take(AppConstants.maxRecentSearches).toList();
     await _saveSearches();
@@ -415,7 +436,8 @@ class SavedSearchesNotifier extends StateNotifier<List<SavedSearch>> {
 }
 
 /// Provider for saved/recent searches
-final savedSearchesProvider = StateNotifierProvider<SavedSearchesNotifier, List<SavedSearch>>((ref) {
+final savedSearchesProvider =
+    StateNotifierProvider<SavedSearchesNotifier, List<SavedSearch>>((ref) {
   return SavedSearchesNotifier();
 });
 
@@ -423,7 +445,8 @@ final savedSearchesProvider = StateNotifierProvider<SavedSearchesNotifier, List<
 // Recommended Activities (derived from Feed)
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeActivitiesNotifier, List<Activity>>(
+final homeActivitiesProvider =
+    AutoDisposeAsyncNotifierProvider<HomeActivitiesNotifier, List<Activity>>(
   HomeActivitiesNotifier.new,
 );
 
