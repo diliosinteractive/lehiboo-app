@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lehiboo/config/env_config.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
@@ -628,7 +629,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           // Bouton partage (ouvre le nouveau sheet)
           ShareButton(
             event: event,
-            shareUrl: 'https://lehiboo.com/events/${event.slug}',
+            shareUrl: EnvConfig.eventShareUrl(event.slug),
             backgroundColor:
                 opacity < 0.5 ? Colors.white : Colors.grey.shade100,
             iconColor: HbColors.textPrimary,
@@ -1171,7 +1172,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       images: event.images,
       initialIndex: initialIndex,
       eventTitle: event.title,
-      shareUrl: 'https://lehiboo.com/events/${event.slug}',
+      shareUrl: EnvConfig.eventShareUrl(event.slug),
     );
   }
 

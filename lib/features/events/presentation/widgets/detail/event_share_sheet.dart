@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/config/env_config.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
@@ -22,7 +23,7 @@ class ShareButton extends ConsumerWidget {
   });
 
   String _buildShareText(WidgetRef ref) {
-    final url = shareUrl ?? 'https://lehiboo.com/events/${event.slug}';
+    final url = shareUrl ?? EnvConfig.eventShareUrl(event.slug);
     final user = ref.read(authProvider).user;
     final senderName = (user?.firstName?.trim().isNotEmpty ?? false)
         ? user!.firstName!.trim()
@@ -40,7 +41,9 @@ class ShareButton extends ConsumerWidget {
     HapticFeedback.lightImpact();
 
     final text = _buildShareText(ref);
-    await Share.share(text, subject: event.title);
+    await SharePlus.instance.share(
+      ShareParams(text: text, subject: event.title),
+    );
     await ref.read(gamificationApiDataSourceProvider).trackEventShare(
           event.slug,
           'native',

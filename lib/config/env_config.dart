@@ -25,6 +25,9 @@ class EnvConfig {
   static String get websiteUrl =>
       dotenv.env['WEBSITE_URL'] ?? 'https://lehiboo.com';
 
+  /// URL publique d'un événement, utilisée pour le partage natif.
+  static String eventShareUrl(String slug) => '$websiteUrl/events/$slug';
+
   // Firebase Configuration
   static String get firebaseProjectId => dotenv.env['FIREBASE_PROJECT_ID'] ?? '';
   static String get firebaseMessagingSenderId => dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '';

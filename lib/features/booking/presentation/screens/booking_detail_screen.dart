@@ -201,7 +201,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     setState(() {});
   }
 
-  void _shareBooking() {
+  Future<void> _shareBooking() async {
     final booking = _booking;
     if (booking == null) return;
 
@@ -218,7 +218,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }
     shareText += '\n\n${_tickets.length} billet(s)';
 
-    Share.share(shareText);
+    await SharePlus.instance.share(ShareParams(text: shareText));
   }
 
   /// Hands off to the system calendar's "create event" flow with the booking

@@ -108,14 +108,14 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     return '';
   }
 
-  void _shareTicket(Ticket ticket) {
+  Future<void> _shareTicket(Ticket ticket) async {
     final activity = widget.booking?.activity;
     String shareText = 'Mon billet Le Hiboo\n';
     if (activity != null) {
       shareText += '\n${activity.title}';
     }
     shareText += '\n\nCode: ${ticket.qrCodeData ?? ticket.id}';
-    Share.share(shareText);
+    await SharePlus.instance.share(ShareParams(text: shareText));
   }
 
   Future<void> _downloadTicket(Ticket ticket) async {
