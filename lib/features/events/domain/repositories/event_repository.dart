@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../entities/event.dart';
+import '../entities/popular_city.dart';
 import '../../data/models/event_dto.dart';
 import '../../data/models/home_feed_response_dto.dart' show HomeFeedDataDto;
 
@@ -7,6 +8,10 @@ import '../../../../domain/entities/city.dart';
 
 abstract class EventRepository {
   Future<List<City>> getCities();
+
+  /// Curated cities for the home "Villes populaires" section.
+  /// Pass `fallback: true` for the spec §5 fallback query (no `featured_only`).
+  Future<List<PopularCity>> getFeaturedCities({bool fallback = false});
   Future<EventsResult> getEvents({
     int page = 1,
     int perPage = 20,

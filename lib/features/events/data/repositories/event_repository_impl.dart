@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/popular_city.dart';
 import '../../domain/repositories/event_repository.dart';
 import '../datasources/events_api_datasource.dart';
 import '../mappers/event_mapper.dart';
@@ -151,6 +152,12 @@ class EventRepositoryImpl implements EventRepository {
   @override
   Future<List<City>> getCities() async {
     return await _apiDataSource.getCities();
+  }
+
+  @override
+  Future<List<PopularCity>> getFeaturedCities({bool fallback = false}) async {
+    final dtos = await _apiDataSource.getFeaturedCities(fallback: fallback);
+    return dtos.map((dto) => dto.toEntity()).toList();
   }
 
   @override

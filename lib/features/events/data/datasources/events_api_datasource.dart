@@ -12,6 +12,7 @@ import '../models/home_feed_response_dto.dart' show HomeFeedDataDto;
 import '../models/locked_event_shell_dto.dart';
 import '../../../../domain/entities/city.dart';
 import '../models/city_with_coordinates_dto.dart';
+import '../models/popular_city_dto.dart';
 
 final eventsApiDataSourceProvider = Provider<EventsApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -433,6 +434,32 @@ class EventsApiDataSource {
         imageUrl: dto.imageUrl,
       );
     }).toList();
+  }
+
+  /// Curated cities for the "Villes populaires" home section.
+  ///
+  /// When [fallback] is false (default), queries the admin-curated set
+  /// (`featured_only=1`). When the curated set is empty, callers should
+  /// retry with `fallback: true` per spec §5 to display "where it's
+  /// happening" instead of an empty section.
+  Future<List<PopularCityDto>> getFeaturedCities({bool fallback = false}) async {
+    final response = await _dio.get(
+      '/cities',
+      queryParameters: {
+        if (!fallback) 'featured_only': '1',
+        'only_with_upcoming_slots': '1',
+      },
+    );
+
+    final citiesJson = ApiResponseHandler.extractList(
+      response.data,
+      key: 'cities',
+    );
+
+    return citiesJson
+        .cast<Map<String, dynamic>>()
+        .map(PopularCityDto.fromJson)
+        .toList();
   }
 
   Future<FiltersResponseDto> getFilters() async {

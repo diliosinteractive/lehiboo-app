@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/city.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../events/domain/entities/popular_city.dart';
 import '../../../events/domain/repositories/event_repository.dart';
 import '../../../events/data/mappers/event_to_activity_mapper.dart';
 import '../../data/models/mobile_app_config.dart';
@@ -179,7 +180,64 @@ class HomeCitiesNotifier extends AutoDisposeAsyncNotifier<List<City>> {
   }
 }
 
-/// Get a placeholder image URL for a city
+// ──────────────────────────────────────────────────────────────────────────────
+// Popular Cities (curated "Villes populaires" home section)
+// ──────────────────────────────────────────────────────────────────────────────
+
+/// Result of [popularCitiesProvider].
+///
+/// [isFallback] is true when the curated `featured_only=1` set was empty and
+/// we silently re-queried `?only_with_upcoming_slots=1` per spec §5.
+/// Presentation uses it to swap the section header.
+class PopularCitiesResult {
+  final List<PopularCity> cities;
+  final bool isFallback;
+
+  const PopularCitiesResult({
+    required this.cities,
+    required this.isFallback,
+  });
+}
+
+final popularCitiesProvider =
+    AutoDisposeAsyncNotifierProvider<PopularCitiesNotifier, PopularCitiesResult>(
+  PopularCitiesNotifier.new,
+);
+
+class PopularCitiesNotifier
+    extends AutoDisposeAsyncNotifier<PopularCitiesResult> {
+  static const int _maxCards = 6;
+
+  @override
+  Future<PopularCitiesResult> build() async {
+    final repository = ref.watch(eventRepositoryProvider);
+
+    final featured = await repository.getFeaturedCities();
+    if (featured.isNotEmpty) {
+      ref.keepAlive();
+      return PopularCitiesResult(
+        cities: featured.take(_maxCards).toList(),
+        isFallback: false,
+      );
+    }
+
+    final fallback = await repository.getFeaturedCities(fallback: true);
+    ref.keepAlive();
+    return PopularCitiesResult(
+      cities: fallback.take(_maxCards).toList(),
+      isFallback: true,
+    );
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
+
+/// Placeholder image fallback for the legacy [homeCitiesProvider], which still
+/// powers the search/filter sheets. The home "Villes populaires" section uses
+/// [popularCitiesProvider] and the server-provided image instead.
 String _getCityImageUrl(String cityName) {
   // Map of known cities to image URLs
   final cityImages = {
