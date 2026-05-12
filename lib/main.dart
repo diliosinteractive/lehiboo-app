@@ -45,6 +45,7 @@ import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 
 // Push Notifications
 import 'features/notifications/presentation/providers/push_notification_provider.dart';
+import 'features/notifications/presentation/providers/in_app_notifications_provider.dart';
 
 // Messages realtime (Pusher WebSocket — eagerly initialised at app boot)
 import 'features/messages/presentation/providers/messages_realtime_provider.dart';
@@ -69,13 +70,14 @@ void main() async {
 
   // Load environment variables
   // Use dart-define to specify environment: --dart-define=ENV=production or --dart-define=ENV=staging
-  const String environment = String.fromEnvironment('ENV', defaultValue: 'development');
+  const String environment =
+      String.fromEnvironment('ENV', defaultValue: 'development');
   final String envFile = switch (environment) {
     'production' => '.env.production',
     'staging' => '.env.staging',
     _ => '.env.development',
   };
-  
+
   try {
     await dotenv.load(fileName: envFile);
     debugPrint('Loaded environment: $environment from $envFile');
@@ -224,11 +226,13 @@ class LeHibooApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     // Wire force logout so the 401 interceptor can trigger auth state change.
-    DioClient.onForceLogout = () => ref.read(authProvider.notifier).forceLogout();
+    DioClient.onForceLogout =
+        () => ref.read(authProvider.notifier).forceLogout();
 
     // Watch push notification provider to initialize on auth state changes
     // The provider will auto-initialize when user logs in and unregister on logout
     ref.watch(pushNotificationProvider);
+    ref.watch(inAppNotificationsProvider);
 
     // Eagerly initialize the Pusher WebSocket so it connects as soon as the
     // user authenticates — not lazily when they navigate to the messages screen.

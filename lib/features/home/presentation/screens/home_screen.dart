@@ -14,6 +14,7 @@ import 'package:lehiboo/features/home/presentation/providers/home_providers.dart
 import 'package:lehiboo/features/home/presentation/providers/hero_slides_provider.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/messages/presentation/providers/unread_count_provider.dart';
+import 'package:lehiboo/features/notifications/presentation/providers/in_app_notifications_provider.dart';
 import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
 
 import '../widgets/ads_banners_section.dart';
@@ -83,6 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(homeCitiesProvider.notifier).refresh(),
       ref.read(mobileAppConfigProvider.notifier).refresh(),
       ref.read(heroSlidesProvider.notifier).refresh(),
+      ref.read(inAppNotificationsProvider.notifier).refreshUnreadCount(),
     ]);
     ref.invalidate(alertsProvider);
     ref.invalidate(viewedStoriesProvider);
@@ -270,6 +272,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .fold<int>(0, (sum, item) => sum + item.quantity);
     final user = ref.watch(authProvider).user;
     final avatarUrl = user?.avatarUrl;
+    final notificationCount = ref.watch(
+      inAppNotificationsProvider.select((state) => state.unreadCount),
+    );
 
     return AppBar(
       backgroundColor: HbColors.brandPrimary.withValues(alpha: opacity),
@@ -340,8 +345,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         ),
         IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.white),
-          onPressed: () {},
+          tooltip: 'Notifications',
+          icon: Badge(
+            isLabelVisible: notificationCount > 0,
+            label: Text('$notificationCount'),
+            child: const Icon(Icons.notifications_none, color: Colors.white),
+          ),
+          onPressed: () async {
+            final allowed = await GuestGuard.check(
+              context: context,
+              ref: ref,
+              featureName: 'voir vos notifications',
+            );
+            if (allowed && mounted) {
+              context.push('/notifications');
+            }
+          },
         ),
         IconButton(
           tooltip: 'Mon panier',

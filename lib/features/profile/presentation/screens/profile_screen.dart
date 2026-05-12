@@ -216,7 +216,7 @@ class ProfileScreen extends ConsumerWidget {
               .notifications_none_rounded, // Slightly more modern icon if possible
           title: 'Mes Alertes & Recherches',
           subtitle: 'Gérer vos recherches enregistrées',
-          onTap: () => context.push('/notifications'),
+          onTap: () => context.push('/alerts'),
         ),
         if (ref.watch(vendorEligibilityProvider))
           _buildMenuItem(
@@ -920,14 +920,12 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
     try {
       final previousAvatarUrl = ref.read(authProvider).user?.avatarUrl;
       final profileDataSource = ref.read(profileApiDataSourceProvider);
-      final updatedUser =
-          await profileDataSource.uploadAvatar(_selectedImage!);
+      final updatedUser = await profileDataSource.uploadAvatar(_selectedImage!);
 
       if (previousAvatarUrl != null && previousAvatarUrl.isNotEmpty) {
         await CachedNetworkImage.evictFromCache(previousAvatarUrl);
       }
-      if (updatedUser.avatarUrl != null &&
-          updatedUser.avatarUrl!.isNotEmpty) {
+      if (updatedUser.avatarUrl != null && updatedUser.avatarUrl!.isNotEmpty) {
         await CachedNetworkImage.evictFromCache(updatedUser.avatarUrl!);
       }
 
