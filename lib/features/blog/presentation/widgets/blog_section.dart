@@ -57,7 +57,7 @@ class BlogSection extends ConsumerWidget {
             }
 
             return SizedBox(
-              height: 240,
+              height: 260,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),

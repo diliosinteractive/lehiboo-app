@@ -48,7 +48,7 @@ class CityWithCoordinatesDto {
       name: json['name'] as String? ?? 'Inconnue',
       department: json['department'] as String?,
       region: json['region'] as String?,
-      eventCount: (json['event_count'] as num?)?.toInt() ?? 0,
+      eventCount: (json['events_count'] as num?)?.toInt() ?? 0,
       lat: lat,
       lng: lng,
       imageUrl: json['image_url'] as String?,

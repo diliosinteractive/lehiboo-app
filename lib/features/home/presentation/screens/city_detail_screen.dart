@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -53,35 +54,140 @@ String _getCityImageUrl(String cityName) {
          'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400';
 }
 
-/// Provider for activities in a city (using location filter)
-final cityActivitiesProvider = FutureProvider.family<List<Activity>, String>((ref, citySlug) async {
-  final eventRepository = ref.watch(eventRepositoryProvider);
+/// Paginated activities for a city.
+///
+/// `total` is `meta.total` from the events endpoint — single source of truth
+/// for the "X événements disponibles" header. `activities` accumulates across
+/// `loadMore()` calls; `page`/`lastPage` track pagination; `isLoadingMore`
+/// gates the spinner shown at the bottom of the list during fetches.
+class CityActivitiesResult {
+  final List<Activity> activities;
+  final int total;
+  final int page;
+  final int lastPage;
+  final bool isLoadingMore;
 
-  debugPrint('Fetching activities for city: $citySlug');
+  const CityActivitiesResult({
+    required this.activities,
+    required this.total,
+    required this.page,
+    required this.lastPage,
+    this.isLoadingMore = false,
+  });
 
-  try {
-    final result = await eventRepository.getEvents(
-      location: citySlug, // Filter by event_loc taxonomy slug
-      perPage: 20,
+  bool get hasMore => page < lastPage;
+
+  CityActivitiesResult copyWith({
+    List<Activity>? activities,
+    int? total,
+    int? page,
+    int? lastPage,
+    bool? isLoadingMore,
+  }) =>
+      CityActivitiesResult(
+        activities: activities ?? this.activities,
+        total: total ?? this.total,
+        page: page ?? this.page,
+        lastPage: lastPage ?? this.lastPage,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      );
+}
+
+class CityActivitiesController
+    extends FamilyAsyncNotifier<CityActivitiesResult, String> {
+  static const _perPage = 20;
+
+  @override
+  Future<CityActivitiesResult> build(String citySlug) async {
+    debugPrint('Fetching activities for city: $citySlug');
+    final result = await ref.read(eventRepositoryProvider).getEvents(
+          location: citySlug,
+          page: 1,
+          perPage: _perPage,
+        );
+    debugPrint(
+        'Got ${result.events.length}/${result.totalItems} events for city $citySlug (page ${result.currentPage}/${result.totalPages})');
+    return CityActivitiesResult(
+      activities: EventToActivityMapper.toActivities(result.events),
+      total: result.totalItems,
+      page: result.currentPage,
+      lastPage: result.totalPages,
     );
-
-    debugPrint('Got ${result.events.length} events for city $citySlug');
-    return EventToActivityMapper.toActivities(result.events);
-  } catch (e) {
-    debugPrint('Error fetching city activities: $e');
-    return [];
   }
-});
 
-class CityDetailScreen extends ConsumerWidget {
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || !current.hasMore || current.isLoadingMore) return;
+
+    state = AsyncData(current.copyWith(isLoadingMore: true));
+
+    try {
+      final next = await ref.read(eventRepositoryProvider).getEvents(
+            location: arg,
+            page: current.page + 1,
+            perPage: _perPage,
+          );
+      final newActivities = EventToActivityMapper.toActivities(next.events);
+      state = AsyncData(
+        current.copyWith(
+          activities: [...current.activities, ...newActivities],
+          page: next.currentPage,
+          lastPage: next.totalPages,
+          isLoadingMore: false,
+        ),
+      );
+    } catch (e, st) {
+      state = AsyncData(current.copyWith(isLoadingMore: false));
+      if (kDebugMode) {
+        debugPrint('CityActivitiesController.loadMore failed: $e\n$st');
+      }
+    }
+  }
+}
+
+final cityActivitiesProvider = AsyncNotifierProvider.family<
+    CityActivitiesController, CityActivitiesResult, String>(
+  CityActivitiesController.new,
+);
+
+class CityDetailScreen extends ConsumerStatefulWidget {
   final String citySlug;
 
   const CityDetailScreen({super.key, required this.citySlug});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cityAsyncValue = ref.watch(cityDetailProvider(citySlug));
-    final activitiesAsyncValue = ref.watch(cityActivitiesProvider(citySlug));
+  ConsumerState<CityDetailScreen> createState() => _CityDetailScreenState();
+}
+
+class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref
+          .read(cityActivitiesProvider(widget.citySlug).notifier)
+          .loadMore();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cityAsyncValue = ref.watch(cityDetailProvider(widget.citySlug));
+    final activitiesAsyncValue =
+        ref.watch(cityActivitiesProvider(widget.citySlug));
 
     return Scaffold(
 
@@ -106,6 +212,7 @@ class CityDetailScreen extends ConsumerWidget {
           }
 
           return CustomScrollView(
+            controller: _scrollController,
             slivers: [
               SliverAppBar(
                 expandedHeight: 250.0,
@@ -159,14 +266,20 @@ class CityDetailScreen extends ConsumerWidget {
                           color: Color(0xFF4A5568),
                         ),
                       ),
-                      if (city.eventCount != null) ...[
+                      if (activitiesAsyncValue.valueOrNull != null) ...[
                         const SizedBox(height: 8),
-                        Text(
-                          '${city.eventCount} événement${city.eventCount! > 1 ? 's' : ''} disponible${city.eventCount! > 1 ? 's' : ''}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
+                        Builder(
+                          builder: (_) {
+                            final total = activitiesAsyncValue.value!.total;
+                            final plural = total > 1;
+                            return Text(
+                              '$total événement${plural ? 's' : ''} disponible${plural ? 's' : ''}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            );
+                          },
                         ),
                       ],
                       const SizedBox(height: 24),
@@ -203,54 +316,7 @@ class CityDetailScreen extends ConsumerWidget {
                 ),
               ),
               // Activities list from real API
-              activitiesAsyncValue.when(
-                data: (activities) {
-                  if (activities.isEmpty) {
-                    return const SliverToBoxAdapter(
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: Text(
-                            'Aucune activité trouvée dans cette ville',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  return SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.48,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => EventCard(activity: activities[index], isCompact: true, fillContainer: true),
-                        childCount: activities.length,
-                      ),
-                    ),
-                  );
-                },
-                loading: () => const SliverToBoxAdapter(
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(color: Color(0xFFFF601F)),
-                    ),
-                  ),
-                ),
-                error: (err, _) => SliverToBoxAdapter(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Text('Erreur: $err'),
-                    ),
-                  ),
-                ),
-              ),
+              ..._buildActivitiesSlivers(activitiesAsyncValue),
               const SliverToBoxAdapter(child: SizedBox(height: 40)),
             ],
           );
@@ -258,6 +324,80 @@ class CityDetailScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFF601F))),
         error: (err, stack) => Center(child: Text('Erreur: $err')),
       ),
+    );
+  }
+
+  List<Widget> _buildActivitiesSlivers(
+      AsyncValue<CityActivitiesResult> activitiesAsyncValue) {
+    return activitiesAsyncValue.when(
+      data: (result) {
+        final activities = result.activities;
+        if (activities.isEmpty) {
+          return [
+            const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text(
+                    'Aucune activité trouvée dans cette ville',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ),
+            ),
+          ];
+        }
+        return [
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.48,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => EventCard(
+                  activity: activities[index],
+                  isCompact: true,
+                  fillContainer: true,
+                ),
+                childCount: activities.length,
+              ),
+            ),
+          ),
+          if (result.isLoadingMore)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+                ),
+              ),
+            ),
+        ];
+      },
+      loading: () => const [
+        SliverToBoxAdapter(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(color: Color(0xFFFF601F)),
+            ),
+          ),
+        ),
+      ],
+      error: (err, _) => [
+        SliverToBoxAdapter(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Text('Erreur: $err'),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
