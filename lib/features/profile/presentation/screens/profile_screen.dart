@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../config/env_config.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../checkin/presentation/providers/vendor_eligibility_provider.dart';
@@ -216,7 +218,7 @@ class ProfileScreen extends ConsumerWidget {
               .notifications_none_rounded, // Slightly more modern icon if possible
           title: 'Mes Alertes & Recherches',
           subtitle: 'Gérer vos recherches enregistrées',
-          onTap: () => context.push('/notifications'),
+          onTap: () => context.push('/alerts'),
         ),
         if (ref.watch(vendorEligibilityProvider))
           _buildMenuItem(
@@ -238,7 +240,7 @@ class ProfileScreen extends ConsumerWidget {
           icon: Icons.help_outline,
           title: 'Aide & Support',
           subtitle: 'FAQ et contact',
-          onTap: () {}, // TODO: Implement help
+          onTap: () => _openFaq(context),
         ),
         const SizedBox(height: 24),
 
@@ -776,6 +778,22 @@ class ProfileScreen extends ConsumerWidget {
       }
     }
   }
+
+  Future<void> _openFaq(BuildContext context) async {
+    final uri = Uri.parse('${EnvConfig.websiteUrl}/faq');
+    final ok = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    if (ok) return;
+    if (!context.mounted) return;
+
+    final fallbackOk =
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (fallbackOk) return;
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Impossible d'ouvrir l'aide")),
+    );
+  }
 }
 
 class _EditableAvatar extends ConsumerStatefulWidget {
@@ -920,14 +938,12 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
     try {
       final previousAvatarUrl = ref.read(authProvider).user?.avatarUrl;
       final profileDataSource = ref.read(profileApiDataSourceProvider);
-      final updatedUser =
-          await profileDataSource.uploadAvatar(_selectedImage!);
+      final updatedUser = await profileDataSource.uploadAvatar(_selectedImage!);
 
       if (previousAvatarUrl != null && previousAvatarUrl.isNotEmpty) {
         await CachedNetworkImage.evictFromCache(previousAvatarUrl);
       }
-      if (updatedUser.avatarUrl != null &&
-          updatedUser.avatarUrl!.isNotEmpty) {
+      if (updatedUser.avatarUrl != null && updatedUser.avatarUrl!.isNotEmpty) {
         await CachedNetworkImage.evictFromCache(updatedUser.avatarUrl!);
       }
 

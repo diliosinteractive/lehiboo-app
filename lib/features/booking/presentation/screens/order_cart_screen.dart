@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/shared/legal/legal_links.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -364,6 +366,16 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                   },
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemCount: participants.length,
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: Text(
+                  'Ajouter au prochain billet vide',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: HbColors.textMuted,
+                  ),
                 ),
               ),
             ],
@@ -734,9 +746,36 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
-              child: Text(
-                'J\'accepte les conditions generales de vente et la politique de confidentialite.',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              child: RichText(
+                text: TextSpan(
+                  style:
+                      TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  children: [
+                    const TextSpan(text: "J'accepte les "),
+                    TextSpan(
+                      text: 'conditions generales de vente',
+                      style: const TextStyle(
+                        color: HbColors.brandPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () =>
+                            LegalLinks.open(context, LegalDocument.sales),
+                    ),
+                    const TextSpan(text: ' et la '),
+                    TextSpan(
+                      text: 'politique de confidentialite',
+                      style: const TextStyle(
+                        color: HbColors.brandPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () =>
+                            LegalLinks.open(context, LegalDocument.privacy),
+                    ),
+                    const TextSpan(text: '.'),
+                  ],
+                ),
               ),
             ),
           ),

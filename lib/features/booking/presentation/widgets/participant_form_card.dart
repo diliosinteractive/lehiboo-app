@@ -309,7 +309,10 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
             duration: const Duration(milliseconds: 220),
             firstChild: const SizedBox.shrink(),
             secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              // Top inset gives the first field's outline floating label room
+              // to render — without it AnimatedCrossFade's Stack clips the
+              // label's upper half (the part that sits above the field).
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
               child: _buildBody(),
             ),
             crossFadeState: _expanded
@@ -414,11 +417,12 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
           key: ValueKey('prefill-$_prefillSource'),
           initialValue: _prefillSource,
           decoration: _inputDecoration('Pre-remplir ce billet').copyWith(
-            // The compact (isDense) decoration clips the floating label.
-            // Use the default density + a bit more vertical padding here.
+            // Base helper uses isDense + symmetric padding, which clips the
+            // floating label. Switch to non-dense and use asymmetric padding
+            // that mirrors Flutter's default for outline + floating label
+            // (extra top room so the label has space to sit).
             isDense: false,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            contentPadding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
           ),
           isExpanded: true,
           items: [

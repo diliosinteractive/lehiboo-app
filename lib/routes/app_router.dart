@@ -54,6 +54,7 @@ import '../features/checkin/presentation/screens/checkin_scan_screen.dart';
 import '../features/checkin/presentation/screens/checkin_manual_entry_screen.dart';
 // Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
+import '../features/notifications/presentation/screens/notifications_inbox_screen.dart';
 // HibonShopScreen import retiré : route /hibons-shop redirigée vers
 // /hibons-dashboard (Plan 04 — achats Hibons désactivés). Le fichier source
 // est conservé pour réactivation v2.
@@ -726,10 +727,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Notifications (Now Alerts & Saved Searches)
+      // In-app notifications inbox
       GoRoute(
         path: '/notifications',
         name: 'notifications',
+        builder: (context, state) => const NotificationsInboxScreen(),
+      ),
+      // Saved searches and search alerts
+      GoRoute(
+        path: '/alerts',
+        name: 'alerts',
         builder: (context, state) => const AlertsListScreen(),
       ),
       // AI Chat (Legacy redirects to Petit Boo)

@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/legal/legal_links.dart';
 import '../providers/business_register_provider.dart';
 
 /// Step 5: Terms Acceptance and Summary Form
@@ -183,9 +184,10 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                             decoration: TextDecoration.underline,
                           ),
                           recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              // TODO: Open terms URL
-                            },
+                            ..onTap = () => LegalLinks.open(
+                                  context,
+                                  LegalDocument.terms,
+                                ),
                         ),
                         const TextSpan(text: ' et la '),
                         TextSpan(
@@ -196,9 +198,10 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                             decoration: TextDecoration.underline,
                           ),
                           recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              // TODO: Open privacy URL
-                            },
+                            ..onTap = () => LegalLinks.open(
+                                  context,
+                                  LegalDocument.privacy,
+                                ),
                         ),
                       ],
                     ),
@@ -229,10 +232,13 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                             fontWeight: FontWeight.w600,
                             decoration: TextDecoration.underline,
                           ),
+                          // Note: vendor register payload should send
+                          // accept_vendor_terms (spec §4). Out of scope here.
                           recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              // TODO: Open business terms URL
-                            },
+                            ..onTap = () => LegalLinks.open(
+                                  context,
+                                  LegalDocument.sales,
+                                ),
                         ),
                       ],
                     ),
