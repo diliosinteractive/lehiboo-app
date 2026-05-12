@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../shared/legal/legal_links.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/password_strength_indicator.dart';
@@ -999,9 +1000,10 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                             fontWeight: FontWeight.w600,
                           ),
                           recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              // TODO: Navigate to terms
-                            },
+                            ..onTap = () => LegalLinks.open(
+                                  context,
+                                  LegalDocument.terms,
+                                ),
                         ),
                         const TextSpan(text: ' et la '),
                         TextSpan(
@@ -1011,9 +1013,10 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                             fontWeight: FontWeight.w600,
                           ),
                           recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              // TODO: Navigate to privacy policy
-                            },
+                            ..onTap = () => LegalLinks.open(
+                                  context,
+                                  LegalDocument.privacy,
+                                ),
                         ),
                       ],
                     ),

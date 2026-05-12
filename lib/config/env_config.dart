@@ -22,13 +22,8 @@ class EnvConfig {
   static String get apiHost => dotenv.env['API_HOST'] ?? '';
 
   // Website URLs
-  static String get websiteUrl => dotenv.env['WEBSITE_URL'] ?? 'https://lehiboo.fr';
-
-  static String get privacyPolicyUrl =>
-      dotenv.env['PRIVACY_POLICY_URL'] ?? 'https://lehiboo.fr/privacy';
-
-  static String get termsOfServiceUrl =>
-      dotenv.env['TERMS_OF_SERVICE_URL'] ?? 'https://lehiboo.fr/terms';
+  static String get websiteUrl =>
+      dotenv.env['WEBSITE_URL'] ?? 'https://lehiboo.com';
 
   // Firebase Configuration
   static String get firebaseProjectId => dotenv.env['FIREBASE_PROJECT_ID'] ?? '';

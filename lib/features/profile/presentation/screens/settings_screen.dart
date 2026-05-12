@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../shared/legal/legal_links.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/providers/push_notification_provider.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
@@ -167,6 +168,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Redémarrer le tutoriel d\'accueil'),
             onTap: () => _showResetConfirmation(context),
           ),
+          const Divider(),
+          _buildSectionHeader('Informations légales'),
+          for (final doc
+              in LegalDocument.values.where((d) => d != LegalDocument.cookies))
+            ListTile(
+              leading: Icon(doc.icon, color: const Color(0xFFFF601F)),
+              title: Text(doc.label),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Colors.grey,
+              ),
+              onTap: () => LegalLinks.open(context, doc),
+            ),
           const Divider(),
           _buildSectionHeader('Informations'),
           const ListTile(
