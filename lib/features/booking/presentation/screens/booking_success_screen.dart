@@ -71,6 +71,11 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
       // next time the user opens the bookings tab. Safe whether the
       // provider is currently alive or not — a no-op in the latter case.
       ref.invalidate(bookingsListControllerProvider);
+      // Poison the event detail cache as soon as we land here — the booking
+      // has consumed a seat, so spots_remaining is now stale. Doing this in
+      // initState (not on button tap) guarantees freshness regardless of
+      // how the user navigates away (system back, swipe, deep link).
+      _invalidateEventData();
     });
 
     // Charger les tickets

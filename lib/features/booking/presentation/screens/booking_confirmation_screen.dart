@@ -10,12 +10,39 @@ import 'package:lehiboo/features/home/presentation/providers/home_providers.dart
 import 'package:lehiboo/features/booking/presentation/widgets/booking_stepper_header.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-class BookingConfirmationScreen extends ConsumerWidget {
+class BookingConfirmationScreen extends ConsumerStatefulWidget {
   const BookingConfirmationScreen({super.key, required this.activity});
   final Activity activity;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BookingConfirmationScreen> createState() =>
+      _BookingConfirmationScreenState();
+}
+
+class _BookingConfirmationScreenState
+    extends ConsumerState<BookingConfirmationScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Poison the event detail cache as soon as we land here — the booking
+    // has consumed a seat, so spots_remaining is now stale. Doing this in
+    // initState (not on button tap) guarantees freshness regardless of
+    // how the user navigates away (system back, swipe, deep link).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _invalidateEventData();
+    });
+  }
+
+  void _invalidateEventData() {
+    final id = widget.activity.id;
+    ref.invalidate(eventDetailControllerProvider(id));
+    ref.invalidate(eventAvailabilityProvider(id));
+    ref.invalidate(similarEventsProvider(id));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activity = widget.activity;
     final provider = bookingFlowControllerProvider(activity);
     final state = ref.watch(provider);
 
