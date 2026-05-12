@@ -184,10 +184,18 @@ class MessagesApiDataSource {
   Future<ConversationsListResponseDto> getSupportConversations({
     int page = 1,
     int perPage = 15,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
   }) async {
     final r = await _dio.get('/user/support-conversations', queryParameters: {
       'page': page,
       'per_page': perPage,
+      if (status != null) 'status': status,
+      if (unreadOnly == true) 'unread_only': true,
+      if (search != null && search.isNotEmpty) 'search': search,
+      if (period != null) 'period': period,
     });
     return ConversationsListResponseDto.fromJson(
         r.data as Map<String, dynamic>);

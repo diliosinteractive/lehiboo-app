@@ -296,9 +296,19 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<ConversationsListResult> getSupportConversations({
     int page = 1,
     int perPage = 15,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
   }) async {
-    final response =
-        await _api.getSupportConversations(page: page, perPage: perPage);
+    final response = await _api.getSupportConversations(
+      page: page,
+      perPage: perPage,
+      status: status,
+      unreadOnly: unreadOnly,
+      search: search,
+      period: period,
+    );
     return _mapListResult(response, page);
   }
 

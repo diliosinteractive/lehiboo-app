@@ -69,6 +69,10 @@ abstract class MessagesRepository {
   Future<ConversationsListResult> getSupportConversations({
     int page = 1,
     int perPage = 15,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
   });
 
   Future<int> getSupportUnreadCount();
