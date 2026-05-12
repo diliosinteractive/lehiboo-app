@@ -99,8 +99,17 @@ class NewConversationForm extends ConsumerStatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) =>
-          NewConversationForm(conversationContext: conversationContext),
+      // Keyboard insets MUST be read from the builder's ctx, not from the
+      // form widget's own context. Using the form's context can lag or miss
+      // updates, leaving the action bar hidden behind the keyboard.
+      builder: (ctx) => AnimatedPadding(
+        duration: const Duration(milliseconds: 130),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+        ),
+        child: NewConversationForm(conversationContext: conversationContext),
+      ),
     );
   }
 
@@ -448,125 +457,108 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
 
   @override
   Widget build(BuildContext context) {
-    // Wrapping the sheet in AnimatedPadding shrinks the parent
-    // constraints by the keyboard height. DraggableScrollableSheet
-    // recomputes its child size against the smaller available space,
-    // so the entire sheet — including the pinned action bar — lifts
-    // above the keyboard. Without this, the sheet keeps its full
-    // screen-height footprint and the bottom sits behind the keyboard.
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: DraggableScrollableSheet(
-        // Locked to 1.0 so the sheet always fills the available height
-        // (capped by `useSafeArea: true` on showModalBottomSheet). Min,
-        // initial, and max are equal — the user can't drag it shorter,
-        // matching the "full-screen new message composer" pattern.
-        initialChildSize: 1.0,
-        maxChildSize: 1.0,
-        minChildSize: 1.0,
-        expand: false,
-        builder: (_, scrollCtrl) => Column(
-          children: [
-            // Drag handle
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 4),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Header row
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Nouveau message',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 2),
-                        Text(_subtitle,
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade600)),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-          const Divider(height: 1),
-          // Scrollable body
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    controller: scrollCtrl,
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding:
-                        const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildRecipientSection(),
-                        if (_isFromOrg && _eventId != null) ...[
-                          const SizedBox(height: 16),
-                          _buildEventChip(),
-                        ],
-                        const SizedBox(height: 16),
-                        if (_isSupport) _buildSupportSubjectChips(),
-                        _buildSubjectField(),
-                        const SizedBox(height: 16),
-                        _buildMessageField(),
-                        if (_submitError != null) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: Colors.red.shade200),
-                            ),
-                            child: Text(_submitError!,
-                                style: TextStyle(
-                                    color: Colors.red.shade700,
-                                    fontSize: 13)),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+    // Simple Column fills the height provided by AnimatedPadding (in show()).
+    // DraggableScrollableSheet is not needed — the sheet is always full-height
+    // and the keyboard lift is handled at the builder level.
+    return Column(
+      children: [
+        // Drag handle
+        Container(
+          margin: const EdgeInsets.only(top: 12, bottom: 4),
+          width: 36,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(2),
           ),
-          // Pinned action bar at the bottom of the sheet. Keyboard
-          // accommodation is handled by the outer AnimatedPadding —
-          // this container only needs its own visual padding.
-          if (!_isLoading)
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade200),
+        ),
+        // Header row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Nouveau message',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    Text(_subtitle,
+                        style: TextStyle(
+                            fontSize: 13, color: Colors.grey.shade600)),
+                  ],
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-              child: _buildActions(),
-            ),
-        ],
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
         ),
-      ),
+        const Divider(height: 1),
+        // Scrollable body — grows to fill remaining space between header and
+        // the pinned action bar below.
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildRecipientSection(),
+                      if (_isFromOrg && _eventId != null) ...[
+                        const SizedBox(height: 16),
+                        _buildEventChip(),
+                      ],
+                      const SizedBox(height: 16),
+                      if (_isSupport) _buildSupportSubjectChips(),
+                      _buildSubjectField(),
+                      const SizedBox(height: 16),
+                      _buildMessageField(),
+                      if (_submitError != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border:
+                                Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Text(_submitError!,
+                              style: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontSize: 13)),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+        ),
+        // Pinned action bar — always visible, lifted above the keyboard by
+        // the AnimatedPadding wrapping the whole sheet in show().
+        if (!_isLoading)
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.07),
+                  blurRadius: 12,
+                  offset: const Offset(0, -3),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            child: _buildActions(),
+          ),
+      ],
     );
   }
 
