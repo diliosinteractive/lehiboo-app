@@ -157,21 +157,39 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                       ? context.pop()
                       : context.go('/messages'),
                 ),
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                title: Row(
                   children: [
-                    Text(
-                      conversation.subject,
-                      style: const TextStyle(fontSize: 16),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: const Color(0xFFFF601F).withValues(alpha: 0.15),
+                      child: const Icon(
+                        Icons.support_agent,
+                        size: 20,
+                        color: Color(0xFFFF601F),
+                      ),
                     ),
-                    Text(
-                      'Support LeHiboo',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.normal,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Support LeHiboo',
+                            style: TextStyle(fontSize: 16),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            conversation.subject,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                   ],

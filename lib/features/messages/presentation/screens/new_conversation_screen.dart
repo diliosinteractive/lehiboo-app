@@ -51,8 +51,12 @@ class _NewConversationScreenState
     if (widget.fromBookingUuid != null) {
       await _createFromBooking();
     } else {
-      await _showFormModal();
-      if (mounted) context.canPop() ? context.pop() : context.go('/messages');
+      final created = await _showFormModal();
+      // Only navigate away when the user cancelled — a successful submission
+      // already called context.pushReplacement inside _submit().
+      if (mounted && created != true) {
+        context.canPop() ? context.pop() : context.go('/messages');
+      }
     }
   }
 
@@ -77,8 +81,8 @@ class _NewConversationScreenState
     }
   }
 
-  Future<void> _showFormModal() async {
-    if (!mounted) return;
+  Future<bool?> _showFormModal() async {
+    if (!mounted) return null;
     NewConversationContext ctx;
     if (widget.fromOrganizationUuid != null) {
       ctx = FromOrganizerConversationContext(
@@ -89,7 +93,7 @@ class _NewConversationScreenState
     } else {
       ctx = DashboardConversationContext();
     }
-    await NewConversationForm.show(context, conversationContext: ctx);
+    return NewConversationForm.show(context, conversationContext: ctx);
   }
 
   @override

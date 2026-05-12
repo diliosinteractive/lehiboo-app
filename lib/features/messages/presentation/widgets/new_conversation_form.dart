@@ -436,9 +436,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         ref.read(conversationsProvider.notifier).refresh();
       }
       Navigator.of(context).pop(true);
-      // SupportConversationContext is opened from /messages/support/new — replace
-      // that route so pressing back goes to the messages screen, not the spinner.
-      if (ctx is SupportConversationContext) {
+      // Use pushReplacement for contexts that are opened from a dedicated
+      // "new conversation" screen (/messages/new, /messages/support/new,
+      // /messages/new/from-organizer/…) so pressing back skips the spinner.
+      if (ctx is SupportConversationContext ||
+          ctx is DashboardConversationContext ||
+          ctx is FromOrganizerConversationContext) {
         context.pushReplacement(route);
       } else {
         context.push(route);

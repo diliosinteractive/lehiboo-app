@@ -56,10 +56,13 @@ class MessagesApiDataSource {
   Future<List<ConversationOrganizationDto>> getContactableOrganizations() async {
     final r = await _dio.get('/user/conversations/contactable-organizations');
     final list = ApiResponseHandler.extractList(r.data);
-    return list
-        .map((e) =>
-            ConversationOrganizationDto.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return list.map((e) {
+      final map = Map<String, dynamic>.from(e as Map<String, dynamic>);
+      // Backend may omit numeric id — default to 0 since only uuid is used for API calls.
+      map.putIfAbsent('id', () => 0);
+      map.putIfAbsent('organization_name', () => map['company_name'] ?? '');
+      return ConversationOrganizationDto.fromJson(map);
+    }).toList();
   }
 
   // 5. POST /user/conversations
