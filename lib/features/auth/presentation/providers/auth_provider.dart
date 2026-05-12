@@ -3,14 +3,29 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import '../../../../config/dio_client.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/entities/user.dart';
 import '../../data/mappers/auth_mapper.dart';
 import '../../data/models/auth_response_dto.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../../booking/presentation/providers/order_cart_provider.dart';
+import '../../../favorites/data/datasources/favorites_local_datasource.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
+import '../../../memberships/presentation/providers/private_events_provider.dart';
+import '../../../messages/presentation/providers/admin_conversations_provider.dart';
+import '../../../messages/presentation/providers/conversations_provider.dart';
+import '../../../messages/presentation/providers/support_conversations_provider.dart';
+import '../../../messages/presentation/providers/unread_count_provider.dart';
+import '../../../messages/presentation/providers/vendor_conversations_provider.dart';
+import '../../../messages/presentation/providers/vendor_org_conversations_provider.dart';
 import '../../../notifications/data/datasources/device_token_datasource.dart';
+import '../../../partners/presentation/providers/followed_organizers_providers.dart';
+import '../../../petit_boo/presentation/providers/conversation_list_provider.dart';
+import '../../../petit_boo/presentation/providers/petit_boo_chat_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../profile/presentation/providers/saved_participants_provider.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, pendingVerification, pendingLoginOtp, error }
 
@@ -275,24 +290,87 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _ref.read(deviceTokenDataSourceProvider).unregisterAllTokens();
     } catch (_) {}
     await _authRepository.logout();
+    await _clearPersistedUserData();
     state = const AuthState(status: AuthStatus.unauthenticated);
-    // Personalized feed depends on identity — drop any cached strata so the
-    // next read returns PersonalizedFeedView.empty() (spec §7).
-    _ref.invalidate(personalizedFeedProvider);
-    // Cart is identity-bound and persisted to SharedPreferences; clear so the
-    // next user (or guest) doesn't inherit stale items + an expired hold.
-    _ref.read(orderCartProvider.notifier).clear();
+    _invalidateUserScopedProviders();
   }
 
   /// Force logout without calling the API (used by 401 interceptor).
   /// Skips the API call to avoid triggering another 401 loop.
   Future<void> forceLogout() async {
     await _authRepository.clearLocalAuthData();
+    await _clearPersistedUserData();
     state = const AuthState(status: AuthStatus.unauthenticated);
-    // Personalized feed depends on identity — drop any cached strata so the
-    // next read returns PersonalizedFeedView.empty() (spec §7).
+    _invalidateUserScopedProviders();
+  }
+
+  /// Flush every disk-backed cache that holds the current user's identity.
+  ///
+  /// In-memory provider state is handled by per-notifier `ref.listen` hooks
+  /// on `authProvider` (see `BookingListController`, `FavoritesProvider`,
+  /// `PetitBooChatNotifier`, …). Disk caches can't self-listen, so they get
+  /// flushed here and we `await` them before flipping to `unauthenticated`
+  /// to guarantee the next user can't observe the previous tenant's bytes.
+  Future<void> _clearPersistedUserData() async {
+    // Cart (SharedPreferences `order_cart_items_v1` + hold expiry).
+    // OrderCartNotifier.clear() is fire-and-forget on _prefs.remove(), so we
+    // don't await it — calling it synchronously is enough to wipe in-memory
+    // state and queue the disk removal.
+    try {
+      _ref.read(orderCartProvider.notifier).clear();
+    } catch (_) {}
+    // Favorites cache (SharedPreferences `favorite_ids` + `favorites_last_sync`).
+    try {
+      await _ref.read(favoritesLocalDatasourceProvider).clear();
+    } catch (_) {}
+    // Petit Boo persisted context, chat history, memory toggle.
+    try {
+      await _ref.read(petitBooContextStorageProvider).clearAll();
+    } catch (_) {}
+    // Petit Boo session UUID (SecureStorage). Survives app restarts — must be
+    // wiped or the next user resumes the previous user's AI session.
+    try {
+      await SharedSecureStorage.instance
+          .delete(key: AppConstants.keyPetitBooSessionUuid);
+    } catch (_) {}
+  }
+
+  /// Invalidate read-only / FutureProvider state that no notifier owns.
+  ///
+  /// Providers in this list either don't expose a notifier we can hook
+  /// `ref.listen(authProvider)` onto (FutureProvider, AsyncNotifier without
+  /// an auth-aware build, StateProvider), or do expose one but pre-date the
+  /// auth-listener convention used elsewhere in the codebase. Anything that
+  /// already self-listens (hibons, inAppNotifications, activeOrganization,
+  /// conversationDetail, messagesRealtime, pushNotification, bookings,
+  /// favorites, favorite_lists, alerts, reminders, userReviews, tripPlans,
+  /// petitBooChat) MUST NOT appear here — double-reset would mask bugs in
+  /// those listeners.
+  void _invalidateUserScopedProviders() {
+    // Personalized feed (per-user strata).
     _ref.invalidate(personalizedFeedProvider);
-    _ref.read(orderCartProvider.notifier).clear();
+    // Profile / stats / saved participants (FutureProvider.autoDispose, but a
+    // mounted screen at logout time would keep the previous user's data
+    // visible until next navigation — invalidate to force a rebuild).
+    _ref.invalidate(userStatsProvider);
+    _ref.invalidate(savedParticipantsProvider);
+    // Partners — followed organizers list.
+    _ref.invalidate(followedOrganizersControllerProvider);
+    // Memberships derived screens (myMembershipsListProvider self-clears via
+    // its build()'s ref.watch on authProvider).
+    _ref.invalidate(privateEventsControllerProvider);
+    _ref.invalidate(privateEventsSearchProvider);
+    _ref.invalidate(privateEventsOrgFilterProvider);
+    // Messages — none of these self-listen to auth.
+    _ref.invalidate(conversationsProvider);
+    _ref.invalidate(adminConversationsProvider);
+    _ref.invalidate(vendorConversationsProvider);
+    _ref.invalidate(supportConversationsProvider);
+    _ref.invalidate(vendorOrgConversationsProvider);
+    _ref.invalidate(unreadCountProvider);
+    // Petit Boo conversation history list (autoDispose; covers the case
+    // where the user is on the history screen at logout time).
+    _ref.invalidate(conversationListProvider);
   }
 
   void clearError() {

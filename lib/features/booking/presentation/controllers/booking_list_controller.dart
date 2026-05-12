@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 
@@ -178,15 +179,39 @@ final bookingsListControllerProvider =
     StateNotifierProvider<BookingListController, BookingsListState>(
   (ref) {
     final repo = ref.watch(bookingRepositoryProvider);
-    return BookingListController(bookingRepository: repo)..loadBookings();
+    return BookingListController(bookingRepository: repo, ref: ref)
+      ..loadBookings();
   },
 );
 
 class BookingListController extends StateNotifier<BookingsListState> {
-  BookingListController({required this.bookingRepository})
-      : super(const BookingsListState(isLoading: true));
+  BookingListController({required this.bookingRepository, required Ref ref})
+      : _ref = ref,
+        super(const BookingsListState(isLoading: true)) {
+    // Bookings are user-scoped. The provider is NOT autoDispose, so its state
+    // survives logout and would leak the previous user's reservations to the
+    // next sign-in on the same app session. Mirror the hibons/notifications
+    // pattern: reset state on real auth transitions only (skip the `loading`
+    // hop that logout() itself triggers).
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = next == AuthStatus.unauthenticated &&
+            previous == AuthStatus.authenticated;
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          state = const BookingsListState();
+        } else if (loggedIn) {
+          loadBookings(refresh: true);
+        }
+      },
+    );
+  }
 
   final BookingRepository bookingRepository;
+  final Ref _ref;
 
   Future<void> loadBookings({bool refresh = false}) async {
     debugPrint('📋 loadBookings called (refresh: $refresh)');

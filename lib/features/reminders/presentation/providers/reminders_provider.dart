@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../domain/entities/reminder.dart';
 import '../../data/repositories/reminders_repository_impl.dart';
@@ -36,6 +37,21 @@ class RemindersListNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
   RemindersListNotifier(this._repository, this._ref)
       : super(const AsyncValue.loading()) {
     loadReminders();
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = next == AuthStatus.unauthenticated &&
+            previous == AuthStatus.authenticated;
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          state = const AsyncValue.data([]);
+        } else if (loggedIn) {
+          loadReminders();
+        }
+      },
+    );
   }
 
   Future<void> loadReminders() async {
