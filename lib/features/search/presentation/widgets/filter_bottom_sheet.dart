@@ -8,6 +8,7 @@ import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../../../events/data/models/event_reference_data_dto.dart';
 import '../../../home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/search/presentation/widgets/category_cascade.dart';
 
 /// Show the filter bottom sheet
 Future<void> showFilterBottomSheet(BuildContext context) {
@@ -1808,7 +1809,7 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
             label: _labelWithCount(category.name, category.eventCount),
             icon: _iconForReference(category.icon, category.slug),
             isSelected: isSelected,
-            onTap: () => _toggleSlug(category.slug),
+            onTap: () => _toggleParent(category),
           ),
           if (visibleChildren.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -1824,7 +1825,7 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
                     label: _labelWithCount(child.name, child.eventCount),
                     icon: _iconForReference(child.icon, child.slug),
                     isSelected: isChildSelected,
-                    onTap: () => _toggleSlug(child.slug),
+                    onTap: () => _toggleChild(child.slug),
                   );
                 }).toList(),
               ),
@@ -1835,13 +1836,23 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
     );
   }
 
-  void _toggleSlug(String slug) {
+  void _toggleChild(String slug) {
     final newList = List<String>.from(widget.selectedSlugs);
     if (newList.contains(slug)) {
       newList.remove(slug);
     } else {
       newList.add(slug);
     }
+    widget.onChanged(newList);
+  }
+
+  void _toggleParent(EventReferenceCategoryDto category) {
+    final childSlugs = category.children.map((c) => c.slug).toList();
+    final newList = cascadeParentSelection(
+      currentSlugs: widget.selectedSlugs,
+      parentSlug: category.slug,
+      childSlugs: childSlugs,
+    );
     widget.onChanged(newList);
   }
 }
