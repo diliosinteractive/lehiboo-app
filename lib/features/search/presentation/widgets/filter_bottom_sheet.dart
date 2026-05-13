@@ -8,7 +8,7 @@ import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../../../events/data/models/event_reference_data_dto.dart';
 import '../../../home/presentation/providers/home_providers.dart';
-import 'package:lehiboo/features/search/presentation/widgets/category_cascade.dart';
+import 'category_cascade.dart';
 
 /// Show the filter bottom sheet
 Future<void> showFilterBottomSheet(BuildContext context) {
