@@ -13,6 +13,20 @@ import 'deep_link_service.dart';
 Map<String, dynamic>? _pendingClickData;
 bool _pendingClickConsumed = false;
 
+// Tracks whether `OneSignal.initialize(appId)` ran successfully in main.dart.
+// When false (e.g. ONESIGNAL_APP_ID missing from .env), all OneSignal calls
+// throw "Must call 'initWithContext' before use" — so every method on the
+// service short-circuits to a safe no-op. Set via [markOneSignalConfigured].
+bool _isOneSignalConfigured = false;
+
+bool get isOneSignalConfigured => _isOneSignalConfigured;
+
+/// Called from main.dart after a successful `OneSignal.initialize()` so the
+/// rest of the app knows it's safe to call OneSignal APIs.
+void markOneSignalConfigured() {
+  _isOneSignalConfigured = true;
+}
+
 /// Click listener registered in `main.dart` BEFORE `runApp()` so the cold-start
 /// payload (app launched by tapping a notification) is not lost.
 void oneSignalColdStartClickListener(OSNotificationClickEvent event) {
@@ -64,6 +78,11 @@ class PushNotificationService {
   /// Wires OneSignal listeners and resolves the current subscription id.
   /// Idempotent.
   Future<void> initialize() async {
+    if (!_isOneSignalConfigured) {
+      debugPrint(
+          'PushNotificationService: skipped (OneSignal SDK not configured)');
+      return;
+    }
     if (_initialized) {
       debugPrint('PushNotificationService already initialized');
       return;
@@ -100,12 +119,10 @@ class PushNotificationService {
         await onSubscriptionReceived?.call(id);
       });
 
-      // Request permission. Returns true when granted.
-      final granted = await OneSignal.Notifications.requestPermission(true);
-      _permissionDenied = !granted;
-      debugPrint(
-          'OneSignal: permission ${granted ? "GRANTED" : "DENIED"} at initialize()');
-
+      // Permission is requested later via [promptUserForPermission], on the
+      // post-signup notifications screen. Initialize must NOT trigger the OS
+      // prompt — listeners above are enough to surface a subscription id if
+      // the user has previously granted permission on this device.
       await ensureSubscriptionId();
       debugPrint(
           'OneSignal: subscriptionId=${_subscriptionId ?? "<null>"} after ensureSubscriptionId()');
@@ -119,10 +136,37 @@ class PushNotificationService {
     }
   }
 
+  /// Trigger the OS-level notification permission prompt and refresh the
+  /// subscription state. Call this from the post-signup notifications screen
+  /// or the Settings "enable push" toggle — never from [initialize].
+  Future<bool> promptUserForPermission() async {
+    if (!_isOneSignalConfigured) {
+      debugPrint(
+          'PushNotificationService.promptUserForPermission: skipped (SDK not configured)');
+      return false;
+    }
+    try {
+      final granted = await OneSignal.Notifications.requestPermission(true);
+      _permissionDenied = !granted;
+      debugPrint(
+          'OneSignal: user prompt → ${granted ? "GRANTED" : "DENIED"}');
+      if (granted) {
+        await ensureSubscriptionId();
+        final id = _subscriptionId;
+        if (id != null) await onSubscriptionReceived?.call(id);
+      }
+      return granted;
+    } catch (e) {
+      debugPrint('OneSignal: promptUserForPermission failed: $e');
+      return false;
+    }
+  }
+
   /// Bind this device to the OneSignal external id assigned by the backend
   /// (`users.onesignal_id`). Idempotent — safe to call on every app start
   /// when an authenticated session with an external id is present.
   Future<void> bindUser(String externalId) async {
+    if (!_isOneSignalConfigured) return;
     try {
       await OneSignal.login(externalId);
       debugPrint('OneSignal.login(external_id=$externalId) → success');
@@ -135,6 +179,7 @@ class PushNotificationService {
   /// backend DELETE /auth/device-tokens has happened so the bearer is still
   /// valid for that call.
   Future<void> unbindUser() async {
+    if (!_isOneSignalConfigured) return;
     try {
       await OneSignal.logout();
       debugPrint('OneSignal.logout → success');
@@ -149,6 +194,7 @@ class PushNotificationService {
   /// short while after init. Polls a few times before giving up — the
   /// subscription observer will pick the value up later anyway.
   Future<String?> ensureSubscriptionId() async {
+    if (!_isOneSignalConfigured) return null;
     var id = OneSignal.User.pushSubscription.id;
     for (var attempt = 0;
         attempt < 5 && (id == null || id.isEmpty);

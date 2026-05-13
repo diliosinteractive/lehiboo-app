@@ -269,17 +269,36 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
       if (!mounted) return;
 
       if (result.authResult != null) {
-        // Direct authentication (no verification needed)
+        // Direct authentication (no verification needed).
         _showSuccess('Compte créé avec succès !');
-        // Update auth state with the new user
-        ref.read(authProvider.notifier).setAuthenticatedUser(result.authResult!.user);
         // If the registration was triggered from a GuestRestrictionDialog,
         // skip the navigation reset — the dialog's auth-state listener
         // will pop our pushed screens and the dialog itself, returning
         // the user to the original screen so the gated action resumes.
+        // Otherwise route through the post-signup permission screens
+        // (location → notifications → home).
+        //
+        // Navigation BEFORE setAuthenticatedUser is intentional: the auth
+        // state change fires _AuthRouterRefresh which rebuilds the router
+        // and pops pushed routes, which would dispose this State and kill
+        // any deferred navigation. Replacing the stack with `go()` first
+        // means the subsequent refresh has nothing to pop.
         if (!ref.read(guestGuardActiveProvider)) {
-          context.go('/');
+          context.go('/post-signup/location');
         }
+        // Listener cascade (Hibons sync, push init, messages realtime, …)
+        // may throw — particularly CircularDependencyError when a Hibons
+        // provider re-reads itself mid-build through the response
+        // interceptor. Don't bubble that to the user — they just succeeded.
+        try {
+          ref
+              .read(authProvider.notifier)
+              .setAuthenticatedUser(result.authResult!.user);
+        } catch (e, st) {
+          debugPrint(
+              '🚨 setAuthenticatedUser cascade error: ${e.runtimeType}: $e\n$st');
+        }
+        return;
       } else if (result.pendingVerification) {
         // This shouldn't happen with the new flow, but handle it just in case
         _showSuccess(result.message);
@@ -292,7 +311,11 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
           },
         );
       }
-    } catch (e) {
+    } catch (e, st) {
+      // Loud diagnostic — narrows down which line of the try block threw
+      // and what runtime type the error is (helps distinguish Dart Errors,
+      // DioExceptions, etc.).
+      debugPrint('🚨 _handleRegister catch: ${e.runtimeType}: $e\n$st');
       if (mounted) {
         final errorMessage = ApiResponseHandler.extractError(e);
         _showError(errorMessage);

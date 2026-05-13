@@ -53,9 +53,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.read(authProvider.notifier).updateUser(updatedDto);
 
       if (isPush && newValue) {
+        // requestPermission() triggers the OS prompt when needed and registers
+        // the subscription with the backend on grant. The OS prompt is the
+        // canonical path now that initialize() no longer prompts.
         final registered = await ref
             .read(pushNotificationProvider.notifier)
-            .syncTokenWithBackend();
+            .requestPermission();
         if (!registered && mounted) {
           PetitBooToast.error(
             context,

@@ -307,6 +307,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: isLoading ? null : () => context.go('/'),
+                          child: Text(
+                            'Continuer sans compte',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[700],
+                              decoration: TextDecoration.underline,
+                              decorationColor: Colors.grey[400],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
