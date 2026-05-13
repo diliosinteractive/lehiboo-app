@@ -27,6 +27,8 @@ import '../features/auth/presentation/screens/customer_register_screen.dart';
 import '../features/auth/presentation/screens/business_register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/otp_verification_screen.dart';
+import '../features/auth/presentation/screens/permission_location_screen.dart';
+import '../features/auth/presentation/screens/permission_notifications_screen.dart';
 import '../features/reminders/presentation/screens/reminders_list_screen.dart';
 import '../features/user_questions/presentation/screens/user_questions_screen.dart';
 import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
@@ -73,6 +75,8 @@ import '../features/messages/presentation/screens/conversation_detail_screen.dar
 import '../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../features/messages/presentation/screens/support_detail_screen.dart';
 import '../features/messages/presentation/screens/vendor_new_conversation_screen.dart';
+import '../features/messages/presentation/screens/broadcast_detail_screen.dart';
+import '../features/messages/presentation/screens/create_broadcast_screen.dart';
 import '../features/messages/presentation/screens/admin_new_conversation_screen.dart';
 import '../features/messages/presentation/screens/admin_report_detail_screen.dart';
 import '../features/messages/domain/entities/conversation_route.dart';
@@ -303,6 +307,18 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // ── Vendor routes (static before parameterized) ───────────────────────
       GoRoute(
+        path: '/messages/vendor/broadcasts/new',
+        name: 'messages-vendor-broadcasts-new',
+        builder: (_, __) => const CreateBroadcastScreen(),
+      ),
+      GoRoute(
+        path: '/messages/vendor/broadcasts/:broadcastUuid',
+        name: 'messages-vendor-broadcast-detail',
+        builder: (_, state) => BroadcastDetailScreen(
+          broadcastUuid: state.pathParameters['broadcastUuid']!,
+        ),
+      ),
+      GoRoute(
         path: '/messages/vendor/new/participant',
         name: 'messages-vendor-new-participant',
         builder: (_, __) => const VendorNewConversationScreen(
@@ -428,6 +444,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/register/business',
         name: 'register-business',
         builder: (context, state) => const BusinessRegisterScreen(),
+      ),
+      // Post-signup permission screens (location → notifications → home).
+      // Top-level, outside the ShellRoute, so the bottom nav stays hidden.
+      GoRoute(
+        path: '/post-signup/location',
+        name: 'post-signup-location',
+        builder: (context, state) => const PermissionLocationScreen(),
+      ),
+      GoRoute(
+        path: '/post-signup/notifications',
+        name: 'post-signup-notifications',
+        builder: (context, state) => const PermissionNotificationsScreen(),
       ),
       GoRoute(
         path: '/forgot-password',

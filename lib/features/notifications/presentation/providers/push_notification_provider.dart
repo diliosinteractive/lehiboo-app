@@ -113,6 +113,14 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
 
   /// Initialize push notifications
   Future<void> initialize() async {
+    if (!isOneSignalConfigured) {
+      debugPrint('PushNotification: SDK not configured — staying disabled');
+      state = state.copyWith(
+        status: PushNotificationStatus.disabled,
+        errorMessage: 'OneSignal SDK not configured (ONESIGNAL_APP_ID missing)',
+      );
+      return;
+    }
     if (state.status == PushNotificationStatus.initializing ||
         state.status == PushNotificationStatus.initialized) {
       debugPrint('PushNotification: Already initialized or initializing');
@@ -131,13 +139,14 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       await pushService.initialize();
 
       if (pushService.subscriptionId == null) {
+        // OS prompt is now deferred to the post-signup notifications screen
+        // (or the Settings toggle), so a null subscription at this point just
+        // means "push isn't active yet" — not an error.
         state = state.copyWith(
-          status: pushService.permissionDenied
-              ? PushNotificationStatus.disabled
-              : PushNotificationStatus.error,
+          status: PushNotificationStatus.disabled,
           errorMessage: pushService.permissionDenied
               ? 'Notification permission denied'
-              : 'OneSignal subscription id unavailable',
+              : 'Notification permission not yet requested',
         );
         return;
       }
@@ -337,13 +346,65 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
   /// Check if push notifications are enabled
   bool get isEnabled => state.status == PushNotificationStatus.initialized;
 
-  /// Request permission manually (if initially denied)
-  Future<void> requestPermission() async {
-    if (state.status != PushNotificationStatus.disabled) {
-      return;
+  /// Trigger the OS notification prompt and, on grant, register the
+  /// subscription with the backend. Called from the post-signup notifications
+  /// screen and from the Settings "enable push" toggle.
+  ///
+  /// Returns true when permission was granted AND the backend registration
+  /// succeeded; false otherwise. Safe to call from any non-`initialized` state.
+  Future<bool> requestPermission() async {
+    if (state.status == PushNotificationStatus.initialized) {
+      return true;
+    }
+    if (state.status == PushNotificationStatus.initializing) {
+      return false;
     }
 
-    await initialize();
+    final pushService = _ref.read(pushNotificationServiceProvider);
+    final tokenDataSource = _ref.read(deviceTokenDataSourceProvider);
+    _configureCallbacks(pushService, tokenDataSource);
+
+    if (!pushService.isInitialized) {
+      await pushService.initialize();
+    }
+
+    state = state.copyWith(status: PushNotificationStatus.initializing);
+
+    final granted = await pushService.promptUserForPermission();
+    if (!granted) {
+      state = state.copyWith(
+        status: PushNotificationStatus.disabled,
+        errorMessage: 'Notification permission denied',
+      );
+      return false;
+    }
+
+    if (pushService.subscriptionId == null) {
+      state = state.copyWith(
+        status: PushNotificationStatus.disabled,
+        errorMessage: 'OneSignal subscription id unavailable',
+      );
+      return false;
+    }
+
+    final registered = await _registerTokenWithBackend(
+      pushService.subscriptionId!,
+      pushService,
+      tokenDataSource,
+    );
+    if (!registered) {
+      state = state.copyWith(
+        status: PushNotificationStatus.error,
+        errorMessage: 'Backend token registration failed',
+      );
+      return false;
+    }
+
+    state = state.copyWith(
+      status: PushNotificationStatus.initialized,
+      subscriptionId: pushService.subscriptionId,
+    );
+    return true;
   }
 }
 

@@ -191,12 +191,20 @@ class ApiResponseHandler {
 
     if (error is ApiFormatException) return fallback;
 
+    // Dart `Error` subclasses (CircularDependencyError, RangeError, etc.) are
+    // programming bugs, not user-facing problems. Their toString often looks
+    // like "Instance of '<ClassName>'" — never surface that to the UI.
+    if (error is Error) return fallback;
+
     // Generic Exception — strip prefix if present
     final str = error.toString();
     final cleaned =
         str.startsWith('Exception: ') ? str.substring(11) : str;
+    // "Instance of '<Class>'" is the default toString for classes without
+    // an override — it's never a helpful message for a user.
     if (cleaned.isNotEmpty &&
         !cleaned.startsWith('http') &&
+        !cleaned.startsWith('Instance of ') &&
         !cleaned.contains('DioException')) {
       return cleaned;
     }

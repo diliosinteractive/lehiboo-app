@@ -75,7 +75,7 @@ void main() async {
   final String envFile = switch (environment) {
     'production' => '.env.production',
     'staging' => '.env.staging',
-    _ => '.env.development',
+    _ => '.env.staging',
   };
 
   try {
@@ -113,6 +113,7 @@ void main() async {
     try {
       OneSignal.initialize(oneSignalAppId);
       OneSignal.Notifications.addClickListener(oneSignalColdStartClickListener);
+      markOneSignalConfigured();
       debugPrint('OneSignal initialized (app_id=$oneSignalAppId)');
     } catch (e) {
       debugPrint('OneSignal initialization failed: $e');

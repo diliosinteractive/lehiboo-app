@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
+import '../../../events/data/models/event_reference_data_dto.dart';
 import '../../../home/presentation/providers/home_providers.dart';
 import 'filter_shared_components.dart';
 
@@ -16,7 +17,7 @@ import 'filter_shared_components.dart';
 /// Design inspiré directement des screenshots Airbnb :
 /// - Page plein écran SANS bottom nav bar (expérience modale immersive)
 /// - Header avec titre "Recherche" et bouton fermer
-/// - 3 volets avec animations fluides (Où, Quand, Quoi)
+/// - Volets avec animations fluides alignés sur le tiroir web /events
 /// - Scroll automatique vers le bloc ouvert
 /// - Footer fixe avec "Tout effacer" et "Rechercher"
 class AirbnbSearchSheet extends ConsumerStatefulWidget {
@@ -78,14 +79,22 @@ class AirbnbSearchSheet extends ConsumerStatefulWidget {
 
 class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     with TickerProviderStateMixin {
-  /// Currently expanded panel: 0 = Où, 1 = Quand, 2 = Quoi
-  int _expandedPanel = 0;
+  static const int _wherePanel = 0;
+  static const int _whenPanel = 1;
+  static const int _whatPanel = 2;
+  static const int _searchPanel = 3;
+  static const int _audiencePanel = 4;
+  static const int _pricePanel = 5;
+  static const int _availabilityPanel = 6;
+  static const int _refinePanel = 7;
+  static const int _panelCount = 8;
+
+  int _expandedPanel = _wherePanel;
 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
-  final GlobalKey _panel0Key = GlobalKey();
-  final GlobalKey _panel1Key = GlobalKey();
-  final GlobalKey _panel2Key = GlobalKey();
+  late final List<GlobalKey> _panelKeys =
+      List<GlobalKey>.generate(_panelCount, (_) => GlobalKey());
 
   late AnimationController _animationController;
   bool _isLoadingLocation = false;
@@ -114,12 +123,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
     // Scroll vers le panel ouvert après l'animation
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final key = index == 0
-          ? _panel0Key
-          : index == 1
-              ? _panel1Key
-              : _panel2Key;
-      final context = key.currentContext;
+      final context = _panelKeys[index].currentContext;
       if (context != null) {
         Scrollable.ensureVisible(
           context,
@@ -139,6 +143,15 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     if (filter.citySlug != null) count++;
     if (filter.latitude != null) count++;
     count += filter.categoriesSlugs.length;
+    count += filter.targetAudienceSlugs.length;
+    count += filter.tagsSlugs.length;
+    count += filter.thematiquesSlugs.length;
+    count += filter.specialEventSlugs.length;
+    count += filter.emotionSlugs.length;
+    if (filter.eventTagSlug != null) count++;
+    if (filter.availableOnly) count++;
+    if (filter.locationType != null) count++;
+    if (filter.priceFilterType != null && !filter.onlyFree) count++;
     if (filter.familyFriendly) count++;
     if (filter.onlyFree) count++;
     if (filter.accessiblePMR) count++;
@@ -222,11 +235,6 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
                   // Header
                   _buildHeader(topPadding),
 
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                    child: _buildSearchInput(filter, filterNotifier),
-                  ),
-
                   // Accordion panels
                   Padding(
                     padding:
@@ -235,12 +243,12 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
                       children: [
                         // Panel 0: Où ?
                         _AccordionPanel(
-                          key: _panel0Key,
+                          key: _panelKeys[_wherePanel],
                           title: 'Où ?',
                           subtitle: _getWhereSubtitle(filter),
                           icon: Icons.location_on,
-                          isExpanded: _expandedPanel == 0,
-                          onTap: () => _expandPanel(0),
+                          isExpanded: _expandedPanel == _wherePanel,
+                          onTap: () => _expandPanel(_wherePanel),
                           child: _WhereContent(
                             filter: filter,
                             isLoadingLocation: _isLoadingLocation,
@@ -252,12 +260,12 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
                         // Panel 1: Quand ?
                         _AccordionPanel(
-                          key: _panel1Key,
+                          key: _panelKeys[_whenPanel],
                           title: 'Quand ?',
                           subtitle: _getWhenSubtitle(filter),
                           icon: Icons.calendar_today,
-                          isExpanded: _expandedPanel == 1,
-                          onTap: () => _expandPanel(1),
+                          isExpanded: _expandedPanel == _whenPanel,
+                          onTap: () => _expandPanel(_whenPanel),
                           child: _WhenContent(filter: filter),
                         ),
 
@@ -265,13 +273,75 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
                         // Panel 2: Quoi ?
                         _AccordionPanel(
-                          key: _panel2Key,
+                          key: _panelKeys[_whatPanel],
                           title: 'Quoi ?',
                           subtitle: _getWhatSubtitle(filter),
                           icon: Icons.category,
-                          isExpanded: _expandedPanel == 2,
-                          onTap: () => _expandPanel(2),
+                          isExpanded: _expandedPanel == _whatPanel,
+                          onTap: () => _expandPanel(_whatPanel),
                           child: _WhatContent(filter: filter),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        _AccordionPanel(
+                          key: _panelKeys[_searchPanel],
+                          title: 'Recherche',
+                          subtitle: _getSearchSubtitle(filter),
+                          icon: Icons.search,
+                          isExpanded: _expandedPanel == _searchPanel,
+                          onTap: () => _expandPanel(_searchPanel),
+                          child: _buildSearchInput(filter, filterNotifier),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        _AccordionPanel(
+                          key: _panelKeys[_audiencePanel],
+                          title: 'Pour qui ?',
+                          subtitle: _getAudienceSubtitle(filter),
+                          icon: Icons.people,
+                          isExpanded: _expandedPanel == _audiencePanel,
+                          onTap: () => _expandPanel(_audiencePanel),
+                          child: _AudienceContent(filter: filter),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        _AccordionPanel(
+                          key: _panelKeys[_pricePanel],
+                          title: 'Prix',
+                          subtitle: _getPriceSubtitle(filter),
+                          icon: Icons.euro,
+                          isExpanded: _expandedPanel == _pricePanel,
+                          onTap: () => _expandPanel(_pricePanel),
+                          child: _PriceContent(filter: filter),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        _AccordionPanel(
+                          key: _panelKeys[_availabilityPanel],
+                          title: 'Disponibilité',
+                          subtitle: filter.availableOnly
+                              ? 'Places disponibles'
+                              : 'Toutes les activités',
+                          icon: Icons.event_available,
+                          isExpanded: _expandedPanel == _availabilityPanel,
+                          onTap: () => _expandPanel(_availabilityPanel),
+                          child: _AvailabilityContent(filter: filter),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        _AccordionPanel(
+                          key: _panelKeys[_refinePanel],
+                          title: 'Affiner la recherche',
+                          subtitle: _getRefineSubtitle(filter),
+                          icon: Icons.tune,
+                          isExpanded: _expandedPanel == _refinePanel,
+                          onTap: () => _expandPanel(_refinePanel),
+                          child: _RefineContent(filter: filter),
                         ),
                       ],
                     ),
@@ -358,56 +428,46 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     EventFilter filter,
     EventFilterNotifier filterNotifier,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(14),
-      child: TextField(
-        controller: _searchController,
-        textInputAction: TextInputAction.search,
-        onChanged: (value) {
-          filterNotifier.setSearchQuery(value);
-          setState(() {});
-        },
-        onSubmitted: (_) => widget.onSearch?.call(),
-        decoration: InputDecoration(
-          hintText: 'Événement ou organisation',
-          prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
-          suffixIcon: filter.searchQuery.isEmpty
-              ? null
-              : IconButton(
-                  icon: Icon(Icons.close, color: Colors.grey.shade500),
-                  onPressed: () {
-                    _searchController.clear();
-                    filterNotifier.clearSearchQuery();
-                    setState(() {});
-                  },
-                ),
-          filled: true,
-          fillColor: HbColors.surfaceInput,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+    return TextField(
+      controller: _searchController,
+      textInputAction: TextInputAction.search,
+      onChanged: (value) {
+        filterNotifier.setSearchQuery(value);
+        setState(() {});
+      },
+      onSubmitted: (_) => widget.onSearch?.call(),
+      decoration: InputDecoration(
+        hintText: 'Rechercher un titre, un organisateur',
+        prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
+        suffixIcon: filter.searchQuery.isEmpty
+            ? null
+            : IconButton(
+                icon: Icon(Icons.close, color: Colors.grey.shade500),
+                onPressed: () {
+                  _searchController.clear();
+                  filterNotifier.clearSearchQuery();
+                  setState(() {});
+                },
+              ),
+        filled: true,
+        fillColor: HbColors.surfaceInput,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
         ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       ),
     );
   }
 
   String _getWhereSubtitle(EventFilter filter) {
-    if (filter.cityName != null) return filter.cityName!;
-    if (filter.latitude != null) return 'À ${filter.radiusKm.toInt()} km';
+    if (filter.latitude != null) {
+      return 'À proximité · ${filter.radiusKm.toInt()} km';
+    }
+    if (filter.cityName != null) {
+      return 'Autour de ${filter.cityName} · ${filter.effectiveCityRadiusKm} km';
+    }
     return 'N\'importe où';
   }
 
@@ -424,18 +484,52 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
   }
 
   String _getWhatSubtitle(EventFilter filter) {
-    final parts = <String>[];
-    if (filter.searchQuery.isNotEmpty) {
-      parts.add('"${filter.searchQuery}"');
-    }
+    if (filter.categoriesSlugs.length == 1) return '1 catégorie';
     if (filter.categoriesSlugs.isNotEmpty) {
-      parts.add('${filter.categoriesSlugs.length} cat.');
+      return '${filter.categoriesSlugs.length} catégories';
     }
-    if (filter.familyFriendly) parts.add('Famille');
-    if (filter.onlyFree) parts.add('Gratuit');
-    if (filter.accessiblePMR) parts.add('PMR');
-    if (parts.isNotEmpty) return parts.join(', ');
     return 'Tout type d\'activité';
+  }
+
+  String _getSearchSubtitle(EventFilter filter) {
+    if (filter.searchQuery.trim().isEmpty) {
+      return 'Titre, organisateur';
+    }
+    return '"${filter.searchQuery.trim()}"';
+  }
+
+  String _getAudienceSubtitle(EventFilter filter) {
+    if (filter.targetAudienceSlugs.length == 1) return '1 public';
+    if (filter.targetAudienceSlugs.isNotEmpty) {
+      return '${filter.targetAudienceSlugs.length} publics';
+    }
+    return 'Tous les publics';
+  }
+
+  String _getPriceSubtitle(EventFilter filter) {
+    if (filter.onlyFree || filter.priceFilterType == PriceFilterType.free) {
+      return 'Gratuit';
+    }
+    if (filter.priceFilterType == PriceFilterType.paid ||
+        filter.priceFilterType == PriceFilterType.range) {
+      if (filter.priceFilterType == PriceFilterType.range) {
+        return '${filter.priceMin.toInt()}€ - ${filter.priceMax.toInt()}€${filter.priceMax >= 500 ? '+' : ''}';
+      }
+      return 'Payant';
+    }
+    return 'Tous';
+  }
+
+  String _getRefineSubtitle(EventFilter filter) {
+    var count = 0;
+    count += filter.tagsSlugs.length;
+    if (filter.eventTagSlug != null && filter.tagsSlugs.isEmpty) count++;
+    count += filter.thematiquesSlugs.length;
+    count += filter.emotionSlugs.length;
+    count += filter.specialEventSlugs.length;
+    if (filter.locationType != null) count++;
+    if (count == 0) return 'Type, thématique, ambiance';
+    return count == 1 ? '1 filtre' : '$count filtres';
   }
 }
 
@@ -574,7 +668,7 @@ class _AccordionPanel extends StatelessWidget {
 // WHERE CONTENT - Contenu du panel "Où ?"
 // =============================================================================
 
-class _WhereContent extends ConsumerWidget {
+class _WhereContent extends ConsumerStatefulWidget {
   final EventFilter filter;
   final bool isLoadingLocation;
   final VoidCallback onLocationTap;
@@ -586,9 +680,25 @@ class _WhereContent extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_WhereContent> createState() => _WhereContentState();
+}
+
+class _WhereContentState extends ConsumerState<_WhereContent> {
+  final TextEditingController _citySearchController = TextEditingController();
+  String _cityQuery = '';
+
+  @override
+  void dispose() {
+    _citySearchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final filter = widget.filter;
     final hasLocation = filter.latitude != null;
+    final hasCity = filter.citySlug != null;
     final citiesAsync = ref.watch(homeCitiesProvider);
 
     return Column(
@@ -596,7 +706,7 @@ class _WhereContent extends ConsumerWidget {
       children: [
         // Géolocalisation
         GestureDetector(
-          onTap: isLoadingLocation ? null : onLocationTap,
+          onTap: widget.isLoadingLocation ? null : widget.onLocationTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(12),
@@ -622,7 +732,7 @@ class _WhereContent extends ConsumerWidget {
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: isLoadingLocation
+                  child: widget.isLoadingLocation
                       ? const Padding(
                           padding: EdgeInsets.all(10),
                           child: CircularProgressIndicator(
@@ -674,30 +784,75 @@ class _WhereContent extends ConsumerWidget {
           ),
         ),
 
-        // Slider rayon (visible si géoloc active)
-        if (hasLocation) ...[
-          const SizedBox(height: 12),
-          SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: HbColors.brandPrimary,
-              inactiveTrackColor: Colors.grey.shade200,
-              thumbColor: HbColors.brandPrimary,
-              overlayColor: HbColors.brandPrimary.withValues(alpha: 0.2),
-              trackHeight: 4,
+        const SizedBox(height: 20),
+
+        TextField(
+          controller: _citySearchController,
+          onChanged: (value) => setState(() => _cityQuery = value.trim()),
+          decoration: InputDecoration(
+            hintText: 'Rechercher une ville',
+            prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
+            suffixIcon: _cityQuery.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      _citySearchController.clear();
+                      setState(() => _cityQuery = '');
+                    },
+                    icon: Icon(Icons.close, color: Colors.grey.shade500),
+                  ),
+            filled: true,
+            fillColor: HbColors.surfaceInput,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
-            child: Slider(
-              value: filter.radiusKm,
-              min: 5,
-              max: 100,
-              divisions: 19,
-              onChanged: (radius) {
-                filterNotifier.setLocation(
-                  filter.latitude!,
-                  filter.longitude!,
-                  radius,
-                );
-              },
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+
+        if (hasLocation || hasCity) ...[
+          const SizedBox(height: 16),
+          Text(
+            'RAYON',
+            style: GoogleFonts.montserrat(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade500,
+              letterSpacing: 1,
             ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: const [5, 10, 20, 50].map((radius) {
+              final selectedRadius = hasCity
+                  ? filter.effectiveCityRadiusKm
+                  : filter.radiusKm.toInt();
+              return SelectableChip(
+                label: '$radius km',
+                icon: Icons.radar,
+                isSelected: selectedRadius == radius,
+                onTap: () {
+                  if (hasCity) {
+                    filterNotifier.setCity(
+                      filter.citySlug!,
+                      filter.cityName ?? filter.citySlug!,
+                      radiusKm: radius.toDouble(),
+                    );
+                  } else if (filter.latitude != null &&
+                      filter.longitude != null) {
+                    filterNotifier.setLocation(
+                      filter.latitude!,
+                      filter.longitude!,
+                      radius.toDouble(),
+                    );
+                  }
+                },
+              );
+            }).toList(),
           ),
         ],
 
@@ -705,7 +860,7 @@ class _WhereContent extends ConsumerWidget {
 
         // Villes populaires
         Text(
-          'VILLES POPULAIRES',
+          _cityQuery.isEmpty ? 'VILLES POPULAIRES' : 'RÉSULTATS',
           style: GoogleFonts.montserrat(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -716,26 +871,55 @@ class _WhereContent extends ConsumerWidget {
         const SizedBox(height: 12),
 
         citiesAsync.when(
-          data: (cities) => Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: cities.take(6).map((city) {
-              final isSelected = filter.citySlug == city.slug;
-              return SelectableChip(
-                label: city.name,
-                icon: Icons.location_city,
-                isSelected: isSelected,
-                onTap: () {
-                  if (isSelected) {
-                    filterNotifier.clearCity();
-                  } else {
-                    filterNotifier.setCity(city.slug, city.name);
-                    filterNotifier.clearLocation();
-                  }
-                },
+          data: (cities) {
+            final query = _cityQuery.toLowerCase();
+            final displayedCities = query.isEmpty
+                ? cities.take(6).toList()
+                : cities
+                    .where(
+                      (city) =>
+                          city.name.toLowerCase().contains(query) ||
+                          city.slug.toLowerCase().contains(query) ||
+                          (city.region ?? '').toLowerCase().contains(query),
+                    )
+                    .take(10)
+                    .toList();
+
+            if (displayedCities.isEmpty) {
+              return Text(
+                'Aucune ville trouvée',
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                ),
               );
-            }).toList(),
-          ),
+            }
+
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: displayedCities.map((city) {
+                final isSelected = filter.citySlug == city.slug;
+                return SelectableChip(
+                  label: city.name,
+                  icon: Icons.location_city,
+                  isSelected: isSelected,
+                  onTap: () {
+                    if (isSelected) {
+                      filterNotifier.clearCity();
+                    } else {
+                      filterNotifier.setCity(
+                        city.slug,
+                        city.name,
+                        radiusKm: filter.effectiveCityRadiusKm.toDouble(),
+                      );
+                      filterNotifier.clearLocation();
+                    }
+                  },
+                );
+              }).toList(),
+            );
+          },
           loading: () => const Center(
             child: Padding(
               padding: EdgeInsets.all(12),
@@ -745,40 +929,15 @@ class _WhereContent extends ConsumerWidget {
               ),
             ),
           ),
-          error: (_, __) => _buildFallbackCities(filter, filterNotifier),
+          error: (_, __) => Text(
+            'Villes indisponibles',
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildFallbackCities(
-      EventFilter filter, EventFilterNotifier filterNotifier) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        ('Paris', 'paris'),
-        ('Lyon', 'lyon'),
-        ('Marseille', 'marseille'),
-        ('Bordeaux', 'bordeaux'),
-        ('Toulouse', 'toulouse'),
-        ('Nantes', 'nantes'),
-      ].map((city) {
-        final isSelected = filter.citySlug == city.$2;
-        return SelectableChip(
-          label: city.$1,
-          icon: Icons.location_city,
-          isSelected: isSelected,
-          onTap: () {
-            if (isSelected) {
-              filterNotifier.clearCity();
-            } else {
-              filterNotifier.setCity(city.$2, city.$1);
-              filterNotifier.clearLocation();
-            }
-          },
-        );
-      }).toList(),
     );
   }
 }
@@ -862,19 +1021,7 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
               },
             ),
             DateQuickChip(
-              label: 'Cette semaine',
-              isSelected:
-                  widget.filter.dateFilterType == DateFilterType.thisWeek,
-              onTap: () {
-                if (widget.filter.dateFilterType == DateFilterType.thisWeek) {
-                  filterNotifier.clearDateFilter();
-                } else {
-                  filterNotifier.setDateFilter(DateFilterType.thisWeek);
-                }
-              },
-            ),
-            DateQuickChip(
-              label: 'Ce mois',
+              label: 'Ce mois-ci',
               isSelected:
                   widget.filter.dateFilterType == DateFilterType.thisMonth,
               onTap: () {
@@ -967,97 +1114,694 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
 // WHAT CONTENT - Contenu du panel "Quoi ?"
 // =============================================================================
 
-class _WhatContent extends ConsumerWidget {
+class _WhatContent extends ConsumerStatefulWidget {
   final EventFilter filter;
 
   const _WhatContent({required this.filter});
 
   @override
+  ConsumerState<_WhatContent> createState() => _WhatContentState();
+}
+
+class _WhatContentState extends ConsumerState<_WhatContent> {
+  final TextEditingController _categorySearchController =
+      TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _categorySearchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final referenceData = ref.watch(eventReferenceDataProvider);
+
+    return referenceData.when(
+      data: (data) {
+        final categories = _filteredCategories(data.categories);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _categorySearchController,
+              onChanged: (value) => setState(() => _query = value.trim()),
+              decoration: InputDecoration(
+                hintText: 'Rechercher une catégorie',
+                prefixIcon:
+                    const Icon(Icons.search, color: HbColors.brandPrimary),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          _categorySearchController.clear();
+                          setState(() => _query = '');
+                        },
+                        icon: Icon(Icons.close, color: Colors.grey.shade500),
+                      ),
+                filled: true,
+                fillColor: HbColors.surfaceInput,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (categories.isEmpty)
+              Text(
+                'Aucune catégorie',
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                ),
+              )
+            else
+              ...categories.map(
+                (entry) => _buildCategoryGroup(
+                  entry,
+                  filterNotifier,
+                ),
+              ),
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: HbColors.brandPrimary,
+          ),
+        ),
+      ),
+      error: (_, __) => Text(
+        'Catégories indisponibles',
+        style: GoogleFonts.montserrat(
+          fontSize: 13,
+          color: Colors.grey.shade600,
+        ),
+      ),
+    );
+  }
+
+  List<_CategoryEntry> _filteredCategories(
+    List<EventReferenceCategoryDto> categories,
+  ) {
+    final normalized = _query.toLowerCase();
+
+    return categories
+        .where(_categoryHasVisibleEvents)
+        .map((category) {
+          final visibleChildren =
+              category.children.where(_categoryHasVisibleEvents).toList();
+
+          if (normalized.isEmpty) {
+            return _CategoryEntry(category, visibleChildren);
+          }
+
+          final parentMatches =
+              category.name.toLowerCase().contains(normalized) ||
+                  category.slug.toLowerCase().contains(normalized);
+          final matchingChildren = visibleChildren
+              .where(
+                (child) =>
+                    child.name.toLowerCase().contains(normalized) ||
+                    child.slug.toLowerCase().contains(normalized),
+              )
+              .toList();
+
+          if (parentMatches) return _CategoryEntry(category, visibleChildren);
+          if (matchingChildren.isNotEmpty) {
+            return _CategoryEntry(category, matchingChildren);
+          }
+          return null;
+        })
+        .whereType<_CategoryEntry>()
+        .toList();
+  }
+
+  bool _categoryHasVisibleEvents(EventReferenceCategoryDto category) {
+    final hasOwnEvents =
+        category.eventCount == null || category.eventCount! > 0;
+    final hasChildEvents = category.children.any(_categoryHasVisibleEvents);
+    return hasOwnEvents || hasChildEvents;
+  }
+
+  Widget _buildCategoryGroup(
+    _CategoryEntry entry,
+    EventFilterNotifier filterNotifier,
+  ) {
+    final category = entry.category;
+    final selectedSlugs = widget.filter.categoriesSlugs;
+    final fullySelected = _isParentFullySelected(category, entry.children);
+    final partiallySelected =
+        _isParentPartiallySelected(category, entry.children);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SelectableChip(
+            label: _labelWithCount(category.name, category.eventCount),
+            icon: _iconForReference(category.icon, category.slug),
+            isSelected: fullySelected || partiallySelected,
+            onTap: () =>
+                _toggleParent(category, entry.children, filterNotifier),
+          ),
+          if (entry.children.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: entry.children.map((child) {
+                  final isSelected = selectedSlugs.contains(category.slug) ||
+                      selectedSlugs.contains(child.slug);
+                  return SelectableChip(
+                    label: _labelWithCount(child.name, child.eventCount),
+                    icon: _iconForReference(child.icon, child.slug),
+                    isSelected: isSelected,
+                    onTap: () => _toggleChild(
+                      category,
+                      child,
+                      entry.children,
+                      filterNotifier,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  bool _isParentFullySelected(
+    EventReferenceCategoryDto parent,
+    List<EventReferenceCategoryDto> children,
+  ) {
+    final selected = widget.filter.categoriesSlugs;
+    if (selected.contains(parent.slug)) return true;
+    return children.isNotEmpty &&
+        children.every((child) => selected.contains(child.slug));
+  }
+
+  bool _isParentPartiallySelected(
+    EventReferenceCategoryDto parent,
+    List<EventReferenceCategoryDto> children,
+  ) {
+    final selected = widget.filter.categoriesSlugs;
+    if (selected.contains(parent.slug) || children.isEmpty) return false;
+    final selectedChildren =
+        children.where((child) => selected.contains(child.slug)).length;
+    return selectedChildren > 0 && selectedChildren < children.length;
+  }
+
+  void _toggleParent(
+    EventReferenceCategoryDto parent,
+    List<EventReferenceCategoryDto> children,
+    EventFilterNotifier filterNotifier,
+  ) {
+    final next = Set<String>.from(widget.filter.categoriesSlugs);
+    final fullySelected = _isParentFullySelected(parent, children);
+    next.remove(parent.slug);
+    for (final child in children) {
+      next.remove(child.slug);
+    }
+    if (!fullySelected) next.add(parent.slug);
+    filterNotifier.applyFilters(
+      widget.filter.copyWith(categoriesSlugs: next.toList()),
+    );
+  }
+
+  void _toggleChild(
+    EventReferenceCategoryDto parent,
+    EventReferenceCategoryDto child,
+    List<EventReferenceCategoryDto> siblings,
+    EventFilterNotifier filterNotifier,
+  ) {
+    final next = Set<String>.from(widget.filter.categoriesSlugs);
+
+    if (next.contains(parent.slug)) {
+      next.remove(parent.slug);
+      for (final sibling in siblings) {
+        if (sibling.slug != child.slug) next.add(sibling.slug);
+      }
+    } else if (next.contains(child.slug)) {
+      next.remove(child.slug);
+    } else {
+      next.add(child.slug);
+      if (siblings.isNotEmpty &&
+          siblings.every((sibling) => next.contains(sibling.slug))) {
+        for (final sibling in siblings) {
+          next.remove(sibling.slug);
+        }
+        next.add(parent.slug);
+      }
+    }
+
+    filterNotifier.applyFilters(
+      widget.filter.copyWith(categoriesSlugs: next.toList()),
+    );
+  }
+}
+
+class _CategoryEntry {
+  final EventReferenceCategoryDto category;
+  final List<EventReferenceCategoryDto> children;
+
+  const _CategoryEntry(this.category, this.children);
+}
+
+class _AudienceContent extends ConsumerWidget {
+  final EventFilter filter;
+
+  const _AudienceContent({required this.filter});
+
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filterNotifier = ref.read(eventFilterProvider.notifier);
-    final filterOptions = ref.watch(filterOptionsProvider);
+    final referenceData = ref.watch(eventReferenceDataProvider);
+
+    return referenceData.when(
+      data: (data) {
+        if (data.audienceGroups.isEmpty) {
+          return Text(
+            'Aucun public disponible',
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: data.audienceGroups.map((group) {
+            if (group.audiences.isEmpty) return const SizedBox.shrink();
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionLabel(group.name),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: group.audiences.map((audience) {
+                      final isSelected =
+                          filter.targetAudienceSlugs.contains(audience.slug);
+                      return SelectableChip(
+                        label: audience.name,
+                        icon: Icons.groups,
+                        isSelected: isSelected,
+                        onTap: () => filterNotifier.setTargetAudiences(
+                          _toggleSlug(
+                              filter.targetAudienceSlugs, audience.slug),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: HbColors.brandPrimary,
+          ),
+        ),
+      ),
+      error: (_, __) => Text(
+        'Publics indisponibles',
+        style: GoogleFonts.montserrat(
+          fontSize: 13,
+          color: Colors.grey.shade600,
+        ),
+      ),
+    );
+  }
+}
+
+class _PriceContent extends ConsumerWidget {
+  final EventFilter filter;
+
+  const _PriceContent({required this.filter});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final isFree =
+        filter.onlyFree || filter.priceFilterType == PriceFilterType.free;
+    final isPaid = filter.priceFilterType == PriceFilterType.paid ||
+        filter.priceFilterType == PriceFilterType.range;
+    final min = filter.priceMin.clamp(1.0, 500.0).toDouble();
+    final max = filter.priceMax.clamp(1.0, 500.0).toDouble();
+    final range = RangeValues(
+      min <= max ? min : 1.0,
+      max >= min ? max : 500.0,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Catégories
-        if (filterOptions.categories.isNotEmpty) ...[
-          Text(
-            'CATÉGORIES',
-            style: GoogleFonts.montserrat(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade500,
-              letterSpacing: 1,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            SelectableChip(
+              label: 'Tout',
+              isSelected: !isFree && !isPaid,
+              onTap: filterNotifier.clearPriceFilter,
             ),
+            SelectableChip(
+              label: 'Gratuit',
+              icon: Icons.local_offer_outlined,
+              isSelected: isFree,
+              onTap: () => filterNotifier.setOnlyFree(!isFree),
+            ),
+            SelectableChip(
+              label: 'Payant',
+              isSelected: isPaid,
+              onTap: () {
+                if (isPaid) {
+                  filterNotifier.clearPriceFilter();
+                } else {
+                  filterNotifier.setPriceFilter(
+                    PriceFilterType.paid,
+                    min: 1,
+                    max: 500,
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+        if (isPaid) ...[
+          const SizedBox(height: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Fourchette de prix',
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              Text(
+                '${range.start.toInt()}€ - ${range.end.toInt()}€${range.end >= 500 ? '+' : ''}',
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: HbColors.brandPrimary,
+                ),
+              ),
+            ],
           ),
+          RangeSlider(
+            values: range,
+            min: 1,
+            max: 500,
+            divisions: 50,
+            activeColor: HbColors.brandPrimary,
+            inactiveColor: Colors.grey.shade200,
+            onChanged: (values) {
+              filterNotifier.setPriceRange(values.start, values.end);
+            },
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _AvailabilityContent extends ConsumerWidget {
+  final EventFilter filter;
+
+  const _AvailabilityContent({required this.filter});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+
+    return ToggleRow(
+      title: 'Places disponibles uniquement',
+      subtitle: 'Masquer les activités complètes',
+      icon: Icons.confirmation_number_outlined,
+      isSelected: filter.availableOnly,
+      onTap: () => filterNotifier.setAvailableOnly(!filter.availableOnly),
+    );
+  }
+}
+
+class _RefineContent extends ConsumerWidget {
+  final EventFilter filter;
+
+  const _RefineContent({required this.filter});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final referenceData = ref.watch(eventReferenceDataProvider);
+    final selectedEventTags = filter.tagsSlugs.isNotEmpty
+        ? filter.tagsSlugs
+        : [
+            if (filter.eventTagSlug != null) filter.eventTagSlug!,
+          ];
+
+    return referenceData.when(
+      data: (data) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ReferenceMultiSection(
+            title: 'TYPE D\'ÉVÉNEMENT',
+            options: data.eventTags,
+            selectedSlugs: selectedEventTags,
+            onChanged: (slugs) {
+              filterNotifier.setEventTag(null);
+              filterNotifier.setTags(slugs);
+            },
+          ),
+          _ReferenceMultiSection(
+            title: 'THÉMATIQUES',
+            options: data.themes,
+            selectedSlugs: filter.thematiquesSlugs,
+            onChanged: filterNotifier.setThematiques,
+          ),
+          _ReferenceMultiSection(
+            title: 'AMBIANCE',
+            options: data.emotions,
+            selectedSlugs: filter.emotionSlugs,
+            onChanged: filterNotifier.setEmotions,
+          ),
+          _LocationTypeSection(filter: filter),
+          _ReferenceMultiSection(
+            title: 'ÉVÉNEMENTS SPÉCIAUX',
+            options: data.specialEvents,
+            selectedSlugs: filter.specialEventSlugs,
+            onChanged: filterNotifier.setSpecialEvents,
+          ),
+        ],
+      ),
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: HbColors.brandPrimary,
+          ),
+        ),
+      ),
+      error: (_, __) => Text(
+        'Options indisponibles',
+        style: GoogleFonts.montserrat(
+          fontSize: 13,
+          color: Colors.grey.shade600,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReferenceMultiSection extends StatelessWidget {
+  final String title;
+  final List<EventReferenceOptionDto> options;
+  final List<String> selectedSlugs;
+  final ValueChanged<List<String>> onChanged;
+
+  const _ReferenceMultiSection({
+    required this.title,
+    required this.options,
+    required this.selectedSlugs,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (options.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(title),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: filterOptions.categories.take(8).map((cat) {
-              final isSelected = filter.categoriesSlugs.contains(cat.slug);
+            children: options.map((option) {
+              final isSelected = selectedSlugs.contains(option.slug);
               return SelectableChip(
-                label: cat.name,
+                label: _labelWithCount(option.name, option.eventCount),
+                icon: _iconForReference(option.icon, option.slug),
                 isSelected: isSelected,
-                onTap: () => filterNotifier.toggleCategory(cat.slug),
+                onTap: () => onChanged(_toggleSlug(selectedSlugs, option.slug)),
               );
             }).toList(),
           ),
-          const SizedBox(height: 20),
         ],
-
-        // Filtres
-        Text(
-          'FILTRES',
-          style: GoogleFonts.montserrat(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: Colors.grey.shade500,
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Toggles
-        ToggleRow(
-          title: 'En famille',
-          subtitle: 'Activités adaptées aux enfants',
-          icon: Icons.family_restroom,
-          isSelected: filter.familyFriendly,
-          onTap: () => filterNotifier.setFamilyFriendly(!filter.familyFriendly),
-        ),
-
-        const Divider(height: 20),
-
-        ToggleRow(
-          title: 'Gratuit',
-          subtitle: 'Activités sans frais',
-          icon: Icons.local_offer_outlined,
-          isSelected: filter.onlyFree,
-          onTap: () => filterNotifier.setOnlyFree(!filter.onlyFree),
-        ),
-
-        const Divider(height: 20),
-
-        ToggleRow(
-          title: 'Accessible PMR',
-          subtitle: 'Mobilité réduite',
-          icon: Icons.accessible,
-          isSelected: filter.accessiblePMR,
-          onTap: () => filterNotifier.setAccessiblePMR(!filter.accessiblePMR),
-        ),
-
-        const Divider(height: 20),
-
-        ToggleRow(
-          title: 'En ligne',
-          subtitle: 'Activités virtuelles',
-          icon: Icons.videocam_outlined,
-          isSelected: filter.onlineOnly,
-          onTap: () => filterNotifier.setOnlineOnly(!filter.onlineOnly),
-        ),
-      ],
+      ),
     );
   }
+}
+
+class _LocationTypeSection extends ConsumerWidget {
+  final EventFilter filter;
+
+  const _LocationTypeSection({required this.filter});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionLabel('TYPE DE LIEU'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _locationTypeChip(
+                label: 'En intérieur',
+                icon: Icons.storefront,
+                type: LocationTypeFilter.physical,
+                filterNotifier: filterNotifier,
+              ),
+              _locationTypeChip(
+                label: 'En extérieur',
+                icon: Icons.location_on_outlined,
+                type: LocationTypeFilter.offline,
+                filterNotifier: filterNotifier,
+              ),
+              _locationTypeChip(
+                label: 'Mixte',
+                icon: Icons.sync_alt,
+                type: LocationTypeFilter.hybrid,
+                filterNotifier: filterNotifier,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _locationTypeChip({
+    required String label,
+    required IconData icon,
+    required LocationTypeFilter type,
+    required EventFilterNotifier filterNotifier,
+  }) {
+    final isSelected = filter.locationType == type;
+    return SelectableChip(
+      label: label,
+      icon: icon,
+      isSelected: isSelected,
+      onTap: () => filterNotifier.setLocationType(isSelected ? null : type),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+
+  const _SectionLabel(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: GoogleFonts.montserrat(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: Colors.grey.shade500,
+        letterSpacing: 1,
+      ),
+    );
+  }
+}
+
+List<String> _toggleSlug(List<String> selectedSlugs, String slug) {
+  final next = List<String>.from(selectedSlugs);
+  if (next.contains(slug)) {
+    next.remove(slug);
+  } else {
+    next.add(slug);
+  }
+  return next;
+}
+
+String _labelWithCount(String label, int? count) {
+  if (count == null || count <= 0) return label;
+  return '$label ($count)';
+}
+
+IconData _iconForReference(String? icon, String slug) {
+  final key = '${icon ?? ''} $slug'.toLowerCase();
+
+  if (key.contains('music') || key.contains('concert')) return Icons.music_note;
+  if (key.contains('movie') || key.contains('cinema')) return Icons.movie;
+  if (key.contains('sport') || key.contains('fitness')) return Icons.sports;
+  if (key.contains('restaurant') || key.contains('gastronomie')) {
+    return Icons.restaurant;
+  }
+  if (key.contains('child') || key.contains('famille')) return Icons.child_care;
+  if (key.contains('palette') || key.contains('art')) return Icons.palette;
+  if (key.contains('school') || key.contains('formation')) return Icons.school;
+  if (key.contains('book') || key.contains('litterature')) {
+    return Icons.menu_book;
+  }
+  if (key.contains('park') || key.contains('nature')) return Icons.park;
+  if (key.contains('computer') || key.contains('numerique')) {
+    return Icons.computer;
+  }
+  if (key.contains('castle') || key.contains('patrimoine')) return Icons.castle;
+  if (key.contains('mood') || key.contains('emotion')) return Icons.mood;
+  if (key.contains('celebration') || key.contains('festival')) {
+    return Icons.celebration;
+  }
+  return Icons.local_activity;
 }

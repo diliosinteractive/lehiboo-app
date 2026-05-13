@@ -484,7 +484,13 @@ class ConversationDetailNotifier
   Future<void> closeConversation() async {
     final closed = await _closeConversationForRoute();
     if (!mounted) return;
-    state = state.copyWith(conversation: AsyncValue.data(closed));
+    // The close endpoint returns the conversation without messages — preserve them
+    final existingMessages = state.conversation.valueOrNull?.messages ?? [];
+    state = state.copyWith(
+      conversation: AsyncValue.data(
+        closed.copyWith(messages: existingMessages),
+      ),
+    );
     _invalidateList();
   }
 
@@ -503,7 +509,12 @@ class ConversationDetailNotifier
   Future<void> reopenConversation() async {
     if (_route != ConversationRoute.admin) return;
     final reopened = await _repo.reopenAdminConversation(_uuid);
-    state = state.copyWith(conversation: AsyncValue.data(reopened));
+    final existingMessages = state.conversation.valueOrNull?.messages ?? [];
+    state = state.copyWith(
+      conversation: AsyncValue.data(
+        reopened.copyWith(messages: existingMessages),
+      ),
+    );
     _ref.read(adminConversationsProvider('user_support').notifier).refresh();
     _ref.read(adminConversationsProvider('vendor_admin').notifier).refresh();
   }

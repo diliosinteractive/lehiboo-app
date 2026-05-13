@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:lehiboo/config/dio_client.dart';
 import 'package:lehiboo/config/env_config.dart';
 import 'package:lehiboo/core/constants/app_constants.dart';
 import 'package:lehiboo/core/services/deep_link_service.dart';
@@ -16,6 +17,7 @@ import 'package:lehiboo/routes/app_router.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'conversations_provider.dart';
 import 'support_conversations_provider.dart';
+import 'vendor_broadcasts_provider.dart';
 import 'vendor_conversations_provider.dart';
 import 'vendor_org_conversations_provider.dart';
 import 'admin_conversations_provider.dart';
@@ -32,6 +34,7 @@ enum RealtimeEventType {
   conversationCreated,
   conversationClosed,
   conversationReopened,
+  broadcastSent,
 }
 
 class RealtimeEvent {
@@ -72,25 +75,61 @@ class _StorageTokenAuthDelegate
     String socketId,
     String channelName,
   ) async {
+    final endpoint = EnvConfig.pusherAuthEndpoint;
     final token = await _storage.read(key: AppConstants.keyAuthToken);
-    if (token == null) throw Exception('No auth token available');
-    final response = await http.post(
-      Uri.parse(EnvConfig.pusherAuthEndpoint),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      },
-      body: {
-        'socket_id': socketId,
-        'channel_name': channelName,
-      },
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Pusher auth failed: ${response.statusCode}');
+    if (token == null || token.isEmpty) {
+      dev.log(
+        '[Pusher][auth] ✗ No auth token in secure storage — channel=$channelName endpoint=$endpoint',
+      );
+      throw Exception('No auth token available');
     }
-    final decoded = jsonDecode(response.body) as Map;
-    return PrivateChannelAuthorizationData(authKey: decoded['auth'] as String);
+    dev.log(
+      '[Pusher][auth] → POST $endpoint channel=$channelName socket=$socketId tokenLen=${token.length}',
+    );
+    final http.Response response;
+    try {
+      response = await http.post(
+        Uri.parse(endpoint),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+        },
+        body: {
+          'socket_id': socketId,
+          'channel_name': channelName,
+        },
+      );
+    } catch (e, st) {
+      dev.log('[Pusher][auth] ✗ Network error calling $endpoint: $e\n$st');
+      rethrow;
+    }
+    if (response.statusCode != 200) {
+      dev.log(
+        '[Pusher][auth] ✗ HTTP ${response.statusCode} from $endpoint — body=${response.body}',
+      );
+      throw Exception(
+        'Pusher auth failed: ${response.statusCode} ${response.body}',
+      );
+    }
+    final Map decoded;
+    try {
+      decoded = jsonDecode(response.body) as Map;
+    } catch (e) {
+      dev.log(
+        '[Pusher][auth] ✗ Could not decode auth response: $e — body=${response.body}',
+      );
+      rethrow;
+    }
+    final authKey = decoded['auth'];
+    if (authKey is! String) {
+      dev.log(
+        '[Pusher][auth] ✗ Response missing "auth" string field — body=${response.body}',
+      );
+      throw Exception('Pusher auth response missing "auth" key');
+    }
+    dev.log('[Pusher][auth] ✓ OK channel=$channelName');
+    return PrivateChannelAuthorizationData(authKey: authKey);
   }
 }
 
@@ -106,7 +145,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   StreamSubscription<ChannelReadEvent>? _eventSub;
   StreamSubscription<ChannelReadEvent>? _orgEventSub;
   StreamSubscription<void>? _connectedSub;
-  final _storage = const FlutterSecureStorage();
+  final _storage = SharedSecureStorage.instance;
   final _eventsController = StreamController<RealtimeEvent>.broadcast();
   int? _orgId; // numeric org ID currently subscribed to
 
@@ -195,6 +234,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     _ref.invalidate(vendorConversationsProvider);
     _ref.invalidate(vendorSupportProvider);
     _ref.invalidate(vendorOrgConversationsProvider);
+    _ref.invalidate(vendorBroadcastsProvider);
     _ref.invalidate(adminConversationsProvider);
     _ref.invalidate(adminReportsProvider);
     _ref.read(unreadCountProvider.notifier).state = 0;
@@ -343,6 +383,14 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           conversationUuid: convUuid,
           conversationType: convType,
         ));
+      case 'broadcast.sent':
+        final broadcastUuid = data['broadcast_uuid'] as String?;
+        _emit(RealtimeEvent(
+          type: RealtimeEventType.broadcastSent,
+          conversationUuid: broadcastUuid,
+        ));
+        // Broadcast creates new conversations — refresh the clients list
+        _ref.invalidate(vendorConversationsProvider);
       case 'notification.created':
         _handleNotificationCreated(data);
       default:

@@ -20,6 +20,7 @@ import 'package:lehiboo/features/booking/presentation/providers/order_cart_provi
 import 'package:lehiboo/features/booking/presentation/widgets/cart_summary_section.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_form_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participants_overview_block.dart';
+import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
 
@@ -973,9 +974,15 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       // Failures here must not block the booking confirmation.
       await _persistFlaggedParticipants();
 
+      // Capture the cart contents BEFORE clearing — we need them below to
+      // invalidate per-event caches so "spots remaining" reflects the seats
+      // we just consumed when the user navigates back to the event detail.
+      final bookedItems = ref.read(orderCartProvider);
+
       _clearReservationTimer();
       ref.read(orderCartProvider.notifier).clear();
       ref.invalidate(bookingsListControllerProvider);
+      _invalidateBookedEventsCache(bookedItems);
       HapticFeedback.heavyImpact();
 
       if (mounted) {
@@ -1030,6 +1037,33 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         await actions.create(draft);
       } catch (_) {
         // Silent — user can retry from /profile/mes-participants.
+      }
+    }
+  }
+
+  /// Refresh every event-level cache for the events the user just paid for,
+  /// so the next visit to an event detail screen shows the post-booking
+  /// "spots remaining" instead of the pre-booking number still sitting in
+  /// Riverpod's family caches.
+  ///
+  /// Lives here (not in OrderSuccessScreen) because the cart is the only
+  /// place that holds the full [Event] entity per line — including both the
+  /// UUID (`event.id`) and the slug. The event detail route accepts either
+  /// as the path param, so the family cache may be keyed by slug for users
+  /// who arrived via a deep link / story / question card. Invalidating only
+  /// the UUID key would leave those slug-keyed entries stale.
+  void _invalidateBookedEventsCache(List<OrderCartItem> bookedItems) {
+    final seenIds = <String>{};
+    for (final item in bookedItems) {
+      final event = item.event;
+      if (!seenIds.add(event.id)) continue;
+
+      ref.invalidate(eventAvailabilityProvider(event.id));
+      ref.invalidate(eventDetailControllerProvider(event.id));
+
+      final slug = event.slug;
+      if (slug.isNotEmpty && slug != event.id) {
+        ref.invalidate(eventDetailControllerProvider(slug));
       }
     }
   }

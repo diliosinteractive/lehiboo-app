@@ -6,6 +6,8 @@ import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/city.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../events/domain/entities/popular_city.dart';
+import '../../../events/domain/entities/event.dart';
+import '../../../events/domain/entities/event_submodels.dart';
 import '../../../events/domain/repositories/event_repository.dart';
 import '../../../events/data/mappers/event_to_activity_mapper.dart';
 import '../../data/models/mobile_app_config.dart';
@@ -106,6 +108,245 @@ class HomeTomorrowActivitiesNotifier
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => build());
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Nearby Available Activities (location-aware, sorted by next slot)
+// ──────────────────────────────────────────────────────────────────────────────
+
+final homeNearbyAvailableActivitiesProvider = AutoDisposeAsyncNotifierProvider<
+    HomeNearbyAvailableActivitiesNotifier, List<Activity>>(
+  HomeNearbyAvailableActivitiesNotifier.new,
+);
+
+class HomeNearbyAvailableActivitiesNotifier
+    extends AutoDisposeAsyncNotifier<List<Activity>> {
+  static const int _querySize = 50;
+  static const int _maxCards = 10;
+  static const int _nearbyRadiusKm = 30;
+
+  @override
+  Future<List<Activity>> build() async {
+    final eventRepository = ref.watch(eventRepositoryProvider);
+    final userLocation = ref.watch(userLocationProvider).valueOrNull;
+    final now = DateTime.now();
+
+    if (userLocation != null) {
+      try {
+        final nearbyActivities = await _fetchAvailableActivities(
+          eventRepository,
+          now,
+          lat: userLocation.lat,
+          lng: userLocation.lng,
+          radius: _nearbyRadiusKm,
+        );
+
+        if (nearbyActivities.isNotEmpty) {
+          ref.keepAlive();
+          return nearbyActivities;
+        }
+      } catch (e) {
+        debugPrint('Nearby activities lookup failed, falling back: $e');
+      }
+    }
+
+    final activities = await _fetchAvailableActivities(eventRepository, now);
+
+    ref.keepAlive();
+    return activities;
+  }
+
+  Future<List<Activity>> _fetchAvailableActivities(
+    EventRepository eventRepository,
+    DateTime now, {
+    double? lat,
+    double? lng,
+    int? radius,
+  }) async {
+    final result = await eventRepository.getEvents(
+      page: 1,
+      perPage: _querySize,
+      lat: lat,
+      lng: lng,
+      radius: radius,
+      availableOnly: true,
+      sort: 'date_asc',
+    );
+
+    final seenEventIds = <String>{};
+    final activities = <Activity>[];
+
+    for (final event in result.events) {
+      if (!seenEventIds.add(event.id)) continue;
+
+      final activity = _activityWithNearestAvailableSlot(event, now);
+      if (activity == null || activity.nextSlot == null) continue;
+
+      activities.add(activity);
+    }
+
+    activities.sort((a, b) => _slotStart(a).compareTo(_slotStart(b)));
+    return activities.take(_maxCards).toList();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
+
+Activity? _activityWithNearestAvailableSlot(Event event, DateTime now) {
+  final pickedSlot = _nearestAvailableSlot(event, now);
+  if (pickedSlot == null) return null;
+
+  return EventToActivityMapper.toActivity(event).copyWith(nextSlot: pickedSlot);
+}
+
+Slot? _nearestAvailableSlot(Event event, DateTime now) {
+  final slots = event.calendar?.dateSlots ?? const <CalendarDateSlot>[];
+  final candidates = slots
+      .map((slot) => _activitySlotFromCalendarSlot(event, slot))
+      .where((slot) => !_isSlotPast(slot, now))
+      .toList()
+    ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+
+  if (candidates.isNotEmpty) return candidates.first;
+
+  if (slots.isNotEmpty) return null;
+
+  final fallback = Slot(
+    id: '${event.id}_slot',
+    activityId: event.id,
+    startDateTime: event.startDate,
+    endDateTime: event.endDate,
+    capacityTotal: event.totalSeats,
+    capacityRemaining: event.availableSeats,
+    priceMin: event.minPrice ?? event.price,
+    priceMax: event.maxPrice ?? event.price,
+    currency: 'EUR',
+    indoorOutdoor: event.isIndoor && event.isOutdoor
+        ? IndoorOutdoor.both
+        : event.isIndoor
+            ? IndoorOutdoor.indoor
+            : IndoorOutdoor.outdoor,
+    status: _eventStatusToSlotStatus(event.status),
+  );
+
+  return _isSlotPast(fallback, now) ? null : fallback;
+}
+
+Slot _activitySlotFromCalendarSlot(Event event, CalendarDateSlot slot) {
+  final start = _slotDateTime(
+    slot.date,
+    slot.startTime,
+    fallbackDateTime: event.startDate,
+  );
+  final end = _slotDateTime(
+    slot.date,
+    slot.endTime,
+    fallbackDateTime: event.endDate,
+  );
+  final normalizedEnd = end.isAfter(start)
+      ? end
+      : event.duration != null
+          ? start.add(event.duration!)
+          : start.add(event.endDate.difference(event.startDate));
+
+  return Slot(
+    id: slot.id.isNotEmpty ? slot.id : '${event.id}_${start.toIso8601String()}',
+    activityId: event.id,
+    startDateTime: start,
+    endDateTime: normalizedEnd.isAfter(start) ? normalizedEnd : start,
+    capacityTotal: slot.totalCapacity ?? event.totalSeats,
+    capacityRemaining: slot.spotsRemaining ?? event.availableSeats,
+    priceMin: event.minPrice ?? event.price,
+    priceMax: event.maxPrice ?? event.price,
+    currency: 'EUR',
+    indoorOutdoor: event.isIndoor && event.isOutdoor
+        ? IndoorOutdoor.both
+        : event.isIndoor
+            ? IndoorOutdoor.indoor
+            : IndoorOutdoor.outdoor,
+    status: 'scheduled',
+  );
+}
+
+DateTime _slotDateTime(
+  DateTime date,
+  String? time, {
+  required DateTime fallbackDateTime,
+}) {
+  final parsedTime = _parseTimeOfDay(time);
+  if (parsedTime != null) {
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      parsedTime.$1,
+      parsedTime.$2,
+    );
+  }
+
+  if (_isSameDate(date, fallbackDateTime)) {
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      fallbackDateTime.hour,
+      fallbackDateTime.minute,
+      fallbackDateTime.second,
+    );
+  }
+
+  return date;
+}
+
+(int, int)? _parseTimeOfDay(String? value) {
+  if (value == null || value.trim().isEmpty) return null;
+  final parts = value.trim().split(':');
+  if (parts.length < 2) return null;
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return (hour, minute);
+}
+
+bool _isSlotPast(Slot slot, DateTime now) =>
+    _effectiveSlotEnd(slot).isBefore(now);
+
+DateTime _effectiveSlotEnd(Slot slot) {
+  final start = slot.startDateTime;
+  final end = slot.endDateTime;
+  final isDateOnly = _isMidnight(start) && _isMidnight(end);
+  if (isDateOnly && _isSameDate(start, end)) {
+    return DateTime(start.year, start.month, start.day, 23, 59, 59, 999);
+  }
+  return end;
+}
+
+bool _isMidnight(DateTime value) =>
+    value.hour == 0 &&
+    value.minute == 0 &&
+    value.second == 0 &&
+    value.millisecond == 0 &&
+    value.microsecond == 0;
+
+DateTime _slotStart(Activity activity) =>
+    activity.nextSlot?.startDateTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+bool _isSameDate(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+String _eventStatusToSlotStatus(EventStatus status) {
+  switch (status) {
+    case EventStatus.cancelled:
+      return 'cancelled';
+    case EventStatus.soldOut:
+      return 'sold_out';
+    default:
+      return 'scheduled';
   }
 }
 
@@ -440,6 +681,55 @@ final savedSearchesProvider =
     StateNotifierProvider<SavedSearchesNotifier, List<SavedSearch>>((ref) {
   return SavedSearchesNotifier();
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// New Activities (recently published events)
+// ──────────────────────────────────────────────────────────────────────────────
+
+final homeNewActivitiesProvider =
+    AutoDisposeAsyncNotifierProvider<HomeNewActivitiesNotifier, List<Activity>>(
+  HomeNewActivitiesNotifier.new,
+);
+
+class HomeNewActivitiesNotifier
+    extends AutoDisposeAsyncNotifier<List<Activity>> {
+  static const int _querySize = 50;
+  static const int _maxCards = 10;
+
+  @override
+  Future<List<Activity>> build() async {
+    final eventRepository = ref.watch(eventRepositoryProvider);
+    final now = DateTime.now();
+    final result = await eventRepository.getEvents(
+      page: 1,
+      perPage: _querySize,
+      availableOnly: true,
+      sort: 'published_at',
+      order: 'desc',
+    );
+
+    final seenEventIds = <String>{};
+    final activities = <Activity>[];
+
+    for (final event in result.events) {
+      if (!seenEventIds.add(event.id)) continue;
+
+      final activity = _activityWithNearestAvailableSlot(event, now);
+      if (activity == null || activity.nextSlot == null) continue;
+
+      activities.add(activity);
+      if (activities.length >= _maxCards) break;
+    }
+
+    ref.keepAlive();
+    return activities;
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Recommended Activities (derived from Feed)

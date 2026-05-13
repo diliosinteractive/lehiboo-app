@@ -156,6 +156,7 @@ const _$LocationTypeFilterEnumMap = {
 
 const _$SortOptionEnumMap = {
   SortOption.relevance: 'relevance',
+  SortOption.newest: 'newest',
   SortOption.dateAsc: 'dateAsc',
   SortOption.dateDesc: 'dateDesc',
   SortOption.priceAsc: 'priceAsc',

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
-import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/popular_city.dart';
 import 'package:lehiboo/features/blog/presentation/widgets/blog_section.dart';
 import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_section.dart';
@@ -20,7 +19,6 @@ import 'package:lehiboo/features/stories/presentation/providers/stories_provider
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
 import '../widgets/home_cities_section.dart';
-import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -75,10 +73,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// Refresh all home screen data
   Future<void> _refreshData() async {
     // Refresh only independent providers in parallel.
-    // Derived providers (today, tomorrow, homeActivities) will auto-rebuild
-    // via ref.watch(homeFeedProvider.future) when homeFeed completes.
+    // Derived feed providers auto-rebuild via ref.watch(homeFeedProvider.future)
+    // when homeFeed completes.
     await Future.wait([
       ref.read(homeFeedProvider.notifier).refresh(),
+      ref.read(homeNewActivitiesProvider.notifier).refresh(),
       ref.read(activeStoriesProvider.notifier).refresh(),
       ref.read(categoriesProvider.notifier).refresh(),
       ref.read(homeCitiesProvider.notifier).refresh(),
@@ -98,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activitiesAsyncValue = ref.watch(homeActivitiesProvider);
+    final newActivitiesAsyncValue = ref.watch(homeNewActivitiesProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -146,39 +145,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: AdsBannersSection(),
             ),
 
-            // 7. Sections activités (Today, Tomorrow, Recommended)
+            // 7. Sections activités (nearby availability and new events)
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Urgency FOMO — événements qui commencent bientôt.
                   const UrgencySection(),
-                  _buildActivitySection(
-                    context,
-                    ref,
-                    provider: homeTodayActivitiesProvider,
-                    baseTitle: 'Activités disponibles aujourd\'hui',
-                    emptyMessage: 'Aucune activité pour aujourd\'hui',
-                    viewAllPath: '/search?date=today',
-                    isToday: true,
-                  ),
-                  _buildActivitySection(
-                    context,
-                    ref,
-                    provider: homeTomorrowActivitiesProvider,
-                    baseTitle: 'Activités disponibles demain',
-                    emptyMessage: 'Aucune activité pour demain',
-                    viewAllPath: '/search?date=tomorrow',
-                    isTomorrow: true,
-                  ),
-                  _buildSectionTitle('Les recommandations', '/recommended'),
+                  _buildNearbyAvailableSection(context, ref),
+                  _buildSectionTitle(
+                      'Nouveautés', '/explore?sort=published_at'),
                   const SizedBox(height: 16),
-                  activitiesAsyncValue.when(
+                  newActivitiesAsyncValue.when(
                     data: (activities) {
                       if (activities.isEmpty) {
                         return const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: Text('Aucune activité trouvée.'),
+                          child: Text('Aucune nouveauté trouvée.'),
                         );
                       }
                       return SizedBox(
@@ -194,7 +177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               margin: const EdgeInsets.only(right: 16),
                               child: EventCard(
                                 activity: activity,
-                                heroTagPrefix: 'home_main',
+                                heroTagPrefix: 'home_new',
                                 isCompact: true,
                               ),
                             );
@@ -434,22 +417,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildActivitySection(
-    BuildContext context,
-    WidgetRef ref, {
-    required ProviderListenable<AsyncValue<List<Activity>>> provider,
-    required String baseTitle,
-    required String emptyMessage,
-    required String viewAllPath,
-    bool isToday = false,
-    bool isTomorrow = false,
-  }) {
-    final activitiesAsyncValue = ref.watch(provider);
-    final userLocationAsync = ref.watch(userLocationProvider);
-    final cityName = userLocationAsync.value?.cityName;
-
-    // Construct dynamic title: "Title • City >"
-    final title = cityName != null ? '$baseTitle • $cityName' : baseTitle;
+  Widget _buildNearbyAvailableSection(BuildContext context, WidgetRef ref) {
+    const title = 'Activités disponibles à proximité';
+    final activitiesAsyncValue =
+        ref.watch(homeNearbyAvailableActivitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -474,7 +445,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               IconButton(
                 icon: const Icon(Icons.arrow_forward_ios,
                     size: 16, color: HbColors.textSlate),
-                onPressed: () => context.push(viewAllPath),
+                onPressed: () => context.push('/search'),
               )
             ],
           ),
@@ -493,15 +464,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 itemCount: activities.length,
                 itemBuilder: (context, index) {
                   final activity = activities[index];
+                  final slotStart = activity.nextSlot?.startDateTime;
+                  final now = DateTime.now();
                   return Container(
                     width: 200,
                     margin: const EdgeInsets.only(right: 16),
                     child: EventCard(
                       activity: activity,
                       isCompact: true,
-                      isToday: isToday,
-                      isTomorrow: isTomorrow,
-                      heroTagPrefix: isTomorrow ? 'tomorrow' : 'today',
+                      isToday: slotStart != null && _isSameDay(slotStart, now),
+                      isTomorrow: slotStart != null &&
+                          _isSameDay(
+                            slotStart,
+                            now.add(const Duration(days: 1)),
+                          ),
+                      heroTagPrefix: 'nearby_available',
                     ),
                   );
                 },
@@ -515,6 +492,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ],
     );
   }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   Widget _buildCarouselSkeleton() {
     return SizedBox(
@@ -690,14 +670,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (city.eventsCount > 0)
-            Text(
-              '${city.eventsCount} événements',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 11,
-              ),
-            ),
         ],
       ),
     );

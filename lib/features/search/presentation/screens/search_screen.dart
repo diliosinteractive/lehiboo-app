@@ -555,6 +555,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     switch (sortBy) {
       case SortOption.relevance:
         return 'Pertinence';
+      case SortOption.newest:
+        return 'Nouveautés';
       case SortOption.dateAsc:
         return 'Date';
       case SortOption.dateDesc:
@@ -609,6 +611,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               isSelected: filter.sortBy == SortOption.relevance,
               onTap: () {
                 filterNotifier.setSortOption(SortOption.relevance);
+                Navigator.pop(context);
+              },
+            ),
+            _SortOption(
+              label: 'Nouveautés',
+              icon: Icons.fiber_new,
+              isSelected: filter.sortBy == SortOption.newest,
+              onTap: () {
+                filterNotifier.setSortOption(SortOption.newest);
                 Navigator.pop(context);
               },
             ),

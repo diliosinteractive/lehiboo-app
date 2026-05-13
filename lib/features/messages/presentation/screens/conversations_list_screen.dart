@@ -4,13 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/conversations_provider.dart';
 import '../providers/support_conversations_provider.dart';
+import '../providers/vendor_broadcasts_provider.dart';
 import '../providers/vendor_conversations_provider.dart';
 import '../providers/vendor_org_conversations_provider.dart';
 import '../providers/admin_conversations_provider.dart';
+import '../widgets/broadcast_tile.dart';
 import '../widgets/conversation_tile.dart';
 import '../widgets/conversation_filters_bar.dart';
 import '../widgets/new_conversation_form.dart';
-import '../../data/repositories/messages_repository_impl.dart';
+import '../widgets/report_conversation_sheet.dart';
 import '../../domain/entities/conversation.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -144,159 +146,12 @@ Future<void> _showVendorReportSheet(
   BuildContext context,
   WidgetRef ref,
   Conversation conv,
-) async {
-  String? selectedReason;
-  final commentCtrl = TextEditingController();
-  const primaryColor = Color(0xFFFF601F);
-
-  await showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setLocal) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.55,
-          minChildSize: 0.4,
-          maxChildSize: 0.85,
-          expand: false,
-          builder: (_, scrollCtrl) => SingleChildScrollView(
-            controller: scrollCtrl,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const Text(
-                  'Signaler cette conversation',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  conv.subject,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: selectedReason,
-                  hint: const Text('Motif du signalement'),
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          const BorderSide(color: primaryColor, width: 1.5),
-                    ),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 12),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                        value: 'inappropriate',
-                        child: Text('Contenu inapproprié')),
-                    DropdownMenuItem(
-                        value: 'harassment', child: Text('Harcèlement')),
-                    DropdownMenuItem(value: 'spam', child: Text('Spam')),
-                    DropdownMenuItem(value: 'other', child: Text('Autre')),
-                  ],
-                  onChanged: (v) => setLocal(() => selectedReason = v),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: commentCtrl,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Commentaire (optionnel)',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          const BorderSide(color: primaryColor, width: 1.5),
-                    ),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.all(12),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Annuler'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                            backgroundColor: primaryColor),
-                        onPressed: selectedReason == null
-                            ? null
-                            : () async {
-                                Navigator.pop(ctx);
-                                try {
-                                  await ref
-                                      .read(messagesRepositoryProvider)
-                                      .reportConversation(
-                                        conversationUuid: conv.uuid,
-                                        reason: selectedReason!,
-                                        comment: commentCtrl.text.trim().isEmpty
-                                            ? null
-                                            : commentCtrl.text.trim(),
-                                      );
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Conversation signalée avec succès')),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text('Erreur : $e'),
-                                          backgroundColor: Colors.red),
-                                    );
-                                  }
-                                }
-                              },
-                        child: const Text('Signaler'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-  commentCtrl.dispose();
-}
+) =>
+    showConversationReportSheet(
+      context,
+      conversationUuid: conv.uuid,
+      ref: ref,
+    );
 
 Widget _emptyConversations([String? label]) => Center(
       child: Column(
@@ -542,7 +397,7 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() => setState(() {}));
   }
 
@@ -591,7 +446,7 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
               ),
             ),
             const Tab(text: 'Diffusions'),
-            const Tab(text: 'Partenaires'),
+            // TODO v2: restore Partenaires tab
             Tab(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -611,8 +466,8 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
         controller: _tabController,
         children: const [
           _VendorClientsTab(),
-          _VendorBroadcastsStub(),
-          _VendorPartnersTab(),
+          _VendorBroadcastsTab(),
+          // TODO v2: _VendorPartnersTab(),
           _VendorSupportTab(),
         ],
       ),
@@ -630,17 +485,17 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
                 label: const Text('Contacter un participant',
                     style: TextStyle(color: Colors.white)),
               ),
-            2 => FloatingActionButton.extended(
-                onPressed: () => NewConversationForm.show(ctx,
-                    conversationContext:
-                        VendorToPartnerConversationContext()),
+            1 => FloatingActionButton.extended(
+                onPressed: () =>
+                    ctx.push('/messages/vendor/broadcasts/new'),
                 backgroundColor: _primaryColor,
-                icon: const Icon(Icons.handshake_outlined,
+                icon: const Icon(Icons.campaign_outlined,
                     color: Colors.white),
-                label: const Text('Contacter un partenaire',
+                label: const Text('Nouvelle diffusion',
                     style: TextStyle(color: Colors.white)),
               ),
-            3 => FloatingActionButton.extended(
+            // TODO v2: case 2 => Partenaires FAB
+            2 => FloatingActionButton.extended(
                 onPressed: () => NewConversationForm.show(ctx,
                     conversationContext: VendorSupportConversationContext()),
                 backgroundColor: _primaryColor,
@@ -702,19 +557,106 @@ class _VendorClientsTab extends ConsumerWidget {
   }
 }
 
-class _VendorBroadcastsStub extends StatelessWidget {
-  const _VendorBroadcastsStub();
+class _VendorBroadcastsTab extends ConsumerWidget {
+  const _VendorBroadcastsTab();
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(vendorBroadcastsProvider);
+    final notifier = ref.read(vendorBroadcastsProvider.notifier);
+
+    return RefreshIndicator(
+      onRefresh: notifier.refresh,
+      color: const Color(0xFFFF601F),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.campaign_outlined, size: 56, color: Colors.grey),
-          SizedBox(height: 12),
-          Text('Bientôt disponible',
-              style: TextStyle(fontSize: 16, color: Colors.grey)),
+          ConversationFiltersBar(
+            showSearch: true,
+            showStatus: false,
+            showPeriod: true,
+            showUnreadOnly: false,
+            searchQuery: state.searchQuery,
+            periodFilter: state.period,
+            onSearchChanged: notifier.setSearchQuery,
+            onPeriodChanged: notifier.setPeriod,
+            onStatusChanged: (_) {},
+            onUnreadOnlyChanged: (_) {},
+            onReasonChanged: (_) {},
+          ),
+          Expanded(
+            child: state.broadcasts.when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 40),
+                    const SizedBox(height: 8),
+                    Text('Erreur : $e',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: notifier.refresh,
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
+                ),
+              ),
+              data: (broadcasts) {
+                if (broadcasts.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.campaign_outlined,
+                            size: 56, color: Colors.grey),
+                        SizedBox(height: 12),
+                        Text(
+                          'Aucune diffusion envoyée',
+                          style:
+                              TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (n) {
+                    if (n is ScrollUpdateNotification &&
+                        n.metrics.pixels >=
+                            n.metrics.maxScrollExtent * 0.8) {
+                      notifier.loadMore();
+                    }
+                    return false;
+                  },
+                  child: ListView.separated(
+                    itemCount:
+                        broadcasts.length + (state.hasMore ? 1 : 0),
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, indent: 72),
+                    itemBuilder: (ctx, i) {
+                      if (i == broadcasts.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(
+                              child: CircularProgressIndicator()),
+                        );
+                      }
+                      final broadcast = broadcasts[i];
+                      return BroadcastTile(
+                        broadcast: broadcast,
+                        onTap: () => ctx.push(
+                            '/messages/vendor/broadcasts/${broadcast.uuid}'),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
