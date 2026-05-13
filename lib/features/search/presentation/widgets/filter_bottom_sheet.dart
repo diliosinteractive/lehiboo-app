@@ -2218,6 +2218,11 @@ class _SortFilterSection extends StatelessWidget {
               onTap: () => onChanged(SortOption.relevance),
             ),
             _SelectableChip(
+              label: 'Nouveautés',
+              isSelected: selectedSort == SortOption.newest,
+              onTap: () => onChanged(SortOption.newest),
+            ),
+            _SelectableChip(
               label: 'Date (proche)',
               isSelected: selectedSort == SortOption.dateAsc,
               onTap: () => onChanged(SortOption.dateAsc),

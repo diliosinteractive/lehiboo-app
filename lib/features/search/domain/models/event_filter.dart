@@ -38,6 +38,7 @@ enum PriceFilterType {
 /// Sort options
 enum SortOption {
   relevance,
+  newest,
   dateAsc,
   dateDesc,
   priceAsc,
@@ -443,6 +444,8 @@ String sortOptionToApiValue(SortOption option) {
   switch (option) {
     case SortOption.relevance:
       return 'relevance';
+    case SortOption.newest:
+      return 'published_at';
     case SortOption.dateAsc:
       return 'date_asc';
     case SortOption.dateDesc:
@@ -475,6 +478,9 @@ SortOption? _sortOptionFromApiValue(String? value) {
   switch (value) {
     case 'relevance':
       return SortOption.relevance;
+    case 'published_at':
+    case 'created_at':
+      return SortOption.newest;
     case 'date_asc':
       return SortOption.dateAsc;
     case 'date_desc':
