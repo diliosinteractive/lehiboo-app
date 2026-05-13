@@ -94,6 +94,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       'thematiquesSlugs': filter.thematiquesSlugs,
       'categoriesSlugs': filter.categoriesSlugs,
       'targetAudienceSlugs': filter.targetAudienceSlugs,
+      'tagsSlugs': filter.tagsSlugs,
       'eventTagSlug': filter.eventTagSlug,
       'specialEventSlugs': filter.specialEventSlugs,
       'emotionSlugs': filter.emotionSlugs,
@@ -125,6 +126,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
           (json['categoriesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
       targetAudienceSlugs:
           (json['targetAudienceSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
+      tagsSlugs: (json['tagsSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
       eventTagSlug: json['eventTagSlug'] as String?,
       specialEventSlugs:
           (json['specialEventSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
@@ -354,6 +356,11 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     _persistFilters();
   }
 
+  void setThematiques(List<String> slugs) {
+    state = state.copyWith(thematiquesSlugs: slugs);
+    _persistFilters();
+  }
+
   // Categories (multi-select)
   void addCategory(String slug) {
     if (!state.categoriesSlugs.contains(slug)) {
@@ -405,6 +412,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       state = state.copyWith(
         tagsSlugs: [...state.tagsSlugs, slug],
       );
+      _persistFilters();
     }
   }
 
@@ -412,6 +420,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     state = state.copyWith(
       tagsSlugs: state.tagsSlugs.where((s) => s != slug).toList(),
     );
+    _persistFilters();
   }
 
   void toggleTag(String slug) {
@@ -424,6 +433,12 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
 
   void clearTags() {
     state = state.copyWith(tagsSlugs: []);
+    _persistFilters();
+  }
+
+  void setTags(List<String> slugs) {
+    state = state.copyWith(tagsSlugs: slugs);
+    _persistFilters();
   }
 
   void setTargetAudiences(List<String> slugs) {
@@ -641,7 +656,9 @@ Future<EventsResult> _fetchEventsForFilter(
     targetAudiences: filter.targetAudienceSlugs.isNotEmpty
         ? filter.targetAudienceSlugs.join(',')
         : null,
-    eventTag: filter.eventTagSlug,
+    eventTag: filter.tagsSlugs.isNotEmpty
+        ? filter.tagsSlugs.join(',')
+        : filter.eventTagSlug,
     specialEvents: filter.specialEventSlugs.isNotEmpty
         ? filter.specialEventSlugs.join(',')
         : null,

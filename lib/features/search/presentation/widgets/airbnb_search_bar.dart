@@ -81,8 +81,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _getSearchSubtitle(filter, filterOptions.thematiques,
-                            filterOptions.categories),
+                        _getSearchSubtitle(filter, filterOptions.categories),
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -177,8 +176,8 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
     return "Rechercher une activité";
   }
 
-  String _getSearchSubtitle(EventFilter filter, List<dynamic> thematiques,
-      List<EventCategoryInfo> categories) {
+  String _getSearchSubtitle(
+      EventFilter filter, List<EventCategoryInfo> categories) {
     final parts = <String>[];
 
     // 1. Où (Where) - Only if not already in Title
@@ -206,28 +205,9 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
       if (match != null) whatParts.add(match.name);
     }
 
-    // Thematiques
-    for (final slug in filter.thematiquesSlugs) {
-      // thematiques list might be generic dynamic or DTO, casting safely
-      // Assuming it has .slug and .name properties if it's the DTO list
-      try {
-        final match = thematiques.where((t) => t.slug == slug).firstOrNull;
-        if (match != null) whatParts.add(match.name);
-      } catch (e) {
-        // Fallback if dynamic lookup fails
-        whatParts.add(slug);
-      }
-    }
-
-    // Audience / Format / Price (optional to add to "Quoi")
-    if (filter.familyFriendly) whatParts.add("Famille");
-    if (filter.accessiblePMR) whatParts.add("PMR");
-    if (filter.onlineOnly) whatParts.add("En ligne");
-    if (filter.onlyFree) whatParts.add("Gratuit");
-
     if (whatParts.isNotEmpty) {
       if (whatParts.length > 2) {
-        parts.add("${whatParts.length} filtres");
+        parts.add("${whatParts.length} catégories");
       } else {
         parts.add(whatParts.join(", "));
       }

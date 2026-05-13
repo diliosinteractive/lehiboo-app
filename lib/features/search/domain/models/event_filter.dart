@@ -201,7 +201,7 @@ class EventFilter with _$EventFilter {
       case DateFilterType.thisWeekend:
         return 'Ce week-end';
       case DateFilterType.thisMonth:
-        return 'Ce mois';
+        return 'Ce mois-ci';
       case DateFilterType.custom:
         return 'Dates personnalisées';
       default:
