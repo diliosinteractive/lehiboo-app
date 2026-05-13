@@ -27,6 +27,26 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
   FavoritesNotifier(this._repository, this._ref) : super(const AsyncValue.loading()) {
     loadFavorites();
+    // Favorites are user-scoped; reset state on real auth transitions so a
+    // second sign-in on the same app session doesn't show the previous user's
+    // list. Skip the `loading` hop that logout() flips through.
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = next == AuthStatus.unauthenticated &&
+            previous == AuthStatus.authenticated;
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          _favoriteIds.clear();
+          _currentListId = null;
+          state = const AsyncValue.data([]);
+        } else if (loggedIn) {
+          loadFavorites();
+        }
+      },
+    );
   }
 
   Future<void> loadFavorites({String? listId}) async {

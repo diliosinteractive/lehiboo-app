@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
-import 'package:lehiboo/domain/entities/city.dart';
+import 'package:lehiboo/features/events/domain/entities/popular_city.dart';
 import 'package:lehiboo/features/blog/presentation/widgets/blog_section.dart';
 import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_section.dart';
 import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
@@ -82,6 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(activeStoriesProvider.notifier).refresh(),
       ref.read(categoriesProvider.notifier).refresh(),
       ref.read(homeCitiesProvider.notifier).refresh(),
+      ref.read(popularCitiesProvider.notifier).refresh(),
       ref.read(mobileAppConfigProvider.notifier).refresh(),
       ref.read(heroSlidesProvider.notifier).refresh(),
       ref.read(inAppNotificationsProvider.notifier).refreshUnreadCount(),
@@ -590,12 +591,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildTopCitiesSection() {
-    final citiesAsyncValue = ref.watch(homeCitiesProvider);
+    final resultAsync = ref.watch(popularCitiesProvider);
 
-    return citiesAsyncValue.when(
-      data: (cities) {
-        // Masquer la section si aucune ville disponible
-        if (cities.isEmpty) return const SizedBox.shrink();
+    return resultAsync.when(
+      data: (result) {
+        if (result.cities.isEmpty) return const SizedBox.shrink();
+
+        final title = result.isFallback
+            ? 'Où ça bouge en ce moment'
+            : 'Villes populaires';
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -617,12 +621,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    'Villes populaires',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textSlate,
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: HbColors.textSlate,
+                      ),
                     ),
                   ),
                 ],
@@ -640,10 +646,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisSpacing: 12,
                   childAspectRatio: 0.75,
                 ),
-                itemCount: cities.length,
+                itemCount: result.cities.length,
                 itemBuilder: (context, index) {
-                  final city = cities[index];
-                  return _buildCityCard(city);
+                  return _buildCityCard(result.cities[index]);
                 },
               ),
             ),
@@ -656,16 +661,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildCityCard(City city) {
+  Widget _buildCityCard(PopularCity city) {
+    final imageUrl = city.thumbnailUrl ?? city.imageUrl;
+
+    final cardChild = Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.7),
+          ],
+        ),
+      ),
+      alignment: Alignment.bottomLeft,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            city.name,
+            style: GoogleFonts.montserrat(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (city.eventsCount > 0)
+            Text(
+              '${city.eventsCount} événements',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 11,
+              ),
+            ),
+        ],
+      ),
+    );
+
     return GestureDetector(
       onTap: () => context.push('/city/${city.slug}'),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          image: DecorationImage(
-            image: NetworkImage(city.imageUrl ?? 'https://placehold.co/200'),
-            fit: BoxFit.cover,
-          ),
+          image: imageUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.cover,
+                )
+              : null,
+          gradient: imageUrl == null
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    HbColors.brandPrimary,
+                    HbColors.brandPrimary.withValues(alpha: 0.7),
+                  ],
+                )
+              : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.15),
@@ -674,43 +731,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.7),
-              ],
-            ),
-          ),
-          alignment: Alignment.bottomLeft,
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                city.name,
-                style: GoogleFonts.montserrat(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (city.eventCount != null && city.eventCount! > 0)
-                Text(
-                  '${city.eventCount} événements',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 11,
-                  ),
-                ),
-            ],
-          ),
-        ),
+        child: cardChild,
       ),
     );
   }

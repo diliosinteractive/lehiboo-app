@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
+import 'package:lehiboo/features/events/data/models/event_reference_data_dto.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/thematiques/presentation/providers/thematiques_provider.dart';
@@ -89,8 +90,15 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     return {
       'citySlug': filter.citySlug,
       'cityName': filter.cityName,
+      'cityRadiusKm': filter.cityRadiusKm,
       'thematiquesSlugs': filter.thematiquesSlugs,
       'categoriesSlugs': filter.categoriesSlugs,
+      'targetAudienceSlugs': filter.targetAudienceSlugs,
+      'eventTagSlug': filter.eventTagSlug,
+      'specialEventSlugs': filter.specialEventSlugs,
+      'emotionSlugs': filter.emotionSlugs,
+      'availableOnly': filter.availableOnly,
+      'locationType': filter.locationType?.name,
       'onlyFree': filter.onlyFree,
       'priceMin': filter.priceMin,
       'priceMax': filter.priceMax,
@@ -100,6 +108,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       'onlineOnly': filter.onlineOnly,
       'inPersonOnly': filter.inPersonOnly,
       'sortBy': filter.sortBy.name,
+      'hasExplicitSort': filter.hasExplicitSort,
       // Don't persist: search query, dates, location (temporary filters)
     };
   }
@@ -109,10 +118,23 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     return EventFilter(
       citySlug: json['citySlug'] as String?,
       cityName: json['cityName'] as String?,
+      cityRadiusKm: (json['cityRadiusKm'] as num?)?.toDouble() ?? 10,
       thematiquesSlugs:
           (json['thematiquesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
       categoriesSlugs:
           (json['categoriesSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
+      targetAudienceSlugs:
+          (json['targetAudienceSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
+      eventTagSlug: json['eventTagSlug'] as String?,
+      specialEventSlugs:
+          (json['specialEventSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
+      emotionSlugs:
+          (json['emotionSlugs'] as List<dynamic>?)?.cast<String>() ?? [],
+      availableOnly: json['availableOnly'] as bool? ?? false,
+      locationType: _enumByName(
+        LocationTypeFilter.values,
+        json['locationType'],
+      ),
       onlyFree: json['onlyFree'] as bool? ?? false,
       priceMin: (json['priceMin'] as num?)?.toDouble() ?? 0,
       priceMax: (json['priceMax'] as num?)?.toDouble() ?? _defaultPriceMax,
@@ -124,8 +146,9 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       accessiblePMR: json['accessiblePMR'] as bool? ?? false,
       onlineOnly: json['onlineOnly'] as bool? ?? false,
       inPersonOnly: json['inPersonOnly'] as bool? ?? false,
-      sortBy: _enumByName(SortOption.values, json['sortBy']) ??
-          SortOption.relevance,
+      sortBy:
+          _enumByName(SortOption.values, json['sortBy']) ?? SortOption.dateAsc,
+      hasExplicitSort: json['hasExplicitSort'] as bool? ?? false,
     );
   }
 
@@ -243,10 +266,13 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
   }
 
   // City filter
-  void setCity(String slug, String name) {
+  void setCity(String slug, String name, {double radiusKm = 10}) {
     state = state.copyWith(
       citySlug: slug,
       cityName: name,
+      cityRadiusKm: radiusKm,
+      latitude: null,
+      longitude: null,
     );
     _persistFilters();
   }
@@ -265,6 +291,8 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       latitude: lat,
       longitude: lng,
       radiusKm: radius,
+      citySlug: null,
+      cityName: null,
     );
   }
 
@@ -292,7 +320,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     state = state.copyWith(
       latitude: null,
       longitude: null,
-      radiusKm: 50,
+      radiusKm: 10,
     );
   }
 
@@ -398,6 +426,36 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     state = state.copyWith(tagsSlugs: []);
   }
 
+  void setTargetAudiences(List<String> slugs) {
+    state = state.copyWith(targetAudienceSlugs: slugs);
+    _persistFilters();
+  }
+
+  void setEventTag(String? slug) {
+    state = state.copyWith(eventTagSlug: slug);
+    _persistFilters();
+  }
+
+  void setSpecialEvents(List<String> slugs) {
+    state = state.copyWith(specialEventSlugs: slugs);
+    _persistFilters();
+  }
+
+  void setEmotions(List<String> slugs) {
+    state = state.copyWith(emotionSlugs: slugs);
+    _persistFilters();
+  }
+
+  void setAvailableOnly(bool value) {
+    state = state.copyWith(availableOnly: value);
+    _persistFilters();
+  }
+
+  void setLocationType(LocationTypeFilter? type) {
+    state = state.copyWith(locationType: type);
+    _persistFilters();
+  }
+
   // Audience filters
   void setFamilyFriendly(bool value) {
     state = state.copyWith(familyFriendly: value);
@@ -428,7 +486,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
 
   // Sort
   void setSortOption(SortOption option) {
-    state = state.copyWith(sortBy: option);
+    state = state.copyWith(sortBy: option, hasExplicitSort: true);
     _persistFilters();
   }
 
@@ -481,6 +539,36 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       case FilterChipType.tag:
         if (value != null) removeTag(value);
         break;
+      case FilterChipType.eventTag:
+        setEventTag(null);
+        break;
+      case FilterChipType.targetAudience:
+        if (value != null) {
+          setTargetAudiences(
+            state.targetAudienceSlugs.where((slug) => slug != value).toList(),
+          );
+        }
+        break;
+      case FilterChipType.specialEvent:
+        if (value != null) {
+          setSpecialEvents(
+            state.specialEventSlugs.where((slug) => slug != value).toList(),
+          );
+        }
+        break;
+      case FilterChipType.emotion:
+        if (value != null) {
+          setEmotions(
+            state.emotionSlugs.where((slug) => slug != value).toList(),
+          );
+        }
+        break;
+      case FilterChipType.availability:
+        setAvailableOnly(false);
+        break;
+      case FilterChipType.locationType:
+        setLocationType(null);
+        break;
       case FilterChipType.audience:
         setFamilyFriendly(false);
         setAccessiblePMR(false);
@@ -522,6 +610,60 @@ class PaginatedActivities {
   }
 }
 
+Future<EventsResult> _fetchEventsForFilter(
+  EventRepository eventRepository,
+  EventFilter filter, {
+  int? page,
+  int? perPage,
+}) async {
+  final dateFromStr = _dateParam(filter.effectiveStartDate);
+  final dateToStr = _dateParam(filter.effectiveEndDate);
+
+  return eventRepository.getEvents(
+    search: filter.searchQuery.isNotEmpty ? filter.searchQuery : null,
+    thematique: filter.thematiquesSlugs.isNotEmpty
+        ? filter.thematiquesSlugs.join(',')
+        : null,
+    categorySlug: filter.categoriesSlugs.isNotEmpty
+        ? filter.categoriesSlugs.join(',')
+        : null,
+    location: filter.citySlug,
+    cityRadiusKm: filter.citySlug != null ? filter.effectiveCityRadiusKm : null,
+    dateFrom: dateFromStr,
+    dateTo: dateToStr,
+    priceMin: _priceMinParam(filter),
+    priceMax: _priceMaxParam(filter),
+    freeOnly: filter.onlyFree ? true : null,
+    familyFriendly: filter.familyFriendly ? true : null,
+    accessiblePmr: filter.accessiblePMR ? true : null,
+    onlineOnly: filter.onlineOnly ? true : null,
+    inPersonOnly: filter.inPersonOnly ? true : null,
+    targetAudiences: filter.targetAudienceSlugs.isNotEmpty
+        ? filter.targetAudienceSlugs.join(',')
+        : null,
+    eventTag: filter.eventTagSlug,
+    specialEvents: filter.specialEventSlugs.isNotEmpty
+        ? filter.specialEventSlugs.join(',')
+        : null,
+    emotions:
+        filter.emotionSlugs.isNotEmpty ? filter.emotionSlugs.join(',') : null,
+    availableOnly: filter.availableOnly ? true : null,
+    locationType: filter.locationType != null
+        ? locationTypeToApiValue(filter.locationType!)
+        : null,
+    lat: filter.latitude,
+    lng: filter.longitude,
+    radius: filter.latitude != null ? filter.radiusKm.toInt() : null,
+    northEastLat: filter.northEastLat,
+    northEastLng: filter.northEastLng,
+    southWestLat: filter.southWestLat,
+    southWestLng: filter.southWestLng,
+    sort: sortOptionToApiValue(filter.effectiveSortBy),
+    perPage: perPage ?? filter.perPage,
+    page: page ?? filter.page,
+  );
+}
+
 /// Notifier for filtered events results with pagination support
 final filteredEventsProvider =
     AsyncNotifierProvider<FilteredEventsNotifier, PaginatedActivities>(() {
@@ -547,38 +689,7 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
     final previousActivities = state.valueOrNull?.activities ?? [];
 
     try {
-      final dateFromStr = _dateParam(filter.effectiveStartDate);
-      final dateToStr = _dateParam(filter.effectiveEndDate);
-
-      final result = await eventRepository.getEvents(
-        search: filter.searchQuery.isNotEmpty ? filter.searchQuery : null,
-        thematique: filter.thematiquesSlugs.isNotEmpty
-            ? filter.thematiquesSlugs.join(',')
-            : null,
-        categorySlug: filter.categoriesSlugs.isNotEmpty
-            ? filter.categoriesSlugs.join(',')
-            : null,
-        location: filter.citySlug,
-        dateFrom: dateFromStr,
-        dateTo: dateToStr,
-        priceMin: _priceMinParam(filter),
-        priceMax: _priceMaxParam(filter),
-        freeOnly: filter.onlyFree ? true : null,
-        familyFriendly: filter.familyFriendly ? true : null,
-        accessiblePmr: filter.accessiblePMR ? true : null,
-        onlineOnly: filter.onlineOnly ? true : null,
-        inPersonOnly: filter.inPersonOnly ? true : null,
-        lat: filter.latitude,
-        lng: filter.longitude,
-        radius: filter.latitude != null ? filter.radiusKm.toInt() : null,
-        northEastLat: filter.northEastLat,
-        northEastLng: filter.northEastLng,
-        southWestLat: filter.southWestLat,
-        southWestLng: filter.southWestLng,
-        sort: sortOptionToApiValue(filter.sortBy),
-        perPage: filter.perPage,
-        page: filter.page,
-      );
+      final result = await _fetchEventsForFilter(eventRepository, filter);
 
       final newActivities = EventToActivityMapper.toActivities(result.events);
       final hasMore = result.hasNext;
@@ -613,6 +724,29 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
     }
   }
 }
+
+final eventReferenceDataProvider =
+    FutureProvider.autoDispose<EventReferenceDataDto>((ref) async {
+  final eventRepository = ref.watch(eventRepositoryProvider);
+  final result = await eventRepository.getEventReferenceData(onlyOnline: true);
+  ref.keepAlive();
+  return result;
+});
+
+final filterPreviewCountProvider =
+    FutureProvider.autoDispose.family<int, EventFilter>((ref, filter) async {
+  final eventRepository = ref.watch(eventRepositoryProvider);
+
+  await Future<void>.delayed(const Duration(milliseconds: 350));
+
+  final result = await _fetchEventsForFilter(
+    eventRepository,
+    filter,
+    page: 1,
+    perPage: 1,
+  );
+  return result.totalItems;
+});
 
 /// Provider for active filter chips (for UI display)
 final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
@@ -703,6 +837,58 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
     ));
   }
 
+  if (filter.eventTagSlug != null) {
+    chips.add(ActiveFilterChip(
+      id: 'event_tag',
+      label: filter.eventTagSlug!,
+      type: FilterChipType.eventTag,
+      value: filter.eventTagSlug,
+    ));
+  }
+
+  for (final slug in filter.targetAudienceSlugs) {
+    chips.add(ActiveFilterChip(
+      id: 'target_audience_$slug',
+      label: slug,
+      type: FilterChipType.targetAudience,
+      value: slug,
+    ));
+  }
+
+  for (final slug in filter.specialEventSlugs) {
+    chips.add(ActiveFilterChip(
+      id: 'special_event_$slug',
+      label: slug,
+      type: FilterChipType.specialEvent,
+      value: slug,
+    ));
+  }
+
+  for (final slug in filter.emotionSlugs) {
+    chips.add(ActiveFilterChip(
+      id: 'emotion_$slug',
+      label: slug,
+      type: FilterChipType.emotion,
+      value: slug,
+    ));
+  }
+
+  if (filter.availableOnly) {
+    chips.add(const ActiveFilterChip(
+      id: 'available_only',
+      label: 'Places disponibles',
+      type: FilterChipType.availability,
+    ));
+  }
+
+  if (filter.locationType != null) {
+    chips.add(ActiveFilterChip(
+      id: 'location_type',
+      label: _locationTypeLabel(filter.locationType!),
+      type: FilterChipType.locationType,
+    ));
+  }
+
   // Audience
   if (filter.familyFriendly) {
     chips.add(const ActiveFilterChip(
@@ -737,6 +923,19 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
 
   return chips;
 });
+
+String _locationTypeLabel(LocationTypeFilter type) {
+  switch (type) {
+    case LocationTypeFilter.physical:
+      return 'Lieu physique';
+    case LocationTypeFilter.offline:
+      return 'Hors ligne';
+    case LocationTypeFilter.online:
+      return 'En ligne';
+    case LocationTypeFilter.hybrid:
+      return 'Hybride';
+  }
+}
 
 /// Provider for available filter options
 final filterOptionsProvider = Provider<FilterOptionsData>((ref) {

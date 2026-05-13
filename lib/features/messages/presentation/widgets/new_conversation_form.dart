@@ -154,6 +154,10 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   // Shared error flag for new contexts
   bool _recipientError = false;
 
+  // Contactable orgs for DashboardContext (loaded eagerly)
+  List<ConversationOrganization>? _contactableOrgs;
+  bool _orgsLoading = false;
+
   // Existing getters
   bool get _isSupport =>
       widget.conversationContext is SupportConversationContext;
@@ -193,6 +197,19 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           if (mounted) setState(() => _allPartners = partners);
         } catch (_) {}
       });
+    }
+    if (widget.conversationContext is DashboardConversationContext) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadContactableOrgs());
+    }
+  }
+
+  Future<void> _loadContactableOrgs() async {
+    setState(() => _orgsLoading = true);
+    try {
+      final orgs = await ref.read(messagesRepositoryImplProvider).getContactableOrganizations();
+      if (mounted) setState(() { _contactableOrgs = orgs; _orgsLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() { _contactableOrgs = []; _orgsLoading = false; });
     }
   }
 
@@ -238,37 +255,22 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   // ── Org picker (DashboardContext only) ─────────────────────────────────────
 
   Future<void> _openOrgPicker() async {
-    setState(() => _isLoading = true);
-    try {
-      final repo = ref.read(messagesRepositoryImplProvider);
-      final orgs = await repo.getContactableOrganizations();
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      final picked = await showModalBottomSheet<ConversationOrganization>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (_) => _OrgPickerSheet(orgs: orgs),
-      );
-      if (picked != null && mounted) {
-        setState(() {
-          _selectedOrg = picked;
-          _orgError = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Impossible de charger les organisateurs : $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    final orgs = _contactableOrgs;
+    if (orgs == null || orgs.isEmpty) return;
+    final picked = await showModalBottomSheet<ConversationOrganization>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _OrgPickerSheet(orgs: orgs),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _selectedOrg = picked;
+        _orgError = false;
+      });
     }
   }
 
@@ -659,23 +661,23 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       );
     }
 
-    // DashboardContext — tappable picker row
+    // DashboardContext — tappable picker row (greyed out when no orgs available)
+    final orgsEmpty = !_orgsLoading && _contactableOrgs != null && _contactableOrgs!.isEmpty;
+    final pickerEnabled = !_orgsLoading && (_contactableOrgs?.isNotEmpty ?? false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionLabel('Destinataire', required: true),
         const SizedBox(height: 6),
         InkWell(
-          onTap: _openOrgPicker,
+          onTap: pickerEnabled ? _openOrgPicker : null,
           borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
+              color: orgsEmpty ? Colors.grey.shade100 : null,
               border: Border.all(
-                color: _orgError
-                    ? Colors.red
-                    : Colors.grey.shade300,
+                color: _orgError ? Colors.red : Colors.grey.shade300,
                 width: _orgError ? 1.5 : 1,
               ),
               borderRadius: BorderRadius.circular(10),
@@ -711,33 +713,55 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                   }()
                 else
                   Icon(Icons.business_outlined,
-                      color: Colors.grey.shade500, size: 20),
+                      color: orgsEmpty ? Colors.grey.shade400 : Colors.grey.shade500,
+                      size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     _selectedOrg?.companyName ??
-                        'Sélectionner un organisateur…',
+                        (orgsEmpty
+                            ? 'Aucun organisateur disponible'
+                            : 'Sélectionner un organisateur…'),
                     style: TextStyle(
                       color: _selectedOrg != null
                           ? Colors.black87
-                          : Colors.grey.shade500,
+                          : orgsEmpty
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade500,
                       fontSize: 14,
                     ),
                   ),
                 ),
-                Icon(Icons.expand_more,
-                    color: Colors.grey.shade500),
+                if (_orgsLoading)
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.grey.shade400),
+                  )
+                else
+                  Icon(Icons.expand_more,
+                      color: orgsEmpty
+                          ? Colors.grey.shade300
+                          : Colors.grey.shade500),
               ],
             ),
           ),
         ),
+        if (orgsEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              'Parcourez les événements pour trouver un organisateur à contacter.',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            ),
+          ),
         if (_orgError)
           Padding(
             padding: const EdgeInsets.only(top: 4, left: 4),
             child: Text(
               'Veuillez sélectionner un organisateur.',
-              style: TextStyle(
-                  fontSize: 11, color: Colors.red.shade600),
+              style: TextStyle(fontSize: 11, color: Colors.red.shade600),
             ),
           ),
       ],

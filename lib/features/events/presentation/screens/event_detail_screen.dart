@@ -1327,20 +1327,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
-                // "Réserver maintenant" temporarily hidden — cart flow only.
-                /*
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   onPressed: () {
+                    // Capture router before pop — sheetContext is disposed by
+                    // Navigator.pop() and the navigation call would otherwise
+                    // dereference a dead context (same trap as the
+                    // "Ajouter au panier" button above).
+                    final router = GoRouter.of(context);
                     Navigator.of(sheetContext).pop();
-                    context.push('/checkout', extra: {
-                      'event': event,
-                      'slotId': _selectedSlotId,
-                      'selectedSlot': _selectedSlot,
-                      'ticketQuantities':
-                          Map<String, int>.from(_ticketQuantities),
-                      'totalPrice': _totalPrice,
-                    });
+                    ref.read(orderCartProvider.notifier).addSelection(
+                          event: event,
+                          slotId: _selectedSlotId!,
+                          selectedSlot: _selectedSlot,
+                          ticketQuantities:
+                              Map<String, int>.from(_ticketQuantities),
+                        );
+                    router.push('/cart');
                   },
                   icon: const Icon(Icons.lock),
                   label: const Text('Reserver maintenant'),
@@ -1353,7 +1356,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     ),
                   ),
                 ),
-                */
               ],
             ),
           ),

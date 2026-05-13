@@ -81,7 +81,8 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _getSearchSubtitle(filter, filterOptions.thematiques, filterOptions.categories),
+                        _getSearchSubtitle(filter, filterOptions.thematiques,
+                            filterOptions.categories),
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -100,7 +101,8 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                 GestureDetector(
                   onTap: widget.onFilterTap,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     child: Stack(
                       children: [
                         Container(
@@ -175,15 +177,17 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
     return "Rechercher une activité";
   }
 
-  String _getSearchSubtitle(EventFilter filter, List<dynamic> thematiques, List<EventCategoryInfo> categories) {
+  String _getSearchSubtitle(EventFilter filter, List<dynamic> thematiques,
+      List<EventCategoryInfo> categories) {
     final parts = <String>[];
 
     // 1. Où (Where) - Only if not already in Title
-    bool locationInTitle = filter.cityName != null || (filter.latitude != null && filter.longitude != null);
+    bool locationInTitle = filter.cityName != null ||
+        (filter.latitude != null && filter.longitude != null);
     if (!locationInTitle) {
-       // If no location filter is set, we can say "Où ?" or just skip it to keep it short. 
-       // User asked to "Add Where".
-       parts.add("Où ?");
+      // If no location filter is set, we can say "Où ?" or just skip it to keep it short.
+      // User asked to "Add Where".
+      parts.add("Où ?");
     }
 
     // 2. Quand (When)
@@ -195,13 +199,13 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
 
     // 3. Quoi (What)
     final whatParts = <String>[];
-    
+
     // Categories
     for (final slug in filter.categoriesSlugs) {
       final match = categories.where((c) => c.slug == slug).firstOrNull;
       if (match != null) whatParts.add(match.name);
     }
-    
+
     // Thematiques
     for (final slug in filter.thematiquesSlugs) {
       // thematiques list might be generic dynamic or DTO, casting safely
@@ -211,7 +215,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
         if (match != null) whatParts.add(match.name);
       } catch (e) {
         // Fallback if dynamic lookup fails
-         whatParts.add(slug);
+        whatParts.add(slug);
       }
     }
 
@@ -222,11 +226,11 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
     if (filter.onlyFree) whatParts.add("Gratuit");
 
     if (whatParts.isNotEmpty) {
-       if (whatParts.length > 2) {
-         parts.add("${whatParts.length} filtres");
-       } else {
-         parts.add(whatParts.join(", "));
-       }
+      if (whatParts.length > 2) {
+        parts.add("${whatParts.length} filtres");
+      } else {
+        parts.add(whatParts.join(", "));
+      }
     } else {
       parts.add("Quoi ?");
     }
@@ -298,7 +302,8 @@ class QuickFilterChips extends ConsumerWidget {
             label: "Famille",
             isSelected: filter.familyFriendly,
             icon: Icons.family_restroom,
-            onTap: () => filterNotifier.setFamilyFriendly(!filter.familyFriendly),
+            onTap: () =>
+                filterNotifier.setFamilyFriendly(!filter.familyFriendly),
           ),
           const SizedBox(width: 8),
           _QuickFilterChip(
@@ -337,7 +342,9 @@ class _QuickFilterChip extends StatelessWidget {
           color: isSelected ? HbColors.brandPrimary : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? HbColors.brandPrimary : Colors.grey.withValues(alpha: 0.3),
+            color: isSelected
+                ? HbColors.brandPrimary
+                : Colors.grey.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -439,15 +446,17 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Recherchez une ville, une activité...',
-                prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
+                hintText: 'Événement ou organisation',
+                prefixIcon:
+                    const Icon(Icons.search, color: HbColors.brandPrimary),
                 filled: true,
                 fillColor: HbColors.surfaceInput,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear, color: Colors.grey),
@@ -465,7 +474,7 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
               },
             ),
           ),
-          
+
           // Tab bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -506,19 +515,18 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
           // Search button
           Container(
             padding: EdgeInsets.only(
-              left: 16, 
-              right: 16, 
-              top: 16, 
-              bottom: MediaQuery.of(context).padding.bottom + 16
-            ),
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).padding.bottom + 16),
             child: Row(
               children: [
                 // Clear filters
                 if (filter.hasActiveFilters)
                   TextButton(
                     onPressed: () {
-                       filterNotifier.resetAll();
-                       _searchController.clear();
+                      filterNotifier.resetAll();
+                      _searchController.clear();
                     },
                     child: const Text(
                       'Effacer tout',
@@ -538,7 +546,8 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -597,7 +606,9 @@ class _TabButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? HbColors.brandPrimary.withValues(alpha: 0.1) : null,
+            color: isSelected
+                ? HbColors.brandPrimary.withValues(alpha: 0.1)
+                : null,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -661,18 +672,22 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showError('Permission de localisation refusée définitivement. Activez-la dans les paramètres.');
+        _showError(
+            'Permission de localisation refusée définitivement. Activez-la dans les paramètres.');
         return;
       }
 
       // Get current position
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
 
       // Update filter with location
       final filterNotifier = ref.read(eventFilterProvider.notifier);
-      filterNotifier.setLocation(position.latitude, position.longitude, _selectedRadius);
+      filterNotifier.setLocation(
+          position.latitude, position.longitude, _selectedRadius);
       filterNotifier.clearCity(); // Clear city when using geolocation
     } catch (e) {
       _showError('Impossible d\'obtenir votre position');
@@ -700,10 +715,10 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
     if (filter.latitude != null && filter.longitude != null) {
       // Update radius if location is already set
       ref.read(eventFilterProvider.notifier).setLocation(
-        filter.latitude!,
-        filter.longitude!,
-        radius,
-      );
+            filter.latitude!,
+            filter.longitude!,
+            radius,
+          );
     }
   }
 
@@ -713,7 +728,6 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
 
   @override
   Widget build(BuildContext context) {
-    final filterNotifier = ref.read(eventFilterProvider.notifier);
     final filter = ref.watch(eventFilterProvider);
     final hasLocation = filter.latitude != null && filter.longitude != null;
 
@@ -744,7 +758,9 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
                 color: hasLocation ? HbColors.brandPrimary : Colors.grey[100],
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: hasLocation ? HbColors.brandPrimary : Colors.grey.shade300,
+                  color: hasLocation
+                      ? HbColors.brandPrimary
+                      : Colors.grey.shade300,
                 ),
               ),
               child: Row(
@@ -812,20 +828,28 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
                 return GestureDetector(
                   onTap: () => _updateRadius(radius),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSelected ? HbColors.brandPrimary.withValues(alpha: 0.15) : Colors.grey[100],
+                      color: isSelected
+                          ? HbColors.brandPrimary.withValues(alpha: 0.15)
+                          : Colors.grey[100],
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
+                        color: isSelected
+                            ? HbColors.brandPrimary
+                            : Colors.grey.shade300,
                         width: isSelected ? 2 : 1,
                       ),
                     ),
                     child: Text(
                       '${radius.toInt()} km',
                       style: TextStyle(
-                        color: isSelected ? HbColors.brandPrimary : Colors.grey[700],
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected
+                            ? HbColors.brandPrimary
+                            : Colors.grey[700],
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
                         fontSize: 13,
                       ),
                     ),
@@ -847,7 +871,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
             ),
           ),
           const SizedBox(height: 12),
-          Wrap(
+          const Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
@@ -943,25 +967,29 @@ class _WhenTab extends ConsumerWidget {
                 label: 'Demain',
                 type: DateFilterType.tomorrow,
                 isSelected: filter.dateFilterType == DateFilterType.tomorrow,
-                onTap: () => filterNotifier.setDateFilter(DateFilterType.tomorrow),
+                onTap: () =>
+                    filterNotifier.setDateFilter(DateFilterType.tomorrow),
               ),
               _DateFilterChip(
                 label: 'Cette semaine',
                 type: DateFilterType.thisWeek,
                 isSelected: filter.dateFilterType == DateFilterType.thisWeek,
-                onTap: () => filterNotifier.setDateFilter(DateFilterType.thisWeek),
+                onTap: () =>
+                    filterNotifier.setDateFilter(DateFilterType.thisWeek),
               ),
               _DateFilterChip(
                 label: 'Ce week-end',
                 type: DateFilterType.thisWeekend,
                 isSelected: filter.dateFilterType == DateFilterType.thisWeekend,
-                onTap: () => filterNotifier.setDateFilter(DateFilterType.thisWeekend),
+                onTap: () =>
+                    filterNotifier.setDateFilter(DateFilterType.thisWeekend),
               ),
               _DateFilterChip(
                 label: 'Ce mois',
                 type: DateFilterType.thisMonth,
                 isSelected: filter.dateFilterType == DateFilterType.thisMonth,
-                onTap: () => filterNotifier.setDateFilter(DateFilterType.thisMonth),
+                onTap: () =>
+                    filterNotifier.setDateFilter(DateFilterType.thisMonth),
               ),
             ],
           ),
@@ -1096,7 +1124,9 @@ class _WhatTab extends ConsumerWidget {
           const SizedBox(height: 12),
           thematiques.when(
             data: (data) {
-              if (data.isEmpty) return const Text('Aucune thématique disponible');
+              if (data.isEmpty) {
+                return const Text('Aucune thématique disponible');
+              }
               return Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -1105,7 +1135,7 @@ class _WhatTab extends ConsumerWidget {
                     name: t.name,
                     slug: t.slug,
                     // Basic icon mapping or default
-                    icon: Icons.label_outline, 
+                    icon: Icons.label_outline,
                   );
                 }).toList(),
               );
@@ -1136,7 +1166,8 @@ class _WhatTab extends ConsumerWidget {
               _PriceChip(
                 label: 'Payant',
                 isSelected: filter.priceFilterType == PriceFilterType.paid,
-                onTap: () => filterNotifier.setPriceFilter(PriceFilterType.paid),
+                onTap: () =>
+                    filterNotifier.setPriceFilter(PriceFilterType.paid),
               ),
               const SizedBox(width: 8),
               _PriceChip(
@@ -1166,13 +1197,15 @@ class _WhatTab extends ConsumerWidget {
                 label: 'En famille',
                 icon: Icons.family_restroom,
                 isSelected: filter.familyFriendly,
-                onTap: () => filterNotifier.setFamilyFriendly(!filter.familyFriendly),
+                onTap: () =>
+                    filterNotifier.setFamilyFriendly(!filter.familyFriendly),
               ),
               _FilterToggleChip(
                 label: 'Accessible PMR',
                 icon: Icons.accessible,
                 isSelected: filter.accessiblePMR,
-                onTap: () => filterNotifier.setAccessiblePMR(!filter.accessiblePMR),
+                onTap: () =>
+                    filterNotifier.setAccessiblePMR(!filter.accessiblePMR),
               ),
             ],
           ),
@@ -1202,7 +1235,8 @@ class _WhatTab extends ConsumerWidget {
                 label: 'En présentiel',
                 icon: Icons.location_on,
                 isSelected: filter.inPersonOnly,
-                onTap: () => filterNotifier.setInPersonOnly(!filter.inPersonOnly),
+                onTap: () =>
+                    filterNotifier.setInPersonOnly(!filter.inPersonOnly),
               ),
             ],
           ),
@@ -1234,8 +1268,8 @@ class _CategoriesFilterState extends State<_CategoriesFilter> {
   @override
   Widget build(BuildContext context) {
     final showAll = _isExpanded || widget.categories.length <= _initialLimit;
-    final displayedCategories = showAll 
-        ? widget.categories 
+    final displayedCategories = showAll
+        ? widget.categories
         : widget.categories.take(_initialLimit).toList();
     final hiddenCount = widget.categories.length - _initialLimit;
 
@@ -1247,33 +1281,49 @@ class _CategoriesFilterState extends State<_CategoriesFilter> {
           runSpacing: 8,
           children: displayedCategories.map((c) {
             final isSelected = widget.selectedSlugs.contains(c.slug);
-            
+
             // Icon mapping
             IconData iconData = Icons.label_outline;
-             if (c.icon != null) {
-               if (c.icon!.contains('music')) iconData = Icons.music_note;
-               else if (c.icon!.contains('movie')) iconData = Icons.movie;
-               else if (c.icon!.contains('sport')) iconData = Icons.sports;
-               else if (c.icon!.contains('restaurant')) iconData = Icons.restaurant;
-               else if (c.icon!.contains('child')) iconData = Icons.child_care;
-               else if (c.icon!.contains('palette')) iconData = Icons.palette;
-               else if (c.icon!.contains('school')) iconData = Icons.school;
-               else if (c.icon!.contains('book')) iconData = Icons.menu_book;
-               else if (c.icon!.contains('park')) iconData = Icons.park;
-               else if (c.icon!.contains('computer')) iconData = Icons.computer;
-               else if (c.icon!.contains('castle')) iconData = Icons.castle;
-               else if (c.icon!.contains('fitness')) iconData = Icons.fitness_center;
-             }
+            if (c.icon != null) {
+              if (c.icon!.contains('music')) {
+                iconData = Icons.music_note;
+              } else if (c.icon!.contains('movie')) {
+                iconData = Icons.movie;
+              } else if (c.icon!.contains('sport')) {
+                iconData = Icons.sports;
+              } else if (c.icon!.contains('restaurant')) {
+                iconData = Icons.restaurant;
+              } else if (c.icon!.contains('child')) {
+                iconData = Icons.child_care;
+              } else if (c.icon!.contains('palette')) {
+                iconData = Icons.palette;
+              } else if (c.icon!.contains('school')) {
+                iconData = Icons.school;
+              } else if (c.icon!.contains('book')) {
+                iconData = Icons.menu_book;
+              } else if (c.icon!.contains('park')) {
+                iconData = Icons.park;
+              } else if (c.icon!.contains('computer')) {
+                iconData = Icons.computer;
+              } else if (c.icon!.contains('castle')) {
+                iconData = Icons.castle;
+              } else if (c.icon!.contains('fitness')) {
+                iconData = Icons.fitness_center;
+              }
+            }
 
             return GestureDetector(
               onTap: () => widget.onChanged(c.slug),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected ? HbColors.brandPrimary : Colors.grey[100],
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isSelected ? HbColors.brandPrimary : Colors.grey.shade300,
+                    color: isSelected
+                        ? HbColors.brandPrimary
+                        : Colors.grey.shade300,
                   ),
                 ),
                 child: Row(
@@ -1322,7 +1372,9 @@ class _CategoriesFilterState extends State<_CategoriesFilter> {
                   ),
                   const SizedBox(width: 4),
                   Icon(
-                    _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    _isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: HbColors.brandPrimary,
                     size: 20,
                   ),

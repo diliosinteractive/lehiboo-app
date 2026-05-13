@@ -19,6 +19,7 @@ class SearchScreen extends ConsumerStatefulWidget {
   final String? categorySlug;
   final String? city;
   final String? dateFilter;
+  final EventFilter? initialFilter;
   final bool autoOpenFilter;
 
   const SearchScreen({
@@ -26,6 +27,7 @@ class SearchScreen extends ConsumerStatefulWidget {
     this.categorySlug,
     this.city,
     this.dateFilter,
+    this.initialFilter,
     this.autoOpenFilter = false,
   });
 
@@ -44,31 +46,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     // Initialize filters if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final filterNotifier = ref.read(eventFilterProvider.notifier);
-      if (widget.categorySlug != null ||
+      if (widget.initialFilter != null) {
+        filterNotifier.applyFilters(widget.initialFilter!);
+        if (widget.initialFilter!.categoriesSlugs.isNotEmpty) {
+          _trackCategoryView(widget.initialFilter!.categoriesSlugs.first);
+        }
+      } else if (widget.categorySlug != null ||
           widget.city != null ||
           widget.dateFilter != null) {
         filterNotifier.resetAll();
-      }
 
-      if (widget.categorySlug != null) {
-        filterNotifier.addCategory(widget.categorySlug!);
-        _trackCategoryView(widget.categorySlug!);
-      }
-      if (widget.city != null) {
-        final cityName =
-            widget.city![0].toUpperCase() + widget.city!.substring(1);
-        filterNotifier.setCity(widget.city!, cityName);
-      }
-      switch (widget.dateFilter) {
-        case 'today':
-          filterNotifier.setDateFilter(DateFilterType.today);
-          break;
-        case 'tomorrow':
-          filterNotifier.setDateFilter(DateFilterType.tomorrow);
-          break;
-        case 'weekend':
-          filterNotifier.setDateFilter(DateFilterType.thisWeekend);
-          break;
+        if (widget.categorySlug != null) {
+          filterNotifier.addCategory(widget.categorySlug!);
+          _trackCategoryView(widget.categorySlug!);
+        }
+        if (widget.city != null) {
+          final cityName =
+              widget.city![0].toUpperCase() + widget.city!.substring(1);
+          filterNotifier.setCity(widget.city!, cityName);
+        }
+        switch (widget.dateFilter) {
+          case 'today':
+            filterNotifier.setDateFilter(DateFilterType.today);
+            break;
+          case 'tomorrow':
+            filterNotifier.setDateFilter(DateFilterType.tomorrow);
+            break;
+          case 'weekend':
+            filterNotifier.setDateFilter(DateFilterType.thisWeekend);
+            break;
+        }
       }
 
       // Auto open filter bottom sheet if requested
@@ -131,7 +138,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       featureName: 'sauvegarder une recherche',
     );
     if (!allowed) return;
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     final filter = ref.read(eventFilterProvider);
     final alertsNotifier = ref.read(alertsProvider.notifier);
@@ -291,7 +298,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(Icons.bookmark_border,
-                                          size: 18, color: HbColors.brandPrimary),
+                                          size: 18,
+                                          color: HbColors.brandPrimary),
                                       SizedBox(width: 4),
                                       Text(
                                         'Sauvegarder\nma recherche',
@@ -762,8 +770,9 @@ class _SortOption extends StatelessWidget {
           color: isSelected ? HbColors.brandPrimary : null,
         ),
       ),
-      trailing:
-          isSelected ? const Icon(Icons.check, color: HbColors.brandPrimary) : null,
+      trailing: isSelected
+          ? const Icon(Icons.check, color: HbColors.brandPrimary)
+          : null,
       onTap: onTap,
     );
   }

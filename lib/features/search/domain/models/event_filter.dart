@@ -46,6 +46,14 @@ enum SortOption {
   distance,
 }
 
+/// Event venue/location type filter.
+enum LocationTypeFilter {
+  physical,
+  offline,
+  online,
+  hybrid,
+}
+
 /// Main filter model - easily extensible
 @freezed
 class EventFilter with _$EventFilter {
@@ -69,9 +77,10 @@ class EventFilter with _$EventFilter {
     // Location filters
     String? citySlug,
     String? cityName,
+    @Default(10) double cityRadiusKm,
     double? latitude,
     double? longitude,
-    @Default(50) double radiusKm,
+    @Default(10) double radiusKm,
 
     // Bounding Box (Search this area)
     double? northEastLat,
@@ -90,6 +99,14 @@ class EventFilter with _$EventFilter {
     // Tags filter (multi-select)
     @Default([]) List<String> tagsSlugs,
 
+    // Web /events reference-data filters
+    @Default([]) List<String> targetAudienceSlugs,
+    String? eventTagSlug,
+    @Default([]) List<String> specialEventSlugs,
+    @Default([]) List<String> emotionSlugs,
+    @Default(false) bool availableOnly,
+    LocationTypeFilter? locationType,
+
     // Audience filter
     @Default(false) bool familyFriendly,
     @Default(false) bool accessiblePMR,
@@ -99,7 +116,8 @@ class EventFilter with _$EventFilter {
     @Default(false) bool inPersonOnly,
 
     // Sorting
-    @Default(SortOption.relevance) SortOption sortBy,
+    @Default(SortOption.dateAsc) SortOption sortBy,
+    @Default(false) bool hasExplicitSort,
 
     // Pagination
     @Default(1) int page,
@@ -122,10 +140,17 @@ class EventFilter with _$EventFilter {
         categoriesSlugs.isNotEmpty ||
         organizerSlug != null ||
         tagsSlugs.isNotEmpty ||
+        targetAudienceSlugs.isNotEmpty ||
+        eventTagSlug != null ||
+        specialEventSlugs.isNotEmpty ||
+        emotionSlugs.isNotEmpty ||
+        availableOnly ||
+        locationType != null ||
         familyFriendly ||
         accessiblePMR ||
         onlineOnly ||
-        inPersonOnly;
+        inPersonOnly ||
+        hasExplicitSort;
   }
 
   /// Count active filters
@@ -140,10 +165,28 @@ class EventFilter with _$EventFilter {
     if (categoriesSlugs.isNotEmpty) count += categoriesSlugs.length;
     if (organizerSlug != null) count++;
     if (tagsSlugs.isNotEmpty) count += tagsSlugs.length;
+    if (targetAudienceSlugs.isNotEmpty) count += targetAudienceSlugs.length;
+    if (eventTagSlug != null) count++;
+    if (specialEventSlugs.isNotEmpty) count += specialEventSlugs.length;
+    if (emotionSlugs.isNotEmpty) count += emotionSlugs.length;
+    if (availableOnly) count++;
+    if (locationType != null) count++;
     if (familyFriendly) count++;
     if (accessiblePMR) count++;
     if (onlineOnly || inPersonOnly) count++;
+    if (hasExplicitSort) count++;
     return count;
+  }
+
+  SortOption get effectiveSortBy {
+    if (hasExplicitSort) return sortBy;
+    if (latitude != null && longitude != null) return SortOption.distance;
+    return SortOption.dateAsc;
+  }
+
+  int get effectiveCityRadiusKm {
+    final radius = cityRadiusKm.round();
+    return const [5, 10, 20, 50].contains(radius) ? radius : 10;
   }
 
   /// Get date filter label
@@ -264,6 +307,7 @@ class EventFilter with _$EventFilter {
       params['radius'] = radiusKm.toString();
     } else if (citySlug != null) {
       params['location'] = citySlug;
+      params['radius_km'] = effectiveCityRadiusKm.toString();
     }
 
     // Bounding Box
@@ -292,7 +336,26 @@ class EventFilter with _$EventFilter {
 
     // Tags
     if (tagsSlugs.isNotEmpty) {
-      params['tags'] = tagsSlugs.join(',');
+      params['event_tag'] = tagsSlugs.join(',');
+    }
+
+    if (targetAudienceSlugs.isNotEmpty) {
+      params['target_audiences'] = targetAudienceSlugs.join(',');
+    }
+    if (eventTagSlug != null) {
+      params['event_tag'] = eventTagSlug;
+    }
+    if (specialEventSlugs.isNotEmpty) {
+      params['special_events'] = specialEventSlugs.join(',');
+    }
+    if (emotionSlugs.isNotEmpty) {
+      params['emotions'] = emotionSlugs.join(',');
+    }
+    if (availableOnly) {
+      params['available_only'] = 1;
+    }
+    if (locationType != null) {
+      params['location_type'] = locationTypeToApiValue(locationType!);
     }
 
     // Audience
@@ -312,7 +375,7 @@ class EventFilter with _$EventFilter {
     }
 
     // Sort
-    params['sort'] = sortOptionToApiValue(sortBy);
+    params['sort'] = sortOptionToApiValue(effectiveSortBy);
 
     // Pagination
     params['page'] = page.toString();
@@ -320,6 +383,60 @@ class EventFilter with _$EventFilter {
 
     return params;
   }
+}
+
+EventFilter eventFilterFromQueryParams(Map<String, String> query) {
+  final dateFrom = _parseDate(query['date_from']);
+  final dateTo = _parseDate(query['date_to']);
+  final dateFilterType = _dateFilterFromQuery(query, dateFrom, dateTo);
+  final lat = _parseDouble(query['lat']);
+  final lng = _parseDouble(query['lng']);
+  final location = query['city'] ?? query['location'];
+  final cityRadiusKm = _cityRadiusFromQuery(query['radius_km']);
+  final radiusKm = _parseDouble(query['radius']) ?? 10;
+  final sort = _sortOptionFromApiValue(query['sort']);
+  final priceMin = _parseDouble(query['price_min']) ?? 0;
+  final priceMax = _parseDouble(query['price_max']) ?? 500;
+  final onlyFree =
+      _parseBool(query['is_free']) || _parseBool(query['free_only']);
+  final hasPriceRange = priceMin > 0 || priceMax < 500;
+
+  return EventFilter(
+    searchQuery: query['search'] ?? '',
+    dateFilterType: dateFilterType,
+    startDate: dateFrom,
+    endDate: dateTo,
+    priceFilterType: onlyFree
+        ? PriceFilterType.free
+        : hasPriceRange
+            ? PriceFilterType.range
+            : null,
+    priceMin: priceMin,
+    priceMax: priceMax,
+    onlyFree: onlyFree,
+    citySlug: lat == null && lng == null ? location : null,
+    cityName: lat == null && lng == null ? _cityLabel(location) : null,
+    cityRadiusKm: cityRadiusKm,
+    latitude: lat,
+    longitude: lng,
+    radiusKm: radiusKm,
+    thematiquesSlugs: _csv(query['themes'] ?? query['thematique']),
+    categoriesSlugs: _csv(query['category'] ?? query['categorySlug']),
+    targetAudienceSlugs: _csv(query['target_audiences']),
+    eventTagSlug: _emptyToNull(query['event_tag']),
+    specialEventSlugs: _csv(query['special_events']),
+    emotionSlugs: _csv(query['emotions']),
+    availableOnly: _parseBool(query['available_only']),
+    locationType: _locationTypeFromApiValue(query['location_type']),
+    familyFriendly: _parseBool(query['family_friendly']),
+    accessiblePMR: _parseBool(query['accessible_pmr']),
+    onlineOnly: _parseBool(query['online']),
+    inPersonOnly: _parseBool(query['in_person']),
+    sortBy: sort ?? SortOption.dateAsc,
+    hasExplicitSort: sort != null,
+    page: _parseInt(query['page']) ?? 1,
+    perPage: _parseInt(query['per_page']) ?? 20,
+  );
 }
 
 String sortOptionToApiValue(SortOption option) {
@@ -339,6 +456,126 @@ String sortOptionToApiValue(SortOption option) {
     case SortOption.distance:
       return 'distance';
   }
+}
+
+String locationTypeToApiValue(LocationTypeFilter option) {
+  switch (option) {
+    case LocationTypeFilter.physical:
+      return 'physical';
+    case LocationTypeFilter.offline:
+      return 'offline';
+    case LocationTypeFilter.online:
+      return 'online';
+    case LocationTypeFilter.hybrid:
+      return 'hybrid';
+  }
+}
+
+SortOption? _sortOptionFromApiValue(String? value) {
+  switch (value) {
+    case 'relevance':
+      return SortOption.relevance;
+    case 'date_asc':
+      return SortOption.dateAsc;
+    case 'date_desc':
+      return SortOption.dateDesc;
+    case 'price_asc':
+      return SortOption.priceAsc;
+    case 'price_desc':
+      return SortOption.priceDesc;
+    case 'popularity':
+      return SortOption.popularity;
+    case 'distance':
+      return SortOption.distance;
+  }
+  return null;
+}
+
+LocationTypeFilter? _locationTypeFromApiValue(String? value) {
+  switch (value) {
+    case 'physical':
+      return LocationTypeFilter.physical;
+    case 'offline':
+      return LocationTypeFilter.offline;
+    case 'online':
+      return LocationTypeFilter.online;
+    case 'hybrid':
+      return LocationTypeFilter.hybrid;
+  }
+  return null;
+}
+
+DateFilterType? _dateFilterFromQuery(
+  Map<String, String> query,
+  DateTime? dateFrom,
+  DateTime? dateTo,
+) {
+  switch (query['date']) {
+    case 'today':
+      return DateFilterType.today;
+    case 'tomorrow':
+      return DateFilterType.tomorrow;
+    case 'week':
+      return DateFilterType.thisWeek;
+    case 'weekend':
+      return DateFilterType.thisWeekend;
+    case 'month':
+      return DateFilterType.thisMonth;
+  }
+
+  if (dateFrom != null || dateTo != null) return DateFilterType.custom;
+  return null;
+}
+
+List<String> _csv(String? value) {
+  if (value == null || value.trim().isEmpty) return const [];
+  return value
+      .split(',')
+      .map((item) => item.trim())
+      .where((item) => item.isNotEmpty)
+      .toList();
+}
+
+DateTime? _parseDate(String? value) {
+  if (value == null || value.isEmpty) return null;
+  return DateTime.tryParse(value);
+}
+
+double? _parseDouble(String? value) {
+  if (value == null || value.isEmpty) return null;
+  return double.tryParse(value);
+}
+
+double _cityRadiusFromQuery(String? value) {
+  final parsed = _parseInt(value);
+  if (parsed != null && const [5, 10, 20, 50].contains(parsed)) {
+    return parsed.toDouble();
+  }
+  return 10;
+}
+
+int? _parseInt(String? value) {
+  if (value == null || value.isEmpty) return null;
+  return int.tryParse(value);
+}
+
+bool _parseBool(String? value) {
+  if (value == null) return false;
+  return value == '1' || value.toLowerCase() == 'true';
+}
+
+String? _emptyToNull(String? value) {
+  if (value == null || value.trim().isEmpty) return null;
+  return value;
+}
+
+String? _cityLabel(String? value) {
+  if (value == null || value.isEmpty) return null;
+  return value
+      .split(RegExp(r'[-_\s]+'))
+      .where((part) => part.isNotEmpty)
+      .map((part) => part[0].toUpperCase() + part.substring(1))
+      .join(' ');
 }
 
 /// Active filter chip model for UI display
@@ -364,4 +601,10 @@ enum FilterChipType {
   tag,
   audience,
   format,
+  eventTag,
+  targetAudience,
+  specialEvent,
+  emotion,
+  availability,
+  locationType,
 }

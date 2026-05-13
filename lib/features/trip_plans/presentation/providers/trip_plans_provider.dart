@@ -1,18 +1,36 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/trip_plan.dart';
 import '../../domain/repositories/trip_plans_repository.dart';
 import '../../data/repositories/trip_plans_repository_impl.dart';
 
 final tripPlansProvider = StateNotifierProvider<TripPlansNotifier, AsyncValue<List<TripPlan>>>((ref) {
   final repository = ref.watch(tripPlansRepositoryImplProvider);
-  return TripPlansNotifier(repository);
+  return TripPlansNotifier(repository, ref);
 });
 
 class TripPlansNotifier extends StateNotifier<AsyncValue<List<TripPlan>>> {
   final TripPlansRepository _repository;
+  final Ref _ref;
 
-  TripPlansNotifier(this._repository) : super(const AsyncValue.loading()) {
+  TripPlansNotifier(this._repository, this._ref)
+      : super(const AsyncValue.loading()) {
     loadTripPlans();
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = next == AuthStatus.unauthenticated &&
+            previous == AuthStatus.authenticated;
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          state = const AsyncValue.data([]);
+        } else if (loggedIn) {
+          loadTripPlans();
+        }
+      },
+    );
   }
 
   Future<void> loadTripPlans() async {

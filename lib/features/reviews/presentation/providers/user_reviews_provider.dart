@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/paginated_reviews.dart';
 import '../../domain/entities/user_review.dart';
 import '../../domain/repositories/reviews_repository.dart';
@@ -48,10 +49,26 @@ const Object _sentinel = Object();
 
 class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
   final ReviewsRepository _repo;
+  final Ref _ref;
   static const int _perPage = 10;
 
-  UserReviewsNotifier(this._repo) : super(const UserReviewsState()) {
+  UserReviewsNotifier(this._repo, this._ref) : super(const UserReviewsState()) {
     refresh();
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = next == AuthStatus.unauthenticated &&
+            previous == AuthStatus.authenticated;
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          state = const UserReviewsState();
+        } else if (loggedIn) {
+          refresh();
+        }
+      },
+    );
   }
 
   Future<void> refresh() async {
@@ -116,7 +133,7 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
 final userReviewsProvider =
     StateNotifierProvider<UserReviewsNotifier, UserReviewsState>((ref) {
   final repo = ref.watch(reviewsRepositoryProvider);
-  return UserReviewsNotifier(repo);
+  return UserReviewsNotifier(repo, ref);
 });
 
 /// Helper pour récupérer un PaginatedUserReviews factice depuis le state.

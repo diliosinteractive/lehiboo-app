@@ -5,9 +5,47 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../events/data/mappers/event_to_activity_mapper.dart';
 import '../../../events/data/mappers/event_mapper.dart';
+import '../../../events/domain/entities/event.dart';
 import '../../../home/presentation/widgets/event_card.dart';
 import '../../data/models/personalized_feed_dto.dart';
 import '../providers/personalized_feed_provider.dart';
+
+/// If [event] has multiple calendar slots, rewrite its `startDate` to the
+/// earliest slot whose date is today or later. Events with no future slot
+/// (one-off past events a user favourited, expired reminders) keep their
+/// original date so cards still render meaningful content for strata 3 & 4.
+///
+/// Time-of-day is preserved from the original `event.startDate`; the slot
+/// model stores start/end as "HH:mm" strings and the common case (recurring
+/// weekly events) has every slot at the same time of day, so reusing the
+/// original avoids parsing without changing the displayed time.
+Event _eventWithUpcomingSlot(Event event) {
+  final slots = event.calendar?.dateSlots ?? const [];
+  if (slots.isEmpty) return event;
+
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+
+  final upcoming = slots.where((s) => !s.date.isBefore(today)).toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+
+  if (upcoming.isEmpty) return event;
+
+  final pickedDate = upcoming.first.date;
+  final origStart = event.startDate;
+  final newStart = DateTime(
+    pickedDate.year,
+    pickedDate.month,
+    pickedDate.day,
+    origStart.hour,
+    origStart.minute,
+  );
+  // Already showing the earliest future slot? Skip the copyWith allocation.
+  if (newStart.isAtSameMomentAs(origStart)) return event;
+
+  final newEnd = newStart.add(event.endDate.difference(origStart));
+  return event.copyWith(startDate: newStart, endDate: newEnd);
+}
 
 /// "Pour vous" carousel — spec §11.
 ///
@@ -65,7 +103,7 @@ class PersonalizedFeedSection extends ConsumerWidget {
                     final isPrivate =
                         entry.sections.contains(PersonalizedSection.private);
                     final activity = EventToActivityMapper.toActivity(
-                      EventMapper.toEvent(entry.event),
+                      _eventWithUpcomingSlot(EventMapper.toEvent(entry.event)),
                     );
                     return SizedBox(
                       width: 200,
