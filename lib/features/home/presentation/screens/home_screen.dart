@@ -670,14 +670,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (city.eventsCount > 0)
-            Text(
-              '${city.eventsCount} événements',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 11,
-              ),
-            ),
         ],
       ),
     );
