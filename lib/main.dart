@@ -75,7 +75,7 @@ void main() async {
   final String envFile = switch (environment) {
     'production' => '.env.production',
     'staging' => '.env.staging',
-    _ => '.env.development',
+    _ => '.env.staging',
   };
 
   try {
