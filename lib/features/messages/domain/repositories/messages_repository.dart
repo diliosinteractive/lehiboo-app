@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import '../entities/accepted_partner.dart';
 import '../entities/admin_report_stats.dart';
+import '../entities/broadcast.dart';
 import '../entities/conversation.dart';
 import '../entities/conversation_report.dart';
 import '../entities/message.dart';
@@ -189,6 +190,33 @@ abstract class MessagesRepository {
   });
 
   Future<Conversation> closeOrgConversation(String uuid);
+
+  // ── Vendor — broadcasts ───────────────────────────────────────────────────
+
+  Future<List<VendorEvent>> getVendorEvents();
+
+  Future<List<SlotOption>> getEventSlots(String eventUuid);
+
+  Future<BroadcastsListResult> getBroadcasts({
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  });
+
+  Future<Broadcast> getBroadcast(String uuid);
+
+  Future<int> previewBroadcastRecipients({
+    required List<String> eventIds,
+    List<String>? slotIds,
+  });
+
+  Future<Broadcast> createBroadcast({
+    required String subject,
+    required String message,
+    required List<String> eventIds,
+    List<String>? slotIds,
+  });
 
   // ── Admin — conversations ─────────────────────────────────────────────────
 

@@ -73,6 +73,8 @@ import '../features/messages/presentation/screens/conversation_detail_screen.dar
 import '../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../features/messages/presentation/screens/support_detail_screen.dart';
 import '../features/messages/presentation/screens/vendor_new_conversation_screen.dart';
+import '../features/messages/presentation/screens/broadcast_detail_screen.dart';
+import '../features/messages/presentation/screens/create_broadcast_screen.dart';
 import '../features/messages/presentation/screens/admin_new_conversation_screen.dart';
 import '../features/messages/presentation/screens/admin_report_detail_screen.dart';
 import '../features/messages/domain/entities/conversation_route.dart';
@@ -302,6 +304,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Vendor routes (static before parameterized) ───────────────────────
+      GoRoute(
+        path: '/messages/vendor/broadcasts/new',
+        name: 'messages-vendor-broadcasts-new',
+        builder: (_, __) => const CreateBroadcastScreen(),
+      ),
+      GoRoute(
+        path: '/messages/vendor/broadcasts/:broadcastUuid',
+        name: 'messages-vendor-broadcast-detail',
+        builder: (_, state) => BroadcastDetailScreen(
+          broadcastUuid: state.pathParameters['broadcastUuid']!,
+        ),
+      ),
       GoRoute(
         path: '/messages/vendor/new/participant',
         name: 'messages-vendor-new-participant',

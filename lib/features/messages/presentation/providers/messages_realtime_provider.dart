@@ -17,6 +17,7 @@ import 'package:lehiboo/routes/app_router.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'conversations_provider.dart';
 import 'support_conversations_provider.dart';
+import 'vendor_broadcasts_provider.dart';
 import 'vendor_conversations_provider.dart';
 import 'vendor_org_conversations_provider.dart';
 import 'admin_conversations_provider.dart';
@@ -33,6 +34,7 @@ enum RealtimeEventType {
   conversationCreated,
   conversationClosed,
   conversationReopened,
+  broadcastSent,
 }
 
 class RealtimeEvent {
@@ -232,6 +234,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     _ref.invalidate(vendorConversationsProvider);
     _ref.invalidate(vendorSupportProvider);
     _ref.invalidate(vendorOrgConversationsProvider);
+    _ref.invalidate(vendorBroadcastsProvider);
     _ref.invalidate(adminConversationsProvider);
     _ref.invalidate(adminReportsProvider);
     _ref.read(unreadCountProvider.notifier).state = 0;
@@ -380,6 +383,14 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           conversationUuid: convUuid,
           conversationType: convType,
         ));
+      case 'broadcast.sent':
+        final broadcastUuid = data['broadcast_uuid'] as String?;
+        _emit(RealtimeEvent(
+          type: RealtimeEventType.broadcastSent,
+          conversationUuid: broadcastUuid,
+        ));
+        // Broadcast creates new conversations — refresh the clients list
+        _ref.invalidate(vendorConversationsProvider);
       case 'notification.created':
         _handleNotificationCreated(data);
       default:

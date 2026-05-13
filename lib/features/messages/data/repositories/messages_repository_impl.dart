@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/admin_report_stats.dart';
+import '../../domain/entities/broadcast.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/conversation_report.dart';
 import '../../domain/entities/message.dart';
@@ -9,6 +10,7 @@ import '../../domain/repositories/messages_repository.dart';
 import '../datasources/messages_api_datasource.dart';
 import '../models/accepted_partner_dto.dart';
 import '../models/admin_report_stats_dto.dart';
+import '../models/broadcast_dto.dart';
 import '../models/conversation_dto.dart';
 import '../models/conversation_report_dto.dart';
 import '../models/message_dto.dart';
@@ -722,6 +724,101 @@ class MessagesRepositoryImpl implements MessagesRepository {
       reportUuid: reportUuid,
       adminNote: adminNote,
     );
+  }
+
+  // ── Vendor — broadcasts ───────────────────────────────────────────────────
+
+  VendorEvent _mapVendorEvent(VendorEventDto dto) =>
+      VendorEvent(id: dto.id, uuid: dto.uuid, title: dto.title, slug: dto.slug);
+
+  SlotOption _mapSlotOption(SlotOptionDto dto) => SlotOption(
+        id: dto.id,
+        uuid: dto.uuid,
+        slotDate: dto.slotDate,
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+      );
+
+  BroadcastEvent _mapBroadcastEvent(BroadcastEventDto dto) =>
+      BroadcastEvent(uuid: dto.uuid, title: dto.title);
+
+  Broadcast _mapBroadcast(BroadcastDto dto) => Broadcast(
+        uuid: dto.uuid,
+        subject: dto.subject,
+        body: dto.body,
+        recipientsCount: dto.recipientsCount,
+        readCount: dto.readCount,
+        conversationsCreated: dto.conversationsCreated,
+        isSent: dto.isSent,
+        sentAt: dto.sentAt != null ? DateTime.tryParse(dto.sentAt!) : null,
+        events: dto.events.map(_mapBroadcastEvent).toList(),
+        createdAt: DateTime.tryParse(dto.createdAt) ?? DateTime.now(),
+      );
+
+  @override
+  Future<List<VendorEvent>> getVendorEvents() async {
+    final dtos = await _api.getVendorEvents();
+    return dtos.map(_mapVendorEvent).toList();
+  }
+
+  @override
+  Future<List<SlotOption>> getEventSlots(String eventUuid) async {
+    final dtos = await _api.getEventSlots(eventUuid);
+    return dtos.map(_mapSlotOption).toList();
+  }
+
+  @override
+  Future<BroadcastsListResult> getBroadcasts({
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    final response = await _api.getBroadcasts(
+      search: search,
+      period: period,
+      page: page,
+      perPage: perPage,
+    );
+    return BroadcastsListResult(
+      broadcasts: response.data.map(_mapBroadcast).toList(),
+      hasMore: response.hasMore,
+      currentPage: response.currentPage,
+      totalCount: response.total,
+    );
+  }
+
+  @override
+  Future<Broadcast> getBroadcast(String uuid) async {
+    final dto = await _api.getBroadcast(uuid);
+    return _mapBroadcast(dto);
+  }
+
+  @override
+  Future<int> previewBroadcastRecipients({
+    required List<String> eventIds,
+    List<String>? slotIds,
+  }) {
+    return _api.previewBroadcastRecipients(
+      eventIds: eventIds,
+      slotIds: slotIds,
+    );
+  }
+
+  @override
+  Future<Broadcast> createBroadcast({
+    required String subject,
+    required String message,
+    required List<String> eventIds,
+    List<String>? slotIds,
+  }) async {
+    final dto = await _api.createBroadcast(
+      subject: subject,
+      message: message,
+      eventIds: eventIds,
+      slotIds: slotIds,
+    );
+    return _mapBroadcast(dto);
   }
 }
 

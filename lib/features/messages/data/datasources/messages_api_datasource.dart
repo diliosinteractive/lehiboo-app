@@ -4,6 +4,7 @@ import '../../../../config/dio_client.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../models/accepted_partner_dto.dart';
 import '../models/admin_report_stats_dto.dart';
+import '../models/broadcast_dto.dart';
 import '../models/conversation_dto.dart';
 import '../models/conversation_report_dto.dart';
 import '../models/message_dto.dart';
@@ -677,6 +678,85 @@ class MessagesApiDataSource {
     });
     return ApiResponseHandler.extractList(r.data)
         .cast<Map<String, dynamic>>();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // VENDOR — broadcasts
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<List<VendorEventDto>> getVendorEvents({int perPage = 100}) async {
+    final r = await _dio.get('/vendor/events', queryParameters: {
+      'per_page': perPage,
+    });
+    final list = ApiResponseHandler.extractList(r.data);
+    return list
+        .map((e) => VendorEventDto.fromJson(
+            Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  Future<List<SlotOptionDto>> getEventSlots(String eventUuid) async {
+    final r = await _dio.get('/vendor/events/$eventUuid/slots');
+    final list = ApiResponseHandler.extractList(r.data);
+    return list
+        .map((e) =>
+            SlotOptionDto.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+  }
+
+  Future<BroadcastsListResponseDto> getBroadcasts({
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    final r = await _dio.get('/vendor/broadcasts', queryParameters: {
+      if (search != null && search.isNotEmpty) 'search': search,
+      if (period != null) 'period': period,
+      'page': page,
+      'per_page': perPage,
+    });
+    return BroadcastsListResponseDto.fromJson(r.data as Map<String, dynamic>);
+  }
+
+  Future<BroadcastDto> getBroadcast(String uuid) async {
+    final r = await _dio.get('/vendor/broadcasts/$uuid');
+    return BroadcastDto.fromJson(ApiResponseHandler.extractObject(r.data));
+  }
+
+  Future<int> previewBroadcastRecipients({
+    required List<String> eventIds,
+    List<String>? slotIds,
+  }) async {
+    final r = await _dio.post(
+      '/vendor/broadcasts/preview-recipients',
+      data: {
+        'event_ids': eventIds,
+        if (slotIds != null && slotIds.isNotEmpty) 'slot_ids': slotIds,
+      },
+    );
+    final data = ApiResponseHandler.extractObject(r.data, unwrapRoot: true);
+    final raw = data['recipients_count'] ?? data['recipientsCount'];
+    if (raw == null) return 0;
+    if (raw is int) return raw;
+    if (raw is double) return raw.toInt();
+    if (raw is String) return int.tryParse(raw) ?? 0;
+    return 0;
+  }
+
+  Future<BroadcastDto> createBroadcast({
+    required String subject,
+    required String message,
+    required List<String> eventIds,
+    List<String>? slotIds,
+  }) async {
+    final r = await _dio.post('/vendor/broadcasts', data: {
+      'subject': subject,
+      'message': message,
+      'event_ids': eventIds,
+      if (slotIds != null && slotIds.isNotEmpty) 'slot_ids': slotIds,
+    });
+    return BroadcastDto.fromJson(ApiResponseHandler.extractObject(r.data));
   }
 }
 
