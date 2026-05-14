@@ -212,6 +212,20 @@ class ApiResponseHandler {
     return fallback;
   }
 
+  /// Returns true when the exception is a transport/connectivity failure.
+  static bool isNetworkError(dynamic error) {
+    if (error is! DioException) return false;
+
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError =>
+        true,
+      _ => false,
+    };
+  }
+
   /// Extracts a human-readable message from a Laravel error response body.
   static String? _extractMessageFromBody(Map<String, dynamic> body) {
     // Validation: { "error": { "details": { "field": ["msg"] } } }

@@ -7,6 +7,7 @@ import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
+import '../widgets/conversation_load_error_view.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
 import '../widgets/new_conversation_form.dart';
@@ -130,21 +131,22 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
     return Scaffold(
       body: state.conversation.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 40),
-              const SizedBox(height: 8),
-              Text('Erreur : ${ApiResponseHandler.extractError(e)}',
-                  style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: notifier.load,
-                child: const Text('Réessayer'),
+        error: (e, _) => Column(
+          children: [
+            AppBar(
+              leading: BackButton(
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/messages'),
               ),
-            ],
-          ),
+              title: const Text('Support LeHiboo'),
+            ),
+            Expanded(
+              child: ConversationLoadErrorView(
+                error: e,
+                onRetry: notifier.load,
+              ),
+            ),
+          ],
         ),
         data: (conversation) {
           final isClosed = conversation.status == 'closed';

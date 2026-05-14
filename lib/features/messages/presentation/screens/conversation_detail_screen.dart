@@ -8,6 +8,7 @@ import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
+import '../widgets/conversation_load_error_view.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
 import '../widgets/report_conversation_sheet.dart';
@@ -78,22 +79,23 @@ class _ConversationDetailScreenState
     return Scaffold(
       body: state.conversation.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 40),
-              const SizedBox(height: 8),
-              Text('Erreur : ${ApiResponseHandler.extractError(e)}',
-                  style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 16),
-              ElevatedButton(
+        error: (e, _) => Column(
+          children: [
+            AppBar(
+              leading: BackButton(
                 onPressed: () =>
-                    ref.read(conversationDetailProvider(pk).notifier).load(),
-                child: const Text('Réessayer'),
+                    context.canPop() ? context.pop() : context.go('/messages'),
               ),
-            ],
-          ),
+              title: const Text('Conversation'),
+            ),
+            Expanded(
+              child: ConversationLoadErrorView(
+                error: e,
+                onRetry: () =>
+                    ref.read(conversationDetailProvider(pk).notifier).load(),
+              ),
+            ),
+          ],
         ),
         data: (conversation) {
           final isClosed = conversation.status == 'closed';
@@ -164,7 +166,7 @@ class _ConversationDetailScreenState
                                 fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => Text(
                                   titleInitial,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: _primaryColor,
@@ -174,7 +176,7 @@ class _ConversationDetailScreenState
                             )
                           : Text(
                               titleInitial,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: _primaryColor,

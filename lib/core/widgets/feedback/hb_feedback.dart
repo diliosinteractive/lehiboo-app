@@ -67,12 +67,14 @@ class HbErrorView extends StatelessWidget {
   final String title;
   final String message;
   final VoidCallback? onRetry;
+  final IconData icon;
 
   const HbErrorView({
     super.key,
     this.title = 'Oups !',
     this.message = 'Une erreur est survenue.',
     this.onRetry,
+    this.icon = Icons.error_outline_rounded,
   });
 
   @override
@@ -82,7 +84,7 @@ class HbErrorView extends StatelessWidget {
       message: message,
       actionLabel: onRetry != null ? 'Réessayer' : null,
       onAction: onRetry,
-      icon: Icons.error_outline_rounded,
+      icon: icon,
     );
   }
 }
