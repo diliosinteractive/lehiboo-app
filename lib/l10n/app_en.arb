@@ -50,7 +50,9 @@
   "commonClose": "Close",
   "commonContinue": "Continue",
   "commonBack": "Back",
+  "commonNext": "Next",
   "commonRestart": "Restart",
+  "commonLoading": "Loading...",
   "commonToday": "Today",
   "commonTomorrow": "Tomorrow",
   "commonYesterday": "Yesterday",
@@ -197,9 +199,134 @@
   "messagesContactSupport": "Contact support",
   "messagesContactParticipant": "Contact a participant",
   "messagesNewBroadcast": "New broadcast",
+  "messagesBroadcastTitle": "Broadcast",
+  "messagesBroadcastCreateStepTitle": "New broadcast - Step {step}/{total}",
+  "@messagesBroadcastCreateStepTitle": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesBroadcastStepRecipients": "Recipients",
+  "messagesBroadcastStepReview": "Review",
+  "messagesBroadcastSentSuccess": "Broadcast sent successfully.",
+  "messagesBroadcastSlotLabel": "Slot",
+  "messagesBroadcastChooseEvent": "Choose an event",
+  "messagesBroadcastSelectEventFirst": "Select an event first",
+  "messagesBroadcastLoadingSlots": "Loading slots...",
+  "messagesBroadcastCalculatingRecipients": "Calculating recipients...",
+  "messagesBroadcastRecipientsPreviewError": "Could not calculate recipients.",
+  "messagesBroadcastPotentialRecipients": "{count, plural, =1{1 potential recipient} other{{count} potential recipients}}",
+  "@messagesBroadcastPotentialRecipients": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesBroadcastNoRecipientsForSelection": "No recipients found for this selection",
+  "messagesBroadcastAllSlots": "All slots",
+  "messagesBroadcastChooseEventTitle": "Choose an event",
+  "messagesBroadcastNoEventsFound": "No event found",
+  "messagesBroadcastSubjectLabel": "Subject",
+  "messagesBroadcastSubjectHint": "Subject of your message...",
+  "messagesMinimumCharacters": "Minimum {count} characters",
+  "@messagesMinimumCharacters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesBroadcastReviewTitle": "Review",
+  "messagesRecipientsLabel": "Recipients",
+  "messagesBroadcastRecipientsCount": "{count, plural, =1{1 recipient} other{{count} recipients}}",
+  "@messagesBroadcastRecipientsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesBroadcastProcessing": "Sending is being processed by the server.",
+  "messagesBroadcastStatusSent": "Sent",
+  "messagesBroadcastStatusInProgress": "In progress",
+  "messagesBroadcastReadLabel": "Read",
+  "messagesBroadcastConversationsLabel": "Conversations",
+  "messagesBroadcastTargetedEventsLabel": "Targeted events",
+  "messagesBroadcastSending": "Sending...",
+  "messagesBroadcastSlotFallback": "Slot {id}",
+  "@messagesBroadcastSlotFallback": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
   "messagesSupportTicket": "Support ticket",
   "messagesContactUser": "Contact a user",
   "messagesContactOrganizer": "Contact an organizer",
+  "messagesGenericError": "Something went wrong.",
+  "messagesFallbackOrganizer": "Organizer",
+  "messagesNewConversationSubtitleSupport": "Describe your issue and our team will reply quickly.",
+  "messagesNewConversationSubtitleRecipient": "Select a recipient and write your message.",
+  "messagesNewConversationSubtitleDefault": "Write your message below.",
+  "messagesRecipientLabel": "Recipient",
+  "messagesOrganizationLabel": "Organization",
+  "messagesParticipantLabel": "Participant",
+  "messagesPartnerLabel": "Partner",
+  "messagesSearchUserPlaceholder": "Search for a user...",
+  "messagesSearchOrganizationPlaceholder": "Search for an organization...",
+  "messagesSearchParticipantPlaceholder": "Search for a participant...",
+  "messagesSearchPartnerPlaceholder": "Search for a partner...",
+  "messagesNoOrganizerAvailable": "No organizer available",
+  "messagesSelectOrganizerPlaceholder": "Select an organizer...",
+  "messagesOrganizerPickerHelp": "Browse events to find an organizer to contact.",
+  "messagesSelectOrganizerRequired": "Please select an organizer.",
+  "messagesFieldRequired": "This field is required.",
+  "messagesEventLabel": "Event",
+  "messagesOptionalLabel": "(optional)",
+  "messagesSupportSubjectPrompt": "What is the subject of your request?",
+  "messagesSubjectLabel": "Subject",
+  "messagesSubjectHint": "Subject of your message",
+  "messagesSubjectRequired": "Subject is required.",
+  "messagesMessageLabel": "Message",
+  "messagesMessageHint": "Write your message...",
+  "messagesMessageRequired": "Message is required.",
+  "messagesSend": "Send",
+  "messagesChooseOrganizerTitle": "Choose an organizer",
+  "messagesSearchByNameHint": "Search by name...",
+  "messagesNoSearchResults": "No results for \"{query}\".",
+  "@messagesNoSearchResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "messagesSearchUserTitle": "Search for a user",
+  "messagesUserSearchHint": "Name, first name, or email...",
+  "messagesNoUsersAvailable": "No users available.",
+  "messagesSearchOrganizationTitle": "Search for an organization",
+  "messagesOrganizationSearchHint": "Organization name...",
+  "messagesNoOrganizationsAvailable": "No organizations available.",
+  "messagesSearchParticipantTitle": "Search for a participant",
+  "messagesVendorParticipantSearchHelper": "Only participants who have interacted with your organization.",
+  "messagesNameOrEmailHint": "Name or email...",
+  "messagesNoParticipantsAvailable": "No participants available.",
+  "messagesSearchPartnerTitle": "Search for a partner",
+  "messagesPartnerSearchHint": "Partner organization name...",
+  "messagesNoPartnersAvailable": "No partners available.",
+  "messagesSupportSubjectBookingIssue": "Booking issue",
+  "messagesSupportSubjectEventQuestion": "Question about an event",
+  "messagesSupportSubjectPaymentIssue": "Payment issue",
+  "messagesSupportSubjectRefundRequest": "Refund request",
+  "messagesSupportSubjectAccountIssue": "Account issue",
+  "messagesSupportSubjectContentReport": "Content report",
   "messagesNoConversations": "No conversations",
   "messagesNoSupportConversations": "No support conversations",
   "messagesNoClients": "No clients",

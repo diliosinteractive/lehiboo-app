@@ -163,7 +163,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonBack => 'Back';
 
   @override
+  String get commonNext => 'Next';
+
+  @override
   String get commonRestart => 'Restart';
+
+  @override
+  String get commonLoading => 'Loading...';
 
   @override
   String get commonToday => 'Today';
@@ -527,6 +533,122 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messagesNewBroadcast => 'New broadcast';
 
   @override
+  String get messagesBroadcastTitle => 'Broadcast';
+
+  @override
+  String messagesBroadcastCreateStepTitle(int step, int total) {
+    return 'New broadcast - Step $step/$total';
+  }
+
+  @override
+  String get messagesBroadcastStepRecipients => 'Recipients';
+
+  @override
+  String get messagesBroadcastStepReview => 'Review';
+
+  @override
+  String get messagesBroadcastSentSuccess => 'Broadcast sent successfully.';
+
+  @override
+  String get messagesBroadcastSlotLabel => 'Slot';
+
+  @override
+  String get messagesBroadcastChooseEvent => 'Choose an event';
+
+  @override
+  String get messagesBroadcastSelectEventFirst => 'Select an event first';
+
+  @override
+  String get messagesBroadcastLoadingSlots => 'Loading slots...';
+
+  @override
+  String get messagesBroadcastCalculatingRecipients =>
+      'Calculating recipients...';
+
+  @override
+  String get messagesBroadcastRecipientsPreviewError =>
+      'Could not calculate recipients.';
+
+  @override
+  String messagesBroadcastPotentialRecipients(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count potential recipients',
+      one: '1 potential recipient',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get messagesBroadcastNoRecipientsForSelection =>
+      'No recipients found for this selection';
+
+  @override
+  String get messagesBroadcastAllSlots => 'All slots';
+
+  @override
+  String get messagesBroadcastChooseEventTitle => 'Choose an event';
+
+  @override
+  String get messagesBroadcastNoEventsFound => 'No event found';
+
+  @override
+  String get messagesBroadcastSubjectLabel => 'Subject';
+
+  @override
+  String get messagesBroadcastSubjectHint => 'Subject of your message...';
+
+  @override
+  String messagesMinimumCharacters(int count) {
+    return 'Minimum $count characters';
+  }
+
+  @override
+  String get messagesBroadcastReviewTitle => 'Review';
+
+  @override
+  String get messagesRecipientsLabel => 'Recipients';
+
+  @override
+  String messagesBroadcastRecipientsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recipients',
+      one: '1 recipient',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get messagesBroadcastProcessing =>
+      'Sending is being processed by the server.';
+
+  @override
+  String get messagesBroadcastStatusSent => 'Sent';
+
+  @override
+  String get messagesBroadcastStatusInProgress => 'In progress';
+
+  @override
+  String get messagesBroadcastReadLabel => 'Read';
+
+  @override
+  String get messagesBroadcastConversationsLabel => 'Conversations';
+
+  @override
+  String get messagesBroadcastTargetedEventsLabel => 'Targeted events';
+
+  @override
+  String get messagesBroadcastSending => 'Sending...';
+
+  @override
+  String messagesBroadcastSlotFallback(int id) {
+    return 'Slot $id';
+  }
+
+  @override
   String get messagesSupportTicket => 'Support ticket';
 
   @override
@@ -534,6 +656,166 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messagesContactOrganizer => 'Contact an organizer';
+
+  @override
+  String get messagesGenericError => 'Something went wrong.';
+
+  @override
+  String get messagesFallbackOrganizer => 'Organizer';
+
+  @override
+  String get messagesNewConversationSubtitleSupport =>
+      'Describe your issue and our team will reply quickly.';
+
+  @override
+  String get messagesNewConversationSubtitleRecipient =>
+      'Select a recipient and write your message.';
+
+  @override
+  String get messagesNewConversationSubtitleDefault =>
+      'Write your message below.';
+
+  @override
+  String get messagesRecipientLabel => 'Recipient';
+
+  @override
+  String get messagesOrganizationLabel => 'Organization';
+
+  @override
+  String get messagesParticipantLabel => 'Participant';
+
+  @override
+  String get messagesPartnerLabel => 'Partner';
+
+  @override
+  String get messagesSearchUserPlaceholder => 'Search for a user...';
+
+  @override
+  String get messagesSearchOrganizationPlaceholder =>
+      'Search for an organization...';
+
+  @override
+  String get messagesSearchParticipantPlaceholder =>
+      'Search for a participant...';
+
+  @override
+  String get messagesSearchPartnerPlaceholder => 'Search for a partner...';
+
+  @override
+  String get messagesNoOrganizerAvailable => 'No organizer available';
+
+  @override
+  String get messagesSelectOrganizerPlaceholder => 'Select an organizer...';
+
+  @override
+  String get messagesOrganizerPickerHelp =>
+      'Browse events to find an organizer to contact.';
+
+  @override
+  String get messagesSelectOrganizerRequired => 'Please select an organizer.';
+
+  @override
+  String get messagesFieldRequired => 'This field is required.';
+
+  @override
+  String get messagesEventLabel => 'Event';
+
+  @override
+  String get messagesOptionalLabel => '(optional)';
+
+  @override
+  String get messagesSupportSubjectPrompt =>
+      'What is the subject of your request?';
+
+  @override
+  String get messagesSubjectLabel => 'Subject';
+
+  @override
+  String get messagesSubjectHint => 'Subject of your message';
+
+  @override
+  String get messagesSubjectRequired => 'Subject is required.';
+
+  @override
+  String get messagesMessageLabel => 'Message';
+
+  @override
+  String get messagesMessageHint => 'Write your message...';
+
+  @override
+  String get messagesMessageRequired => 'Message is required.';
+
+  @override
+  String get messagesSend => 'Send';
+
+  @override
+  String get messagesChooseOrganizerTitle => 'Choose an organizer';
+
+  @override
+  String get messagesSearchByNameHint => 'Search by name...';
+
+  @override
+  String messagesNoSearchResults(String query) {
+    return 'No results for \"$query\".';
+  }
+
+  @override
+  String get messagesSearchUserTitle => 'Search for a user';
+
+  @override
+  String get messagesUserSearchHint => 'Name, first name, or email...';
+
+  @override
+  String get messagesNoUsersAvailable => 'No users available.';
+
+  @override
+  String get messagesSearchOrganizationTitle => 'Search for an organization';
+
+  @override
+  String get messagesOrganizationSearchHint => 'Organization name...';
+
+  @override
+  String get messagesNoOrganizationsAvailable => 'No organizations available.';
+
+  @override
+  String get messagesSearchParticipantTitle => 'Search for a participant';
+
+  @override
+  String get messagesVendorParticipantSearchHelper =>
+      'Only participants who have interacted with your organization.';
+
+  @override
+  String get messagesNameOrEmailHint => 'Name or email...';
+
+  @override
+  String get messagesNoParticipantsAvailable => 'No participants available.';
+
+  @override
+  String get messagesSearchPartnerTitle => 'Search for a partner';
+
+  @override
+  String get messagesPartnerSearchHint => 'Partner organization name...';
+
+  @override
+  String get messagesNoPartnersAvailable => 'No partners available.';
+
+  @override
+  String get messagesSupportSubjectBookingIssue => 'Booking issue';
+
+  @override
+  String get messagesSupportSubjectEventQuestion => 'Question about an event';
+
+  @override
+  String get messagesSupportSubjectPaymentIssue => 'Payment issue';
+
+  @override
+  String get messagesSupportSubjectRefundRequest => 'Refund request';
+
+  @override
+  String get messagesSupportSubjectAccountIssue => 'Account issue';
+
+  @override
+  String get messagesSupportSubjectContentReport => 'Content report';
 
   @override
   String get messagesNoConversations => 'No conversations';

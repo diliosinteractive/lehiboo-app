@@ -165,7 +165,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonBack => 'Retour';
 
   @override
+  String get commonNext => 'Suivant';
+
+  @override
   String get commonRestart => 'Redémarrer';
+
+  @override
+  String get commonLoading => 'Chargement...';
 
   @override
   String get commonToday => 'Aujourd\'hui';
@@ -530,6 +536,123 @@ class AppLocalizationsFr extends AppLocalizations {
   String get messagesNewBroadcast => 'Nouvelle diffusion';
 
   @override
+  String get messagesBroadcastTitle => 'Diffusion';
+
+  @override
+  String messagesBroadcastCreateStepTitle(int step, int total) {
+    return 'Nouvelle diffusion - Étape $step/$total';
+  }
+
+  @override
+  String get messagesBroadcastStepRecipients => 'Destinataires';
+
+  @override
+  String get messagesBroadcastStepReview => 'Récapitulatif';
+
+  @override
+  String get messagesBroadcastSentSuccess => 'Diffusion envoyée avec succès.';
+
+  @override
+  String get messagesBroadcastSlotLabel => 'Créneau';
+
+  @override
+  String get messagesBroadcastChooseEvent => 'Choisir un événement';
+
+  @override
+  String get messagesBroadcastSelectEventFirst =>
+      'Sélectionnez d\'abord un événement';
+
+  @override
+  String get messagesBroadcastLoadingSlots => 'Chargement des créneaux...';
+
+  @override
+  String get messagesBroadcastCalculatingRecipients =>
+      'Calcul des destinataires...';
+
+  @override
+  String get messagesBroadcastRecipientsPreviewError =>
+      'Impossible de calculer les destinataires.';
+
+  @override
+  String messagesBroadcastPotentialRecipients(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count destinataires potentiels',
+      one: '1 destinataire potentiel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get messagesBroadcastNoRecipientsForSelection =>
+      'Aucun destinataire trouvé pour cette sélection';
+
+  @override
+  String get messagesBroadcastAllSlots => 'Tous les créneaux';
+
+  @override
+  String get messagesBroadcastChooseEventTitle => 'Choisir un événement';
+
+  @override
+  String get messagesBroadcastNoEventsFound => 'Aucun événement trouvé';
+
+  @override
+  String get messagesBroadcastSubjectLabel => 'Sujet';
+
+  @override
+  String get messagesBroadcastSubjectHint => 'Objet de votre message...';
+
+  @override
+  String messagesMinimumCharacters(int count) {
+    return 'Minimum $count caractères';
+  }
+
+  @override
+  String get messagesBroadcastReviewTitle => 'Récapitulatif';
+
+  @override
+  String get messagesRecipientsLabel => 'Destinataires';
+
+  @override
+  String messagesBroadcastRecipientsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count destinataires',
+      one: '1 destinataire',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get messagesBroadcastProcessing =>
+      'L\'envoi est en cours de traitement par le serveur.';
+
+  @override
+  String get messagesBroadcastStatusSent => 'Envoyée';
+
+  @override
+  String get messagesBroadcastStatusInProgress => 'En cours';
+
+  @override
+  String get messagesBroadcastReadLabel => 'Lus';
+
+  @override
+  String get messagesBroadcastConversationsLabel => 'Conversations';
+
+  @override
+  String get messagesBroadcastTargetedEventsLabel => 'Événements ciblés';
+
+  @override
+  String get messagesBroadcastSending => 'En cours d\'envoi...';
+
+  @override
+  String messagesBroadcastSlotFallback(int id) {
+    return 'Créneau $id';
+  }
+
+  @override
   String get messagesSupportTicket => 'Ticket support';
 
   @override
@@ -537,6 +660,169 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get messagesContactOrganizer => 'Contacter un organisateur';
+
+  @override
+  String get messagesGenericError => 'Une erreur est survenue.';
+
+  @override
+  String get messagesFallbackOrganizer => 'Organisateur';
+
+  @override
+  String get messagesNewConversationSubtitleSupport =>
+      'Décrivez votre problème et notre équipe vous répondra rapidement.';
+
+  @override
+  String get messagesNewConversationSubtitleRecipient =>
+      'Sélectionnez un destinataire et composez votre message.';
+
+  @override
+  String get messagesNewConversationSubtitleDefault =>
+      'Composez votre message ci-dessous.';
+
+  @override
+  String get messagesRecipientLabel => 'Destinataire';
+
+  @override
+  String get messagesOrganizationLabel => 'Organisation';
+
+  @override
+  String get messagesParticipantLabel => 'Participant';
+
+  @override
+  String get messagesPartnerLabel => 'Partenaire';
+
+  @override
+  String get messagesSearchUserPlaceholder => 'Rechercher un utilisateur…';
+
+  @override
+  String get messagesSearchOrganizationPlaceholder =>
+      'Rechercher une organisation…';
+
+  @override
+  String get messagesSearchParticipantPlaceholder =>
+      'Rechercher un participant…';
+
+  @override
+  String get messagesSearchPartnerPlaceholder => 'Rechercher un partenaire…';
+
+  @override
+  String get messagesNoOrganizerAvailable => 'Aucun organisateur disponible';
+
+  @override
+  String get messagesSelectOrganizerPlaceholder =>
+      'Sélectionner un organisateur…';
+
+  @override
+  String get messagesOrganizerPickerHelp =>
+      'Parcourez les événements pour trouver un organisateur à contacter.';
+
+  @override
+  String get messagesSelectOrganizerRequired =>
+      'Veuillez sélectionner un organisateur.';
+
+  @override
+  String get messagesFieldRequired => 'Ce champ est requis.';
+
+  @override
+  String get messagesEventLabel => 'Événement';
+
+  @override
+  String get messagesOptionalLabel => '(optionnel)';
+
+  @override
+  String get messagesSupportSubjectPrompt =>
+      'Quel est le sujet de votre demande ?';
+
+  @override
+  String get messagesSubjectLabel => 'Objet';
+
+  @override
+  String get messagesSubjectHint => 'L\'objet de votre message';
+
+  @override
+  String get messagesSubjectRequired => 'Le sujet est obligatoire.';
+
+  @override
+  String get messagesMessageLabel => 'Message';
+
+  @override
+  String get messagesMessageHint => 'Écrivez votre message…';
+
+  @override
+  String get messagesMessageRequired => 'Le message est obligatoire.';
+
+  @override
+  String get messagesSend => 'Envoyer';
+
+  @override
+  String get messagesChooseOrganizerTitle => 'Choisir un organisateur';
+
+  @override
+  String get messagesSearchByNameHint => 'Rechercher par nom…';
+
+  @override
+  String messagesNoSearchResults(String query) {
+    return 'Aucun résultat pour \"$query\".';
+  }
+
+  @override
+  String get messagesSearchUserTitle => 'Rechercher un utilisateur';
+
+  @override
+  String get messagesUserSearchHint => 'Nom, prénom ou e-mail…';
+
+  @override
+  String get messagesNoUsersAvailable => 'Aucun utilisateur disponible.';
+
+  @override
+  String get messagesSearchOrganizationTitle => 'Rechercher une organisation';
+
+  @override
+  String get messagesOrganizationSearchHint => 'Nom de l\'organisation…';
+
+  @override
+  String get messagesNoOrganizationsAvailable =>
+      'Aucune organisation disponible.';
+
+  @override
+  String get messagesSearchParticipantTitle => 'Rechercher un participant';
+
+  @override
+  String get messagesVendorParticipantSearchHelper =>
+      'Seuls les participants ayant interagi avec votre organisation.';
+
+  @override
+  String get messagesNameOrEmailHint => 'Nom ou e-mail…';
+
+  @override
+  String get messagesNoParticipantsAvailable => 'Aucun participant disponible.';
+
+  @override
+  String get messagesSearchPartnerTitle => 'Rechercher un partenaire';
+
+  @override
+  String get messagesPartnerSearchHint => 'Nom de l\'organisation partenaire…';
+
+  @override
+  String get messagesNoPartnersAvailable => 'Aucun partenaire disponible.';
+
+  @override
+  String get messagesSupportSubjectBookingIssue => 'Problème de réservation';
+
+  @override
+  String get messagesSupportSubjectEventQuestion => 'Question sur un événement';
+
+  @override
+  String get messagesSupportSubjectPaymentIssue => 'Problème de paiement';
+
+  @override
+  String get messagesSupportSubjectRefundRequest => 'Demande de remboursement';
+
+  @override
+  String get messagesSupportSubjectAccountIssue => 'Problème de compte';
+
+  @override
+  String get messagesSupportSubjectContentReport => 'Signalement d\'un contenu';
 
   @override
   String get messagesNoConversations => 'Aucune conversation';

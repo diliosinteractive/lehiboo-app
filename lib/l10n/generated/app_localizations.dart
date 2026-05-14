@@ -398,11 +398,23 @@ abstract class AppLocalizations {
   /// **'Retour'**
   String get commonBack;
 
+  /// No description provided for @commonNext.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivant'**
+  String get commonNext;
+
   /// No description provided for @commonRestart.
   ///
   /// In fr, this message translates to:
   /// **'Redémarrer'**
   String get commonRestart;
+
+  /// No description provided for @commonLoading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement...'**
+  String get commonLoading;
 
   /// No description provided for @commonToday.
   ///
@@ -1094,6 +1106,186 @@ abstract class AppLocalizations {
   /// **'Nouvelle diffusion'**
   String get messagesNewBroadcast;
 
+  /// No description provided for @messagesBroadcastTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Diffusion'**
+  String get messagesBroadcastTitle;
+
+  /// No description provided for @messagesBroadcastCreateStepTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle diffusion - Étape {step}/{total}'**
+  String messagesBroadcastCreateStepTitle(int step, int total);
+
+  /// No description provided for @messagesBroadcastStepRecipients.
+  ///
+  /// In fr, this message translates to:
+  /// **'Destinataires'**
+  String get messagesBroadcastStepRecipients;
+
+  /// No description provided for @messagesBroadcastStepReview.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récapitulatif'**
+  String get messagesBroadcastStepReview;
+
+  /// No description provided for @messagesBroadcastSentSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Diffusion envoyée avec succès.'**
+  String get messagesBroadcastSentSuccess;
+
+  /// No description provided for @messagesBroadcastSlotLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créneau'**
+  String get messagesBroadcastSlotLabel;
+
+  /// No description provided for @messagesBroadcastChooseEvent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un événement'**
+  String get messagesBroadcastChooseEvent;
+
+  /// No description provided for @messagesBroadcastSelectEventFirst.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez d\'abord un événement'**
+  String get messagesBroadcastSelectEventFirst;
+
+  /// No description provided for @messagesBroadcastLoadingSlots.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement des créneaux...'**
+  String get messagesBroadcastLoadingSlots;
+
+  /// No description provided for @messagesBroadcastCalculatingRecipients.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calcul des destinataires...'**
+  String get messagesBroadcastCalculatingRecipients;
+
+  /// No description provided for @messagesBroadcastRecipientsPreviewError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de calculer les destinataires.'**
+  String get messagesBroadcastRecipientsPreviewError;
+
+  /// No description provided for @messagesBroadcastPotentialRecipients.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 destinataire potentiel} other{{count} destinataires potentiels}}'**
+  String messagesBroadcastPotentialRecipients(int count);
+
+  /// No description provided for @messagesBroadcastNoRecipientsForSelection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun destinataire trouvé pour cette sélection'**
+  String get messagesBroadcastNoRecipientsForSelection;
+
+  /// No description provided for @messagesBroadcastAllSlots.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les créneaux'**
+  String get messagesBroadcastAllSlots;
+
+  /// No description provided for @messagesBroadcastChooseEventTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un événement'**
+  String get messagesBroadcastChooseEventTitle;
+
+  /// No description provided for @messagesBroadcastNoEventsFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun événement trouvé'**
+  String get messagesBroadcastNoEventsFound;
+
+  /// No description provided for @messagesBroadcastSubjectLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sujet'**
+  String get messagesBroadcastSubjectLabel;
+
+  /// No description provided for @messagesBroadcastSubjectHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Objet de votre message...'**
+  String get messagesBroadcastSubjectHint;
+
+  /// No description provided for @messagesMinimumCharacters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Minimum {count} caractères'**
+  String messagesMinimumCharacters(int count);
+
+  /// No description provided for @messagesBroadcastReviewTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récapitulatif'**
+  String get messagesBroadcastReviewTitle;
+
+  /// No description provided for @messagesRecipientsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Destinataires'**
+  String get messagesRecipientsLabel;
+
+  /// No description provided for @messagesBroadcastRecipientsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 destinataire} other{{count} destinataires}}'**
+  String messagesBroadcastRecipientsCount(int count);
+
+  /// No description provided for @messagesBroadcastProcessing.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'envoi est en cours de traitement par le serveur.'**
+  String get messagesBroadcastProcessing;
+
+  /// No description provided for @messagesBroadcastStatusSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyée'**
+  String get messagesBroadcastStatusSent;
+
+  /// No description provided for @messagesBroadcastStatusInProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours'**
+  String get messagesBroadcastStatusInProgress;
+
+  /// No description provided for @messagesBroadcastReadLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lus'**
+  String get messagesBroadcastReadLabel;
+
+  /// No description provided for @messagesBroadcastConversationsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversations'**
+  String get messagesBroadcastConversationsLabel;
+
+  /// No description provided for @messagesBroadcastTargetedEventsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événements ciblés'**
+  String get messagesBroadcastTargetedEventsLabel;
+
+  /// No description provided for @messagesBroadcastSending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours d\'envoi...'**
+  String get messagesBroadcastSending;
+
+  /// No description provided for @messagesBroadcastSlotFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créneau {id}'**
+  String messagesBroadcastSlotFallback(int id);
+
   /// No description provided for @messagesSupportTicket.
   ///
   /// In fr, this message translates to:
@@ -1111,6 +1303,306 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Contacter un organisateur'**
   String get messagesContactOrganizer;
+
+  /// No description provided for @messagesGenericError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue.'**
+  String get messagesGenericError;
+
+  /// No description provided for @messagesFallbackOrganizer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisateur'**
+  String get messagesFallbackOrganizer;
+
+  /// No description provided for @messagesNewConversationSubtitleSupport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décrivez votre problème et notre équipe vous répondra rapidement.'**
+  String get messagesNewConversationSubtitleSupport;
+
+  /// No description provided for @messagesNewConversationSubtitleRecipient.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez un destinataire et composez votre message.'**
+  String get messagesNewConversationSubtitleRecipient;
+
+  /// No description provided for @messagesNewConversationSubtitleDefault.
+  ///
+  /// In fr, this message translates to:
+  /// **'Composez votre message ci-dessous.'**
+  String get messagesNewConversationSubtitleDefault;
+
+  /// No description provided for @messagesRecipientLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Destinataire'**
+  String get messagesRecipientLabel;
+
+  /// No description provided for @messagesOrganizationLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisation'**
+  String get messagesOrganizationLabel;
+
+  /// No description provided for @messagesParticipantLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participant'**
+  String get messagesParticipantLabel;
+
+  /// No description provided for @messagesPartnerLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partenaire'**
+  String get messagesPartnerLabel;
+
+  /// No description provided for @messagesSearchUserPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un utilisateur…'**
+  String get messagesSearchUserPlaceholder;
+
+  /// No description provided for @messagesSearchOrganizationPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une organisation…'**
+  String get messagesSearchOrganizationPlaceholder;
+
+  /// No description provided for @messagesSearchParticipantPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un participant…'**
+  String get messagesSearchParticipantPlaceholder;
+
+  /// No description provided for @messagesSearchPartnerPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un partenaire…'**
+  String get messagesSearchPartnerPlaceholder;
+
+  /// No description provided for @messagesNoOrganizerAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun organisateur disponible'**
+  String get messagesNoOrganizerAvailable;
+
+  /// No description provided for @messagesSelectOrganizerPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner un organisateur…'**
+  String get messagesSelectOrganizerPlaceholder;
+
+  /// No description provided for @messagesOrganizerPickerHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parcourez les événements pour trouver un organisateur à contacter.'**
+  String get messagesOrganizerPickerHelp;
+
+  /// No description provided for @messagesSelectOrganizerRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner un organisateur.'**
+  String get messagesSelectOrganizerRequired;
+
+  /// No description provided for @messagesFieldRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce champ est requis.'**
+  String get messagesFieldRequired;
+
+  /// No description provided for @messagesEventLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement'**
+  String get messagesEventLabel;
+
+  /// No description provided for @messagesOptionalLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'(optionnel)'**
+  String get messagesOptionalLabel;
+
+  /// No description provided for @messagesSupportSubjectPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quel est le sujet de votre demande ?'**
+  String get messagesSupportSubjectPrompt;
+
+  /// No description provided for @messagesSubjectLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Objet'**
+  String get messagesSubjectLabel;
+
+  /// No description provided for @messagesSubjectHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'objet de votre message'**
+  String get messagesSubjectHint;
+
+  /// No description provided for @messagesSubjectRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le sujet est obligatoire.'**
+  String get messagesSubjectRequired;
+
+  /// No description provided for @messagesMessageLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message'**
+  String get messagesMessageLabel;
+
+  /// No description provided for @messagesMessageHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrivez votre message…'**
+  String get messagesMessageHint;
+
+  /// No description provided for @messagesMessageRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le message est obligatoire.'**
+  String get messagesMessageRequired;
+
+  /// No description provided for @messagesSend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get messagesSend;
+
+  /// No description provided for @messagesChooseOrganizerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un organisateur'**
+  String get messagesChooseOrganizerTitle;
+
+  /// No description provided for @messagesSearchByNameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher par nom…'**
+  String get messagesSearchByNameHint;
+
+  /// No description provided for @messagesNoSearchResults.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun résultat pour \"{query}\".'**
+  String messagesNoSearchResults(String query);
+
+  /// No description provided for @messagesSearchUserTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un utilisateur'**
+  String get messagesSearchUserTitle;
+
+  /// No description provided for @messagesUserSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom, prénom ou e-mail…'**
+  String get messagesUserSearchHint;
+
+  /// No description provided for @messagesNoUsersAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun utilisateur disponible.'**
+  String get messagesNoUsersAvailable;
+
+  /// No description provided for @messagesSearchOrganizationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une organisation'**
+  String get messagesSearchOrganizationTitle;
+
+  /// No description provided for @messagesOrganizationSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de l\'organisation…'**
+  String get messagesOrganizationSearchHint;
+
+  /// No description provided for @messagesNoOrganizationsAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune organisation disponible.'**
+  String get messagesNoOrganizationsAvailable;
+
+  /// No description provided for @messagesSearchParticipantTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un participant'**
+  String get messagesSearchParticipantTitle;
+
+  /// No description provided for @messagesVendorParticipantSearchHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seuls les participants ayant interagi avec votre organisation.'**
+  String get messagesVendorParticipantSearchHelper;
+
+  /// No description provided for @messagesNameOrEmailHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom ou e-mail…'**
+  String get messagesNameOrEmailHint;
+
+  /// No description provided for @messagesNoParticipantsAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun participant disponible.'**
+  String get messagesNoParticipantsAvailable;
+
+  /// No description provided for @messagesSearchPartnerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un partenaire'**
+  String get messagesSearchPartnerTitle;
+
+  /// No description provided for @messagesPartnerSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de l\'organisation partenaire…'**
+  String get messagesPartnerSearchHint;
+
+  /// No description provided for @messagesNoPartnersAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun partenaire disponible.'**
+  String get messagesNoPartnersAvailable;
+
+  /// No description provided for @messagesSupportSubjectBookingIssue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Problème de réservation'**
+  String get messagesSupportSubjectBookingIssue;
+
+  /// No description provided for @messagesSupportSubjectEventQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Question sur un événement'**
+  String get messagesSupportSubjectEventQuestion;
+
+  /// No description provided for @messagesSupportSubjectPaymentIssue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Problème de paiement'**
+  String get messagesSupportSubjectPaymentIssue;
+
+  /// No description provided for @messagesSupportSubjectRefundRequest.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande de remboursement'**
+  String get messagesSupportSubjectRefundRequest;
+
+  /// No description provided for @messagesSupportSubjectAccountIssue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Problème de compte'**
+  String get messagesSupportSubjectAccountIssue;
+
+  /// No description provided for @messagesSupportSubjectContentReport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement d\'un contenu'**
+  String get messagesSupportSubjectContentReport;
 
   /// No description provided for @messagesNoConversations.
   ///

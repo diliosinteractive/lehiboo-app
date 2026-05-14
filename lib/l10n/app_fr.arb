@@ -60,7 +60,9 @@
   "commonClose": "Fermer",
   "commonContinue": "Continuer",
   "commonBack": "Retour",
+  "commonNext": "Suivant",
   "commonRestart": "Redémarrer",
+  "commonLoading": "Chargement...",
   "commonToday": "Aujourd'hui",
   "commonTomorrow": "Demain",
   "commonYesterday": "Hier",
@@ -207,9 +209,134 @@
   "messagesContactSupport": "Contacter le support",
   "messagesContactParticipant": "Contacter un participant",
   "messagesNewBroadcast": "Nouvelle diffusion",
+  "messagesBroadcastTitle": "Diffusion",
+  "messagesBroadcastCreateStepTitle": "Nouvelle diffusion - Étape {step}/{total}",
+  "@messagesBroadcastCreateStepTitle": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesBroadcastStepRecipients": "Destinataires",
+  "messagesBroadcastStepReview": "Récapitulatif",
+  "messagesBroadcastSentSuccess": "Diffusion envoyée avec succès.",
+  "messagesBroadcastSlotLabel": "Créneau",
+  "messagesBroadcastChooseEvent": "Choisir un événement",
+  "messagesBroadcastSelectEventFirst": "Sélectionnez d'abord un événement",
+  "messagesBroadcastLoadingSlots": "Chargement des créneaux...",
+  "messagesBroadcastCalculatingRecipients": "Calcul des destinataires...",
+  "messagesBroadcastRecipientsPreviewError": "Impossible de calculer les destinataires.",
+  "messagesBroadcastPotentialRecipients": "{count, plural, =1{1 destinataire potentiel} other{{count} destinataires potentiels}}",
+  "@messagesBroadcastPotentialRecipients": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesBroadcastNoRecipientsForSelection": "Aucun destinataire trouvé pour cette sélection",
+  "messagesBroadcastAllSlots": "Tous les créneaux",
+  "messagesBroadcastChooseEventTitle": "Choisir un événement",
+  "messagesBroadcastNoEventsFound": "Aucun événement trouvé",
+  "messagesBroadcastSubjectLabel": "Sujet",
+  "messagesBroadcastSubjectHint": "Objet de votre message...",
+  "messagesMinimumCharacters": "Minimum {count} caractères",
+  "@messagesMinimumCharacters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesBroadcastReviewTitle": "Récapitulatif",
+  "messagesRecipientsLabel": "Destinataires",
+  "messagesBroadcastRecipientsCount": "{count, plural, =1{1 destinataire} other{{count} destinataires}}",
+  "@messagesBroadcastRecipientsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesBroadcastProcessing": "L'envoi est en cours de traitement par le serveur.",
+  "messagesBroadcastStatusSent": "Envoyée",
+  "messagesBroadcastStatusInProgress": "En cours",
+  "messagesBroadcastReadLabel": "Lus",
+  "messagesBroadcastConversationsLabel": "Conversations",
+  "messagesBroadcastTargetedEventsLabel": "Événements ciblés",
+  "messagesBroadcastSending": "En cours d'envoi...",
+  "messagesBroadcastSlotFallback": "Créneau {id}",
+  "@messagesBroadcastSlotFallback": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
   "messagesSupportTicket": "Ticket support",
   "messagesContactUser": "Contacter un utilisateur",
   "messagesContactOrganizer": "Contacter un organisateur",
+  "messagesGenericError": "Une erreur est survenue.",
+  "messagesFallbackOrganizer": "Organisateur",
+  "messagesNewConversationSubtitleSupport": "Décrivez votre problème et notre équipe vous répondra rapidement.",
+  "messagesNewConversationSubtitleRecipient": "Sélectionnez un destinataire et composez votre message.",
+  "messagesNewConversationSubtitleDefault": "Composez votre message ci-dessous.",
+  "messagesRecipientLabel": "Destinataire",
+  "messagesOrganizationLabel": "Organisation",
+  "messagesParticipantLabel": "Participant",
+  "messagesPartnerLabel": "Partenaire",
+  "messagesSearchUserPlaceholder": "Rechercher un utilisateur…",
+  "messagesSearchOrganizationPlaceholder": "Rechercher une organisation…",
+  "messagesSearchParticipantPlaceholder": "Rechercher un participant…",
+  "messagesSearchPartnerPlaceholder": "Rechercher un partenaire…",
+  "messagesNoOrganizerAvailable": "Aucun organisateur disponible",
+  "messagesSelectOrganizerPlaceholder": "Sélectionner un organisateur…",
+  "messagesOrganizerPickerHelp": "Parcourez les événements pour trouver un organisateur à contacter.",
+  "messagesSelectOrganizerRequired": "Veuillez sélectionner un organisateur.",
+  "messagesFieldRequired": "Ce champ est requis.",
+  "messagesEventLabel": "Événement",
+  "messagesOptionalLabel": "(optionnel)",
+  "messagesSupportSubjectPrompt": "Quel est le sujet de votre demande ?",
+  "messagesSubjectLabel": "Objet",
+  "messagesSubjectHint": "L'objet de votre message",
+  "messagesSubjectRequired": "Le sujet est obligatoire.",
+  "messagesMessageLabel": "Message",
+  "messagesMessageHint": "Écrivez votre message…",
+  "messagesMessageRequired": "Le message est obligatoire.",
+  "messagesSend": "Envoyer",
+  "messagesChooseOrganizerTitle": "Choisir un organisateur",
+  "messagesSearchByNameHint": "Rechercher par nom…",
+  "messagesNoSearchResults": "Aucun résultat pour \"{query}\".",
+  "@messagesNoSearchResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "messagesSearchUserTitle": "Rechercher un utilisateur",
+  "messagesUserSearchHint": "Nom, prénom ou e-mail…",
+  "messagesNoUsersAvailable": "Aucun utilisateur disponible.",
+  "messagesSearchOrganizationTitle": "Rechercher une organisation",
+  "messagesOrganizationSearchHint": "Nom de l'organisation…",
+  "messagesNoOrganizationsAvailable": "Aucune organisation disponible.",
+  "messagesSearchParticipantTitle": "Rechercher un participant",
+  "messagesVendorParticipantSearchHelper": "Seuls les participants ayant interagi avec votre organisation.",
+  "messagesNameOrEmailHint": "Nom ou e-mail…",
+  "messagesNoParticipantsAvailable": "Aucun participant disponible.",
+  "messagesSearchPartnerTitle": "Rechercher un partenaire",
+  "messagesPartnerSearchHint": "Nom de l'organisation partenaire…",
+  "messagesNoPartnersAvailable": "Aucun partenaire disponible.",
+  "messagesSupportSubjectBookingIssue": "Problème de réservation",
+  "messagesSupportSubjectEventQuestion": "Question sur un événement",
+  "messagesSupportSubjectPaymentIssue": "Problème de paiement",
+  "messagesSupportSubjectRefundRequest": "Demande de remboursement",
+  "messagesSupportSubjectAccountIssue": "Problème de compte",
+  "messagesSupportSubjectContentReport": "Signalement d'un contenu",
   "messagesNoConversations": "Aucune conversation",
   "messagesNoSupportConversations": "Aucune conversation avec le support",
   "messagesNoClients": "Aucun client",

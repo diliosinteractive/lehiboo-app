@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import '../../domain/entities/broadcast.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../providers/vendor_broadcasts_provider.dart';
@@ -17,6 +18,36 @@ final _eventSlotsProvider =
   return ref.read(messagesRepositoryProvider).getEventSlots(eventUuid);
 });
 
+String _broadcastSlotLabel(BuildContext context, SlotOption slot) {
+  if (slot.slotDate == null && slot.startTime == null) {
+    return context.l10n.messagesBroadcastSlotFallback(slot.id);
+  }
+
+  final parts = <String>[];
+  if (slot.slotDate != null) {
+    try {
+      final date = DateTime.parse(slot.slotDate!);
+      parts.add(context
+          .appDateFormat('d MMM yyyy', enPattern: 'MMM d, yyyy')
+          .format(date));
+    } catch (_) {
+      parts.add(slot.slotDate!);
+    }
+  }
+  if (slot.startTime != null) {
+    parts.add(_broadcastSlotTime(context, slot.startTime!));
+  }
+  return parts.join(' · ');
+}
+
+String _broadcastSlotTime(BuildContext context, String time) {
+  final pieces = time.split(':');
+  if (pieces.length < 2) return time;
+  return context.isEnglishLocale
+      ? '${pieces[0]}:${pieces[1]}'
+      : '${pieces[0]}h${pieces[1]}';
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Screen
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,8 +62,7 @@ class CreateBroadcastScreen extends ConsumerStatefulWidget {
 
 enum _Step { recipients, message, review }
 
-class _CreateBroadcastScreenState
-    extends ConsumerState<CreateBroadcastScreen> {
+class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
   static const _primaryColor = Color(0xFFFF601F);
 
   _Step _step = _Step.recipients;
@@ -67,13 +97,11 @@ class _CreateBroadcastScreenState
       _recipientsCount = null;
     });
     try {
-      final count = await ref
-          .read(messagesRepositoryProvider)
-          .previewBroadcastRecipients(
-            eventIds: [_selectedEvent!.uuid],
-            slotIds:
-                _selectedSlot != null ? [_selectedSlot!.uuid] : null,
-          );
+      final count =
+          await ref.read(messagesRepositoryProvider).previewBroadcastRecipients(
+        eventIds: [_selectedEvent!.uuid],
+        slotIds: _selectedSlot != null ? [_selectedSlot!.uuid] : null,
+      );
       if (!mounted) return;
       setState(() {
         _recipientsCount = count;
@@ -95,15 +123,14 @@ class _CreateBroadcastScreenState
             subject: _subjectCtrl.text.trim(),
             message: _messageCtrl.text.trim(),
             eventIds: [_selectedEvent!.uuid],
-            slotIds:
-                _selectedSlot != null ? [_selectedSlot!.uuid] : null,
+            slotIds: _selectedSlot != null ? [_selectedSlot!.uuid] : null,
           );
       if (!mounted) return;
       ref.read(vendorBroadcastsProvider.notifier).refresh();
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Diffusion envoyée avec succès !'),
+        SnackBar(
+          content: Text(context.l10n.messagesBroadcastSentSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -112,7 +139,7 @@ class _CreateBroadcastScreenState
       setState(() => _sending = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur : $e'),
+          content: Text(context.l10n.messagesLoadError(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -146,13 +173,11 @@ class _CreateBroadcastScreenState
       };
 
   bool get _canGoNext => switch (_step) {
-        _Step.recipients =>
-          _selectedEvent != null &&
-              (_recipientsCount ?? 0) > 0 &&
-              !_loadingPreview,
-        _Step.message =>
-          _subjectCtrl.text.trim().length >= 3 &&
-              _messageCtrl.text.trim().isNotEmpty,
+        _Step.recipients => _selectedEvent != null &&
+            (_recipientsCount ?? 0) > 0 &&
+            !_loadingPreview,
+        _Step.message => _subjectCtrl.text.trim().length >= 3 &&
+            _messageCtrl.text.trim().isNotEmpty,
         _Step.review => false,
       };
 
@@ -160,7 +185,9 @@ class _CreateBroadcastScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Nouvelle diffusion — Étape ${_stepIndex + 1}/3'),
+        title: Text(
+          context.l10n.messagesBroadcastCreateStepTitle(_stepIndex + 1, 3),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
@@ -176,14 +203,16 @@ class _CreateBroadcastScreenState
                 _StepDot(
                     index: 0,
                     current: _stepIndex,
-                    label: 'Destinataires'),
+                    label: context.l10n.messagesBroadcastStepRecipients),
                 Expanded(
                     child: Divider(
                         color: _stepIndex > 0
                             ? _primaryColor
                             : Colors.grey.shade300)),
                 _StepDot(
-                    index: 1, current: _stepIndex, label: 'Message'),
+                    index: 1,
+                    current: _stepIndex,
+                    label: context.l10n.messagesMessageLabel),
                 Expanded(
                     child: Divider(
                         color: _stepIndex > 1
@@ -192,7 +221,7 @@ class _CreateBroadcastScreenState
                 _StepDot(
                     index: 2,
                     current: _stepIndex,
-                    label: 'Récapitulatif'),
+                    label: context.l10n.messagesBroadcastStepReview),
               ],
             ),
           ),
@@ -246,11 +275,10 @@ class _CreateBroadcastScreenState
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _prevStep,
-                        child: const Text('Retour'),
+                        child: Text(context.l10n.commonBack),
                       ),
                     ),
-                  if (_step != _Step.recipients)
-                    const SizedBox(width: 12),
+                  if (_step != _Step.recipients) const SizedBox(width: 12),
                   Expanded(
                     flex: 2,
                     child: _step == _Step.review
@@ -267,15 +295,14 @@ class _CreateBroadcastScreenState
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text('Envoyer'),
+                                : Text(context.l10n.messagesSend),
                           )
                         : FilledButton(
                             style: FilledButton.styleFrom(
-                                backgroundColor: _canGoNext
-                                    ? _primaryColor
-                                    : Colors.grey),
+                                backgroundColor:
+                                    _canGoNext ? _primaryColor : Colors.grey),
                             onPressed: _canGoNext ? _nextStep : null,
-                            child: const Text('Suivant'),
+                            child: Text(context.l10n.commonNext),
                           ),
                   ),
                 ],
@@ -337,47 +364,49 @@ class _RecipientsStep extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Événement',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          Text(
+            context.l10n.messagesEventLabel,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           eventsAsync.when(
             loading: () => _SelectorField(
-              label: 'Chargement...',
+              label: context.l10n.commonLoading,
               isPlaceholder: true,
               loading: true,
               onTap: null,
             ),
-            error: (e, _) => Text('Erreur de chargement : $e',
+            error: (e, _) => Text(context.l10n.messagesLoadError(e.toString()),
                 style: const TextStyle(color: Colors.red)),
             data: (events) => _SelectorField(
-              label: selectedEvent?.title ?? 'Choisir un événement',
+              label: selectedEvent?.title ??
+                  context.l10n.messagesBroadcastChooseEvent,
               isPlaceholder: selectedEvent == null,
               onTap: () => _openEventPicker(context, events),
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Créneau',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          Text(
+            context.l10n.messagesBroadcastSlotLabel,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           if (selectedEvent == null)
             _SelectorField(
-              label: 'Sélectionnez d\'abord un événement',
+              label: context.l10n.messagesBroadcastSelectEventFirst,
               isPlaceholder: true,
               onTap: null,
             )
           else
             ref.watch(_eventSlotsProvider(selectedEvent!.uuid)).when(
                   loading: () => _SelectorField(
-                    label: 'Chargement des créneaux...',
+                    label: context.l10n.messagesBroadcastLoadingSlots,
                     isPlaceholder: true,
                     loading: true,
                     onTap: null,
                   ),
-                  error: (e, _) => Text('Erreur : $e',
+                  error: (e, _) => Text(
+                      context.l10n.messagesLoadError(e.toString()),
                       style: const TextStyle(color: Colors.red)),
                   data: (slots) => _SlotSelector(
                     slots: slots,
@@ -391,15 +420,15 @@ class _RecipientsStep extends ConsumerWidget {
             const Divider(),
             const SizedBox(height: 12),
             if (loadingPreview)
-              const Row(
+              Row(
                 children: [
-                  SizedBox(
+                  const SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2)),
-                  SizedBox(width: 10),
-                  Text('Calcul des destinataires...',
-                      style: TextStyle(fontSize: 13)),
+                  const SizedBox(width: 10),
+                  Text(context.l10n.messagesBroadcastCalculatingRecipients,
+                      style: const TextStyle(fontSize: 13)),
                 ],
               )
             else if (previewError != null)
@@ -410,7 +439,7 @@ class _RecipientsStep extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Impossible de calculer les destinataires.',
+                      context.l10n.messagesBroadcastRecipientsPreviewError,
                       style: TextStyle(
                           fontSize: 13, color: Colors.orange.shade700),
                     ),
@@ -419,8 +448,8 @@ class _RecipientsStep extends ConsumerWidget {
               )
             else if (recipientsCount != null)
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: recipientsCount! > 0
                       ? Colors.green.shade50
@@ -444,16 +473,21 @@ class _RecipientsStep extends ConsumerWidget {
                           : Colors.orange.shade700,
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      recipientsCount! > 0
-                          ? '$recipientsCount destinataire${recipientsCount! > 1 ? 's' : ''} potentiel${recipientsCount! > 1 ? 's' : ''}'
-                          : 'Aucun destinataire trouvé pour cette sélection',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: recipientsCount! > 0
-                            ? Colors.green.shade800
-                            : Colors.orange.shade800,
+                    Expanded(
+                      child: Text(
+                        recipientsCount! > 0
+                            ? context.l10n.messagesBroadcastPotentialRecipients(
+                                recipientsCount!,
+                              )
+                            : context
+                                .l10n.messagesBroadcastNoRecipientsForSelection,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: recipientsCount! > 0
+                              ? Colors.green.shade800
+                              : Colors.orange.shade800,
+                        ),
                       ),
                     ),
                   ],
@@ -489,13 +523,10 @@ class _SelectorField extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
           border: Border.all(
-            color: enabled
-                ? Colors.grey.shade400
-                : Colors.grey.shade200,
+            color: enabled ? Colors.grey.shade400 : Colors.grey.shade200,
           ),
           borderRadius: BorderRadius.circular(8),
           color: enabled ? Colors.white : Colors.grey.shade50,
@@ -507,9 +538,7 @@ class _SelectorField extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isPlaceholder
-                      ? Colors.grey.shade500
-                      : Colors.black87,
+                  color: isPlaceholder ? Colors.grey.shade500 : Colors.black87,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -527,9 +556,7 @@ class _SelectorField extends StatelessWidget {
                 : Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 20,
-                    color: enabled
-                        ? _primaryColor
-                        : Colors.grey.shade300,
+                    color: enabled ? _primaryColor : Colors.grey.shade300,
                   ),
           ],
         ),
@@ -559,26 +586,26 @@ class _SlotSelector extends StatelessWidget {
       initialValue: selected,
       isExpanded: true,
       decoration: InputDecoration(
-        border:
-            OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide:
-              const BorderSide(color: _primaryColor, width: 1.5),
+          borderSide: const BorderSide(color: _primaryColor, width: 1.5),
         ),
         isDense: true,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       ),
       items: [
-        const DropdownMenuItem<SlotOption?>(
+        DropdownMenuItem<SlotOption?>(
           value: null,
-          child: Text('Tous les créneaux'),
+          child: Text(context.l10n.messagesBroadcastAllSlots),
         ),
         ...slots.map((s) => DropdownMenuItem<SlotOption?>(
               value: s,
-              child:
-                  Text(s.label, overflow: TextOverflow.ellipsis),
+              child: Text(
+                _broadcastSlotLabel(context, s),
+                overflow: TextOverflow.ellipsis,
+              ),
             )),
       ],
       onChanged: onChanged,
@@ -655,11 +682,11 @@ class _EventPickerSheetState extends State<_EventPickerSheet> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Choisir un événement',
-                    style: TextStyle(
+                    context.l10n.messagesBroadcastChooseEventTitle,
+                    style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -669,7 +696,7 @@ class _EventPickerSheetState extends State<_EventPickerSheet> {
                   controller: _searchCtrl,
                   autofocus: true,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher...',
+                    hintText: context.l10n.messagesSearchHint,
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: _searchCtrl.text.isNotEmpty
                         ? IconButton(
@@ -701,7 +728,7 @@ class _EventPickerSheetState extends State<_EventPickerSheet> {
             child: _filtered.isEmpty
                 ? Center(
                     child: Text(
-                      'Aucun événement trouvé',
+                      context.l10n.messagesBroadcastNoEventsFound,
                       style: TextStyle(color: Colors.grey.shade500),
                     ),
                   )
@@ -710,8 +737,7 @@ class _EventPickerSheetState extends State<_EventPickerSheet> {
                     itemCount: _filtered.length,
                     itemBuilder: (ctx, i) {
                       final event = _filtered[i];
-                      final isSelected =
-                          event.uuid == widget.selected?.uuid;
+                      final isSelected = event.uuid == widget.selected?.uuid;
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 4),
@@ -779,18 +805,18 @@ class _MessageStep extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Sujet',
+            Text(context.l10n.messagesBroadcastSubjectLabel,
                 style:
-                    TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextFormField(
               controller: subjectCtrl,
               onChanged: (_) => onChanged(),
               maxLength: 255,
               decoration: InputDecoration(
-                hintText: 'Objet de votre message...',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                hintText: context.l10n.messagesBroadcastSubjectHint,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide:
@@ -801,15 +827,15 @@ class _MessageStep extends StatelessWidget {
               ),
               validator: (v) {
                 if (v == null || v.trim().length < 3) {
-                  return 'Minimum 3 caractères';
+                  return context.l10n.messagesMinimumCharacters(3);
                 }
                 return null;
               },
             ),
             const SizedBox(height: 20),
-            const Text('Message',
+            Text(context.l10n.messagesMessageLabel,
                 style:
-                    TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             TextFormField(
               controller: messageCtrl,
@@ -817,10 +843,10 @@ class _MessageStep extends StatelessWidget {
               maxLength: 10000,
               maxLines: 8,
               decoration: InputDecoration(
-                hintText: 'Rédigez votre message...',
+                hintText: context.l10n.messagesMessageHint,
                 alignLabelWithHint: true,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide:
@@ -831,7 +857,7 @@ class _MessageStep extends StatelessWidget {
               ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty) {
-                  return 'Le message est requis';
+                  return context.l10n.messagesMessageRequired;
                 }
                 return null;
               },
@@ -869,38 +895,41 @@ class _ReviewStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Récapitulatif',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          Text(
+            context.l10n.messagesBroadcastReviewTitle,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 16),
           _ReviewRow(
             icon: Icons.event_outlined,
-            label: 'Événement',
+            label: context.l10n.messagesEventLabel,
             value: event.title,
           ),
           _ReviewRow(
             icon: Icons.schedule_outlined,
-            label: 'Créneau',
-            value: slot?.label ?? 'Tous les créneaux',
+            label: context.l10n.messagesBroadcastSlotLabel,
+            value: slot != null
+                ? _broadcastSlotLabel(context, slot!)
+                : context.l10n.messagesBroadcastAllSlots,
           ),
           _ReviewRow(
             icon: Icons.people_outline,
-            label: 'Destinataires',
-            value:
-                '$recipientsCount destinataire${recipientsCount > 1 ? 's' : ''}',
+            label: context.l10n.messagesRecipientsLabel,
+            value: context.l10n.messagesBroadcastRecipientsCount(
+              recipientsCount,
+            ),
             valueColor: Colors.green.shade700,
           ),
           const Divider(height: 24),
           _ReviewRow(
             icon: Icons.subject_outlined,
-            label: 'Sujet',
+            label: context.l10n.messagesBroadcastSubjectLabel,
             value: subject,
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Message',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+          Text(
+            context.l10n.messagesMessageLabel,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 6),
           Container(

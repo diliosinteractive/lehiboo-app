@@ -32,6 +32,8 @@ The localization infrastructure is in place and the first rollout slices are com
 11. Legacy booking checkout/success copy.
 12. Profile screen, account edit, and saved participants copy.
 13. Core Messages inbox/detail/shared-widget copy.
+14. Shared Messages new-conversation flow copy.
+15. Messages broadcast create/detail/tile copy.
 
 The app is not fully translated yet. Many screens still contain hard-coded French UI copy, but the app now has the wiring needed to migrate them screen by screen.
 
@@ -178,9 +180,51 @@ Covered:
 
 Not covered in this slice:
 
-- The large `new_conversation_form.dart` create-message flow still has hard-coded copy and should get its own focused pass.
-- Broadcast detail/create flows, support detail, vendor/admin new conversation screens, and admin report detail moderation copy still need follow-up migration.
+- Shared create-message flow copy is covered in the Messages new-conversation slice below.
+- Broadcast detail/create flows, support detail, legacy standalone vendor/admin new conversation screens, and admin report detail moderation copy still need follow-up migration.
 - Backend-owned conversation subjects, message bodies, event titles, user/org names, participant names, API error response bodies, and system message content remain displayed as returned by their source.
+
+### Messages New Conversation Flow
+
+Migrated:
+
+- `lib/features/messages/presentation/screens/new_conversation_screen.dart`
+- `lib/features/messages/presentation/widgets/new_conversation_form.dart`
+
+Covered:
+
+- `/messages/new` booking/org/dashboard entry title, generic error fallback, retry CTA, and fallback organizer label.
+- Shared new-conversation sheet title/subtitles, recipient labels, support recipient label, subject/message labels, hints, validation messages, cancel/send actions, and vendor support fallback subject.
+- Support subject chips for booking issue, event question, payment issue, refund request, account issue, content report, and other.
+- Dashboard organizer picker labels, search hint, empty state, helper text, required-recipient error, and no-result text.
+- Admin user/org and vendor participant/partner recipient search sheets: titles, hints, error prefixes, empty states, and no-result text.
+
+Not covered in this slice:
+
+- Legacy standalone `admin_new_conversation_screen.dart` and `vendor_new_conversation_screen.dart`; the active shared `NewConversationForm.show(...)` path was targeted first.
+- Support detail, legacy standalone vendor/admin new-conversation screens, and admin report detail moderation copy.
+- Backend-owned subjects, message bodies, event/org/user/participant names, and API error response bodies remain displayed as returned by their source.
+
+### Messages Broadcast Flow
+
+Migrated:
+
+- `lib/features/messages/presentation/screens/create_broadcast_screen.dart`
+- `lib/features/messages/presentation/screens/broadcast_detail_screen.dart`
+- `lib/features/messages/presentation/widgets/broadcast_tile.dart`
+
+Covered:
+
+- Create broadcast title/step labels, bottom actions, success/error snackbars, event and slot selector labels, loading/error states, recipient preview text, event picker title/search/empty state, subject/message labels/hints/validation, and review labels.
+- Locale-aware slot labels in the create flow, including fallback slot names, localized dates, and French/English time formatting.
+- Broadcast detail title, retry/error labels, processing banner, sent/in-progress status badge, stats labels, targeted events heading, and message section heading.
+- Broadcast list tile sending state.
+
+Not covered in this slice:
+
+- Backend-owned event titles, broadcast subjects, broadcast bodies, and API error response bodies remain displayed as returned by their source.
+- `SlotOption.label` still exists as a French-first context-free domain fallback; the migrated broadcast create UI now avoids it in favor of context-aware formatting.
+- Support detail, legacy standalone vendor/admin new-conversation screens, and admin report detail moderation copy still need follow-up migration.
 
 ### API And Backend-Facing Locale
 
@@ -669,6 +713,38 @@ Result:
 - Locale tests passed.
 - Whitespace check passed.
 
+Latest focused Messages new-conversation check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/messages/presentation/widgets/new_conversation_form.dart lib/features/messages/presentation/screens/new_conversation_screen.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/messages/presentation/widgets/new_conversation_form.dart lib/features/messages/presentation/screens/new_conversation_screen.dart lib/core/l10n lib/l10n/generated
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused Messages new-conversation slice.
+- Locale tests passed.
+
+Latest focused Messages broadcast flow check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/messages/presentation/screens/create_broadcast_screen.dart lib/features/messages/presentation/screens/broadcast_detail_screen.dart lib/features/messages/presentation/widgets/broadcast_tile.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/messages/presentation/screens/create_broadcast_screen.dart lib/features/messages/presentation/screens/broadcast_detail_screen.dart lib/features/messages/presentation/widgets/broadcast_tile.dart lib/core/l10n lib/l10n/generated
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused Messages broadcast flow slice.
+- Locale tests passed.
+- Whitespace check passed.
+
 Targeted analyzer checks:
 
 - Booking files no longer have analyzer errors after null-safety cleanup.
@@ -701,6 +777,7 @@ The worktree has unrelated dirty/untracked files. Do not assume everything in `g
 Known unrelated or pre-existing dirty entries observed during this work:
 
 - `.env.development`
+- `pubspec.lock`
 - `android/build/`
 - Unrelated docs under `docs/`:
   - `docs/BLOG_API_MOBILE.md`
@@ -799,11 +876,22 @@ Core Messages inbox/detail files are now part of the i18n work:
 - `lib/features/messages/presentation/widgets/message_bubble.dart`
 - `lib/features/messages/presentation/widgets/report_conversation_sheet.dart`
 
+Messages new-conversation files are now part of the i18n work:
+
+- `lib/features/messages/presentation/screens/new_conversation_screen.dart`
+- `lib/features/messages/presentation/widgets/new_conversation_form.dart`
+
+Messages broadcast files are now part of the i18n work:
+
+- `lib/features/messages/presentation/screens/create_broadcast_screen.dart`
+- `lib/features/messages/presentation/screens/broadcast_detail_screen.dart`
+- `lib/features/messages/presentation/widgets/broadcast_tile.dart`
+
 Before committing or refining, review diffs by file instead of using bulk restore/reset commands.
 
 ## Where Work Stopped
 
-Stopped after completing the core Messages inbox/detail slice.
+Stopped after completing the Messages broadcast create/detail/tile slice.
 
 Current stable stopping point:
 
@@ -823,10 +911,12 @@ Current stable stopping point:
 - Legacy Booking slot selection, contact details, simulated payment, confirmation, and success screens are localized.
 - Profile screen, account edit, and saved participants copy is localized.
 - Core Messages inbox/detail/shared-widget copy is localized, including filters, conversation tiles, composer, message bubble actions, report sheet, and admin report list labels.
+- Shared Messages new-conversation copy is localized, including `/messages/new`, the modal form, recipient pickers, support subject chips, field validation, actions, and admin/vendor recipient search sheets embedded in the shared form.
+- Messages broadcast create/detail/tile copy is localized, including create steps, selectors, recipient preview, review, detail stats/statuses, and sending state.
 - Direct hard-coded `featureName: '...'` / `featureName: "..."` scan under `lib/` is clean.
 - Locale unit tests pass.
 
-Next work should continue with either the remaining Messages create/admin/vendor/broadcast flows or Petit Boo chat/tool cards, not more locale plumbing.
+Next work should continue with remaining Messages support/admin report/legacy admin-vendor surfaces or Petit Boo chat/tool cards, not more locale plumbing.
 
 ## Remaining Task Queue
 
@@ -834,7 +924,7 @@ Next work should continue with either the remaining Messages create/admin/vendor
 
 Recommended order:
 
-1. Remaining Messages create/admin/vendor/broadcast flows.
+1. Remaining Messages support/admin report/legacy admin-vendor surfaces.
 2. Petit Boo chat and tool cards.
 3. Memberships/partners/check-in/admin surfaces.
 

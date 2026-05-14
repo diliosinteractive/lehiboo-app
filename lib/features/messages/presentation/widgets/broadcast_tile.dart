@@ -89,7 +89,7 @@ class BroadcastTile extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'En cours d\'envoi...',
+                          context.l10n.messagesBroadcastSending,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.orange.shade700,
