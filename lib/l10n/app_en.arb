@@ -199,6 +199,7 @@
   "messagesContactSupport": "Contact support",
   "messagesContactParticipant": "Contact a participant",
   "messagesNewBroadcast": "New broadcast",
+  "messagesContactPartner": "Contact a partner",
   "messagesBroadcastTitle": "Broadcast",
   "messagesBroadcastCreateStepTitle": "New broadcast - Step {step}/{total}",
   "@messagesBroadcastCreateStepTitle": {
@@ -327,6 +328,16 @@
   "messagesSupportSubjectRefundRequest": "Refund request",
   "messagesSupportSubjectAccountIssue": "Account issue",
   "messagesSupportSubjectContentReport": "Content report",
+  "messagesCreateConversation": "Create conversation",
+  "messagesNoResults": "No results",
+  "messagesSelectUserRequired": "Please select a user.",
+  "messagesSelectOrganizationRequired": "Please select an organization.",
+  "messagesSelectParticipantRequired": "Please select a participant.",
+  "messagesSelectPartnerRequired": "Please select a partner.",
+  "messagesNoAcceptedPartners": "No accepted partners",
+  "messagesVendorParticipantAccessDenied": "This participant has no interaction with your organization.",
+  "messagesVendorPartnerAccessDenied": "This partnership is not accepted.",
+  "messagesAccessDenied": "Access denied.",
   "messagesNoConversations": "No conversations",
   "messagesNoSupportConversations": "No support conversations",
   "messagesNoClients": "No clients",
@@ -395,6 +406,7 @@
   "messagesReportSuccessTitle": "Report sent",
   "messagesReportSuccessBody": "Your report has been sent to the LeHiboo team.",
   "messagesReportSupportCreated": "A support ticket was created for follow-up.",
+  "messagesSendFailedRetry": "Failed to send. Try again.",
   "messagesViewAction": "View",
   "messagesAdminReportFallbackTitle": "Report {reportId}",
   "@messagesAdminReportFallbackTitle": {
@@ -404,6 +416,26 @@
       }
     }
   },
+  "messagesAdminReportDetailTitle": "Report details",
+  "messagesAdminReportNotFound": "Report not found",
+  "messagesUntitledConversation": "Untitled conversation",
+  "messagesAdminReportPartiesSection": "Involved parties",
+  "messagesAdminReportReporterLabel": "Reporter",
+  "messagesAdminReportReportedLabel": "Reported",
+  "messagesUserLabel": "User",
+  "messagesAdminReportReasonSection": "Report reason",
+  "messagesAdminReportInternalNoteSection": "Internal note (not visible to users)",
+  "messagesAdminReportNoteHint": "Add a moderation note...",
+  "messagesAdminReportNoteSaved": "Note saved.",
+  "messagesAdminReportModerationActionsSection": "Moderation actions",
+  "messagesAdminReportFinalActionsWarning": "These actions are final and cannot be undone.",
+  "messagesAdminReportDismissAction": "Dismiss",
+  "messagesAdminReportMarkReviewedAction": "Mark reviewed",
+  "messagesAdminReportDismissConfirmBody": "This report will be marked as dismissed. Do you confirm this action?",
+  "messagesAdminReportReviewConfirmBody": "This report will be marked as reviewed. Do you confirm this action?",
+  "messagesAdminReportDismissedSnackbar": "Report dismissed.",
+  "messagesAdminReportReviewedSnackbar": "Report marked as reviewed.",
+  "messagesAdminReportViewConversation": "View linked conversation",
   "messagesAdminReportStatusReviewed": "Reviewed",
   "messagesAdminReportStatusDismissed": "Dismissed",
   "messagesAdminReportStatusSuspended": "Suspended",
@@ -423,6 +455,338 @@
   "petitBooChatHintStreaming": "Petit Boo is thinking...",
   "petitBooChatHintIdle": "Ask your assistant a question or type / for commands...",
   "petitBooDisclaimer": "AI can make mistakes. Check important information.",
+  "petitBooStatusResponding": "Replying...",
+  "petitBooStatusAssistantAi": "AI assistant",
+  "petitBooHistoryTitle": "History",
+  "petitBooNewConversation": "New conversation",
+  "petitBooServiceUnavailable": "Petit Boo is temporarily unavailable",
+  "petitBooGreetingMorning": "Good morning",
+  "petitBooGreetingAfternoon": "Good afternoon",
+  "petitBooGreetingEvening": "Good evening",
+  "petitBooGreetingWithName": "{greeting} {name}!",
+  "@petitBooGreetingWithName": {
+    "placeholders": {
+      "greeting": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooGreetingNoName": "{greeting}!",
+  "@petitBooGreetingNoName": {
+    "placeholders": {
+      "greeting": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooSubtitleWithCity": "What can I do for you in {city}?",
+  "@petitBooSubtitleWithCity": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooSubtitleDefault": "How can I help you today?",
+  "petitBooQuickTonight": "Tonight",
+  "petitBooQuickTonightPrompt": "What to do tonight?",
+  "petitBooQuickTonightPromptWithCity": "What to do tonight in {city}?",
+  "@petitBooQuickTonightPromptWithCity": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooQuickWeekend": "Weekend",
+  "petitBooQuickWeekendPrompt": "Events this weekend",
+  "petitBooQuickWeekendPromptWithCity": "Events this weekend in {city}",
+  "@petitBooQuickWeekendPromptWithCity": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooQuickTickets": "My tickets",
+  "petitBooQuickTicketsPrompt": "Show my bookings",
+  "petitBooQuickFavorites": "Favorites",
+  "petitBooQuickFavoritesPrompt": "My favorites",
+  "petitBooTryAsking": "Try asking me...",
+  "petitBooSuggestionTonight": "What events are on tonight?",
+  "petitBooSuggestionTonightWithCity": "What events are on tonight in {city}?",
+  "@petitBooSuggestionTonightWithCity": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooSuggestionKids": "Kids activities this weekend",
+  "petitBooSuggestionKidsWithCity": "Kids activities in {city}",
+  "@petitBooSuggestionKidsWithCity": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooSuggestionFood": "Food outings this weekend",
+  "petitBooSuggestionFoodWithCity": "Food outings in {city}",
+  "@petitBooSuggestionFoodWithCity": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooSuggestionConcerts": "Concerts and shows coming up",
+  "petitBooSuggestionConcertsWithCity": "Concerts and shows in {city}",
+  "@petitBooSuggestionConcertsWithCity": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooEmptyHistoryTitle": "No conversations",
+  "petitBooEmptyHistoryBody": "Start a conversation with Petit Boo\nfor personalized help",
+  "petitBooErrorTitle": "Oops!",
+  "petitBooDeleteConversationTitle": "Delete this conversation?",
+  "petitBooDeleteConversationBody": "This action cannot be undone.",
+  "petitBooConversationDeleted": "Conversation deleted",
+  "petitBooConversationFallbackTitle": "Conversation",
+  "petitBooRelativeDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@petitBooRelativeDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooMessageCountShort": "{count} msg",
+  "@petitBooMessageCountShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooBrainTitle": "Petit Boo Memory",
+  "petitBooMemoryKnownTitle": "What I know about you",
+  "petitBooMemoryClearAll": "Clear all",
+  "petitBooMemoryEnabled": "Memory on",
+  "petitBooMemoryPaused": "Memory paused",
+  "petitBooMemoryEnabledDescription": "Petit Boo learns from your conversations to suggest outings that fit you. You can correct or delete this information below.",
+  "petitBooMemoryPausedDescription": "Petit Boo will not remember anything from your new conversations. Previous information remains stored but is not used.",
+  "petitBooMemoryEmptyTitle": "I do not have any information about you yet.",
+  "petitBooMemoryEmptyBody": "Chat with me so I can learn your tastes.",
+  "petitBooMemoryDisabledBody": "Turn memory back on to view and edit your information.",
+  "petitBooMemoryEditAction": "Edit",
+  "petitBooMemoryForgetAction": "Forget",
+  "petitBooMemoryEditTitle": "Edit {label}",
+  "@petitBooMemoryEditTitle": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooMemoryNewValueHint": "New value",
+  "petitBooMemoryForgetTitle": "Forget this information?",
+  "petitBooMemoryForgetBody": "Do you really want Petit Boo to forget: {label}?",
+  "@petitBooMemoryForgetBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooMemoryNoKeep": "No, keep it",
+  "petitBooMemoryForgetConfirm": "Yes, forget",
+  "petitBooMemoryClearAllTitle": "Clear everything?",
+  "petitBooMemoryClearAllBody": "Do you really want to clear all information Petit Boo has learned about you?",
+  "petitBooMemoryClearAllConfirm": "Yes, clear all",
+  "petitBooMemoryLabelFirstName": "First name",
+  "petitBooMemoryLabelLastName": "Last name",
+  "petitBooMemoryLabelNickname": "Nickname",
+  "petitBooMemoryLabelAge": "Age",
+  "petitBooMemoryLabelBirthYear": "Birth year",
+  "petitBooMemoryLabelAgeGroup": "Age group",
+  "petitBooMemoryLabelCity": "City",
+  "petitBooMemoryLabelRegion": "Region",
+  "petitBooMemoryLabelCountry": "Country",
+  "petitBooMemoryLabelLatitude": "Latitude",
+  "petitBooMemoryLabelLongitude": "Longitude",
+  "petitBooMemoryLabelMaxDistance": "Max distance (km)",
+  "petitBooMemoryLabelFavoriteActivities": "Favorite activities",
+  "petitBooMemoryLabelDislikedActivities": "Activities to avoid",
+  "petitBooMemoryLabelFavoriteCategories": "Favorite categories",
+  "petitBooMemoryLabelBudgetPreference": "Budget",
+  "petitBooMemoryLabelGroupType": "Group type",
+  "petitBooMemoryLabelHasChildren": "Has children",
+  "petitBooMemoryLabelChildrenAges": "Children's ages",
+  "petitBooMemoryLabelDietaryPreferences": "Dietary preferences",
+  "petitBooMemoryLabelMobilityConstraints": "Mobility constraints",
+  "petitBooMemoryLabelPetFriendlyNeeded": "Pet-friendly needed",
+  "petitBooMemoryLabelPreferredTimes": "Preferred times",
+  "petitBooMemoryLabelPreferredLanguage": "Preferred language",
+  "petitBooMemoryLabelInterests": "Interests",
+  "petitBooMemoryLabelLastUpdated": "Last updated",
+  "petitBooMemoryUndefined": "Not set",
+  "petitBooMemoryYes": "Yes",
+  "petitBooMemoryNo": "No",
+  "petitBooMemoryAgeGroupYoungAdult": "Young adult",
+  "petitBooMemoryAgeGroupAdult": "Adult",
+  "petitBooMemoryAgeGroupSenior": "Senior",
+  "petitBooMemoryBudgetLow": "Small budget",
+  "petitBooMemoryBudgetMedium": "Medium budget",
+  "petitBooMemoryBudgetHigh": "Large budget",
+  "petitBooMemoryGroupSolo": "Solo",
+  "petitBooMemoryGroupCouple": "Couple",
+  "petitBooMemoryGroupFamily": "Family",
+  "petitBooMemoryGroupFriends": "With friends",
+  "petitBooQuotaHeaderTitle": "Your messages with Petit Boo",
+  "petitBooQuotaHeaderSubtitle": "How your quota works",
+  "petitBooQuotaRemainingLabel": "remaining",
+  "petitBooQuotaUsage": "{used, plural, =1{1 message used} other{{used} messages used}} out of {limit}",
+  "@petitBooQuotaUsage": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooQuotaRenewalTitle": "{period} renewal",
+  "@petitBooQuotaRenewalTitle": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooQuotaRenewsAt": "Your quota renews {time}",
+  "@petitBooQuotaRenewsAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooQuotaRenewsAutomatically": "Your quota renews automatically",
+  "petitBooQuotaTipTitle": "Tip",
+  "petitBooQuotaTipDescription": "Ask specific questions to get more relevant answers and save messages.",
+  "petitBooQuotaWhyTitle": "Why a quota?",
+  "petitBooQuotaWhyDescription": "Petit Boo uses advanced AI to help you. The quota helps us keep the service reliable for everyone.",
+  "petitBooQuotaUnderstood": "Got it",
+  "petitBooQuotaPeriodDaily": "Daily",
+  "petitBooQuotaPeriodWeekly": "Weekly",
+  "petitBooQuotaPeriodMonthly": "Monthly",
+  "petitBooQuotaPeriodAutomatic": "Automatic",
+  "petitBooQuotaResetVerySoon": "very soon",
+  "petitBooQuotaResetInDays": "in {count, plural, =1{1 day} other{{count} days}}",
+  "@petitBooQuotaResetInDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooQuotaResetTomorrow": "tomorrow",
+  "petitBooQuotaResetInHours": "in {count, plural, =1{1 hour} other{{count} hours}}",
+  "@petitBooQuotaResetInHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooQuotaResetInOneHour": "in 1 hour",
+  "petitBooQuotaResetInMinutes": "in {count, plural, =1{1 minute} other{{count} minutes}}",
+  "@petitBooQuotaResetInMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooQuotaResetSoon": "in a few moments",
+  "petitBooQuotaResetAutomatically": "automatically",
+  "petitBooQuotaDisplayTitle": "Message quota",
+  "petitBooQuotaDisplayResets": "Resets: {time}",
+  "@petitBooQuotaDisplayResets": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooLimitTitle": "Oops, all done already?",
+  "petitBooLimitBody": "Petit Boo needs energy to keep finding gems for you. Recharge with Hibons to unlock the conversation.",
+  "petitBooLimitWalletBalance": "Balance: {balance} Hibons",
+  "@petitBooLimitWalletBalance": {
+    "placeholders": {
+      "balance": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooLimitContinue": "Continue for {cost} Hibons (+{messages, plural, =1{1 msg} other{{messages} msg}})",
+  "@petitBooLimitContinue": {
+    "placeholders": {
+      "cost": {
+        "type": "int"
+      },
+      "messages": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooLimitWatchAdReward": "Watch an ad (+{amount} Hibons)",
+  "@petitBooLimitWatchAdReward": {
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooLimitComeBackTomorrow": "Come back tomorrow for new messages.",
+  "petitBooMaybeLater": "Maybe later",
+  "petitBooConversationUnlocked": "Conversation unlocked.",
+  "petitBooUnlockFailed": "Could not unlock the conversation",
+  "petitBooComingSoon": "Feature coming soon.",
+  "petitBooErrorWithMessage": "Error: {message}",
+  "@petitBooErrorWithMessage": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooFavoriteAddedWithTitle": "\"{eventTitle}\" added to favorites",
+  "@petitBooFavoriteAddedWithTitle": {
+    "placeholders": {
+      "eventTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooFavoriteAdded": "Added to favorites",
+  "petitBooFavoriteRemoved": "Removed from favorites",
+  "petitBooHibonsEarned": "+{amount} Hibons earned!",
+  "@petitBooHibonsEarned": {
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      }
+    }
+  },
   "bookingTicketSingular": "1 ticket",
   "bookingTicketPlural": "{count} tickets",
   "bookingLifecycleCancelled": "Cancelled",

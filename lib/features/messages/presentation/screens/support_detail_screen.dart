@@ -75,17 +75,19 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Fermer la conversation'),
-        content: const Text(
-            'Voulez-vous fermer cette conversation ? Vous ne pourrez plus envoyer de messages.'),
+        title: Text(context.l10n.messagesCloseConversation),
+        content: Text(context.l10n.messagesCloseConversationBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Fermer', style: TextStyle(color: Colors.red)),
+            child: Text(
+              context.l10n.commonClose,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -97,7 +99,11 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
+              content: Text(
+                context.l10n.messagesLoadError(
+                  ApiResponseHandler.extractError(e),
+                ),
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -175,9 +181,9 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Support LeHiboo',
-                            style: TextStyle(fontSize: 16),
+                          Text(
+                            context.l10n.messagesTabSupportLeHiboo,
+                            style: const TextStyle(fontSize: 16),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -203,13 +209,13 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                         if (value == 'close') _handleClose(notifier);
                       },
                       itemBuilder: (_) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'close',
                           child: Row(
                             children: [
-                              Icon(Icons.lock_outline, size: 18),
-                              SizedBox(width: 8),
-                              Text('Fermer la conversation'),
+                              const Icon(Icons.lock_outline, size: 18),
+                              const SizedBox(width: 8),
+                              Text(context.l10n.messagesCloseConversation),
                             ],
                           ),
                         ),
@@ -229,7 +235,7 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                           size: 18, color: Colors.grey.shade600),
                       const SizedBox(width: 8),
                       Text(
-                        'Cette conversation est fermée.',
+                        context.l10n.messagesClosedNotice,
                         style: TextStyle(
                             color: Colors.grey.shade700, fontSize: 13),
                       ),
@@ -266,9 +272,11 @@ class _MessagesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (messages.isEmpty) {
-      return const Center(
-        child: Text('Aucun message. Soyez le premier à écrire !',
-            style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text(
+          context.l10n.messagesEmptyThread,
+          style: const TextStyle(color: Colors.grey),
+        ),
       );
     }
 

@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:ui';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/conversation_route.dart';
@@ -83,10 +86,8 @@ class ConversationDetailNotifier
   }
 
   void _subscribeToRealtime() {
-    _realtimeSub = _ref
-        .read(messagesRealtimeProvider.notifier)
-        .events
-        .listen((event) {
+    _realtimeSub =
+        _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
       if (!mounted) return;
       if (event.conversationUuid != _uuid) return;
       switch (event.type) {
@@ -118,8 +119,7 @@ class ConversationDetailNotifier
     final conv = state.conversation.valueOrNull;
     if (conv == null) return;
     final messages = conv.messages
-        .map((m) =>
-            m.uuid == messageUuid ? m.copyWith(isDelivered: true) : m)
+        .map((m) => m.uuid == messageUuid ? m.copyWith(isDelivered: true) : m)
         .toList();
     state = state.copyWith(
         conversation: AsyncValue.data(conv.copyWith(messages: messages)));
@@ -145,8 +145,7 @@ class ConversationDetailNotifier
     final conv = state.conversation.valueOrNull;
     if (conv == null) return;
     final messages = conv.messages
-        .map((m) =>
-            m.uuid == messageUuid ? m.copyWith(isDeleted: true) : m)
+        .map((m) => m.uuid == messageUuid ? m.copyWith(isDeleted: true) : m)
         .toList();
     state = state.copyWith(
         conversation: AsyncValue.data(conv.copyWith(messages: messages)));
@@ -186,14 +185,19 @@ class ConversationDetailNotifier
         _ref.read(vendorOrgConversationsProvider.notifier).refresh();
       case ConversationRoute.admin:
       case ConversationRoute.adminReadonly:
-        _ref.read(adminConversationsProvider('user_support').notifier).refresh();
-        _ref.read(adminConversationsProvider('vendor_admin').notifier).refresh();
+        _ref
+            .read(adminConversationsProvider('user_support').notifier)
+            .refresh();
+        _ref
+            .read(adminConversationsProvider('vendor_admin').notifier)
+            .refresh();
     }
   }
 
   String _senderTypeForRoute() {
     return switch (_route) {
-      ConversationRoute.vendor || ConversationRoute.vendorOrgOrg =>
+      ConversationRoute.vendor ||
+      ConversationRoute.vendorOrgOrg =>
         'organization',
       ConversationRoute.admin || ConversationRoute.adminReadonly => 'admin',
       _ => 'participant',
@@ -276,18 +280,26 @@ class ConversationDetailNotifier
       case ConversationRoute.participant:
         list = _ref.read(conversationsProvider).conversations.valueOrNull;
       case ConversationRoute.participantSupport:
-        list = _ref.read(supportConversationsProvider).conversations.valueOrNull;
+        list =
+            _ref.read(supportConversationsProvider).conversations.valueOrNull;
       case ConversationRoute.vendor:
         list = _ref.read(vendorConversationsProvider).conversations.valueOrNull;
         if (list == null || !list.any((c) => c.uuid == _uuid)) {
           list = _ref.read(vendorSupportProvider).conversations.valueOrNull;
         }
       case ConversationRoute.vendorOrgOrg:
-        list = _ref.read(vendorOrgConversationsProvider).conversations.valueOrNull;
+        list =
+            _ref.read(vendorOrgConversationsProvider).conversations.valueOrNull;
       case ConversationRoute.admin:
-        list = _ref.read(adminConversationsProvider('user_support')).conversations.valueOrNull;
+        list = _ref
+            .read(adminConversationsProvider('user_support'))
+            .conversations
+            .valueOrNull;
         if (list == null || !list.any((c) => c.uuid == _uuid)) {
-          list = _ref.read(adminConversationsProvider('vendor_admin')).conversations.valueOrNull;
+          list = _ref
+              .read(adminConversationsProvider('vendor_admin'))
+              .conversations
+              .valueOrNull;
         }
       case ConversationRoute.adminReadonly:
         return 0;
@@ -312,8 +324,12 @@ class ConversationDetailNotifier
       case ConversationRoute.vendorOrgOrg:
         _ref.read(vendorOrgConversationsProvider.notifier).applyRead(_uuid);
       case ConversationRoute.admin:
-        _ref.read(adminConversationsProvider('user_support').notifier).applyRead(_uuid);
-        _ref.read(adminConversationsProvider('vendor_admin').notifier).applyRead(_uuid);
+        _ref
+            .read(adminConversationsProvider('user_support').notifier)
+            .applyRead(_uuid);
+        _ref
+            .read(adminConversationsProvider('vendor_admin').notifier)
+            .applyRead(_uuid);
       case ConversationRoute.adminReadonly:
         break;
     }
@@ -341,8 +357,8 @@ class ConversationDetailNotifier
 
     final optimisticMessages = [...conversation.messages, tempMessage];
     state = state.copyWith(
-      conversation: AsyncValue.data(
-          conversation.copyWith(messages: optimisticMessages)),
+      conversation:
+          AsyncValue.data(conversation.copyWith(messages: optimisticMessages)),
       isSending: true,
       clearSendError: true,
     );
@@ -369,7 +385,8 @@ class ConversationDetailNotifier
         isSending: false,
         sendError: ApiResponseHandler.extractError(
           e,
-          fallback: "Échec de l'envoi. Réessayez.",
+          fallback: lookupAppLocalizations(Locale(AppLocaleCache.languageCode))
+              .messagesSendFailedRetry,
         ),
       );
     }
@@ -407,8 +424,9 @@ class ConversationDetailNotifier
     final conversation = state.conversation.valueOrNull;
     if (conversation == null) return;
     final updated = await _editMessageForRoute(messageUuid, content);
-    final messages =
-        conversation.messages.map((m) => m.uuid == messageUuid ? updated : m).toList();
+    final messages = conversation.messages
+        .map((m) => m.uuid == messageUuid ? updated : m)
+        .toList();
     state = state.copyWith(
         conversation:
             AsyncValue.data(conversation.copyWith(messages: messages)));
@@ -462,10 +480,10 @@ class ConversationDetailNotifier
 
   Future<void> _deleteMessageForRoute(String messageUuid) {
     return switch (_route) {
-      ConversationRoute.participant => _repo.deleteMessage(
-          conversationUuid: _uuid, messageUuid: messageUuid),
-      ConversationRoute.participantSupport => _repo.deleteMessage(
-          conversationUuid: _uuid, messageUuid: messageUuid),
+      ConversationRoute.participant =>
+        _repo.deleteMessage(conversationUuid: _uuid, messageUuid: messageUuid),
+      ConversationRoute.participantSupport =>
+        _repo.deleteMessage(conversationUuid: _uuid, messageUuid: messageUuid),
       ConversationRoute.vendor => _repo.deleteVendorMessage(
           conversationUuid: _uuid, messageUuid: messageUuid),
       ConversationRoute.vendorOrgOrg => _repo.deleteOrgMessage(
@@ -494,7 +512,8 @@ class ConversationDetailNotifier
   Future<Conversation> _closeConversationForRoute() {
     return switch (_route) {
       ConversationRoute.participant => _repo.closeConversation(_uuid),
-      ConversationRoute.participantSupport => _repo.closeSupportConversation(_uuid),
+      ConversationRoute.participantSupport =>
+        _repo.closeSupportConversation(_uuid),
       ConversationRoute.vendor => _repo.closeVendorConversation(_uuid),
       ConversationRoute.vendorOrgOrg => _repo.closeOrgConversation(_uuid),
       ConversationRoute.admin => _repo.closeAdminConversation(_uuid),

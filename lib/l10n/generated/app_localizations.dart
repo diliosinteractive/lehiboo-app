@@ -1106,6 +1106,12 @@ abstract class AppLocalizations {
   /// **'Nouvelle diffusion'**
   String get messagesNewBroadcast;
 
+  /// No description provided for @messagesContactPartner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contacter un partenaire'**
+  String get messagesContactPartner;
+
   /// No description provided for @messagesBroadcastTitle.
   ///
   /// In fr, this message translates to:
@@ -1604,6 +1610,66 @@ abstract class AppLocalizations {
   /// **'Signalement d\'un contenu'**
   String get messagesSupportSubjectContentReport;
 
+  /// No description provided for @messagesCreateConversation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer la conversation'**
+  String get messagesCreateConversation;
+
+  /// No description provided for @messagesNoResults.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun résultat'**
+  String get messagesNoResults;
+
+  /// No description provided for @messagesSelectUserRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner un utilisateur.'**
+  String get messagesSelectUserRequired;
+
+  /// No description provided for @messagesSelectOrganizationRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner une organisation.'**
+  String get messagesSelectOrganizationRequired;
+
+  /// No description provided for @messagesSelectParticipantRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner un participant.'**
+  String get messagesSelectParticipantRequired;
+
+  /// No description provided for @messagesSelectPartnerRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner un partenaire.'**
+  String get messagesSelectPartnerRequired;
+
+  /// No description provided for @messagesNoAcceptedPartners.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun partenaire accepté'**
+  String get messagesNoAcceptedPartners;
+
+  /// No description provided for @messagesVendorParticipantAccessDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce participant n\'a pas d\'interaction avec votre organisation.'**
+  String get messagesVendorParticipantAccessDenied;
+
+  /// No description provided for @messagesVendorPartnerAccessDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce partenariat n\'est pas accepté.'**
+  String get messagesVendorPartnerAccessDenied;
+
+  /// No description provided for @messagesAccessDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accès refusé.'**
+  String get messagesAccessDenied;
+
   /// No description provided for @messagesNoConversations.
   ///
   /// In fr, this message translates to:
@@ -1928,6 +1994,12 @@ abstract class AppLocalizations {
   /// **'Un ticket support a été créé pour le suivi.'**
   String get messagesReportSupportCreated;
 
+  /// No description provided for @messagesSendFailedRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de l\'envoi. Réessayez.'**
+  String get messagesSendFailedRetry;
+
   /// No description provided for @messagesViewAction.
   ///
   /// In fr, this message translates to:
@@ -1939,6 +2011,126 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Signalement {reportId}'**
   String messagesAdminReportFallbackTitle(String reportId);
+
+  /// No description provided for @messagesAdminReportDetailTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détail du signalement'**
+  String get messagesAdminReportDetailTitle;
+
+  /// No description provided for @messagesAdminReportNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement introuvable'**
+  String get messagesAdminReportNotFound;
+
+  /// No description provided for @messagesUntitledConversation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversation sans titre'**
+  String get messagesUntitledConversation;
+
+  /// No description provided for @messagesAdminReportPartiesSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parties impliquées'**
+  String get messagesAdminReportPartiesSection;
+
+  /// No description provided for @messagesAdminReportReporterLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapporteur'**
+  String get messagesAdminReportReporterLabel;
+
+  /// No description provided for @messagesAdminReportReportedLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalé'**
+  String get messagesAdminReportReportedLabel;
+
+  /// No description provided for @messagesUserLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateur'**
+  String get messagesUserLabel;
+
+  /// No description provided for @messagesAdminReportReasonSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Motif du signalement'**
+  String get messagesAdminReportReasonSection;
+
+  /// No description provided for @messagesAdminReportInternalNoteSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Note interne (non visible par les usagers)'**
+  String get messagesAdminReportInternalNoteSection;
+
+  /// No description provided for @messagesAdminReportNoteHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une note de modération…'**
+  String get messagesAdminReportNoteHint;
+
+  /// No description provided for @messagesAdminReportNoteSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Note enregistrée.'**
+  String get messagesAdminReportNoteSaved;
+
+  /// No description provided for @messagesAdminReportModerationActionsSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actions de modération'**
+  String get messagesAdminReportModerationActionsSection;
+
+  /// No description provided for @messagesAdminReportFinalActionsWarning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces actions sont définitives et ne peuvent pas être annulées.'**
+  String get messagesAdminReportFinalActionsWarning;
+
+  /// No description provided for @messagesAdminReportDismissAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ignorer'**
+  String get messagesAdminReportDismissAction;
+
+  /// No description provided for @messagesAdminReportMarkReviewedAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer traité'**
+  String get messagesAdminReportMarkReviewedAction;
+
+  /// No description provided for @messagesAdminReportDismissConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce signalement sera marqué comme ignoré. Confirmez-vous cette action ?'**
+  String get messagesAdminReportDismissConfirmBody;
+
+  /// No description provided for @messagesAdminReportReviewConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce signalement sera marqué comme traité. Confirmez-vous cette action ?'**
+  String get messagesAdminReportReviewConfirmBody;
+
+  /// No description provided for @messagesAdminReportDismissedSnackbar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement ignoré.'**
+  String get messagesAdminReportDismissedSnackbar;
+
+  /// No description provided for @messagesAdminReportReviewedSnackbar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement marqué comme traité.'**
+  String get messagesAdminReportReviewedSnackbar;
+
+  /// No description provided for @messagesAdminReportViewConversation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la conversation liée'**
+  String get messagesAdminReportViewConversation;
 
   /// No description provided for @messagesAdminReportStatusReviewed.
   ///
@@ -2053,6 +2245,852 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'L\'IA peut commettre des erreurs. Vérifiez les informations importantes.'**
   String get petitBooDisclaimer;
+
+  /// No description provided for @petitBooStatusResponding.
+  ///
+  /// In fr, this message translates to:
+  /// **'Répond...'**
+  String get petitBooStatusResponding;
+
+  /// No description provided for @petitBooStatusAssistantAi.
+  ///
+  /// In fr, this message translates to:
+  /// **'Assistant IA'**
+  String get petitBooStatusAssistantAi;
+
+  /// No description provided for @petitBooHistoryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Historique'**
+  String get petitBooHistoryTitle;
+
+  /// No description provided for @petitBooNewConversation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle conversation'**
+  String get petitBooNewConversation;
+
+  /// No description provided for @petitBooServiceUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit Boo est temporairement indisponible'**
+  String get petitBooServiceUnavailable;
+
+  /// No description provided for @petitBooGreetingMorning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour'**
+  String get petitBooGreetingMorning;
+
+  /// No description provided for @petitBooGreetingAfternoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bon après-midi'**
+  String get petitBooGreetingAfternoon;
+
+  /// No description provided for @petitBooGreetingEvening.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonsoir'**
+  String get petitBooGreetingEvening;
+
+  /// No description provided for @petitBooGreetingWithName.
+  ///
+  /// In fr, this message translates to:
+  /// **'{greeting} {name} !'**
+  String petitBooGreetingWithName(String greeting, String name);
+
+  /// No description provided for @petitBooGreetingNoName.
+  ///
+  /// In fr, this message translates to:
+  /// **'{greeting} !'**
+  String petitBooGreetingNoName(String greeting);
+
+  /// No description provided for @petitBooSubtitleWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Que puis-je faire pour vous à {city} ?'**
+  String petitBooSubtitleWithCity(String city);
+
+  /// No description provided for @petitBooSubtitleDefault.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment puis-je vous aider aujourd\'hui ?'**
+  String get petitBooSubtitleDefault;
+
+  /// No description provided for @petitBooQuickTonight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce soir'**
+  String get petitBooQuickTonight;
+
+  /// No description provided for @petitBooQuickTonightPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Que faire ce soir ?'**
+  String get petitBooQuickTonightPrompt;
+
+  /// No description provided for @petitBooQuickTonightPromptWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Que faire ce soir à {city} ?'**
+  String petitBooQuickTonightPromptWithCity(String city);
+
+  /// No description provided for @petitBooQuickWeekend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Week-end'**
+  String get petitBooQuickWeekend;
+
+  /// No description provided for @petitBooQuickWeekendPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événements ce week-end'**
+  String get petitBooQuickWeekendPrompt;
+
+  /// No description provided for @petitBooQuickWeekendPromptWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événements ce week-end à {city}'**
+  String petitBooQuickWeekendPromptWithCity(String city);
+
+  /// No description provided for @petitBooQuickTickets.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes billets'**
+  String get petitBooQuickTickets;
+
+  /// No description provided for @petitBooQuickTicketsPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affiche mes réservations'**
+  String get petitBooQuickTicketsPrompt;
+
+  /// No description provided for @petitBooQuickFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris'**
+  String get petitBooQuickFavorites;
+
+  /// No description provided for @petitBooQuickFavoritesPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes favoris'**
+  String get petitBooQuickFavoritesPrompt;
+
+  /// No description provided for @petitBooTryAsking.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essayez de me demander...'**
+  String get petitBooTryAsking;
+
+  /// No description provided for @petitBooSuggestionTonight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quels événements ce soir ?'**
+  String get petitBooSuggestionTonight;
+
+  /// No description provided for @petitBooSuggestionTonightWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quels événements ce soir à {city} ?'**
+  String petitBooSuggestionTonightWithCity(String city);
+
+  /// No description provided for @petitBooSuggestionKids.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités pour enfants ce week-end'**
+  String get petitBooSuggestionKids;
+
+  /// No description provided for @petitBooSuggestionKidsWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités pour enfants à {city}'**
+  String petitBooSuggestionKidsWithCity(String city);
+
+  /// No description provided for @petitBooSuggestionFood.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sorties gastronomiques ce week-end'**
+  String get petitBooSuggestionFood;
+
+  /// No description provided for @petitBooSuggestionFoodWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sorties gastronomiques à {city}'**
+  String petitBooSuggestionFoodWithCity(String city);
+
+  /// No description provided for @petitBooSuggestionConcerts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Concerts et spectacles à venir'**
+  String get petitBooSuggestionConcerts;
+
+  /// No description provided for @petitBooSuggestionConcertsWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Concerts et spectacles à {city}'**
+  String petitBooSuggestionConcertsWithCity(String city);
+
+  /// No description provided for @petitBooEmptyHistoryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune conversation'**
+  String get petitBooEmptyHistoryTitle;
+
+  /// No description provided for @petitBooEmptyHistoryBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Démarrez une conversation avec Petit Boo\npour obtenir de l\'aide personnalisée'**
+  String get petitBooEmptyHistoryBody;
+
+  /// No description provided for @petitBooErrorTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oups !'**
+  String get petitBooErrorTitle;
+
+  /// No description provided for @petitBooDeleteConversationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer cette conversation ?'**
+  String get petitBooDeleteConversationTitle;
+
+  /// No description provided for @petitBooDeleteConversationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action est irréversible.'**
+  String get petitBooDeleteConversationBody;
+
+  /// No description provided for @petitBooConversationDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversation supprimée'**
+  String get petitBooConversationDeleted;
+
+  /// No description provided for @petitBooConversationFallbackTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversation'**
+  String get petitBooConversationFallbackTitle;
+
+  /// No description provided for @petitBooRelativeDaysAgo.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{Il y a 1 jour} other{Il y a {count} jours}}'**
+  String petitBooRelativeDaysAgo(int count);
+
+  /// No description provided for @petitBooMessageCountShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} msg'**
+  String petitBooMessageCountShort(int count);
+
+  /// No description provided for @petitBooBrainTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mémoire de Petit Boo'**
+  String get petitBooBrainTitle;
+
+  /// No description provided for @petitBooMemoryKnownTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce que je sais sur vous'**
+  String get petitBooMemoryKnownTitle;
+
+  /// No description provided for @petitBooMemoryClearAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout effacer'**
+  String get petitBooMemoryClearAll;
+
+  /// No description provided for @petitBooMemoryEnabled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mémoire activée'**
+  String get petitBooMemoryEnabled;
+
+  /// No description provided for @petitBooMemoryPaused.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mémoire en pause'**
+  String get petitBooMemoryPaused;
+
+  /// No description provided for @petitBooMemoryEnabledDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit Boo apprend de vos échanges pour vous proposer des sorties qui vous ressemblent. Vous pouvez corriger ou supprimer ces infos ci-dessous.'**
+  String get petitBooMemoryEnabledDescription;
+
+  /// No description provided for @petitBooMemoryPausedDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit Boo ne retient plus rien de vos nouvelles conversations. Les anciennes informations restent stockées mais ne sont pas utilisées.'**
+  String get petitBooMemoryPausedDescription;
+
+  /// No description provided for @petitBooMemoryEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je n\'ai pas encore d\'infos sur vous.'**
+  String get petitBooMemoryEmptyTitle;
+
+  /// No description provided for @petitBooMemoryEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Discutez avec moi pour que j\'apprenne vos goûts.'**
+  String get petitBooMemoryEmptyBody;
+
+  /// No description provided for @petitBooMemoryDisabledBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réactivez la mémoire pour voir et modifier vos informations.'**
+  String get petitBooMemoryDisabledBody;
+
+  /// No description provided for @petitBooMemoryEditAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get petitBooMemoryEditAction;
+
+  /// No description provided for @petitBooMemoryForgetAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oublier'**
+  String get petitBooMemoryForgetAction;
+
+  /// No description provided for @petitBooMemoryEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier {label}'**
+  String petitBooMemoryEditTitle(String label);
+
+  /// No description provided for @petitBooMemoryNewValueHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle valeur'**
+  String get petitBooMemoryNewValueHint;
+
+  /// No description provided for @petitBooMemoryForgetTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oublier cette info ?'**
+  String get petitBooMemoryForgetTitle;
+
+  /// No description provided for @petitBooMemoryForgetBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment que Petit Boo oublie : {label} ?'**
+  String petitBooMemoryForgetBody(String label);
+
+  /// No description provided for @petitBooMemoryNoKeep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non, garder'**
+  String get petitBooMemoryNoKeep;
+
+  /// No description provided for @petitBooMemoryForgetConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oui, oublier'**
+  String get petitBooMemoryForgetConfirm;
+
+  /// No description provided for @petitBooMemoryClearAllTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout effacer ?'**
+  String get petitBooMemoryClearAllTitle;
+
+  /// No description provided for @petitBooMemoryClearAllBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment effacer toutes les informations que Petit Boo a apprises sur vous ?'**
+  String get petitBooMemoryClearAllBody;
+
+  /// No description provided for @petitBooMemoryClearAllConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oui, tout effacer'**
+  String get petitBooMemoryClearAllConfirm;
+
+  /// No description provided for @petitBooMemoryLabelFirstName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénom'**
+  String get petitBooMemoryLabelFirstName;
+
+  /// No description provided for @petitBooMemoryLabelLastName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get petitBooMemoryLabelLastName;
+
+  /// No description provided for @petitBooMemoryLabelNickname.
+  ///
+  /// In fr, this message translates to:
+  /// **'Surnom'**
+  String get petitBooMemoryLabelNickname;
+
+  /// No description provided for @petitBooMemoryLabelAge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Âge'**
+  String get petitBooMemoryLabelAge;
+
+  /// No description provided for @petitBooMemoryLabelBirthYear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Année de naissance'**
+  String get petitBooMemoryLabelBirthYear;
+
+  /// No description provided for @petitBooMemoryLabelAgeGroup.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tranche d\'âge'**
+  String get petitBooMemoryLabelAgeGroup;
+
+  /// No description provided for @petitBooMemoryLabelCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville'**
+  String get petitBooMemoryLabelCity;
+
+  /// No description provided for @petitBooMemoryLabelRegion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Région'**
+  String get petitBooMemoryLabelRegion;
+
+  /// No description provided for @petitBooMemoryLabelCountry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pays'**
+  String get petitBooMemoryLabelCountry;
+
+  /// No description provided for @petitBooMemoryLabelLatitude.
+  ///
+  /// In fr, this message translates to:
+  /// **'Latitude'**
+  String get petitBooMemoryLabelLatitude;
+
+  /// No description provided for @petitBooMemoryLabelLongitude.
+  ///
+  /// In fr, this message translates to:
+  /// **'Longitude'**
+  String get petitBooMemoryLabelLongitude;
+
+  /// No description provided for @petitBooMemoryLabelMaxDistance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Distance max (km)'**
+  String get petitBooMemoryLabelMaxDistance;
+
+  /// No description provided for @petitBooMemoryLabelFavoriteActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités préférées'**
+  String get petitBooMemoryLabelFavoriteActivities;
+
+  /// No description provided for @petitBooMemoryLabelDislikedActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités à éviter'**
+  String get petitBooMemoryLabelDislikedActivities;
+
+  /// No description provided for @petitBooMemoryLabelFavoriteCategories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégories préférées'**
+  String get petitBooMemoryLabelFavoriteCategories;
+
+  /// No description provided for @petitBooMemoryLabelBudgetPreference.
+  ///
+  /// In fr, this message translates to:
+  /// **'Budget'**
+  String get petitBooMemoryLabelBudgetPreference;
+
+  /// No description provided for @petitBooMemoryLabelGroupType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de groupe'**
+  String get petitBooMemoryLabelGroupType;
+
+  /// No description provided for @petitBooMemoryLabelHasChildren.
+  ///
+  /// In fr, this message translates to:
+  /// **'A des enfants'**
+  String get petitBooMemoryLabelHasChildren;
+
+  /// No description provided for @petitBooMemoryLabelChildrenAges.
+  ///
+  /// In fr, this message translates to:
+  /// **'Âge des enfants'**
+  String get petitBooMemoryLabelChildrenAges;
+
+  /// No description provided for @petitBooMemoryLabelDietaryPreferences.
+  ///
+  /// In fr, this message translates to:
+  /// **'Régime alimentaire'**
+  String get petitBooMemoryLabelDietaryPreferences;
+
+  /// No description provided for @petitBooMemoryLabelMobilityConstraints.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contraintes de mobilité'**
+  String get petitBooMemoryLabelMobilityConstraints;
+
+  /// No description provided for @petitBooMemoryLabelPetFriendlyNeeded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Animaux acceptés'**
+  String get petitBooMemoryLabelPetFriendlyNeeded;
+
+  /// No description provided for @petitBooMemoryLabelPreferredTimes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moments préférés'**
+  String get petitBooMemoryLabelPreferredTimes;
+
+  /// No description provided for @petitBooMemoryLabelPreferredLanguage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue préférée'**
+  String get petitBooMemoryLabelPreferredLanguage;
+
+  /// No description provided for @petitBooMemoryLabelInterests.
+  ///
+  /// In fr, this message translates to:
+  /// **'Centres d\'intérêt'**
+  String get petitBooMemoryLabelInterests;
+
+  /// No description provided for @petitBooMemoryLabelLastUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernière mise à jour'**
+  String get petitBooMemoryLabelLastUpdated;
+
+  /// No description provided for @petitBooMemoryUndefined.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non défini'**
+  String get petitBooMemoryUndefined;
+
+  /// No description provided for @petitBooMemoryYes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oui'**
+  String get petitBooMemoryYes;
+
+  /// No description provided for @petitBooMemoryNo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non'**
+  String get petitBooMemoryNo;
+
+  /// No description provided for @petitBooMemoryAgeGroupYoungAdult.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jeune adulte'**
+  String get petitBooMemoryAgeGroupYoungAdult;
+
+  /// No description provided for @petitBooMemoryAgeGroupAdult.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adulte'**
+  String get petitBooMemoryAgeGroupAdult;
+
+  /// No description provided for @petitBooMemoryAgeGroupSenior.
+  ///
+  /// In fr, this message translates to:
+  /// **'Senior'**
+  String get petitBooMemoryAgeGroupSenior;
+
+  /// No description provided for @petitBooMemoryBudgetLow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit budget'**
+  String get petitBooMemoryBudgetLow;
+
+  /// No description provided for @petitBooMemoryBudgetMedium.
+  ///
+  /// In fr, this message translates to:
+  /// **'Budget moyen'**
+  String get petitBooMemoryBudgetMedium;
+
+  /// No description provided for @petitBooMemoryBudgetHigh.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gros budget'**
+  String get petitBooMemoryBudgetHigh;
+
+  /// No description provided for @petitBooMemoryGroupSolo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seul(e)'**
+  String get petitBooMemoryGroupSolo;
+
+  /// No description provided for @petitBooMemoryGroupCouple.
+  ///
+  /// In fr, this message translates to:
+  /// **'En couple'**
+  String get petitBooMemoryGroupCouple;
+
+  /// No description provided for @petitBooMemoryGroupFamily.
+  ///
+  /// In fr, this message translates to:
+  /// **'En famille'**
+  String get petitBooMemoryGroupFamily;
+
+  /// No description provided for @petitBooMemoryGroupFriends.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entre amis'**
+  String get petitBooMemoryGroupFriends;
+
+  /// No description provided for @petitBooQuotaHeaderTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos messages avec Petit Boo'**
+  String get petitBooQuotaHeaderTitle;
+
+  /// No description provided for @petitBooQuotaHeaderSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment fonctionne votre quota'**
+  String get petitBooQuotaHeaderSubtitle;
+
+  /// No description provided for @petitBooQuotaRemainingLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'restants'**
+  String get petitBooQuotaRemainingLabel;
+
+  /// No description provided for @petitBooQuotaUsage.
+  ///
+  /// In fr, this message translates to:
+  /// **'{used, plural, =1{1 message utilisé} other{{used} messages utilisés}} sur {limit}'**
+  String petitBooQuotaUsage(int used, int limit);
+
+  /// No description provided for @petitBooQuotaRenewalTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renouvellement {period}'**
+  String petitBooQuotaRenewalTitle(String period);
+
+  /// No description provided for @petitBooQuotaRenewsAt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre quota se renouvelle {time}'**
+  String petitBooQuotaRenewsAt(String time);
+
+  /// No description provided for @petitBooQuotaRenewsAutomatically.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre quota se renouvelle automatiquement'**
+  String get petitBooQuotaRenewsAutomatically;
+
+  /// No description provided for @petitBooQuotaTipTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Astuce'**
+  String get petitBooQuotaTipTitle;
+
+  /// No description provided for @petitBooQuotaTipDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Posez des questions précises pour obtenir des réponses plus pertinentes et économiser vos messages.'**
+  String get petitBooQuotaTipDescription;
+
+  /// No description provided for @petitBooQuotaWhyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pourquoi un quota ?'**
+  String get petitBooQuotaWhyTitle;
+
+  /// No description provided for @petitBooQuotaWhyDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit Boo utilise une IA avancée pour vous aider. Le quota nous permet de garantir un service de qualité pour tous.'**
+  String get petitBooQuotaWhyDescription;
+
+  /// No description provided for @petitBooQuotaUnderstood.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai compris'**
+  String get petitBooQuotaUnderstood;
+
+  /// No description provided for @petitBooQuotaPeriodDaily.
+  ///
+  /// In fr, this message translates to:
+  /// **'quotidien'**
+  String get petitBooQuotaPeriodDaily;
+
+  /// No description provided for @petitBooQuotaPeriodWeekly.
+  ///
+  /// In fr, this message translates to:
+  /// **'hebdomadaire'**
+  String get petitBooQuotaPeriodWeekly;
+
+  /// No description provided for @petitBooQuotaPeriodMonthly.
+  ///
+  /// In fr, this message translates to:
+  /// **'mensuel'**
+  String get petitBooQuotaPeriodMonthly;
+
+  /// No description provided for @petitBooQuotaPeriodAutomatic.
+  ///
+  /// In fr, this message translates to:
+  /// **'automatique'**
+  String get petitBooQuotaPeriodAutomatic;
+
+  /// No description provided for @petitBooQuotaResetVerySoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'très bientôt'**
+  String get petitBooQuotaResetVerySoon;
+
+  /// No description provided for @petitBooQuotaResetInDays.
+  ///
+  /// In fr, this message translates to:
+  /// **'dans {count, plural, =1{1 jour} other{{count} jours}}'**
+  String petitBooQuotaResetInDays(int count);
+
+  /// No description provided for @petitBooQuotaResetTomorrow.
+  ///
+  /// In fr, this message translates to:
+  /// **'demain'**
+  String get petitBooQuotaResetTomorrow;
+
+  /// No description provided for @petitBooQuotaResetInHours.
+  ///
+  /// In fr, this message translates to:
+  /// **'dans {count, plural, =1{1 heure} other{{count} heures}}'**
+  String petitBooQuotaResetInHours(int count);
+
+  /// No description provided for @petitBooQuotaResetInOneHour.
+  ///
+  /// In fr, this message translates to:
+  /// **'dans 1 heure'**
+  String get petitBooQuotaResetInOneHour;
+
+  /// No description provided for @petitBooQuotaResetInMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'dans {count, plural, =1{1 minute} other{{count} minutes}}'**
+  String petitBooQuotaResetInMinutes(int count);
+
+  /// No description provided for @petitBooQuotaResetSoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'dans quelques instants'**
+  String get petitBooQuotaResetSoon;
+
+  /// No description provided for @petitBooQuotaResetAutomatically.
+  ///
+  /// In fr, this message translates to:
+  /// **'automatiquement'**
+  String get petitBooQuotaResetAutomatically;
+
+  /// No description provided for @petitBooQuotaDisplayTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quota de messages'**
+  String get petitBooQuotaDisplayTitle;
+
+  /// No description provided for @petitBooQuotaDisplayResets.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renouvellement : {time}'**
+  String petitBooQuotaDisplayResets(String time);
+
+  /// No description provided for @petitBooLimitTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oups, c\'est déjà fini ?'**
+  String get petitBooLimitTitle;
+
+  /// No description provided for @petitBooLimitBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit Boo a besoin d\'énergie pour continuer à chercher des pépites pour vous. Rechargez son stock de Hibons pour débloquer la conversation.'**
+  String get petitBooLimitBody;
+
+  /// No description provided for @petitBooLimitWalletBalance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Solde : {balance} Hibons'**
+  String petitBooLimitWalletBalance(int balance);
+
+  /// No description provided for @petitBooLimitContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer pour {cost} Hibons (+{messages, plural, =1{1 msg} other{{messages} msg}})'**
+  String petitBooLimitContinue(int cost, int messages);
+
+  /// No description provided for @petitBooLimitWatchAdReward.
+  ///
+  /// In fr, this message translates to:
+  /// **'Regarder une pub (+{amount} Hibons)'**
+  String petitBooLimitWatchAdReward(int amount);
+
+  /// No description provided for @petitBooLimitComeBackTomorrow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revenez demain pour de nouveaux messages.'**
+  String get petitBooLimitComeBackTomorrow;
+
+  /// No description provided for @petitBooMaybeLater.
+  ///
+  /// In fr, this message translates to:
+  /// **'Peut-être plus tard'**
+  String get petitBooMaybeLater;
+
+  /// No description provided for @petitBooConversationUnlocked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversation débloquée.'**
+  String get petitBooConversationUnlocked;
+
+  /// No description provided for @petitBooUnlockFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de débloquer la conversation'**
+  String get petitBooUnlockFailed;
+
+  /// No description provided for @petitBooComingSoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fonctionnalité bientôt disponible.'**
+  String get petitBooComingSoon;
+
+  /// No description provided for @petitBooErrorWithMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur : {message}'**
+  String petitBooErrorWithMessage(String message);
+
+  /// No description provided for @petitBooFavoriteAddedWithTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'\"{eventTitle}\" ajouté aux favoris'**
+  String petitBooFavoriteAddedWithTitle(String eventTitle);
+
+  /// No description provided for @petitBooFavoriteAdded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouté aux favoris'**
+  String get petitBooFavoriteAdded;
+
+  /// No description provided for @petitBooFavoriteRemoved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retiré des favoris'**
+  String get petitBooFavoriteRemoved;
+
+  /// No description provided for @petitBooHibonsEarned.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{amount} Hibons gagnés !'**
+  String petitBooHibonsEarned(int amount);
 
   /// No description provided for @bookingTicketSingular.
   ///

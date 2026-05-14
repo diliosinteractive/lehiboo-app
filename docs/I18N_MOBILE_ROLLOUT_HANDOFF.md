@@ -1,6 +1,6 @@
 # Mobile i18n Rollout Handoff
 
-Last updated: 2026-05-14
+Last updated: 2026-05-15
 
 ## Goal
 
@@ -34,6 +34,10 @@ The localization infrastructure is in place and the first rollout slices are com
 13. Core Messages inbox/detail/shared-widget copy.
 14. Shared Messages new-conversation flow copy.
 15. Messages broadcast create/detail/tile copy.
+16. Messages support detail and admin report moderation detail copy.
+17. Legacy standalone Messages admin/vendor new-conversation screens.
+18. Petit Boo chat shell and conversation history copy.
+19. Petit Boo brain, quota/limit dialog, and toast copy.
 
 The app is not fully translated yet. Many screens still contain hard-coded French UI copy, but the app now has the wiring needed to migrate them screen by screen.
 
@@ -181,7 +185,9 @@ Covered:
 Not covered in this slice:
 
 - Shared create-message flow copy is covered in the Messages new-conversation slice below.
-- Broadcast detail/create flows, support detail, legacy standalone vendor/admin new conversation screens, and admin report detail moderation copy still need follow-up migration.
+- Broadcast detail/create flows are covered in the Messages broadcast slice below.
+- Support detail and admin report detail moderation copy are covered in the Messages support/admin-report slice below.
+- Legacy standalone vendor/admin new conversation screens are covered in the legacy Messages create slice below.
 - Backend-owned conversation subjects, message bodies, event titles, user/org names, participant names, API error response bodies, and system message content remain displayed as returned by their source.
 
 ### Messages New Conversation Flow
@@ -202,7 +208,8 @@ Covered:
 Not covered in this slice:
 
 - Legacy standalone `admin_new_conversation_screen.dart` and `vendor_new_conversation_screen.dart`; the active shared `NewConversationForm.show(...)` path was targeted first.
-- Support detail, legacy standalone vendor/admin new-conversation screens, and admin report detail moderation copy.
+- Support detail and admin report detail moderation copy are covered in the Messages support/admin-report slice below.
+- Legacy standalone vendor/admin new-conversation screens are covered in the legacy Messages create slice below.
 - Backend-owned subjects, message bodies, event/org/user/participant names, and API error response bodies remain displayed as returned by their source.
 
 ### Messages Broadcast Flow
@@ -224,7 +231,84 @@ Not covered in this slice:
 
 - Backend-owned event titles, broadcast subjects, broadcast bodies, and API error response bodies remain displayed as returned by their source.
 - `SlotOption.label` still exists as a French-first context-free domain fallback; the migrated broadcast create UI now avoids it in favor of context-aware formatting.
-- Support detail, legacy standalone vendor/admin new-conversation screens, and admin report detail moderation copy still need follow-up migration.
+- Support detail and admin report detail moderation copy are covered in the Messages support/admin-report slice below.
+- Legacy standalone vendor/admin new-conversation screens are covered in the legacy Messages create slice below.
+
+### Messages Support And Admin Report Detail
+
+Migrated:
+
+- `lib/features/messages/presentation/screens/support_detail_screen.dart`
+- `lib/features/messages/presentation/screens/admin_report_detail_screen.dart`
+- `lib/features/messages/presentation/providers/conversation_detail_provider.dart`
+
+Covered:
+
+- Support detail retry/error labels, close-conversation dialog/menu, Support title, closed banner, and empty-thread copy.
+- Shared conversation send-failure fallback in `conversation_detail_provider.dart`, using the cached app locale outside widget context.
+- Admin report detail title, not-found state, untitled conversation fallback, party labels/type labels, report reason section, internal note label/hint/save snackbar, moderation actions/warnings, dismiss/review confirmation dialogs, result snackbars, linked-conversation CTA, status labels, and reason labels.
+
+Not covered in this slice:
+
+- Backend-owned conversation subjects, report comments, user/org names, emails, organization names, and API error response bodies remain displayed as returned by their source.
+- Legacy standalone vendor/admin new-conversation screens are covered in the legacy Messages create slice below.
+
+### Legacy Messages Admin/Vendor New Conversation Screens
+
+Migrated:
+
+- `lib/features/messages/presentation/screens/admin_new_conversation_screen.dart`
+- `lib/features/messages/presentation/screens/vendor_new_conversation_screen.dart`
+
+Covered:
+
+- Legacy admin create-conversation titles, required recipient/organization labels, optional subject/message labels, create action, validation errors, search sheet titles/search hints/loading/no-result states, and localized error prefixes.
+- Legacy vendor create-conversation titles, required participant/partner/subject/message labels, support subject fallback, send action, validation errors, access-denied fallbacks, participant helper text, search sheet titles/search hints/loading/no-result/no-accepted-partners states.
+
+Not covered in this slice:
+
+- Backend-owned user/org/participant/partner names, emails, IDs, organization names, and API error response bodies remain displayed as returned by their source.
+
+### Petit Boo Chat Shell And History
+
+Migrated:
+
+- `lib/features/petit_boo/presentation/screens/petit_boo_chat_screen.dart`
+- `lib/features/petit_boo/presentation/screens/conversation_list_screen.dart`
+
+Covered:
+
+- Chat app bar assistant status, history/new-conversation tooltips, service-unavailable banner, retry action, personalized greetings/subtitles, quick action labels/prompts, suggestion section title, and suggestion prompts.
+- Conversation history title, retry action, empty state, new-conversation action, delete confirmation sheet, deletion toast, fallback conversation title, relative day labels, and message-count badge.
+
+Not covered in this slice:
+
+- Petit Boo brain, quota/limit, and toast copy are covered in the next Petit Boo slice below.
+- Petit Boo tool cards, tool schema fallback titles/descriptions, data-source field labels, and backend/LLM-generated chat content still need follow-up migration.
+- Existing `prefer_const_constructors` info-level analyzer noise in the touched Petit Boo screens was left as style debt.
+
+### Petit Boo Brain, Quota, Limit, And Toasts
+
+Migrated:
+
+- `lib/features/petit_boo/presentation/screens/petit_boo_brain_screen.dart`
+- `lib/features/petit_boo/presentation/widgets/quota_indicator.dart`
+- `lib/features/petit_boo/presentation/widgets/limit_reached_dialog.dart`
+- `lib/features/petit_boo/presentation/widgets/animated_toast.dart`
+
+Covered:
+
+- Brain screen title, memory toggle labels/descriptions, known-memory heading, empty/disabled states, edit/forget/clear actions, confirmation dialogs, and new-value hint.
+- Brain memory display labels for known context keys, localized boolean/value fallbacks for age group, budget, group type, and localized last-updated formatting.
+- Quota explanation sheet header, remaining/usage text, renewal period/relative reset copy, tip/why cards, close action, and full quota display reset label.
+- Limit-reached dialog title/body, wallet balance, unlock/ad actions, unavailable hint, dismiss action, unlock result toasts, coming-soon toast, and error fallback.
+- Petit Boo favorite and Hibons reward toast helper copy, including the overlay-based reward helper.
+
+Not covered in this slice:
+
+- Petit Boo tool cards, tool schema fallback titles/descriptions, API/data-source fallback labels, and backend/LLM-generated chat content remain follow-up work.
+- Legacy static French helpers in `PetitBooContextStorage` remain in the data layer for now, but the migrated brain screen no longer uses them for visible labels/values.
+- Existing `prefer_const_constructors`, `withOpacity`, and `activeColor` info-level analyzer notes in the touched Petit Boo widgets were left as style debt.
 
 ### API And Backend-Facing Locale
 
@@ -745,6 +829,77 @@ Result:
 - Locale tests passed.
 - Whitespace check passed.
 
+Latest focused Messages support/admin report detail check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/messages/presentation/screens/support_detail_screen.dart lib/features/messages/presentation/screens/admin_report_detail_screen.dart lib/features/messages/presentation/providers/conversation_detail_provider.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/messages/presentation/screens/support_detail_screen.dart lib/features/messages/presentation/screens/admin_report_detail_screen.dart lib/features/messages/presentation/providers/conversation_detail_provider.dart lib/core/l10n lib/l10n/generated
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused Messages support/admin report detail slice.
+- Locale tests passed.
+- Whitespace check passed.
+
+Latest focused legacy Messages admin/vendor new-conversation check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/messages/presentation/screens/admin_new_conversation_screen.dart lib/features/messages/presentation/screens/vendor_new_conversation_screen.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/messages/presentation/screens/admin_new_conversation_screen.dart lib/features/messages/presentation/screens/vendor_new_conversation_screen.dart lib/features/messages/presentation/screens/support_detail_screen.dart lib/features/messages/presentation/screens/admin_report_detail_screen.dart lib/features/messages/presentation/providers/conversation_detail_provider.dart lib/core/l10n lib/l10n/generated
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused legacy Messages admin/vendor new-conversation slice.
+- Locale tests passed.
+- Whitespace check passed.
+- Remaining Messages French-string scan matches only documented date-format patterns and the context-free `SlotOption.label` domain fallback.
+
+Latest focused Petit Boo chat shell/history check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/petit_boo/presentation/screens/petit_boo_chat_screen.dart lib/features/petit_boo/presentation/screens/conversation_list_screen.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/petit_boo/presentation/screens/petit_boo_chat_screen.dart lib/features/petit_boo/presentation/screens/conversation_list_screen.dart lib/features/petit_boo/presentation/widgets/chat_input_bar.dart lib/core/l10n lib/l10n/generated
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No warning/error issues found in the focused Petit Boo chat shell/history slice.
+- Analyzer output still includes existing `prefer_const_constructors` info-level style notes in the touched Petit Boo screens.
+- Locale tests passed.
+- Whitespace check passed.
+
+Latest focused Petit Boo brain/quota/limit/toast check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/petit_boo/presentation/screens/petit_boo_brain_screen.dart lib/features/petit_boo/presentation/widgets/quota_indicator.dart lib/features/petit_boo/presentation/widgets/limit_reached_dialog.dart lib/features/petit_boo/presentation/widgets/animated_toast.dart lib/l10n/generated
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/petit_boo/presentation/screens/petit_boo_brain_screen.dart lib/features/petit_boo/presentation/widgets/quota_indicator.dart lib/features/petit_boo/presentation/widgets/limit_reached_dialog.dart lib/features/petit_boo/presentation/widgets/animated_toast.dart lib/core/l10n lib/l10n/generated
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No warning/error issues found in the focused Petit Boo brain/quota/limit/toast slice.
+- Analyzer output still includes existing `prefer_const_constructors`, `withOpacity`, and `activeColor` info-level notes in the touched Petit Boo widgets.
+- Locale tests passed.
+- Whitespace check passed.
+
 Targeted analyzer checks:
 
 - Booking files no longer have analyzer errors after null-safety cleanup.
@@ -887,11 +1042,34 @@ Messages broadcast files are now part of the i18n work:
 - `lib/features/messages/presentation/screens/broadcast_detail_screen.dart`
 - `lib/features/messages/presentation/widgets/broadcast_tile.dart`
 
+Messages support/admin report detail files are now part of the i18n work:
+
+- `lib/features/messages/presentation/screens/support_detail_screen.dart`
+- `lib/features/messages/presentation/screens/admin_report_detail_screen.dart`
+- `lib/features/messages/presentation/providers/conversation_detail_provider.dart`
+
+Legacy Messages admin/vendor create files are now part of the i18n work:
+
+- `lib/features/messages/presentation/screens/admin_new_conversation_screen.dart`
+- `lib/features/messages/presentation/screens/vendor_new_conversation_screen.dart`
+
+Petit Boo chat shell/history files are now part of the i18n work:
+
+- `lib/features/petit_boo/presentation/screens/petit_boo_chat_screen.dart`
+- `lib/features/petit_boo/presentation/screens/conversation_list_screen.dart`
+
+Petit Boo brain/quota/limit/toast files are now part of the i18n work:
+
+- `lib/features/petit_boo/presentation/screens/petit_boo_brain_screen.dart`
+- `lib/features/petit_boo/presentation/widgets/quota_indicator.dart`
+- `lib/features/petit_boo/presentation/widgets/limit_reached_dialog.dart`
+- `lib/features/petit_boo/presentation/widgets/animated_toast.dart`
+
 Before committing or refining, review diffs by file instead of using bulk restore/reset commands.
 
 ## Where Work Stopped
 
-Stopped after completing the Messages broadcast create/detail/tile slice.
+Stopped after completing the Petit Boo brain/quota/limit/toast slice.
 
 Current stable stopping point:
 
@@ -913,10 +1091,14 @@ Current stable stopping point:
 - Core Messages inbox/detail/shared-widget copy is localized, including filters, conversation tiles, composer, message bubble actions, report sheet, and admin report list labels.
 - Shared Messages new-conversation copy is localized, including `/messages/new`, the modal form, recipient pickers, support subject chips, field validation, actions, and admin/vendor recipient search sheets embedded in the shared form.
 - Messages broadcast create/detail/tile copy is localized, including create steps, selectors, recipient preview, review, detail stats/statuses, and sending state.
+- Messages support detail and admin report moderation detail copy is localized, including support close/empty states, admin report party/reason/note/actions/status labels, confirmation dialogs, result snackbars, linked-conversation CTA, and the shared send-failure fallback.
+- Legacy standalone Messages admin/vendor new-conversation screens are localized, including recipient selectors, form labels, validation, actions, access-denied fallbacks, and search sheets.
+- Petit Boo chat shell/history copy is localized, including app bar statuses/tooltips, service banner, personalized greetings/subtitles, quick prompts, suggestions, history empty state, delete confirmation, relative dates, and message-count badge.
+- Petit Boo brain/quota/limit/toast copy is localized, including memory labels/actions/dialogs, quota explanation and reset text, limit dialog wallet/actions/toasts, favorite toasts, and Hibons reward toasts.
 - Direct hard-coded `featureName: '...'` / `featureName: "..."` scan under `lib/` is clean.
 - Locale unit tests pass.
 
-Next work should continue with remaining Messages support/admin report/legacy admin-vendor surfaces or Petit Boo chat/tool cards, not more locale plumbing.
+Next work should continue with remaining Petit Boo tool schemas/tool cards and context-free fallback labels, then memberships/partners/check-in/admin surfaces, not more locale plumbing.
 
 ## Remaining Task Queue
 
@@ -924,9 +1106,9 @@ Next work should continue with remaining Messages support/admin report/legacy ad
 
 Recommended order:
 
-1. Remaining Messages support/admin report/legacy admin-vendor surfaces.
-2. Petit Boo chat and tool cards.
-3. Memberships/partners/check-in/admin surfaces.
+1. Remaining Petit Boo tool schema, tool-card, and context-free fallback label surfaces.
+2. Memberships/partners/check-in/admin surfaces.
+3. Any remaining niche/disabled screens found by hard-coded copy scans.
 
 For each screen:
 

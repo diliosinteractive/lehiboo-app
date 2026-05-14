@@ -32,6 +32,10 @@ class _ReportDetailState {
       );
 }
 
+class _ReportNotFoundException implements Exception {
+  const _ReportNotFoundException();
+}
+
 class _ReportDetailNotifier extends StateNotifier<_ReportDetailState> {
   final String _uuid;
   final Ref _ref;
@@ -54,8 +58,11 @@ class _ReportDetailNotifier extends StateNotifier<_ReportDetailState> {
         state = state.copyWith(report: AsyncValue.data(found));
       } else {
         state = state.copyWith(
-            report: AsyncValue.error(
-                'Signalement introuvable', StackTrace.current));
+          report: AsyncValue.error(
+            const _ReportNotFoundException(),
+            StackTrace.current,
+          ),
+        );
       }
     } catch (e) {
       state =
@@ -167,29 +174,38 @@ class _AdminReportDetailScreenState
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/messages'),
         ),
-        title: const Text('Détail du signalement',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        title: Text(
+          context.l10n.messagesAdminReportDetailTitle,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
       ),
       body: state.report.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.flag_outlined, color: Colors.grey, size: 40),
-              const SizedBox(height: 12),
-              Text('$e',
+        error: (e, _) {
+          final message = e is _ReportNotFoundException
+              ? context.l10n.messagesAdminReportNotFound
+              : '$e';
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.flag_outlined, color: Colors.grey, size: 40),
+                const SizedBox(height: 12),
+                Text(
+                  message,
                   style: const TextStyle(color: Colors.grey),
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: notifier._load,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Réessayer'),
-              ),
-            ],
-          ),
-        ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: notifier._load,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(context.l10n.commonRetry),
+                ),
+              ],
+            ),
+          );
+        },
         data: (report) {
           if (!_noteInitialized) {
             _noteController.text = report.adminNote ?? '';
@@ -214,7 +230,7 @@ class _AdminReportDetailScreenState
                           Expanded(
                             child: Text(
                               report.conversationSubject ??
-                                  'Conversation sans titre',
+                                  context.l10n.messagesUntitledConversation,
                               style: const TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w700,
@@ -262,26 +278,26 @@ class _AdminReportDetailScreenState
                 const SizedBox(height: 16),
 
                 // ── 2. Parties ──────────────────────────────────────────
-                const _SectionLabel('Parties impliquées'),
+                _SectionLabel(context.l10n.messagesAdminReportPartiesSection),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: _PartyCard(
-                        label: 'Rapporteur',
+                        label: context.l10n.messagesAdminReportReporterLabel,
                         party: report.reporter,
-                        typeLabel: 'Utilisateur',
+                        typeLabel: context.l10n.messagesUserLabel,
                         typeColor: Colors.blue,
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _PartyCard(
-                        label: 'Signalé',
+                        label: context.l10n.messagesAdminReportReportedLabel,
                         party: report.againstWhom,
                         typeLabel: report.againstWhomType == 'organization'
-                            ? 'Organisation'
-                            : 'Utilisateur',
+                            ? context.l10n.messagesOrganizationLabel
+                            : context.l10n.messagesUserLabel,
                         typeColor: report.againstWhomType == 'organization'
                             ? Colors.purple
                             : Colors.blue,
@@ -292,7 +308,7 @@ class _AdminReportDetailScreenState
                 const SizedBox(height: 16),
 
                 // ── 3. Reason ───────────────────────────────────────────
-                const _SectionLabel('Motif du signalement'),
+                _SectionLabel(context.l10n.messagesAdminReportReasonSection),
                 _Card(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,8 +342,9 @@ class _AdminReportDetailScreenState
                 const SizedBox(height: 16),
 
                 // ── 4. Admin note ───────────────────────────────────────
-                const _SectionLabel(
-                    'Note interne (non visible par les usagers)'),
+                _SectionLabel(
+                  context.l10n.messagesAdminReportInternalNoteSection,
+                ),
                 _Card(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -337,7 +354,7 @@ class _AdminReportDetailScreenState
                         maxLines: 4,
                         style: const TextStyle(fontSize: 13),
                         decoration: InputDecoration(
-                          hintText: 'Ajouter une note de modération…',
+                          hintText: context.l10n.messagesAdminReportNoteHint,
                           hintStyle: TextStyle(
                               color: Colors.grey.shade400, fontSize: 13),
                           border: OutlineInputBorder(
@@ -380,8 +397,8 @@ class _AdminReportDetailScreenState
                                       strokeWidth: 2, color: Colors.white),
                                 )
                               : const Icon(Icons.save_outlined, size: 16),
-                          label: const Text('Enregistrer',
-                              style: TextStyle(fontSize: 13)),
+                          label: Text(context.l10n.commonSave,
+                              style: const TextStyle(fontSize: 13)),
                         ),
                       ),
                     ],
@@ -391,14 +408,17 @@ class _AdminReportDetailScreenState
                 // ── 5. Actions (pending only) ───────────────────────────
                 if (isPending) ...[
                   const SizedBox(height: 16),
-                  const _SectionLabel('Actions de modération'),
+                  _SectionLabel(
+                    context.l10n.messagesAdminReportModerationActionsSection,
+                  ),
                   _Card(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
-                          'Ces actions sont définitives et ne peuvent pas être annulées.',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        Text(
+                          context.l10n.messagesAdminReportFinalActionsWarning,
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                         const SizedBox(height: 14),
                         Row(
@@ -418,9 +438,11 @@ class _AdminReportDetailScreenState
                                       borderRadius: BorderRadius.circular(8)),
                                 ),
                                 icon: const Icon(Icons.close, size: 16),
-                                label: const Text('Ignorer',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w500)),
+                                label: Text(
+                                  context.l10n.messagesAdminReportDismissAction,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w500),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -438,9 +460,12 @@ class _AdminReportDetailScreenState
                                       borderRadius: BorderRadius.circular(8)),
                                 ),
                                 icon: const Icon(Icons.check, size: 16),
-                                label: const Text('Marquer traité',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w500)),
+                                label: Text(
+                                  context.l10n
+                                      .messagesAdminReportMarkReviewedAction,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w500),
+                                ),
                               ),
                             ),
                           ],
@@ -508,8 +533,10 @@ class _AdminReportDetailScreenState
                             borderRadius: BorderRadius.circular(10)),
                       ),
                       icon: const Icon(Icons.visibility_outlined, size: 18),
-                      label: const Text('Voir la conversation liée',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      label: Text(
+                        context.l10n.messagesAdminReportViewConversation,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ],
@@ -530,13 +557,14 @@ class _AdminReportDetailScreenState
       await notifier.updateNote(note.isEmpty ? null : note);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Note enregistrée.')),
+          SnackBar(content: Text(context.l10n.messagesAdminReportNoteSaved)),
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Erreur : $e'), backgroundColor: Colors.red));
+            content: Text(context.l10n.messagesLoadError(e.toString())),
+            backgroundColor: Colors.red));
       }
     }
   }
@@ -547,18 +575,20 @@ class _AdminReportDetailScreenState
     String action,
   ) async {
     final isDismiss = action == 'dismiss';
-    final label = isDismiss ? 'Ignorer' : 'Marquer traité';
+    final label = isDismiss
+        ? context.l10n.messagesAdminReportDismissAction
+        : context.l10n.messagesAdminReportMarkReviewedAction;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(label),
         content: Text(isDismiss
-            ? 'Ce signalement sera marqué comme ignoré. Confirmez-vous cette action ?'
-            : 'Ce signalement sera marqué comme traité. Confirmez-vous cette action ?'),
+            ? context.l10n.messagesAdminReportDismissConfirmBody
+            : context.l10n.messagesAdminReportReviewConfirmBody),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler')),
+              child: Text(context.l10n.commonCancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(
@@ -578,15 +608,16 @@ class _AdminReportDetailScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(isDismiss
-                  ? 'Signalement ignoré.'
-                  : 'Signalement marqué comme traité.'),
+                  ? context.l10n.messagesAdminReportDismissedSnackbar
+                  : context.l10n.messagesAdminReportReviewedSnackbar),
               backgroundColor: isDismiss ? Colors.grey.shade700 : Colors.green),
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Erreur : $e'), backgroundColor: Colors.red));
+            content: Text(context.l10n.messagesLoadError(e.toString())),
+            backgroundColor: Colors.red));
       }
     }
   }
@@ -654,22 +685,22 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, bg, fg) = switch (status) {
       'pending' => (
-          'En attente',
+          context.l10n.messagesStatusPending,
           const Color(0xFFFFF3E0),
           const Color(0xFFE65100)
         ),
       'reviewed' => (
-          'Traité',
+          context.l10n.messagesAdminReportStatusReviewed,
           const Color(0xFFE8F5E9),
           const Color(0xFF2E7D32)
         ),
       'dismissed' => (
-          'Ignoré',
+          context.l10n.messagesAdminReportStatusDismissed,
           const Color(0xFFF5F5F5),
           const Color(0xFF616161)
         ),
       'suspended' => (
-          'Suspendu',
+          context.l10n.messagesAdminReportStatusSuspended,
           const Color(0xFFFFEBEE),
           const Color(0xFFC62828)
         ),
@@ -699,13 +730,21 @@ class _ReasonChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, icon, color) = switch (reason) {
       'inappropriate' => (
-          'Contenu inapproprié',
+          context.l10n.messagesReasonInappropriate,
           Icons.warning_amber_outlined,
           Colors.orange
         ),
-      'harassment' => ('Harcèlement', Icons.person_off_outlined, Colors.red),
-      'spam' => ('Spam', Icons.mark_email_unread_outlined, Colors.blue),
-      _ => ('Autre', Icons.help_outline, Colors.grey),
+      'harassment' => (
+          context.l10n.messagesReasonHarassment,
+          Icons.person_off_outlined,
+          Colors.red
+        ),
+      'spam' => (
+          context.l10n.messagesReasonSpam,
+          Icons.mark_email_unread_outlined,
+          Colors.blue
+        ),
+      _ => (context.l10n.messagesReasonOther, Icons.help_outline, Colors.grey),
     };
 
     return Container(

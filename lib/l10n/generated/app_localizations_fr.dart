@@ -536,6 +536,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get messagesNewBroadcast => 'Nouvelle diffusion';
 
   @override
+  String get messagesContactPartner => 'Contacter un partenaire';
+
+  @override
   String get messagesBroadcastTitle => 'Diffusion';
 
   @override
@@ -825,6 +828,42 @@ class AppLocalizationsFr extends AppLocalizations {
   String get messagesSupportSubjectContentReport => 'Signalement d\'un contenu';
 
   @override
+  String get messagesCreateConversation => 'Créer la conversation';
+
+  @override
+  String get messagesNoResults => 'Aucun résultat';
+
+  @override
+  String get messagesSelectUserRequired =>
+      'Veuillez sélectionner un utilisateur.';
+
+  @override
+  String get messagesSelectOrganizationRequired =>
+      'Veuillez sélectionner une organisation.';
+
+  @override
+  String get messagesSelectParticipantRequired =>
+      'Veuillez sélectionner un participant.';
+
+  @override
+  String get messagesSelectPartnerRequired =>
+      'Veuillez sélectionner un partenaire.';
+
+  @override
+  String get messagesNoAcceptedPartners => 'Aucun partenaire accepté';
+
+  @override
+  String get messagesVendorParticipantAccessDenied =>
+      'Ce participant n\'a pas d\'interaction avec votre organisation.';
+
+  @override
+  String get messagesVendorPartnerAccessDenied =>
+      'Ce partenariat n\'est pas accepté.';
+
+  @override
+  String get messagesAccessDenied => 'Accès refusé.';
+
+  @override
   String get messagesNoConversations => 'Aucune conversation';
 
   @override
@@ -999,12 +1038,81 @@ class AppLocalizationsFr extends AppLocalizations {
       'Un ticket support a été créé pour le suivi.';
 
   @override
+  String get messagesSendFailedRetry => 'Échec de l\'envoi. Réessayez.';
+
+  @override
   String get messagesViewAction => 'Voir';
 
   @override
   String messagesAdminReportFallbackTitle(String reportId) {
     return 'Signalement $reportId';
   }
+
+  @override
+  String get messagesAdminReportDetailTitle => 'Détail du signalement';
+
+  @override
+  String get messagesAdminReportNotFound => 'Signalement introuvable';
+
+  @override
+  String get messagesUntitledConversation => 'Conversation sans titre';
+
+  @override
+  String get messagesAdminReportPartiesSection => 'Parties impliquées';
+
+  @override
+  String get messagesAdminReportReporterLabel => 'Rapporteur';
+
+  @override
+  String get messagesAdminReportReportedLabel => 'Signalé';
+
+  @override
+  String get messagesUserLabel => 'Utilisateur';
+
+  @override
+  String get messagesAdminReportReasonSection => 'Motif du signalement';
+
+  @override
+  String get messagesAdminReportInternalNoteSection =>
+      'Note interne (non visible par les usagers)';
+
+  @override
+  String get messagesAdminReportNoteHint => 'Ajouter une note de modération…';
+
+  @override
+  String get messagesAdminReportNoteSaved => 'Note enregistrée.';
+
+  @override
+  String get messagesAdminReportModerationActionsSection =>
+      'Actions de modération';
+
+  @override
+  String get messagesAdminReportFinalActionsWarning =>
+      'Ces actions sont définitives et ne peuvent pas être annulées.';
+
+  @override
+  String get messagesAdminReportDismissAction => 'Ignorer';
+
+  @override
+  String get messagesAdminReportMarkReviewedAction => 'Marquer traité';
+
+  @override
+  String get messagesAdminReportDismissConfirmBody =>
+      'Ce signalement sera marqué comme ignoré. Confirmez-vous cette action ?';
+
+  @override
+  String get messagesAdminReportReviewConfirmBody =>
+      'Ce signalement sera marqué comme traité. Confirmez-vous cette action ?';
+
+  @override
+  String get messagesAdminReportDismissedSnackbar => 'Signalement ignoré.';
+
+  @override
+  String get messagesAdminReportReviewedSnackbar =>
+      'Signalement marqué comme traité.';
+
+  @override
+  String get messagesAdminReportViewConversation => 'Voir la conversation liée';
 
   @override
   String get messagesAdminReportStatusReviewed => 'Traité';
@@ -1069,6 +1177,533 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get petitBooDisclaimer =>
       'L\'IA peut commettre des erreurs. Vérifiez les informations importantes.';
+
+  @override
+  String get petitBooStatusResponding => 'Répond...';
+
+  @override
+  String get petitBooStatusAssistantAi => 'Assistant IA';
+
+  @override
+  String get petitBooHistoryTitle => 'Historique';
+
+  @override
+  String get petitBooNewConversation => 'Nouvelle conversation';
+
+  @override
+  String get petitBooServiceUnavailable =>
+      'Petit Boo est temporairement indisponible';
+
+  @override
+  String get petitBooGreetingMorning => 'Bonjour';
+
+  @override
+  String get petitBooGreetingAfternoon => 'Bon après-midi';
+
+  @override
+  String get petitBooGreetingEvening => 'Bonsoir';
+
+  @override
+  String petitBooGreetingWithName(String greeting, String name) {
+    return '$greeting $name !';
+  }
+
+  @override
+  String petitBooGreetingNoName(String greeting) {
+    return '$greeting !';
+  }
+
+  @override
+  String petitBooSubtitleWithCity(String city) {
+    return 'Que puis-je faire pour vous à $city ?';
+  }
+
+  @override
+  String get petitBooSubtitleDefault =>
+      'Comment puis-je vous aider aujourd\'hui ?';
+
+  @override
+  String get petitBooQuickTonight => 'Ce soir';
+
+  @override
+  String get petitBooQuickTonightPrompt => 'Que faire ce soir ?';
+
+  @override
+  String petitBooQuickTonightPromptWithCity(String city) {
+    return 'Que faire ce soir à $city ?';
+  }
+
+  @override
+  String get petitBooQuickWeekend => 'Week-end';
+
+  @override
+  String get petitBooQuickWeekendPrompt => 'Événements ce week-end';
+
+  @override
+  String petitBooQuickWeekendPromptWithCity(String city) {
+    return 'Événements ce week-end à $city';
+  }
+
+  @override
+  String get petitBooQuickTickets => 'Mes billets';
+
+  @override
+  String get petitBooQuickTicketsPrompt => 'Affiche mes réservations';
+
+  @override
+  String get petitBooQuickFavorites => 'Favoris';
+
+  @override
+  String get petitBooQuickFavoritesPrompt => 'Mes favoris';
+
+  @override
+  String get petitBooTryAsking => 'Essayez de me demander...';
+
+  @override
+  String get petitBooSuggestionTonight => 'Quels événements ce soir ?';
+
+  @override
+  String petitBooSuggestionTonightWithCity(String city) {
+    return 'Quels événements ce soir à $city ?';
+  }
+
+  @override
+  String get petitBooSuggestionKids => 'Activités pour enfants ce week-end';
+
+  @override
+  String petitBooSuggestionKidsWithCity(String city) {
+    return 'Activités pour enfants à $city';
+  }
+
+  @override
+  String get petitBooSuggestionFood => 'Sorties gastronomiques ce week-end';
+
+  @override
+  String petitBooSuggestionFoodWithCity(String city) {
+    return 'Sorties gastronomiques à $city';
+  }
+
+  @override
+  String get petitBooSuggestionConcerts => 'Concerts et spectacles à venir';
+
+  @override
+  String petitBooSuggestionConcertsWithCity(String city) {
+    return 'Concerts et spectacles à $city';
+  }
+
+  @override
+  String get petitBooEmptyHistoryTitle => 'Aucune conversation';
+
+  @override
+  String get petitBooEmptyHistoryBody =>
+      'Démarrez une conversation avec Petit Boo\npour obtenir de l\'aide personnalisée';
+
+  @override
+  String get petitBooErrorTitle => 'Oups !';
+
+  @override
+  String get petitBooDeleteConversationTitle =>
+      'Supprimer cette conversation ?';
+
+  @override
+  String get petitBooDeleteConversationBody => 'Cette action est irréversible.';
+
+  @override
+  String get petitBooConversationDeleted => 'Conversation supprimée';
+
+  @override
+  String get petitBooConversationFallbackTitle => 'Conversation';
+
+  @override
+  String petitBooRelativeDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Il y a $count jours',
+      one: 'Il y a 1 jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String petitBooMessageCountShort(int count) {
+    return '$count msg';
+  }
+
+  @override
+  String get petitBooBrainTitle => 'Mémoire de Petit Boo';
+
+  @override
+  String get petitBooMemoryKnownTitle => 'Ce que je sais sur vous';
+
+  @override
+  String get petitBooMemoryClearAll => 'Tout effacer';
+
+  @override
+  String get petitBooMemoryEnabled => 'Mémoire activée';
+
+  @override
+  String get petitBooMemoryPaused => 'Mémoire en pause';
+
+  @override
+  String get petitBooMemoryEnabledDescription =>
+      'Petit Boo apprend de vos échanges pour vous proposer des sorties qui vous ressemblent. Vous pouvez corriger ou supprimer ces infos ci-dessous.';
+
+  @override
+  String get petitBooMemoryPausedDescription =>
+      'Petit Boo ne retient plus rien de vos nouvelles conversations. Les anciennes informations restent stockées mais ne sont pas utilisées.';
+
+  @override
+  String get petitBooMemoryEmptyTitle =>
+      'Je n\'ai pas encore d\'infos sur vous.';
+
+  @override
+  String get petitBooMemoryEmptyBody =>
+      'Discutez avec moi pour que j\'apprenne vos goûts.';
+
+  @override
+  String get petitBooMemoryDisabledBody =>
+      'Réactivez la mémoire pour voir et modifier vos informations.';
+
+  @override
+  String get petitBooMemoryEditAction => 'Modifier';
+
+  @override
+  String get petitBooMemoryForgetAction => 'Oublier';
+
+  @override
+  String petitBooMemoryEditTitle(String label) {
+    return 'Modifier $label';
+  }
+
+  @override
+  String get petitBooMemoryNewValueHint => 'Nouvelle valeur';
+
+  @override
+  String get petitBooMemoryForgetTitle => 'Oublier cette info ?';
+
+  @override
+  String petitBooMemoryForgetBody(String label) {
+    return 'Voulez-vous vraiment que Petit Boo oublie : $label ?';
+  }
+
+  @override
+  String get petitBooMemoryNoKeep => 'Non, garder';
+
+  @override
+  String get petitBooMemoryForgetConfirm => 'Oui, oublier';
+
+  @override
+  String get petitBooMemoryClearAllTitle => 'Tout effacer ?';
+
+  @override
+  String get petitBooMemoryClearAllBody =>
+      'Voulez-vous vraiment effacer toutes les informations que Petit Boo a apprises sur vous ?';
+
+  @override
+  String get petitBooMemoryClearAllConfirm => 'Oui, tout effacer';
+
+  @override
+  String get petitBooMemoryLabelFirstName => 'Prénom';
+
+  @override
+  String get petitBooMemoryLabelLastName => 'Nom';
+
+  @override
+  String get petitBooMemoryLabelNickname => 'Surnom';
+
+  @override
+  String get petitBooMemoryLabelAge => 'Âge';
+
+  @override
+  String get petitBooMemoryLabelBirthYear => 'Année de naissance';
+
+  @override
+  String get petitBooMemoryLabelAgeGroup => 'Tranche d\'âge';
+
+  @override
+  String get petitBooMemoryLabelCity => 'Ville';
+
+  @override
+  String get petitBooMemoryLabelRegion => 'Région';
+
+  @override
+  String get petitBooMemoryLabelCountry => 'Pays';
+
+  @override
+  String get petitBooMemoryLabelLatitude => 'Latitude';
+
+  @override
+  String get petitBooMemoryLabelLongitude => 'Longitude';
+
+  @override
+  String get petitBooMemoryLabelMaxDistance => 'Distance max (km)';
+
+  @override
+  String get petitBooMemoryLabelFavoriteActivities => 'Activités préférées';
+
+  @override
+  String get petitBooMemoryLabelDislikedActivities => 'Activités à éviter';
+
+  @override
+  String get petitBooMemoryLabelFavoriteCategories => 'Catégories préférées';
+
+  @override
+  String get petitBooMemoryLabelBudgetPreference => 'Budget';
+
+  @override
+  String get petitBooMemoryLabelGroupType => 'Type de groupe';
+
+  @override
+  String get petitBooMemoryLabelHasChildren => 'A des enfants';
+
+  @override
+  String get petitBooMemoryLabelChildrenAges => 'Âge des enfants';
+
+  @override
+  String get petitBooMemoryLabelDietaryPreferences => 'Régime alimentaire';
+
+  @override
+  String get petitBooMemoryLabelMobilityConstraints =>
+      'Contraintes de mobilité';
+
+  @override
+  String get petitBooMemoryLabelPetFriendlyNeeded => 'Animaux acceptés';
+
+  @override
+  String get petitBooMemoryLabelPreferredTimes => 'Moments préférés';
+
+  @override
+  String get petitBooMemoryLabelPreferredLanguage => 'Langue préférée';
+
+  @override
+  String get petitBooMemoryLabelInterests => 'Centres d\'intérêt';
+
+  @override
+  String get petitBooMemoryLabelLastUpdated => 'Dernière mise à jour';
+
+  @override
+  String get petitBooMemoryUndefined => 'Non défini';
+
+  @override
+  String get petitBooMemoryYes => 'Oui';
+
+  @override
+  String get petitBooMemoryNo => 'Non';
+
+  @override
+  String get petitBooMemoryAgeGroupYoungAdult => 'Jeune adulte';
+
+  @override
+  String get petitBooMemoryAgeGroupAdult => 'Adulte';
+
+  @override
+  String get petitBooMemoryAgeGroupSenior => 'Senior';
+
+  @override
+  String get petitBooMemoryBudgetLow => 'Petit budget';
+
+  @override
+  String get petitBooMemoryBudgetMedium => 'Budget moyen';
+
+  @override
+  String get petitBooMemoryBudgetHigh => 'Gros budget';
+
+  @override
+  String get petitBooMemoryGroupSolo => 'Seul(e)';
+
+  @override
+  String get petitBooMemoryGroupCouple => 'En couple';
+
+  @override
+  String get petitBooMemoryGroupFamily => 'En famille';
+
+  @override
+  String get petitBooMemoryGroupFriends => 'Entre amis';
+
+  @override
+  String get petitBooQuotaHeaderTitle => 'Vos messages avec Petit Boo';
+
+  @override
+  String get petitBooQuotaHeaderSubtitle => 'Comment fonctionne votre quota';
+
+  @override
+  String get petitBooQuotaRemainingLabel => 'restants';
+
+  @override
+  String petitBooQuotaUsage(int used, int limit) {
+    String _temp0 = intl.Intl.pluralLogic(
+      used,
+      locale: localeName,
+      other: '$used messages utilisés',
+      one: '1 message utilisé',
+    );
+    return '$_temp0 sur $limit';
+  }
+
+  @override
+  String petitBooQuotaRenewalTitle(String period) {
+    return 'Renouvellement $period';
+  }
+
+  @override
+  String petitBooQuotaRenewsAt(String time) {
+    return 'Votre quota se renouvelle $time';
+  }
+
+  @override
+  String get petitBooQuotaRenewsAutomatically =>
+      'Votre quota se renouvelle automatiquement';
+
+  @override
+  String get petitBooQuotaTipTitle => 'Astuce';
+
+  @override
+  String get petitBooQuotaTipDescription =>
+      'Posez des questions précises pour obtenir des réponses plus pertinentes et économiser vos messages.';
+
+  @override
+  String get petitBooQuotaWhyTitle => 'Pourquoi un quota ?';
+
+  @override
+  String get petitBooQuotaWhyDescription =>
+      'Petit Boo utilise une IA avancée pour vous aider. Le quota nous permet de garantir un service de qualité pour tous.';
+
+  @override
+  String get petitBooQuotaUnderstood => 'J\'ai compris';
+
+  @override
+  String get petitBooQuotaPeriodDaily => 'quotidien';
+
+  @override
+  String get petitBooQuotaPeriodWeekly => 'hebdomadaire';
+
+  @override
+  String get petitBooQuotaPeriodMonthly => 'mensuel';
+
+  @override
+  String get petitBooQuotaPeriodAutomatic => 'automatique';
+
+  @override
+  String get petitBooQuotaResetVerySoon => 'très bientôt';
+
+  @override
+  String petitBooQuotaResetInDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours',
+      one: '1 jour',
+    );
+    return 'dans $_temp0';
+  }
+
+  @override
+  String get petitBooQuotaResetTomorrow => 'demain';
+
+  @override
+  String petitBooQuotaResetInHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count heures',
+      one: '1 heure',
+    );
+    return 'dans $_temp0';
+  }
+
+  @override
+  String get petitBooQuotaResetInOneHour => 'dans 1 heure';
+
+  @override
+  String petitBooQuotaResetInMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '1 minute',
+    );
+    return 'dans $_temp0';
+  }
+
+  @override
+  String get petitBooQuotaResetSoon => 'dans quelques instants';
+
+  @override
+  String get petitBooQuotaResetAutomatically => 'automatiquement';
+
+  @override
+  String get petitBooQuotaDisplayTitle => 'Quota de messages';
+
+  @override
+  String petitBooQuotaDisplayResets(String time) {
+    return 'Renouvellement : $time';
+  }
+
+  @override
+  String get petitBooLimitTitle => 'Oups, c\'est déjà fini ?';
+
+  @override
+  String get petitBooLimitBody =>
+      'Petit Boo a besoin d\'énergie pour continuer à chercher des pépites pour vous. Rechargez son stock de Hibons pour débloquer la conversation.';
+
+  @override
+  String petitBooLimitWalletBalance(int balance) {
+    return 'Solde : $balance Hibons';
+  }
+
+  @override
+  String petitBooLimitContinue(int cost, int messages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      messages,
+      locale: localeName,
+      other: '$messages msg',
+      one: '1 msg',
+    );
+    return 'Continuer pour $cost Hibons (+$_temp0)';
+  }
+
+  @override
+  String petitBooLimitWatchAdReward(int amount) {
+    return 'Regarder une pub (+$amount Hibons)';
+  }
+
+  @override
+  String get petitBooLimitComeBackTomorrow =>
+      'Revenez demain pour de nouveaux messages.';
+
+  @override
+  String get petitBooMaybeLater => 'Peut-être plus tard';
+
+  @override
+  String get petitBooConversationUnlocked => 'Conversation débloquée.';
+
+  @override
+  String get petitBooUnlockFailed => 'Impossible de débloquer la conversation';
+
+  @override
+  String get petitBooComingSoon => 'Fonctionnalité bientôt disponible.';
+
+  @override
+  String petitBooErrorWithMessage(String message) {
+    return 'Erreur : $message';
+  }
+
+  @override
+  String petitBooFavoriteAddedWithTitle(String eventTitle) {
+    return '\"$eventTitle\" ajouté aux favoris';
+  }
+
+  @override
+  String get petitBooFavoriteAdded => 'Ajouté aux favoris';
+
+  @override
+  String get petitBooFavoriteRemoved => 'Retiré des favoris';
+
+  @override
+  String petitBooHibonsEarned(int amount) {
+    return '+$amount Hibons gagnés !';
+  }
 
   @override
   String get bookingTicketSingular => '1 billet';

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 
 /// Animated toast notification for Petit Boo actions
@@ -114,8 +115,8 @@ class PetitBooToast extends StatefulWidget {
     show(
       context,
       message: eventTitle != null
-          ? '"$eventTitle" ajouté aux favoris'
-          : 'Ajouté aux favoris',
+          ? context.l10n.petitBooFavoriteAddedWithTitle(eventTitle)
+          : context.l10n.petitBooFavoriteAdded,
       icon: Icons.favorite,
       color: PetitBooTheme.error,
     );
@@ -125,7 +126,7 @@ class PetitBooToast extends StatefulWidget {
   static void favoriteRemoved(BuildContext context) {
     show(
       context,
-      message: 'Retiré des favoris',
+      message: context.l10n.petitBooFavoriteRemoved,
       icon: Icons.favorite_border,
       color: PetitBooTheme.grey500,
     );
@@ -139,9 +140,7 @@ class PetitBooToast extends StatefulWidget {
   static void hibonsEarned(BuildContext context, {required int amount}) {
     show(
       context,
-      // TODO(i18n): remplacer par `l10n.favorites_hibonsEarned(amount)` quand
-      // un framework i18n sera en place dans l'app (fr/en/es/de/nl/ar).
-      message: '+$amount hibons 🪙 gagnés !',
+      message: context.l10n.petitBooHibonsEarned(amount),
       icon: Icons.monetization_on,
       color: const Color(0xFFFFB300), // or doré
       duration: const Duration(seconds: 3),
@@ -149,10 +148,11 @@ class PetitBooToast extends StatefulWidget {
   }
 
   /// Variante hibonsEarned qui prend un [OverlayState] directement (Plan 05).
-  static void hibonsEarnedOnOverlay(OverlayState overlay, {required int amount}) {
+  static void hibonsEarnedOnOverlay(OverlayState overlay,
+      {required int amount}) {
     showOnOverlay(
       overlay,
-      message: '+$amount hibons 🪙 gagnés !',
+      message: overlay.context.l10n.petitBooHibonsEarned(amount),
       icon: Icons.monetization_on,
       color: const Color(0xFFFFB300),
       duration: const Duration(seconds: 3),

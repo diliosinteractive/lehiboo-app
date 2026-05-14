@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../../data/models/conversation_dto.dart';
 import '../providers/conversation_list_provider.dart';
@@ -58,7 +59,7 @@ class ConversationListScreen extends ConsumerWidget {
           ),
           SizedBox(width: PetitBooTheme.spacing12),
           Text(
-            'Historique',
+            context.l10n.petitBooHistoryTitle,
             style: PetitBooTheme.headingSm,
           ),
         ],
@@ -66,7 +67,8 @@ class ConversationListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBody(BuildContext context, WidgetRef ref, ConversationListState state) {
+  Widget _buildBody(
+      BuildContext context, WidgetRef ref, ConversationListState state) {
     if (state.isLoading && state.conversations.isEmpty) {
       return Center(
         child: CircularProgressIndicator(
@@ -112,7 +114,8 @@ class ConversationListScreen extends ConsumerWidget {
           final conversation = state.conversations[index];
           return _ConversationCard(
             conversation: conversation,
-            onTap: () => context.push('/petit-boo?session=${conversation.uuid}'),
+            onTap: () =>
+                context.push('/petit-boo?session=${conversation.uuid}'),
             onDelete: () => _confirmDelete(context, ref, conversation),
           );
         },
@@ -142,7 +145,7 @@ class ConversationListScreen extends ConsumerWidget {
             ),
             SizedBox(height: PetitBooTheme.spacing24),
             Text(
-              'Oups !',
+              context.l10n.petitBooErrorTitle,
               style: PetitBooTheme.headingMd,
             ),
             SizedBox(height: PetitBooTheme.spacing8),
@@ -170,7 +173,7 @@ class ConversationListScreen extends ConsumerWidget {
                 ),
               ),
               icon: const Icon(Icons.refresh_rounded, size: 20),
-              label: const Text('Réessayer'),
+              label: Text(context.l10n.commonRetry),
             ),
           ],
         ),
@@ -207,12 +210,12 @@ class ConversationListScreen extends ConsumerWidget {
             ),
             SizedBox(height: PetitBooTheme.spacing24),
             Text(
-              'Aucune conversation',
+              context.l10n.petitBooEmptyHistoryTitle,
               style: PetitBooTheme.headingMd,
             ),
             SizedBox(height: PetitBooTheme.spacing8),
             Text(
-              'Démarrez une conversation avec Petit Boo\npour obtenir de l\'aide personnalisée',
+              context.l10n.petitBooEmptyHistoryBody,
               textAlign: TextAlign.center,
               style: PetitBooTheme.bodyMd.copyWith(
                 color: PetitBooTheme.textSecondary,
@@ -236,9 +239,9 @@ class ConversationListScreen extends ConsumerWidget {
                 shadowColor: PetitBooTheme.primary.withValues(alpha: 0.3),
               ),
               icon: const Icon(Icons.chat_rounded, size: 20),
-              label: const Text(
-                'Nouvelle conversation',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              label: Text(
+                context.l10n.petitBooNewConversation,
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -288,13 +291,13 @@ class ConversationListScreen extends ConsumerWidget {
             ),
             SizedBox(height: PetitBooTheme.spacing16),
             Text(
-              'Supprimer cette conversation ?',
+              context.l10n.petitBooDeleteConversationTitle,
               style: PetitBooTheme.headingSm,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: PetitBooTheme.spacing8),
             Text(
-              'Cette action est irréversible.',
+              context.l10n.petitBooDeleteConversationBody,
               style: PetitBooTheme.bodySm.copyWith(
                 color: PetitBooTheme.textSecondary,
               ),
@@ -308,13 +311,14 @@ class ConversationListScreen extends ConsumerWidget {
                     onPressed: () => Navigator.pop(context, false),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: PetitBooTheme.textPrimary,
-                      padding: EdgeInsets.symmetric(vertical: PetitBooTheme.spacing14),
+                      padding: EdgeInsets.symmetric(
+                          vertical: PetitBooTheme.spacing14),
                       side: BorderSide(color: PetitBooTheme.border),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Annuler'),
+                    child: Text(context.l10n.commonCancel),
                   ),
                 ),
                 SizedBox(width: PetitBooTheme.spacing12),
@@ -324,12 +328,13 @@ class ConversationListScreen extends ConsumerWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: PetitBooTheme.error,
                       foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: PetitBooTheme.spacing14),
+                      padding: EdgeInsets.symmetric(
+                          vertical: PetitBooTheme.spacing14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Supprimer'),
+                    child: Text(context.l10n.messagesDeleteAction),
                   ),
                 ),
               ],
@@ -346,7 +351,8 @@ class ConversationListScreen extends ConsumerWidget {
           .deleteConversation(conversation.uuid);
 
       if (context.mounted && success) {
-        PetitBooToast.success(context, 'Conversation supprimée');
+        PetitBooToast.success(
+            context, context.l10n.petitBooConversationDeleted);
       }
     }
   }
@@ -432,7 +438,8 @@ class _ConversationCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            conversation.title ?? 'Conversation',
+                            conversation.title ??
+                                context.l10n.petitBooConversationFallbackTitle,
                             style: PetitBooTheme.bodyMd.copyWith(
                               fontWeight: FontWeight.w600,
                               color: PetitBooTheme.textPrimary,
@@ -461,7 +468,7 @@ class _ConversationCard extends StatelessWidget {
                               ),
                               SizedBox(width: PetitBooTheme.spacing4),
                               Text(
-                                _formatDate(conversation.createdAt),
+                                _formatDate(context, conversation.createdAt),
                                 style: PetitBooTheme.caption.copyWith(
                                   color: PetitBooTheme.textTertiary,
                                 ),
@@ -478,7 +485,9 @@ class _ConversationCard extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(100),
                                   ),
                                   child: Text(
-                                    '${conversation.messageCount} msg',
+                                    context.l10n.petitBooMessageCountShort(
+                                      conversation.messageCount,
+                                    ),
                                     style: PetitBooTheme.caption.copyWith(
                                       color: PetitBooTheme.primary,
                                       fontWeight: FontWeight.w500,
@@ -509,7 +518,7 @@ class _ConversationCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(String isoDate) {
+  String _formatDate(BuildContext context, String isoDate) {
     try {
       final date = DateTime.parse(isoDate);
       final now = DateTime.now();
@@ -519,11 +528,13 @@ class _ConversationCard extends StatelessWidget {
         // Show time for today
         return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
       } else if (diff.inDays == 1) {
-        return 'Hier';
+        return context.l10n.commonYesterday;
       } else if (diff.inDays < 7) {
-        return 'Il y a ${diff.inDays} jours';
+        return context.l10n.petitBooRelativeDaysAgo(diff.inDays);
       } else {
-        return '${date.day}/${date.month}/${date.year}';
+        return context
+            .appDateFormat('d/M/yyyy', enPattern: 'M/d/yyyy')
+            .format(date);
       }
     } catch (e) {
       return isoDate;
