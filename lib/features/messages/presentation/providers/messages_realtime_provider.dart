@@ -144,6 +144,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   StreamSubscription<PusherChannelsClientLifeCycleState>? _lifecycleSub;
   StreamSubscription<ChannelReadEvent>? _eventSub;
   StreamSubscription<ChannelReadEvent>? _orgEventSub;
+  StreamSubscription<PusherChannelsReadEvent>? _allEventsSub;
   StreamSubscription<void>? _connectedSub;
   final _storage = SharedSecureStorage.instance;
   final _eventsController = StreamController<RealtimeEvent>.broadcast();
@@ -208,6 +209,17 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         }
       });
 
+      // Global wiretap: logs EVERY frame received from the WebSocket —
+      // protocol events (pusher:*, pusher_internal:*) and channel events.
+      // Useful when an event is fired by the backend but not handled by any
+      // bound channel (wrong channel name, wrong event name, payload shape…).
+      _allEventsSub = _client!.eventStream.listen((event) {
+        final root = event.rootObject;
+        dev.log(
+          '[Pusher][wire] ← name="${root['event']}" channel="${root['channel'] ?? '-'}" data=${root['data']}',
+        );
+      });
+
       final channel = _client!.privateChannel(
         'private-user.$userId',
         authorizationDelegate: _StorageTokenAuthDelegate(_storage),
@@ -244,10 +256,12 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     _lifecycleSub?.cancel();
     _eventSub?.cancel();
     _orgEventSub?.cancel();
+    _allEventsSub?.cancel();
     _connectedSub?.cancel();
     _lifecycleSub = null;
     _eventSub = null;
     _orgEventSub = null;
+    _allEventsSub = null;
     _connectedSub = null;
     _orgId = null;
     try {

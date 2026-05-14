@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E '\\\\.\\(dart|json\\)$')",
+      "Bash(xargs grep *)",
+      "Bash(dart analyze *)"
+    ]
+  }
+}
