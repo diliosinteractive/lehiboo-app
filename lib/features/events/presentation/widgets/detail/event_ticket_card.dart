@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/shared/widgets/animations/pulse_animation.dart';
@@ -46,6 +47,7 @@ class EventTicketCard extends StatefulWidget {
   final ValueChanged<int> onQuantityChanged;
   final bool isExpanded;
   final VoidCallback? onToggleExpand;
+
   /// When false, both quantity buttons are inert. Used by the event
   /// detail screen to lock the ticket selectors when no future slot is
   /// available — there's nothing to book against.
@@ -67,8 +69,12 @@ class EventTicketCard extends StatefulWidget {
 
 class _EventTicketCardState extends State<EventTicketCard> {
   bool get _isSelected => widget.quantity > 0;
-  bool get _isSoldOut => widget.ticket.remainingPlaces != null && widget.ticket.remainingPlaces! <= 0;
-  bool get _isLowStock => widget.ticket.remainingPlaces != null && widget.ticket.remainingPlaces! <= 5;
+  bool get _isSoldOut =>
+      widget.ticket.remainingPlaces != null &&
+      widget.ticket.remainingPlaces! <= 0;
+  bool get _isLowStock =>
+      widget.ticket.remainingPlaces != null &&
+      widget.ticket.remainingPlaces! <= 5;
   bool get _isFree => widget.ticket.price == 0;
 
   TicketTier get _tier {
@@ -116,139 +122,144 @@ class _EventTicketCardState extends State<EventTicketCard> {
         ],
       ),
       child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Row 1: Icon + Name + Price
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: _isSelected
-                              ? HbColors.brandPrimary.withValues(alpha: 0.1)
-                              : HbColors.grey200,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          _tier.icon,
-                          color: _isSelected ? HbColors.brandPrimary : HbColors.grey500,
-                          size: 20,
-                        ),
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Row 1: Icon + Name + Price
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _isSelected
+                            ? HbColors.brandPrimary.withValues(alpha: 0.1)
+                            : HbColors.grey200,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                widget.ticket.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: HbColors.textPrimary,
-                                ),
+                      child: Icon(
+                        _tier.icon,
+                        color: _isSelected
+                            ? HbColors.brandPrimary
+                            : HbColors.grey500,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.ticket.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: HbColors.textPrimary,
                               ),
                             ),
-                            _buildPrice(),
-                          ],
-                        ),
+                          ),
+                          _buildPrice(context),
+                        ],
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Row 2: Description + Quantity selector
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Description + stock badge
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (widget.ticket.description != null &&
-                                widget.ticket.description!.isNotEmpty)
-                              Text(
-                                widget.ticket.description!,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade600,
-                                  height: 1.3,
-                                ),
-                                maxLines: widget.isExpanded ? null : 2,
-                                overflow:
-                                    widget.isExpanded ? null : TextOverflow.ellipsis,
-                              ),
-                            const SizedBox(height: 6),
-                            _buildStockBadge(),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Quantity selector
-                      Flexible(
-                        flex: 2,
-                        child: _buildQuantitySelector(),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Expand pour plus de détails (optionnel)
-            if (widget.ticket.description != null &&
-                widget.ticket.description!.length > 80 &&
-                widget.onToggleExpand != null)
-              GestureDetector(
-                onTap: widget.onToggleExpand,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(15),
-                      bottomRight: Radius.circular(15),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        widget.isExpanded ? 'Voir moins' : 'Voir plus',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                // Row 2: Description + Quantity selector
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Description + stock badge
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.ticket.description != null &&
+                              widget.ticket.description!.isNotEmpty)
+                            Text(
+                              widget.ticket.description!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                                height: 1.3,
+                              ),
+                              maxLines: widget.isExpanded ? null : 2,
+                              overflow: widget.isExpanded
+                                  ? null
+                                  : TextOverflow.ellipsis,
+                            ),
+                          const SizedBox(height: 6),
+                          _buildStockBadge(context),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        widget.isExpanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        color: Colors.grey.shade600,
-                        size: 16,
-                      ),
-                    ],
+                    ),
+                    const SizedBox(width: 12),
+                    // Quantity selector
+                    Flexible(
+                      flex: 2,
+                      child: _buildQuantitySelector(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Expand pour plus de détails (optionnel)
+          if (widget.ticket.description != null &&
+              widget.ticket.description!.length > 80 &&
+              widget.onToggleExpand != null)
+            GestureDetector(
+              onTap: widget.onToggleExpand,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(15),
+                    bottomRight: Radius.circular(15),
                   ),
                 ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.isExpanded
+                          ? context.l10n.eventShowLess
+                          : context.l10n.eventShowMore,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      widget.isExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      color: Colors.grey.shade600,
+                      size: 16,
+                    ),
+                  ],
+                ),
               ),
-          ],
-        ),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _buildPrice() {
+  Widget _buildPrice(BuildContext context) {
     if (_isFree) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -256,9 +267,9 @@ class _EventTicketCardState extends State<EventTicketCard> {
           color: Colors.green.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Text(
-          'Gratuit',
-          style: TextStyle(
+        child: Text(
+          context.l10n.commonFree,
+          style: const TextStyle(
             color: Colors.green,
             fontWeight: FontWeight.bold,
             fontSize: 14,
@@ -277,7 +288,7 @@ class _EventTicketCardState extends State<EventTicketCard> {
     );
   }
 
-  Widget _buildStockBadge() {
+  Widget _buildStockBadge(BuildContext context) {
     if (_isSoldOut) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -285,14 +296,14 @@ class _EventTicketCardState extends State<EventTicketCard> {
           color: Colors.red.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.block, color: Colors.red, size: 14),
-            SizedBox(width: 4),
+            const Icon(Icons.block, color: Colors.red, size: 14),
+            const SizedBox(width: 4),
             Text(
-              'Épuisé',
-              style: TextStyle(
+              context.l10n.eventSoldOut,
+              style: const TextStyle(
                 color: Colors.red,
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
@@ -311,11 +322,12 @@ class _EventTicketCardState extends State<EventTicketCard> {
       if (_isLowStock) {
         color = Colors.orange;
         icon = Icons.local_fire_department;
-        text = 'Plus que ${widget.ticket.remainingPlaces}!';
+        text = context.l10n.eventTicketLowStock(widget.ticket.remainingPlaces!);
       } else {
         color = Colors.green;
         icon = Icons.check_circle_outline;
-        text = '${widget.ticket.remainingPlaces} disponible${widget.ticket.remainingPlaces! > 1 ? 's' : ''}';
+        text =
+            context.l10n.eventTicketsAvailable(widget.ticket.remainingPlaces!);
       }
 
       final badge = Container(
@@ -397,7 +409,9 @@ class _EventTicketCardState extends State<EventTicketCard> {
               style: TextStyle(
                 fontSize: widget.quantity > 0 ? 18 : 16,
                 fontWeight: FontWeight.bold,
-                color: widget.quantity > 0 ? HbColors.brandPrimary : HbColors.textPrimary,
+                color: widget.quantity > 0
+                    ? HbColors.brandPrimary
+                    : HbColors.textPrimary,
               ),
               child: Text(
                 widget.quantity.toString(),
@@ -436,7 +450,8 @@ class _EventTicketCardState extends State<EventTicketCard> {
           child: Icon(
             icon,
             size: 18,
-            color: onPressed != null ? HbColors.textPrimary : Colors.grey.shade400,
+            color:
+                onPressed != null ? HbColors.textPrimary : Colors.grey.shade400,
           ),
         ),
       ),
@@ -449,6 +464,7 @@ class EventTicketsSection extends StatelessWidget {
   final List<Ticket> tickets;
   final Map<String, int> quantities;
   final ValueChanged<MapEntry<String, int>> onQuantityChanged;
+
   /// Forwarded to each [EventTicketCard]. When false, no ticket can be
   /// added or removed — used when the event has no future slot to book
   /// against, so the customer can't reach a coherent booking state.
@@ -472,11 +488,11 @@ class EventTicketsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Billets',
-            style: TextStyle(
+            context.l10n.eventTicketsTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,

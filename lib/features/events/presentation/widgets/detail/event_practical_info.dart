@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
 import 'package:lehiboo/features/events/presentation/widgets/detail/practical_info_card.dart';
 import 'package:lehiboo/features/events/presentation/widgets/detail/practical_info_sheet.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// Section informations pratiques avec grille 2x2
 ///
@@ -51,8 +51,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
   bool get _hasServices =>
       _hasFood || _hasDrinks || _hasWifi || _hasOtherServices;
 
-  bool get _hasAnyInfo =>
-      _hasParking || _hasTransport || _hasServices;
+  bool get _hasAnyInfo => _hasParking || _hasTransport || _hasServices;
 
   @override
   Widget build(BuildContext context) {
@@ -62,11 +61,11 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Infos pratiques',
-            style: TextStyle(
+            context.l10n.eventPracticalInfoTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -78,19 +77,19 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
         // Grille 2x2 principale
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildMainGrid(),
+          child: _buildMainGrid(context),
         ),
 
         // Service chips
         if (_hasServices) ...[
           const SizedBox(height: 16),
-          _buildServiceChips(),
+          _buildServiceChips(context),
         ],
       ],
     );
   }
 
-  Widget _buildMainGrid() {
+  Widget _buildMainGrid(BuildContext context) {
     final cards = <Widget>[];
 
     // Card Lieu supprimée - redondante avec la section Localisation (carte)
@@ -101,8 +100,8 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       cards.add(
         PracticalInfoCard(
           icon: Icons.local_parking_outlined,
-          title: 'Parking',
-          subtitle: 'Places disponibles',
+          title: context.l10n.eventParkingTitle,
+          subtitle: context.l10n.eventParkingSubtitle,
           color: Colors.blue,
           onTap: () => _showParkingSheet(),
         ),
@@ -114,8 +113,8 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       cards.add(
         PracticalInfoCard(
           icon: Icons.directions_bus_outlined,
-          title: 'Transports',
-          subtitle: 'Bus, métro, tram',
+          title: context.l10n.eventTransportTitle,
+          subtitle: context.l10n.eventTransportSubtitle,
           color: Colors.green,
           onTap: () => _showTransportSheet(),
         ),
@@ -157,7 +156,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
     );
   }
 
-  Widget _buildServiceChips() {
+  Widget _buildServiceChips(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -168,11 +167,11 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
               padding: const EdgeInsets.only(right: 8),
               child: CompactInfoChip(
                 icon: Icons.restaurant,
-                label: 'Restauration',
+                label: context.l10n.eventFoodService,
                 color: Colors.orange,
                 onTap: () => _showAccessibilitySheet(
                   icon: Icons.restaurant,
-                  title: 'Restauration sur place',
+                  title: context.l10n.eventFoodOnSite,
                   note: widget.locationDetails?.food?.note,
                 ),
               ),
@@ -182,11 +181,11 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
               padding: const EdgeInsets.only(right: 8),
               child: CompactInfoChip(
                 icon: Icons.local_bar,
-                label: 'Boissons',
+                label: context.l10n.eventDrinks,
                 color: Colors.purple,
                 onTap: () => _showAccessibilitySheet(
                   icon: Icons.local_bar,
-                  title: 'Boissons disponibles',
+                  title: context.l10n.eventDrinksAvailable,
                   note: widget.locationDetails?.drinks?.note,
                 ),
               ),
@@ -200,7 +199,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
                 color: Colors.teal,
                 onTap: () => _showAccessibilitySheet(
                   icon: Icons.wifi,
-                  title: 'Wi-Fi disponible',
+                  title: context.l10n.eventWifiAvailable,
                   note: widget.locationDetails?.wifi?.note,
                 ),
               ),
@@ -208,7 +207,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
           // Dynamic chips for all remaining services from the API
           if (_hasOtherServices)
             ...widget.locationDetails!.otherServices.map((key) {
-              final info = _serviceInfo(key);
+              final info = _serviceInfo(context, key);
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: CompactInfoChip(
@@ -236,14 +235,22 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
     PracticalInfoSheet.show(
       context,
       icon: Icons.location_on,
-      title: widget.event.venue ?? 'Lieu',
+      title: widget.event.venue ?? context.l10n.eventPlace,
       description: address,
       color: HbColors.brandPrimary,
       actions: [
         if (lat != null && lng != null) ...[
-          PracticalInfoActions.googleMaps(lat: lat, lng: lng),
-          PracticalInfoActions.walkingDirections(lat: lat, lng: lng),
-          PracticalInfoActions.publicTransport(lat: lat, lng: lng),
+          PracticalInfoActions.googleMaps(context: context, lat: lat, lng: lng),
+          PracticalInfoActions.walkingDirections(
+            context: context,
+            lat: lat,
+            lng: lng,
+          ),
+          PracticalInfoActions.publicTransport(
+            context: context,
+            lat: lat,
+            lng: lng,
+          ),
         ],
         if (address.isNotEmpty)
           PracticalInfoActions.copyAddress(address: address, context: context),
@@ -261,16 +268,17 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
     PracticalInfoSheet.show(
       context,
       icon: Icons.local_parking,
-      title: 'Stationnement',
+      title: context.l10n.eventParkingSheetTitle,
       description: parking.description,
       imageUrl: parking.imageUrl,
       color: Colors.blue,
       actions: lat != null && lng != null
           ? [
               PracticalInfoActions.googleMaps(
+                context: context,
                 lat: lat,
                 lng: lng,
-                label: 'Naviguer vers le parking',
+                label: context.l10n.eventParkingDirections,
               ),
             ]
           : null,
@@ -287,13 +295,17 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
     PracticalInfoSheet.show(
       context,
       icon: Icons.directions_bus,
-      title: 'Transports en commun',
+      title: context.l10n.eventTransportSheetTitle,
       description: transport.description,
       imageUrl: transport.imageUrl,
       color: Colors.green,
       actions: lat != null && lng != null
           ? [
-              PracticalInfoActions.publicTransport(lat: lat, lng: lng),
+              PracticalInfoActions.publicTransport(
+                context: context,
+                lat: lat,
+                lng: lng,
+              ),
             ]
           : null,
     );
@@ -308,37 +320,40 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       context,
       icon: icon,
       title: title,
-      description: note ?? 'Ce service est disponible sur place.',
+      description: note ?? context.l10n.eventServiceDefaultDescription,
       color: HbColors.brandPrimary,
     );
   }
 
-  _ServiceDisplay _serviceInfo(String key) {
+  _ServiceDisplay _serviceInfo(BuildContext context, String key) {
     switch (key) {
       case 'materiel':
-        return _ServiceDisplay('Matériel fourni', Icons.handyman_outlined, Colors.brown);
+        return _ServiceDisplay(context.eventServiceLabel(key),
+            Icons.handyman_outlined, Colors.brown);
       case 'animateur':
-        return _ServiceDisplay('Animateur', Icons.person_outline, Colors.indigo);
+        return _ServiceDisplay(context.eventServiceLabel(key),
+            Icons.person_outline, Colors.indigo);
       case 'hebergement':
-        return _ServiceDisplay('Hébergement', Icons.hotel_outlined, Colors.deepPurple);
+        return _ServiceDisplay(context.eventServiceLabel(key),
+            Icons.hotel_outlined, Colors.deepPurple);
       case 'vestiaire':
-        return _ServiceDisplay('Vestiaire', Icons.checkroom_outlined, Colors.blueGrey);
+        return _ServiceDisplay(context.eventServiceLabel(key),
+            Icons.checkroom_outlined, Colors.blueGrey);
       case 'securite':
-        return _ServiceDisplay('Sécurité', Icons.security_outlined, Colors.red);
+        return _ServiceDisplay(context.eventServiceLabel(key),
+            Icons.security_outlined, Colors.red);
       case 'premiers_secours':
-        return _ServiceDisplay('Premiers secours', Icons.medical_services_outlined, Colors.redAccent);
+        return _ServiceDisplay(context.eventServiceLabel(key),
+            Icons.medical_services_outlined, Colors.redAccent);
       case 'garderie':
-        return _ServiceDisplay('Garderie', Icons.child_care_outlined, Colors.pink);
+        return _ServiceDisplay(context.eventServiceLabel(key),
+            Icons.child_care_outlined, Colors.pink);
       case 'photobooth':
-        return _ServiceDisplay('Photobooth', Icons.camera_alt_outlined, Colors.amber);
+        return _ServiceDisplay(context.eventServiceLabel(key),
+            Icons.camera_alt_outlined, Colors.amber);
       default:
-        // Capitalize first letter for unknown keys
-        final label = key.replaceAll('_', ' ');
-        return _ServiceDisplay(
-          label[0].toUpperCase() + label.substring(1),
-          Icons.check_circle_outline,
-          Colors.grey,
-        );
+        return _ServiceDisplay(context.eventServiceLabel(key),
+            Icons.check_circle_outline, Colors.grey);
     }
   }
 
@@ -347,7 +362,8 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
     if (widget.event.address != null && widget.event.address!.isNotEmpty) {
       parts.add(widget.event.address!);
     }
-    if (widget.event.postalCode != null && widget.event.postalCode!.isNotEmpty) {
+    if (widget.event.postalCode != null &&
+        widget.event.postalCode!.isNotEmpty) {
       parts.add(widget.event.postalCode!);
     }
     if (widget.event.city != null && widget.event.city!.isNotEmpty) {

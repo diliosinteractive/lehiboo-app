@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 
@@ -21,9 +22,9 @@ class EventIndicativePrices extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Services additionnels (indicatif)',
-            style: TextStyle(
+          Text(
+            context.l10n.eventServicesAdditionalTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -31,7 +32,7 @@ class EventIndicativePrices extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Prix indicatifs communiqués par l\'organisateur',
+            context.l10n.eventIndicativePrices,
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey.shade500,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/booking/data/models/order_api_dto.dart';
 
@@ -56,10 +57,10 @@ class _OrderSuccessScreenState extends ConsumerState<OrderSuccessScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Commande confirmee',
+              Text(
+                context.l10n.bookingOrderConfirmed,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: HbColors.textPrimary,
@@ -67,15 +68,15 @@ class _OrderSuccessScreenState extends ConsumerState<OrderSuccessScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Reference: ${order?.uuid ?? widget.orderId}',
+                context.l10n.bookingReference(order?.uuid ?? widget.orderId),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 32),
               if (bookings.isNotEmpty) ...[
-                const Text(
-                  'Reservations creees',
-                  style: TextStyle(
+                Text(
+                  context.l10n.bookingCreatedReservations,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: HbColors.textPrimary,
@@ -92,7 +93,7 @@ class _OrderSuccessScreenState extends ConsumerState<OrderSuccessScreen> {
                     border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: Text(
-                    'Vos billets sont en cours de generation. Vous les retrouverez dans Mes reservations.',
+                    context.l10n.bookingTicketsGeneratingOrder,
                     style: TextStyle(color: Colors.grey.shade700),
                   ),
                 ),
@@ -107,7 +108,7 @@ class _OrderSuccessScreenState extends ConsumerState<OrderSuccessScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Voir mes reservations'),
+                child: Text(context.l10n.bookingViewMyBookings),
               ),
               const SizedBox(height: 12),
               OutlinedButton(
@@ -118,7 +119,7 @@ class _OrderSuccessScreenState extends ConsumerState<OrderSuccessScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Retour a l accueil'),
+                child: Text(context.l10n.bookingBackHome),
               ),
             ],
           ),
@@ -152,7 +153,7 @@ class _BookingTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  booking.eventTitle ?? 'Reservation',
+                  booking.eventTitle ?? context.l10n.bookingReservationFallback,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

@@ -2051,4 +2051,814 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventAudienceSeniors => 'Seniors';
+
+  @override
+  String get eventDatesAvailable => 'Available dates';
+
+  @override
+  String get eventChooseDate => 'Choose a date';
+
+  @override
+  String eventViewAllCount(int count) {
+    return 'View all ($count)';
+  }
+
+  @override
+  String get eventNoDateAvailable => 'No date available';
+
+  @override
+  String get eventNoOpenSlots => 'This event has no open slots';
+
+  @override
+  String eventSpotsRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots left',
+      one: '1 spot left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventTicketsTitle => 'Tickets';
+
+  @override
+  String get eventShowMore => 'Show more';
+
+  @override
+  String get eventShowLess => 'Show less';
+
+  @override
+  String get eventSoldOut => 'Sold out';
+
+  @override
+  String eventTicketLowStock(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Only $count left!',
+      one: 'Only 1 left!',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventTicketsAvailable(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count available',
+      one: '1 available',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventTotal => 'total';
+
+  @override
+  String eventTicketsSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tickets selected',
+      one: '1 ticket selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventTicketsForDate(int count, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tickets • $date',
+      one: '1 ticket • $date',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventNoSeatsAvailable => 'No seats available';
+
+  @override
+  String eventExpectedCapacity(int count) {
+    return 'Expected capacity: $count';
+  }
+
+  @override
+  String get eventViewDates => 'View dates';
+
+  @override
+  String get eventReminded => 'Reminder set';
+
+  @override
+  String get eventRemindMe => 'Remind me';
+
+  @override
+  String get eventViewWebsite => 'View website';
+
+  @override
+  String get eventIndicativePrice => 'Indicative price';
+
+  @override
+  String eventDateFromTo(String date, String start, String end) {
+    return '$date from $start to $end';
+  }
+
+  @override
+  String eventDateAtStart(String date, String start) {
+    return '$date at $start';
+  }
+
+  @override
+  String get eventServicesAdditionalTitle => 'Additional services (indicative)';
+
+  @override
+  String get eventPracticalInfoTitle => 'Practical information';
+
+  @override
+  String get eventParkingTitle => 'Parking';
+
+  @override
+  String get eventParkingSubtitle => 'Available spaces';
+
+  @override
+  String get eventTransportTitle => 'Transport';
+
+  @override
+  String get eventTransportSubtitle => 'Bus, metro, tram';
+
+  @override
+  String get eventFoodService => 'Food';
+
+  @override
+  String get eventFoodOnSite => 'Food on site';
+
+  @override
+  String get eventDrinks => 'Drinks';
+
+  @override
+  String get eventDrinksAvailable => 'Drinks available';
+
+  @override
+  String get eventWifiAvailable => 'Wi-Fi available';
+
+  @override
+  String get eventServiceDefaultDescription =>
+      'This service is available on site.';
+
+  @override
+  String get eventServiceEquipment => 'Equipment provided';
+
+  @override
+  String get eventServiceFacilitator => 'Facilitator';
+
+  @override
+  String get eventServiceAccommodation => 'Accommodation';
+
+  @override
+  String get eventServiceCloakroom => 'Cloakroom';
+
+  @override
+  String get eventServiceSecurity => 'Security';
+
+  @override
+  String get eventServiceFirstAid => 'First aid';
+
+  @override
+  String get eventServiceChildcare => 'Childcare';
+
+  @override
+  String get eventServicePhotoBooth => 'Photo booth';
+
+  @override
+  String get eventPlace => 'Place';
+
+  @override
+  String get eventParkingSheetTitle => 'Parking';
+
+  @override
+  String get eventParkingDirections => 'Navigate to parking';
+
+  @override
+  String get eventTransportSheetTitle => 'Public transport';
+
+  @override
+  String get eventAccessibilityTitle => 'Accessibility';
+
+  @override
+  String get eventAccessibilityPmr => 'Wheelchair accessible';
+
+  @override
+  String get eventAccessibilityPmrTitle => 'Wheelchair accessibility';
+
+  @override
+  String get eventAccessibilitySignLanguage => 'Sign language';
+
+  @override
+  String get eventAccessibilityElevator => 'Elevator';
+
+  @override
+  String get eventAccessibilityDisabledParking => 'Accessible parking';
+
+  @override
+  String get eventAccessibilityDisabledSeats => 'Accessible seats';
+
+  @override
+  String get eventAccessibilityGuideDog => 'Guide dog';
+
+  @override
+  String get eventAccessibilityHearingLoop => 'Hearing loop';
+
+  @override
+  String get eventAccessibilityAudioDescription => 'Audio description';
+
+  @override
+  String get eventAccessibilityBraille => 'Braille';
+
+  @override
+  String get eventAvailable => 'Available';
+
+  @override
+  String get eventQuickActions => 'Quick actions';
+
+  @override
+  String get eventDrivingDirections => 'Driving directions';
+
+  @override
+  String get eventWalkingDirections => 'Walking directions';
+
+  @override
+  String get eventPublicTransportDirections => 'Public transport';
+
+  @override
+  String get eventCopyAddress => 'Copy address';
+
+  @override
+  String get eventAddressCopied => 'Address copied';
+
+  @override
+  String get eventDetailsLabel => 'Details';
+
+  @override
+  String get eventLocationTitle => 'Location';
+
+  @override
+  String get eventViewOnGoogleMaps => 'View on Google Maps';
+
+  @override
+  String get eventNoImage => 'No image';
+
+  @override
+  String get eventNoImageAvailable => 'No image available';
+
+  @override
+  String get eventViewVideo => 'View video';
+
+  @override
+  String eventViewAllPhotosCount(int count) {
+    return 'View all photos ($count)';
+  }
+
+  @override
+  String get eventPrivateNotFound => 'Event not found.';
+
+  @override
+  String get eventPasswordRequired => 'Password is required.';
+
+  @override
+  String get eventPasswordIncorrect => 'Incorrect password.';
+
+  @override
+  String get eventPasswordInvalidFormat => 'Invalid format.';
+
+  @override
+  String get eventPasswordNetworkError => 'Network error. Try again.';
+
+  @override
+  String eventPasswordRetryIn(int seconds) {
+    return 'Try again in ${seconds}s';
+  }
+
+  @override
+  String get eventPasswordChecking => 'Checking...';
+
+  @override
+  String get eventUnlock => 'Unlock';
+
+  @override
+  String get eventPrivateTitle => 'This event is private';
+
+  @override
+  String get eventPrivateInstructions =>
+      'Enter the password shared by the organizer.';
+
+  @override
+  String get eventPasswordAttemptsWarning =>
+      '3 attempts left before a 1-minute delay.';
+
+  @override
+  String get eventPasswordLabel => 'Password';
+
+  @override
+  String get eventPasswordHint => 'Enter the password';
+
+  @override
+  String get eventMembersOnlyTitle => 'Members only';
+
+  @override
+  String get eventMembersOnlyPrefix => 'The event ';
+
+  @override
+  String get eventMembersOnlyReservedFor => 'is reserved for members of ';
+
+  @override
+  String get eventMembersOnlySuffix => '. Join the community to access it.';
+
+  @override
+  String get eventOrganizationFallback => 'this organization';
+
+  @override
+  String get eventViewOrganizer => 'View organizer';
+
+  @override
+  String get eventEnterPassword => 'Enter password';
+
+  @override
+  String get eventPrivateFallbackSubtitle =>
+      'This event is private. Enter the password shared by the organizer.';
+
+  @override
+  String eventShareWithSender(
+      String senderName, String eventTitle, String url) {
+    return '$senderName is sharing the event $eventTitle: $url';
+  }
+
+  @override
+  String eventShareDefault(String eventTitle, String url) {
+    return 'Check out the event $eventTitle: $url';
+  }
+
+  @override
+  String get eventQuestionsTitle => 'Questions';
+
+  @override
+  String get eventAsk => 'Ask';
+
+  @override
+  String get eventQuestionSent => 'Your question has been sent!';
+
+  @override
+  String get eventQuestionAlreadyAsked =>
+      'You have already asked a question about this event.';
+
+  @override
+  String get eventYourQuestion => 'Your question';
+
+  @override
+  String get eventQuestionStatusPending => 'Pending moderation';
+
+  @override
+  String get eventQuestionStatusApproved => 'Approved';
+
+  @override
+  String get eventQuestionStatusAnswered => 'Answered';
+
+  @override
+  String get eventQuestionStatusRejected => 'Rejected';
+
+  @override
+  String eventViewAllQuestionsCount(int count) {
+    return 'View all questions ($count)';
+  }
+
+  @override
+  String get eventNoQuestionsTitle => 'No questions yet';
+
+  @override
+  String get eventNoQuestionsBody =>
+      'Be the first to ask a question about this event.';
+
+  @override
+  String get eventAskQuestion => 'Ask a question';
+
+  @override
+  String get eventQuestionsLoadError => 'Unable to load questions';
+
+  @override
+  String get eventQuestionsEnd => 'You have seen all questions';
+
+  @override
+  String get eventVoteUnavailable => 'Unable to vote right now.';
+
+  @override
+  String eventQuestionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventOfficialAnswer => 'Official answer';
+
+  @override
+  String get eventAnonymous => 'Anonymous';
+
+  @override
+  String get eventHelpful => 'Helpful';
+
+  @override
+  String eventHelpfulCount(int count) {
+    return 'Helpful ($count)';
+  }
+
+  @override
+  String get eventAskQuestionHint => 'Example: What time do doors open?';
+
+  @override
+  String get eventQuestionRequired => 'Please enter your question.';
+
+  @override
+  String get eventQuestionMinLength =>
+      'Your question must contain at least 10 characters.';
+
+  @override
+  String get eventQuestionTooLong => 'Your question is too long (1000 max).';
+
+  @override
+  String get eventQuestionInfo =>
+      'The organizer will receive your question and reply soon.';
+
+  @override
+  String get eventSendQuestion => 'Send my question';
+
+  @override
+  String get eventCheckConnectionRetry =>
+      'Check your connection, then try again.';
+
+  @override
+  String get eventOrganizerInfoSources => 'Info Sources';
+
+  @override
+  String get eventOrganizerTitle => 'Organizer';
+
+  @override
+  String get eventOrganizerVerified => 'Verified organizer';
+
+  @override
+  String get eventOrganizerNotVerified => 'Organizer not verified';
+
+  @override
+  String eventOrganizerEventsPublished(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events published',
+      one: '1 event published',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventOrganizerFollowers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count followers',
+      one: '1 follower',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventContact => 'Contact';
+
+  @override
+  String get eventViewProfile => 'View profile';
+
+  @override
+  String get eventWrittenBy => 'Written by';
+
+  @override
+  String get eventLehibooExperiences => 'LEHIBOO EXPERIENCES';
+
+  @override
+  String get eventSourceInfo => 'Info source: ';
+
+  @override
+  String get eventSimilarEvents => 'Similar events';
+
+  @override
+  String get bookingCheckoutTitle => 'Finalize my booking';
+
+  @override
+  String get bookingSummaryTitle => 'Summary';
+
+  @override
+  String get bookingTicketFallback => 'Ticket';
+
+  @override
+  String get bookingTotal => 'Total';
+
+  @override
+  String get bookingBuyerContactTitle => 'Your contact details';
+
+  @override
+  String get bookingContactDetailsTitle => 'Contact details';
+
+  @override
+  String get bookingContactDetailsSubtitle =>
+      'You will receive your confirmation and tickets at this address.';
+
+  @override
+  String get bookingAdditionalInfoOptional =>
+      'Additional information (optional)';
+
+  @override
+  String get bookingFirstNameLabelRequired => 'First name *';
+
+  @override
+  String get bookingLastNameLabelRequired => 'Last name *';
+
+  @override
+  String get bookingEmailLabelRequired => 'Email *';
+
+  @override
+  String get bookingPhoneLabel => 'Phone';
+
+  @override
+  String get bookingAgeLabel => 'Age';
+
+  @override
+  String get bookingMembershipCityLabel => 'Membership city';
+
+  @override
+  String get bookingFirstNameRequired => 'First name is required';
+
+  @override
+  String get bookingLastNameRequired => 'Last name is required';
+
+  @override
+  String get bookingEmailRequired => 'Email is required';
+
+  @override
+  String get bookingEmailInvalid => 'Invalid email';
+
+  @override
+  String get bookingCityMaxLength => 'City must not exceed 255 characters';
+
+  @override
+  String get bookingTermsPrefix => 'I accept the ';
+
+  @override
+  String get bookingTermsConnector => ' and the ';
+
+  @override
+  String get bookingAcceptSalesRequired => 'Please accept the terms of sale';
+
+  @override
+  String get bookingEveryTicketNeedsParticipant =>
+      'Each ticket must have a participant';
+
+  @override
+  String get bookingParticipantsMissingDetails =>
+      'Please enter the first name, last name, birth date, city, and relationship for each participant';
+
+  @override
+  String get bookingParticipantsMissingCartDetails =>
+      'Please enter the first name, birth date, city, and relationship for each participant';
+
+  @override
+  String get bookingConfirm => 'Confirm';
+
+  @override
+  String get bookingPay => 'Pay';
+
+  @override
+  String get bookingContinueToPayment => 'Continue to payment';
+
+  @override
+  String get bookingPaymentCancelled => 'Payment cancelled';
+
+  @override
+  String bookingTicketsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tickets',
+      one: '1 ticket',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bookingCartTitle => 'Cart';
+
+  @override
+  String get bookingCartHoldExpired =>
+      'The cart hold has expired. Add your tickets again to continue.';
+
+  @override
+  String get bookingClearCartTitle => 'Clear cart?';
+
+  @override
+  String get bookingClearCartBody =>
+      'All added tickets will be removed. This action cannot be undone.';
+
+  @override
+  String get bookingClear => 'Clear';
+
+  @override
+  String bookingCartHoldLabel(String time) {
+    return 'Cart $time';
+  }
+
+  @override
+  String bookingPlacesHoldLabel(String time) {
+    return 'Seats $time';
+  }
+
+  @override
+  String get bookingCartHoldTitle => 'Cart hold';
+
+  @override
+  String get bookingCartHoldBody =>
+      'Your selection is held for 15 minutes after the last item is added. At payment time, seats are locked for the time needed to finish.';
+
+  @override
+  String get bookingUnderstood => 'Got it';
+
+  @override
+  String get bookingEmptyCartTitle => 'Your cart is empty';
+
+  @override
+  String get bookingEmptyCartBody =>
+      'Add tickets from an event page to pay for several bookings at once.';
+
+  @override
+  String get bookingExploreEvents => 'Explore events';
+
+  @override
+  String get bookingParticipantsTitle => 'Participants';
+
+  @override
+  String get bookingParticipantsInstruction =>
+      'Choose a saved person or fill in each ticket.';
+
+  @override
+  String get bookingParticipantSectionSubtitle =>
+      'One form per ticket — fill in each participant';
+
+  @override
+  String get bookingParticipantInfoNote =>
+      'First name, birth date, city, and relationship help the AI and Le Hiboo experience suggest the most relevant offers and events.';
+
+  @override
+  String get bookingChooseSavedParticipant => 'Choose a saved participant';
+
+  @override
+  String get bookingAddToNextEmptyTicket => 'Add to the next empty ticket';
+
+  @override
+  String get bookingMyParticipants => 'My participants';
+
+  @override
+  String bookingSavedParticipantsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count saved',
+      one: '1 saved',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bookingPrefillTicketsOneClick =>
+      'Pre-fill your tickets in one tap';
+
+  @override
+  String bookingParticipantsReady(int completed, int total) {
+    return '$completed / $total participants ready';
+  }
+
+  @override
+  String get bookingFillAllWithProfile => 'Fill all tickets with my profile';
+
+  @override
+  String get bookingIncompleteProfileTitle => 'Incomplete profile';
+
+  @override
+  String get bookingIncompleteProfileBody =>
+      'Complete your profile (birth date, city) to pre-fill all required fields.';
+
+  @override
+  String get bookingCompleteProfile => 'Complete my profile >';
+
+  @override
+  String get bookingPrefillTicket => 'Pre-fill this ticket';
+
+  @override
+  String get bookingManualEntry => 'Manual entry';
+
+  @override
+  String get bookingBuyerSelf => 'Me (buyer)';
+
+  @override
+  String get bookingRelationshipSelf => 'Me';
+
+  @override
+  String get bookingRelationshipChild => 'Child';
+
+  @override
+  String get bookingRelationshipSpouse => 'Spouse';
+
+  @override
+  String get bookingRelationshipFamily => 'Family';
+
+  @override
+  String get bookingRelationshipFriend => 'Friend';
+
+  @override
+  String get bookingRelationshipOther => 'Other';
+
+  @override
+  String get bookingFirstNameShortRequired => 'First name required';
+
+  @override
+  String get bookingCityRequired => 'City required';
+
+  @override
+  String get bookingRelationRequired => 'Relationship required';
+
+  @override
+  String get bookingLastNameLabel => 'Last name';
+
+  @override
+  String get bookingRelationLabelRequired => 'Relationship *';
+
+  @override
+  String get bookingBirthDateLabelRequired => 'Birth date *';
+
+  @override
+  String get bookingBirthDateHelp => 'Birth date';
+
+  @override
+  String get bookingBirthDatePlaceholder => 'mm/dd/yyyy';
+
+  @override
+  String get bookingContactOptional => 'Optional contact';
+
+  @override
+  String get bookingSaveParticipant => 'Add to My participants';
+
+  @override
+  String get bookingParticipantComplete => 'Complete';
+
+  @override
+  String get bookingParticipantActionRequired => 'Action required';
+
+  @override
+  String get bookingRecapTitle => 'Summary';
+
+  @override
+  String get bookingTotalTickets => 'Total tickets';
+
+  @override
+  String bookingPerTicket(String price) {
+    return '$price / ticket';
+  }
+
+  @override
+  String get bookingRemove => 'Remove';
+
+  @override
+  String get bookingOrderConfirmed => 'Order confirmed';
+
+  @override
+  String bookingReference(String reference) {
+    return 'Reference: $reference';
+  }
+
+  @override
+  String get bookingCreatedReservations => 'Bookings created';
+
+  @override
+  String get bookingTicketsGeneratingOrder =>
+      'Your tickets are being generated. You will find them in My bookings.';
+
+  @override
+  String get bookingViewMyBookings => 'View my bookings';
+
+  @override
+  String get bookingBackHome => 'Back to home';
+
+  @override
+  String get bookingReservationFallback => 'Booking';
 }

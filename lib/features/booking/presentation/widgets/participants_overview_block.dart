@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
@@ -63,10 +64,10 @@ class ParticipantsOverviewBlock extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Mes participants',
-                  style: TextStyle(
+                  context.l10n.bookingMyParticipants,
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: HbColors.textPrimary,
@@ -82,7 +83,8 @@ class ParticipantsOverviewBlock extends StatelessWidget {
                     borderRadius: BorderRadius.circular(99),
                   ),
                   child: Text(
-                    '${savedParticipants.length} enregistre${savedParticipants.length > 1 ? 's' : ''}',
+                    context.l10n.bookingSavedParticipantsCount(
+                        savedParticipants.length),
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -94,7 +96,7 @@ class ParticipantsOverviewBlock extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Pre-remplissez vos billets en un clic',
+            context.l10n.bookingPrefillTicketsOneClick,
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
           const SizedBox(height: 12),
@@ -102,7 +104,8 @@ class ParticipantsOverviewBlock extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '$completedCount / $totalCount participants prets',
+                  context.l10n
+                      .bookingParticipantsReady(completedCount, totalCount),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -137,9 +140,9 @@ class ParticipantsOverviewBlock extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onFillFromProfile,
               icon: const Icon(Icons.person_outline, size: 16),
-              label: const Text(
-                'Remplir tous les billets avec mon profil',
-                style: TextStyle(fontSize: 13),
+              label: Text(
+                context.l10n.bookingFillAllWithProfile,
+                style: const TextStyle(fontSize: 13),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: HbColors.brandPrimary,
@@ -158,9 +161,9 @@ class ParticipantsOverviewBlock extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onPickSavedParticipant,
               icon: const Icon(Icons.group_outlined, size: 16),
-              label: const Text(
-                'Choisir un participant enregistre',
-                style: TextStyle(fontSize: 13),
+              label: Text(
+                context.l10n.bookingChooseSavedParticipant,
+                style: const TextStyle(fontSize: 13),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: HbColors.textPrimary,
@@ -193,18 +196,18 @@ class ParticipantsOverviewBlock extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Profil incomplet',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.bookingIncompleteProfileTitle,
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF92400E),
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'Completez votre profil (date de naissance, ville) pour pre-remplir tous les champs requis.',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.bookingIncompleteProfileBody,
+                          style: const TextStyle(
                             fontSize: 11.5,
                             color: Color(0xFF92400E),
                           ),
@@ -213,9 +216,9 @@ class ParticipantsOverviewBlock extends StatelessWidget {
                           const SizedBox(height: 6),
                           GestureDetector(
                             onTap: onCompleteProfile,
-                            child: const Text(
-                              'Completer mon profil >',
-                              style: TextStyle(
+                            child: Text(
+                              context.l10n.bookingCompleteProfile,
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFFB45309),

@@ -7,6 +7,7 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -15,6 +16,7 @@ import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/domain/models/checkout_params.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_forms_section.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
@@ -140,7 +142,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Finaliser ma réservation'),
+        title: Text(context.l10n.bookingCheckoutTitle),
         backgroundColor: Colors.white,
         foregroundColor: HbColors.textPrimary,
         elevation: 0,
@@ -154,12 +156,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Récapitulatif de la commande
-            _buildOrderSummary(),
+            _buildOrderSummary(context),
 
             const SizedBox(height: 16),
 
             // Formulaire acheteur
-            _buildBuyerForm(),
+            _buildBuyerForm(context),
 
             const SizedBox(height: 16),
 
@@ -169,7 +171,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             const SizedBox(height: 16),
 
             // CGV
-            _buildTermsSection(),
+            _buildTermsSection(context),
 
             // Message d'erreur
             if (_errorMessage != null)
@@ -207,7 +209,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildOrderSummary() {
+  Widget _buildOrderSummary(BuildContext context) {
     final event = widget.params.event;
     final tickets = widget.params.ticketQuantities;
 
@@ -217,9 +219,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Récapitulatif',
-            style: TextStyle(
+          Text(
+            context.l10n.bookingSummaryTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -275,7 +277,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                     const SizedBox(height: 4),
                     // Date
-                    if (widget.params.formattedDate != null)
+                    if (widget.params.selectedSlot != null)
                       Row(
                         children: [
                           Icon(Icons.calendar_today,
@@ -283,7 +285,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              widget.params.formattedDate!,
+                              context
+                                  .bookingSlotLabel(widget.params.selectedSlot),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey.shade600,
@@ -327,7 +330,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ...tickets.entries.where((e) => e.value > 0).map((entry) {
             final ticket = event.tickets.firstWhere(
               (t) => t.id == entry.key,
-              orElse: () => const Ticket(id: '', name: 'Billet', price: 0),
+              orElse: () => Ticket(
+                id: '',
+                name: context.l10n.bookingTicketFallback,
+                price: 0,
+              ),
             );
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -362,9 +369,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total',
-                style: TextStyle(
+              Text(
+                context.l10n.bookingTotal,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: HbColors.textPrimary,
@@ -372,7 +379,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               Text(
                 widget.params.isFree
-                    ? 'Gratuit'
+                    ? context.l10n.commonFree
                     : _formatPrice(widget.params.totalPrice),
                 style: TextStyle(
                   fontSize: 20,
@@ -389,7 +396,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildBuyerForm() {
+  Widget _buildBuyerForm(BuildContext context) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
@@ -398,9 +405,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Vos coordonnées',
-              style: TextStyle(
+            Text(
+              context.l10n.bookingBuyerContactTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textPrimary,
@@ -411,11 +418,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Prénom
             TextFormField(
               controller: _firstNameController,
-              decoration: _inputDecoration('Prénom *'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingFirstNameLabelRequired),
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Le prénom est requis';
+                  return context.l10n.bookingFirstNameRequired;
                 }
                 return null;
               },
@@ -425,11 +433,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Nom
             TextFormField(
               controller: _lastNameController,
-              decoration: _inputDecoration('Nom *'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingLastNameLabelRequired),
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Le nom est requis';
+                  return context.l10n.bookingLastNameRequired;
                 }
                 return null;
               },
@@ -439,14 +448,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Email
             TextFormField(
               controller: _emailController,
-              decoration: _inputDecoration('Email *'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingEmailLabelRequired),
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'L\'email est requis';
+                  return context.l10n.bookingEmailRequired;
                 }
                 if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                  return 'Email invalide';
+                  return context.l10n.bookingEmailInvalid;
                 }
                 return null;
               },
@@ -456,7 +466,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Téléphone
             TextFormField(
               controller: _phoneController,
-              decoration: _inputDecoration('Téléphone'),
+              decoration: _inputDecoration(context.l10n.bookingPhoneLabel),
               keyboardType: TextInputType.phone,
             ),
 
@@ -464,7 +474,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
             // Informations complémentaires (optionnel)
             Text(
-              'Informations complémentaires (optionnel)',
+              context.l10n.bookingAdditionalInfoOptional,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -476,7 +486,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Age
             TextFormField(
               controller: _ageController,
-              decoration: _inputDecoration('Age'),
+              decoration: _inputDecoration(context.l10n.bookingAgeLabel),
               keyboardType: TextInputType.number,
               onChanged: (value) {
                 final age = int.tryParse(value);
@@ -492,11 +502,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Ville
             TextFormField(
               controller: _townController,
-              decoration: _inputDecoration('Ville d\'appartenance'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingMembershipCityLabel),
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value != null && value.length > 255) {
-                  return 'La ville ne doit pas dépasser 255 caractères';
+                  return context.l10n.bookingCityMaxLength;
                 }
                 return null;
               },
@@ -534,7 +545,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildTermsSection() {
+  Widget _buildTermsSection(BuildContext context) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
@@ -560,20 +571,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               },
               child: Text.rich(
                 TextSpan(
-                  text: 'J\'accepte les ',
+                  text: context.l10n.bookingTermsPrefix,
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                  children: const [
+                  children: [
                     TextSpan(
-                      text: 'conditions générales de vente',
-                      style: TextStyle(
+                      text: context.l10n.legalSales.toLowerCase(),
+                      style: const TextStyle(
                         color: HbColors.brandPrimary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
-                    TextSpan(text: ' et la '),
+                    TextSpan(text: context.l10n.bookingTermsConnector),
                     TextSpan(
-                      text: 'politique de confidentialité',
-                      style: TextStyle(
+                      text: context.l10n.legalPrivacy.toLowerCase(),
+                      style: const TextStyle(
                         color: HbColors.brandPrimary,
                         decoration: TextDecoration.underline,
                       ),
@@ -615,7 +626,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   children: [
                     Text(
                       isFree
-                          ? 'Gratuit'
+                          ? context.l10n.commonFree
                           : _formatPrice(widget.params.totalPrice),
                       style: TextStyle(
                         fontSize: 22,
@@ -624,7 +635,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ),
                     Text(
-                      '${widget.params.totalTickets} billet${widget.params.totalTickets > 1 ? 's' : ''}',
+                      context.l10n.bookingTicketsCount(
+                        widget.params.totalTickets,
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -666,7 +679,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            isFree ? 'Confirmer' : 'Payer',
+                            isFree
+                                ? context.l10n.bookingConfirm
+                                : context.l10n.bookingPay,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -722,7 +737,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // Vérifier les CGV
     if (!_acceptedTerms) {
       setState(() {
-        _errorMessage = 'Veuillez accepter les conditions générales de vente';
+        _errorMessage = context.l10n.bookingAcceptSalesRequired;
       });
       return;
     }
@@ -733,7 +748,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final attendees = _attendeesMap[entry.key] ?? [];
       if (attendees.length != entry.value) {
         setState(() {
-          _errorMessage = 'Chaque billet doit avoir un participant renseigné';
+          _errorMessage = context.l10n.bookingEveryTicketNeedsParticipant;
         });
         return;
       }
@@ -744,8 +759,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             (a.birthDate ?? '').trim().isEmpty ||
             (a.membershipCity ?? a.city ?? '').trim().isEmpty) {
           setState(() {
-            _errorMessage =
-                'Veuillez renseigner le prénom, le nom, la date de naissance, la ville et la relation de chaque participant';
+            _errorMessage = context.l10n.bookingParticipantsMissingDetails;
           });
           return;
         }
@@ -861,7 +875,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // Paiement annulé ou échoué
       setState(() {
         _isLoading = false;
-        _errorMessage = e.error.localizedMessage ?? 'Paiement annulé';
+        _errorMessage =
+            e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
       });
     } catch (e) {
       setState(() {

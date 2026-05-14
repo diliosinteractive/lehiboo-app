@@ -9,6 +9,7 @@ import '../../../../../core/utils/guest_guard.dart';
 import '../../../../auth/presentation/providers/auth_provider.dart';
 import '../../../domain/entities/event_question.dart';
 import '../../providers/event_questions_providers.dart';
+import '../../utils/event_l10n.dart';
 import 'ask_question_sheet.dart';
 import 'question_card.dart';
 
@@ -119,9 +120,9 @@ class EventQASection extends ConsumerWidget {
     ref.read(eventQuestionsActionsProvider.notifier).refreshAll(eventSlug);
 
     final message = switch (outcome) {
-      AskQuestionOutcome.created => 'Votre question a été envoyée !',
+      AskQuestionOutcome.created => context.l10n.eventQuestionSent,
       AskQuestionOutcome.alreadyExists =>
-        'Vous avez déjà posé une question sur cet événement.',
+        context.l10n.eventQuestionAlreadyAsked,
     };
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -149,9 +150,9 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Text(
-          'Questions',
-          style: TextStyle(
+        Text(
+          context.l10n.eventQuestionsTitle,
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: HbColors.textPrimary,
@@ -180,7 +181,7 @@ class _Header extends StatelessWidget {
           TextButton.icon(
             onPressed: onAsk,
             icon: const Icon(Icons.add_comment_outlined, size: 18),
-            label: const Text('Poser'),
+            label: Text(context.l10n.eventAsk),
             style: TextButton.styleFrom(
               foregroundColor: HbColors.brandPrimary,
             ),
@@ -199,7 +200,7 @@ class _MyQuestionBlock extends StatelessWidget {
     final q = myQuestion;
     if (q == null) return const SizedBox.shrink();
 
-    final (label, color) = _statusLabel(q.status);
+    final (label, color) = _statusLabel(context, q.status);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
@@ -216,9 +217,9 @@ class _MyQuestionBlock extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(
-                'Votre question',
-                style: TextStyle(
+              Text(
+                context.l10n.eventYourQuestion,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: HbColors.brandPrimary,
@@ -277,16 +278,19 @@ class _MyQuestionBlock extends StatelessWidget {
     );
   }
 
-  static (String, Color) _statusLabel(QuestionStatus status) {
+  static (String, Color) _statusLabel(
+    BuildContext context,
+    QuestionStatus status,
+  ) {
     switch (status) {
       case QuestionStatus.pending:
-        return ('En attente de modération', HbColors.warning);
+        return (context.eventQuestionStatusLabel(status), HbColors.warning);
       case QuestionStatus.approved:
-        return ('Approuvée', HbColors.success);
+        return (context.eventQuestionStatusLabel(status), HbColors.success);
       case QuestionStatus.answered:
-        return ('Répondue', HbColors.success);
+        return (context.eventQuestionStatusLabel(status), HbColors.success);
       case QuestionStatus.rejected:
-        return ('Refusée', HbColors.error);
+        return (context.eventQuestionStatusLabel(status), HbColors.error);
     }
   }
 }
@@ -352,7 +356,7 @@ class _Content extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Voir toutes les questions (${page.total})'),
+                  Text(context.l10n.eventViewAllQuestionsCount(page.total)),
                   const SizedBox(width: 6),
                   const Icon(Icons.arrow_forward, size: 16),
                 ],
@@ -412,19 +416,19 @@ class _EmptyBlock extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Aucune question pour le moment',
-            style: TextStyle(
+          Text(
+            context.l10n.eventNoQuestionsTitle,
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: HbColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Soyez le premier à poser une question sur cet événement.',
+          Text(
+            context.l10n.eventNoQuestionsBody,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               color: HbColors.grey500,
               height: 1.4,
@@ -434,7 +438,7 @@ class _EmptyBlock extends StatelessWidget {
           FilledButton.icon(
             onPressed: onAsk,
             icon: const Icon(Icons.add_comment_outlined, size: 18),
-            label: const Text('Poser une question'),
+            label: Text(context.l10n.eventAskQuestion),
             style: FilledButton.styleFrom(
               backgroundColor: HbColors.brandPrimary,
               foregroundColor: HbColors.white,
@@ -535,9 +539,9 @@ class _ErrorBlock extends StatelessWidget {
             size: 32,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Impossible de charger les questions',
-            style: TextStyle(
+          Text(
+            context.l10n.eventQuestionsLoadError,
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: HbColors.textPrimary,
@@ -549,7 +553,7 @@ class _ErrorBlock extends StatelessWidget {
             style: TextButton.styleFrom(
               foregroundColor: HbColors.brandPrimary,
             ),
-            child: const Text('Réessayer'),
+            child: Text(context.l10n.searchRetry),
           ),
         ],
       ),

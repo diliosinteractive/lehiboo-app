@@ -35,7 +35,7 @@ class EventDateSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (slots.isEmpty) return _buildEmptyState();
+    if (slots.isEmpty) return _buildEmptyState(context);
 
     final grouped = _groupSlotsByMonth(context, slots);
 
@@ -49,7 +49,9 @@ class EventDateSelector extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _isReminderMode ? 'Dates disponibles' : 'Choisissez une date',
+                _isReminderMode
+                    ? context.l10n.eventDatesAvailable
+                    : context.l10n.eventChooseDate,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -60,7 +62,7 @@ class EventDateSelector extends StatelessWidget {
                 TextButton(
                   onPressed: onViewAllDates,
                   child: Text(
-                    'Voir tout (${slots.length})',
+                    context.l10n.eventViewAllCount(slots.length),
                     style: const TextStyle(
                       color: HbColors.brandPrimary,
                       fontWeight: FontWeight.w600,
@@ -123,7 +125,7 @@ class EventDateSelector extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
@@ -132,22 +134,22 @@ class EventDateSelector extends StatelessWidget {
           color: Colors.grey.shade100,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Column(
+        child: Column(
           children: [
-            Icon(Icons.event_busy_outlined, size: 48, color: Colors.grey),
-            SizedBox(height: 12),
+            const Icon(Icons.event_busy_outlined, size: 48, color: Colors.grey),
+            const SizedBox(height: 12),
             Text(
-              'Aucune date disponible',
-              style: TextStyle(
+              context.l10n.eventNoDateAvailable,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: HbColors.textPrimary,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
-              'Cet événement n\'a pas de créneaux ouverts',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+              context.l10n.eventNoOpenSlots,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
           ],
@@ -299,7 +301,7 @@ class _DateChipState extends State<_DateChip>
                 ),
               ] else if (widget.slot.spotsRemaining != null) ...[
                 const SizedBox(height: 4),
-                _buildSpots(),
+                _buildSpots(context),
               ],
             ],
           ),
@@ -366,12 +368,12 @@ class _DateChipState extends State<_DateChip>
     );
   }
 
-  Widget _buildSpots() {
+  Widget _buildSpots(BuildContext context) {
     final spots = widget.slot.spotsRemaining!;
 
     if (_isFull) {
       return Text(
-        'Complet',
+        context.l10n.eventFull,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
@@ -381,7 +383,7 @@ class _DateChipState extends State<_DateChip>
     }
 
     return Text(
-      '$spots place${spots > 1 ? 's' : ''} restante${spots > 1 ? 's' : ''}',
+      context.l10n.eventSpotsRemaining(spots),
       style: TextStyle(
         fontSize: 11,
         color: _isHighlighted

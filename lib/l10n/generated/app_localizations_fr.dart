@@ -2073,4 +2073,821 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventAudienceSeniors => 'Seniors';
+
+  @override
+  String get eventDatesAvailable => 'Dates disponibles';
+
+  @override
+  String get eventChooseDate => 'Choisissez une date';
+
+  @override
+  String eventViewAllCount(int count) {
+    return 'Voir tout ($count)';
+  }
+
+  @override
+  String get eventNoDateAvailable => 'Aucune date disponible';
+
+  @override
+  String get eventNoOpenSlots => 'Cet événement n\'a pas de créneaux ouverts';
+
+  @override
+  String eventSpotsRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count places restantes',
+      one: '1 place restante',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventTicketsTitle => 'Billets';
+
+  @override
+  String get eventShowMore => 'Voir plus';
+
+  @override
+  String get eventShowLess => 'Voir moins';
+
+  @override
+  String get eventSoldOut => 'Épuisé';
+
+  @override
+  String eventTicketLowStock(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Plus que $count !',
+      one: 'Plus qu\'1 !',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventTicketsAvailable(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count disponibles',
+      one: '1 disponible',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventTotal => 'total';
+
+  @override
+  String eventTicketsSelected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count billets sélectionnés',
+      one: '1 billet sélectionné',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventTicketsForDate(int count, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count billets • $date',
+      one: '1 billet • $date',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventNoSeatsAvailable => 'Plus de places disponibles';
+
+  @override
+  String eventExpectedCapacity(int count) {
+    return 'Capacité prévue : $count';
+  }
+
+  @override
+  String get eventViewDates => 'Voir les dates';
+
+  @override
+  String get eventReminded => 'Rappelé';
+
+  @override
+  String get eventRemindMe => 'Me rappeler';
+
+  @override
+  String get eventViewWebsite => 'Voir le site';
+
+  @override
+  String get eventIndicativePrice => 'Prix indicatif';
+
+  @override
+  String eventDateFromTo(String date, String start, String end) {
+    return '$date de $start à $end';
+  }
+
+  @override
+  String eventDateAtStart(String date, String start) {
+    return '$date à $start';
+  }
+
+  @override
+  String get eventServicesAdditionalTitle =>
+      'Services additionnels (indicatif)';
+
+  @override
+  String get eventPracticalInfoTitle => 'Infos pratiques';
+
+  @override
+  String get eventParkingTitle => 'Parking';
+
+  @override
+  String get eventParkingSubtitle => 'Places disponibles';
+
+  @override
+  String get eventTransportTitle => 'Transports';
+
+  @override
+  String get eventTransportSubtitle => 'Bus, métro, tram';
+
+  @override
+  String get eventFoodService => 'Restauration';
+
+  @override
+  String get eventFoodOnSite => 'Restauration sur place';
+
+  @override
+  String get eventDrinks => 'Boissons';
+
+  @override
+  String get eventDrinksAvailable => 'Boissons disponibles';
+
+  @override
+  String get eventWifiAvailable => 'Wi-Fi disponible';
+
+  @override
+  String get eventServiceDefaultDescription =>
+      'Ce service est disponible sur place.';
+
+  @override
+  String get eventServiceEquipment => 'Matériel fourni';
+
+  @override
+  String get eventServiceFacilitator => 'Animateur';
+
+  @override
+  String get eventServiceAccommodation => 'Hébergement';
+
+  @override
+  String get eventServiceCloakroom => 'Vestiaire';
+
+  @override
+  String get eventServiceSecurity => 'Sécurité';
+
+  @override
+  String get eventServiceFirstAid => 'Premiers secours';
+
+  @override
+  String get eventServiceChildcare => 'Garderie';
+
+  @override
+  String get eventServicePhotoBooth => 'Photobooth';
+
+  @override
+  String get eventPlace => 'Lieu';
+
+  @override
+  String get eventParkingSheetTitle => 'Stationnement';
+
+  @override
+  String get eventParkingDirections => 'Naviguer vers le parking';
+
+  @override
+  String get eventTransportSheetTitle => 'Transports en commun';
+
+  @override
+  String get eventAccessibilityTitle => 'Accessibilité';
+
+  @override
+  String get eventAccessibilityPmr => 'Accessible PMR';
+
+  @override
+  String get eventAccessibilityPmrTitle => 'Accessibilité PMR';
+
+  @override
+  String get eventAccessibilitySignLanguage => 'Langue des signes';
+
+  @override
+  String get eventAccessibilityElevator => 'Ascenseur';
+
+  @override
+  String get eventAccessibilityDisabledParking => 'Parking handicapé';
+
+  @override
+  String get eventAccessibilityDisabledSeats => 'Places handicapé';
+
+  @override
+  String get eventAccessibilityGuideDog => 'Chien guide';
+
+  @override
+  String get eventAccessibilityHearingLoop => 'Boucle magnétique';
+
+  @override
+  String get eventAccessibilityAudioDescription => 'Audiodescription';
+
+  @override
+  String get eventAccessibilityBraille => 'Braille';
+
+  @override
+  String get eventAvailable => 'Disponible';
+
+  @override
+  String get eventQuickActions => 'Actions rapides';
+
+  @override
+  String get eventDrivingDirections => 'Itinéraire en voiture';
+
+  @override
+  String get eventWalkingDirections => 'Y aller à pied';
+
+  @override
+  String get eventPublicTransportDirections => 'Transports en commun';
+
+  @override
+  String get eventCopyAddress => 'Copier l\'adresse';
+
+  @override
+  String get eventAddressCopied => 'Adresse copiée';
+
+  @override
+  String get eventDetailsLabel => 'Détails';
+
+  @override
+  String get eventLocationTitle => 'Localisation';
+
+  @override
+  String get eventViewOnGoogleMaps => 'Voir sur Google Maps';
+
+  @override
+  String get eventNoImage => 'Aucune image';
+
+  @override
+  String get eventNoImageAvailable => 'Aucune image disponible';
+
+  @override
+  String get eventViewVideo => 'Voir la vidéo';
+
+  @override
+  String eventViewAllPhotosCount(int count) {
+    return 'Voir toutes les photos ($count)';
+  }
+
+  @override
+  String get eventPrivateNotFound => 'Événement introuvable.';
+
+  @override
+  String get eventPasswordRequired => 'Le mot de passe est requis.';
+
+  @override
+  String get eventPasswordIncorrect => 'Mot de passe incorrect.';
+
+  @override
+  String get eventPasswordInvalidFormat => 'Format invalide.';
+
+  @override
+  String get eventPasswordNetworkError => 'Erreur réseau. Réessaie.';
+
+  @override
+  String eventPasswordRetryIn(int seconds) {
+    return 'Réessaye dans ${seconds}s';
+  }
+
+  @override
+  String get eventPasswordChecking => 'Vérification...';
+
+  @override
+  String get eventUnlock => 'Déverrouiller';
+
+  @override
+  String get eventPrivateTitle => 'Cet événement est privé';
+
+  @override
+  String get eventPrivateInstructions =>
+      'Entre le mot de passe communiqué par l\'organisateur.';
+
+  @override
+  String get eventPasswordAttemptsWarning =>
+      'Encore 3 essais avant un délai de 1 minute.';
+
+  @override
+  String get eventPasswordLabel => 'Mot de passe';
+
+  @override
+  String get eventPasswordHint => 'Saisis le mot de passe';
+
+  @override
+  String get eventMembersOnlyTitle => 'Réservé aux membres';
+
+  @override
+  String get eventMembersOnlyPrefix => 'L\'événement ';
+
+  @override
+  String get eventMembersOnlyReservedFor => 'est réservé aux membres de ';
+
+  @override
+  String get eventMembersOnlySuffix =>
+      '. Rejoins la communauté pour y accéder.';
+
+  @override
+  String get eventOrganizationFallback => 'cette organisation';
+
+  @override
+  String get eventViewOrganizer => 'Voir l\'organisateur';
+
+  @override
+  String get eventEnterPassword => 'Entrer le mot de passe';
+
+  @override
+  String get eventPrivateFallbackSubtitle =>
+      'Cet événement est privé. Entre le mot de passe communiqué par l\'organisateur.';
+
+  @override
+  String eventShareWithSender(
+      String senderName, String eventTitle, String url) {
+    return '$senderName vous partage l\'événement $eventTitle : $url';
+  }
+
+  @override
+  String eventShareDefault(String eventTitle, String url) {
+    return 'Découvre l\'événement $eventTitle : $url';
+  }
+
+  @override
+  String get eventQuestionsTitle => 'Questions';
+
+  @override
+  String get eventAsk => 'Poser';
+
+  @override
+  String get eventQuestionSent => 'Votre question a été envoyée !';
+
+  @override
+  String get eventQuestionAlreadyAsked =>
+      'Vous avez déjà posé une question sur cet événement.';
+
+  @override
+  String get eventYourQuestion => 'Votre question';
+
+  @override
+  String get eventQuestionStatusPending => 'En attente de modération';
+
+  @override
+  String get eventQuestionStatusApproved => 'Approuvée';
+
+  @override
+  String get eventQuestionStatusAnswered => 'Répondue';
+
+  @override
+  String get eventQuestionStatusRejected => 'Refusée';
+
+  @override
+  String eventViewAllQuestionsCount(int count) {
+    return 'Voir toutes les questions ($count)';
+  }
+
+  @override
+  String get eventNoQuestionsTitle => 'Aucune question pour le moment';
+
+  @override
+  String get eventNoQuestionsBody =>
+      'Soyez le premier à poser une question sur cet événement.';
+
+  @override
+  String get eventAskQuestion => 'Poser une question';
+
+  @override
+  String get eventQuestionsLoadError => 'Impossible de charger les questions';
+
+  @override
+  String get eventQuestionsEnd => 'Vous avez vu toutes les questions';
+
+  @override
+  String get eventVoteUnavailable => 'Impossible de voter pour le moment.';
+
+  @override
+  String eventQuestionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions',
+      one: '1 question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventOfficialAnswer => 'Réponse officielle';
+
+  @override
+  String get eventAnonymous => 'Anonyme';
+
+  @override
+  String get eventHelpful => 'Utile';
+
+  @override
+  String eventHelpfulCount(int count) {
+    return 'Utile ($count)';
+  }
+
+  @override
+  String get eventAskQuestionHint => 'Ex: À quelle heure ouvrent les portes ?';
+
+  @override
+  String get eventQuestionRequired => 'Veuillez saisir votre question.';
+
+  @override
+  String get eventQuestionMinLength =>
+      'Votre question doit contenir au moins 10 caractères.';
+
+  @override
+  String get eventQuestionTooLong =>
+      'Votre question est trop longue (1000 max).';
+
+  @override
+  String get eventQuestionInfo =>
+      'L\'organisateur recevra votre question et vous répondra bientôt.';
+
+  @override
+  String get eventSendQuestion => 'Envoyer ma question';
+
+  @override
+  String get eventCheckConnectionRetry =>
+      'Vérifiez votre connexion puis réessayez.';
+
+  @override
+  String get eventOrganizerInfoSources => 'Sources Infos';
+
+  @override
+  String get eventOrganizerTitle => 'Organisateur';
+
+  @override
+  String get eventOrganizerVerified => 'Organisateur vérifié';
+
+  @override
+  String get eventOrganizerNotVerified => 'Organisateur non vérifié';
+
+  @override
+  String eventOrganizerEventsPublished(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count événements publiés',
+      one: '1 événement publié',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventOrganizerFollowers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count abonnés',
+      one: '1 abonné',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventContact => 'Contacter';
+
+  @override
+  String get eventViewProfile => 'Voir le profil';
+
+  @override
+  String get eventWrittenBy => 'Rédigé par';
+
+  @override
+  String get eventLehibooExperiences => 'LEHIBOO EXPÉRIENCES';
+
+  @override
+  String get eventSourceInfo => 'Source infos : ';
+
+  @override
+  String get eventSimilarEvents => 'Événements similaires';
+
+  @override
+  String get bookingCheckoutTitle => 'Finaliser ma réservation';
+
+  @override
+  String get bookingSummaryTitle => 'Récapitulatif';
+
+  @override
+  String get bookingTicketFallback => 'Billet';
+
+  @override
+  String get bookingTotal => 'Total';
+
+  @override
+  String get bookingBuyerContactTitle => 'Vos coordonnées';
+
+  @override
+  String get bookingContactDetailsTitle => 'Coordonnées';
+
+  @override
+  String get bookingContactDetailsSubtitle =>
+      'Vous recevrez votre confirmation et vos billets à cette adresse.';
+
+  @override
+  String get bookingAdditionalInfoOptional =>
+      'Informations complémentaires (optionnel)';
+
+  @override
+  String get bookingFirstNameLabelRequired => 'Prénom *';
+
+  @override
+  String get bookingLastNameLabelRequired => 'Nom *';
+
+  @override
+  String get bookingEmailLabelRequired => 'Email *';
+
+  @override
+  String get bookingPhoneLabel => 'Téléphone';
+
+  @override
+  String get bookingAgeLabel => 'Âge';
+
+  @override
+  String get bookingMembershipCityLabel => 'Ville d\'appartenance';
+
+  @override
+  String get bookingFirstNameRequired => 'Le prénom est requis';
+
+  @override
+  String get bookingLastNameRequired => 'Le nom est requis';
+
+  @override
+  String get bookingEmailRequired => 'L\'email est requis';
+
+  @override
+  String get bookingEmailInvalid => 'Email invalide';
+
+  @override
+  String get bookingCityMaxLength =>
+      'La ville ne doit pas dépasser 255 caractères';
+
+  @override
+  String get bookingTermsPrefix => 'J\'accepte les ';
+
+  @override
+  String get bookingTermsConnector => ' et la ';
+
+  @override
+  String get bookingAcceptSalesRequired =>
+      'Veuillez accepter les conditions générales de vente';
+
+  @override
+  String get bookingEveryTicketNeedsParticipant =>
+      'Chaque billet doit avoir un participant renseigné';
+
+  @override
+  String get bookingParticipantsMissingDetails =>
+      'Veuillez renseigner le prénom, le nom, la date de naissance, la ville et la relation de chaque participant';
+
+  @override
+  String get bookingParticipantsMissingCartDetails =>
+      'Veuillez renseigner le prénom, la date de naissance, la ville et la relation de chaque participant';
+
+  @override
+  String get bookingConfirm => 'Confirmer';
+
+  @override
+  String get bookingPay => 'Payer';
+
+  @override
+  String get bookingContinueToPayment => 'Continuer vers le paiement';
+
+  @override
+  String get bookingPaymentCancelled => 'Paiement annulé';
+
+  @override
+  String bookingTicketsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count billets',
+      one: '1 billet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bookingCartTitle => 'Panier';
+
+  @override
+  String get bookingCartHoldExpired =>
+      'Le délai du panier est dépassé. Ajoutez à nouveau vos billets pour continuer.';
+
+  @override
+  String get bookingClearCartTitle => 'Vider le panier ?';
+
+  @override
+  String get bookingClearCartBody =>
+      'Tous les billets ajoutés seront supprimés. Cette action est irréversible.';
+
+  @override
+  String get bookingClear => 'Vider';
+
+  @override
+  String bookingCartHoldLabel(String time) {
+    return 'Panier $time';
+  }
+
+  @override
+  String bookingPlacesHoldLabel(String time) {
+    return 'Places $time';
+  }
+
+  @override
+  String get bookingCartHoldTitle => 'Conservation du panier';
+
+  @override
+  String get bookingCartHoldBody =>
+      'Votre sélection est conservée 15 minutes après le dernier ajout. Au moment du paiement, les places sont bloquées le temps nécessaire à la finalisation.';
+
+  @override
+  String get bookingUnderstood => 'Compris';
+
+  @override
+  String get bookingEmptyCartTitle => 'Votre panier est vide';
+
+  @override
+  String get bookingEmptyCartBody =>
+      'Ajoutez des billets depuis une fiche événement pour payer plusieurs réservations en une fois.';
+
+  @override
+  String get bookingExploreEvents => 'Explorer les événements';
+
+  @override
+  String get bookingParticipantsTitle => 'Participants';
+
+  @override
+  String get bookingParticipantsInstruction =>
+      'Choisissez une personne enregistrée ou renseignez chaque billet.';
+
+  @override
+  String get bookingParticipantSectionSubtitle =>
+      'Un formulaire par billet — renseignez chaque participant';
+
+  @override
+  String get bookingParticipantInfoNote =>
+      'Le prénom, la date de naissance, la ville et la relation aident l\'IA et l\'expérience Le Hiboo à proposer les offres et événements les plus pertinents.';
+
+  @override
+  String get bookingChooseSavedParticipant =>
+      'Choisir un participant enregistré';
+
+  @override
+  String get bookingAddToNextEmptyTicket => 'Ajouter au prochain billet vide';
+
+  @override
+  String get bookingMyParticipants => 'Mes participants';
+
+  @override
+  String bookingSavedParticipantsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count enregistrés',
+      one: '1 enregistré',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bookingPrefillTicketsOneClick =>
+      'Pré-remplissez vos billets en un clic';
+
+  @override
+  String bookingParticipantsReady(int completed, int total) {
+    return '$completed / $total participants prêts';
+  }
+
+  @override
+  String get bookingFillAllWithProfile =>
+      'Remplir tous les billets avec mon profil';
+
+  @override
+  String get bookingIncompleteProfileTitle => 'Profil incomplet';
+
+  @override
+  String get bookingIncompleteProfileBody =>
+      'Complétez votre profil (date de naissance, ville) pour pré-remplir tous les champs requis.';
+
+  @override
+  String get bookingCompleteProfile => 'Compléter mon profil >';
+
+  @override
+  String get bookingPrefillTicket => 'Pré-remplir ce billet';
+
+  @override
+  String get bookingManualEntry => 'Saisie manuelle';
+
+  @override
+  String get bookingBuyerSelf => 'Moi (acheteur)';
+
+  @override
+  String get bookingRelationshipSelf => 'Moi';
+
+  @override
+  String get bookingRelationshipChild => 'Enfant';
+
+  @override
+  String get bookingRelationshipSpouse => 'Conjoint';
+
+  @override
+  String get bookingRelationshipFamily => 'Famille';
+
+  @override
+  String get bookingRelationshipFriend => 'Ami';
+
+  @override
+  String get bookingRelationshipOther => 'Autre';
+
+  @override
+  String get bookingFirstNameShortRequired => 'Prénom requis';
+
+  @override
+  String get bookingCityRequired => 'Ville requise';
+
+  @override
+  String get bookingRelationRequired => 'Relation requise';
+
+  @override
+  String get bookingLastNameLabel => 'Nom';
+
+  @override
+  String get bookingRelationLabelRequired => 'Relation *';
+
+  @override
+  String get bookingBirthDateLabelRequired => 'Date de naissance *';
+
+  @override
+  String get bookingBirthDateHelp => 'Date de naissance';
+
+  @override
+  String get bookingBirthDatePlaceholder => 'jj/mm/aaaa';
+
+  @override
+  String get bookingContactOptional => 'Contact optionnel';
+
+  @override
+  String get bookingSaveParticipant => 'Ajouter à Mes participants';
+
+  @override
+  String get bookingParticipantComplete => 'Complet';
+
+  @override
+  String get bookingParticipantActionRequired => 'Action requise';
+
+  @override
+  String get bookingRecapTitle => 'Récapitulatif';
+
+  @override
+  String get bookingTotalTickets => 'Total billets';
+
+  @override
+  String bookingPerTicket(String price) {
+    return '$price / billet';
+  }
+
+  @override
+  String get bookingRemove => 'Retirer';
+
+  @override
+  String get bookingOrderConfirmed => 'Commande confirmée';
+
+  @override
+  String bookingReference(String reference) {
+    return 'Référence : $reference';
+  }
+
+  @override
+  String get bookingCreatedReservations => 'Réservations créées';
+
+  @override
+  String get bookingTicketsGeneratingOrder =>
+      'Vos billets sont en cours de génération. Vous les retrouverez dans Mes réservations.';
+
+  @override
+  String get bookingViewMyBookings => 'Voir mes réservations';
+
+  @override
+  String get bookingBackHome => 'Retour à l\'accueil';
+
+  @override
+  String get bookingReservationFallback => 'Réservation';
 }

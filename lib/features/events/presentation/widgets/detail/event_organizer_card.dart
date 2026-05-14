@@ -36,7 +36,9 @@ class EventOrganizerCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            event.organizerIsPlatform ? 'Sources Infos' : 'Organisateur',
+            event.organizerIsPlatform
+                ? context.l10n.eventOrganizerInfoSources
+                : context.l10n.eventOrganizerTitle,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -140,7 +142,7 @@ class _VendorOrganizerCard extends ConsumerWidget {
               const SizedBox(height: 10),
 
               // Row 2: Verified status
-              _buildVerifiedStatus(),
+              _buildVerifiedStatus(context),
 
               // Row 3: Venue type tags
               if (event.organizerVenueTypes.isNotEmpty) ...[
@@ -150,7 +152,7 @@ class _VendorOrganizerCard extends ConsumerWidget {
 
               // Row 4: Events count + followers
               const SizedBox(height: 10),
-              _buildStats(),
+              _buildStats(context),
 
               // Row 5: Contact button
               if (event.organizerAllowPublicContact) ...[
@@ -206,7 +208,7 @@ class _VendorOrganizerCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildVerifiedStatus() {
+  Widget _buildVerifiedStatus(BuildContext context) {
     final isVerified = event.organizerVerified;
     return Row(
       children: [
@@ -217,7 +219,9 @@ class _VendorOrganizerCard extends ConsumerWidget {
         ),
         const SizedBox(width: 5),
         Text(
-          isVerified ? 'Organisateur vérifié' : 'Organisateur non vérifié',
+          isVerified
+              ? context.l10n.eventOrganizerVerified
+              : context.l10n.eventOrganizerNotVerified,
           style: TextStyle(
             fontSize: 13,
             color: isVerified ? Colors.blue.shade600 : Colors.grey.shade500,
@@ -252,7 +256,7 @@ class _VendorOrganizerCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildStats() {
+  Widget _buildStats(BuildContext context) {
     final count = event.organizerEventsCount;
     final followers = event.organizerFollowersCount ?? 0;
     return Row(
@@ -261,7 +265,7 @@ class _VendorOrganizerCard extends ConsumerWidget {
           Icon(Icons.event_outlined, size: 15, color: Colors.grey.shade500),
           const SizedBox(width: 5),
           Text(
-            '$count événement${count > 1 ? 's' : ''} publiés',
+            context.l10n.eventOrganizerEventsPublished(count),
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade600,
@@ -273,7 +277,7 @@ class _VendorOrganizerCard extends ConsumerWidget {
             size: 15, color: HbColors.brandPrimary),
         const SizedBox(width: 5),
         Text(
-          '$followers abonné${followers > 1 ? 's' : ''}',
+          context.l10n.eventOrganizerFollowers(followers),
           style: TextStyle(
             fontSize: 13,
             color: Colors.grey.shade600,
@@ -308,7 +312,7 @@ class _VendorOrganizerCard extends ConsumerWidget {
               );
             },
             icon: const Icon(Icons.mail_outline, size: 18),
-            label: const Text('Contacter'),
+            label: Text(context.l10n.eventContact),
             style: ElevatedButton.styleFrom(
               backgroundColor: HbColors.brandPrimary,
               foregroundColor: Colors.white,
@@ -335,9 +339,9 @@ class _VendorOrganizerCard extends ConsumerWidget {
               ),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
-            child: const Text(
-              'Voir le profil',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            child: Text(
+              context.l10n.eventViewProfile,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -400,22 +404,22 @@ class _PlatformOrganizerCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Rédigé par',
-                      style: TextStyle(
+                      context.l10n.eventWrittenBy,
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: HbColors.brandPrimary,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'LEHIBOO EXPÉRIENCES',
-                      style: TextStyle(
+                      context.l10n.eventLehibooExperiences,
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: HbColors.textPrimary,
@@ -435,7 +439,7 @@ class _PlatformOrganizerCard extends StatelessWidget {
               text: TextSpan(
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                 children: [
-                  const TextSpan(text: 'Source infos : '),
+                  TextSpan(text: context.l10n.eventSourceInfo),
                   TextSpan(
                     text: sourceName,
                     style: const TextStyle(

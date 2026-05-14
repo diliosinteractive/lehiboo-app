@@ -26,6 +26,8 @@ The localization infrastructure is in place and the first rollout slices are com
 5. Customer/business multi-step registration form copy.
 6. Active Home surface copy.
 7. Search and filter user-facing copy.
+8. Event browse, core detail, and deep detail subwidget copy.
+9. Active booking checkout/cart/order confirmation copy.
 
 The app is not fully translated yet. Many screens still contain hard-coded French UI copy, but the app now has the wiring needed to migrate them screen by screen.
 
@@ -306,20 +308,76 @@ Covered:
 - Core detail error state, selected date label, soon-available date notice, about/pricing/characteristics sections, read-more/show-less label, discovery price states, cart choice sheet, booking validation snackbars, all-dates modal title, full/choose slot labels, compact header ticketing/discovery chip, fallback place/category/audience labels, and featured/recommended/new badges.
 - Shared event l10n helpers for event categories, audiences, date-at-time, filter count, all-dates count, and map grouped-event count.
 
+### Deep Event Detail Subwidgets
+
+Migrated:
+
+- `lib/features/events/presentation/widgets/detail/event_date_selector.dart`
+- `lib/features/events/presentation/widgets/detail/event_ticket_card.dart`
+- `lib/features/events/presentation/widgets/detail/event_sticky_booking_bar.dart`
+- `lib/features/events/presentation/widgets/detail/event_practical_info.dart`
+- `lib/features/events/presentation/widgets/detail/event_accessibility_section.dart`
+- `lib/features/events/presentation/widgets/detail/event_location_map.dart`
+- `lib/features/events/presentation/widgets/detail/event_indicative_prices.dart`
+- `lib/features/events/presentation/widgets/detail/practical_info_card.dart`
+- `lib/features/events/presentation/widgets/detail/practical_info_sheet.dart`
+- `lib/features/events/presentation/widgets/detail/event_gallery_grid.dart`
+- `lib/features/events/presentation/widgets/detail/event_hero_gallery.dart`
+- `lib/features/events/presentation/widgets/detail/event_share_sheet.dart`
+- `lib/features/events/presentation/widgets/detail/event_password_sheet.dart`
+- `lib/features/events/presentation/widgets/detail/event_locked_view.dart`
+- `lib/features/events/presentation/widgets/detail/event_organizer_card.dart`
+- `lib/features/events/presentation/widgets/detail/event_similar_carousel.dart`
+- `lib/features/events/presentation/widgets/detail/event_qa_section.dart`
+- `lib/features/events/presentation/screens/event_questions_screen.dart`
+- `lib/features/events/presentation/widgets/detail/ask_question_sheet.dart`
+- `lib/features/events/presentation/widgets/detail/question_card.dart`
+- `lib/features/events/presentation/utils/event_l10n.dart`
+
+Covered:
+
+- Date-selector headers, empty states, view-all count, full/spots-remaining labels, and locale-aware slot date ranges.
+- Ticket card price/free/sold-out/low-stock labels, show-more/show-less controls, ticket section title, and selected-ticket summaries.
+- Sticky booking bar sold-out state, total label, date/spots/capacity labels, view-dates chip, reminder CTA states, external-booking CTA, and indicative price label.
+- Practical-info, accessibility, location-map, quick-action sheet, action labels, service/accessibility feature labels, address-copy snackbar, and Google Maps CTA.
+- Gallery empty states, view-video CTA, view-all-photos CTA, share text, password/private-event sheet, members-only sheet, and locked preview fallback copy.
+- Organizer card labels, verification status, event/follower counts, contact/profile CTAs, platform attribution, and similar-events carousel copy.
+- Event Q&A preview, full questions screen, ask-question sheet, question status labels, official-answer/helpful labels, empty/error/end states, and vote/submit snackbars.
+- Shared event l10n helpers for question statuses, backend-coded service/accessibility labels, and locale-aware slot date ranges.
+
 Not covered in this slice:
 
-- Deep event detail subwidgets still have hard-coded French and need the next event-specific pass, especially:
-  - `event_date_selector.dart`
-  - `event_ticket_card.dart`
-  - `event_sticky_booking_bar.dart`
-  - `event_practical_info.dart`
-  - `event_accessibility_section.dart`
-  - `event_location_map.dart`
-  - `event_qa_section.dart`
-  - `event_questions_screen.dart`
-  - `ask_question_sheet.dart`
-  - `question_card.dart`
-  - gallery/password/share/practical-info sheets as needed.
+- Backend-owned event content such as titles, descriptions, ticket names/descriptions, organizer names, venue type labels, API-provided question/answer text, and API-provided relative dates remain displayed as returned by the backend.
+- French text that remains in comments or enum/data matching logic was left alone because it is not visible UI copy.
+
+### Active Booking Checkout And Cart
+
+Migrated:
+
+- `lib/features/booking/presentation/screens/checkout_screen.dart`
+- `lib/features/booking/presentation/screens/order_cart_screen.dart`
+- `lib/features/booking/presentation/screens/order_success_screen.dart`
+- `lib/features/booking/presentation/widgets/cart_summary_section.dart`
+- `lib/features/booking/presentation/widgets/participant_form_card.dart`
+- `lib/features/booking/presentation/widgets/participant_forms_section.dart`
+- `lib/features/booking/presentation/widgets/participants_overview_block.dart`
+- `lib/features/booking/presentation/utils/booking_l10n.dart`
+
+Covered:
+
+- Checkout/order summary title, buyer/contact form labels, validation errors, terms sentence, participant validation errors, payment CTAs, and Stripe cancel fallback.
+- Active cart app bar, cart/seat hold timers, clear-cart dialog, hold-info dialog, empty cart state, participant instructions, saved-participant picker, buyer form, terms, footer total/ticket count, and order submit validation errors.
+- Cart summary section title, total labels, per-ticket labels, remove action, and locale-aware slot dates.
+- Participant card prefill labels, relationship labels, birth-date picker labels, required-field messages, optional contact section, save-participant label, and status pills.
+- Participant overview saved-count/progress labels, profile prefill actions, saved participant action, and incomplete-profile warning.
+- Order confirmation title, reference label, created-bookings header, ticket-generation fallback, navigation buttons, and booking fallback title.
+
+Not covered in this slice:
+
+- Legacy `/booking/:activityId` screens such as slot selection, participants, payment, and legacy confirmation.
+- Booking list/detail/ticket-management surfaces under `lib/features/booking/presentation/screens` and related widgets.
+- Backend-owned booking/event/ticket/user content such as event titles, ticket names, UUIDs, and API error messages returned by `ApiResponseHandler`.
+- Context-free legacy helpers such as `CheckoutParams.formattedDate`; the migrated UI now uses `context.bookingSlotLabel(...)` where the active flow needs locale-aware display.
 
 ## Verification Already Run
 
@@ -410,6 +468,36 @@ Result:
 - Analyzer output is only info-level existing lint/style debt in touched event files: `prefer_const_constructors`, `withOpacity`, and `use_build_context_synchronously`.
 - Locale tests passed.
 
+Latest focused Deep Event detail check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/events/presentation/utils/event_l10n.dart lib/features/events/presentation/widgets/detail/event_date_selector.dart lib/features/events/presentation/widgets/detail/event_ticket_card.dart lib/features/events/presentation/widgets/detail/event_sticky_booking_bar.dart lib/features/events/presentation/widgets/detail/event_practical_info.dart lib/features/events/presentation/widgets/detail/event_accessibility_section.dart lib/features/events/presentation/widgets/detail/practical_info_sheet.dart lib/features/events/presentation/widgets/detail/practical_info_card.dart lib/features/events/presentation/widgets/detail/event_location_map.dart lib/features/events/presentation/widgets/detail/event_indicative_prices.dart lib/features/events/presentation/widgets/detail/event_gallery_grid.dart lib/features/events/presentation/widgets/detail/event_hero_gallery.dart lib/features/events/presentation/widgets/detail/event_share_sheet.dart lib/features/events/presentation/widgets/detail/event_password_sheet.dart lib/features/events/presentation/widgets/detail/event_locked_view.dart lib/features/events/presentation/widgets/detail/event_organizer_card.dart lib/features/events/presentation/widgets/detail/event_similar_carousel.dart lib/features/events/presentation/widgets/detail/event_qa_section.dart lib/features/events/presentation/screens/event_questions_screen.dart lib/features/events/presentation/widgets/detail/ask_question_sheet.dart lib/features/events/presentation/widgets/detail/question_card.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/events/presentation/utils/event_l10n.dart lib/features/events/presentation/widgets/detail/event_date_selector.dart lib/features/events/presentation/widgets/detail/event_ticket_card.dart lib/features/events/presentation/widgets/detail/event_sticky_booking_bar.dart lib/features/events/presentation/widgets/detail/event_practical_info.dart lib/features/events/presentation/widgets/detail/event_accessibility_section.dart lib/features/events/presentation/widgets/detail/practical_info_sheet.dart lib/features/events/presentation/widgets/detail/practical_info_card.dart lib/features/events/presentation/widgets/detail/event_location_map.dart lib/features/events/presentation/widgets/detail/event_indicative_prices.dart lib/features/events/presentation/widgets/detail/event_gallery_grid.dart lib/features/events/presentation/widgets/detail/event_hero_gallery.dart lib/features/events/presentation/widgets/detail/event_share_sheet.dart lib/features/events/presentation/widgets/detail/event_password_sheet.dart lib/features/events/presentation/widgets/detail/event_locked_view.dart lib/features/events/presentation/widgets/detail/event_organizer_card.dart lib/features/events/presentation/widgets/detail/event_similar_carousel.dart lib/features/events/presentation/widgets/detail/event_qa_section.dart lib/features/events/presentation/screens/event_questions_screen.dart lib/features/events/presentation/widgets/detail/ask_question_sheet.dart lib/features/events/presentation/widgets/detail/question_card.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- Analyzer output is warning-level existing nullability/dead-code cleanup in `event_location_map.dart`, `event_practical_info.dart`, and `event_similar_carousel.dart`.
+- Locale tests passed.
+
+Latest focused Active Booking checkout/cart check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/booking/presentation/utils/booking_l10n.dart lib/features/booking/presentation/screens/checkout_screen.dart lib/features/booking/presentation/screens/order_cart_screen.dart lib/features/booking/presentation/screens/order_success_screen.dart lib/features/booking/presentation/widgets/cart_summary_section.dart lib/features/booking/presentation/widgets/participant_form_card.dart lib/features/booking/presentation/widgets/participant_forms_section.dart lib/features/booking/presentation/widgets/participants_overview_block.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/booking/presentation/utils/booking_l10n.dart lib/features/booking/presentation/screens/checkout_screen.dart lib/features/booking/presentation/screens/order_cart_screen.dart lib/features/booking/presentation/screens/order_success_screen.dart lib/features/booking/presentation/widgets/cart_summary_section.dart lib/features/booking/presentation/widgets/participant_form_card.dart lib/features/booking/presentation/widgets/participant_forms_section.dart lib/features/booking/presentation/widgets/participants_overview_block.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused booking slice.
+- Locale tests passed.
+
 Targeted analyzer checks:
 
 - Booking files no longer have analyzer errors after null-safety cleanup.
@@ -452,12 +540,32 @@ Known unrelated or pre-existing dirty entries observed during this work:
   - `lib/features/events/data/repositories/event_repository_impl.dart`
   - `lib/features/events/domain/repositories/event_repository.dart`
   - `lib/features/events/presentation/providers/event_providers.dart`
-  - Event browse/core-detail files are now part of the i18n work:
+  - Event browse/core-detail and deep-detail files are now part of the i18n work:
     - `lib/features/events/presentation/screens/event_detail_screen.dart`
     - `lib/features/events/presentation/screens/event_list_screen.dart`
     - `lib/features/events/presentation/screens/map_view_screen.dart`
+    - `lib/features/events/presentation/screens/event_questions_screen.dart`
     - `lib/features/events/presentation/widgets/detail/event_compact_header.dart`
     - `lib/features/events/presentation/widgets/detail/event_social_proof.dart`
+    - `lib/features/events/presentation/widgets/detail/event_date_selector.dart`
+    - `lib/features/events/presentation/widgets/detail/event_ticket_card.dart`
+    - `lib/features/events/presentation/widgets/detail/event_sticky_booking_bar.dart`
+    - `lib/features/events/presentation/widgets/detail/event_practical_info.dart`
+    - `lib/features/events/presentation/widgets/detail/event_accessibility_section.dart`
+    - `lib/features/events/presentation/widgets/detail/event_location_map.dart`
+    - `lib/features/events/presentation/widgets/detail/event_indicative_prices.dart`
+    - `lib/features/events/presentation/widgets/detail/practical_info_card.dart`
+    - `lib/features/events/presentation/widgets/detail/practical_info_sheet.dart`
+    - `lib/features/events/presentation/widgets/detail/event_gallery_grid.dart`
+    - `lib/features/events/presentation/widgets/detail/event_hero_gallery.dart`
+    - `lib/features/events/presentation/widgets/detail/event_share_sheet.dart`
+    - `lib/features/events/presentation/widgets/detail/event_password_sheet.dart`
+    - `lib/features/events/presentation/widgets/detail/event_locked_view.dart`
+    - `lib/features/events/presentation/widgets/detail/event_organizer_card.dart`
+    - `lib/features/events/presentation/widgets/detail/event_similar_carousel.dart`
+    - `lib/features/events/presentation/widgets/detail/event_qa_section.dart`
+    - `lib/features/events/presentation/widgets/detail/ask_question_sheet.dart`
+    - `lib/features/events/presentation/widgets/detail/question_card.dart`
     - `lib/features/events/presentation/widgets/map_event_card.dart`
     - `lib/features/events/presentation/utils/event_l10n.dart`
   - `lib/features/events/data/models/search_suggestions_dto.dart`
@@ -466,11 +574,22 @@ Known unrelated or pre-existing dirty entries observed during this work:
   - `lib/features/search/presentation/widgets/filter_bottom_sheet.dart`
   - `test/features/search/widgets/active_filter_chips_provider_test.dart`
 
+Booking checkout/cart files are now part of the i18n work:
+
+- `lib/features/booking/presentation/screens/checkout_screen.dart`
+- `lib/features/booking/presentation/screens/order_cart_screen.dart`
+- `lib/features/booking/presentation/screens/order_success_screen.dart`
+- `lib/features/booking/presentation/widgets/cart_summary_section.dart`
+- `lib/features/booking/presentation/widgets/participant_form_card.dart`
+- `lib/features/booking/presentation/widgets/participant_forms_section.dart`
+- `lib/features/booking/presentation/widgets/participants_overview_block.dart`
+- `lib/features/booking/presentation/utils/booking_l10n.dart`
+
 Before committing or refining, review diffs by file instead of using bulk restore/reset commands.
 
 ## Where Work Stopped
 
-Stopped after completing the Event browse/core-detail copy slice.
+Stopped after completing the active Booking checkout/cart/order confirmation slice.
 
 Current stable stopping point:
 
@@ -484,10 +603,12 @@ Current stable stopping point:
 - Active Home surface chrome, hero, cards, stories, ads fallback, city detail, and Home search pill copy are localized.
 - Search screen, search sheets, filter sheet, active chips, and save-search sheet copy are localized.
 - Event list, map, map cards, core detail sections, core detail booking/cart sheet, compact header, and event badges are localized.
+- Deep Event detail subwidgets are localized, including date/ticket/sticky booking controls, practical info, accessibility, location, gallery, share, password/private access, organizer/similar sections, Q&A preview, full questions screen, ask-question sheet, and question cards.
+- Active Booking checkout, cart, cart summary, participant forms/overview, saved-participant picker, and order confirmation copy are localized.
 - Direct hard-coded `featureName: '...'` / `featureName: "..."` scan under `lib/` is clean.
 - Locale unit tests pass.
 
-Next work should continue with deep Event detail subwidgets, not more locale plumbing.
+Next work should continue with the remaining Booking management/legacy screens, not more locale plumbing.
 
 ## Remaining Task Queue
 
@@ -495,12 +616,11 @@ Next work should continue with deep Event detail subwidgets, not more locale plu
 
 Recommended order:
 
-1. Deep Event detail subwidgets: date selector, tickets/sticky booking bar, practical info, accessibility, location, Q&A/questions, gallery/password/share sheets.
-2. Booking flow.
-3. Profile/settings subpages.
-4. Messages.
-5. Petit Boo chat and tool cards.
-6. Memberships/partners/check-in/admin surfaces.
+1. Remaining Booking management and legacy checkout screens.
+2. Profile/settings subpages.
+3. Messages.
+4. Petit Boo chat and tool cards.
+5. Memberships/partners/check-in/admin surfaces.
 
 For each screen:
 

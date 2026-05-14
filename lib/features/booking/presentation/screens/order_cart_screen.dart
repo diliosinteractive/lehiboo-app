@@ -6,8 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
-import 'package:lehiboo/shared/legal/legal_links.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -17,12 +17,14 @@ import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/models/order_cart_item.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/cart_summary_section.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_form_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participants_overview_block.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
+import 'package:lehiboo/shared/legal/legal_links.dart';
 
 class OrderCartScreen extends ConsumerStatefulWidget {
   const OrderCartScreen({super.key});
@@ -169,8 +171,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       ref.read(orderCartProvider.notifier).clear();
       setState(() {
         _cartHoldRemaining = null;
-        _errorMessage =
-            'Le delai du panier est depasse. Ajoutez a nouveau vos billets pour continuer.';
+        _errorMessage = context.l10n.bookingCartHoldExpired;
       });
       return;
     }
@@ -210,19 +211,17 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Vider le panier ?'),
-        content: const Text(
-          'Tous les billets ajoutes seront supprimes. Cette action est irreversible.',
-        ),
+        title: Text(context.l10n.bookingClearCartTitle),
+        content: Text(context.l10n.bookingClearCartBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Annuler'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Vider'),
+            child: Text(context.l10n.bookingClear),
           ),
         ],
       ),
@@ -319,11 +318,11 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
                 child: Text(
-                  'Choisir un participant enregistre',
-                  style: TextStyle(
+                  context.l10n.bookingChooseSavedParticipant,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: HbColors.textPrimary,
@@ -369,11 +368,11 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                   itemCount: participants.length,
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                 child: Text(
-                  'Ajouter au prochain billet vide',
-                  style: TextStyle(
+                  context.l10n.bookingAddToNextEmptyTicket,
+                  style: const TextStyle(
                     fontSize: 12,
                     color: HbColors.textMuted,
                   ),
@@ -418,26 +417,29 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Panier'),
+        title: Text(context.l10n.bookingCartTitle),
         backgroundColor: Colors.white,
         foregroundColor: HbColors.textPrimary,
         elevation: 0,
         actions: [
           if (_cartHoldRemaining != null && _activeOrderUuid == null)
             _CartTimerChip(
-              label: 'Panier ${_formatRemaining(_cartHoldRemaining!)}',
+              label: context.l10n
+                  .bookingCartHoldLabel(_formatRemaining(_cartHoldRemaining!)),
               onTap: _showCartHoldInfo,
             ),
           if (_activeOrderUuid != null && _reservationRemaining != null)
             _CartTimerChip(
-              label: 'Places ${_formatRemaining(_reservationRemaining!)}',
+              label: context.l10n.bookingPlacesHoldLabel(
+                _formatRemaining(_reservationRemaining!),
+              ),
               onTap: _showCartHoldInfo,
               highlight: true,
             ),
           if (items.isNotEmpty)
             TextButton(
               onPressed: _isLoading ? null : _confirmClearCart,
-              child: const Text('Vider'),
+              child: Text(context.l10n.bookingClear),
             ),
         ],
       ),
@@ -455,9 +457,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                     onRemove: ref.read(orderCartProvider.notifier).remove,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Participants',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.bookingParticipantsTitle,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: HbColors.textPrimary,
@@ -465,7 +467,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Choisissez une personne enregistree ou renseignez chaque billet.',
+                    context.l10n.bookingParticipantsInstruction,
                     style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 12),
@@ -508,14 +510,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Conservation du panier'),
-        content: const Text(
-          'Votre selection est conservee 15 minutes apres le dernier ajout. Au moment du paiement, les places sont bloquees pour le temps necessaire a la finalisation.',
-        ),
+        title: Text(context.l10n.bookingCartHoldTitle),
+        content: Text(context.l10n.bookingCartHoldBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Compris'),
+            child: Text(context.l10n.bookingUnderstood),
           ),
         ],
       ),
@@ -543,9 +543,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Votre panier est vide',
-              style: TextStyle(
+            Text(
+              context.l10n.bookingEmptyCartTitle,
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textPrimary,
@@ -553,7 +553,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ajoutez des billets depuis une fiche evenement pour payer plusieurs reservations en une fois.',
+              context.l10n.bookingEmptyCartBody,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade600),
             ),
@@ -564,7 +564,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                 backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Explorer les evenements'),
+              child: Text(context.l10n.bookingExploreEvents),
             ),
           ],
         ),
@@ -606,7 +606,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             initialValue: initial,
             savedParticipants: savedParticipants,
             eventTitle: item.event.title,
-            slotLabel: _formatSlot(item),
+            slotLabel: context.bookingCartItemSlotLabel(item),
             initiallyExpanded: cardIndex == firstIncompleteIndex,
             onChanged: (info) => _updateAttendee(item.id, i, info),
           ),
@@ -632,9 +632,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Coordonnees',
-              style: TextStyle(
+            Text(
+              context.l10n.bookingContactDetailsTitle,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: HbColors.textPrimary,
@@ -642,7 +642,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Vous recevrez votre confirmation et vos billets a cette adresse.',
+              context.l10n.bookingContactDetailsSubtitle,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 14),
@@ -656,11 +656,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                     width: fieldWidth,
                     child: TextFormField(
                       controller: _firstNameController,
-                      decoration: _inputDecoration('Prenom *'),
+                      decoration: _inputDecoration(
+                          context.l10n.bookingFirstNameLabelRequired),
                       textCapitalization: TextCapitalization.words,
                       validator: (value) =>
                           value == null || value.trim().isEmpty
-                              ? 'Le prenom est requis'
+                              ? context.l10n.bookingFirstNameRequired
                               : null,
                     ),
                   ),
@@ -668,11 +669,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                     width: fieldWidth,
                     child: TextFormField(
                       controller: _lastNameController,
-                      decoration: _inputDecoration('Nom *'),
+                      decoration: _inputDecoration(
+                          context.l10n.bookingLastNameLabelRequired),
                       textCapitalization: TextCapitalization.words,
                       validator: (value) =>
                           value == null || value.trim().isEmpty
-                              ? 'Le nom est requis'
+                              ? context.l10n.bookingLastNameRequired
                               : null,
                     ),
                   ),
@@ -682,14 +684,15 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             const SizedBox(height: 10),
             TextFormField(
               controller: _emailController,
-              decoration: _inputDecoration('Email *'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingEmailLabelRequired),
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'L\'email est requis';
+                  return context.l10n.bookingEmailRequired;
                 }
                 if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                  return 'Email invalide';
+                  return context.l10n.bookingEmailInvalid;
                 }
                 return null;
               },
@@ -705,7 +708,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                     width: fieldWidth,
                     child: TextFormField(
                       controller: _phoneController,
-                      decoration: _inputDecoration('Telephone'),
+                      decoration:
+                          _inputDecoration(context.l10n.bookingPhoneLabel),
                       keyboardType: TextInputType.phone,
                     ),
                   ),
@@ -713,7 +717,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                     width: fieldWidth,
                     child: TextFormField(
                       controller: _townController,
-                      decoration: _inputDecoration('Ville d\'appartenance'),
+                      decoration: _inputDecoration(
+                          context.l10n.bookingMembershipCityLabel),
                       textCapitalization: TextCapitalization.words,
                     ),
                   ),
@@ -749,23 +754,22 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
               onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
               child: RichText(
                 text: TextSpan(
-                  style:
-                      TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
                   children: [
-                    const TextSpan(text: "J'accepte les "),
+                    TextSpan(text: context.l10n.bookingTermsPrefix),
                     TextSpan(
-                      text: 'conditions generales de vente',
+                      text: context.l10n.legalSales.toLowerCase(),
                       style: const TextStyle(
                         color: HbColors.brandPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                       recognizer: TapGestureRecognizer()
-                        ..onTap = () =>
-                            LegalLinks.open(context, LegalDocument.sales),
+                        ..onTap =
+                            () => LegalLinks.open(context, LegalDocument.sales),
                     ),
-                    const TextSpan(text: ' et la '),
+                    TextSpan(text: context.l10n.bookingTermsConnector),
                     TextSpan(
-                      text: 'politique de confidentialite',
+                      text: context.l10n.legalPrivacy.toLowerCase(),
                       style: const TextStyle(
                         color: HbColors.brandPrimary,
                         fontWeight: FontWeight.w600,
@@ -837,7 +841,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      totalAmount == 0 ? 'Gratuit' : _formatPrice(totalAmount),
+                      totalAmount == 0
+                          ? context.l10n.commonFree
+                          : _formatPrice(totalAmount),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -845,7 +851,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                       ),
                     ),
                     Text(
-                      '$totalQuantity billet${totalQuantity > 1 ? 's' : ''}',
+                      context.l10n.bookingTicketsCount(totalQuantity),
                       style:
                           TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
@@ -880,8 +886,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                               size: 18),
                           const SizedBox(width: 8),
                           Text(totalAmount == 0
-                              ? 'Confirmer'
-                              : 'Continuer vers le paiement'),
+                              ? context.l10n.bookingConfirm
+                              : context.l10n.bookingContinueToPayment),
                         ],
                       ),
               ),
@@ -901,7 +907,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (!_acceptedTerms) {
       setState(() {
-        _errorMessage = 'Veuillez accepter les conditions generales de vente';
+        _errorMessage = context.l10n.bookingAcceptSalesRequired;
       });
       return;
     }
@@ -995,7 +1001,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
       setState(() {
         _isLoading = false;
-        _errorMessage = e.error.localizedMessage ?? 'Paiement annule';
+        _errorMessage =
+            e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
       });
     } catch (e) {
       if (shouldCancelOrderOnError) {
@@ -1073,7 +1080,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       final attendees = _attendeesByCartItemId[item.id] ?? [];
       if (attendees.length != item.quantity) {
         setState(() {
-          _errorMessage = 'Chaque billet doit avoir un participant renseigne';
+          _errorMessage = context.l10n.bookingEveryTicketNeedsParticipant;
         });
         return false;
       }
@@ -1081,8 +1088,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       for (final attendee in attendees) {
         if (!attendee.isComplete) {
           setState(() {
-            _errorMessage =
-                'Veuillez renseigner le prenom, la date de naissance, la ville et la relation de chaque participant';
+            _errorMessage = context.l10n.bookingParticipantsMissingCartDetails;
           });
           return false;
         }
@@ -1139,29 +1145,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     );
-  }
-
-  String? _formatSlot(OrderCartItem item) {
-    final slot = item.selectedSlot;
-    if (slot == null) return null;
-
-    return [
-      '${slot.date.day.toString().padLeft(2, '0')}/${slot.date.month.toString().padLeft(2, '0')}/${slot.date.year}',
-      _formatTime(slot.startTime),
-    ].whereType<String>().where((value) => value.isNotEmpty).join(' · ');
-  }
-
-  String _formatTime(String? raw) {
-    final value = raw?.trim() ?? '';
-    if (value.isEmpty) return '';
-
-    final match =
-        RegExp(r'(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?').firstMatch(value);
-    if (match == null) return value;
-
-    final hour = match.group(1)!.padLeft(2, '0');
-    final minute = match.group(2)!;
-    return '$hour:$minute';
   }
 
   String _formatPrice(double price) {

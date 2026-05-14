@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 
 /// One ticket = one card. Layout matches the desktop accordion item:
@@ -60,15 +62,14 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
   bool _expanded = false;
   bool _contactExpanded = false;
 
-  static final DateFormat _displayDateFormat = DateFormat('dd/MM/yyyy');
-  static const Map<String, String> _relationshipLabels = {
-    'self': 'Moi',
-    'child': 'Enfant',
-    'spouse': 'Conjoint',
-    'family': 'Famille',
-    'friend': 'Ami',
-    'other': 'Autre',
-  };
+  static const List<String> _relationshipKeys = [
+    'self',
+    'child',
+    'spouse',
+    'family',
+    'friend',
+    'other',
+  ];
 
   @override
   void initState() {
@@ -263,9 +264,9 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
       initialDate: initial,
       firstDate: DateTime(1900),
       lastDate: now,
-      helpText: 'Date de naissance',
-      cancelText: 'Annuler',
-      confirmText: 'Valider',
+      helpText: context.l10n.bookingBirthDateHelp,
+      cancelText: context.l10n.commonCancel,
+      confirmText: context.l10n.bookingConfirm,
     );
     if (picked == null || !mounted) return;
 
@@ -285,7 +286,9 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
     final fn = _firstNameCtrl.text.trim();
     final ln = _lastNameCtrl.text.trim();
     final composed = [fn, ln].where((v) => v.isNotEmpty).join(' ');
-    return composed.isNotEmpty ? composed : 'Billet ${widget.participantIndex}';
+    return composed.isNotEmpty
+        ? composed
+        : '${context.l10n.bookingTicketFallback} ${widget.participantIndex}';
   }
 
   @override
@@ -416,7 +419,8 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
         DropdownButtonFormField<String>(
           key: ValueKey('prefill-$_prefillSource'),
           initialValue: _prefillSource,
-          decoration: _inputDecoration('Pre-remplir ce billet').copyWith(
+          decoration:
+              _inputDecoration(context.l10n.bookingPrefillTicket).copyWith(
             // Base helper uses isDense + symmetric padding, which clips the
             // floating label. Switch to non-dense and use asymmetric padding
             // that mirrors Flutter's default for outline + floating label
@@ -426,20 +430,20 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
           ),
           isExpanded: true,
           items: [
-            const DropdownMenuItem(
+            DropdownMenuItem(
               value: 'manual',
-              child: Text('Saisie manuelle'),
+              child: Text(context.l10n.bookingManualEntry),
             ),
             if (widget.buyerInfo != null)
-              const DropdownMenuItem(
+              DropdownMenuItem(
                 value: 'self',
-                child: Text('Moi (acheteur)'),
+                child: Text(context.l10n.bookingBuyerSelf),
               ),
             for (final p in widget.savedParticipants)
               DropdownMenuItem(
                 value: p.uuid,
                 child: Text(
-                  '${p.displayName}${p.relationship != null ? ' · ${_relationshipLabels[p.relationship!] ?? p.relationship!}' : ''}',
+                  '${p.displayName}${p.relationship != null ? ' · ${context.bookingRelationshipLabel(p.relationship!)}' : ''}',
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -460,18 +464,21 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                 width: fieldWidth,
                 child: TextFormField(
                   controller: _firstNameCtrl,
-                  decoration: _inputDecoration('Prenom *'),
+                  decoration: _inputDecoration(
+                      context.l10n.bookingFirstNameLabelRequired),
                   textCapitalization: TextCapitalization.words,
                   onChanged: (_) => _emitChange(),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Prenom requis' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? context.l10n.bookingFirstNameShortRequired
+                      : null,
                 ),
               ),
               SizedBox(
                 width: fieldWidth,
                 child: TextFormField(
                   controller: _lastNameCtrl,
-                  decoration: _inputDecoration('Nom'),
+                  decoration:
+                      _inputDecoration(context.l10n.bookingLastNameLabel),
                   textCapitalization: TextCapitalization.words,
                   onChanged: (_) => _emitChange(),
                 ),
@@ -484,11 +491,13 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                 width: fieldWidth,
                 child: TextFormField(
                   controller: _cityCtrl,
-                  decoration: _inputDecoration('Ville d\'appartenance *'),
+                  decoration:
+                      _inputDecoration(context.l10n.bookingMembershipCityLabel),
                   textCapitalization: TextCapitalization.words,
                   onChanged: (_) => _emitChange(),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Ville requise' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? context.l10n.bookingCityRequired
+                      : null,
                 ),
               ),
               SizedBox(
@@ -499,12 +508,15 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                       (_relationship != null && _relationship!.isNotEmpty)
                           ? _relationship
                           : null,
-                  decoration: _inputDecoration('Relation *'),
-                  items: _relationshipLabels.entries
+                  decoration: _inputDecoration(
+                      context.l10n.bookingRelationLabelRequired),
+                  items: _relationshipKeys
                       .map(
-                        (entry) => DropdownMenuItem(
-                          value: entry.key,
-                          child: Text(entry.value),
+                        (relationship) => DropdownMenuItem(
+                          value: relationship,
+                          child: Text(
+                            context.bookingRelationshipLabel(relationship),
+                          ),
                         ),
                       )
                       .toList(),
@@ -513,7 +525,7 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                     _emitChange();
                   },
                   validator: (value) => value == null || value.isEmpty
-                      ? 'Relation requise'
+                      ? context.l10n.bookingRelationRequired
                       : null,
                 ),
               ),
@@ -535,7 +547,7 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Contact optionnel',
+                  context.l10n.bookingContactOptional,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -554,14 +566,14 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _emailCtrl,
-                decoration: _inputDecoration('Email'),
+                decoration: _inputDecoration(context.l10n.authEmailLabel),
                 keyboardType: TextInputType.emailAddress,
                 onChanged: (_) => _emitChange(),
               ),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _phoneCtrl,
-                decoration: _inputDecoration('Telephone'),
+                decoration: _inputDecoration(context.l10n.bookingPhoneLabel),
                 keyboardType: TextInputType.phone,
                 onChanged: (_) => _emitChange(),
               ),
@@ -595,7 +607,7 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                     _emitChange();
                   },
                   child: Text(
-                    'Ajouter a Mes participants',
+                    context.l10n.bookingSaveParticipant,
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade700,
@@ -616,11 +628,16 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
       onTap: _pickBirthDate,
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
-        decoration: _inputDecoration('Date de naissance *').copyWith(
+        decoration: _inputDecoration(context.l10n.bookingBirthDateLabelRequired)
+            .copyWith(
           suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
         ),
         child: Text(
-          parsed != null ? _displayDateFormat.format(parsed) : 'jj/mm/aaaa',
+          parsed != null
+              ? context
+                  .appDateFormat('dd/MM/yyyy', enPattern: 'MM/dd/yyyy')
+                  .format(parsed)
+              : context.l10n.bookingBirthDatePlaceholder,
           style: TextStyle(
             color: parsed != null ? HbColors.textPrimary : Colors.grey.shade500,
           ),
@@ -698,7 +715,9 @@ class _StatusPill extends StatelessWidget {
         ? const Color(0xFFD1FAE5) // emerald-100
         : const Color(0xFFFFEDD5); // orange-100
     final icon = complete ? Icons.check_circle : Icons.error_outline;
-    final label = complete ? 'Complete' : 'Action requise';
+    final label = complete
+        ? context.l10n.bookingParticipantComplete
+        : context.l10n.bookingParticipantActionRequired;
 
     return Container(
       margin: const EdgeInsets.only(right: 4),

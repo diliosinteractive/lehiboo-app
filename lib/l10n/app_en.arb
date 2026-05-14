@@ -613,5 +613,429 @@
   "eventAudienceChildren": "Children",
   "eventAudienceTeenagers": "Teens",
   "eventAudienceAdults": "Adults",
-  "eventAudienceSeniors": "Seniors"
+  "eventAudienceSeniors": "Seniors",
+  "eventDatesAvailable": "Available dates",
+  "eventChooseDate": "Choose a date",
+  "eventViewAllCount": "View all ({count})",
+  "@eventViewAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventNoDateAvailable": "No date available",
+  "eventNoOpenSlots": "This event has no open slots",
+  "eventSpotsRemaining": "{count, plural, =1{1 spot left} other{{count} spots left}}",
+  "@eventSpotsRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventTicketsTitle": "Tickets",
+  "eventShowMore": "Show more",
+  "eventShowLess": "Show less",
+  "eventSoldOut": "Sold out",
+  "eventTicketLowStock": "{count, plural, =1{Only 1 left!} other{Only {count} left!}}",
+  "@eventTicketLowStock": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventTicketsAvailable": "{count, plural, =1{1 available} other{{count} available}}",
+  "@eventTicketsAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventTotal": "total",
+  "eventTicketsSelected": "{count, plural, =1{1 ticket selected} other{{count} tickets selected}}",
+  "@eventTicketsSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventTicketsForDate": "{count, plural, =1{1 ticket • {date}} other{{count} tickets • {date}}}",
+  "@eventTicketsForDate": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventNoSeatsAvailable": "No seats available",
+  "eventExpectedCapacity": "Expected capacity: {count}",
+  "@eventExpectedCapacity": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventViewDates": "View dates",
+  "eventReminded": "Reminder set",
+  "eventRemindMe": "Remind me",
+  "eventViewWebsite": "View website",
+  "eventIndicativePrice": "Indicative price",
+  "eventDateFromTo": "{date} from {start} to {end}",
+  "@eventDateFromTo": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDateAtStart": "{date} at {start}",
+  "@eventDateAtStart": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "eventServicesAdditionalTitle": "Additional services (indicative)",
+  "eventPracticalInfoTitle": "Practical information",
+  "eventParkingTitle": "Parking",
+  "eventParkingSubtitle": "Available spaces",
+  "eventTransportTitle": "Transport",
+  "eventTransportSubtitle": "Bus, metro, tram",
+  "eventFoodService": "Food",
+  "eventFoodOnSite": "Food on site",
+  "eventDrinks": "Drinks",
+  "eventDrinksAvailable": "Drinks available",
+  "eventWifiAvailable": "Wi-Fi available",
+  "eventServiceDefaultDescription": "This service is available on site.",
+  "eventServiceEquipment": "Equipment provided",
+  "eventServiceFacilitator": "Facilitator",
+  "eventServiceAccommodation": "Accommodation",
+  "eventServiceCloakroom": "Cloakroom",
+  "eventServiceSecurity": "Security",
+  "eventServiceFirstAid": "First aid",
+  "eventServiceChildcare": "Childcare",
+  "eventServicePhotoBooth": "Photo booth",
+  "eventPlace": "Place",
+  "eventParkingSheetTitle": "Parking",
+  "eventParkingDirections": "Navigate to parking",
+  "eventTransportSheetTitle": "Public transport",
+  "eventAccessibilityTitle": "Accessibility",
+  "eventAccessibilityPmr": "Wheelchair accessible",
+  "eventAccessibilityPmrTitle": "Wheelchair accessibility",
+  "eventAccessibilitySignLanguage": "Sign language",
+  "eventAccessibilityElevator": "Elevator",
+  "eventAccessibilityDisabledParking": "Accessible parking",
+  "eventAccessibilityDisabledSeats": "Accessible seats",
+  "eventAccessibilityGuideDog": "Guide dog",
+  "eventAccessibilityHearingLoop": "Hearing loop",
+  "eventAccessibilityAudioDescription": "Audio description",
+  "eventAccessibilityBraille": "Braille",
+  "eventAvailable": "Available",
+  "eventQuickActions": "Quick actions",
+  "eventDrivingDirections": "Driving directions",
+  "eventWalkingDirections": "Walking directions",
+  "eventPublicTransportDirections": "Public transport",
+  "eventCopyAddress": "Copy address",
+  "eventAddressCopied": "Address copied",
+  "eventDetailsLabel": "Details",
+  "eventLocationTitle": "Location",
+  "eventViewOnGoogleMaps": "View on Google Maps",
+  "eventNoImage": "No image",
+  "eventNoImageAvailable": "No image available",
+  "eventViewVideo": "View video",
+  "eventViewAllPhotosCount": "View all photos ({count})",
+  "@eventViewAllPhotosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventPrivateNotFound": "Event not found.",
+  "eventPasswordRequired": "Password is required.",
+  "eventPasswordIncorrect": "Incorrect password.",
+  "eventPasswordInvalidFormat": "Invalid format.",
+  "eventPasswordNetworkError": "Network error. Try again.",
+  "eventPasswordRetryIn": "Try again in {seconds}s",
+  "@eventPasswordRetryIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "eventPasswordChecking": "Checking...",
+  "eventUnlock": "Unlock",
+  "eventPrivateTitle": "This event is private",
+  "eventPrivateInstructions": "Enter the password shared by the organizer.",
+  "eventPasswordAttemptsWarning": "3 attempts left before a 1-minute delay.",
+  "eventPasswordLabel": "Password",
+  "eventPasswordHint": "Enter the password",
+  "eventMembersOnlyTitle": "Members only",
+  "eventMembersOnlyPrefix": "The event ",
+  "eventMembersOnlyReservedFor": "is reserved for members of ",
+  "eventMembersOnlySuffix": ". Join the community to access it.",
+  "eventOrganizationFallback": "this organization",
+  "eventViewOrganizer": "View organizer",
+  "eventEnterPassword": "Enter password",
+  "eventPrivateFallbackSubtitle": "This event is private. Enter the password shared by the organizer.",
+  "eventShareWithSender": "{senderName} is sharing the event {eventTitle}: {url}",
+  "@eventShareWithSender": {
+    "placeholders": {
+      "senderName": {
+        "type": "String"
+      },
+      "eventTitle": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "eventShareDefault": "Check out the event {eventTitle}: {url}",
+  "@eventShareDefault": {
+    "placeholders": {
+      "eventTitle": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "eventQuestionsTitle": "Questions",
+  "eventAsk": "Ask",
+  "eventQuestionSent": "Your question has been sent!",
+  "eventQuestionAlreadyAsked": "You have already asked a question about this event.",
+  "eventYourQuestion": "Your question",
+  "eventQuestionStatusPending": "Pending moderation",
+  "eventQuestionStatusApproved": "Approved",
+  "eventQuestionStatusAnswered": "Answered",
+  "eventQuestionStatusRejected": "Rejected",
+  "eventViewAllQuestionsCount": "View all questions ({count})",
+  "@eventViewAllQuestionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventNoQuestionsTitle": "No questions yet",
+  "eventNoQuestionsBody": "Be the first to ask a question about this event.",
+  "eventAskQuestion": "Ask a question",
+  "eventQuestionsLoadError": "Unable to load questions",
+  "eventQuestionsEnd": "You have seen all questions",
+  "eventVoteUnavailable": "Unable to vote right now.",
+  "eventQuestionsCount": "{count, plural, =1{1 question} other{{count} questions}}",
+  "@eventQuestionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventOfficialAnswer": "Official answer",
+  "eventAnonymous": "Anonymous",
+  "eventHelpful": "Helpful",
+  "eventHelpfulCount": "Helpful ({count})",
+  "@eventHelpfulCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventAskQuestionHint": "Example: What time do doors open?",
+  "eventQuestionRequired": "Please enter your question.",
+  "eventQuestionMinLength": "Your question must contain at least 10 characters.",
+  "eventQuestionTooLong": "Your question is too long (1000 max).",
+  "eventQuestionInfo": "The organizer will receive your question and reply soon.",
+  "eventSendQuestion": "Send my question",
+  "eventCheckConnectionRetry": "Check your connection, then try again.",
+  "eventOrganizerInfoSources": "Info Sources",
+  "eventOrganizerTitle": "Organizer",
+  "eventOrganizerVerified": "Verified organizer",
+  "eventOrganizerNotVerified": "Organizer not verified",
+  "eventOrganizerEventsPublished": "{count, plural, =1{1 event published} other{{count} events published}}",
+  "@eventOrganizerEventsPublished": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventOrganizerFollowers": "{count, plural, =1{1 follower} other{{count} followers}}",
+  "@eventOrganizerFollowers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventContact": "Contact",
+  "eventViewProfile": "View profile",
+  "eventWrittenBy": "Written by",
+  "eventLehibooExperiences": "LEHIBOO EXPERIENCES",
+  "eventSourceInfo": "Info source: ",
+  "eventSimilarEvents": "Similar events",
+  "bookingCheckoutTitle": "Finalize my booking",
+  "bookingSummaryTitle": "Summary",
+  "bookingTicketFallback": "Ticket",
+  "bookingTotal": "Total",
+  "bookingBuyerContactTitle": "Your contact details",
+  "bookingContactDetailsTitle": "Contact details",
+  "bookingContactDetailsSubtitle": "You will receive your confirmation and tickets at this address.",
+  "bookingAdditionalInfoOptional": "Additional information (optional)",
+  "bookingFirstNameLabelRequired": "First name *",
+  "bookingLastNameLabelRequired": "Last name *",
+  "bookingEmailLabelRequired": "Email *",
+  "bookingPhoneLabel": "Phone",
+  "bookingAgeLabel": "Age",
+  "bookingMembershipCityLabel": "Membership city",
+  "bookingFirstNameRequired": "First name is required",
+  "bookingLastNameRequired": "Last name is required",
+  "bookingEmailRequired": "Email is required",
+  "bookingEmailInvalid": "Invalid email",
+  "bookingCityMaxLength": "City must not exceed 255 characters",
+  "bookingTermsPrefix": "I accept the ",
+  "bookingTermsConnector": " and the ",
+  "bookingAcceptSalesRequired": "Please accept the terms of sale",
+  "bookingEveryTicketNeedsParticipant": "Each ticket must have a participant",
+  "bookingParticipantsMissingDetails": "Please enter the first name, last name, birth date, city, and relationship for each participant",
+  "bookingParticipantsMissingCartDetails": "Please enter the first name, birth date, city, and relationship for each participant",
+  "bookingConfirm": "Confirm",
+  "bookingPay": "Pay",
+  "bookingContinueToPayment": "Continue to payment",
+  "bookingPaymentCancelled": "Payment cancelled",
+  "bookingTicketsCount": "{count, plural, =1{1 ticket} other{{count} tickets}}",
+  "@bookingTicketsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingCartTitle": "Cart",
+  "bookingCartHoldExpired": "The cart hold has expired. Add your tickets again to continue.",
+  "bookingClearCartTitle": "Clear cart?",
+  "bookingClearCartBody": "All added tickets will be removed. This action cannot be undone.",
+  "bookingClear": "Clear",
+  "bookingCartHoldLabel": "Cart {time}",
+  "@bookingCartHoldLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingPlacesHoldLabel": "Seats {time}",
+  "@bookingPlacesHoldLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingCartHoldTitle": "Cart hold",
+  "bookingCartHoldBody": "Your selection is held for 15 minutes after the last item is added. At payment time, seats are locked for the time needed to finish.",
+  "bookingUnderstood": "Got it",
+  "bookingEmptyCartTitle": "Your cart is empty",
+  "bookingEmptyCartBody": "Add tickets from an event page to pay for several bookings at once.",
+  "bookingExploreEvents": "Explore events",
+  "bookingParticipantsTitle": "Participants",
+  "bookingParticipantsInstruction": "Choose a saved person or fill in each ticket.",
+  "bookingParticipantSectionSubtitle": "One form per ticket — fill in each participant",
+  "bookingParticipantInfoNote": "First name, birth date, city, and relationship help the AI and Le Hiboo experience suggest the most relevant offers and events.",
+  "bookingChooseSavedParticipant": "Choose a saved participant",
+  "bookingAddToNextEmptyTicket": "Add to the next empty ticket",
+  "bookingMyParticipants": "My participants",
+  "bookingSavedParticipantsCount": "{count, plural, =1{1 saved} other{{count} saved}}",
+  "@bookingSavedParticipantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingPrefillTicketsOneClick": "Pre-fill your tickets in one tap",
+  "bookingParticipantsReady": "{completed} / {total} participants ready",
+  "@bookingParticipantsReady": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingFillAllWithProfile": "Fill all tickets with my profile",
+  "bookingIncompleteProfileTitle": "Incomplete profile",
+  "bookingIncompleteProfileBody": "Complete your profile (birth date, city) to pre-fill all required fields.",
+  "bookingCompleteProfile": "Complete my profile >",
+  "bookingPrefillTicket": "Pre-fill this ticket",
+  "bookingManualEntry": "Manual entry",
+  "bookingBuyerSelf": "Me (buyer)",
+  "bookingRelationshipSelf": "Me",
+  "bookingRelationshipChild": "Child",
+  "bookingRelationshipSpouse": "Spouse",
+  "bookingRelationshipFamily": "Family",
+  "bookingRelationshipFriend": "Friend",
+  "bookingRelationshipOther": "Other",
+  "bookingFirstNameShortRequired": "First name required",
+  "bookingCityRequired": "City required",
+  "bookingRelationRequired": "Relationship required",
+  "bookingLastNameLabel": "Last name",
+  "bookingRelationLabelRequired": "Relationship *",
+  "bookingBirthDateLabelRequired": "Birth date *",
+  "bookingBirthDateHelp": "Birth date",
+  "bookingBirthDatePlaceholder": "mm/dd/yyyy",
+  "bookingContactOptional": "Optional contact",
+  "bookingSaveParticipant": "Add to My participants",
+  "bookingParticipantComplete": "Complete",
+  "bookingParticipantActionRequired": "Action required",
+  "bookingRecapTitle": "Summary",
+  "bookingTotalTickets": "Total tickets",
+  "bookingPerTicket": "{price} / ticket",
+  "@bookingPerTicket": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingRemove": "Remove",
+  "bookingOrderConfirmed": "Order confirmed",
+  "bookingReference": "Reference: {reference}",
+  "@bookingReference": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingCreatedReservations": "Bookings created",
+  "bookingTicketsGeneratingOrder": "Your tickets are being generated. You will find them in My bookings.",
+  "bookingViewMyBookings": "View my bookings",
+  "bookingBackHome": "Back to home",
+  "bookingReservationFallback": "Booking"
 }

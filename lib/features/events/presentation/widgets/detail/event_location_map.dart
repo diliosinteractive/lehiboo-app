@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/shared/widgets/animations/pulse_animation.dart';
@@ -38,7 +39,8 @@ class _EventLocationMapState extends State<EventLocationMap> {
 
   double? get _lat => widget.event.latitude;
   double? get _lng => widget.event.longitude;
-  bool get _hasCoordinates => _lat != null && _lng != null && _lat != 0 && _lng != 0;
+  bool get _hasCoordinates =>
+      _lat != null && _lng != null && _lat != 0 && _lng != 0;
 
   String? get _distanceKm {
     if (widget.userLatitude == null ||
@@ -67,9 +69,9 @@ class _EventLocationMapState extends State<EventLocationMap> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          const Text(
-            'Localisation',
-            style: TextStyle(
+          Text(
+            context.l10n.eventLocationTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -112,7 +114,8 @@ class _EventLocationMapState extends State<EventLocationMap> {
                       ),
                       children: [
                         TileLayer(
-                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                           userAgentPackageName: 'com.lehiboo.app',
                         ),
                         MarkerLayer(
@@ -314,19 +317,19 @@ class _EventLocationMapState extends State<EventLocationMap> {
           foregroundColor: HbColors.brandPrimary,
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Voir sur Google Maps',
-              style: TextStyle(
+              context.l10n.eventViewOnGoogleMaps,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            SizedBox(width: 6),
-            Icon(Icons.open_in_new, size: 16),
+            const SizedBox(width: 6),
+            const Icon(Icons.open_in_new, size: 16),
           ],
         ),
       ),
