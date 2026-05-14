@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart' as intl;
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
 import '../../data/models/membership_dto.dart';
@@ -79,7 +79,7 @@ class MembershipCard extends ConsumerWidget {
                     _OrgMetaRow(organization: org),
                     const SizedBox(height: 4),
                     Text(
-                      _subText(membership),
+                      _subText(context, membership),
                       style: GoogleFonts.figtree(
                         fontSize: 12,
                         color: Colors.grey[700],
@@ -131,20 +131,20 @@ class MembershipCard extends ConsumerWidget {
         MembershipStatus.rejected => StatusChip.rejected(),
       };
 
-  String _subText(MembershipDto m) {
-    final fmt = intl.DateFormat('dd/MM/yyyy', 'fr');
+  String _subText(BuildContext context, MembershipDto m) {
+    final fmt = context.appDateFormat('dd/MM/yyyy', enPattern: 'MM/dd/yyyy');
     final approved = _parse(m.approvedAt);
     final requested = _parse(m.requestedAt);
     return switch (m.status) {
       MembershipStatus.active => approved != null
-          ? 'Membre depuis le ${fmt.format(approved)}'
-          : 'Membre',
+          ? context.l10n.membershipMemberSince(fmt.format(approved))
+          : context.l10n.membershipMember,
       MembershipStatus.pending => requested != null
-          ? 'Demande envoyée le ${fmt.format(requested)}'
-          : 'Demande envoyée',
+          ? context.l10n.membershipRequestSentOn(fmt.format(requested))
+          : context.l10n.membershipRequestSent,
       MembershipStatus.rejected => requested != null
-          ? 'Demande du ${fmt.format(requested)} — non acceptée'
-          : 'Demande non acceptée',
+          ? context.l10n.membershipRequestRejectedOn(fmt.format(requested))
+          : context.l10n.membershipRequestRejected,
     };
   }
 
@@ -187,7 +187,7 @@ class _OrgMetaRow extends StatelessWidget {
     final hasCount = count != null;
     if (!hasAddress && !hasCount) return const SizedBox.shrink();
 
-    final compact = intl.NumberFormat.compact(locale: 'fr');
+    final compact = context.appCompactNumberFormat;
     return Padding(
       padding: const EdgeInsets.only(top: 2),
       child: Wrap(

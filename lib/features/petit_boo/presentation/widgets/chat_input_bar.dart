@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../providers/petit_boo_chat_provider.dart';
 import 'animated_toast.dart';
@@ -78,7 +79,10 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
         onError: (errorNotification) {
           if (mounted) {
             setState(() => _isListening = false);
-            PetitBooToast.error(context, 'Erreur micro: ${errorNotification.errorMsg}');
+            PetitBooToast.error(
+              context,
+              context.l10n.voiceMicrophoneError(errorNotification.errorMsg),
+            );
           }
         },
       );
@@ -114,7 +118,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
           }
         });
       },
-      localeId: "fr_FR",
+      localeId: context.appLocaleName,
     );
   }
 
@@ -145,6 +149,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final chatState = ref.watch(petitBooChatProvider);
     final canSend = chatState.canSendMessage && _hasText;
     final isDisabled = chatState.isStreaming || chatState.isLoading;
@@ -152,7 +157,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: const EdgeInsets.fromLTRB(
           PetitBooTheme.spacing16,
           PetitBooTheme.spacing12,
           PetitBooTheme.spacing16,
@@ -170,7 +175,9 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                 borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: _isFocused || _isListening
-                      ? (_isListening ? PetitBooTheme.error : PetitBooTheme.primary)
+                      ? (_isListening
+                          ? PetitBooTheme.error
+                          : PetitBooTheme.primary)
                       : Colors.transparent,
                   width: 2,
                 ),
@@ -215,7 +222,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
+                        contentPadding: const EdgeInsets.symmetric(
                           horizontal: PetitBooTheme.spacing24,
                           vertical: PetitBooTheme.spacing16,
                         ),
@@ -224,7 +231,9 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                   ),
                   // Send/Mic button
                   Padding(
-                    padding: EdgeInsets.only(right: PetitBooTheme.spacing8),
+                    padding: const EdgeInsets.only(
+                      right: PetitBooTheme.spacing8,
+                    ),
                     child: _buildActionButton(canSend, isDisabled),
                   ),
                 ],
@@ -232,9 +241,9 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
             ),
             // Disclaimer text
             Padding(
-              padding: EdgeInsets.only(top: PetitBooTheme.spacing10),
+              padding: const EdgeInsets.only(top: PetitBooTheme.spacing10),
               child: Text(
-                "L'IA peut commettre des erreurs. Vérifiez les informations importantes.",
+                l10n.petitBooDisclaimer,
                 style: PetitBooTheme.caption.copyWith(
                   color: PetitBooTheme.textTertiary,
                   fontSize: 11,
@@ -249,13 +258,14 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   }
 
   String _getHintText(bool isStreaming) {
-    if (_isListening) return 'Je vous écoute...';
-    if (isStreaming) return 'Petit Boo réfléchit...';
-    return "Posez une question à votre assistant ou tapez '/' pour les commandes...";
+    final l10n = context.l10n;
+    if (_isListening) return l10n.petitBooChatHintListening;
+    if (isStreaming) return l10n.petitBooChatHintStreaming;
+    return l10n.petitBooChatHintIdle;
   }
 
   Widget _buildActionButton(bool canSend, bool isDisabled) {
-    final size = 48.0;
+    const size = 48.0;
 
     return AnimatedContainer(
       duration: PetitBooTheme.durationFast,

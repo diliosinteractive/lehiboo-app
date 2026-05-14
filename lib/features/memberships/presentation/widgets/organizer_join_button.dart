@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/guest_restriction_dialog.dart';
@@ -27,16 +28,14 @@ class OrganizerJoinButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final membership = ref.watch(myMembershipForOrgProvider(organizerUuid));
-    final action =
-        ref.watch(membershipActionControllerProvider(organizerUuid));
+    final action = ref.watch(membershipActionControllerProvider(organizerUuid));
     final isInFlight = action.valueOrNull?.isInFlight ?? false;
 
     final spec = _specFor(membership);
 
     return InkWell(
-      onTap: isInFlight
-          ? null
-          : () => _handleTap(ref, context, membership, spec),
+      onTap:
+          isInFlight ? null : () => _handleTap(ref, context, membership, spec),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -94,7 +93,7 @@ class OrganizerJoinButton extends ConsumerWidget {
           PendingOrganizerAction.join;
       GuestRestrictionDialog.show(
         context,
-        featureName: "rejoindre cet organisateur",
+        featureName: context.l10n.guestFeatureJoinOrganizer,
       );
       return;
     }

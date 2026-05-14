@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -140,7 +140,8 @@ class BookingListCard extends StatelessWidget {
   ) {
     // Debug: afficher la structure des données
     debugPrint('🎫 BookingListCard._extractItems: itemsKey=$itemsKey');
-    debugPrint('🎫 BookingListCard._extractItems: data.keys=${data.keys.toList()}');
+    debugPrint(
+        '🎫 BookingListCard._extractItems: data.keys=${data.keys.toList()}');
 
     // Essayer directement
     var items = data[itemsKey];
@@ -148,7 +149,8 @@ class BookingListCard extends StatelessWidget {
     // Si pas trouvé, essayer dans data['data'] (structure imbriquée)
     if (items == null && data['data'] is Map<String, dynamic>) {
       final nested = data['data'] as Map<String, dynamic>;
-      debugPrint('🎫 BookingListCard._extractItems: nested.keys=${nested.keys.toList()}');
+      debugPrint(
+          '🎫 BookingListCard._extractItems: nested.keys=${nested.keys.toList()}');
       items = nested[itemsKey];
     }
 
@@ -157,7 +159,8 @@ class BookingListCard extends StatelessWidget {
       items = data['data'];
     }
 
-    debugPrint('🎫 BookingListCard._extractItems: items is ${items?.runtimeType}, length=${items is List ? items.length : 'N/A'}');
+    debugPrint(
+        '🎫 BookingListCard._extractItems: items is ${items?.runtimeType}, length=${items is List ? items.length : 'N/A'}');
 
     if (items is List) {
       try {
@@ -234,16 +237,18 @@ class _BookingItem extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    final title = _safeString(_getValue(schema?.titleField, 'event_title')) ?? 'Sans titre';
+    final title = _safeString(_getValue(schema?.titleField, 'event_title')) ??
+        'Sans titre';
     final imageUrl = _safeString(_getValue(schema?.imageField, 'event_image'));
     final dateStr = _safeString(_getValue(schema?.dateField, 'slot_date'));
     final timeStr = _safeString(_getValue(schema?.timeField, 'slot_time'));
     final status = _safeString(_getValue(schema?.statusField, 'status'));
-    final ticketsCount = _safeInt(item['tickets_count']) ?? _safeInt(item['quantity']) ?? 1;
+    final ticketsCount =
+        _safeInt(item['tickets_count']) ?? _safeInt(item['quantity']) ?? 1;
     final totalPrice = _parsePrice(item['total_price'] ?? item['total_amount']);
 
     // Parse et format la date
-    final formattedDate = _formatDate(dateStr);
+    final formattedDate = _formatDate(context, dateStr);
     final formattedTime = _formatTime(timeStr);
 
     return InkWell(
@@ -326,7 +331,9 @@ class _BookingItem extends StatelessWidget {
                               const SizedBox(width: 8),
                             ],
                             Text(
-                              ticketsCount > 1 ? '$ticketsCount billets' : '1 billet',
+                              ticketsCount > 1
+                                  ? '$ticketsCount billets'
+                                  : '1 billet',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: HbColors.textSecondary,
@@ -393,8 +400,10 @@ class _BookingItem extends StatelessWidget {
     );
   }
 
-  String _formatDate(String? dateStr) {
-    if (dateStr == null || dateStr.isEmpty) return 'Date non définie';
+  String _formatDate(BuildContext context, String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) {
+      return context.l10n.commonUndefinedDate;
+    }
 
     try {
       DateTime date;
@@ -413,11 +422,13 @@ class _BookingItem extends StatelessWidget {
       final dateOnly = DateTime(date.year, date.month, date.day);
 
       if (dateOnly == today) {
-        return "Aujourd'hui";
+        return context.l10n.commonToday;
       } else if (dateOnly == tomorrow) {
-        return 'Demain';
+        return context.l10n.commonTomorrow;
       } else {
-        return DateFormat('E d MMM yyyy', 'fr_FR').format(date);
+        return context
+            .appDateFormat('E d MMM yyyy', enPattern: 'EEE, MMM d, yyyy')
+            .format(date);
       }
     } catch (e) {
       return dateStr;
@@ -469,7 +480,8 @@ class _BookingItem extends StatelessWidget {
 
   void _navigate(BuildContext context) {
     final nav = schema?.navigation;
-    debugPrint('🎫 _BookingItem._navigate: schema.navigation=$nav, item.keys=${item.keys.toList()}');
+    debugPrint(
+        '🎫 _BookingItem._navigate: schema.navigation=$nav, item.keys=${item.keys.toList()}');
 
     if (nav != null) {
       final id = item[nav.idField];
@@ -483,7 +495,8 @@ class _BookingItem extends StatelessWidget {
         // Fallback: essayer uuid ou id
         final uuid = item['uuid'] ?? item['id'];
         if (uuid != null) {
-          debugPrint('🎫 _BookingItem._navigate: Fallback navigating to /booking-detail/$uuid');
+          debugPrint(
+              '🎫 _BookingItem._navigate: Fallback navigating to /booking-detail/$uuid');
           context.push('/booking-detail/$uuid');
         }
       }
@@ -491,7 +504,8 @@ class _BookingItem extends StatelessWidget {
       // Fallback
       final uuid = item['uuid'] ?? item['id'];
       if (uuid != null) {
-        debugPrint('🎫 _BookingItem._navigate: No schema, navigating to /booking-detail/$uuid');
+        debugPrint(
+            '🎫 _BookingItem._navigate: No schema, navigating to /booking-detail/$uuid');
         context.push('/booking-detail/$uuid');
       }
     }
@@ -548,11 +562,7 @@ class _StatusBadge extends StatelessWidget {
       case 'used':
       case 'utilise':
       case 'utilisé':
-        return (
-          HbColors.textSecondary,
-          Colors.grey.shade100,
-          'Utilisé'
-        );
+        return (HbColors.textSecondary, Colors.grey.shade100, 'Utilisé');
       default:
         return (HbColors.textSecondary, Colors.grey.shade100, status);
     }

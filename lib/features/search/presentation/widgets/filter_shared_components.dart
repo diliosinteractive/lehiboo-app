@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/models/event_filter.dart';
 import '../../../home/presentation/providers/home_providers.dart';
@@ -214,7 +214,8 @@ class ToggleRow extends StatelessWidget {
             child: AnimatedAlign(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
-              alignment: isSelected ? Alignment.centerRight : Alignment.centerLeft,
+              alignment:
+                  isSelected ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
                 width: 28,
                 height: 28,
@@ -347,8 +348,10 @@ class _MiniCalendarState extends State<MiniCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    final daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
-    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final daysInMonth =
+        DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+    final firstDayOfMonth =
+        DateTime(_currentMonth.year, _currentMonth.month, 1);
     final startingWeekday = (firstDayOfMonth.weekday - 1) % 7;
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
@@ -370,12 +373,15 @@ class _MiniCalendarState extends State<MiniCalendar> {
                 icon: Icon(Icons.chevron_left, color: Colors.grey.shade700),
                 onPressed: () {
                   setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+                    _currentMonth =
+                        DateTime(_currentMonth.year, _currentMonth.month - 1);
                   });
                 },
               ),
               Text(
-                DateFormat('MMMM yyyy', 'fr_FR').format(_currentMonth),
+                context
+                    .appDateFormat('MMMM yyyy', enPattern: 'MMMM yyyy')
+                    .format(_currentMonth),
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -385,7 +391,8 @@ class _MiniCalendarState extends State<MiniCalendar> {
                 icon: Icon(Icons.chevron_right, color: Colors.grey.shade700),
                 onPressed: () {
                   setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+                    _currentMonth =
+                        DateTime(_currentMonth.year, _currentMonth.month + 1);
                   });
                 },
               ),
@@ -426,7 +433,8 @@ class _MiniCalendarState extends State<MiniCalendar> {
                 return const SizedBox();
               }
 
-              final date = DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
+              final date =
+                  DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
               final isPast = date.isBefore(todayDate);
               final isToday = date.isAtSameMomentAs(todayDate);
               final isSelected = _isDateSelected(date);
@@ -453,7 +461,9 @@ class _MiniCalendarState extends State<MiniCalendar> {
                       '$dayNumber',
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
-                        fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isToday || isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isPast
                             ? Colors.grey.shade300
                             : isSelected
@@ -554,7 +564,8 @@ class LocationSection extends ConsumerWidget {
                   : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
+                color:
+                    hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
                 width: hasLocation ? 2 : 1,
               ),
             ),
@@ -613,7 +624,8 @@ class LocationSection extends ConsumerWidget {
                 if (hasLocation)
                   IconButton(
                     onPressed: onClearLocation,
-                    icon: Icon(Icons.close, size: 20, color: Colors.grey.shade500),
+                    icon: Icon(Icons.close,
+                        size: 20, color: Colors.grey.shade500),
                   ),
               ],
             ),
@@ -897,7 +909,8 @@ class FilterFooter extends StatelessWidget {
                   // Badge compteur
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -972,7 +985,9 @@ class FilterFooterWithClear extends StatelessWidget {
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: hasFilters ? Colors.black87 : Colors.grey.shade400,
-                  decoration: hasFilters ? TextDecoration.underline : TextDecoration.none,
+                  decoration: hasFilters
+                      ? TextDecoration.underline
+                      : TextDecoration.none,
                 ),
               ),
             ),
@@ -982,7 +997,8 @@ class FilterFooterWithClear extends StatelessWidget {
               onTap: onPressed,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [HbColors.brandPrimary, HbColors.brandPrimaryDark],
@@ -1016,7 +1032,8 @@ class FilterFooterWithClear extends StatelessWidget {
                     if (activeFilterCount > 0) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(10),

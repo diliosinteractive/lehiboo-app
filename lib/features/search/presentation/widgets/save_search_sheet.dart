@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/models/event_filter.dart';
 
@@ -106,8 +107,13 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
     if (filter.dateFilterLabel != null) {
       parts.add(filter.dateFilterLabel!.toLowerCase());
     } else if (filter.startDate != null) {
-      final formatter = DateFormat('d MMM yyyy', 'fr_FR');
-      parts.add('à partir du ${formatter.format(filter.startDate!)}');
+      final formatter = DateFormat(
+        AppLocaleCache.languageCode == 'en' ? 'MMM d, yyyy' : 'd MMM yyyy',
+        AppLocaleCache.localeName,
+      );
+      final prefix =
+          AppLocaleCache.languageCode == 'en' ? 'from ' : 'à partir du ';
+      parts.add('$prefix${formatter.format(filter.startDate!)}');
     }
 
     // Other filters
@@ -130,7 +136,8 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
 
     // Check if name is already used
     if (widget.isNameAlreadyUsed != null && widget.isNameAlreadyUsed!(name)) {
-      setState(() => _nameError = 'Ce nom est déjà utilisé. Choisissez un autre nom.');
+      setState(() =>
+          _nameError = 'Ce nom est déjà utilisé. Choisissez un autre nom.');
       return;
     }
 
@@ -472,7 +479,9 @@ class _NotificationToggle extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: value ? HbColors.brandPrimary.withValues(alpha: 0.3) : Colors.grey.shade200,
+            color: value
+                ? HbColors.brandPrimary.withValues(alpha: 0.3)
+                : Colors.grey.shade200,
           ),
           boxShadow: [
             BoxShadow(

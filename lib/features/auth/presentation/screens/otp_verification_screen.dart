@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/auth_provider.dart';
 
@@ -19,13 +20,15 @@ class OtpVerificationScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+  ConsumerState<OtpVerificationScreen> createState() =>
+      _OtpVerificationScreenState();
 }
 
 class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
-  final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _controllers =
+      List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
-  
+
   bool _isLoading = false;
   bool _isResending = false;
   int _resendCountdown = 0;
@@ -69,8 +72,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     if (_isLoading) return; // Prevent double submission
     if (_otpCode.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez entrer le code complet'),
+        SnackBar(
+          content: Text(context.l10n.authOtpIncompleteCode),
           backgroundColor: Colors.red,
         ),
       );
@@ -81,21 +84,21 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
 
     try {
       bool success;
-      
+
       if (_isLoginOtp) {
         // Verify login OTP (2FA)
         success = await ref.read(authProvider.notifier).verifyLoginOtp(
-          userId: widget.userId,
-          email: widget.email,
-          otp: _otpCode,
-        );
+              userId: widget.userId,
+              email: widget.email,
+              otp: _otpCode,
+            );
       } else {
         // Verify registration OTP
         success = await ref.read(authProvider.notifier).verifyOtp(
-          userId: widget.userId,
-          email: widget.email,
-          otp: _otpCode,
-        );
+              userId: widget.userId,
+              email: widget.email,
+              otp: _otpCode,
+            );
       }
 
       if (success && mounted) {
@@ -121,16 +124,16 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
 
     try {
       final success = await ref.read(authProvider.notifier).resendOtp(
-        userId: widget.userId,
-        email: widget.email,
-        type: widget.type,
-      );
+            userId: widget.userId,
+            email: widget.email,
+            type: widget.type,
+          );
 
       if (success && mounted) {
         _startResendCountdown();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Un nouveau code a été envoyé'),
+          SnackBar(
+            content: Text(context.l10n.authOtpResent),
             backgroundColor: Colors.green,
           ),
         );
@@ -158,7 +161,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     if (value.length == 1 && index < 5) {
       _focusNodes[index + 1].requestFocus();
     }
-    
+
     // Auto-submit when all digits are entered
     if (_otpCode.length == 6) {
       _verifyOtp();
@@ -176,6 +179,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     // Watch auth state for error handling via ref.listen below
 
     ref.listen<AuthState>(authProvider, (previous, next) {
@@ -187,7 +191,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
           ),
         );
         ref.read(authProvider.notifier).clearError();
-        
+
         // Clear OTP fields on error
         for (var controller in _controllers) {
           controller.clear();
@@ -242,9 +246,9 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
               ),
               const SizedBox(height: 32),
               // Title
-              const Text(
-                'Vérification email',
-                style: TextStyle(
+              Text(
+                l10n.authOtpTitle,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: HbColors.textSlate,
@@ -253,7 +257,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Entrez le code à 6 chiffres envoyé à',
+                l10n.authOtpSubtitle,
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey[600],
@@ -295,7 +299,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                         ),
                         decoration: InputDecoration(
                           counterText: '',
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12), // Fix clipping
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12), // Fix clipping
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -315,7 +320,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                         ),
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(6), // Enforce max length via formatter
+                          LengthLimitingTextInputFormatter(
+                              6), // Enforce max length via formatter
                         ],
                         onChanged: (value) => _onOtpDigitChanged(index, value),
                       ),
@@ -343,12 +349,13 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text(
-                          'Vérifier',
-                          style: TextStyle(
+                      : Text(
+                          l10n.authOtpVerify,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -361,12 +368,13 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Vous n\'avez pas reçu le code ? ',
+                    l10n.authOtpNotReceived,
                     style: TextStyle(color: Colors.grey[600]),
                   ),
+                  const SizedBox(width: 4),
                   if (_resendCountdown > 0)
                     Text(
-                      'Renvoyer dans ${_resendCountdown}s',
+                      l10n.authOtpResendIn(_resendCountdown),
                       style: TextStyle(
                         color: Colors.grey[400],
                         fontWeight: FontWeight.w500,
@@ -389,9 +397,9 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                                 color: HbColors.brandPrimary,
                               ),
                             )
-                          : const Text(
-                              'Renvoyer',
-                              style: TextStyle(
+                          : Text(
+                              l10n.authOtpResend,
+                              style: const TextStyle(
                                 color: HbColors.brandPrimary,
                                 fontWeight: FontWeight.w600,
                               ),

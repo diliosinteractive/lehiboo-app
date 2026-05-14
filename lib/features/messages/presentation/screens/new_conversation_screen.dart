@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../providers/conversations_provider.dart';
 import '../widgets/new_conversation_form.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
@@ -25,8 +26,7 @@ class NewConversationScreen extends ConsumerStatefulWidget {
       _NewConversationScreenState();
 }
 
-class _NewConversationScreenState
-    extends ConsumerState<NewConversationScreen> {
+class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   static const _primaryColor = Color(0xFFFF601F);
 
   bool _isLoading = false;
@@ -35,12 +35,15 @@ class _NewConversationScreenState
   @override
   void initState() {
     super.initState();
-    
+
     // Safety check for unauthenticated users (e.g. deep links)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authState = ref.read(authProvider);
       if (authState.status == AuthStatus.unauthenticated) {
-        GuestRestrictionDialog.show(context, featureName: 'envoyer un message');
+        GuestRestrictionDialog.show(
+          context,
+          featureName: context.l10n.guestFeatureSendMessage,
+        );
       } else {
         _init();
       }
@@ -67,8 +70,7 @@ class _NewConversationScreenState
     });
     try {
       final repo = ref.read(messagesRepositoryProvider);
-      final result =
-          await repo.createFromBooking(widget.fromBookingUuid!);
+      final result = await repo.createFromBooking(widget.fromBookingUuid!);
       if (!mounted) return;
       ref.read(conversationsProvider.notifier).refresh();
       context.pushReplacement('/messages/${result.conversation.uuid}');
@@ -87,8 +89,7 @@ class _NewConversationScreenState
     if (widget.fromOrganizationUuid != null) {
       ctx = FromOrganizerConversationContext(
         organizationUuid: widget.fromOrganizationUuid!,
-        organizationName:
-            widget.fromOrganizationName ?? 'Organisateur',
+        organizationName: widget.fromOrganizationName ?? 'Organisateur',
       );
     } else {
       ctx = DashboardConversationContext();
@@ -129,8 +130,7 @@ class _NewConversationScreenState
                         style: ElevatedButton.styleFrom(
                             backgroundColor: _primaryColor),
                         child: const Text('Réessayer',
-                            style:
-                                TextStyle(color: Colors.white)),
+                            style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),

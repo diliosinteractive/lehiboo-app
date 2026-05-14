@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../core/constants/app_constants.dart';
+import '../core/l10n/app_locale.dart';
 import '../core/network/json_resilience.dart';
 import '../features/checkin/presentation/providers/active_organization_provider.dart';
 import '../features/gamification/data/interceptors/hibons_update_interceptor.dart';
@@ -63,6 +64,7 @@ class DioClient {
 
     // Add interceptors
     _dio.interceptors.addAll([
+      LocaleHeaderInterceptor(),
       JwtAuthInterceptor(SharedSecureStorage.instance),
       OrganizationHeaderInterceptor(),
       HibonsUpdateInterceptor(),
@@ -84,6 +86,14 @@ class DioClient {
           maxWidth: 90,
         ),
     ]);
+  }
+}
+
+class LocaleHeaderInterceptor extends Interceptor {
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    options.headers['Accept-Language'] = AppLocaleCache.languageCode;
+    handler.next(options);
   }
 }
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/petit_boo_theme.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -31,16 +31,15 @@ class TripPlansListCard extends StatelessWidget {
       }
     }
     if (data['plans'] is List) {
-      return (data['plans'] as List)
-          .whereType<Map<String, dynamic>>()
-          .toList();
+      return (data['plans'] as List).whereType<Map<String, dynamic>>().toList();
     }
     return [];
   }
 
-  int get _total => (data['total'] as num?)?.toInt() ??
-                    (data['data']?['total'] as num?)?.toInt() ??
-                    _plans.length;
+  int get _total =>
+      (data['total'] as num?)?.toInt() ??
+      (data['data']?['total'] as num?)?.toInt() ??
+      _plans.length;
 
   /// Check if backend returned an error
   bool get _hasError {
@@ -56,7 +55,8 @@ class TripPlansListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = parseHexColor(schema.color, fallback: const Color(0xFF27AE60));
+    final accentColor =
+        parseHexColor(schema.color, fallback: const Color(0xFF27AE60));
 
     // Check for errors first
     if (_hasError) {
@@ -89,7 +89,8 @@ class TripPlansListCard extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: plans.length.clamp(0, 5), // Show max 5 plans
-            separatorBuilder: (_, __) => const Divider(height: 1, color: PetitBooTheme.border),
+            separatorBuilder: (_, __) =>
+                const Divider(height: 1, color: PetitBooTheme.border),
             itemBuilder: (context, index) {
               return _PlanListItem(
                 plan: plans[index],
@@ -279,9 +280,12 @@ class _PlanListItem extends StatelessWidget {
 
   String get _title => plan['title'] as String? ?? 'Plan sans titre';
   String? get _plannedDate => plan['planned_date'] as String?;
-  int? get _totalDurationMinutes => (plan['total_duration_minutes'] as num?)?.toInt();
-  int get _stopsCount => (plan['stops_count'] as num?)?.toInt() ??
-                          (plan['stops'] as List?)?.length ?? 0;
+  int? get _totalDurationMinutes =>
+      (plan['total_duration_minutes'] as num?)?.toInt();
+  int get _stopsCount =>
+      (plan['stops_count'] as num?)?.toInt() ??
+      (plan['stops'] as List?)?.length ??
+      0;
 
   List<Map<String, dynamic>> get _stops {
     final stopsData = plan['stops'] as List?;
@@ -331,10 +335,15 @@ class _PlanListItem extends StatelessWidget {
               runSpacing: 4,
               children: [
                 if (_plannedDate != null)
-                  _buildMetaChip(Icons.calendar_today, _formatDate(_plannedDate!)),
+                  _buildMetaChip(
+                    Icons.calendar_today,
+                    _formatDate(context, _plannedDate!),
+                  ),
                 if (_totalDurationMinutes != null)
-                  _buildMetaChip(Icons.schedule, _formatDuration(_totalDurationMinutes!)),
-                _buildMetaChip(Icons.flag, '$_stopsCount étape${_stopsCount > 1 ? 's' : ''}'),
+                  _buildMetaChip(
+                      Icons.schedule, _formatDuration(_totalDurationMinutes!)),
+                _buildMetaChip(Icons.flag,
+                    '$_stopsCount étape${_stopsCount > 1 ? 's' : ''}'),
               ],
             ),
 
@@ -342,7 +351,9 @@ class _PlanListItem extends StatelessWidget {
             if (_stops.isNotEmpty) ...[
               const SizedBox(height: 10),
               ...(_stops.take(2).map((stop) {
-                final title = stop['event_title'] as String? ?? stop['title'] as String? ?? 'Étape';
+                final title = stop['event_title'] as String? ??
+                    stop['title'] as String? ??
+                    'Étape';
                 final time = stop['arrival_time'] as String?;
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
@@ -433,7 +444,8 @@ class _PlanListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+      IconData icon, String label, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -516,10 +528,11 @@ class _PlanListItem extends StatelessWidget {
     launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
-  String _formatDate(String dateStr) {
+  String _formatDate(BuildContext context, String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      final formatter = DateFormat('EEE d MMM', 'fr_FR');
+      final formatter =
+          context.appDateFormat('EEE d MMM', enPattern: 'EEE, MMM d');
       final formatted = formatter.format(date);
       return formatted[0].toUpperCase() + formatted.substring(1);
     } catch (_) {

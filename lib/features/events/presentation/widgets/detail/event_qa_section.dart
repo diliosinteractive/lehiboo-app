@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../../../core/utils/guest_guard.dart';
 import '../../../../auth/presentation/providers/auth_provider.dart';
@@ -38,8 +39,8 @@ class EventQASection extends ConsumerWidget {
     // ses interactions) et on cache le bloc "Votre question". Le bloc ne
     // s'affiche que pour les status pending/rejected non visibles publiquement.
     final publicItems = previewAsync.valueOrNull?.items ?? const [];
-    final myQuestionInPublicList = myQuestion != null &&
-        publicItems.any((q) => q.uuid == myQuestion.uuid);
+    final myQuestionInPublicList =
+        myQuestion != null && publicItems.any((q) => q.uuid == myQuestion.uuid);
     final myQuestionToDisplay = myQuestionInPublicList ? null : myQuestion;
 
     // Afficher le loader dès qu'une des deux sources est en cours de chargement
@@ -102,7 +103,7 @@ class EventQASection extends ConsumerWidget {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'poser une question',
+      featureName: context.l10n.guestFeatureAskQuestion,
     );
     if (!allowed || !context.mounted) return;
 
@@ -115,9 +116,7 @@ class EventQASection extends ConsumerWidget {
 
     // Refresh les vues Q&A maintenant que le sheet est fermé — le loader
     // de la section s'affiche pendant le refetch.
-    ref
-        .read(eventQuestionsActionsProvider.notifier)
-        .refreshAll(eventSlug);
+    ref.read(eventQuestionsActionsProvider.notifier).refreshAll(eventSlug);
 
     final message = switch (outcome) {
       AskQuestionOutcome.created => 'Votre question a été envoyée !',
@@ -373,7 +372,7 @@ class _Content extends ConsumerWidget {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'voter pour cette question',
+      featureName: context.l10n.guestFeatureVoteQuestion,
     );
     if (!allowed) return;
     await ref

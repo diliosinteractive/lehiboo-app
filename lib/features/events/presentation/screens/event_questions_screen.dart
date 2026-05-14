@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/guest_guard.dart';
 import '../../domain/entities/event_question.dart';
@@ -49,7 +50,7 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'poser une question',
+      featureName: context.l10n.guestFeatureAskQuestion,
     );
     if (!allowed || !mounted) return;
 
@@ -103,8 +104,8 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
     // (status approved/answered), on la laisse dans la liste (avec ses
     // interactions) et on cache le bloc "Votre question" en tête de page.
     final publicItems = listAsync.valueOrNull?.items ?? const [];
-    final myQuestionInPublicList = myQuestion != null &&
-        publicItems.any((q) => q.uuid == myQuestion.uuid);
+    final myQuestionInPublicList =
+        myQuestion != null && publicItems.any((q) => q.uuid == myQuestion.uuid);
     final myQuestionToDisplay = myQuestionInPublicList ? null : myQuestion;
 
     return Scaffold(
@@ -148,8 +149,7 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
           builder: (_) {
             // Afficher le loader dès qu'une des deux sources est en cours de
             // chargement (initial OU refresh après soumission).
-            final isLoading =
-                listAsync.isLoading || myQuestionAsync.isLoading;
+            final isLoading = listAsync.isLoading || myQuestionAsync.isLoading;
             if (isLoading) return const _LoadingList();
             if (listAsync.hasError) {
               return _ErrorList(
@@ -206,9 +206,8 @@ class _QuestionsList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myUuid = myQuestion?.uuid;
-    final items = page.items
-        .where((q) => q.uuid != myUuid)
-        .toList(growable: false);
+    final items =
+        page.items.where((q) => q.uuid != myUuid).toList(growable: false);
     if (items.isEmpty && myQuestion == null) {
       return ListView(
         controller: scrollController,
@@ -220,7 +219,7 @@ class _QuestionsList extends ConsumerWidget {
               final allowed = await GuestGuard.check(
                 context: context,
                 ref: ref,
-                featureName: 'poser une question',
+                featureName: context.l10n.guestFeatureAskQuestion,
               );
               if (!allowed || !context.mounted) return;
               await AskQuestionSheet.show(
@@ -306,19 +305,18 @@ class _QuestionsList extends ConsumerWidget {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'voter pour cette question',
+      featureName: context.l10n.guestFeatureVoteQuestion,
     );
     if (!allowed) return;
     final controller = ref.read(
       eventQuestionsListControllerProvider(eventSlug).notifier,
     );
-    final ok = await ref
-        .read(eventQuestionsActionsProvider.notifier)
-        .toggleHelpful(
-          eventSlug: eventSlug,
-          question: q,
-          listController: controller,
-        );
+    final ok =
+        await ref.read(eventQuestionsActionsProvider.notifier).toggleHelpful(
+              eventSlug: eventSlug,
+              question: q,
+              listController: controller,
+            );
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

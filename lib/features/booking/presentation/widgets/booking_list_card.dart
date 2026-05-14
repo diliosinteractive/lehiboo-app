@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
@@ -28,28 +29,29 @@ class BookingListCard extends StatelessWidget {
     final startDateTime = booking.slot?.startDateTime;
     final endDateTime = booking.slot?.endDateTime;
     final formattedDate = startDateTime != null
-        ? _formatDate(startDateTime)
-        : 'Date non définie';
-    final formattedStartTime = startDateTime != null
-        ? DateFormat('HH:mm').format(startDateTime)
-        : '';
-    final formattedEndTime = endDateTime != null
-        ? DateFormat('HH:mm').format(endDateTime)
-        : '';
-    final timeText = formattedStartTime.isNotEmpty && formattedEndTime.isNotEmpty
-        ? '$formattedStartTime - $formattedEndTime'
-        : formattedStartTime;
+        ? _formatDate(context, startDateTime)
+        : context.l10n.commonUndefinedDate;
+    final formattedStartTime =
+        startDateTime != null ? DateFormat('HH:mm').format(startDateTime) : '';
+    final formattedEndTime =
+        endDateTime != null ? DateFormat('HH:mm').format(endDateTime) : '';
+    final timeText =
+        formattedStartTime.isNotEmpty && formattedEndTime.isNotEmpty
+            ? '$formattedStartTime - $formattedEndTime'
+            : formattedStartTime;
 
     final totalPrice = booking.totalPrice ?? 0;
     final priceText = totalPrice > 0
         ? '${totalPrice.toStringAsFixed(0)}€'
-        : 'Gratuit';
+        : context.l10n.commonFree;
 
     final ticketCount = booking.quantity ?? 1;
-    final ticketText = ticketCount > 1 ? '$ticketCount billets' : '1 billet';
+    final ticketText = ticketCount > 1
+        ? context.l10n.bookingTicketPlural(ticketCount)
+        : context.l10n.bookingTicketSingular;
 
     final reference = booking.reference;
-    final lifecycle = _resolveLifecycle(booking.status, startDateTime);
+    final lifecycle = _resolveLifecycle(context, booking.status, startDateTime);
 
     return GestureDetector(
       onTap: onTap,
@@ -105,7 +107,10 @@ class BookingListCard extends StatelessWidget {
                                 if (reference != null && reference.isNotEmpty)
                                   Expanded(
                                     child: Text(
-                                      (reference.length > 8 ? reference.substring(0, 8) : reference).toUpperCase(),
+                                      (reference.length > 8
+                                              ? reference.substring(0, 8)
+                                              : reference)
+                                          .toUpperCase(),
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey.shade500,
@@ -208,13 +213,15 @@ class BookingListCard extends StatelessWidget {
                             ),
                             const Spacer(),
                             // QR Button
-                            if (booking.status == 'confirmed' && onQRTap != null)
+                            if (booking.status == 'confirmed' &&
+                                onQRTap != null)
                               GestureDetector(
                                 onTap: onQRTap,
                                 child: Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: HbColors.brandPrimary.withOpacity(0.1),
+                                    color:
+                                        HbColors.brandPrimary.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Icon(
@@ -284,33 +291,40 @@ class BookingListCard extends StatelessWidget {
     );
   }
 
-  _Lifecycle _resolveLifecycle(String? status, DateTime? startDateTime) {
+  _Lifecycle _resolveLifecycle(
+    BuildContext context,
+    String? status,
+    DateTime? startDateTime,
+  ) {
     final normalized = status?.toLowerCase();
     if (normalized == 'cancelled' || normalized == 'refunded') {
-      return const _Lifecycle('Annulé', Color(0xFFD32F2F));
+      return _Lifecycle(
+          context.l10n.bookingLifecycleCancelled, const Color(0xFFD32F2F));
     }
     if (startDateTime != null && startDateTime.isBefore(DateTime.now())) {
-      return _Lifecycle('Passé', Colors.grey.shade600);
+      return _Lifecycle(
+          context.l10n.bookingLifecyclePast, Colors.grey.shade600);
     }
-    return const _Lifecycle('À venir', Color(0xFF2E7D32));
+    return _Lifecycle(
+        context.l10n.bookingLifecycleUpcoming, const Color(0xFF2E7D32));
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(BuildContext context, DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
     final dateOnly = DateTime(date.year, date.month, date.day);
 
     if (dateOnly == today) {
-      return "Aujourd'hui";
+      return context.l10n.commonToday;
     } else if (dateOnly == tomorrow) {
-      return 'Demain';
+      return context.l10n.commonTomorrow;
     } else {
-      // mer. 14 janv. 2026
-      return DateFormat('E d MMM yyyy', 'fr_FR').format(date);
+      return context
+          .appDateFormat('E d MMM yyyy', enPattern: 'EEE, MMM d, yyyy')
+          .format(date);
     }
   }
-
 }
 
 class _Lifecycle {

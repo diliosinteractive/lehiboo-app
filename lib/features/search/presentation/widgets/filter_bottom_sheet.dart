@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
@@ -1175,7 +1176,7 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
 
   String _formatDateRange() {
     if (widget.startDate == null) return '';
-    final formatter = DateFormat('d MMM', 'fr_FR');
+    final formatter = context.appDateFormat('d MMM', enPattern: 'MMM d');
     if (widget.endDate == null || widget.startDate == widget.endDate) {
       return formatter.format(widget.startDate!);
     }
@@ -1207,8 +1208,10 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
           runSpacing: 10,
           children: [
             _DateQuickChip(
-              label: "Aujourd'hui",
-              subtitle: DateFormat('d MMM', 'fr_FR').format(today),
+              label: context.l10n.commonToday,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(today),
               isSelected: widget.selectedType == DateFilterType.today,
               onTap: () => widget.onTypeChanged(
                 widget.selectedType == DateFilterType.today
@@ -1217,8 +1220,10 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
               ),
             ),
             _DateQuickChip(
-              label: 'Demain',
-              subtitle: DateFormat('d MMM', 'fr_FR').format(tomorrow),
+              label: context.l10n.commonTomorrow,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(tomorrow),
               isSelected: widget.selectedType == DateFilterType.tomorrow,
               onTap: () => widget.onTypeChanged(
                 widget.selectedType == DateFilterType.tomorrow
@@ -1227,9 +1232,9 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
               ),
             ),
             _DateQuickChip(
-              label: 'Ce week-end',
+              label: context.l10n.commonThisWeekend,
               subtitle:
-                  '${DateFormat('d').format(saturday)}-${DateFormat('d MMM', 'fr_FR').format(sunday)}',
+                  '${DateFormat('d').format(saturday)}-${context.appDateFormat('d MMM', enPattern: 'MMM d').format(sunday)}',
               isSelected: widget.selectedType == DateFilterType.thisWeekend,
               onTap: () => widget.onTypeChanged(
                 widget.selectedType == DateFilterType.thisWeekend
@@ -1466,7 +1471,9 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                 },
               ),
               Text(
-                DateFormat('MMMM yyyy', 'fr_FR').format(_currentMonth),
+                context
+                    .appDateFormat('MMMM yyyy', enPattern: 'MMMM yyyy')
+                    .format(_currentMonth),
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

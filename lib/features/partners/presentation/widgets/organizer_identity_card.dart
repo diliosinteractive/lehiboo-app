@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../memberships/presentation/widgets/organizer_join_button.dart';
 import '../../data/models/organizer_profile_dto.dart';
@@ -137,7 +137,7 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = NumberFormat.compact(locale: 'fr');
+    final compact = context.appCompactNumberFormat;
     final showRating = (averageRating ?? 0) > 0;
 
     return Wrap(

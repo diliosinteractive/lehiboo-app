@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../home/presentation/providers/user_location_provider.dart';
 import '../widgets/permission_explainer_scaffold.dart';
 
@@ -63,23 +64,22 @@ class _PermissionLocationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return PermissionExplainerScaffold(
       icon: Icons.location_on_outlined,
-      title: 'Trouvez des sorties près de vous',
-      intro:
-          'LeHiboo Experiences utilise votre position pour vous suggérer les '
-          'meilleurs événements à proximité.',
-      bullets: const [
-        'Voir les événements à proximité sur la carte',
-        'Filtrer la recherche selon votre position',
-        'Recevoir des suggestions adaptées à votre ville',
+      title: l10n.authPermissionLocationTitle,
+      intro: l10n.authPermissionLocationIntro,
+      bullets: [
+        l10n.authPermissionLocationBulletMap,
+        l10n.authPermissionLocationBulletSearch,
+        l10n.authPermissionLocationBulletSuggestions,
       ],
-      reassurance:
-          'Vous pouvez changer cet accès à tout moment dans les réglages.',
-      ctaLabel: 'Continuer',
+      reassurance: l10n.authPermissionReassurance,
+      ctaLabel: l10n.commonContinue,
       busy: _busy,
       onContinue: _onContinue,
-      grantedLabel: _alreadyGranted ? 'Localisation déjà activée' : null,
+      grantedLabel: _alreadyGranted ? l10n.authPermissionLocationGranted : null,
     );
   }
 }

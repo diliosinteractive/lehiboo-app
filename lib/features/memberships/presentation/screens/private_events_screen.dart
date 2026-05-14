@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
@@ -41,7 +41,8 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    if (widget.initialOrgFilter != null && widget.initialOrgFilter!.isNotEmpty) {
+    if (widget.initialOrgFilter != null &&
+        widget.initialOrgFilter!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(privateEventsOrgFilterProvider.notifier).state =
             widget.initialOrgFilter;
@@ -75,13 +76,14 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeOrgs = (ref.watch(myMembershipsListProvider).valueOrNull?.data ??
-            const <MembershipDto>[])
-        .where((m) => m.status == MembershipStatus.active)
-        .map((m) => m.organization)
-        .whereType<OrganizationSummaryDto>()
-        .where((o) => (o.uuid ?? '').isNotEmpty)
-        .toList();
+    final activeOrgs =
+        (ref.watch(myMembershipsListProvider).valueOrNull?.data ??
+                const <MembershipDto>[])
+            .where((m) => m.status == MembershipStatus.active)
+            .map((m) => m.organization)
+            .whereType<OrganizationSummaryDto>()
+            .where((o) => (o.uuid ?? '').isNotEmpty)
+            .toList();
 
     final selectedOrg = ref.watch(privateEventsOrgFilterProvider);
     final asyncState = ref.watch(privateEventsControllerProvider);
@@ -132,9 +134,9 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
               child: _OrgFilterDropdown(
                 orgs: activeOrgs,
                 selectedUuid: selectedOrg,
-                onChanged: (uuid) =>
-                    ref.read(privateEventsOrgFilterProvider.notifier).state =
-                        uuid,
+                onChanged: (uuid) => ref
+                    .read(privateEventsOrgFilterProvider.notifier)
+                    .state = uuid,
               ),
             ),
           Expanded(
@@ -152,8 +154,9 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                 if (state.events.isEmpty) {
                   return _EmptyState(
                     hasActiveMemberships: activeOrgs.isNotEmpty,
-                    isFiltered: ref.read(privateEventsSearchProvider).isNotEmpty ||
-                        selectedOrg != null,
+                    isFiltered:
+                        ref.read(privateEventsSearchProvider).isNotEmpty ||
+                            selectedOrg != null,
                   );
                 }
                 return RefreshIndicator(
@@ -165,8 +168,8 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: state.events.length +
-                        (state.isLoadingMore ? 1 : 0),
+                    itemCount:
+                        state.events.length + (state.isLoadingMore ? 1 : 0),
                     separatorBuilder: (_, __) => Divider(
                       height: 1,
                       thickness: 1,
@@ -348,7 +351,10 @@ class _PrivateEventTile extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormat('dd MMM yyyy', 'fr').format(event.startDate),
+                      context
+                          .appDateFormat('dd MMM yyyy',
+                              enPattern: 'MMM d, yyyy')
+                          .format(event.startDate),
                       style: GoogleFonts.figtree(
                         fontSize: 12,
                         color: Colors.grey[700],
@@ -375,7 +381,8 @@ class _PrivateEventTile extends ConsumerWidget {
 
   Widget _imageFallback() => Container(
         color: Colors.grey[100],
-        child: Icon(Icons.image_not_supported_outlined, color: Colors.grey[400]),
+        child:
+            Icon(Icons.image_not_supported_outlined, color: Colors.grey[400]),
       );
 }
 

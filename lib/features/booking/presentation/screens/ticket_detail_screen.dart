@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
@@ -39,7 +40,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   late int _currentIndex;
   double? _originalBrightness;
 
-  List<Ticket> get _tickets => widget.tickets ?? (widget.ticket != null ? [widget.ticket!] : []);
+  List<Ticket> get _tickets =>
+      widget.tickets ?? (widget.ticket != null ? [widget.ticket!] : []);
 
   @override
   void initState() {
@@ -100,9 +102,12 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
 
   String _getEventSubtitle() {
     final slot = widget.booking?.slot;
-    if (slot?.startDateTime != null) {
-      final date = DateFormat('E d MMM', 'fr_FR').format(slot!.startDateTime!);
-      final time = DateFormat('HH:mm').format(slot.startDateTime!);
+    final startDateTime = slot?.startDateTime;
+    if (startDateTime != null) {
+      final date = context
+          .appDateFormat('E d MMM', enPattern: 'EEE, MMM d')
+          .format(startDateTime);
+      final time = DateFormat('HH:mm').format(startDateTime);
       return '$date • $time';
     }
     return '';
@@ -197,7 +202,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
           ),
           title: const Text(
             'Billet',
-            style: TextStyle(color: HbColors.textPrimary, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: HbColors.textPrimary, fontWeight: FontWeight.w700),
           ),
         ),
         body: const Center(
@@ -318,6 +324,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     final tokens = HbTheme.tokens(context);
     final activity = widget.booking?.activity;
     final slot = widget.booking?.slot;
+    final slotStartDateTime = slot?.startDateTime;
+    final slotEndDateTime = slot?.endDateTime;
     final status = TicketStatusExtension.fromString(ticket.status);
 
     final qrData = ticket.qrCodeData ?? ticket.id;
@@ -423,7 +431,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                     ),
                     // Status badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: status.color.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(20),
@@ -431,7 +440,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check_circle, size: 14, color: status.color),
+                          Icon(Icons.check_circle,
+                              size: 14, color: status.color),
                           const SizedBox(width: 4),
                           Text(
                             status.label,
@@ -469,7 +479,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                   ],
                   if (city != null && city.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    _buildInfoRow(icon: Icons.location_city_outlined, text: city),
+                    _buildInfoRow(
+                        icon: Icons.location_city_outlined, text: city),
                   ],
                 ],
               ],
@@ -496,19 +507,22 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                if (slot?.startDateTime != null)
+                if (slotStartDateTime != null)
                   _buildInfoRow(
                     icon: Icons.calendar_today_outlined,
-                    text: DateFormat('EEEE d MMMM yyyy', 'fr_FR')
-                        .format(slot!.startDateTime!),
+                    text: context
+                        .appDateFormat(
+                          'EEEE d MMMM yyyy',
+                          enPattern: 'EEEE, MMMM d, yyyy',
+                        )
+                        .format(slotStartDateTime),
                   ),
-                if (slot?.startDateTime != null) ...[
+                if (slotStartDateTime != null && slotEndDateTime != null) ...[
                   const SizedBox(height: 8),
                   _buildInfoRow(
                     icon: Icons.access_time,
-                    text:
-                        '${DateFormat('HH:mm').format(slot!.startDateTime!)} - '
-                        '${DateFormat('HH:mm').format(slot.endDateTime)}',
+                    text: '${DateFormat('HH:mm').format(slotStartDateTime)} - '
+                        '${DateFormat('HH:mm').format(slotEndDateTime)}',
                   ),
                 ],
                 if (activity?.city?.name != null) ...[
@@ -556,5 +570,4 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
       ],
     );
   }
-
 }

@@ -5,6 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'firebase_options.dart';
+import 'core/l10n/app_locale.dart';
+import 'core/l10n/l10n.dart';
 import 'core/themes/app_theme.dart';
 import 'core/services/push_notification_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -69,7 +71,10 @@ const bool useRealApi = true;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('fr_FR', null);
+  await Future.wait([
+    initializeDateFormatting('fr_FR', null),
+    initializeDateFormatting('en_US', null),
+  ]);
 
   // Load environment variables
   // Use dart-define to specify environment: --dart-define=ENV=production or --dart-define=ENV=staging
@@ -227,6 +232,7 @@ class LeHibooApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(appLocaleControllerProvider);
     final router = ref.watch(routerProvider);
 
     // Wire force logout so the 401 interceptor can trigger auth state change.
@@ -276,6 +282,9 @@ class LeHibooApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Le Hiboo',
       debugShowCheckedModeBanner: false,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,

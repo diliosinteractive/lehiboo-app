@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/petit_boo/presentation/providers/engagement_provider.dart';
+import '../l10n/l10n.dart';
 import '../utils/guest_guard.dart';
 import 'voice_fab/voice_fab.dart';
 
@@ -74,7 +75,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'mes réservations',
+      featureName: context.l10n.guestFeatureBookings,
     );
     if (!allowed) return;
 
@@ -92,6 +93,8 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
       body: widget.child,
       // Nouveau VoiceFab avec appui prolongé pour parler
@@ -109,14 +112,18 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 16.0),
-              child: _buildNavItem(Icons.home_rounded, 'Accueil', 0),
+              child: _buildNavItem(Icons.home_rounded, l10n.navHome, 0),
             ),
-            _buildNavItem(Icons.explore_outlined, 'Explorer', 1),
+            _buildNavItem(Icons.explore_outlined, l10n.navExplore, 1),
             const SizedBox(width: 64), // Space for FAB
-            _buildNavItem(Icons.map_outlined, 'Carte', 2),
+            _buildNavItem(Icons.map_outlined, l10n.navMap, 2),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
-              child: _buildNavItem(Icons.confirmation_number_outlined, 'Réservations', 3),
+              child: _buildNavItem(
+                Icons.confirmation_number_outlined,
+                l10n.navBookings,
+                3,
+              ),
             ),
           ],
         ),

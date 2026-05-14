@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lehiboo/config/env_config.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
@@ -56,7 +57,8 @@ class EventDetailController
   @override
   Future<EventDetailState> build(String identifier) async {
     try {
-      final event = await ref.read(eventRepositoryProvider).getEvent(identifier);
+      final event =
+          await ref.read(eventRepositoryProvider).getEvent(identifier);
       return EventDetailState.loaded(event);
     } on EventPasswordRequiredException catch (e) {
       return EventDetailState.locked(e.shell);
@@ -73,8 +75,9 @@ class EventDetailController
   /// Typed exceptions propagate so the sheet can surface them (shake,
   /// countdown, members-only swap).
   Future<Event> unlock(String password) async {
-    final event =
-        await ref.read(eventRepositoryProvider).verifyEventPassword(arg, password);
+    final event = await ref
+        .read(eventRepositoryProvider)
+        .verifyEventPassword(arg, password);
     state = AsyncData(EventDetailState.loaded(event));
     return event;
   }
@@ -256,8 +259,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stateAsync =
-        ref.watch(eventDetailControllerProvider(widget.eventId));
+    final stateAsync = ref.watch(eventDetailControllerProvider(widget.eventId));
 
     // Sticky booking bar is only meaningful when an Event is loaded — never
     // show it on top of the locked shell, the loading spinner, or an error.
@@ -414,7 +416,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 right: 0,
                 child: _buildOverlayAppBar(event),
               ),
-
             ],
           ),
         ),
@@ -539,7 +540,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ),
                 const SizedBox(height: 24),
               ],
-
 
               // 8. Infos pratiques (grille 2x2)
               EventPracticalInfo(
@@ -788,7 +788,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'activer un rappel',
+      featureName: context.l10n.guestFeatureEnableReminder,
     );
     if (!allowed || !mounted) return;
 
@@ -1199,7 +1199,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'réserver une activité',
+      featureName: context.l10n.guestFeatureBookActivity,
     );
     if (!allowed) return;
     if (!mounted) return;
@@ -1447,7 +1447,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'laisser un avis',
+      featureName: context.l10n.guestFeatureWriteReview,
     );
     if (!allowed || !mounted) return;
     await WriteReviewSheet.show(

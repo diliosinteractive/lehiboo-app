@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/app_locale.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../shared/legal/legal_links.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/providers/push_notification_provider.dart';
@@ -62,7 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (!registered && mounted) {
           PetitBooToast.error(
             context,
-            'Autorisation notifications requise',
+            context.l10n.settingsPushPermissionRequired,
           );
         }
       }
@@ -71,7 +73,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // sont gérés globalement par HibonsUpdateInterceptor.
     } catch (e) {
       if (mounted) {
-        PetitBooToast.error(context, 'Mise à jour impossible');
+        PetitBooToast.error(context, context.l10n.settingsUpdateFailed);
       }
     } finally {
       if (mounted) {
@@ -85,6 +87,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final locale = ref.watch(appLocaleControllerProvider);
     final user = ref.watch(authProvider).user;
     final newsletter = user?.newsletter ?? false;
     final pushEnabled = user?.pushNotificationsEnabled ?? false;
@@ -92,7 +96,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Paramètres'),
+        title: Text(l10n.settingsTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         titleTextStyle: const TextStyle(
@@ -104,7 +108,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          _buildSectionHeader('Préférences'),
+          _buildSectionHeader(l10n.settingsSectionPreferences),
           if (neitherEverActivated)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -126,7 +130,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Active les notifications pour gagner 30 Hibons',
+                      l10n.settingsPushReward,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade800,
@@ -142,8 +146,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Icons.notifications_active_outlined,
               color: Color(0xFFFF601F),
             ),
-            title: const Text('Notifications push'),
-            subtitle: const Text('Recevoir les alertes sur ton téléphone'),
+            title: Text(l10n.settingsPushTitle),
+            subtitle: Text(l10n.settingsPushSubtitle),
             value: pushEnabled,
             onChanged: _busyPush
                 ? null
@@ -154,30 +158,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Icons.email_outlined,
               color: Color(0xFFFF601F),
             ),
-            title: const Text('Newsletter'),
-            subtitle: const Text(
-              'Recommandations événements et bons plans par email',
-            ),
+            title: Text(l10n.settingsNewsletterTitle),
+            subtitle: Text(l10n.settingsNewsletterSubtitle),
             value: newsletter,
             onChanged: _busyNewsletter
                 ? null
                 : (_) => _togglePref(current: newsletter, isPush: false),
           ),
           const Divider(),
-          _buildSectionHeader('Application'),
+          _buildSectionHeader(l10n.settingsSectionApplication),
+          ListTile(
+            leading: const Icon(Icons.language, color: Color(0xFFFF601F)),
+            title: Text(l10n.settingsLanguageTitle),
+            subtitle: Text(
+              l10n.settingsLanguageSubtitle(
+                _languageName(l10n, locale.languageCode),
+              ),
+            ),
+            onTap: () => _showLanguagePicker(context),
+          ),
           ListTile(
             leading: const Icon(Icons.restart_alt, color: Color(0xFFFF601F)),
-            title: const Text('Revoir l\'introduction'),
-            subtitle: const Text('Redémarrer le tutoriel d\'accueil'),
+            title: Text(l10n.settingsResetOnboardingTitle),
+            subtitle: Text(l10n.settingsResetOnboardingSubtitle),
             onTap: () => _showResetConfirmation(context),
           ),
           const Divider(),
-          _buildSectionHeader('Informations légales'),
+          _buildSectionHeader(l10n.settingsSectionLegal),
           for (final doc
               in LegalDocument.values.where((d) => d != LegalDocument.cookies))
             ListTile(
               leading: Icon(doc.icon, color: const Color(0xFFFF601F)),
-              title: Text(doc.label),
+              title: Text(LegalLinks.labelFor(context, doc)),
               trailing: const Icon(
                 Icons.chevron_right,
                 color: Colors.grey,
@@ -185,14 +197,74 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onTap: () => LegalLinks.open(context, doc),
             ),
           const Divider(),
-          _buildSectionHeader('Informations'),
-          const ListTile(
-            leading: Icon(Icons.info_outline),
-            title: Text('Version'),
-            trailing: Text(AppConstants.appVersion),
+          _buildSectionHeader(l10n.settingsSectionInformation),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text(l10n.settingsVersionTitle),
+            trailing: const Text(AppConstants.appVersion),
           ),
         ],
       ),
+    );
+  }
+
+  String _languageName(AppLocalizations l10n, String languageCode) {
+    return switch (languageCode) {
+      'en' => l10n.languageEnglish,
+      _ => l10n.languageFrench,
+    };
+  }
+
+  void _showLanguagePicker(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final l10n = sheetContext.l10n;
+
+        return SafeArea(
+          child: Consumer(
+            builder: (context, ref, _) {
+              final selected = ref.watch(appLocaleControllerProvider);
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        l10n.settingsLanguageDialogTitle,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                  ),
+                  for (final option in supportedAppLocales)
+                    ListTile(
+                      leading: const Icon(Icons.language),
+                      title: Text(_languageName(l10n, option.languageCode)),
+                      trailing: selected.languageCode == option.languageCode
+                          ? const Icon(
+                              Icons.check,
+                              color: Color(0xFFFF601F),
+                            )
+                          : null,
+                      onTap: () async {
+                        await ref
+                            .read(appLocaleControllerProvider.notifier)
+                            .setLanguageCode(option.languageCode);
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -212,17 +284,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showResetConfirmation(BuildContext context) {
+    final l10n = context.l10n;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Redémarrer l\'onboarding ?'),
-        content: const Text(
-          'Voulez-vous vraiment revoir les écrans de bienvenue ? Cela vous déconnectera temporairement de l\'accueil.',
-        ),
+        title: Text(l10n.settingsResetDialogTitle),
+        content: Text(l10n.settingsResetDialogContent),
         actions: [
           TextButton(
             onPressed: () => context.pop(),
-            child: const Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () {
@@ -231,7 +303,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
             style:
                 TextButton.styleFrom(foregroundColor: const Color(0xFFFF601F)),
-            child: const Text('Redémarrer'),
+            child: Text(l10n.commonRestart),
           ),
         ],
       ),

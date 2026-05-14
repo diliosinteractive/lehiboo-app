@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../providers/auth_provider.dart';
 
 /// A modal that gates guest-restricted actions behind authentication.
@@ -28,7 +29,7 @@ class GuestRestrictionDialog extends ConsumerStatefulWidget {
   }) async {
     final result = await showDialog<bool>(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
       builder: (context) => GuestRestrictionDialog(featureName: featureName),
     );
     return result ?? false;
@@ -159,7 +160,7 @@ class _GuestRestrictionDialogState
     setState(() {
       _isSubmitting = false;
       _errorMessage = ref.read(authProvider).errorMessage ??
-          'Identifiants incorrects. Réessayez.';
+          context.l10n.authGuestIncorrectCredentials;
     });
   }
 
@@ -182,7 +183,7 @@ class _GuestRestrictionDialogState
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
+                      color: Colors.black.withValues(alpha: 0.15),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -224,7 +225,7 @@ class _GuestRestrictionDialogState
                 top: 4,
                 right: 4,
                 child: IconButton(
-                  tooltip: 'Fermer',
+                  tooltip: context.l10n.commonClose,
                   icon: const Icon(Icons.close, color: Color(0xFF718096)),
                   onPressed: _isSubmitting ? null : () => _safePop(false),
                 ),
@@ -247,26 +248,49 @@ class _GuestRestrictionDialogState
           fit: BoxFit.cover,
         ),
         border: Border.all(
-          color: const Color(0xFFFF601F).withOpacity(0.1),
+          color: const Color(0xFFFF601F).withValues(alpha: 0.1),
         ),
       ),
     ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack);
   }
 
   Widget _buildTitle() {
-    return const Text(
-      'Connectez-vous !',
+    return Text(
+      context.l10n.authGuestTitle,
       textAlign: TextAlign.center,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 22,
         fontWeight: FontWeight.bold,
         color: Color(0xFF1A202C),
         letterSpacing: -0.5,
       ),
-    ).animate().fadeIn(delay: 100.ms, duration: 400.ms).moveY(begin: 10, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 100.ms, duration: 400.ms)
+        .moveY(begin: 10, end: 0);
   }
 
   Widget _buildSubtitle() {
+    final l10n = context.l10n;
+    final featureName = widget.featureName;
+    final subtitle = l10n.authGuestSubtitle(featureName);
+    final featureIndex = subtitle.indexOf(featureName);
+
+    if (featureIndex == -1) {
+      return Text(
+        subtitle,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF718096),
+          height: 1.4,
+        ),
+      )
+          .animate()
+          .fadeIn(delay: 200.ms, duration: 400.ms)
+          .moveY(begin: 10, end: 0);
+    }
+
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
@@ -276,28 +300,31 @@ class _GuestRestrictionDialogState
           height: 1.4,
         ),
         children: [
-          const TextSpan(text: 'Connectez-vous pour '),
+          TextSpan(text: subtitle.substring(0, featureIndex)),
           TextSpan(
-            text: widget.featureName,
+            text: featureName,
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               color: Color(0xFF2D3748),
             ),
           ),
-          const TextSpan(text: '.'),
+          TextSpan(text: subtitle.substring(featureIndex + featureName.length)),
         ],
       ),
-    ).animate().fadeIn(delay: 200.ms, duration: 400.ms).moveY(begin: 10, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 200.ms, duration: 400.ms)
+        .moveY(begin: 10, end: 0);
   }
 
   /// Encouragement line moved out of the subtitle and rendered below the
   /// "Créer un compte" button so the layout reads top-to-bottom: gated
   /// feature → login → register CTA → reassurance.
   Widget _buildEncouragement() {
-    return const Text(
-      "Cela ne prend que 2 minutes et c'est gratuit !",
+    return Text(
+      context.l10n.authGuestEncouragement,
       textAlign: TextAlign.center,
-      style: TextStyle(
+      style: const TextStyle(
         fontStyle: FontStyle.italic,
         fontSize: 13,
         color: Color(0xFFFF601F),
@@ -313,13 +340,15 @@ class _GuestRestrictionDialogState
       autofillHints: const [AutofillHints.email, AutofillHints.username],
       textInputAction: TextInputAction.next,
       decoration: _inputDecoration(
-        label: 'Email',
+        label: context.l10n.authEmailLabel,
         icon: Icons.email_outlined,
       ),
       validator: (value) {
         final v = value?.trim() ?? '';
-        if (v.isEmpty) return 'Email requis';
-        if (!v.contains('@') || !v.contains('.')) return 'Email invalide';
+        if (v.isEmpty) return context.l10n.authEmailRequiredShort;
+        if (!v.contains('@') || !v.contains('.')) {
+          return context.l10n.authEmailInvalidShort;
+        }
         return null;
       },
     );
@@ -334,12 +363,14 @@ class _GuestRestrictionDialogState
       textInputAction: TextInputAction.done,
       onFieldSubmitted: (_) => _submit(),
       decoration: _inputDecoration(
-        label: 'Mot de passe',
+        label: context.l10n.authPasswordLabel,
         icon: Icons.lock_outline,
       ).copyWith(
         suffixIcon: IconButton(
           icon: Icon(
-            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            _obscurePassword
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             color: const Color(0xFF718096),
             size: 20,
           ),
@@ -347,7 +378,9 @@ class _GuestRestrictionDialogState
         ),
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) return 'Mot de passe requis';
+        if (value == null || value.isEmpty) {
+          return context.l10n.authPasswordRequiredShort;
+        }
         return null;
       },
     );
@@ -389,9 +422,11 @@ class _GuestRestrictionDialogState
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFF601F),
           foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFFFF601F).withOpacity(0.5),
+          disabledBackgroundColor:
+              const Color(0xFFFF601F).withValues(alpha: 0.5),
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: _isSubmitting
             ? const SizedBox(
@@ -402,16 +437,19 @@ class _GuestRestrictionDialogState
                   valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
               )
-            : const Text(
-                'Se connecter',
-                style: TextStyle(
+            : Text(
+                context.l10n.authLoginSubmit,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
       ),
-    ).animate().fadeIn(delay: 300.ms, duration: 400.ms).moveY(begin: 20, end: 0);
+    )
+        .animate()
+        .fadeIn(delay: 300.ms, duration: 400.ms)
+        .moveY(begin: 20, end: 0);
   }
 
   Widget _buildForgotPasswordLink() {
@@ -425,9 +463,9 @@ class _GuestRestrictionDialogState
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: const Text(
-          'Mot de passe oublié ?',
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        child: Text(
+          context.l10n.authForgotPasswordLink,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -458,9 +496,9 @@ class _GuestRestrictionDialogState
           foregroundColor: const Color(0xFFFF601F),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
-        child: const Text(
-          'Créer un compte',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        child: Text(
+          context.l10n.authCreateAccount,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     ).animate().fadeIn(delay: 400.ms, duration: 400.ms);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/favorites/data/models/toggle_favorite_result.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
@@ -117,7 +118,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     final canProceed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'gérer les favoris',
+      featureName: context.l10n.guestFeatureManageFavorites,
     );
 
     if (!canProceed || !mounted) return;
@@ -129,9 +130,9 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
     try {
       final result = await ref.read(favoritesProvider.notifier).toggleFavorite(
-        widget.event,
-        internalId: widget.internalId,
-      );
+            widget.event,
+            internalId: widget.internalId,
+          );
 
       if (result != null && mounted) {
         widget.onChanged?.call(false);
@@ -158,7 +159,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     final canProceed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'gérer les favoris',
+      featureName: context.l10n.guestFeatureManageFavorites,
     );
 
     if (!canProceed || !mounted) return;
@@ -190,10 +191,11 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
       if (result.removeFromFavorites) {
         // Retirer des favoris
-        final toggleResult = await ref.read(favoritesProvider.notifier).toggleFavorite(
-          widget.event,
-          internalId: widget.internalId,
-        );
+        final toggleResult =
+            await ref.read(favoritesProvider.notifier).toggleFavorite(
+                  widget.event,
+                  internalId: widget.internalId,
+                );
         success = toggleResult != null;
 
         if (success && mounted) {
@@ -203,24 +205,26 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
       } else if (_isFavorite) {
         // Déjà favori: déplacer vers une autre liste (jamais de reward)
         success = await ref.read(favoritesProvider.notifier).moveToList(
-          widget.event,
-          result.listId,
-          internalId: widget.internalId,
-        );
+              widget.event,
+              result.listId,
+              internalId: widget.internalId,
+            );
 
         if (success && mounted) {
           PetitBooToast.success(
             context,
-            result.listId != null ? 'Déplacé vers la liste' : 'Déplacé vers "Non classés"',
+            result.listId != null
+                ? 'Déplacé vers la liste'
+                : 'Déplacé vers "Non classés"',
           );
         }
       } else {
         // Pas encore favori: ajouter avec la liste sélectionnée (reward possible)
         final addResult = await ref.read(favoritesProvider.notifier).addToList(
-          widget.event,
-          result.listId ?? '',
-          internalId: widget.internalId,
-        );
+              widget.event,
+              result.listId ?? '',
+              internalId: widget.internalId,
+            );
         success = addResult != null;
         rewardSource = addResult;
 
@@ -269,7 +273,9 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
     return GestureDetector(
       onTap: _onTap,
-      onLongPress: _isFavorite ? _showListPicker : null, // Long press to move to another folder
+      onLongPress: _isFavorite
+          ? _showListPicker
+          : null, // Long press to move to another folder
       child: AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) {

@@ -1,0 +1,238 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Le Hiboo",
+  "@appTitle": {
+    "description": "Application title."
+  },
+  "navHome": "Accueil",
+  "navExplore": "Explorer",
+  "navMap": "Carte",
+  "navBookings": "Réservations",
+  "guestFeatureBookings": "consulter mes réservations",
+  "guestFeaturePetitBoo": "discuter avec Petit Boo",
+  "guestFeatureViewMessages": "voir vos messages",
+  "guestFeatureSendMessage": "envoyer un message",
+  "guestFeatureViewFavorites": "voir vos favoris",
+  "guestFeatureViewNotifications": "voir vos notifications",
+  "guestFeatureAccessProfile": "accéder à votre profil",
+  "guestFeatureViewConversation": "voir cette conversation",
+  "guestFeatureManageFavorites": "gérer les favoris",
+  "guestFeatureWriteReview": "laisser un avis",
+  "guestFeatureReportReview": "signaler un avis",
+  "guestFeatureSaveSearch": "sauvegarder une recherche",
+  "guestFeatureAskQuestion": "poser une question",
+  "guestFeatureVoteQuestion": "voter pour cette question",
+  "guestFeatureJoinOrganizer": "rejoindre cet organisateur",
+  "guestFeatureFollowOrganizer": "suivre cet organisateur",
+  "guestFeatureContactOrganizer": "contacter un organisateur",
+  "guestFeatureContactThisOrganizer": "contacter cet organisateur",
+  "guestFeatureViewCoordinates": "voir les coordonnées",
+  "guestFeatureEnableReminder": "activer un rappel",
+  "guestFeatureBookActivity": "réserver une activité",
+  "settingsTitle": "Paramètres",
+  "settingsSectionPreferences": "Préférences",
+  "settingsSectionApplication": "Application",
+  "settingsSectionLegal": "Informations légales",
+  "settingsSectionInformation": "Informations",
+  "settingsPushReward": "Active les notifications pour gagner 30 Hibons",
+  "settingsPushTitle": "Notifications push",
+  "settingsPushSubtitle": "Recevoir les alertes sur ton téléphone",
+  "settingsNewsletterTitle": "Newsletter",
+  "settingsNewsletterSubtitle": "Recommandations événements et bons plans par email",
+  "settingsLanguageTitle": "Langue",
+  "settingsLanguageDialogTitle": "Choisir la langue",
+  "settingsLanguageSubtitle": "{language}",
+  "@settingsLanguageSubtitle": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "languageFrench": "Français",
+  "languageEnglish": "Anglais",
+  "settingsResetOnboardingTitle": "Revoir l'introduction",
+  "settingsResetOnboardingSubtitle": "Redémarrer le tutoriel d'accueil",
+  "settingsVersionTitle": "Version",
+  "settingsResetDialogTitle": "Redémarrer l'onboarding ?",
+  "settingsResetDialogContent": "Voulez-vous vraiment revoir les écrans de bienvenue ? Cela vous déconnectera temporairement de l'accueil.",
+  "commonCancel": "Annuler",
+  "commonClose": "Fermer",
+  "commonContinue": "Continuer",
+  "commonBack": "Retour",
+  "commonRestart": "Redémarrer",
+  "commonToday": "Aujourd'hui",
+  "commonTomorrow": "Demain",
+  "commonYesterday": "Hier",
+  "commonThisWeekend": "Ce week-end",
+  "commonFree": "Gratuit",
+  "commonUndefinedDate": "Date non définie",
+  "settingsPushPermissionRequired": "Autorisation notifications requise",
+  "settingsUpdateFailed": "Mise à jour impossible",
+  "legalTerms": "Conditions Générales d'Utilisation",
+  "legalSales": "Conditions Générales de Vente",
+  "legalPrivacy": "Politique de confidentialité",
+  "legalCookies": "Politique cookies",
+  "legalNotices": "Mentions légales",
+  "legalOpenFailed": "Ouverture impossible : {documentLabel}",
+  "@legalOpenFailed": {
+    "placeholders": {
+      "documentLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceTooltipHoldToTalk": "Maintiens pour parler",
+  "voiceMicrophoneError": "Erreur micro : {message}",
+  "@voiceMicrophoneError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceAllowMicrophoneSettings": "Autorise le micro dans Réglages",
+  "voiceAllowSpeechSettings": "Autorise la reconnaissance vocale dans Réglages",
+  "voiceMicrophoneUnavailable": "Le micro n'est pas disponible",
+  "voiceNothingHeard": "Je n'ai rien entendu",
+  "petitBooChatHintListening": "Je vous écoute...",
+  "petitBooChatHintStreaming": "Petit Boo réfléchit...",
+  "petitBooChatHintIdle": "Posez une question à votre assistant ou tapez / pour les commandes...",
+  "petitBooDisclaimer": "L'IA peut commettre des erreurs. Vérifiez les informations importantes.",
+  "bookingTicketSingular": "1 billet",
+  "bookingTicketPlural": "{count} billets",
+  "@bookingTicketPlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingLifecycleCancelled": "Annulé",
+  "bookingLifecyclePast": "Passé",
+  "bookingLifecycleUpcoming": "À venir",
+  "broadcastSentOn": "Envoyée le {date}",
+  "@broadcastSentOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "broadcastCreatedOn": "Créée le {date}",
+  "@broadcastCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "adminReportReviewedBy": "Traité par {name}",
+  "adminReportReviewedByOn": "Traité par {name} le {date}",
+  "membershipMember": "Membre",
+  "membershipMemberSince": "Membre depuis le {date}",
+  "membershipRequestSent": "Demande envoyée",
+  "membershipRequestSentOn": "Demande envoyée le {date}",
+  "membershipRequestRejected": "Demande non acceptée",
+  "membershipRequestRejectedOn": "Demande du {date} - non acceptée",
+  "authEmailLabel": "Email",
+  "authEmailHint": "votre@email.com",
+  "authPasswordLabel": "Mot de passe",
+  "authPasswordHint": "••••••••",
+  "authEmailRequired": "Veuillez entrer votre email",
+  "authEmailInvalid": "Veuillez entrer un email valide",
+  "authPasswordRequired": "Veuillez entrer votre mot de passe",
+  "authEmailRequiredShort": "Email requis",
+  "authEmailInvalidShort": "Email invalide",
+  "authPasswordRequiredShort": "Mot de passe requis",
+  "authLoginTitle": "Bienvenue sur Le Hiboo !",
+  "authLoginSubtitle": "Connectez-vous pour découvrir les événements près de chez vous",
+  "authForgotPasswordLink": "Mot de passe oublié ?",
+  "authLoginSubmit": "Se connecter",
+  "authLoginNoAccount": "Pas encore de compte ?",
+  "authCreateAccount": "Créer un compte",
+  "authContinueAsGuest": "Continuer sans compte",
+  "authForgotPasswordTitle": "Mot de passe oublié ?",
+  "authForgotPasswordSubtitle": "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+  "authForgotPasswordSubmit": "Envoyer le lien",
+  "authBackToLogin": "Retour à la connexion",
+  "authForgotPasswordSuccessTitle": "Email envoyé !",
+  "authForgotPasswordSuccessPrefix": "Nous avons envoyé un lien de réinitialisation à",
+  "authForgotPasswordSuccessInfo": "Vérifiez votre boîte de réception et vos spams. Le lien expire dans 1 heure.",
+  "authForgotPasswordResend": "Renvoyer l'email",
+  "authOtpIncompleteCode": "Veuillez entrer le code complet",
+  "authOtpResent": "Un nouveau code a été envoyé",
+  "authOtpTitle": "Vérification email",
+  "authOtpSubtitle": "Entrez le code à 6 chiffres envoyé à",
+  "authOtpVerify": "Vérifier",
+  "authOtpNotReceived": "Vous n'avez pas reçu le code ?",
+  "authOtpResendIn": "Renvoyer dans {seconds}s",
+  "@authOtpResendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "authOtpResend": "Renvoyer",
+  "authGuestIncorrectCredentials": "Identifiants incorrects. Réessayez.",
+  "authGuestTitle": "Connectez-vous !",
+  "authGuestSubtitle": "Connectez-vous pour {featureName}.",
+  "@authGuestSubtitle": {
+    "placeholders": {
+      "featureName": {
+        "type": "String"
+      }
+    }
+  },
+  "authGuestEncouragement": "Cela ne prend que 2 minutes et c'est gratuit !",
+  "authRegisterTypeEyebrow": "TYPE DE COMPTE",
+  "authRegisterTypeTitle": "Vous êtes...",
+  "authRegisterTypeSubtitle": "Sélectionnez votre profil pour personnaliser votre expérience",
+  "authRegisterTypeCustomerTitle": "Un particulier",
+  "authRegisterTypeCustomerDescription": "Je réserve des activités pour moi ou mes proches.",
+  "authRegisterTypeBusinessTitle": "Une organisation",
+  "authRegisterTypeBusinessDescription": "Entreprise, association ou collectivité - je réserve pour mon équipe.",
+  "authRegisterTypeComingSoon": "Bientôt disponible",
+  "authRegisterCreateMyAccount": "Créer mon compte",
+  "authAlreadyHaveAccount": "Déjà un compte ?",
+  "authRegisterLegacySubtitle": "Rejoignez LeHiboo pour ne rien manquer",
+  "authFirstNameLabel": "Prénom",
+  "authFirstNameHint": "Jean",
+  "authLastNameLabel": "Nom",
+  "authLastNameHint": "Dupont",
+  "authRequired": "Requis",
+  "authPasswordMinimumHint": "Minimum 8 caractères",
+  "authPasswordCreateRequired": "Veuillez entrer un mot de passe",
+  "authPasswordMinLength": "Le mot de passe doit contenir au moins 8 caractères",
+  "authPasswordNeedsUppercase": "Le mot de passe doit contenir une majuscule",
+  "authPasswordNeedsNumber": "Le mot de passe doit contenir un chiffre",
+  "authConfirmPasswordLabel": "Confirmer le mot de passe",
+  "authConfirmPasswordHint": "Retapez votre mot de passe",
+  "authConfirmPasswordRequired": "Veuillez confirmer votre mot de passe",
+  "authPasswordsDoNotMatch": "Les mots de passe ne correspondent pas",
+  "authAcceptTermsRequired": "Veuillez accepter les conditions d'utilisation",
+  "authRegisterTermsPrefix": "J'accepte les ",
+  "authRegisterTermsConnector": " et la ",
+  "authPermissionReassurance": "Vous pouvez changer cet accès à tout moment dans les réglages.",
+  "authPermissionLocationTitle": "Trouvez des sorties près de vous",
+  "authPermissionLocationIntro": "LeHiboo Experiences utilise votre position pour vous suggérer les meilleurs événements à proximité.",
+  "authPermissionLocationBulletMap": "Voir les événements à proximité sur la carte",
+  "authPermissionLocationBulletSearch": "Filtrer la recherche selon votre position",
+  "authPermissionLocationBulletSuggestions": "Recevoir des suggestions adaptées à votre ville",
+  "authPermissionLocationGranted": "Localisation déjà activée",
+  "authPermissionAudioTitle": "Discutez en vocal avec Petit Boo",
+  "authPermissionAudioIntro": "Activez le micro pour interagir à la voix avec Petit Boo, notre assistant IA dédié aux sorties.",
+  "authPermissionAudioBulletQuestions": "Posez vos questions à la voix, sans clavier",
+  "authPermissionAudioBulletDictate": "Dictez vos messages plus rapidement",
+  "authPermissionAudioBulletHandsFree": "Trouvez des sorties les mains libres",
+  "authPermissionAudioGranted": "Micro déjà activé",
+  "authPermissionNotificationsTitle": "Ne ratez rien des bons plans",
+  "authPermissionNotificationsIntro": "Activez les notifications pour recevoir l'essentiel directement sur votre téléphone.",
+  "authPermissionNotificationsBulletTickets": "Vos billets et confirmations de réservation",
+  "authPermissionNotificationsBulletAlerts": "Les événements qui matchent vos alertes",
+  "authPermissionNotificationsBulletFavorites": "Les nouveautés de vos lieux favoris",
+  "authPermissionNotificationsBulletReminders": "Vos rappels et alertes personnalisées",
+  "authPermissionNotificationsBulletMessages": "Les réponses des organisateurs à vos messages",
+  "authPermissionNotificationsGranted": "Notifications déjà activées"
+}

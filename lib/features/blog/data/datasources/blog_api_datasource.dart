@@ -32,7 +32,6 @@ class BlogApiDataSource {
     final response = await _dio.get(
       '/posts',
       queryParameters: queryParams,
-      options: Options(headers: {'Accept-Language': 'fr'}),
     );
     final postList = ApiResponseHandler.extractList(response.data)
         .whereType<Map<String, dynamic>>()
@@ -59,7 +58,6 @@ class BlogApiDataSource {
   Future<BlogPostDto> getPostById(int id) async {
     final response = await _dio.get(
       '/posts/$id',
-      options: Options(headers: {'Accept-Language': 'fr'}),
     );
     final payload = ApiResponseHandler.extractObject(response.data);
     final postData = payload['post'];

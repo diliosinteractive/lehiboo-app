@@ -306,7 +306,6 @@ class EventsApiDataSource {
       final response = await _dio.post(
         '/events/$identifier/verify-password',
         data: {'password': password},
-        options: Options(headers: {'Accept-Language': 'fr'}),
       );
       final payload = ApiResponseHandler.extractObject(response.data);
       return EventDto.fromJson(payload);

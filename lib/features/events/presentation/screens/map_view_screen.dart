@@ -7,8 +7,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart'; // For attribution links
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import 'package:lehiboo/features/events/presentation/providers/event_providers.dart';
@@ -385,7 +385,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        "${DateFormat('dd MMM HH:mm', 'fr_FR').format(event.startDate)} • ${(event.minPrice ?? 0) == 0 ? 'Gratuit' : '${(event.minPrice ?? 0).toStringAsFixed(0)}€'}",
+                        "${context.appDateFormat('dd MMM HH:mm', enPattern: 'MMM d, HH:mm').format(event.startDate)} • ${(event.minPrice ?? 0) == 0 ? context.l10n.commonFree : '${(event.minPrice ?? 0).toStringAsFixed(0)}€'}",
                         style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
                       trailing: isSelected
@@ -439,9 +439,10 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: widget.initialLat != null && widget.initialLng != null
-                  ? LatLng(widget.initialLat!, widget.initialLng!)
-                  : _kDefaultCenter,
+              initialCenter:
+                  widget.initialLat != null && widget.initialLng != null
+                      ? LatLng(widget.initialLat!, widget.initialLng!)
+                      : _kDefaultCenter,
               initialZoom: widget.initialZoom ?? _kDefaultZoom,
               onPositionChanged: _onPositionChanged,
               onMapReady: _onMapReady,

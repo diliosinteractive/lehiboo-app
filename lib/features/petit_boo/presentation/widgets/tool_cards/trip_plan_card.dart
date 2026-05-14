@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/petit_boo_theme.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import '../../providers/petit_boo_chat_provider.dart';
@@ -70,16 +70,18 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
         order: (stop['order'] as num?)?.toInt() ?? 0,
         eventUuid: stop['event_uuid'] as String?,
         eventTitle: stop['event_title'] as String? ??
-                    stop['title'] as String? ??
-                    'Étape',
+            stop['title'] as String? ??
+            'Étape',
         venueName: stop['venue_name'] as String?,
         address: stop['address'] as String?,
         city: stop['city'] as String?,
         arrivalTime: stop['arrival_time'] as String?,
         departureTime: stop['departure_time'] as String?,
         durationMinutes: (stop['duration_minutes'] as num?)?.toInt(),
-        travelFromPreviousKm: (stop['travel_from_previous_km'] as num?)?.toDouble(),
-        travelFromPreviousMinutes: (stop['travel_from_previous_minutes'] as num?)?.toInt(),
+        travelFromPreviousKm:
+            (stop['travel_from_previous_km'] as num?)?.toDouble(),
+        travelFromPreviousMinutes:
+            (stop['travel_from_previous_minutes'] as num?)?.toInt(),
         latitude: lat,
         longitude: lng,
       );
@@ -94,14 +96,18 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
 
   String? get _endTime => _plan['end_time'] as String?;
 
-  int? get _totalDurationMinutes => (_plan['total_duration_minutes'] as num?)?.toInt();
+  int? get _totalDurationMinutes =>
+      (_plan['total_duration_minutes'] as num?)?.toInt();
 
-  double? get _totalDistanceKm => (_plan['total_distance_km'] as num?)?.toDouble();
+  double? get _totalDistanceKm =>
+      (_plan['total_distance_km'] as num?)?.toDouble();
 
   double? get _score => (_plan['score'] as num?)?.toDouble();
 
-  bool get _isSaved => widget.data['saved'] == true ||
-                       (widget.data['data'] is Map && (widget.data['data'] as Map)['saved'] == true);
+  bool get _isSaved =>
+      widget.data['saved'] == true ||
+      (widget.data['data'] is Map &&
+          (widget.data['data'] as Map)['saved'] == true);
 
   List<String> get _recommendations {
     final recs = _plan['recommendations'] as List<dynamic>?;
@@ -138,8 +144,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
           const Divider(height: 1, color: PetitBooTheme.border),
 
           // Map (collapsible)
-          if (validStops.isNotEmpty)
-            _buildMap(validStops, accentColor),
+          if (validStops.isNotEmpty) _buildMap(validStops, accentColor),
 
           // Timeline
           _buildTimeline(stops, accentColor),
@@ -193,7 +198,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                     ),
                     if (_plannedDate != null)
                       Text(
-                        _formatDate(_plannedDate!),
+                        _formatDate(context, _plannedDate!),
                         style: PetitBooTheme.bodySm.copyWith(
                           color: PetitBooTheme.textTertiary,
                         ),
@@ -577,14 +582,17 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
     // Le LLM a le contexte du plan qu'il vient de générer (date + event_uuids)
     // Pas besoin de passer l'UUID - il n'existe qu'après sauvegarde
     ref.read(petitBooChatProvider.notifier).sendMessage(
-      'Sauvegarde ce plan de sortie',
-    );
+          'Sauvegarde ce plan de sortie',
+        );
   }
 
-  String _formatDate(String dateStr) {
+  String _formatDate(BuildContext context, String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      final formatter = DateFormat('EEEE d MMMM', 'fr_FR');
+      final formatter = context.appDateFormat(
+        'EEEE d MMMM',
+        enPattern: 'EEEE, MMMM d',
+      );
       final formatted = formatter.format(date);
       // Capitalize first letter
       return formatted[0].toUpperCase() + formatted.substring(1);
@@ -653,8 +661,8 @@ class _TimelineStopWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasTravel = !isLast &&
-        (travelToNextMinutes != null && travelToNextMinutes! > 0);
+    final hasTravel =
+        !isLast && (travelToNextMinutes != null && travelToNextMinutes! > 0);
 
     return InkWell(
       onTap: onTap,
@@ -736,7 +744,9 @@ class _TimelineStopWidget extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(
-                    bottom: isLast ? PetitBooTheme.spacing8 : PetitBooTheme.spacing16,
+                    bottom: isLast
+                        ? PetitBooTheme.spacing8
+                        : PetitBooTheme.spacing16,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -852,7 +862,8 @@ class _TimelineStopWidget extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _formatTravel(travelToNextMinutes, travelToNextKm),
+                                  _formatTravel(
+                                      travelToNextMinutes, travelToNextKm),
                                   style: PetitBooTheme.caption.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),

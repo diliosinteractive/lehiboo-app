@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import '../../domain/entities/trip_plan.dart';
 
 /// Card displaying a trip plan in the profile list
@@ -116,7 +116,7 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                     ),
                     if (widget.plan.plannedDate != null)
                       Text(
-                        _formatDate(widget.plan.plannedDate!),
+                        _formatDate(context, widget.plan.plannedDate!),
                         style: const TextStyle(
                           fontSize: 13,
                           color: _textSecondary,
@@ -126,7 +126,8 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                 ),
               ),
               // Score badge
-              if (widget.plan.score != null) _buildScoreBadge(widget.plan.score!),
+              if (widget.plan.score != null)
+                _buildScoreBadge(widget.plan.score!),
               const SizedBox(width: 8),
               // Expand indicator
               AnimatedRotation(
@@ -148,11 +149,15 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
             runSpacing: 6,
             children: [
               _buildStatChip(Icons.schedule, widget.plan.formattedDuration),
-              if (widget.plan.totalDistanceKm != null && widget.plan.totalDistanceKm! > 0)
-                _buildStatChip(Icons.directions_car, '${widget.plan.totalDistanceKm!.toStringAsFixed(1)} km'),
-              if (widget.plan.timeRange != null && widget.plan.timeRange!.isNotEmpty)
+              if (widget.plan.totalDistanceKm != null &&
+                  widget.plan.totalDistanceKm! > 0)
+                _buildStatChip(Icons.directions_car,
+                    '${widget.plan.totalDistanceKm!.toStringAsFixed(1)} km'),
+              if (widget.plan.timeRange != null &&
+                  widget.plan.timeRange!.isNotEmpty)
                 _buildStatChip(Icons.access_time, widget.plan.timeRange!),
-              _buildStatChip(Icons.flag, '${widget.plan.stopsCount} étape${widget.plan.stopsCount > 1 ? 's' : ''}'),
+              _buildStatChip(Icons.flag,
+                  '${widget.plan.stopsCount} étape${widget.plan.stopsCount > 1 ? 's' : ''}'),
             ],
           ),
         ],
@@ -366,10 +371,12 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
           child: Padding(
             padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
             child: InkWell(
-              onTap: hasEventLink ? () {
-                HapticFeedback.selectionClick();
-                context.push('/event/$eventId');
-              } : null,
+              onTap: hasEventLink
+                  ? () {
+                      HapticFeedback.selectionClick();
+                      context.push('/event/$eventId');
+                    }
+                  : null,
               borderRadius: BorderRadius.circular(8),
               child: Row(
                 children: [
@@ -392,7 +399,8 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                             padding: const EdgeInsets.only(top: 2),
                             child: Row(
                               children: [
-                                const Icon(Icons.location_on, size: 12, color: _textTertiary),
+                                const Icon(Icons.location_on,
+                                    size: 12, color: _textTertiary),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
@@ -408,11 +416,13 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                               ],
                             ),
                           ),
-                        if (stop.durationMinutes != null && stop.durationMinutes! > 0)
+                        if (stop.durationMinutes != null &&
+                            stop.durationMinutes! > 0)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
                                 color: _accentColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(6),
@@ -420,7 +430,8 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.schedule, size: 12, color: _accentColor),
+                                  const Icon(Icons.schedule,
+                                      size: 12, color: _accentColor),
                                   const SizedBox(width: 4),
                                   Text(
                                     _formatDuration(stop.durationMinutes!),
@@ -464,10 +475,12 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
     required VoidCallback onTap,
   }) {
     return InkWell(
-      onTap: enabled ? () {
-        HapticFeedback.lightImpact();
-        onTap();
-      } : null,
+      onTap: enabled
+          ? () {
+              HapticFeedback.lightImpact();
+              onTap();
+            }
+          : null,
       borderRadius: BorderRadius.circular(10),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -518,7 +531,8 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
   }
 
   void _openInGoogleMaps() {
-    final validStops = widget.plan.stops.where((s) => s.hasCoordinates).toList();
+    final validStops =
+        widget.plan.stops.where((s) => s.hasCoordinates).toList();
     if (validStops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aucune coordonnée disponible')),
@@ -526,15 +540,15 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
       return;
     }
 
-    final waypoints = validStops
-        .map((s) => '${s.latitude},${s.longitude}')
-        .join('/');
+    final waypoints =
+        validStops.map((s) => '${s.latitude},${s.longitude}').join('/');
     final url = 'https://www.google.com/maps/dir/$waypoints';
     launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   void _openInWaze() {
-    final validStops = widget.plan.stops.where((s) => s.hasCoordinates).toList();
+    final validStops =
+        widget.plan.stops.where((s) => s.hasCoordinates).toList();
     if (validStops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aucune coordonnée disponible')),
@@ -543,7 +557,8 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
     }
 
     final firstStop = validStops.first;
-    final url = 'https://waze.com/ul?ll=${firstStop.latitude},${firstStop.longitude}&navigate=yes';
+    final url =
+        'https://waze.com/ul?ll=${firstStop.latitude},${firstStop.longitude}&navigate=yes';
     launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
@@ -553,7 +568,8 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Supprimer ce plan ?'),
-        content: Text('Le plan "${widget.plan.title}" sera définitivement supprimé.'),
+        content: Text(
+            'Le plan "${widget.plan.title}" sera définitivement supprimé.'),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
@@ -582,8 +598,11 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final formatter = DateFormat('EEEE d MMMM', 'fr_FR');
+  String _formatDate(BuildContext context, DateTime date) {
+    final formatter = context.appDateFormat(
+      'EEEE d MMMM',
+      enPattern: 'EEEE, MMMM d',
+    );
     final formatted = formatter.format(date);
     return formatted[0].toUpperCase() + formatted.substring(1);
   }

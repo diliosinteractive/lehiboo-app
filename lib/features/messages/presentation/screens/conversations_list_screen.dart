@@ -15,6 +15,7 @@ import '../widgets/new_conversation_form.dart';
 import '../widgets/report_conversation_sheet.dart';
 import '../../domain/entities/conversation.dart';
 import 'package:lehiboo/domain/entities/user.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
@@ -34,15 +35,17 @@ class _ConversationsListScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authState = ref.read(authProvider);
       if (authState.status == AuthStatus.unauthenticated) {
-        GuestRestrictionDialog.show(context, featureName: 'voir vos messages');
+        GuestRestrictionDialog.show(
+          context,
+          featureName: context.l10n.guestFeatureViewMessages,
+        );
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final role =
-        ref.watch(authProvider).user?.role ?? UserRole.subscriber;
+    final role = ref.watch(authProvider).user?.role ?? UserRole.subscriber;
 
     return switch (role) {
       UserRole.partner => const _VendorInbox(key: ValueKey('vendor')),
@@ -119,8 +122,7 @@ Widget _buildConversationList<N extends StateNotifier<S>, S>({
         },
         child: ListView.separated(
           itemCount: conversations.length + (hasMore ? 1 : 0),
-          separatorBuilder: (_, __) =>
-              const Divider(height: 1, indent: 72),
+          separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
           itemBuilder: (ctx, i) {
             if (i == conversations.length) {
               return const Padding(
@@ -480,17 +482,15 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
                     conversationContext:
                         VendorToParticipantConversationContext()),
                 backgroundColor: _primaryColor,
-                icon: const Icon(Icons.person_add_outlined,
-                    color: Colors.white),
+                icon:
+                    const Icon(Icons.person_add_outlined, color: Colors.white),
                 label: const Text('Contacter un participant',
                     style: TextStyle(color: Colors.white)),
               ),
             1 => FloatingActionButton.extended(
-                onPressed: () =>
-                    ctx.push('/messages/vendor/broadcasts/new'),
+                onPressed: () => ctx.push('/messages/vendor/broadcasts/new'),
                 backgroundColor: _primaryColor,
-                icon: const Icon(Icons.campaign_outlined,
-                    color: Colors.white),
+                icon: const Icon(Icons.campaign_outlined, color: Colors.white),
                 label: const Text('Nouvelle diffusion',
                     style: TextStyle(color: Colors.white)),
               ),
@@ -585,8 +585,7 @@ class _VendorBroadcastsTab extends ConsumerWidget {
           ),
           Expanded(
             child: state.broadcasts.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -616,8 +615,7 @@ class _VendorBroadcastsTab extends ConsumerWidget {
                         SizedBox(height: 12),
                         Text(
                           'Aucune diffusion envoyée',
-                          style:
-                              TextStyle(fontSize: 16, color: Colors.grey),
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -626,23 +624,20 @@ class _VendorBroadcastsTab extends ConsumerWidget {
                 return NotificationListener<ScrollNotification>(
                   onNotification: (n) {
                     if (n is ScrollUpdateNotification &&
-                        n.metrics.pixels >=
-                            n.metrics.maxScrollExtent * 0.8) {
+                        n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
                       notifier.loadMore();
                     }
                     return false;
                   },
                   child: ListView.separated(
-                    itemCount:
-                        broadcasts.length + (state.hasMore ? 1 : 0),
+                    itemCount: broadcasts.length + (state.hasMore ? 1 : 0),
                     separatorBuilder: (_, __) =>
                         const Divider(height: 1, indent: 72),
                     itemBuilder: (ctx, i) {
                       if (i == broadcasts.length) {
                         return const Padding(
                           padding: EdgeInsets.all(16),
-                          child: Center(
-                              child: CircularProgressIndicator()),
+                          child: Center(child: CircularProgressIndicator()),
                         );
                       }
                       final broadcast = broadcasts[i];
@@ -764,10 +759,8 @@ class _AdminInboxState extends ConsumerState<_AdminInbox>
 
   @override
   Widget build(BuildContext context) {
-    final usersState =
-        ref.watch(adminConversationsProvider('user_support'));
-    final orgsState =
-        ref.watch(adminConversationsProvider('vendor_admin'));
+    final usersState = ref.watch(adminConversationsProvider('user_support'));
+    final orgsState = ref.watch(adminConversationsProvider('vendor_admin'));
     final reportStats = ref.watch(adminReportStatsProvider);
 
     final usersUnread = usersState.conversations.valueOrNull
@@ -844,8 +837,8 @@ class _AdminInboxState extends ConsumerState<_AdminInbox>
                 onPressed: () => NewConversationForm.show(ctx,
                     conversationContext: AdminToUserConversationContext()),
                 backgroundColor: _primaryColor,
-                icon: const Icon(Icons.person_add_outlined,
-                    color: Colors.white),
+                icon:
+                    const Icon(Icons.person_add_outlined, color: Colors.white),
                 label: const Text('Contacter un utilisateur',
                     style: TextStyle(color: Colors.white)),
               ),
@@ -853,8 +846,7 @@ class _AdminInboxState extends ConsumerState<_AdminInbox>
                 onPressed: () => NewConversationForm.show(ctx,
                     conversationContext: AdminToOrgConversationContext()),
                 backgroundColor: _primaryColor,
-                icon: const Icon(Icons.business_outlined,
-                    color: Colors.white),
+                icon: const Icon(Icons.business_outlined, color: Colors.white),
                 label: const Text('Contacter un organisateur',
                     style: TextStyle(color: Colors.white)),
               ),
@@ -942,149 +934,149 @@ class _AdminReportsTab extends ConsumerWidget {
           ),
           Expanded(
             child: state.reports.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 40),
-              const SizedBox(height: 8),
-              Text('Erreur : $e',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: notifier.refresh,
-                child: const Text('Réessayer'),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 40),
+                    const SizedBox(height: 8),
+                    Text('Erreur : $e',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: notifier.refresh,
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
-        data: (reports) {
-          if (reports.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.flag_outlined, size: 56, color: Colors.grey),
-                  SizedBox(height: 12),
-                  Text('Aucun signalement',
-                      style:
-                          TextStyle(fontSize: 16, color: Colors.grey)),
-                ],
-              ),
-            );
-          }
-          return NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              if (n is ScrollUpdateNotification &&
-                  n.metrics.pixels >=
-                      n.metrics.maxScrollExtent * 0.8) {
-                notifier.loadMore();
-              }
-              return false;
-            },
-            child: ListView.separated(
-              itemCount: reports.length + (state.hasMore ? 1 : 0),
-              separatorBuilder: (_, __) =>
-                  const Divider(height: 1, indent: 16),
-              itemBuilder: (ctx, i) {
-                if (i == reports.length) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: CircularProgressIndicator()),
+              data: (reports) {
+                if (reports.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.flag_outlined, size: 56, color: Colors.grey),
+                        SizedBox(height: 12),
+                        Text('Aucun signalement',
+                            style: TextStyle(fontSize: 16, color: Colors.grey)),
+                      ],
+                    ),
                   );
                 }
-                final report = reports[i];
-                final (statusLabel, statusColor) = switch (report.status) {
-                  'pending' => ('En attente', Colors.orange),
-                  'reviewed' => ('Traité', Colors.green),
-                  'dismissed' => ('Ignoré', Colors.grey.shade600),
-                  'suspended' => ('Suspendu', Colors.red),
-                  _ => (report.status, Colors.grey.shade600),
-                };
-                final reasonLabel = switch (report.reason) {
-                  'inappropriate' => 'Contenu inapproprié',
-                  'harassment' => 'Harcèlement',
-                  'spam' => 'Spam',
-                  _ => 'Autre',
-                };
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 4),
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.flag, size: 18, color: statusColor),
-                  ),
-                  title: Text(
-                    report.conversationSubject ??
-                        'Signalement ${report.uuid.substring(0, 8)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 2),
-                      Text(
-                        '${report.reporter?.name ?? '–'} → ${report.againstWhom?.name ?? '–'}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(4),
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (n) {
+                    if (n is ScrollUpdateNotification &&
+                        n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
+                      notifier.loadMore();
+                    }
+                    return false;
+                  },
+                  child: ListView.separated(
+                    itemCount: reports.length + (state.hasMore ? 1 : 0),
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, indent: 16),
+                    itemBuilder: (ctx, i) {
+                      if (i == reports.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      final report = reports[i];
+                      final (statusLabel, statusColor) =
+                          switch (report.status) {
+                        'pending' => ('En attente', Colors.orange),
+                        'reviewed' => ('Traité', Colors.green),
+                        'dismissed' => ('Ignoré', Colors.grey.shade600),
+                        'suspended' => ('Suspendu', Colors.red),
+                        _ => (report.status, Colors.grey.shade600),
+                      };
+                      final reasonLabel = switch (report.reason) {
+                        'inappropriate' => 'Contenu inapproprié',
+                        'harassment' => 'Harcèlement',
+                        'spam' => 'Spam',
+                        _ => 'Autre',
+                      };
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.flag, size: 18, color: statusColor),
                         ),
-                        child: Text(
-                          reasonLabel,
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade700,
-                              fontWeight: FontWeight.w500),
+                        title: Text(
+                          report.conversationSubject ??
+                              'Signalement ${report.uuid.substring(0, 8)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w500),
                         ),
-                      ),
-                    ],
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 2),
+                            Text(
+                              '${report.reporter?.name ?? '–'} → ${report.againstWhom?.name ?? '–'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade600),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                reasonLabel,
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                                color: statusColor.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            statusLabel,
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: statusColor,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        onTap: () =>
+                            ctx.push('/messages/admin/reports/${report.uuid}'),
+                      );
+                    },
                   ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                          color: statusColor.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(
-                      statusLabel,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: statusColor,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  onTap: () => ctx.push(
-                      '/messages/admin/reports/${report.uuid}'),
                 );
               },
             ),
-          );
-        },
-      ),
-    ),   // Expanded
+          ), // Expanded
         ],
-      ),   // Column
+      ), // Column
     );
   }
 }

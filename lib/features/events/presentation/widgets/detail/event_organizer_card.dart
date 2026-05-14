@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
@@ -268,7 +269,8 @@ class _VendorOrganizerCard extends ConsumerWidget {
           ),
           const SizedBox(width: 14),
         ],
-        const Icon(Icons.favorite_border, size: 15, color: HbColors.brandPrimary),
+        const Icon(Icons.favorite_border,
+            size: 15, color: HbColors.brandPrimary),
         const SizedBox(width: 5),
         Text(
           '$followers abonné${followers > 1 ? 's' : ''}',
@@ -291,7 +293,7 @@ class _VendorOrganizerCard extends ConsumerWidget {
               final allowed = await GuestGuard.check(
                 context: context,
                 ref: ref,
-                featureName: 'contacter un organisateur',
+                featureName: context.l10n.guestFeatureContactOrganizer,
               );
               if (!allowed || !context.mounted) return;
               NewConversationForm.show(

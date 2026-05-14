@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
@@ -84,8 +84,7 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Fermer',
-                style: TextStyle(color: Colors.red)),
+            child: const Text('Fermer', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -161,7 +160,8 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(0xFFFF601F).withValues(alpha: 0.15),
+                      backgroundColor:
+                          const Color(0xFFFF601F).withValues(alpha: 0.15),
                       child: const Icon(
                         Icons.support_agent,
                         size: 20,
@@ -219,14 +219,17 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                 Container(
                   width: double.infinity,
                   color: Colors.grey.shade100,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     children: [
-                      Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade600),
+                      Icon(Icons.lock_outline,
+                          size: 18, color: Colors.grey.shade600),
                       const SizedBox(width: 8),
                       Text(
                         'Cette conversation est fermée.',
-                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                        style: TextStyle(
+                            color: Colors.grey.shade700, fontSize: 13),
                       ),
                     ],
                   ),
@@ -283,7 +286,7 @@ class _MessagesList extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = items[index];
         if (item is _DateSeparator) {
-          return _buildDateChip(item.date);
+          return _buildDateChip(context, item.date);
         }
         final msg = (item as _MessageItem).message;
         final originalIndex = messages.indexOf(msg);
@@ -324,18 +327,20 @@ class _MessagesList extends StatelessWidget {
     return items;
   }
 
-  Widget _buildDateChip(DateTime date) {
+  Widget _buildDateChip(BuildContext context, DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
 
     String label;
     if (date == today) {
-      label = "Aujourd'hui";
+      label = context.l10n.commonToday;
     } else if (date == yesterday) {
-      label = 'Hier';
+      label = context.l10n.commonYesterday;
     } else {
-      label = DateFormat('d MMMM yyyy', 'fr_FR').format(date);
+      label = context
+          .appDateFormat('d MMMM yyyy', enPattern: 'MMMM d, yyyy')
+          .format(date);
     }
 
     return Center(

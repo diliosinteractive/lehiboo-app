@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import '../../domain/entities/trip_plan.dart';
 import '../providers/trip_plans_provider.dart';
 
@@ -65,7 +65,8 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
             onPressed: () => context.pop(),
           ),
         ),
-        body: const Center(child: CircularProgressIndicator(color: _accentColor)),
+        body:
+            const Center(child: CircularProgressIndicator(color: _accentColor)),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: const Color(0xFFF7F8FA),
@@ -172,7 +173,8 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: _accentColor, width: 2),
+                        borderSide:
+                            const BorderSide(color: _accentColor, width: 2),
                       ),
                       hintText: 'Nom de la sortie',
                       contentPadding: const EdgeInsets.symmetric(
@@ -210,7 +212,7 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
                           const SizedBox(width: 12),
                           Text(
                             _selectedDate != null
-                                ? _formatDate(_selectedDate!)
+                                ? _formatDate(context, _selectedDate!)
                                 : 'Sélectionner une date',
                             style: TextStyle(
                               fontSize: 15,
@@ -432,7 +434,8 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
   }
 
   void _checkChanges() {
-    final plan = ref.read(tripPlansProvider.notifier).getTripPlan(widget.planUuid);
+    final plan =
+        ref.read(tripPlansProvider.notifier).getTripPlan(widget.planUuid);
     if (plan == null) return;
 
     final titleChanged = _titleController.text != plan.title;
@@ -465,11 +468,11 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
           .toList();
 
       await ref.read(tripPlansProvider.notifier).updateTripPlan(
-        uuid: widget.planUuid,
-        title: _titleController.text.trim(),
-        plannedDate: _selectedDate,
-        stopsOrder: stopsOrder.isNotEmpty ? stopsOrder : null,
-      );
+            uuid: widget.planUuid,
+            title: _titleController.text.trim(),
+            plannedDate: _selectedDate,
+            stopsOrder: stopsOrder.isNotEmpty ? stopsOrder : null,
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -511,7 +514,8 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
         builder: (context) => AlertDialog(
           title: const Text('Abandonner les modifications ?'),
           content: const Text('Vos modifications ne seront pas sauvegardées.'),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -542,8 +546,11 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    final formatter = DateFormat('EEEE d MMMM yyyy', 'fr_FR');
+  String _formatDate(BuildContext context, DateTime date) {
+    final formatter = context.appDateFormat(
+      'EEEE d MMMM yyyy',
+      enPattern: 'EEEE, MMMM d, yyyy',
+    );
     final formatted = formatter.format(date);
     return formatted[0].toUpperCase() + formatted.substring(1);
   }

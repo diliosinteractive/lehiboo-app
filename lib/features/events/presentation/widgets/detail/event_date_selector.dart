@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 
@@ -37,7 +37,7 @@ class EventDateSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     if (slots.isEmpty) return _buildEmptyState();
 
-    final grouped = _groupSlotsByMonth(slots);
+    final grouped = _groupSlotsByMonth(context, slots);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,10 +157,12 @@ class EventDateSelector extends StatelessWidget {
   }
 
   Map<String, List<CalendarDateSlot>> _groupSlotsByMonth(
-      List<CalendarDateSlot> slots) {
+      BuildContext context, List<CalendarDateSlot> slots) {
     final grouped = <String, List<CalendarDateSlot>>{};
     for (final slot in slots) {
-      final monthKey = DateFormat('MMMM yyyy', 'fr_FR').format(slot.date);
+      final monthKey = context
+          .appDateFormat('MMMM yyyy', enPattern: 'MMMM yyyy')
+          .format(slot.date);
       grouped.putIfAbsent(monthKey, () => []);
       grouped[monthKey]!.add(slot);
     }
@@ -281,7 +283,7 @@ class _DateChipState extends State<_DateChip>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Day number + abbreviated day name
-              _buildDayRow(),
+              _buildDayRow(context),
               const SizedBox(height: 6),
               // Time range
               _buildTimeRange(),
@@ -293,9 +295,7 @@ class _DateChipState extends State<_DateChip>
                       ? Icons.notifications_active
                       : Icons.notifications_none,
                   size: 18,
-                  color: _isHighlighted
-                      ? Colors.white
-                      : HbColors.brandPrimary,
+                  color: _isHighlighted ? Colors.white : HbColors.brandPrimary,
                 ),
               ] else if (widget.slot.spotsRemaining != null) ...[
                 const SizedBox(height: 4),
@@ -308,10 +308,10 @@ class _DateChipState extends State<_DateChip>
     );
   }
 
-  Widget _buildDayRow() {
+  Widget _buildDayRow(BuildContext context) {
     final dayNumber = widget.slot.date.day.toString();
     final dayAbbrev =
-        '${DateFormat('E', 'fr_FR').format(widget.slot.date)}.';
+        '${context.appDateFormat('E', enPattern: 'E').format(widget.slot.date)}.';
 
     final color = _isFull && !widget.isReminderMode
         ? Colors.grey

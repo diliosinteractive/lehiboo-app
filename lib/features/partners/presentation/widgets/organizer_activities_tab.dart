@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
@@ -241,7 +241,8 @@ class _OrganizerEventTile extends ConsumerWidget {
                   ? CachedNetworkImage(
                       imageUrl: event.coverImage!,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: Colors.grey[100]),
+                      placeholder: (_, __) =>
+                          Container(color: Colors.grey[100]),
                       errorWidget: (_, __, ___) => _imageFallback(),
                     )
                   : _imageFallback(),
@@ -288,7 +289,11 @@ class _OrganizerEventTile extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          DateFormat('dd MMM yyyy', 'fr')
+                          context
+                              .appDateFormat(
+                                'dd MMM yyyy',
+                                enPattern: 'MMM d, yyyy',
+                              )
                               .format(event.startDate),
                           style: TextStyle(
                             fontSize: 12,

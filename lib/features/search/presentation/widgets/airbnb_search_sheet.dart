@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
@@ -474,7 +475,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
   String _getWhenSubtitle(EventFilter filter) {
     if (filter.dateFilterLabel != null) return filter.dateFilterLabel!;
     if (filter.startDate != null) {
-      final formatter = DateFormat('d MMM', 'fr_FR');
+      final formatter = context.appDateFormat('d MMM', enPattern: 'MMM d');
       if (filter.endDate != null && filter.startDate != filter.endDate) {
         return '${formatter.format(filter.startDate!)} - ${formatter.format(filter.endDate!)}';
       }
@@ -981,8 +982,10 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
           runSpacing: 8,
           children: [
             DateQuickChip(
-              label: "Aujourd'hui",
-              subtitle: DateFormat('d MMM', 'fr_FR').format(today),
+              label: context.l10n.commonToday,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(today),
               isSelected: widget.filter.dateFilterType == DateFilterType.today,
               onTap: () {
                 if (widget.filter.dateFilterType == DateFilterType.today) {
@@ -993,8 +996,10 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
               },
             ),
             DateQuickChip(
-              label: 'Demain',
-              subtitle: DateFormat('d MMM', 'fr_FR').format(tomorrow),
+              label: context.l10n.commonTomorrow,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(tomorrow),
               isSelected:
                   widget.filter.dateFilterType == DateFilterType.tomorrow,
               onTap: () {
@@ -1006,9 +1011,9 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
               },
             ),
             DateQuickChip(
-              label: 'Ce week-end',
+              label: context.l10n.commonThisWeekend,
               subtitle:
-                  '${DateFormat('d').format(saturday)}-${DateFormat('d MMM', 'fr_FR').format(sunday)}',
+                  '${DateFormat('d').format(saturday)}-${context.appDateFormat('d MMM', enPattern: 'MMM d').format(sunday)}',
               isSelected:
                   widget.filter.dateFilterType == DateFilterType.thisWeekend,
               onTap: () {

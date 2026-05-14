@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
@@ -136,7 +137,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'sauvegarder une recherche',
+      featureName: context.l10n.guestFeatureSaveSearch,
     );
     if (!allowed) return;
     if (!context.mounted) return;

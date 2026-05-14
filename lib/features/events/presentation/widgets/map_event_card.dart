@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
-import 'package:lehiboo/features/events/domain/entities/event.dart' show Event, EventCategory, EventStatus, PriceType;
+import 'package:lehiboo/features/events/domain/entities/event.dart'
+    show Event, EventCategory, EventStatus, PriceType;
 
 class MapEventCard extends ConsumerWidget {
   final Activity activity;
@@ -47,7 +48,8 @@ class MapEventCard extends ConsumerWidget {
               CachedNetworkImage(
                 imageUrl: activity.imageUrl!,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => Container(color: Colors.grey[800]),
+                placeholder: (context, url) =>
+                    Container(color: Colors.grey[800]),
                 errorWidget: (context, url, error) {
                   // Fallback 1: Theme Image
                   if (activity.category != null) {
@@ -57,7 +59,8 @@ class MapEventCard extends ConsumerWidget {
                       errorBuilder: (context, error, stackTrace) {
                         // Fallback 2: Logo
                         return Container(
-                          color: const Color(0xFFFF601F), // HbColors.brandPrimary
+                          color:
+                              const Color(0xFFFF601F), // HbColors.brandPrimary
                           padding: const EdgeInsets.all(24),
                           child: Image.asset(
                             'assets/images/logo_picto_lehiboo.png',
@@ -100,7 +103,7 @@ class MapEventCard extends ConsumerWidget {
                   fit: BoxFit.contain,
                 ),
               ),
-            
+
             // Gradient Overlay for Text Visibility
             Positioned(
               bottom: 0,
@@ -135,7 +138,8 @@ class MapEventCard extends ConsumerWidget {
                   if (activity.nextSlot != null)
                     Container(
                       margin: const EdgeInsets.only(bottom: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF601F),
                         borderRadius: BorderRadius.circular(4),
@@ -144,7 +148,9 @@ class MapEventCard extends ConsumerWidget {
                         builder: (context) {
                           String dateText;
                           try {
-                            dateText = DateFormat('d MMM', 'fr_FR').format(activity.nextSlot!.startDateTime);
+                            dateText = context
+                                .appDateFormat('d MMM', enPattern: 'MMM d')
+                                .format(activity.nextSlot!.startDateTime);
                           } catch (e) {
                             final dt = activity.nextSlot!.startDateTime;
                             dateText = '${dt.day}/${dt.month}';
@@ -152,10 +158,9 @@ class MapEventCard extends ConsumerWidget {
                           return Text(
                             dateText,
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold
-                            ),
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold),
                           );
                         },
                       ),
@@ -163,11 +168,10 @@ class MapEventCard extends ConsumerWidget {
                   Text(
                     activity.title,
                     style: const TextStyle(
-                      color: Colors.white, 
-                      fontSize: 14, 
-                      fontWeight: FontWeight.bold,
-                      height: 1.2
-                    ),
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -181,15 +185,16 @@ class MapEventCard extends ConsumerWidget {
                         style: TextStyle(color: Colors.white70, fontSize: 12),
                       );
                     }
-                    final isBooking =
-                        activity.reservationMode == ReservationMode.lehibooFree ||
-                            activity.reservationMode == ReservationMode.lehibooPaid;
+                    final isBooking = activity.reservationMode ==
+                            ReservationMode.lehibooFree ||
+                        activity.reservationMode == ReservationMode.lehibooPaid;
                     if (!isBooking) {
                       return const SizedBox.shrink();
                     }
                     return Text(
                       '${(activity.priceMin ?? 0).toStringAsFixed(0)}€',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12),
                     );
                   }),
                 ],
@@ -202,42 +207,45 @@ class MapEventCard extends ConsumerWidget {
               right: 8,
               child: GestureDetector(
                 onTap: () {
-                   final event = Event(
-                            id: activity.id,
-                            slug: activity.slug,
-                            title: activity.title,
-                            description: '',
-                            shortDescription: '',
-                            category: EventCategory.other,
-                            targetAudiences: [],
-                            startDate: activity.nextSlot?.startDateTime ?? DateTime.now(),
-                            endDate: activity.nextSlot?.endDateTime ?? DateTime.now(),
-                            venue: activity.city?.name ?? '',
-                            address: '',
-                            city: activity.city?.name ?? '',
-                            postalCode: '',
-                            latitude: 0,
-                            longitude: 0,
-                            images: activity.imageUrl != null ? [activity.imageUrl!] : [],
-                            coverImage: activity.imageUrl,
-                            priceType: activity.priceMin == 0 ? PriceType.free : PriceType.paid,
-                            minPrice: activity.priceMin,
-                            maxPrice: activity.priceMax,
-                            isIndoor: false,
-                            isOutdoor: false,
-                            tags: [],
-                            organizerId: '',
-                            organizerName: '',
-                            isFavorite: isFavorite,
-                            isFeatured: false,
-                            isRecommended: false,
-                            status: EventStatus.upcoming,
-                            hasDirectBooking: false,
-                            createdAt: DateTime.now(),
-                            updatedAt: DateTime.now(),
-                            views: 0
-                          );
-                          ref.read(favoritesProvider.notifier).toggleFavorite(event);
+                  final event = Event(
+                      id: activity.id,
+                      slug: activity.slug,
+                      title: activity.title,
+                      description: '',
+                      shortDescription: '',
+                      category: EventCategory.other,
+                      targetAudiences: [],
+                      startDate:
+                          activity.nextSlot?.startDateTime ?? DateTime.now(),
+                      endDate: activity.nextSlot?.endDateTime ?? DateTime.now(),
+                      venue: activity.city?.name ?? '',
+                      address: '',
+                      city: activity.city?.name ?? '',
+                      postalCode: '',
+                      latitude: 0,
+                      longitude: 0,
+                      images:
+                          activity.imageUrl != null ? [activity.imageUrl!] : [],
+                      coverImage: activity.imageUrl,
+                      priceType: activity.priceMin == 0
+                          ? PriceType.free
+                          : PriceType.paid,
+                      minPrice: activity.priceMin,
+                      maxPrice: activity.priceMax,
+                      isIndoor: false,
+                      isOutdoor: false,
+                      tags: [],
+                      organizerId: '',
+                      organizerName: '',
+                      isFavorite: isFavorite,
+                      isFeatured: false,
+                      isRecommended: false,
+                      status: EventStatus.upcoming,
+                      hasDirectBooking: false,
+                      createdAt: DateTime.now(),
+                      updatedAt: DateTime.now(),
+                      views: 0);
+                  ref.read(favoritesProvider.notifier).toggleFavorite(event);
                 },
                 child: Container(
                   width: 32,
@@ -256,11 +264,14 @@ class MapEventCard extends ConsumerWidget {
                   child: Icon(
                     isFavorite ? Icons.favorite : Icons.favorite_border,
                     size: 18,
-                    color: isFavorite ? const Color(0xFFFF601F) : Colors.grey[400], // Using brand Orange for fav or Red? EventCard uses Red. Let's check.
+                    color: isFavorite
+                        ? const Color(0xFFFF601F)
+                        : Colors.grey[
+                            400], // Using brand Orange for fav or Red? EventCard uses Red. Let's check.
                     // EventCard used Colors.red for favorite, Colors.grey for border.
                     // I'll stick to what EventCard had: color: isFavorite ? Colors.red : Colors.grey
                     // But wait, the standard usually is brand color.
-                    // Let's re-read EventCard code... 
+                    // Let's re-read EventCard code...
                     // line 167: color: isFavorite ? Colors.red : Colors.grey,
                   ),
                 ),

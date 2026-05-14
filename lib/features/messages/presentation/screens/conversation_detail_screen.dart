@@ -2,8 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
@@ -41,8 +41,10 @@ class _ConversationDetailScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authState = ref.read(authProvider);
       if (authState.status == AuthStatus.unauthenticated) {
-        GuestRestrictionDialog.show(context,
-            featureName: 'voir cette conversation');
+        GuestRestrictionDialog.show(
+          context,
+          featureName: context.l10n.guestFeatureViewConversation,
+        );
       }
     });
   }
@@ -51,8 +53,7 @@ class _ConversationDetailScreenState
   Widget build(BuildContext context) {
     final pk = (uuid: widget.conversationUuid, route: widget.route);
     final state = ref.watch(conversationDetailProvider(pk));
-    final detailNotifier =
-        ref.read(conversationDetailProvider(pk).notifier);
+    final detailNotifier = ref.read(conversationDetailProvider(pk).notifier);
 
     ref.listen<ConversationDetailState>(
       conversationDetailProvider(pk),
@@ -83,7 +84,8 @@ class _ConversationDetailScreenState
             children: [
               const Icon(Icons.error_outline, color: Colors.red, size: 40),
               const SizedBox(height: 8),
-              Text('Erreur : ${ApiResponseHandler.extractError(e)}', style: const TextStyle(color: Colors.red)),
+              Text('Erreur : ${ApiResponseHandler.extractError(e)}',
+                  style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () =>
@@ -95,8 +97,7 @@ class _ConversationDetailScreenState
         ),
         data: (conversation) {
           final isClosed = conversation.status == 'closed';
-          final notifier =
-              ref.read(conversationDetailProvider(pk).notifier);
+          final notifier = ref.read(conversationDetailProvider(pk).notifier);
           final route = widget.route;
 
           final titleText = switch (route) {
@@ -113,15 +114,12 @@ class _ConversationDetailScreenState
               conversation.participant?.name ??
                   conversation.organization?.companyName ??
                   conversation.subject,
-            _ =>
-              conversation.organization?.companyName ?? conversation.subject,
+            _ => conversation.organization?.companyName ?? conversation.subject,
           };
 
           final titleAvatarUrl = switch (route) {
-            ConversationRoute.participant =>
-              conversation.organization?.logoUrl,
-            ConversationRoute.vendor =>
-              conversation.participant?.avatarUrl,
+            ConversationRoute.participant => conversation.organization?.logoUrl,
+            ConversationRoute.vendor => conversation.participant?.avatarUrl,
             ConversationRoute.vendorOrgOrg =>
               conversation.partnerOrganization?.logoUrl,
             ConversationRoute.admin ||
@@ -132,11 +130,11 @@ class _ConversationDetailScreenState
               conversation.participant?.avatarUrl ??
                   conversation.organization?.logoUrl,
           };
-          final titleInitial = titleText.isNotEmpty
-              ? titleText[0].toUpperCase()
-              : '?';
+          final titleInitial =
+              titleText.isNotEmpty ? titleText[0].toUpperCase() : '?';
 
-          final showSubjectSubtitle = route != ConversationRoute.participantSupport;
+          final showSubjectSubtitle =
+              route != ConversationRoute.participantSupport;
           final showOverflowMenu = !_isReadonly;
           final canReport = route == ConversationRoute.participant ||
               route == ConversationRoute.vendor ||
@@ -148,8 +146,9 @@ class _ConversationDetailScreenState
             children: [
               AppBar(
                 leading: BackButton(
-                  onPressed: () =>
-                      context.canPop() ? context.pop() : context.go('/messages'),
+                  onPressed: () => context.canPop()
+                      ? context.pop()
+                      : context.go('/messages'),
                 ),
                 title: Row(
                   children: [
@@ -226,8 +225,7 @@ class _ConversationDetailScreenState
                                 size: 12, color: _primaryColor),
                             const SizedBox(width: 4),
                             ConstrainedBox(
-                              constraints:
-                                  const BoxConstraints(maxWidth: 100),
+                              constraints: const BoxConstraints(maxWidth: 100),
                               child: Text(
                                 conversation.event!.title,
                                 style: const TextStyle(
@@ -253,7 +251,8 @@ class _ConversationDetailScreenState
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                  content: Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
+                                  content: Text(
+                                      'Erreur : ${ApiResponseHandler.extractError(e)}'),
                                   backgroundColor: Colors.red),
                             );
                           }
@@ -295,8 +294,7 @@ class _ConversationDetailScreenState
                             child: Row(
                               children: [
                                 Icon(Icons.flag,
-                                    size: 18,
-                                    color: Colors.orange.shade400),
+                                    size: 18, color: Colors.orange.shade400),
                                 const SizedBox(width: 8),
                                 Text('Signalé',
                                     style: TextStyle(
@@ -330,14 +328,17 @@ class _ConversationDetailScreenState
                 Container(
                   width: double.infinity,
                   color: Colors.grey.shade100,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     children: [
-                      Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade600),
+                      Icon(Icons.lock_outline,
+                          size: 18, color: Colors.grey.shade600),
                       const SizedBox(width: 8),
                       Text(
                         'Cette conversation est fermée.',
-                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                        style: TextStyle(
+                            color: Colors.grey.shade700, fontSize: 13),
                       ),
                     ],
                   ),
@@ -347,15 +348,14 @@ class _ConversationDetailScreenState
                   messages: conversation.messages,
                   notifier: notifier,
                   readonly: _isReadonly,
-                  organizationLogoUrl: conversation.organization?.logoUrl
-                      ?? conversation.organization?.avatarUrl,
+                  organizationLogoUrl: conversation.organization?.logoUrl ??
+                      conversation.organization?.avatarUrl,
                 ),
               ),
               MessageComposer(
                 conversationUuid: widget.conversationUuid,
                 disabled: isClosed || _isReadonly,
-                isSupport:
-                    widget.route == ConversationRoute.participantSupport,
+                isSupport: widget.route == ConversationRoute.participantSupport,
                 onSend: (content) => notifier.sendMessage(
                   content: content,
                 ),
@@ -387,8 +387,7 @@ class _ConversationDetailScreenState
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Fermer',
-                  style: TextStyle(color: Colors.red)),
+              child: const Text('Fermer', style: TextStyle(color: Colors.red)),
             ),
           ],
         ),
@@ -400,7 +399,8 @@ class _ConversationDetailScreenState
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content: Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
+                  content:
+                      Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
                   backgroundColor: Colors.red),
             );
           }
@@ -414,7 +414,6 @@ class _ConversationDetailScreenState
       );
     }
   }
-
 }
 
 class _MessagesList extends StatefulWidget {
@@ -525,10 +524,10 @@ class _MessagesListState extends State<_MessagesList> {
     // System messages sort before non-system ones so they always appear
     // at the top of their day group, regardless of the backend timestamp.
     final sorted = [...msgs]..sort((a, b) {
-      if (a.isSystem && !b.isSystem) return -1;
-      if (!a.isSystem && b.isSystem) return 1;
-      return a.createdAt.compareTo(b.createdAt);
-    });
+        if (a.isSystem && !b.isSystem) return -1;
+        if (!a.isSystem && b.isSystem) return 1;
+        return a.createdAt.compareTo(b.createdAt);
+      });
     final reversed = sorted.reversed.toList();
     final items = <Object>[];
 
@@ -561,11 +560,13 @@ class _MessagesListState extends State<_MessagesList> {
 
     String label;
     if (date == today) {
-      label = "Aujourd'hui";
+      label = context.l10n.commonToday;
     } else if (date == yesterday) {
-      label = 'Hier';
+      label = context.l10n.commonYesterday;
     } else {
-      label = DateFormat('d MMMM yyyy', 'fr_FR').format(date);
+      label = context
+          .appDateFormat('d MMMM yyyy', enPattern: 'MMMM d, yyyy')
+          .format(date);
     }
 
     return Center(

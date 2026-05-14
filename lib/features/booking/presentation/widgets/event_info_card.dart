@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
@@ -24,16 +25,19 @@ class EventInfoCard extends StatelessWidget {
     final tokens = HbTheme.tokens(context);
 
     final formattedDate = slotDateTime != null
-        ? DateFormat('EEEE d MMMM yyyy', 'fr_FR').format(slotDateTime!)
-        : 'Date non définie';
+        ? context
+            .appDateFormat(
+              'EEEE d MMMM yyyy',
+              enPattern: 'EEEE, MMMM d, yyyy',
+            )
+            .format(slotDateTime!)
+        : context.l10n.commonUndefinedDate;
 
-    final formattedTime = slotDateTime != null
-        ? DateFormat('HH:mm').format(slotDateTime!)
-        : '';
+    final formattedTime =
+        slotDateTime != null ? DateFormat('HH:mm').format(slotDateTime!) : '';
 
-    final formattedEndTime = endDateTime != null
-        ? DateFormat('HH:mm').format(endDateTime!)
-        : '';
+    final formattedEndTime =
+        endDateTime != null ? DateFormat('HH:mm').format(endDateTime!) : '';
 
     final timeRange = formattedEndTime.isNotEmpty
         ? '$formattedTime - $formattedEndTime'

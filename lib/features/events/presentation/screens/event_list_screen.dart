@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart';
@@ -13,12 +14,15 @@ import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/search/presentation/widgets/save_search_sheet.dart';
 
 /// Provider for events list from real API
-final eventsListProvider = FutureProvider.family<List<Activity>, EventsListParams>((ref, params) async {
+final eventsListProvider =
+    FutureProvider.family<List<Activity>, EventsListParams>(
+        (ref, params) async {
   final eventRepository = ref.watch(eventRepositoryProvider);
 
   debugPrint('=== eventsListProvider called ===');
   debugPrint('Params: page=${params.page}, perPage=${params.perPage}');
-  debugPrint('Search: ${params.search}, categorySlug: ${params.categorySlug}, city: ${params.city}');
+  debugPrint(
+      'Search: ${params.search}, categorySlug: ${params.categorySlug}, city: ${params.city}');
   debugPrint('DateFilter: ${params.dateFilter}, OnlyFree: ${params.onlyFree}');
 
   try {
@@ -34,7 +38,8 @@ final eventsListProvider = FutureProvider.family<List<Activity>, EventsListParam
     );
 
     debugPrint('Got ${result.events.length} events from API');
-    debugPrint('Pagination: page ${result.currentPage}/${result.totalPages}, total: ${result.totalItems}');
+    debugPrint(
+        'Pagination: page ${result.currentPage}/${result.totalPages}, total: ${result.totalItems}');
 
     if (result.events.isNotEmpty) {
       debugPrint('First event: ${result.events.first.title}');
@@ -46,7 +51,8 @@ final eventsListProvider = FutureProvider.family<List<Activity>, EventsListParam
     // Apply client-side filters
     if (params.dateFilter != null) {
       activities = _filterByDate(activities, params.dateFilter!);
-      debugPrint('After date filter (${params.dateFilter}): ${activities.length} activities');
+      debugPrint(
+          'After date filter (${params.dateFilter}): ${activities.length} activities');
     }
 
     if (params.onlyFree) {
@@ -88,14 +94,18 @@ List<Activity> _filterByDate(List<Activity> activities, String dateFilter) {
     case 'weekend':
       // Find next Saturday and Sunday
       final daysUntilSaturday = (DateTime.saturday - now.weekday) % 7;
-      final saturday = today.add(Duration(days: daysUntilSaturday == 0 && now.weekday != DateTime.saturday ? 7 : daysUntilSaturday));
+      final saturday = today.add(Duration(
+          days: daysUntilSaturday == 0 && now.weekday != DateTime.saturday
+              ? 7
+              : daysUntilSaturday));
       final sunday = saturday.add(const Duration(days: 1));
 
       return activities.where((a) {
         final slotDate = a.nextSlot?.startDateTime;
         if (slotDate == null) return false;
         final eventDate = DateTime(slotDate.year, slotDate.month, slotDate.day);
-        return eventDate.isAtSameMomentAs(saturday) || eventDate.isAtSameMomentAs(sunday);
+        return eventDate.isAtSameMomentAs(saturday) ||
+            eventDate.isAtSameMomentAs(sunday);
       }).toList();
 
     default:
@@ -181,11 +191,11 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    
+
     // Initialize category filter from widget parameter if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final filterNotifier = ref.read(eventFilterProvider.notifier);
-      
+
       // If passing specific filters via navigation, reset previous state
       if (widget.categorySlug != null || widget.city != null) {
         filterNotifier.resetAll();
@@ -196,7 +206,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
       }
       if (widget.city != null) {
         // Use slug as name temporarily, or capitalize it
-        final cityName = widget.city![0].toUpperCase() + widget.city!.substring(1);
+        final cityName =
+            widget.city![0].toUpperCase() + widget.city!.substring(1);
         filterNotifier.setCity(widget.city!, cityName);
       }
     });
@@ -210,11 +221,12 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       final filteredEventsState = ref.read(filteredEventsProvider);
       filteredEventsState.whenData((data) {
         if (data.hasMore && !filteredEventsState.isLoading) {
-           ref.read(eventFilterProvider.notifier).nextPage();
+          ref.read(eventFilterProvider.notifier).nextPage();
         }
       });
     }
@@ -228,7 +240,6 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
     final eventsAsync = ref.watch(filteredEventsProvider);
 
     return Scaffold(
-
       appBar: AppBar(
         title: Text(widget.title ?? 'Explorer les événements'),
         backgroundColor: Colors.white,
@@ -246,7 +257,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               decoration: InputDecoration(
                 hintText: 'Rechercher une activité...',
                 hintStyle: TextStyle(color: Colors.grey[400]),
-                prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
+                prefixIcon:
+                    const Icon(Icons.search, color: HbColors.brandPrimary),
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -261,7 +273,9 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                     IconButton(
                       icon: Icon(
                         Icons.tune,
-                        color: filter.hasActiveFilters ? HbColors.brandPrimary : Colors.grey,
+                        color: filter.hasActiveFilters
+                            ? HbColors.brandPrimary
+                            : Colors.grey,
                       ),
                       onPressed: () => showFilterBottomSheet(context),
                     ),
@@ -273,7 +287,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
               onSubmitted: (value) {
                 filterNotifier.setSearchQuery(value);
@@ -288,7 +303,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               height: 40,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 children: [
                   _QuickFilterChip(
                     label: "Aujourd'hui",
@@ -304,7 +320,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   const SizedBox(width: 8),
                   _QuickFilterChip(
                     label: 'Demain',
-                    isSelected: filter.dateFilterType == DateFilterType.tomorrow,
+                    isSelected:
+                        filter.dateFilterType == DateFilterType.tomorrow,
                     onTap: () {
                       if (filter.dateFilterType == DateFilterType.tomorrow) {
                         filterNotifier.clearDateFilter();
@@ -316,12 +333,14 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   const SizedBox(width: 8),
                   _QuickFilterChip(
                     label: 'Ce week-end',
-                    isSelected: filter.dateFilterType == DateFilterType.thisWeekend,
+                    isSelected:
+                        filter.dateFilterType == DateFilterType.thisWeekend,
                     onTap: () {
                       if (filter.dateFilterType == DateFilterType.thisWeekend) {
                         filterNotifier.clearDateFilter();
                       } else {
-                        filterNotifier.setDateFilter(DateFilterType.thisWeekend);
+                        filterNotifier
+                            .setDateFilter(DateFilterType.thisWeekend);
                       }
                     },
                   ),
@@ -339,23 +358,35 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   GestureDetector(
                     onTap: () => showFilterBottomSheet(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: filter.hasActiveFilters ? HbColors.brandPrimary : Colors.white,
+                        color: filter.hasActiveFilters
+                            ? HbColors.brandPrimary
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: HbColors.brandPrimary, width: 2),
+                        border:
+                            Border.all(color: HbColors.brandPrimary, width: 2),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.tune, size: 16, color: filter.hasActiveFilters ? Colors.white : HbColors.brandPrimary),
+                          Icon(Icons.tune,
+                              size: 16,
+                              color: filter.hasActiveFilters
+                                  ? Colors.white
+                                  : HbColors.brandPrimary),
                           const SizedBox(width: 6),
                           Text(
-                            filter.hasActiveFilters ? 'Filtres (${filter.activeFilterCount})' : 'Filtres',
+                            filter.hasActiveFilters
+                                ? 'Filtres (${filter.activeFilterCount})'
+                                : 'Filtres',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: filter.hasActiveFilters ? Colors.white : HbColors.brandPrimary,
+                              color: filter.hasActiveFilters
+                                  ? Colors.white
+                                  : HbColors.brandPrimary,
                             ),
                           ),
                         ],
@@ -372,7 +403,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               data: (paginatedData) {
                 final activities = paginatedData.activities;
                 final hasMore = paginatedData.hasMore;
-                
+
                 if (activities.isEmpty) {
                   return _buildEmptyState(filter);
                 }
@@ -392,7 +423,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 32),
                             child: Center(
-                              child: CircularProgressIndicator(color: HbColors.brandPrimary),
+                              child: CircularProgressIndicator(
+                                  color: HbColors.brandPrimary),
                             ),
                           );
                         } else {
@@ -406,13 +438,17 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
-                                  onPressed: () => _saveCurrentSearch(context, isAlert: true),
-                                  icon: const Icon(Icons.notifications_active_outlined),
-                                  label: const Text('M\'alerter des nouveautés'),
+                                  onPressed: () => _saveCurrentSearch(context,
+                                      isAlert: true),
+                                  icon: const Icon(
+                                      Icons.notifications_active_outlined),
+                                  label:
+                                      const Text('M\'alerter des nouveautés'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: HbColors.accentBlue,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 12),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(30),
                                     ),
@@ -424,54 +460,57 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                           );
                         }
                       }
-                      
+
                       // Using GridView inside ListView via index mapping is tricky, changed to ListView with cards for simplicity
                       // Or if we want Grid:
                       // Getting a grid inside expanded with infinite scroll:
                       // Actually users usually prefer list or grid. The previous code used GridView.builder.
                       // To keep GridView with infinite scroll loader at bottom:
-                      
-                      // We can return a tailored item. But GridView itembuilder builds cells. 
+
+                      // We can return a tailored item. But GridView itembuilder builds cells.
                       // If we want a loader at the bottom of a grid, the grid needs to span full width.
                       // Easier to use CustomScrollView with SliverGrid and SliverToBoxAdapter for loader.
-                      
+
                       return Padding(
-                         padding: const EdgeInsets.only(bottom: 12),
-                         child: EventCard(activity: activities[index]),
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: EventCard(activity: activities[index]),
                       );
                     },
                   ),
                 );
               },
               loading: () {
-                 // Handle re-loading with data
-                 final previousData = eventsAsync.valueOrNull;
-                 if (previousData != null && previousData.activities.isNotEmpty) {
-                    final activities = previousData.activities;
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: activities.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == activities.length) {
-                           return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 32),
-                            child: Center(
-                              child: CircularProgressIndicator(color: HbColors.brandPrimary),
-                            ),
-                          );
-                        }
-                        return Padding(
-                           padding: const EdgeInsets.only(bottom: 12),
-                           child: EventCard(activity: activities[index]),
+                // Handle re-loading with data
+                final previousData = eventsAsync.valueOrNull;
+                if (previousData != null &&
+                    previousData.activities.isNotEmpty) {
+                  final activities = previousData.activities;
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: activities.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == activities.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                                color: HbColors.brandPrimary),
+                          ),
                         );
-                      },
-                    );
-                 }
-              
-                 return const Center(
-                   child: CircularProgressIndicator(color: HbColors.brandPrimary),
-                 );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: EventCard(activity: activities[index]),
+                      );
+                    },
+                  );
+                }
+
+                return const Center(
+                  child:
+                      CircularProgressIndicator(color: HbColors.brandPrimary),
+                );
               },
               error: (error, stack) => _buildErrorState(error.toString()),
             ),
@@ -481,11 +520,12 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
     );
   }
 
-  Future<void> _saveCurrentSearch(BuildContext context, {bool isAlert = false}) async {
+  Future<void> _saveCurrentSearch(BuildContext context,
+      {bool isAlert = false}) async {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'sauvegarder une recherche',
+      featureName: context.l10n.guestFeatureSaveSearch,
     );
     if (!allowed) return;
     if (!mounted) return;
@@ -519,7 +559,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
           backgroundColor: HbColors.accentBlue,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -615,7 +656,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
-                ),
+              ),
               textAlign: TextAlign.center,
             ),
           ),

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/events/domain/entities/popular_city.dart';
@@ -285,7 +286,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             final allowed = await GuestGuard.check(
               context: context,
               ref: ref,
-              featureName: 'voir vos favoris',
+              featureName: context.l10n.guestFeatureViewFavorites,
             );
             if (allowed && mounted) {
               context.push('/favorites');
@@ -308,7 +309,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final allowed = await GuestGuard.check(
                   context: context,
                   ref: ref,
-                  featureName: 'voir vos messages',
+                  featureName: context.l10n.guestFeatureViewMessages,
                 );
                 if (allowed && context.mounted) {
                   context.push('/messages');
@@ -328,7 +329,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             final allowed = await GuestGuard.check(
               context: context,
               ref: ref,
-              featureName: 'voir vos notifications',
+              featureName: context.l10n.guestFeatureViewNotifications,
             );
             if (allowed && mounted) {
               context.push('/notifications');
@@ -364,7 +365,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final allowed = await GuestGuard.check(
                 context: context,
                 ref: ref,
-                featureName: 'accéder à votre profil',
+                featureName: context.l10n.guestFeatureAccessProfile,
               );
               if (allowed && mounted) {
                 context.push('/profile');

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../widgets/permission_explainer_scaffold.dart';
 
 class PermissionAudioScreen extends ConsumerStatefulWidget {
@@ -49,23 +50,22 @@ class _PermissionAudioScreenState extends ConsumerState<PermissionAudioScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return PermissionExplainerScaffold(
       icon: Icons.mic_none_outlined,
-      title: 'Discutez en vocal avec Petit Boo',
-      intro:
-          'Activez le micro pour interagir à la voix avec Petit Boo, notre '
-          'assistant IA dédié aux sorties.',
-      bullets: const [
-        'Posez vos questions à la voix, sans clavier',
-        'Dictez vos messages plus rapidement',
-        'Trouvez des sorties les mains libres',
+      title: l10n.authPermissionAudioTitle,
+      intro: l10n.authPermissionAudioIntro,
+      bullets: [
+        l10n.authPermissionAudioBulletQuestions,
+        l10n.authPermissionAudioBulletDictate,
+        l10n.authPermissionAudioBulletHandsFree,
       ],
-      reassurance:
-          'Vous pouvez changer cet accès à tout moment dans les réglages.',
-      ctaLabel: 'Continuer',
+      reassurance: l10n.authPermissionReassurance,
+      ctaLabel: l10n.commonContinue,
       busy: _busy,
       onContinue: _onContinue,
-      grantedLabel: _alreadyGranted ? 'Micro déjà activé' : null,
+      grantedLabel: _alreadyGranted ? l10n.authPermissionAudioGranted : null,
     );
   }
 }

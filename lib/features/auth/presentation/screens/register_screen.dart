@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../shared/legal/legal_links.dart';
 import '../providers/auth_provider.dart';
@@ -41,8 +42,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     if (!_acceptTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez accepter les conditions d\'utilisation'),
+        SnackBar(
+          content: Text(context.l10n.authAcceptTermsRequired),
           backgroundColor: Colors.red,
         ),
       );
@@ -50,11 +51,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
 
     final result = await ref.read(authProvider.notifier).register(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      firstName: _firstNameController.text.trim(),
-      lastName: _lastNameController.text.trim(),
-    );
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+        );
 
     debugPrint('📱 Register result: $result');
     debugPrint('📱 Result userId: ${result?.userId}');
@@ -70,6 +71,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final authState = ref.watch(authProvider);
 
     // Listen for state changes to handle navigation
@@ -84,10 +86,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         );
         ref.read(authProvider.notifier).clearError();
       }
-      
+
       // Navigate to OTP screen when pendingVerification state is reached
-      if (next.status == AuthStatus.pendingVerification && 
-          next.pendingUserId != null && 
+      if (next.status == AuthStatus.pendingVerification &&
+          next.pendingUserId != null &&
           next.pendingEmail != null) {
         debugPrint('📱 ref.listen: Navigating to OTP screen!');
         context.push(
@@ -136,9 +138,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
                 // Title
-                const Text(
-                  'Créer un compte',
-                  style: TextStyle(
+                Text(
+                  l10n.authCreateAccount,
+                  style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: HbColors.textSlate,
@@ -147,7 +149,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Rejoignez LeHiboo pour ne rien manquer',
+                  l10n.authRegisterLegacySubtitle,
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -165,8 +167,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         textCapitalization: TextCapitalization.words,
                         textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
-                          labelText: 'Prénom',
-                          hintText: 'Jean',
+                          labelText: l10n.authFirstNameLabel,
+                          hintText: l10n.authFirstNameHint,
                           prefixIcon: const Icon(Icons.person_outline),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -177,12 +179,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                            borderSide: const BorderSide(
+                                color: HbColors.brandPrimary, width: 2),
                           ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Requis';
+                            return l10n.authRequired;
                           }
                           return null;
                         },
@@ -195,8 +198,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         textCapitalization: TextCapitalization.words,
                         textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
-                          labelText: 'Nom',
-                          hintText: 'Dupont',
+                          labelText: l10n.authLastNameLabel,
+                          hintText: l10n.authLastNameHint,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -206,12 +209,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                            borderSide: const BorderSide(
+                                color: HbColors.brandPrimary, width: 2),
                           ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Requis';
+                            return l10n.authRequired;
                           }
                           return null;
                         },
@@ -227,8 +231,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'votre@email.com',
+                    labelText: l10n.authEmailLabel,
+                    hintText: l10n.authEmailHint,
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -239,22 +243,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                      borderSide: const BorderSide(
+                          color: HbColors.brandPrimary, width: 2),
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre email';
+                      return l10n.authEmailRequired;
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Veuillez entrer un email valide';
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                        .hasMatch(value)) {
+                      return l10n.authEmailInvalid;
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
-
-
 
                 // Password field
                 TextFormField(
@@ -262,12 +266,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    labelText: 'Mot de passe',
-                    hintText: 'Minimum 8 caractères',
+                    labelText: l10n.authPasswordLabel,
+                    hintText: l10n.authPasswordMinimumHint,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
                       onPressed: () {
                         setState(() {
@@ -284,21 +290,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                      borderSide: const BorderSide(
+                          color: HbColors.brandPrimary, width: 2),
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un mot de passe';
+                      return l10n.authPasswordCreateRequired;
                     }
                     if (value.length < 8) {
-                      return 'Le mot de passe doit contenir au moins 8 caractères';
+                      return l10n.authPasswordMinLength;
                     }
                     if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                      return 'Le mot de passe doit contenir une majuscule';
+                      return l10n.authPasswordNeedsUppercase;
                     }
                     if (!RegExp(r'[0-9]').hasMatch(value)) {
-                      return 'Le mot de passe doit contenir un chiffre';
+                      return l10n.authPasswordNeedsNumber;
                     }
                     return null;
                   },
@@ -312,12 +319,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _handleRegister(),
                   decoration: InputDecoration(
-                    labelText: 'Confirmer le mot de passe',
-                    hintText: 'Retapez votre mot de passe',
+                    labelText: l10n.authConfirmPasswordLabel,
+                    hintText: l10n.authConfirmPasswordHint,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
                       onPressed: () {
                         setState(() {
@@ -334,15 +343,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                      borderSide: const BorderSide(
+                          color: HbColors.brandPrimary, width: 2),
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez confirmer votre mot de passe';
+                      return l10n.authConfirmPasswordRequired;
                     }
                     if (value != _passwordController.text) {
-                      return 'Les mots de passe ne correspondent pas';
+                      return l10n.authPasswordsDoNotMatch;
                     }
                     return null;
                   },
@@ -378,9 +388,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             color: Colors.grey[600],
                           ),
                           children: [
-                            const TextSpan(text: 'J\'accepte les '),
+                            TextSpan(text: l10n.authRegisterTermsPrefix),
                             TextSpan(
-                              text: 'conditions d\'utilisation',
+                              text: l10n.legalTerms,
                               style: const TextStyle(
                                 color: HbColors.brandPrimary,
                                 fontWeight: FontWeight.w600,
@@ -391,9 +401,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                       LegalDocument.terms,
                                     ),
                             ),
-                            const TextSpan(text: ' et la '),
+                            TextSpan(text: l10n.authRegisterTermsConnector),
                             TextSpan(
-                              text: 'politique de confidentialité',
+                              text: l10n.legalPrivacy,
                               style: const TextStyle(
                                 color: HbColors.brandPrimary,
                                 fontWeight: FontWeight.w600,
@@ -431,12 +441,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text(
-                            'Créer mon compte',
-                            style: TextStyle(
+                        : Text(
+                            l10n.authRegisterCreateMyAccount,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -450,7 +461,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Déjà un compte ? ',
+                      '${l10n.authAlreadyHaveAccount} ',
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                     TextButton(
@@ -460,9 +471,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text(
-                        'Se connecter',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.authLoginSubmit,
+                        style: const TextStyle(
                           color: HbColors.brandPrimary,
                           fontWeight: FontWeight.w600,
                         ),

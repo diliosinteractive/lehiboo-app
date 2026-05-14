@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/auth_provider.dart';
 
@@ -41,14 +42,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() {
       _isLocalLoading = true;
     });
-    
+
     // Tiny delay to ensure the UI renders the spinner
     await Future.delayed(const Duration(milliseconds: 50));
 
     final result = await ref.read(authProvider.notifier).login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
 
     if (!mounted) return;
     setState(() => _isLocalLoading = false);
@@ -89,6 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final authState = ref.watch(authProvider);
     final isLoading = authState.isLoading || _isLocalLoading;
 
@@ -125,7 +127,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           image: const DecorationImage(
-                            image: AssetImage('assets/images/logo_picto_lehiboo.png'),
+                            image: AssetImage(
+                                'assets/images/logo_picto_lehiboo.png'),
                             fit: BoxFit.cover,
                           ),
                           border: Border.all(
@@ -137,9 +140,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 32),
                     // Title
-                    const Text(
-                      'Bienvenue sur Le Hiboo !',
-                      style: TextStyle(
+                    Text(
+                      l10n.authLoginTitle,
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: HbColors.textSlate,
@@ -148,7 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Connectez-vous pour découvrir les événements près de chez vous',
+                      l10n.authLoginSubtitle,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -163,8 +166,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       textInputAction: TextInputAction.next,
                       enabled: !isLoading,
                       decoration: InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'votre@email.com',
+                        labelText: l10n.authEmailLabel,
+                        hintText: l10n.authEmailHint,
                         prefixIcon: const Icon(Icons.email_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -175,15 +178,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                          borderSide: const BorderSide(
+                              color: HbColors.brandPrimary, width: 2),
                         ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer votre email';
+                          return l10n.authEmailRequired;
                         }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Veuillez entrer un email valide';
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value)) {
+                          return l10n.authEmailInvalid;
                         }
                         return null;
                       },
@@ -197,12 +202,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       enabled: !isLoading,
                       onFieldSubmitted: (_) => _handleLogin(),
                       decoration: InputDecoration(
-                        labelText: 'Mot de passe',
-                        hintText: '••••••••',
+                        labelText: l10n.authPasswordLabel,
+                        hintText: l10n.authPasswordHint,
                         prefixIcon: const Icon(Icons.lock_outlined),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                           ),
                           onPressed: () {
                             setState(() {
@@ -219,12 +226,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                          borderSide: const BorderSide(
+                              color: HbColors.brandPrimary, width: 2),
                         ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer votre mot de passe';
+                          return l10n.authPasswordRequired;
                         }
                         return null;
                       },
@@ -234,10 +242,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: isLoading ? null : () => context.push('/forgot-password'),
-                        child: const Text(
-                          'Mot de passe oublié ?',
-                          style: TextStyle(
+                        onPressed: isLoading
+                            ? null
+                            : () => context.push('/forgot-password'),
+                        child: Text(
+                          l10n.authForgotPasswordLink,
+                          style: const TextStyle(
                             color: HbColors.brandPrimary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -264,12 +274,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 height: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
-                            : const Text(
-                                'Se connecter',
-                                style: TextStyle(
+                            : Text(
+                                l10n.authLoginSubmit,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -281,7 +292,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Column(
                       children: [
                         Text(
-                          'Pas encore de compte ?',
+                          l10n.authLoginNoAccount,
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                         const SizedBox(height: 16),
@@ -289,19 +300,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           width: double.infinity,
                           height: 56,
                           child: OutlinedButton(
-                            onPressed: isLoading ? null : () => context.push('/register'),
+                            onPressed: isLoading
+                                ? null
+                                : () => context.push('/register'),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              side: const BorderSide(color: HbColors.brandPrimary, width: 1.5),
+                              side: const BorderSide(
+                                  color: HbColors.brandPrimary, width: 1.5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
-                              'Créer un compte',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.authCreateAccount,
+                              style: const TextStyle(
                                 fontSize: 16,
-                                fontWeight: FontWeight.bold, // Increased weight for visibility
+                                fontWeight: FontWeight
+                                    .bold, // Increased weight for visibility
                                 color: HbColors.brandPrimary,
                               ),
                             ),
@@ -311,7 +326,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         TextButton(
                           onPressed: isLoading ? null : () => context.go('/'),
                           child: Text(
-                            'Continuer sans compte',
+                            l10n.authContinueAsGuest,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
