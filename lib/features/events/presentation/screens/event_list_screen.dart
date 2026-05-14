@@ -6,6 +6,7 @@ import 'package:lehiboo/features/events/domain/repositories/event_repository.dar
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
+import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
@@ -241,7 +242,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title ?? 'Explorer les événements'),
+        title: Text(widget.title ?? context.l10n.eventExploreTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -255,7 +256,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Rechercher une activité...',
+                hintText: context.l10n.eventSearchHintActivity,
                 hintStyle: TextStyle(color: Colors.grey[400]),
                 prefixIcon:
                     const Icon(Icons.search, color: HbColors.brandPrimary),
@@ -307,7 +308,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                 children: [
                   _QuickFilterChip(
-                    label: "Aujourd'hui",
+                    label: context.l10n.commonToday,
                     isSelected: filter.dateFilterType == DateFilterType.today,
                     onTap: () {
                       if (filter.dateFilterType == DateFilterType.today) {
@@ -319,7 +320,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   ),
                   const SizedBox(width: 8),
                   _QuickFilterChip(
-                    label: 'Demain',
+                    label: context.l10n.commonTomorrow,
                     isSelected:
                         filter.dateFilterType == DateFilterType.tomorrow,
                     onTap: () {
@@ -332,7 +333,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   ),
                   const SizedBox(width: 8),
                   _QuickFilterChip(
-                    label: 'Ce week-end',
+                    label: context.l10n.commonThisWeekend,
                     isSelected:
                         filter.dateFilterType == DateFilterType.thisWeekend,
                     onTap: () {
@@ -346,7 +347,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   ),
                   const SizedBox(width: 8),
                   _QuickFilterChip(
-                    label: 'Gratuit',
+                    label: context.l10n.commonFree,
                     icon: Icons.local_offer,
                     isSelected: filter.onlyFree,
                     onTap: () {
@@ -379,8 +380,9 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                           const SizedBox(width: 6),
                           Text(
                             filter.hasActiveFilters
-                                ? 'Filtres (${filter.activeFilterCount})'
-                                : 'Filtres',
+                                ? context.eventFiltersWithCount(
+                                    filter.activeFilterCount)
+                                : context.l10n.searchFiltersTitle,
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -432,8 +434,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 32),
                             child: Column(
                               children: [
-                                const Text(
-                                  "C'est tout pour le moment !",
+                                Text(
+                                  context.l10n.eventEndOfList,
                                   style: TextStyle(color: Colors.grey),
                                 ),
                                 const SizedBox(height: 16),
@@ -442,8 +444,9 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                                       isAlert: true),
                                   icon: const Icon(
                                       Icons.notifications_active_outlined),
-                                  label:
-                                      const Text('M\'alerter des nouveautés'),
+                                  label: Text(
+                                    context.l10n.searchAlertNewActivities,
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: HbColors.accentBlue,
                                     foregroundColor: Colors.white,
@@ -554,8 +557,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(hasNotifications
-              ? 'Alerte "${result.name}" créée avec notifications !'
-              : 'Recherche "${result.name}" enregistrée !'),
+              ? context.l10n.searchSavedAlertCreated(result.name)
+              : context.l10n.searchSavedSearchCreated(result.name)),
           backgroundColor: HbColors.accentBlue,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
@@ -588,8 +591,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Aucun événement trouvé',
+          Text(
+            context.l10n.eventNoEventsTitle,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -599,8 +602,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
           const SizedBox(height: 8),
           Text(
             filter.hasActiveFilters
-                ? 'Aucun résultat avec les filtres actuels'
-                : 'Il n\'y a pas d\'événements disponibles pour le moment',
+                ? context.l10n.eventNoResultsWithFilters
+                : context.l10n.eventNoEventsAvailable,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -621,7 +624,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Effacer les filtres'),
+              child: Text(context.l10n.searchClearFilters),
             ),
           ],
         ],
@@ -640,8 +643,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
             color: Colors.red,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Une erreur est survenue',
+          Text(
+            context.l10n.eventGenericErrorTitle,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -672,7 +675,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Réessayer'),
+            child: Text(context.l10n.searchRetry),
           ),
         ],
       ),

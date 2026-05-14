@@ -16,6 +16,7 @@ import '../widgets/airbnb_search_sheet.dart';
 import '../widgets/active_filter_chips.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/save_search_sheet.dart';
+import '../utils/search_l10n.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   final String? categorySlug;
@@ -168,8 +169,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     PetitBooToast.success(
       context,
       hasNotifications
-          ? 'Alerte "${result.name}" créée avec notifications !'
-          : 'Recherche "${result.name}" enregistrée !',
+          ? context.l10n.searchSavedAlertCreated(result.name)
+          : context.l10n.searchSavedSearchCreated(result.name),
     );
   }
 
@@ -219,9 +220,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               },
                               icon: const Icon(Icons.arrow_back),
                             ),
-                            const Text(
-                              'Rechercher',
-                              style: TextStyle(
+                            Text(
+                              context.l10n.searchAction,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -267,7 +268,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                             size: 18, color: Colors.grey[500]),
                                         const SizedBox(width: 4),
                                         Text(
-                                          'Recherche\nenregistrée',
+                                          context
+                                              .l10n.searchAlreadySavedMultiline,
                                           textAlign: TextAlign.start,
                                           style: TextStyle(
                                             color: Colors.grey[600],
@@ -296,17 +298,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     backgroundColor: HbColors.brandPrimary
                                         .withValues(alpha: 0.05),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.bookmark_border,
+                                      const Icon(Icons.bookmark_border,
                                           size: 18,
                                           color: HbColors.brandPrimary),
-                                      SizedBox(width: 4),
+                                      const SizedBox(width: 4),
                                       Text(
-                                        'Sauvegarder\nma recherche',
+                                        context.l10n.searchSaveSearchMultiline,
                                         textAlign: TextAlign.start,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: HbColors.brandPrimary,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10,
@@ -416,11 +418,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       const Icon(Icons.error_outline,
                           size: 48, color: Colors.red),
                       const SizedBox(height: 16),
-                      Text('Erreur: $error'),
+                      Text(context.l10n.homeErrorWithMessage(error.toString())),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () => ref.refresh(filteredEventsProvider),
-                        child: const Text('Réessayer'),
+                        child: Text(context.l10n.searchRetry),
                       ),
                     ],
                   ),
@@ -452,7 +454,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '$displayCount résultat${displayCount > 1 ? 's' : ''}',
+                displayCount == 1
+                    ? context.l10n.searchResult(displayCount)
+                    : context.l10n.searchResultsCount(displayCount),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -475,7 +479,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       const Icon(Icons.sort, size: 18, color: Colors.grey),
                       const SizedBox(width: 6),
                       Text(
-                        _getSortLabel(filter.sortBy),
+                        context.searchSortOptionLabel(filter.sortBy),
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey[700],
@@ -528,9 +532,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
             child: Column(
               children: [
-                const Text(
-                  "C'est tout pour le moment !",
-                  style: TextStyle(
+                Text(
+                  context.l10n.searchNoMoreResults,
+                  style: const TextStyle(
                     color: Colors.grey,
                     fontSize: 14,
                   ),
@@ -539,7 +543,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ElevatedButton.icon(
                   onPressed: () => _showCreateAlertDialog(context),
                   icon: const Icon(Icons.notifications_active_outlined),
-                  label: const Text('M\'alerter des nouveautés'),
+                  label: Text(context.l10n.searchAlertNewActivities),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.accentBlue,
                     foregroundColor: Colors.white,
@@ -556,27 +560,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
     ];
-  }
-
-  String _getSortLabel(SortOption sortBy) {
-    switch (sortBy) {
-      case SortOption.relevance:
-        return 'Pertinence';
-      case SortOption.newest:
-        return 'Nouveautés';
-      case SortOption.dateAsc:
-        return 'Date';
-      case SortOption.dateDesc:
-        return 'Date (desc)';
-      case SortOption.priceAsc:
-        return 'Prix';
-      case SortOption.priceDesc:
-        return 'Prix (desc)';
-      case SortOption.popularity:
-        return 'Popularité';
-      case SortOption.distance:
-        return 'Distance';
-    }
   }
 
   void _showSortOptions(
@@ -602,18 +585,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Text(
-                'Trier par',
-                style: TextStyle(
+                context.l10n.searchSortBy,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
             _SortOption(
-              label: 'Pertinence',
+              label: context.l10n.searchSortRelevance,
               icon: Icons.auto_awesome,
               isSelected: filter.sortBy == SortOption.relevance,
               onTap: () {
@@ -622,7 +605,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
             _SortOption(
-              label: 'Nouveautés',
+              label: context.l10n.searchSortNewest,
               icon: Icons.fiber_new,
               isSelected: filter.sortBy == SortOption.newest,
               onTap: () {
@@ -631,7 +614,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
             _SortOption(
-              label: 'Date (plus proche)',
+              label: context.l10n.searchSortDateAsc,
               icon: Icons.calendar_today,
               isSelected: filter.sortBy == SortOption.dateAsc,
               onTap: () {
@@ -640,7 +623,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
             _SortOption(
-              label: 'Prix (croissant)',
+              label: context.l10n.searchSortPriceAsc,
               icon: Icons.arrow_upward,
               isSelected: filter.sortBy == SortOption.priceAsc,
               onTap: () {
@@ -649,7 +632,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
             _SortOption(
-              label: 'Prix (décroissant)',
+              label: context.l10n.searchSortPriceDesc,
               icon: Icons.arrow_downward,
               isSelected: filter.sortBy == SortOption.priceDesc,
               onTap: () {
@@ -658,7 +641,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
             _SortOption(
-              label: 'Popularité',
+              label: context.l10n.searchSortPopularity,
               icon: Icons.trending_up,
               isSelected: filter.sortBy == SortOption.popularity,
               onTap: () {
@@ -703,8 +686,8 @@ class _EmptyResults extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               hasFilters
-                  ? 'Aucun résultat pour ces filtres'
-                  : 'Commencez votre recherche',
+                  ? context.l10n.searchNoResultsForFilters
+                  : context.l10n.searchStartTitle,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -715,8 +698,8 @@ class _EmptyResults extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               hasFilters
-                  ? 'Essayez de modifier ou supprimer certains filtres pour voir plus de résultats.'
-                  : 'Utilisez la barre de recherche ci-dessus pour trouver des activités.',
+                  ? context.l10n.searchNoResultsBody
+                  : context.l10n.searchStartBody,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -731,7 +714,7 @@ class _EmptyResults extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: onCreateAlert,
                   icon: const Icon(Icons.notifications_active_outlined),
-                  label: const Text('M\'alerter des nouveaux événements'),
+                  label: Text(context.l10n.searchAlertNewEvents),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.accentBlue, // Bleu foncé
                     foregroundColor: Colors.white,
@@ -750,7 +733,7 @@ class _EmptyResults extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 icon: const Icon(Icons.clear),
-                label: const Text('Effacer les filtres'),
+                label: Text(context.l10n.searchClearFilters),
               ),
             ],
             const SizedBox(height: 40),

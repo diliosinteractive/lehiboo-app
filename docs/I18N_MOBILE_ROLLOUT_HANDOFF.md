@@ -25,6 +25,7 @@ The localization infrastructure is in place and the first rollout slices are com
 4. Registration entry and post-signup permission onboarding copy.
 5. Customer/business multi-step registration form copy.
 6. Active Home surface copy.
+7. Search and filter user-facing copy.
 
 The app is not fully translated yet. Many screens still contain hard-coded French UI copy, but the app now has the wiring needed to migrate them screen by screen.
 
@@ -258,7 +259,67 @@ Covered:
 Not covered in this slice:
 
 - Disabled/legacy Home widgets that are not mounted by `home_screen.dart`, such as `recommended_section.dart`, `personalized_section.dart`, `partner_highlight.dart`, and `native_ad_card.dart`.
-- Search/filter sheet internals beyond the Home search pill.
+
+### Search And Filters
+
+Migrated:
+
+- `lib/features/search/presentation/screens/search_screen.dart`
+- `lib/features/search/presentation/screens/filter_screen.dart`
+- `lib/features/search/presentation/widgets/active_filter_chips.dart`
+- `lib/features/search/presentation/widgets/airbnb_search_bar.dart`
+- `lib/features/search/presentation/widgets/airbnb_search_sheet.dart`
+- `lib/features/search/presentation/widgets/filter_bottom_sheet.dart`
+- `lib/features/search/presentation/widgets/filter_shared_components.dart`
+- `lib/features/search/presentation/widgets/home_search_pill.dart`
+- `lib/features/search/presentation/widgets/save_search_sheet.dart`
+- `lib/features/search/presentation/utils/search_l10n.dart`
+
+Covered:
+
+- Search screen app bar, save-search CTA states, result counts, sorting sheet, empty states, retry/end-of-list copy, alert/save success toasts, and active filter chips.
+- Compact and expanded search bars, quick filters, where/when/what panels, category/search hints, location permission errors, geolocation radius labels, and search action labels.
+- Filter bottom sheet section titles, search/city/category autocomplete empty states, location/date/budget/audience/format/availability/location-type/sort labels, footer action count, and clear actions.
+- Save-search sheet title, subtitle, summary prefix, default name, name validation, notification toggles, cancel/save buttons, and locale-aware date summary.
+- Shared search l10n helpers for date, price, sort, location type, radius, and action labels.
+
+Not covered in this slice:
+
+- `lib/features/search/domain/models/event_filter.dart` still has legacy context-free French label getters (`dateFilterLabel`, `priceFilterLabel`). Newly migrated Search UI and the current event list/map batch avoid them, but other older surfaces may still show those values.
+
+### Event Browse And Core Detail
+
+Migrated:
+
+- `lib/features/events/presentation/screens/event_list_screen.dart`
+- `lib/features/events/presentation/screens/map_view_screen.dart`
+- `lib/features/events/presentation/widgets/map_event_card.dart`
+- `lib/features/events/presentation/screens/event_detail_screen.dart`
+- `lib/features/events/presentation/widgets/detail/event_compact_header.dart`
+- `lib/features/events/presentation/widgets/detail/event_social_proof.dart`
+- `lib/features/events/presentation/utils/event_l10n.dart`
+
+Covered:
+
+- Event list title, search hint, quick filter chips, filter count label, empty/error states, end-of-list copy, alert/save success toasts, and retry/clear buttons.
+- Map geolocation error, map marker free label, grouped-events sheet title, quick filter chips, loading pill, empty-map Petit Boo helper, map card price label, and active filter chip labels.
+- Core detail error state, selected date label, soon-available date notice, about/pricing/characteristics sections, read-more/show-less label, discovery price states, cart choice sheet, booking validation snackbars, all-dates modal title, full/choose slot labels, compact header ticketing/discovery chip, fallback place/category/audience labels, and featured/recommended/new badges.
+- Shared event l10n helpers for event categories, audiences, date-at-time, filter count, all-dates count, and map grouped-event count.
+
+Not covered in this slice:
+
+- Deep event detail subwidgets still have hard-coded French and need the next event-specific pass, especially:
+  - `event_date_selector.dart`
+  - `event_ticket_card.dart`
+  - `event_sticky_booking_bar.dart`
+  - `event_practical_info.dart`
+  - `event_accessibility_section.dart`
+  - `event_location_map.dart`
+  - `event_qa_section.dart`
+  - `event_questions_screen.dart`
+  - `ask_question_sheet.dart`
+  - `question_card.dart`
+  - gallery/password/share/practical-info sheets as needed.
 
 ## Verification Already Run
 
@@ -319,6 +380,36 @@ Result:
 - Analyzer output is only info-level existing style/deprecation notes in touched Home files, mainly `withOpacity`, `prefer_const_*`, and `sized_box_for_whitespace`.
 - Locale tests passed.
 
+Latest focused Search/filter check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/search/presentation/utils/search_l10n.dart lib/features/search/presentation/widgets/active_filter_chips.dart lib/features/search/presentation/widgets/home_search_pill.dart lib/features/search/presentation/screens/search_screen.dart lib/features/search/presentation/widgets/airbnb_search_bar.dart lib/features/search/presentation/widgets/filter_bottom_sheet.dart lib/features/search/presentation/widgets/save_search_sheet.dart lib/features/search/presentation/widgets/airbnb_search_sheet.dart lib/features/search/presentation/widgets/filter_shared_components.dart lib/features/search/presentation/screens/filter_screen.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos lib/features/search/presentation lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- Analyzer output is only info-level `prefer_const_constructors` notes in `airbnb_search_bar.dart`.
+- Locale tests passed.
+
+Latest focused Event browse/core-detail check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/events/presentation/utils/event_l10n.dart lib/features/events/presentation/screens/event_list_screen.dart lib/features/events/presentation/screens/map_view_screen.dart lib/features/events/presentation/widgets/map_event_card.dart lib/features/events/presentation/screens/event_detail_screen.dart lib/features/events/presentation/widgets/detail/event_compact_header.dart lib/features/events/presentation/widgets/detail/event_social_proof.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos lib/features/events/presentation/screens/event_list_screen.dart lib/features/events/presentation/screens/map_view_screen.dart lib/features/events/presentation/widgets/map_event_card.dart lib/features/events/presentation/screens/event_detail_screen.dart lib/features/events/presentation/widgets/detail/event_compact_header.dart lib/features/events/presentation/widgets/detail/event_social_proof.dart lib/features/events/presentation/utils/event_l10n.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- Analyzer output is only info-level existing lint/style debt in touched event files: `prefer_const_constructors`, `withOpacity`, and `use_build_context_synchronously`.
+- Locale tests passed.
+
 Targeted analyzer checks:
 
 - Booking files no longer have analyzer errors after null-safety cleanup.
@@ -357,17 +448,29 @@ Known unrelated or pre-existing dirty entries observed during this work:
   - `docs/MOBILE_EVENT_FILTERS_INTEGRATION.md`
 - Events/search files not touched by the active Home i18n slice were also observed dirty:
   - `lib/features/events/data/datasources/events_api_datasource.dart`
+  - `lib/features/events/data/models/event_reference_data_dto.dart`
   - `lib/features/events/data/repositories/event_repository_impl.dart`
   - `lib/features/events/domain/repositories/event_repository.dart`
+  - `lib/features/events/presentation/providers/event_providers.dart`
+  - Event browse/core-detail files are now part of the i18n work:
+    - `lib/features/events/presentation/screens/event_detail_screen.dart`
+    - `lib/features/events/presentation/screens/event_list_screen.dart`
+    - `lib/features/events/presentation/screens/map_view_screen.dart`
+    - `lib/features/events/presentation/widgets/detail/event_compact_header.dart`
+    - `lib/features/events/presentation/widgets/detail/event_social_proof.dart`
+    - `lib/features/events/presentation/widgets/map_event_card.dart`
+    - `lib/features/events/presentation/utils/event_l10n.dart`
   - `lib/features/events/data/models/search_suggestions_dto.dart`
+  - `lib/features/search/domain/models/event_filter.dart`
   - `lib/features/search/presentation/providers/filter_provider.dart`
   - `lib/features/search/presentation/widgets/filter_bottom_sheet.dart`
+  - `test/features/search/widgets/active_filter_chips_provider_test.dart`
 
 Before committing or refining, review diffs by file instead of using bulk restore/reset commands.
 
 ## Where Work Stopped
 
-Stopped after completing the active Home surface copy slice.
+Stopped after completing the Event browse/core-detail copy slice.
 
 Current stable stopping point:
 
@@ -379,10 +482,12 @@ Current stable stopping point:
 - Active register type selector, legacy simple register screen, and permission onboarding screens are localized.
 - Customer and business multi-step registration forms are localized.
 - Active Home surface chrome, hero, cards, stories, ads fallback, city detail, and Home search pill copy are localized.
+- Search screen, search sheets, filter sheet, active chips, and save-search sheet copy are localized.
+- Event list, map, map cards, core detail sections, core detail booking/cart sheet, compact header, and event badges are localized.
 - Direct hard-coded `featureName: '...'` / `featureName: "..."` scan under `lib/` is clean.
 - Locale unit tests pass.
 
-Next work should continue with Search and filters user-facing copy, not more locale plumbing.
+Next work should continue with deep Event detail subwidgets, not more locale plumbing.
 
 ## Remaining Task Queue
 
@@ -390,13 +495,12 @@ Next work should continue with Search and filters user-facing copy, not more loc
 
 Recommended order:
 
-1. Search and filters.
-2. Event list/detail.
-3. Booking flow.
-4. Profile/settings subpages.
-5. Messages.
-6. Petit Boo chat and tool cards.
-7. Memberships/partners/check-in/admin surfaces.
+1. Deep Event detail subwidgets: date selector, tickets/sticky booking bar, practical info, accessibility, location, Q&A/questions, gallery/password/share sheets.
+2. Booking flow.
+3. Profile/settings subpages.
+4. Messages.
+5. Petit Boo chat and tool cards.
+6. Memberships/partners/check-in/admin surfaces.
 
 For each screen:
 

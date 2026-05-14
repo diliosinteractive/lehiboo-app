@@ -31,6 +31,7 @@ import '../widgets/detail/event_qa_section.dart';
 import '../widgets/detail/event_similar_carousel.dart';
 import '../widgets/detail/event_share_sheet.dart';
 import '../widgets/detail/event_sticky_booking_bar.dart';
+import '../utils/event_l10n.dart';
 import '../../../memberships/domain/exceptions/members_only_exception.dart';
 import '../../../memberships/presentation/widgets/members_only_gate.dart';
 import '../../../reviews/presentation/widgets/event_reviews_section.dart';
@@ -162,28 +163,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
     if (slot.id != _selectedSlotId) return null;
 
-    final months = [
-      'Jan',
-      'Fév',
-      'Mars',
-      'Avr',
-      'Mai',
-      'Juin',
-      'Juil',
-      'Août',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Déc'
-    ];
-    final days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-
-    final dayName = days[slot.date.weekday - 1];
-    final monthName = months[slot.date.month - 1];
-    final dateStr = '$dayName ${slot.date.day} $monthName';
+    final dateStr = context
+        .appDateFormat('EEE d MMM', enPattern: 'EEE, MMM d')
+        .format(slot.date);
 
     if (slot.startTime != null) {
-      return '$dateStr à ${slot.startTime}';
+      return context.eventDateAtTime(dateStr, slot.startTime!);
     }
     return dateStr;
   }
@@ -337,7 +322,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget _buildErrorState(Object error) {
     final message = ApiResponseHandler.extractError(
       error,
-      fallback: 'Impossible de charger l\'activité.',
+      fallback: context.l10n.eventLoadError,
     );
 
     return Center(
@@ -360,7 +345,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 OutlinedButton.icon(
                   onPressed: () => context.pop(),
                   icon: const Icon(Icons.arrow_back, size: 18),
-                  label: const Text('Retour'),
+                  label: Text(context.l10n.commonBack),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.grey.shade700,
                     side: BorderSide(color: Colors.grey.shade300),
@@ -374,7 +359,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   onPressed: () => ref.invalidate(
                       eventDetailControllerProvider(widget.eventId)),
                   icon: const Icon(Icons.refresh, size: 18),
-                  label: const Text('Réessayer'),
+                  label: Text(context.l10n.searchRetry),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
@@ -739,7 +724,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Dates bientôt disponibles. Contactez l\'organisateur pour plus d\'infos.',
+                  context.l10n.eventDatesSoonAvailable,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade700,
@@ -771,8 +756,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Widget _buildDateSelectorWidget(Event event, List<CalendarDateSlot> slots) {
-    final isDiscovery = !event.hasDirectBooking;
-
     return EventDateSelector(
       slots: slots,
       selectedSlotId: _selectedSlotId,
@@ -839,8 +822,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'À propos de l\'événement',
+          Text(
+            context.l10n.eventAboutTitle,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -882,7 +865,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 child: Row(
                   children: [
                     Text(
-                      _isDescriptionExpanded ? 'Voir moins' : 'Lire la suite',
+                      _isDescriptionExpanded
+                          ? context.l10n.searchShowLess
+                          : context.l10n.eventReadMore,
                       style: const TextStyle(
                         color: HbColors.brandPrimary,
                         fontWeight: FontWeight.w600,
@@ -914,8 +899,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tarification',
+          Text(
+            context.l10n.eventPricingTitle,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -948,7 +933,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           Icon(Icons.info_outline, size: 16, color: Colors.grey.shade400),
           const SizedBox(width: 8),
           Text(
-            'Non définie',
+            context.l10n.eventUndefined,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade600,
@@ -968,8 +953,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               color: HbColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
-              'Gratuit',
+            child: Text(
+              context.l10n.commonFree,
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -979,7 +964,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           ),
           const SizedBox(width: 10),
           Text(
-            'Aucun frais d\'entrée',
+            context.l10n.eventNoEntryFee,
             style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
           ),
         ],
@@ -995,7 +980,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Prix indicatifs communiqués par l\'organisateur',
+            context.l10n.eventIndicativePrices,
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
           const SizedBox(height: 12),
@@ -1034,7 +1019,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         Icon(Icons.info_outline, size: 16, color: Colors.grey.shade400),
         const SizedBox(width: 8),
         Text(
-          'Non définie',
+          context.l10n.eventUndefined,
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade600,
@@ -1086,8 +1071,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Caractéristiques',
+          Text(
+            context.l10n.eventCharacteristicsTitle,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1217,9 +1202,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lien de réservation invalide'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.eventInvalidBookingLink),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -1230,9 +1215,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (_selectedSlotId == null) {
       _scrollToDateSection();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez d\'abord choisir une date'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.eventChooseDateFirst),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -1241,9 +1226,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     // Vérification: au moins un billet sélectionné
     if (_totalTickets == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner au moins un billet'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.eventSelectAtLeastOneTicket),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -1277,9 +1262,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   ),
                   alignment: Alignment.center,
                 ),
-                const Text(
-                  'Que voulez-vous faire ?',
-                  style: TextStyle(
+                Text(
+                  context.l10n.eventBookingChoiceTitle,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: HbColors.textPrimary,
@@ -1287,7 +1272,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ajoutez ces billets au panier pour les payer avec d autres evenements, ou finalisez maintenant.',
+                  context.l10n.eventBookingChoiceBody,
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 18),
@@ -1309,17 +1294,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         );
                     messenger.showSnackBar(
                       SnackBar(
-                        content: const Text('Billets ajoutes au panier'),
+                        content: Text(context.l10n.eventTicketsAddedToCart),
                         duration: const Duration(seconds: 6),
                         action: SnackBarAction(
-                          label: 'Voir',
+                          label: context.l10n.eventView,
                           onPressed: () => router.push('/cart'),
                         ),
                       ),
                     );
                   },
                   icon: const Icon(Icons.add_shopping_cart),
-                  label: const Text('Ajouter au panier'),
+                  label: Text(context.l10n.eventAddToCart),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -1346,7 +1331,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     router.push('/cart');
                   },
                   icon: const Icon(Icons.lock),
-                  label: const Text('Reserver maintenant'),
+                  label: Text(context.l10n.eventBookNow),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
@@ -1396,7 +1381,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Toutes les dates (${slots.length})',
+                      context.eventAllDatesCount(slots.length),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1509,7 +1494,7 @@ class _DateSlotModalCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _formatDate(slot.date),
+                    _formatDate(context, slot.date),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -1537,9 +1522,9 @@ class _DateSlotModalCard extends StatelessWidget {
                   color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'Complet',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.eventFull,
+                  style: const TextStyle(
                     color: Colors.grey,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1566,9 +1551,9 @@ class _DateSlotModalCard extends StatelessWidget {
                   color: HbColors.brandPrimary,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'Choisir',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.eventChoose,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1580,33 +1565,12 @@ class _DateSlotModalCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'janvier',
-      'février',
-      'mars',
-      'avril',
-      'mai',
-      'juin',
-      'juillet',
-      'août',
-      'septembre',
-      'octobre',
-      'novembre',
-      'décembre'
-    ];
-    final days = [
-      'lundi',
-      'mardi',
-      'mercredi',
-      'jeudi',
-      'vendredi',
-      'samedi',
-      'dimanche'
-    ];
-    final dayName = days[date.weekday - 1];
-    final monthName = months[date.month - 1];
-    return '${dayName[0].toUpperCase()}${dayName.substring(1)} ${date.day} $monthName';
+  String _formatDate(BuildContext context, DateTime date) {
+    final formatted = context
+        .appDateFormat('EEEE d MMMM', enPattern: 'EEEE, MMMM d')
+        .format(date);
+    if (formatted.isEmpty) return formatted;
+    return formatted[0].toUpperCase() + formatted.substring(1);
   }
 
   String _formatTimeRange() {

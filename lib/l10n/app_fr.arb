@@ -741,5 +741,374 @@
   "homeCategoryCulture": "Culture",
   "homeCategoryMarkets": "Marchés",
   "homeCategoryLeisure": "Loisirs",
-  "homeBrowseByCity": "Parcourir par ville"
+  "homeBrowseByCity": "Parcourir par ville",
+  "searchTitle": "Recherche",
+  "searchFiltersTitle": "Filtres",
+  "searchClear": "Effacer",
+  "searchClearAllWithCount": "Tout effacer ({count})",
+  "@searchClearAllWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchAction": "Rechercher",
+  "searchActionWithActivity": "Rechercher · {count} activité",
+  "@searchActionWithActivity": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchActionWithActivities": "Rechercher · {count} activités",
+  "@searchActionWithActivities": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchSearchActivityTitle": "Rechercher une activité",
+  "searchAroundMe": "Autour de moi",
+  "searchAnywhere": "N'importe où",
+  "searchAnytime": "N'importe quand",
+  "searchAnyActivityType": "Tout type d'activité",
+  "searchSearchSubtitleDefault": "Titre, organisateur",
+  "searchForWhom": "Pour qui ?",
+  "searchAllAudiences": "Tous les publics",
+  "searchRefineTitle": "Affiner la recherche",
+  "searchRefineSubtitleDefault": "Type, thématique, ambiance",
+  "searchFilterSingular": "1 filtre",
+  "searchFiltersCount": "{count} filtres",
+  "@searchFiltersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchCategorySingular": "1 catégorie",
+  "searchCategoriesCount": "{count} catégories",
+  "@searchCategoriesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchAudienceSingular": "1 public",
+  "searchAudiencesCount": "{count} publics",
+  "@searchAudiencesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchMyPosition": "Ma position",
+  "searchUseCurrentLocation": "Utiliser ma position actuelle",
+  "searchWithinRadius": "Dans un rayon de {radius} km",
+  "@searchWithinRadius": {
+    "placeholders": {
+      "radius": {
+        "type": "int"
+      }
+    }
+  },
+  "searchRadiusLabel": "Rayon :",
+  "searchRadiusAroundCity": "Rayon autour de {cityName}",
+  "@searchRadiusAroundCity": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      }
+    }
+  },
+  "searchLocationDisabled": "Activez la localisation",
+  "searchPermissionDenied": "Permission refusée",
+  "searchLocationSettingsRequired": "Activez la localisation dans les paramètres",
+  "searchLocationNotFound": "Position introuvable",
+  "searchSavedAlertCreated": "Alerte \"{name}\" créée avec notifications !",
+  "@searchSavedAlertCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "searchSavedSearchCreated": "Recherche \"{name}\" enregistrée !",
+  "@searchSavedSearchCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "searchAlreadySaved": "Déjà enregistrée",
+  "searchSave": "Enregistrer",
+  "searchSaveAlert": "Créer une alerte",
+  "searchAlreadySavedMultiline": "Recherche\nenregistrée",
+  "searchSaveSearchMultiline": "Sauvegarder\nma recherche",
+  "searchRetry": "Réessayer",
+  "searchResult": "{count} résultat",
+  "searchResultsCount": "{count} résultats",
+  "searchNoMoreResults": "C'est tout pour le moment !",
+  "searchAlertNewActivities": "M'alerter des nouveautés",
+  "searchSortBy": "Trier par",
+  "searchSortRelevance": "Pertinence",
+  "searchNoResultsForFilters": "Aucun résultat pour ces filtres",
+  "searchStartTitle": "Commencez votre recherche",
+  "searchNoResultsTitle": "Aucune activité trouvée",
+  "searchNoResultsBody": "Essayez de modifier vos filtres ou d'élargir votre zone de recherche.",
+  "searchStartBody": "Utilisez la barre de recherche ci-dessus pour trouver des activités.",
+  "searchAlertNewEvents": "M'alerter des nouveaux événements",
+  "searchClearFilters": "Effacer les filtres",
+  "searchResultsActivity": "{count} activité",
+  "@searchResultsActivity": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchResultsActivities": "{count} activités",
+  "@searchResultsActivities": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchDateToday": "Aujourd'hui",
+  "searchDateTomorrow": "Demain",
+  "searchDateThisWeek": "Cette semaine",
+  "searchDateThisWeekend": "Ce week-end",
+  "searchDateThisMonth": "Ce mois-ci",
+  "searchDateCustom": "Dates personnalisées",
+  "searchPricePaid": "Payant",
+  "searchPriceRange": "{min}€ - {max}€",
+  "@searchPriceRange": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "searchAroundMeWithRadius": "Autour de moi ({radius} km)",
+  "@searchAroundMeWithRadius": {
+    "placeholders": {
+      "radius": {
+        "type": "int"
+      }
+    }
+  },
+  "searchCityWithRadius": "{cityName} · {radius} km",
+  "@searchCityWithRadius": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      },
+      "radius": {
+        "type": "int"
+      }
+    }
+  },
+  "searchAvailablePlaces": "Places disponibles",
+  "searchAccessiblePmr": "Accessible PMR",
+  "searchOnline": "En ligne",
+  "searchInPerson": "En présentiel",
+  "searchLocationTypePhysical": "Lieu physique",
+  "searchLocationTypeOffline": "Hors ligne",
+  "searchLocationTypeOnline": "En ligne",
+  "searchLocationTypeHybrid": "Hybride",
+  "searchHintEventOrOrganization": "Événement ou organisation",
+  "searchNoSuggestions": "Aucune suggestion",
+  "searchSectionThemes": "Thématiques",
+  "searchSectionEventType": "Type d'événement",
+  "searchSectionSpecialEvents": "Temps forts",
+  "searchSectionMood": "Ambiance",
+  "searchSectionDate": "Date",
+  "searchSectionCategories": "Catégories",
+  "searchSectionSort": "Tri",
+  "searchSectionLocation": "Localisation",
+  "searchSectionBudget": "Budget",
+  "searchSectionFormat": "Format",
+  "searchSectionAudience": "Public",
+  "searchSectionLocationType": "Type de lieu",
+  "searchChoosePeriod": "Choisissez une période",
+  "searchChooseCustomDates": "Choisir des dates personnalisées",
+  "searchFreeOnlyTitle": "Gratuit uniquement",
+  "searchFreeOnlySubtitle": "Afficher seulement les activités gratuites",
+  "searchPriceRangeTitle": "Fourchette de prix",
+  "searchAll": "Tous",
+  "searchNoThemeAvailable": "Aucune thématique disponible",
+  "searchShowLess": "Voir moins",
+  "searchShowMoreWithCount": "Voir plus ({count})",
+  "@searchShowMoreWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchLoadError": "Chargement impossible",
+  "searchHintCity": "Rechercher une ville",
+  "searchPopularCities": "VILLES POPULAIRES",
+  "searchResults": "RÉSULTATS",
+  "searchMinCharacters": "Saisissez au moins {count} caractères",
+  "@searchMinCharacters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchNoCityFound": "Aucune ville trouvée",
+  "searchCitiesUnavailable": "Villes indisponibles",
+  "searchHintCategory": "Rechercher une catégorie",
+  "searchNoCategoryFound": "Aucune catégorie trouvée",
+  "searchCategoriesUnavailable": "Catégories indisponibles",
+  "searchFamilyTitle": "Famille",
+  "searchFamilySubtitle": "Activités adaptées aux enfants",
+  "searchAudienceGroup": "En groupe",
+  "searchAudienceSchoolGroup": "Groupe scolaire",
+  "searchAudienceProfessional": "Professionnel",
+  "searchAccessibleSubtitle": "Accessibilité mobilité réduite",
+  "searchOnlineSubtitle": "Activités virtuelles",
+  "searchInPersonSubtitle": "Activités sur place",
+  "searchAvailabilityTitle": "Disponibilités",
+  "searchAvailabilitySubtitle": "Masquer les activités complètes",
+  "searchAvailabilityPanelTitle": "Disponibilité",
+  "searchAllActivities": "Toutes les activités",
+  "searchAvailableOnlyTitle": "Places disponibles uniquement",
+  "searchNoAudienceAvailable": "Aucun public disponible",
+  "searchAudiencesUnavailable": "Publics indisponibles",
+  "searchOptionsUnavailable": "Options indisponibles",
+  "searchLocationIndoor": "En intérieur",
+  "searchLocationOutdoor": "En extérieur",
+  "searchLocationMixed": "Mixte",
+  "searchSortNewest": "Nouveautés",
+  "searchSortDateAsc": "Date (proche)",
+  "searchSortDateDesc": "Date (plus tard)",
+  "searchSortPriceAsc": "Prix croissant",
+  "searchSortPriceDesc": "Prix décroissant",
+  "searchSortPopularity": "Popularité",
+  "searchSortDistance": "Distance",
+  "searchSaveSheetTitle": "Sauvegarder la recherche",
+  "searchSaveSheetSubtitle": "Retrouvez facilement cette recherche et recevez des alertes pour les nouveaux événements.",
+  "searchDefaultName": "Ma recherche",
+  "searchAllEvents": "Tous les événements",
+  "searchSummaryPrefix": "Filtres : {summary}",
+  "@searchSummaryPrefix": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNameRequired": "Veuillez entrer un nom pour la recherche",
+  "searchNameAlreadyUsed": "Ce nom est déjà utilisé. Choisissez un autre nom.",
+  "searchNameLabel": "Nom de la recherche",
+  "searchNameHint": "Ex : Concerts à Paris ce week-end",
+  "searchNotificationsTitle": "Notifications",
+  "searchPushSubtitle": "Notifications sur l'app mobile",
+  "searchEmailSubtitle": "Recevez un email pour chaque nouvel événement",
+  "searchSaveButton": "Sauvegarder",
+  "eventExploreTitle": "Explorer les événements",
+  "eventSearchHintActivity": "Rechercher une activité...",
+  "eventFiltersWithCount": "Filtres ({count})",
+  "@eventFiltersWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventEndOfList": "C'est tout pour le moment !",
+  "eventNoEventsTitle": "Aucun événement trouvé",
+  "eventNoResultsWithFilters": "Aucun résultat avec les filtres actuels",
+  "eventNoEventsAvailable": "Il n'y a pas d'événements disponibles pour le moment",
+  "eventGenericErrorTitle": "Une erreur est survenue",
+  "eventMapLocationError": "Impossible de récupérer votre position",
+  "eventMapEventsHere": "{count} événements ici",
+  "@eventMapEventsHere": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventMapSearching": "Recherche en cours...",
+  "eventMapEmptyHelp": "Oups, c'est calme par ici !\nBesoin d'un coup de pouce ?",
+  "eventLoadError": "Impossible de charger l'activité.",
+  "eventDateAtTime": "{date} à {time}",
+  "@eventDateAtTime": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDatesSoonAvailable": "Dates bientôt disponibles. Contactez l'organisateur pour plus d'infos.",
+  "eventAboutTitle": "À propos de l'événement",
+  "eventReadMore": "Lire la suite",
+  "eventPricingTitle": "Tarification",
+  "eventUndefined": "Non définie",
+  "eventNoEntryFee": "Aucun frais d'entrée",
+  "eventIndicativePrices": "Prix indicatifs communiqués par l'organisateur",
+  "eventPriceFromPrefix": "À partir de ",
+  "eventCharacteristicsTitle": "Caractéristiques",
+  "eventInvalidBookingLink": "Lien de réservation invalide",
+  "eventChooseDateFirst": "Veuillez d'abord choisir une date",
+  "eventSelectAtLeastOneTicket": "Veuillez sélectionner au moins un billet",
+  "eventBookingChoiceTitle": "Que voulez-vous faire ?",
+  "eventBookingChoiceBody": "Ajoutez ces billets au panier pour les payer avec d'autres événements, ou finalisez maintenant.",
+  "eventTicketsAddedToCart": "Billets ajoutés au panier",
+  "eventView": "Voir",
+  "eventAddToCart": "Ajouter au panier",
+  "eventBookNow": "Réserver maintenant",
+  "eventAllDatesCount": "Toutes les dates ({count})",
+  "@eventAllDatesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFull": "Complet",
+  "eventChoose": "Choisir",
+  "eventTicketing": "Billetterie",
+  "eventDiscovery": "Découverte",
+  "eventFeatured": "En vedette",
+  "eventRecommended": "Recommandé",
+  "eventNew": "Nouveau",
+  "eventPlaceNotSpecified": "Lieu non précisé",
+  "eventCategoryWorkshop": "Atelier",
+  "eventCategoryShow": "Spectacle",
+  "eventCategoryFestival": "Festival",
+  "eventCategoryConcert": "Concert",
+  "eventCategoryExhibition": "Exposition",
+  "eventCategorySport": "Sport",
+  "eventCategoryCulture": "Culture",
+  "eventCategoryMarket": "Marché",
+  "eventCategoryLeisure": "Loisirs",
+  "eventCategoryOutdoor": "Plein air",
+  "eventCategoryIndoor": "Intérieur",
+  "eventCategoryTheater": "Théâtre",
+  "eventCategoryCinema": "Cinéma",
+  "eventCategoryOther": "Événement",
+  "eventAudienceAll": "Tout public",
+  "eventAudienceFamily": "Famille",
+  "eventAudienceChildren": "Enfants",
+  "eventAudienceTeenagers": "Ados",
+  "eventAudienceAdults": "Adultes",
+  "eventAudienceSeniors": "Seniors"
 }

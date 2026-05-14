@@ -2545,6 +2545,1242 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Parcourir par ville'**
   String get homeBrowseByCity;
+
+  /// No description provided for @searchTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche'**
+  String get searchTitle;
+
+  /// No description provided for @searchFiltersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtres'**
+  String get searchFiltersTitle;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer'**
+  String get searchClear;
+
+  /// No description provided for @searchClearAllWithCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout effacer ({count})'**
+  String searchClearAllWithCount(int count);
+
+  /// No description provided for @searchAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher'**
+  String get searchAction;
+
+  /// No description provided for @searchActionWithActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher · {count} activité'**
+  String searchActionWithActivity(int count);
+
+  /// No description provided for @searchActionWithActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher · {count} activités'**
+  String searchActionWithActivities(int count);
+
+  /// No description provided for @searchSearchActivityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une activité'**
+  String get searchSearchActivityTitle;
+
+  /// No description provided for @searchAroundMe.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autour de moi'**
+  String get searchAroundMe;
+
+  /// No description provided for @searchAnywhere.
+  ///
+  /// In fr, this message translates to:
+  /// **'N\'importe où'**
+  String get searchAnywhere;
+
+  /// No description provided for @searchAnytime.
+  ///
+  /// In fr, this message translates to:
+  /// **'N\'importe quand'**
+  String get searchAnytime;
+
+  /// No description provided for @searchAnyActivityType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout type d\'activité'**
+  String get searchAnyActivityType;
+
+  /// No description provided for @searchSearchSubtitleDefault.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre, organisateur'**
+  String get searchSearchSubtitleDefault;
+
+  /// No description provided for @searchForWhom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour qui ?'**
+  String get searchForWhom;
+
+  /// No description provided for @searchAllAudiences.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les publics'**
+  String get searchAllAudiences;
+
+  /// No description provided for @searchRefineTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affiner la recherche'**
+  String get searchRefineTitle;
+
+  /// No description provided for @searchRefineSubtitleDefault.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type, thématique, ambiance'**
+  String get searchRefineSubtitleDefault;
+
+  /// No description provided for @searchFilterSingular.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 filtre'**
+  String get searchFilterSingular;
+
+  /// No description provided for @searchFiltersCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} filtres'**
+  String searchFiltersCount(int count);
+
+  /// No description provided for @searchCategorySingular.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 catégorie'**
+  String get searchCategorySingular;
+
+  /// No description provided for @searchCategoriesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} catégories'**
+  String searchCategoriesCount(int count);
+
+  /// No description provided for @searchAudienceSingular.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 public'**
+  String get searchAudienceSingular;
+
+  /// No description provided for @searchAudiencesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} publics'**
+  String searchAudiencesCount(int count);
+
+  /// No description provided for @searchMyPosition.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ma position'**
+  String get searchMyPosition;
+
+  /// No description provided for @searchUseCurrentLocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utiliser ma position actuelle'**
+  String get searchUseCurrentLocation;
+
+  /// No description provided for @searchWithinRadius.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dans un rayon de {radius} km'**
+  String searchWithinRadius(int radius);
+
+  /// No description provided for @searchRadiusLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rayon :'**
+  String get searchRadiusLabel;
+
+  /// No description provided for @searchRadiusAroundCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rayon autour de {cityName}'**
+  String searchRadiusAroundCity(String cityName);
+
+  /// No description provided for @searchLocationDisabled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activez la localisation'**
+  String get searchLocationDisabled;
+
+  /// No description provided for @searchPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Permission refusée'**
+  String get searchPermissionDenied;
+
+  /// No description provided for @searchLocationSettingsRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activez la localisation dans les paramètres'**
+  String get searchLocationSettingsRequired;
+
+  /// No description provided for @searchLocationNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Position introuvable'**
+  String get searchLocationNotFound;
+
+  /// No description provided for @searchSavedAlertCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alerte \"{name}\" créée avec notifications !'**
+  String searchSavedAlertCreated(String name);
+
+  /// No description provided for @searchSavedSearchCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche \"{name}\" enregistrée !'**
+  String searchSavedSearchCreated(String name);
+
+  /// No description provided for @searchAlreadySaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déjà enregistrée'**
+  String get searchAlreadySaved;
+
+  /// No description provided for @searchSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get searchSave;
+
+  /// No description provided for @searchSaveAlert.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer une alerte'**
+  String get searchSaveAlert;
+
+  /// No description provided for @searchAlreadySavedMultiline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche\nenregistrée'**
+  String get searchAlreadySavedMultiline;
+
+  /// No description provided for @searchSaveSearchMultiline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sauvegarder\nma recherche'**
+  String get searchSaveSearchMultiline;
+
+  /// No description provided for @searchRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get searchRetry;
+
+  /// No description provided for @searchResult.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} résultat'**
+  String searchResult(Object count);
+
+  /// No description provided for @searchResultsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} résultats'**
+  String searchResultsCount(Object count);
+
+  /// No description provided for @searchNoMoreResults.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est tout pour le moment !'**
+  String get searchNoMoreResults;
+
+  /// No description provided for @searchAlertNewActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'M\'alerter des nouveautés'**
+  String get searchAlertNewActivities;
+
+  /// No description provided for @searchSortBy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trier par'**
+  String get searchSortBy;
+
+  /// No description provided for @searchSortRelevance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pertinence'**
+  String get searchSortRelevance;
+
+  /// No description provided for @searchNoResultsForFilters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun résultat pour ces filtres'**
+  String get searchNoResultsForFilters;
+
+  /// No description provided for @searchStartTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencez votre recherche'**
+  String get searchStartTitle;
+
+  /// No description provided for @searchNoResultsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune activité trouvée'**
+  String get searchNoResultsTitle;
+
+  /// No description provided for @searchNoResultsBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essayez de modifier vos filtres ou d\'élargir votre zone de recherche.'**
+  String get searchNoResultsBody;
+
+  /// No description provided for @searchStartBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisez la barre de recherche ci-dessus pour trouver des activités.'**
+  String get searchStartBody;
+
+  /// No description provided for @searchAlertNewEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'M\'alerter des nouveaux événements'**
+  String get searchAlertNewEvents;
+
+  /// No description provided for @searchClearFilters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer les filtres'**
+  String get searchClearFilters;
+
+  /// No description provided for @searchResultsActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} activité'**
+  String searchResultsActivity(int count);
+
+  /// No description provided for @searchResultsActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} activités'**
+  String searchResultsActivities(int count);
+
+  /// No description provided for @searchDateToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui'**
+  String get searchDateToday;
+
+  /// No description provided for @searchDateTomorrow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demain'**
+  String get searchDateTomorrow;
+
+  /// No description provided for @searchDateThisWeek.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette semaine'**
+  String get searchDateThisWeek;
+
+  /// No description provided for @searchDateThisWeekend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce week-end'**
+  String get searchDateThisWeekend;
+
+  /// No description provided for @searchDateThisMonth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce mois-ci'**
+  String get searchDateThisMonth;
+
+  /// No description provided for @searchDateCustom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dates personnalisées'**
+  String get searchDateCustom;
+
+  /// No description provided for @searchPricePaid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Payant'**
+  String get searchPricePaid;
+
+  /// No description provided for @searchPriceRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'{min}€ - {max}€'**
+  String searchPriceRange(int min, int max);
+
+  /// No description provided for @searchAroundMeWithRadius.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autour de moi ({radius} km)'**
+  String searchAroundMeWithRadius(int radius);
+
+  /// No description provided for @searchCityWithRadius.
+  ///
+  /// In fr, this message translates to:
+  /// **'{cityName} · {radius} km'**
+  String searchCityWithRadius(String cityName, int radius);
+
+  /// No description provided for @searchAvailablePlaces.
+  ///
+  /// In fr, this message translates to:
+  /// **'Places disponibles'**
+  String get searchAvailablePlaces;
+
+  /// No description provided for @searchAccessiblePmr.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accessible PMR'**
+  String get searchAccessiblePmr;
+
+  /// No description provided for @searchOnline.
+  ///
+  /// In fr, this message translates to:
+  /// **'En ligne'**
+  String get searchOnline;
+
+  /// No description provided for @searchInPerson.
+  ///
+  /// In fr, this message translates to:
+  /// **'En présentiel'**
+  String get searchInPerson;
+
+  /// No description provided for @searchLocationTypePhysical.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu physique'**
+  String get searchLocationTypePhysical;
+
+  /// No description provided for @searchLocationTypeOffline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors ligne'**
+  String get searchLocationTypeOffline;
+
+  /// No description provided for @searchLocationTypeOnline.
+  ///
+  /// In fr, this message translates to:
+  /// **'En ligne'**
+  String get searchLocationTypeOnline;
+
+  /// No description provided for @searchLocationTypeHybrid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hybride'**
+  String get searchLocationTypeHybrid;
+
+  /// No description provided for @searchHintEventOrOrganization.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement ou organisation'**
+  String get searchHintEventOrOrganization;
+
+  /// No description provided for @searchNoSuggestions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune suggestion'**
+  String get searchNoSuggestions;
+
+  /// No description provided for @searchSectionThemes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Thématiques'**
+  String get searchSectionThemes;
+
+  /// No description provided for @searchSectionEventType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type d\'événement'**
+  String get searchSectionEventType;
+
+  /// No description provided for @searchSectionSpecialEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps forts'**
+  String get searchSectionSpecialEvents;
+
+  /// No description provided for @searchSectionMood.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ambiance'**
+  String get searchSectionMood;
+
+  /// No description provided for @searchSectionDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get searchSectionDate;
+
+  /// No description provided for @searchSectionCategories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégories'**
+  String get searchSectionCategories;
+
+  /// No description provided for @searchSectionSort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tri'**
+  String get searchSectionSort;
+
+  /// No description provided for @searchSectionLocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Localisation'**
+  String get searchSectionLocation;
+
+  /// No description provided for @searchSectionBudget.
+  ///
+  /// In fr, this message translates to:
+  /// **'Budget'**
+  String get searchSectionBudget;
+
+  /// No description provided for @searchSectionFormat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Format'**
+  String get searchSectionFormat;
+
+  /// No description provided for @searchSectionAudience.
+  ///
+  /// In fr, this message translates to:
+  /// **'Public'**
+  String get searchSectionAudience;
+
+  /// No description provided for @searchSectionLocationType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de lieu'**
+  String get searchSectionLocationType;
+
+  /// No description provided for @searchChoosePeriod.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez une période'**
+  String get searchChoosePeriod;
+
+  /// No description provided for @searchChooseCustomDates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir des dates personnalisées'**
+  String get searchChooseCustomDates;
+
+  /// No description provided for @searchFreeOnlyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gratuit uniquement'**
+  String get searchFreeOnlyTitle;
+
+  /// No description provided for @searchFreeOnlySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Afficher seulement les activités gratuites'**
+  String get searchFreeOnlySubtitle;
+
+  /// No description provided for @searchPriceRangeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fourchette de prix'**
+  String get searchPriceRangeTitle;
+
+  /// No description provided for @searchAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get searchAll;
+
+  /// No description provided for @searchNoThemeAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune thématique disponible'**
+  String get searchNoThemeAvailable;
+
+  /// No description provided for @searchShowLess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir moins'**
+  String get searchShowLess;
+
+  /// No description provided for @searchShowMoreWithCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir plus ({count})'**
+  String searchShowMoreWithCount(int count);
+
+  /// No description provided for @searchLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement impossible'**
+  String get searchLoadError;
+
+  /// No description provided for @searchHintCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une ville'**
+  String get searchHintCity;
+
+  /// No description provided for @searchPopularCities.
+  ///
+  /// In fr, this message translates to:
+  /// **'VILLES POPULAIRES'**
+  String get searchPopularCities;
+
+  /// No description provided for @searchResults.
+  ///
+  /// In fr, this message translates to:
+  /// **'RÉSULTATS'**
+  String get searchResults;
+
+  /// No description provided for @searchMinCharacters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez au moins {count} caractères'**
+  String searchMinCharacters(int count);
+
+  /// No description provided for @searchNoCityFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune ville trouvée'**
+  String get searchNoCityFound;
+
+  /// No description provided for @searchCitiesUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Villes indisponibles'**
+  String get searchCitiesUnavailable;
+
+  /// No description provided for @searchHintCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une catégorie'**
+  String get searchHintCategory;
+
+  /// No description provided for @searchNoCategoryFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune catégorie trouvée'**
+  String get searchNoCategoryFound;
+
+  /// No description provided for @searchCategoriesUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégories indisponibles'**
+  String get searchCategoriesUnavailable;
+
+  /// No description provided for @searchFamilyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Famille'**
+  String get searchFamilyTitle;
+
+  /// No description provided for @searchFamilySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités adaptées aux enfants'**
+  String get searchFamilySubtitle;
+
+  /// No description provided for @searchAudienceGroup.
+  ///
+  /// In fr, this message translates to:
+  /// **'En groupe'**
+  String get searchAudienceGroup;
+
+  /// No description provided for @searchAudienceSchoolGroup.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupe scolaire'**
+  String get searchAudienceSchoolGroup;
+
+  /// No description provided for @searchAudienceProfessional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Professionnel'**
+  String get searchAudienceProfessional;
+
+  /// No description provided for @searchAccessibleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accessibilité mobilité réduite'**
+  String get searchAccessibleSubtitle;
+
+  /// No description provided for @searchOnlineSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités virtuelles'**
+  String get searchOnlineSubtitle;
+
+  /// No description provided for @searchInPersonSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités sur place'**
+  String get searchInPersonSubtitle;
+
+  /// No description provided for @searchAvailabilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Disponibilités'**
+  String get searchAvailabilityTitle;
+
+  /// No description provided for @searchAvailabilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Masquer les activités complètes'**
+  String get searchAvailabilitySubtitle;
+
+  /// No description provided for @searchAvailabilityPanelTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Disponibilité'**
+  String get searchAvailabilityPanelTitle;
+
+  /// No description provided for @searchAllActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les activités'**
+  String get searchAllActivities;
+
+  /// No description provided for @searchAvailableOnlyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Places disponibles uniquement'**
+  String get searchAvailableOnlyTitle;
+
+  /// No description provided for @searchNoAudienceAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun public disponible'**
+  String get searchNoAudienceAvailable;
+
+  /// No description provided for @searchAudiencesUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publics indisponibles'**
+  String get searchAudiencesUnavailable;
+
+  /// No description provided for @searchOptionsUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Options indisponibles'**
+  String get searchOptionsUnavailable;
+
+  /// No description provided for @searchLocationIndoor.
+  ///
+  /// In fr, this message translates to:
+  /// **'En intérieur'**
+  String get searchLocationIndoor;
+
+  /// No description provided for @searchLocationOutdoor.
+  ///
+  /// In fr, this message translates to:
+  /// **'En extérieur'**
+  String get searchLocationOutdoor;
+
+  /// No description provided for @searchLocationMixed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mixte'**
+  String get searchLocationMixed;
+
+  /// No description provided for @searchSortNewest.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveautés'**
+  String get searchSortNewest;
+
+  /// No description provided for @searchSortDateAsc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date (proche)'**
+  String get searchSortDateAsc;
+
+  /// No description provided for @searchSortDateDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date (plus tard)'**
+  String get searchSortDateDesc;
+
+  /// No description provided for @searchSortPriceAsc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prix croissant'**
+  String get searchSortPriceAsc;
+
+  /// No description provided for @searchSortPriceDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prix décroissant'**
+  String get searchSortPriceDesc;
+
+  /// No description provided for @searchSortPopularity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Popularité'**
+  String get searchSortPopularity;
+
+  /// No description provided for @searchSortDistance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Distance'**
+  String get searchSortDistance;
+
+  /// No description provided for @searchSaveSheetTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sauvegarder la recherche'**
+  String get searchSaveSheetTitle;
+
+  /// No description provided for @searchSaveSheetSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retrouvez facilement cette recherche et recevez des alertes pour les nouveaux événements.'**
+  String get searchSaveSheetSubtitle;
+
+  /// No description provided for @searchDefaultName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ma recherche'**
+  String get searchDefaultName;
+
+  /// No description provided for @searchAllEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les événements'**
+  String get searchAllEvents;
+
+  /// No description provided for @searchSummaryPrefix.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtres : {summary}'**
+  String searchSummaryPrefix(String summary);
+
+  /// No description provided for @searchNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez entrer un nom pour la recherche'**
+  String get searchNameRequired;
+
+  /// No description provided for @searchNameAlreadyUsed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce nom est déjà utilisé. Choisissez un autre nom.'**
+  String get searchNameAlreadyUsed;
+
+  /// No description provided for @searchNameLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de la recherche'**
+  String get searchNameLabel;
+
+  /// No description provided for @searchNameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ex : Concerts à Paris ce week-end'**
+  String get searchNameHint;
+
+  /// No description provided for @searchNotificationsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get searchNotificationsTitle;
+
+  /// No description provided for @searchPushSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications sur l\'app mobile'**
+  String get searchPushSubtitle;
+
+  /// No description provided for @searchEmailSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recevez un email pour chaque nouvel événement'**
+  String get searchEmailSubtitle;
+
+  /// No description provided for @searchSaveButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sauvegarder'**
+  String get searchSaveButton;
+
+  /// No description provided for @eventExploreTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorer les événements'**
+  String get eventExploreTitle;
+
+  /// No description provided for @eventSearchHintActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une activité...'**
+  String get eventSearchHintActivity;
+
+  /// No description provided for @eventFiltersWithCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtres ({count})'**
+  String eventFiltersWithCount(int count);
+
+  /// No description provided for @eventEndOfList.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est tout pour le moment !'**
+  String get eventEndOfList;
+
+  /// No description provided for @eventNoEventsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun événement trouvé'**
+  String get eventNoEventsTitle;
+
+  /// No description provided for @eventNoResultsWithFilters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun résultat avec les filtres actuels'**
+  String get eventNoResultsWithFilters;
+
+  /// No description provided for @eventNoEventsAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Il n\'y a pas d\'événements disponibles pour le moment'**
+  String get eventNoEventsAvailable;
+
+  /// No description provided for @eventGenericErrorTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue'**
+  String get eventGenericErrorTitle;
+
+  /// No description provided for @eventMapLocationError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de récupérer votre position'**
+  String get eventMapLocationError;
+
+  /// No description provided for @eventMapEventsHere.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} événements ici'**
+  String eventMapEventsHere(int count);
+
+  /// No description provided for @eventMapSearching.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche en cours...'**
+  String get eventMapSearching;
+
+  /// No description provided for @eventMapEmptyHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oups, c\'est calme par ici !\nBesoin d\'un coup de pouce ?'**
+  String get eventMapEmptyHelp;
+
+  /// No description provided for @eventLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger l\'activité.'**
+  String get eventLoadError;
+
+  /// No description provided for @eventDateAtTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'{date} à {time}'**
+  String eventDateAtTime(String date, String time);
+
+  /// No description provided for @eventDatesSoonAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dates bientôt disponibles. Contactez l\'organisateur pour plus d\'infos.'**
+  String get eventDatesSoonAvailable;
+
+  /// No description provided for @eventAboutTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'À propos de l\'événement'**
+  String get eventAboutTitle;
+
+  /// No description provided for @eventReadMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lire la suite'**
+  String get eventReadMore;
+
+  /// No description provided for @eventPricingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tarification'**
+  String get eventPricingTitle;
+
+  /// No description provided for @eventUndefined.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non définie'**
+  String get eventUndefined;
+
+  /// No description provided for @eventNoEntryFee.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun frais d\'entrée'**
+  String get eventNoEntryFee;
+
+  /// No description provided for @eventIndicativePrices.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prix indicatifs communiqués par l\'organisateur'**
+  String get eventIndicativePrices;
+
+  /// No description provided for @eventPriceFromPrefix.
+  ///
+  /// In fr, this message translates to:
+  /// **'À partir de '**
+  String get eventPriceFromPrefix;
+
+  /// No description provided for @eventCharacteristicsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Caractéristiques'**
+  String get eventCharacteristicsTitle;
+
+  /// No description provided for @eventInvalidBookingLink.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lien de réservation invalide'**
+  String get eventInvalidBookingLink;
+
+  /// No description provided for @eventChooseDateFirst.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez d\'abord choisir une date'**
+  String get eventChooseDateFirst;
+
+  /// No description provided for @eventSelectAtLeastOneTicket.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner au moins un billet'**
+  String get eventSelectAtLeastOneTicket;
+
+  /// No description provided for @eventBookingChoiceTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Que voulez-vous faire ?'**
+  String get eventBookingChoiceTitle;
+
+  /// No description provided for @eventBookingChoiceBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez ces billets au panier pour les payer avec d\'autres événements, ou finalisez maintenant.'**
+  String get eventBookingChoiceBody;
+
+  /// No description provided for @eventTicketsAddedToCart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billets ajoutés au panier'**
+  String get eventTicketsAddedToCart;
+
+  /// No description provided for @eventView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir'**
+  String get eventView;
+
+  /// No description provided for @eventAddToCart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter au panier'**
+  String get eventAddToCart;
+
+  /// No description provided for @eventBookNow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réserver maintenant'**
+  String get eventBookNow;
+
+  /// No description provided for @eventAllDatesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les dates ({count})'**
+  String eventAllDatesCount(int count);
+
+  /// No description provided for @eventFull.
+  ///
+  /// In fr, this message translates to:
+  /// **'Complet'**
+  String get eventFull;
+
+  /// No description provided for @eventChoose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir'**
+  String get eventChoose;
+
+  /// No description provided for @eventTicketing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billetterie'**
+  String get eventTicketing;
+
+  /// No description provided for @eventDiscovery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découverte'**
+  String get eventDiscovery;
+
+  /// No description provided for @eventFeatured.
+  ///
+  /// In fr, this message translates to:
+  /// **'En vedette'**
+  String get eventFeatured;
+
+  /// No description provided for @eventRecommended.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recommandé'**
+  String get eventRecommended;
+
+  /// No description provided for @eventNew.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau'**
+  String get eventNew;
+
+  /// No description provided for @eventPlaceNotSpecified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu non précisé'**
+  String get eventPlaceNotSpecified;
+
+  /// No description provided for @eventCategoryWorkshop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Atelier'**
+  String get eventCategoryWorkshop;
+
+  /// No description provided for @eventCategoryShow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Spectacle'**
+  String get eventCategoryShow;
+
+  /// No description provided for @eventCategoryFestival.
+  ///
+  /// In fr, this message translates to:
+  /// **'Festival'**
+  String get eventCategoryFestival;
+
+  /// No description provided for @eventCategoryConcert.
+  ///
+  /// In fr, this message translates to:
+  /// **'Concert'**
+  String get eventCategoryConcert;
+
+  /// No description provided for @eventCategoryExhibition.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exposition'**
+  String get eventCategoryExhibition;
+
+  /// No description provided for @eventCategorySport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sport'**
+  String get eventCategorySport;
+
+  /// No description provided for @eventCategoryCulture.
+  ///
+  /// In fr, this message translates to:
+  /// **'Culture'**
+  String get eventCategoryCulture;
+
+  /// No description provided for @eventCategoryMarket.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marché'**
+  String get eventCategoryMarket;
+
+  /// No description provided for @eventCategoryLeisure.
+  ///
+  /// In fr, this message translates to:
+  /// **'Loisirs'**
+  String get eventCategoryLeisure;
+
+  /// No description provided for @eventCategoryOutdoor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plein air'**
+  String get eventCategoryOutdoor;
+
+  /// No description provided for @eventCategoryIndoor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intérieur'**
+  String get eventCategoryIndoor;
+
+  /// No description provided for @eventCategoryTheater.
+  ///
+  /// In fr, this message translates to:
+  /// **'Théâtre'**
+  String get eventCategoryTheater;
+
+  /// No description provided for @eventCategoryCinema.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cinéma'**
+  String get eventCategoryCinema;
+
+  /// No description provided for @eventCategoryOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement'**
+  String get eventCategoryOther;
+
+  /// No description provided for @eventAudienceAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout public'**
+  String get eventAudienceAll;
+
+  /// No description provided for @eventAudienceFamily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Famille'**
+  String get eventAudienceFamily;
+
+  /// No description provided for @eventAudienceChildren.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfants'**
+  String get eventAudienceChildren;
+
+  /// No description provided for @eventAudienceTeenagers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ados'**
+  String get eventAudienceTeenagers;
+
+  /// No description provided for @eventAudienceAdults.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adultes'**
+  String get eventAudienceAdults;
+
+  /// No description provided for @eventAudienceSeniors.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seniors'**
+  String get eventAudienceSeniors;
 }
 
 class _AppLocalizationsDelegate

@@ -1378,4 +1378,677 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeBrowseByCity => 'Browse by city';
+
+  @override
+  String get searchTitle => 'Search';
+
+  @override
+  String get searchFiltersTitle => 'Filters';
+
+  @override
+  String get searchClear => 'Clear';
+
+  @override
+  String searchClearAllWithCount(int count) {
+    return 'Clear all ($count)';
+  }
+
+  @override
+  String get searchAction => 'Search';
+
+  @override
+  String searchActionWithActivity(int count) {
+    return 'Search · $count activity';
+  }
+
+  @override
+  String searchActionWithActivities(int count) {
+    return 'Search · $count activities';
+  }
+
+  @override
+  String get searchSearchActivityTitle => 'Search for an activity';
+
+  @override
+  String get searchAroundMe => 'Around me';
+
+  @override
+  String get searchAnywhere => 'Anywhere';
+
+  @override
+  String get searchAnytime => 'Anytime';
+
+  @override
+  String get searchAnyActivityType => 'Any activity type';
+
+  @override
+  String get searchSearchSubtitleDefault => 'Title, organizer';
+
+  @override
+  String get searchForWhom => 'For whom?';
+
+  @override
+  String get searchAllAudiences => 'All audiences';
+
+  @override
+  String get searchRefineTitle => 'Refine search';
+
+  @override
+  String get searchRefineSubtitleDefault => 'Type, theme, mood';
+
+  @override
+  String get searchFilterSingular => '1 filter';
+
+  @override
+  String searchFiltersCount(int count) {
+    return '$count filters';
+  }
+
+  @override
+  String get searchCategorySingular => '1 category';
+
+  @override
+  String searchCategoriesCount(int count) {
+    return '$count categories';
+  }
+
+  @override
+  String get searchAudienceSingular => '1 audience';
+
+  @override
+  String searchAudiencesCount(int count) {
+    return '$count audiences';
+  }
+
+  @override
+  String get searchMyPosition => 'My position';
+
+  @override
+  String get searchUseCurrentLocation => 'Use my current location';
+
+  @override
+  String searchWithinRadius(int radius) {
+    return 'Within $radius km';
+  }
+
+  @override
+  String get searchRadiusLabel => 'Radius:';
+
+  @override
+  String searchRadiusAroundCity(String cityName) {
+    return 'Radius around $cityName';
+  }
+
+  @override
+  String get searchLocationDisabled => 'Enable location';
+
+  @override
+  String get searchPermissionDenied => 'Permission denied';
+
+  @override
+  String get searchLocationSettingsRequired => 'Enable location in settings';
+
+  @override
+  String get searchLocationNotFound => 'Location not found';
+
+  @override
+  String searchSavedAlertCreated(String name) {
+    return 'Alert \"$name\" created with notifications!';
+  }
+
+  @override
+  String searchSavedSearchCreated(String name) {
+    return 'Search \"$name\" saved!';
+  }
+
+  @override
+  String get searchAlreadySaved => 'Already saved';
+
+  @override
+  String get searchSave => 'Save';
+
+  @override
+  String get searchSaveAlert => 'Create alert';
+
+  @override
+  String get searchAlreadySavedMultiline => 'Search\nsaved';
+
+  @override
+  String get searchSaveSearchMultiline => 'Save\nmy search';
+
+  @override
+  String get searchRetry => 'Retry';
+
+  @override
+  String searchResult(Object count) {
+    return '$count result';
+  }
+
+  @override
+  String searchResultsCount(Object count) {
+    return '$count results';
+  }
+
+  @override
+  String get searchNoMoreResults => 'That\'s all for now!';
+
+  @override
+  String get searchAlertNewActivities => 'Alert me about new activities';
+
+  @override
+  String get searchSortBy => 'Sort by';
+
+  @override
+  String get searchSortRelevance => 'Relevance';
+
+  @override
+  String get searchNoResultsForFilters => 'No results for these filters';
+
+  @override
+  String get searchStartTitle => 'Start your search';
+
+  @override
+  String get searchNoResultsTitle => 'No activity found';
+
+  @override
+  String get searchNoResultsBody =>
+      'Try changing your filters or expanding your search area.';
+
+  @override
+  String get searchStartBody => 'Use the search bar above to find activities.';
+
+  @override
+  String get searchAlertNewEvents => 'Alert me about new events';
+
+  @override
+  String get searchClearFilters => 'Clear filters';
+
+  @override
+  String searchResultsActivity(int count) {
+    return '$count activity';
+  }
+
+  @override
+  String searchResultsActivities(int count) {
+    return '$count activities';
+  }
+
+  @override
+  String get searchDateToday => 'Today';
+
+  @override
+  String get searchDateTomorrow => 'Tomorrow';
+
+  @override
+  String get searchDateThisWeek => 'This week';
+
+  @override
+  String get searchDateThisWeekend => 'This weekend';
+
+  @override
+  String get searchDateThisMonth => 'This month';
+
+  @override
+  String get searchDateCustom => 'Custom dates';
+
+  @override
+  String get searchPricePaid => 'Paid';
+
+  @override
+  String searchPriceRange(int min, int max) {
+    return '€$min - €$max';
+  }
+
+  @override
+  String searchAroundMeWithRadius(int radius) {
+    return 'Around me ($radius km)';
+  }
+
+  @override
+  String searchCityWithRadius(String cityName, int radius) {
+    return '$cityName · $radius km';
+  }
+
+  @override
+  String get searchAvailablePlaces => 'Available spots';
+
+  @override
+  String get searchAccessiblePmr => 'Wheelchair accessible';
+
+  @override
+  String get searchOnline => 'Online';
+
+  @override
+  String get searchInPerson => 'In person';
+
+  @override
+  String get searchLocationTypePhysical => 'Physical venue';
+
+  @override
+  String get searchLocationTypeOffline => 'Offline';
+
+  @override
+  String get searchLocationTypeOnline => 'Online';
+
+  @override
+  String get searchLocationTypeHybrid => 'Hybrid';
+
+  @override
+  String get searchHintEventOrOrganization => 'Event or organization';
+
+  @override
+  String get searchNoSuggestions => 'No suggestions';
+
+  @override
+  String get searchSectionThemes => 'Themes';
+
+  @override
+  String get searchSectionEventType => 'Event type';
+
+  @override
+  String get searchSectionSpecialEvents => 'Highlights';
+
+  @override
+  String get searchSectionMood => 'Mood';
+
+  @override
+  String get searchSectionDate => 'Date';
+
+  @override
+  String get searchSectionCategories => 'Categories';
+
+  @override
+  String get searchSectionSort => 'Sort';
+
+  @override
+  String get searchSectionLocation => 'Location';
+
+  @override
+  String get searchSectionBudget => 'Budget';
+
+  @override
+  String get searchSectionFormat => 'Format';
+
+  @override
+  String get searchSectionAudience => 'Audience';
+
+  @override
+  String get searchSectionLocationType => 'Venue type';
+
+  @override
+  String get searchChoosePeriod => 'Choose a period';
+
+  @override
+  String get searchChooseCustomDates => 'Choose custom dates';
+
+  @override
+  String get searchFreeOnlyTitle => 'Free only';
+
+  @override
+  String get searchFreeOnlySubtitle => 'Show free activities only';
+
+  @override
+  String get searchPriceRangeTitle => 'Price range';
+
+  @override
+  String get searchAll => 'All';
+
+  @override
+  String get searchNoThemeAvailable => 'No theme available';
+
+  @override
+  String get searchShowLess => 'Show less';
+
+  @override
+  String searchShowMoreWithCount(int count) {
+    return 'Show more ($count)';
+  }
+
+  @override
+  String get searchLoadError => 'Unable to load';
+
+  @override
+  String get searchHintCity => 'Search for a city';
+
+  @override
+  String get searchPopularCities => 'POPULAR CITIES';
+
+  @override
+  String get searchResults => 'RESULTS';
+
+  @override
+  String searchMinCharacters(int count) {
+    return 'Enter at least $count characters';
+  }
+
+  @override
+  String get searchNoCityFound => 'No city found';
+
+  @override
+  String get searchCitiesUnavailable => 'Cities unavailable';
+
+  @override
+  String get searchHintCategory => 'Search for a category';
+
+  @override
+  String get searchNoCategoryFound => 'No category found';
+
+  @override
+  String get searchCategoriesUnavailable => 'Categories unavailable';
+
+  @override
+  String get searchFamilyTitle => 'Family';
+
+  @override
+  String get searchFamilySubtitle => 'Kid-friendly activities';
+
+  @override
+  String get searchAudienceGroup => 'Group';
+
+  @override
+  String get searchAudienceSchoolGroup => 'School group';
+
+  @override
+  String get searchAudienceProfessional => 'Professional';
+
+  @override
+  String get searchAccessibleSubtitle => 'Reduced-mobility accessibility';
+
+  @override
+  String get searchOnlineSubtitle => 'Virtual activities';
+
+  @override
+  String get searchInPersonSubtitle => 'On-site activities';
+
+  @override
+  String get searchAvailabilityTitle => 'Availability';
+
+  @override
+  String get searchAvailabilitySubtitle => 'Hide full activities';
+
+  @override
+  String get searchAvailabilityPanelTitle => 'Availability';
+
+  @override
+  String get searchAllActivities => 'All activities';
+
+  @override
+  String get searchAvailableOnlyTitle => 'Available spots only';
+
+  @override
+  String get searchNoAudienceAvailable => 'No audience available';
+
+  @override
+  String get searchAudiencesUnavailable => 'Audiences unavailable';
+
+  @override
+  String get searchOptionsUnavailable => 'Options unavailable';
+
+  @override
+  String get searchLocationIndoor => 'Indoor';
+
+  @override
+  String get searchLocationOutdoor => 'Outdoor';
+
+  @override
+  String get searchLocationMixed => 'Mixed';
+
+  @override
+  String get searchSortNewest => 'New';
+
+  @override
+  String get searchSortDateAsc => 'Date (soonest)';
+
+  @override
+  String get searchSortDateDesc => 'Date (latest)';
+
+  @override
+  String get searchSortPriceAsc => 'Price low to high';
+
+  @override
+  String get searchSortPriceDesc => 'Price high to low';
+
+  @override
+  String get searchSortPopularity => 'Popularity';
+
+  @override
+  String get searchSortDistance => 'Distance';
+
+  @override
+  String get searchSaveSheetTitle => 'Save search';
+
+  @override
+  String get searchSaveSheetSubtitle =>
+      'Find this search easily and receive alerts for new events.';
+
+  @override
+  String get searchDefaultName => 'My search';
+
+  @override
+  String get searchAllEvents => 'All events';
+
+  @override
+  String searchSummaryPrefix(String summary) {
+    return 'Filters: $summary';
+  }
+
+  @override
+  String get searchNameRequired => 'Please enter a name for the search';
+
+  @override
+  String get searchNameAlreadyUsed =>
+      'This name is already used. Choose another name.';
+
+  @override
+  String get searchNameLabel => 'Search name';
+
+  @override
+  String get searchNameHint => 'Example: Concerts in Paris this weekend';
+
+  @override
+  String get searchNotificationsTitle => 'Notifications';
+
+  @override
+  String get searchPushSubtitle => 'Notifications in the mobile app';
+
+  @override
+  String get searchEmailSubtitle => 'Receive an email for each new event';
+
+  @override
+  String get searchSaveButton => 'Save';
+
+  @override
+  String get eventExploreTitle => 'Explore events';
+
+  @override
+  String get eventSearchHintActivity => 'Search for an activity...';
+
+  @override
+  String eventFiltersWithCount(int count) {
+    return 'Filters ($count)';
+  }
+
+  @override
+  String get eventEndOfList => 'That\'s all for now!';
+
+  @override
+  String get eventNoEventsTitle => 'No event found';
+
+  @override
+  String get eventNoResultsWithFilters => 'No results with the current filters';
+
+  @override
+  String get eventNoEventsAvailable =>
+      'There are no events available right now';
+
+  @override
+  String get eventGenericErrorTitle => 'Something went wrong';
+
+  @override
+  String get eventMapLocationError => 'Unable to get your location';
+
+  @override
+  String eventMapEventsHere(int count) {
+    return '$count events here';
+  }
+
+  @override
+  String get eventMapSearching => 'Searching...';
+
+  @override
+  String get eventMapEmptyHelp => 'It\'s quiet around here!\nNeed a hand?';
+
+  @override
+  String get eventLoadError => 'Unable to load the activity.';
+
+  @override
+  String eventDateAtTime(String date, String time) {
+    return '$date at $time';
+  }
+
+  @override
+  String get eventDatesSoonAvailable =>
+      'Dates will be available soon. Contact the organizer for more information.';
+
+  @override
+  String get eventAboutTitle => 'About this event';
+
+  @override
+  String get eventReadMore => 'Read more';
+
+  @override
+  String get eventPricingTitle => 'Pricing';
+
+  @override
+  String get eventUndefined => 'Not defined';
+
+  @override
+  String get eventNoEntryFee => 'No entry fee';
+
+  @override
+  String get eventIndicativePrices =>
+      'Indicative prices provided by the organizer';
+
+  @override
+  String get eventPriceFromPrefix => 'From ';
+
+  @override
+  String get eventCharacteristicsTitle => 'Characteristics';
+
+  @override
+  String get eventInvalidBookingLink => 'Invalid booking link';
+
+  @override
+  String get eventChooseDateFirst => 'Please choose a date first';
+
+  @override
+  String get eventSelectAtLeastOneTicket => 'Please select at least one ticket';
+
+  @override
+  String get eventBookingChoiceTitle => 'What would you like to do?';
+
+  @override
+  String get eventBookingChoiceBody =>
+      'Add these tickets to your cart to pay with other events, or finish now.';
+
+  @override
+  String get eventTicketsAddedToCart => 'Tickets added to cart';
+
+  @override
+  String get eventView => 'View';
+
+  @override
+  String get eventAddToCart => 'Add to cart';
+
+  @override
+  String get eventBookNow => 'Book now';
+
+  @override
+  String eventAllDatesCount(int count) {
+    return 'All dates ($count)';
+  }
+
+  @override
+  String get eventFull => 'Full';
+
+  @override
+  String get eventChoose => 'Choose';
+
+  @override
+  String get eventTicketing => 'Ticketing';
+
+  @override
+  String get eventDiscovery => 'Discovery';
+
+  @override
+  String get eventFeatured => 'Featured';
+
+  @override
+  String get eventRecommended => 'Recommended';
+
+  @override
+  String get eventNew => 'New';
+
+  @override
+  String get eventPlaceNotSpecified => 'Place not specified';
+
+  @override
+  String get eventCategoryWorkshop => 'Workshop';
+
+  @override
+  String get eventCategoryShow => 'Show';
+
+  @override
+  String get eventCategoryFestival => 'Festival';
+
+  @override
+  String get eventCategoryConcert => 'Concert';
+
+  @override
+  String get eventCategoryExhibition => 'Exhibition';
+
+  @override
+  String get eventCategorySport => 'Sport';
+
+  @override
+  String get eventCategoryCulture => 'Culture';
+
+  @override
+  String get eventCategoryMarket => 'Market';
+
+  @override
+  String get eventCategoryLeisure => 'Leisure';
+
+  @override
+  String get eventCategoryOutdoor => 'Outdoor';
+
+  @override
+  String get eventCategoryIndoor => 'Indoor';
+
+  @override
+  String get eventCategoryTheater => 'Theater';
+
+  @override
+  String get eventCategoryCinema => 'Cinema';
+
+  @override
+  String get eventCategoryOther => 'Event';
+
+  @override
+  String get eventAudienceAll => 'All audiences';
+
+  @override
+  String get eventAudienceFamily => 'Family';
+
+  @override
+  String get eventAudienceChildren => 'Children';
+
+  @override
+  String get eventAudienceTeenagers => 'Teens';
+
+  @override
+  String get eventAudienceAdults => 'Adults';
+
+  @override
+  String get eventAudienceSeniors => 'Seniors';
 }

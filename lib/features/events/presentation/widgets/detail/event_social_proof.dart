@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/shared/widgets/animations/pulse_animation.dart';
 
@@ -139,21 +140,21 @@ class EventBadges extends StatelessWidget {
       children: [
         if (isFeatured)
           _AnimatedBadge(
-            label: 'En vedette',
+            label: context.l10n.eventFeatured,
             icon: Icons.star,
             color: const Color(0xFFFFB800),
             backgroundColor: const Color(0xFFFFF8E1),
           ),
         if (isRecommended)
           _AnimatedBadge(
-            label: 'Recommandé',
+            label: context.l10n.eventRecommended,
             icon: Icons.thumb_up,
             color: const Color(0xFF4CAF50),
             backgroundColor: const Color(0xFFE8F5E9),
           ),
         if (isNew)
           _AnimatedBadge(
-            label: 'Nouveau',
+            label: context.l10n.eventNew,
             icon: Icons.fiber_new,
             color: const Color(0xFF2196F3),
             backgroundColor: const Color(0xFFE3F2FD),
@@ -293,9 +294,9 @@ class EventPriceDisplay extends StatelessWidget {
             width: 1,
           ),
         ),
-        child: const Text(
-          'Gratuit',
-          style: TextStyle(
+        child: Text(
+          context.l10n.commonFree,
+          style: const TextStyle(
             color: Colors.green,
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -309,7 +310,7 @@ class EventPriceDisplay extends StatelessWidget {
       text: TextSpan(
         children: [
           TextSpan(
-            text: 'À partir de ',
+            text: context.l10n.eventPriceFromPrefix,
             style: TextStyle(
               fontSize: large ? 14 : 12,
               color: HbColors.grey500,

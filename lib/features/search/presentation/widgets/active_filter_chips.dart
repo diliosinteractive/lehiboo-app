@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/filter_provider.dart';
+import '../utils/search_l10n.dart';
 import '../../domain/models/event_filter.dart';
 
 /// Displays active filter chips with remove functionality
@@ -95,7 +97,7 @@ class _ClearAllPill extends StatelessWidget {
                 size: 14, color: HbColors.brandPrimary),
             const SizedBox(width: 6),
             Text(
-              'Tout effacer ($count)',
+              context.searchClearAllLabel(count),
               style: const TextStyle(
                 fontSize: 13,
                 color: HbColors.brandPrimary,
@@ -146,7 +148,7 @@ class _ActiveChip extends StatelessWidget {
             // ~15-20 chars depending on letterforms before ellipsis kicks in.
             constraints: const BoxConstraints(maxWidth: 180),
             child: Text(
-              _formatLabel(chip),
+              _formatLabel(context, chip),
               overflow: TextOverflow.ellipsis,
               softWrap: false,
               style: TextStyle(
@@ -255,7 +257,10 @@ class _ActiveChip extends StatelessWidget {
     }
   }
 
-  String _formatLabel(ActiveFilterChip chip) {
+  String _formatLabel(BuildContext context, ActiveFilterChip chip) {
+    final localized = _localizedSystemChipLabel(context, chip);
+    if (localized != null) return localized;
+
     // Format thematique/category slugs to readable names
     if (chip.type == FilterChipType.thematique ||
         chip.type == FilterChipType.category ||
@@ -266,6 +271,59 @@ class _ActiveChip extends StatelessWidget {
       return _slugToName(chip.label);
     }
     return chip.label;
+  }
+
+  String? _localizedSystemChipLabel(
+    BuildContext context,
+    ActiveFilterChip chip,
+  ) {
+    switch (chip.id) {
+      case 'price':
+        if (chip.label == 'Gratuit') return context.l10n.commonFree;
+        if (chip.label == 'Payant') return context.l10n.searchPricePaid;
+        return chip.label;
+      case 'city':
+        final radius = int.tryParse(chip.value ?? '');
+        return radius == null
+            ? chip.label
+            : context.searchCityRadiusLabel(chip.label, radius);
+      case 'location':
+        final radius = int.tryParse(chip.value ?? '');
+        return context.searchAroundMeLabel(radius ?? 10);
+      case 'available_only':
+        return context.l10n.searchAvailablePlaces;
+      case 'family':
+        return context.l10n.searchFamilyTitle;
+      case 'pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_family':
+        return context.l10n.searchFamilyTitle;
+      case 'public_filter_pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_group':
+        return context.l10n.searchAudienceGroup;
+      case 'public_filter_school':
+        return context.l10n.searchAudienceSchoolGroup;
+      case 'public_filter_professional':
+        return context.l10n.searchAudienceProfessional;
+      case 'online':
+        return context.l10n.searchOnline;
+      case 'in_person':
+        return context.l10n.searchInPerson;
+      case 'location_type':
+        return _locationTypeLabel(context, chip.value);
+    }
+    return null;
+  }
+
+  String? _locationTypeLabel(BuildContext context, String? value) {
+    return switch (value) {
+      'physical' => context.l10n.searchLocationTypePhysical,
+      'offline' => context.l10n.searchLocationTypeOffline,
+      'online' => context.l10n.searchLocationTypeOnline,
+      'hybrid' => context.l10n.searchLocationTypeHybrid,
+      _ => null,
+    };
   }
 
   String _slugToName(String slug) {
@@ -317,7 +375,7 @@ class HorizontalActiveFilterChips extends ConsumerWidget {
                     Icon(Icons.clear_all, size: 16, color: Colors.grey[700]),
                     const SizedBox(width: 4),
                     Text(
-                      'Effacer',
+                      context.l10n.searchClear,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[700],
@@ -367,7 +425,7 @@ class _CompactActiveChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            _formatLabel(chip),
+            _formatLabel(context, chip),
             style: const TextStyle(
               fontSize: 13,
               color: HbColors.brandPrimary,
@@ -395,7 +453,10 @@ class _CompactActiveChip extends StatelessWidget {
     );
   }
 
-  String _formatLabel(ActiveFilterChip chip) {
+  String _formatLabel(BuildContext context, ActiveFilterChip chip) {
+    final localized = _localizedSystemChipLabel(context, chip);
+    if (localized != null) return localized;
+
     if (chip.type == FilterChipType.thematique ||
         chip.type == FilterChipType.category ||
         chip.type == FilterChipType.eventTag ||
@@ -405,6 +466,59 @@ class _CompactActiveChip extends StatelessWidget {
       return _slugToName(chip.label);
     }
     return chip.label;
+  }
+
+  String? _localizedSystemChipLabel(
+    BuildContext context,
+    ActiveFilterChip chip,
+  ) {
+    switch (chip.id) {
+      case 'price':
+        if (chip.label == 'Gratuit') return context.l10n.commonFree;
+        if (chip.label == 'Payant') return context.l10n.searchPricePaid;
+        return chip.label;
+      case 'city':
+        final radius = int.tryParse(chip.value ?? '');
+        return radius == null
+            ? chip.label
+            : context.searchCityRadiusLabel(chip.label, radius);
+      case 'location':
+        final radius = int.tryParse(chip.value ?? '');
+        return context.searchAroundMeLabel(radius ?? 10);
+      case 'available_only':
+        return context.l10n.searchAvailablePlaces;
+      case 'family':
+        return context.l10n.searchFamilyTitle;
+      case 'pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_family':
+        return context.l10n.searchFamilyTitle;
+      case 'public_filter_pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_group':
+        return context.l10n.searchAudienceGroup;
+      case 'public_filter_school':
+        return context.l10n.searchAudienceSchoolGroup;
+      case 'public_filter_professional':
+        return context.l10n.searchAudienceProfessional;
+      case 'online':
+        return context.l10n.searchOnline;
+      case 'in_person':
+        return context.l10n.searchInPerson;
+      case 'location_type':
+        return _locationTypeLabel(context, chip.value);
+    }
+    return null;
+  }
+
+  String? _locationTypeLabel(BuildContext context, String? value) {
+    return switch (value) {
+      'physical' => context.l10n.searchLocationTypePhysical,
+      'offline' => context.l10n.searchLocationTypeOffline,
+      'online' => context.l10n.searchLocationTypeOnline,
+      'hybrid' => context.l10n.searchLocationTypeHybrid,
+      _ => null,
+    };
   }
 
   String _slugToName(String slug) {

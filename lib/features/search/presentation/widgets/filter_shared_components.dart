@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/models/event_filter.dart';
+import '../utils/search_l10n.dart';
 import '../../../home/presentation/providers/home_providers.dart';
 
 // =============================================================================
@@ -549,7 +550,10 @@ class LocationSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle(title: 'Localisation', icon: Icons.location_on),
+        SectionTitle(
+          title: context.l10n.searchSectionLocation,
+          icon: Icons.location_on,
+        ),
         const SizedBox(height: 20),
 
         // Géolocalisation
@@ -602,7 +606,7 @@ class LocationSection extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'À proximité',
+                        context.l10n.homeSearchNearby,
                         style: GoogleFonts.montserrat(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -611,8 +615,8 @@ class LocationSection extends ConsumerWidget {
                       ),
                       Text(
                         hasLocation
-                            ? 'Dans un rayon de ${filter.radiusKm.toInt()} km'
-                            : 'Utiliser ma position actuelle',
+                            ? context.searchWithinRadiusLabel(filter.radiusKm)
+                            : context.l10n.searchUseCurrentLocation,
                         style: GoogleFonts.montserrat(
                           fontSize: 13,
                           color: Colors.grey.shade600,
@@ -638,7 +642,7 @@ class LocationSection extends ConsumerWidget {
           Row(
             children: [
               Text(
-                'Rayon : ',
+                context.l10n.searchRadiusLabel,
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   color: Colors.grey.shade700,
@@ -676,7 +680,7 @@ class LocationSection extends ConsumerWidget {
 
         // Villes populaires
         Text(
-          'VILLES POPULAIRES',
+          context.l10n.searchPopularCities,
           style: GoogleFonts.montserrat(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -820,7 +824,7 @@ class FilterHeader extends StatelessWidget {
             GestureDetector(
               onTap: onClear,
               child: Text(
-                'Effacer',
+                context.l10n.searchClear,
                 style: GoogleFonts.montserrat(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -980,7 +984,7 @@ class FilterFooterWithClear extends StatelessWidget {
             GestureDetector(
               onTap: hasFilters ? onClear : null,
               child: Text(
-                'Tout effacer',
+                context.l10n.searchClearFilters,
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

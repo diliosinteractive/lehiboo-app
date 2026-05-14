@@ -180,9 +180,10 @@ class MapEventCard extends ConsumerWidget {
                     final isTrulyFree = activity.priceMin == 0 &&
                         (activity.priceMax == null || activity.priceMax == 0);
                     if (isTrulyFree) {
-                      return const Text(
-                        'Gratuit',
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      return Text(
+                        context.l10n.commonFree,
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12),
                       );
                     }
                     final isBooking = activity.reservationMode ==

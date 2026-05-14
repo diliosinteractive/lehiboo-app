@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/filter_provider.dart';
+import '../utils/search_l10n.dart';
 import 'airbnb_search_sheet.dart';
 
 /// Compact search pill for the home page hero section
@@ -157,7 +158,8 @@ class HomeSearchPill extends ConsumerWidget {
   }
 
   String _getWhenText(BuildContext context, filter) {
-    if (filter.dateFilterLabel != null) return filter.dateFilterLabel!;
+    final dateLabel = context.searchDateFilterLabelOrNull(filter);
+    if (dateLabel != null) return dateLabel;
     return context.l10n.homeSearchWhen;
   }
 
