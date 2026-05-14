@@ -202,10 +202,7 @@ class ConversationDetailNotifier
 
   Future<Conversation> _fetchConversation() async {
     return switch (_route) {
-      ConversationRoute.participant => _repo.getConversation(_uuid).then((conv) {
-          _repo.markConversationAsRead(_uuid).catchError((_) {});
-          return conv;
-        }),
+      ConversationRoute.participant => _repo.getConversation(_uuid),
       ConversationRoute.participantSupport =>
         _repo.getSupportConversation(_uuid),
       ConversationRoute.vendor => _repo

@@ -15,6 +15,7 @@ import 'package:lehiboo/features/notifications/domain/entities/in_app_notificati
 import 'package:lehiboo/features/notifications/presentation/providers/in_app_notifications_provider.dart';
 import 'package:lehiboo/routes/app_router.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/domain/entities/user.dart';
 import 'conversations_provider.dart';
 import 'support_conversations_provider.dart';
 import 'vendor_broadcasts_provider.dart';
@@ -41,6 +42,7 @@ class RealtimeEvent {
   final RealtimeEventType type;
   final String? conversationUuid;
   final String? conversationType;
+  final String? senderType;
   final String? messageUuid;
   final String? content;
   final DateTime? editedAt;
@@ -49,6 +51,7 @@ class RealtimeEvent {
     required this.type,
     this.conversationUuid,
     this.conversationType,
+    this.senderType,
     this.messageUuid,
     this.content,
     this.editedAt,
@@ -304,6 +307,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     final data = event.tryGetDataAsMap() ?? {};
     final convUuid = data['conversation_uuid'] as String?;
     final convType = data['conversation_type'] as String?;
+    final senderType = data['sender_type'] as String?;
     final msgUuid = data['message_uuid'] as String?;
 
     dev.log(
@@ -318,11 +322,18 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         }
         // Increment badge immediately — no API round-trip needed.
         // Each notifier's _refreshUnreadCount() / 30s poll will re-sync the exact value.
+        if (_isOwnMessage(senderType)) {
+          dev.log(
+            '[Pusher] message.received ignored for unread badge: own sender_type=$senderType',
+          );
+          return;
+        }
         _ref.read(unreadCountProvider.notifier).update((n) => n + 1);
         _emit(RealtimeEvent(
           type: RealtimeEventType.messageReceived,
           conversationUuid: convUuid,
           conversationType: convType,
+          senderType: senderType,
           messageUuid: msgUuid,
         ));
       case 'message.delivered':
@@ -334,6 +345,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           type: RealtimeEventType.messageDelivered,
           conversationUuid: convUuid,
           conversationType: convType,
+          senderType: senderType,
           messageUuid: msgUuid,
         ));
       case 'message.edited':
@@ -345,6 +357,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           type: RealtimeEventType.messageEdited,
           conversationUuid: convUuid,
           conversationType: convType,
+          senderType: senderType,
           messageUuid: msgUuid,
           content: data['content'] as String?,
           editedAt: DateTime.tryParse(data['edited_at'] as String? ?? ''),
@@ -358,6 +371,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           type: RealtimeEventType.messageDeleted,
           conversationUuid: convUuid,
           conversationType: convType,
+          senderType: senderType,
           messageUuid: msgUuid,
         ));
       case 'conversation.read':
@@ -425,6 +439,13 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     final notification = InAppNotificationDto.fromJson(json).toDomain();
     final unreadCount = _int(data['unread_count']);
 
+    if (_isOwnMessageNotification(notification)) {
+      dev.log(
+        '[Pusher] notification.created ignored for own new_message sender_type=${_notificationSenderType(notification)}',
+      );
+      return;
+    }
+
     _ref.read(inAppNotificationsProvider.notifier).handleRealtimeNotification(
           notification,
           unreadCount: unreadCount,
@@ -439,6 +460,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 3),
         content: _NotificationSnackContent(notification: notification),
         action: SnackBarAction(
           label: 'Ouvrir',
@@ -458,6 +480,58 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     if (value is int) return value;
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  bool _isOwnMessage(String? senderType) {
+    if (senderType == null || senderType.isEmpty) return false;
+    final user = _ref.read(authProvider).user;
+    if (user == null) return false;
+
+    return switch (user.role) {
+      UserRole.partner => senderType == 'organization',
+      UserRole.admin => senderType == 'admin',
+      _ => senderType == 'participant',
+    };
+  }
+
+  bool _isOwnMessageNotification(InAppNotification notification) {
+    if (notification.type.toLowerCase() != 'new_message') return false;
+    if (_bool(notification.data['is_mine']) == true ||
+        _bool(notification.data['isMine']) == true) {
+      return true;
+    }
+    return _isOwnMessage(_notificationSenderType(notification));
+  }
+
+  String? _notificationSenderType(InAppNotification notification) {
+    final direct = notification.data['sender_type'] ??
+        notification.data['senderType'] ??
+        notification.data['sender_role'] ??
+        notification.data['senderRole'];
+    if (direct != null && direct.toString().isNotEmpty) {
+      return direct.toString();
+    }
+
+    final sender = notification.data['sender'];
+    if (sender is Map) {
+      final nested = sender['type'] ?? sender['sender_type'] ?? sender['role'];
+      if (nested != null && nested.toString().isNotEmpty) {
+        return nested.toString();
+      }
+    }
+
+    return null;
+  }
+
+  bool? _bool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
     return null;
   }
 

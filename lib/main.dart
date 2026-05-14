@@ -51,6 +51,9 @@ import 'features/notifications/presentation/providers/in_app_notifications_provi
 import 'features/messages/presentation/providers/messages_realtime_provider.dart';
 // Conversation list (eagerly initialised to sync badge count and realtime events)
 import 'features/messages/presentation/providers/conversations_provider.dart';
+import 'features/messages/presentation/providers/vendor_conversations_provider.dart';
+import 'features/messages/presentation/providers/admin_conversations_provider.dart';
+import 'domain/entities/user.dart';
 
 // Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
 import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
@@ -240,13 +243,19 @@ class LeHibooApp extends ConsumerWidget {
     // This mirrors the web frontend which subscribes globally at app boot.
     ref.watch(messagesRealtimeProvider);
 
-    // Eagerly initialize the participant conversation list when authenticated
-    // so that: (1) the unread badge shows the correct server count from app
-    // start, (2) realtime events update the list even when the user is on
-    // another tab, and (3) the list is ready instantly when navigating to messages.
+    // Eagerly initialize the role-appropriate conversation provider when
+    // authenticated so the global unread badge syncs against the correct API.
     final authState = ref.watch(authProvider);
-    if (authState.status == AuthStatus.authenticated) {
-      ref.watch(conversationsProvider);
+    final user = authState.user;
+    if (authState.status == AuthStatus.authenticated && user != null) {
+      switch (user.role) {
+        case UserRole.partner:
+          ref.watch(vendorConversationsProvider);
+        case UserRole.admin:
+          ref.watch(adminConversationsProvider('user_support'));
+        default:
+          ref.watch(conversationsProvider);
+      }
     }
 
     // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après

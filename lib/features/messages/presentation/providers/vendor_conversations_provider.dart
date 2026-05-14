@@ -95,6 +95,7 @@ class VendorConversationsNotifier
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
+  final Map<String, int> _realtimeUnreadByUuid = {};
 
   VendorConversationsNotifier(this._repo, this._polling, this._ref)
       : super(const VendorConversationsState()) {
@@ -123,6 +124,13 @@ class VendorConversationsNotifier
       final type = event.conversationType;
       // messageReceived: validate by UUID in _applyNewMessage — not by type.
       if (event.type == RealtimeEventType.messageReceived) {
+        if (type != null && type != 'participant_vendor') {
+          if (type == 'vendor_admin') _refreshUnreadCount();
+          dev.log(
+            '[VendorConv] skipping messageReceived convType=$type (not participant_vendor)',
+          );
+          return;
+        }
         _applyNewMessage(event);
         return;
       }
@@ -167,13 +175,21 @@ class VendorConversationsNotifier
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
     if (uuid == null) return;
+    // New message invalidates the "already read" marker so _silentRefresh
+    // doesn't zero out the unread indicator for this conversation.
+    _readUuids.remove(uuid);
+    _realtimeUnreadByUuid[uuid] = (_realtimeUnreadByUuid[uuid] ?? 0) + 1;
     final current = state.conversations.valueOrNull;
     if (current == null) {
       _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
-    if (idx == -1) return; // not in this list — skip silently
+    if (idx == -1) {
+      // Not in this list (e.g. vendor_admin message) — still refresh badge.
+      _silentRefresh();
+      return;
+    }
     final updated = current[idx].copyWith(
       unreadCount: current[idx].unreadCount + 1,
     );
@@ -200,15 +216,7 @@ class VendorConversationsNotifier
         page: 1,
       );
       if (!mounted) return;
-      var conversations = result.conversations;
-      if (_readUuids.isNotEmpty) {
-        conversations = conversations.map((c) {
-          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
-            return c.copyWith(unreadCount: 0);
-          }
-          return c;
-        }).toList();
-      }
+      final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
@@ -265,25 +273,19 @@ class VendorConversationsNotifier
         page: 1,
       );
       if (!mounted) return;
-      var conversations = result.conversations;
-      if (_readUuids.isNotEmpty) {
-        conversations = conversations.map((c) {
-          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
-            return c.copyWith(unreadCount: 0);
-          }
-          return c;
-        }).toList();
-      }
+      final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
       );
+      _refreshUnreadCount();
     } catch (_) {}
   }
 
   void applyRead(String uuid) {
     _readUuids.add(uuid);
+    _realtimeUnreadByUuid.remove(uuid);
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -329,8 +331,46 @@ class VendorConversationsNotifier
   Future<void> _refreshUnreadCount() async {
     try {
       final count = await _polling.getVendorUnreadCount();
-      _ref.read(unreadCountProvider.notifier).state = count;
+      final localUnread = _localUnreadTotal();
+      _ref.read(unreadCountProvider.notifier).state =
+          count > localUnread ? count : localUnread;
     } catch (_) {}
+  }
+
+  List<Conversation> _mergeUnreadState(List<Conversation> incoming) {
+    final current = state.conversations.valueOrNull;
+    final localUnreadByUuid = {
+      for (final conversation in current ?? const <Conversation>[])
+        conversation.uuid: conversation.unreadCount,
+    };
+
+    return incoming.map((conversation) {
+      if (_readUuids.contains(conversation.uuid)) {
+        return conversation.unreadCount == 0
+            ? conversation
+            : conversation.copyWith(unreadCount: 0);
+      }
+
+      final localUnread = localUnreadByUuid[conversation.uuid] ?? 0;
+      final realtimeUnread = _realtimeUnreadByUuid[conversation.uuid] ?? 0;
+      final unread = [
+        conversation.unreadCount,
+        localUnread,
+        realtimeUnread,
+      ].reduce((a, b) => a > b ? a : b);
+
+      return unread == conversation.unreadCount
+          ? conversation
+          : conversation.copyWith(unreadCount: unread);
+    }).toList();
+  }
+
+  int _localUnreadTotal() {
+    final conversations = state.conversations.valueOrNull;
+    if (conversations == null) {
+      return _realtimeUnreadByUuid.values.fold<int>(0, (sum, n) => sum + n);
+    }
+    return conversations.fold<int>(0, (sum, c) => sum + c.unreadCount);
   }
 
   @override
@@ -351,6 +391,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
   final Ref _ref;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
+  final Map<String, int> _realtimeUnreadByUuid = {};
 
   VendorSupportNotifier(this._repo, this._ref)
       : super(const VendorSupportState()) {
@@ -367,6 +408,12 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
       final type = event.conversationType;
       // messageReceived: validate by UUID in _applyNewMessage — not by type.
       if (event.type == RealtimeEventType.messageReceived) {
+        if (type != null && type != 'vendor_admin') {
+          dev.log(
+            '[VendorSupport] skipping messageReceived convType=$type (not vendor_admin)',
+          );
+          return;
+        }
         _applyNewMessage(event);
         return;
       }
@@ -400,13 +447,18 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
     if (uuid == null) return;
+    _readUuids.remove(uuid);
+    _realtimeUnreadByUuid[uuid] = (_realtimeUnreadByUuid[uuid] ?? 0) + 1;
     final current = state.conversations.valueOrNull;
     if (current == null) {
       _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
-    if (idx == -1) return; // not in this list — skip silently
+    if (idx == -1) {
+      _silentRefresh();
+      return;
+    }
     final updated = current[idx].copyWith(
       unreadCount: current[idx].unreadCount + 1,
     );
@@ -424,15 +476,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         page: 1,
       );
       if (!mounted) return;
-      var conversations = result.conversations;
-      if (_readUuids.isNotEmpty) {
-        conversations = conversations.map((c) {
-          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
-            return c.copyWith(unreadCount: 0);
-          }
-          return c;
-        }).toList();
-      }
+      final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
@@ -463,15 +507,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         page: 1,
       );
       if (!mounted) return;
-      var conversations = result.conversations;
-      if (_readUuids.isNotEmpty) {
-        conversations = conversations.map((c) {
-          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
-            return c.copyWith(unreadCount: 0);
-          }
-          return c;
-        }).toList();
-      }
+      final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
@@ -506,6 +542,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
 
   void applyRead(String uuid) {
     _readUuids.add(uuid);
+    _realtimeUnreadByUuid.remove(uuid);
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -513,6 +550,34 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
     final updated = [...current];
     updated[idx] = current[idx].copyWith(unreadCount: 0);
     state = state.copyWith(conversations: AsyncValue.data(updated));
+  }
+
+  List<Conversation> _mergeUnreadState(List<Conversation> incoming) {
+    final current = state.conversations.valueOrNull;
+    final localUnreadByUuid = {
+      for (final conversation in current ?? const <Conversation>[])
+        conversation.uuid: conversation.unreadCount,
+    };
+
+    return incoming.map((conversation) {
+      if (_readUuids.contains(conversation.uuid)) {
+        return conversation.unreadCount == 0
+            ? conversation
+            : conversation.copyWith(unreadCount: 0);
+      }
+
+      final localUnread = localUnreadByUuid[conversation.uuid] ?? 0;
+      final realtimeUnread = _realtimeUnreadByUuid[conversation.uuid] ?? 0;
+      final unread = [
+        conversation.unreadCount,
+        localUnread,
+        realtimeUnread,
+      ].reduce((a, b) => a > b ? a : b);
+
+      return unread == conversation.unreadCount
+          ? conversation
+          : conversation.copyWith(unreadCount: unread);
+    }).toList();
   }
 
   @override
