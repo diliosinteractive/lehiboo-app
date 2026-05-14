@@ -27,6 +27,7 @@ import '../features/auth/presentation/screens/customer_register_screen.dart';
 import '../features/auth/presentation/screens/business_register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/otp_verification_screen.dart';
+import '../features/auth/presentation/screens/permission_audio_screen.dart';
 import '../features/auth/presentation/screens/permission_location_screen.dart';
 import '../features/auth/presentation/screens/permission_notifications_screen.dart';
 import '../features/reminders/presentation/screens/reminders_list_screen.dart';
@@ -445,12 +446,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'register-business',
         builder: (context, state) => const BusinessRegisterScreen(),
       ),
-      // Post-signup permission screens (location → notifications → home).
-      // Top-level, outside the ShellRoute, so the bottom nav stays hidden.
+      // Permission explainer screens. Top-level, outside the ShellRoute,
+      // so the bottom nav stays hidden.
+      //
+      // Location + audio are the last two steps of first-launch onboarding
+      // (carousel → location → audio → /login). Notifications fires only
+      // after a successful signup (customer/business → notifications → /).
       GoRoute(
         path: '/post-signup/location',
         name: 'post-signup-location',
         builder: (context, state) => const PermissionLocationScreen(),
+      ),
+      GoRoute(
+        path: '/post-signup/audio',
+        name: 'post-signup-audio',
+        builder: (context, state) => const PermissionAudioScreen(),
       ),
       GoRoute(
         path: '/post-signup/notifications',

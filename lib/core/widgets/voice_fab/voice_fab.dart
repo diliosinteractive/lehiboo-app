@@ -51,7 +51,10 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
   void initState() {
     super.initState();
     _initAnimations();
-    _initSpeech();
+    // Speech recognizer is initialized lazily on long-press in _startListening:
+    // speech_to_text's initialize() triggers the OS microphone prompt on first
+    // call, and we don't want that to fire just because the FAB is on screen.
+    // The mic permission explainer is shown once during onboarding instead.
     VoiceFabSounds.init();
   }
 

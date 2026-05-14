@@ -73,15 +73,16 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
           ref.read(businessRegisterProvider.notifier).reset();
           // Skip the home redirect when a GuestRestrictionDialog is active
           // so the dialog can pop pushed screens and the original gated
-          // action can resume. Otherwise route through the post-signup
-          // permission screens (location → notifications → home).
+          // action can resume. Otherwise route to the post-signup
+          // notifications screen. Location permission is now part of
+          // first-launch onboarding, not the signup flow.
           if (!ref.read(guestGuardActiveProvider)) {
             // setAuthenticatedUser already fired earlier (in
             // _handleRegistrationComplete, before showDialog) and the user
             // confirmed the success dialog, so the auth-listener cascade
             // has settled by now. A direct go() against the outer State's
             // context is safe.
-            context.go('/post-signup/location');
+            context.go('/post-signup/notifications');
           }
         },
       ),

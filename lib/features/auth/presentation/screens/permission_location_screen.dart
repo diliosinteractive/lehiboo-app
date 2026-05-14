@@ -57,7 +57,8 @@ class _PermissionLocationScreenState
     }
 
     if (!mounted) return;
-    context.go('/post-signup/notifications');
+    // Next step of first-launch onboarding: the audio permission screen.
+    context.go('/post-signup/audio');
   }
 
   @override

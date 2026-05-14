@@ -275,8 +275,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
         // skip the navigation reset — the dialog's auth-state listener
         // will pop our pushed screens and the dialog itself, returning
         // the user to the original screen so the gated action resumes.
-        // Otherwise route through the post-signup permission screens
-        // (location → notifications → home).
+        // Otherwise route to the post-signup notifications screen. Location
+        // permission is now part of first-launch onboarding (shown once
+        // before the user ever reaches the login page), so we skip it here.
         //
         // Navigation BEFORE setAuthenticatedUser is intentional: the auth
         // state change fires _AuthRouterRefresh which rebuilds the router
@@ -284,7 +285,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
         // any deferred navigation. Replacing the stack with `go()` first
         // means the subsequent refresh has nothing to pop.
         if (!ref.read(guestGuardActiveProvider)) {
-          context.go('/post-signup/location');
+          context.go('/post-signup/notifications');
         }
         // Listener cascade (Hibons sync, push init, messages realtime, …)
         // may throw — particularly CircularDependencyError when a Hibons

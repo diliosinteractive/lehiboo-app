@@ -53,7 +53,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool(AppConstants.keyOnboardingCompleted, true);
 
     if (mounted) {
-      context.go('/login');
+      // Location permission is the last step of first-launch onboarding.
+      // Marking the flag completed BEFORE navigation means if the user kills
+      // the app on the permission screen, the next launch goes straight to
+      // /login — they don't get the carousel again. On-demand location
+      // requests in search filters still re-prompt if needed.
+      context.go('/post-signup/location');
     }
   }
 
