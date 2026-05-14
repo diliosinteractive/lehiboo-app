@@ -14,6 +14,34 @@ import '../../data/models/quota_dto.dart';
 import '../../data/models/tool_result_dto.dart';
 import '../../domain/repositories/petit_boo_repository.dart';
 
+const _genericPetitBooError =
+    'Petit Boo est temporairement indisponible. Réessaie dans un instant.';
+
+String _safePetitBooErrorMessage(
+  Object? error, {
+  String fallback = _genericPetitBooError,
+}) {
+  final raw = (error ?? '').toString().trim();
+  if (raw.isEmpty) return fallback;
+
+  final lower = raw.toLowerCase();
+  final exposesProviderDetails = lower.contains('openai') ||
+      lower.contains('deepseek') ||
+      lower.contains('platform.') ||
+      lower.contains('api.openai') ||
+      lower.contains('insufficient_quota') ||
+      lower.contains('billing') ||
+      lower.contains('error code:') ||
+      lower.contains('model') ||
+      lower.contains('provider') ||
+      lower.contains('langchain') ||
+      lower.contains('traceback');
+
+  if (exposesProviderDetails) return fallback;
+
+  return raw;
+}
+
 /// Provider for the context storage
 final petitBooContextStorageProvider = Provider<PetitBooContextStorage>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
@@ -200,7 +228,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     );
 
     // Load saved session UUID FIRST (critical for session continuity)
-    final storage = SharedSecureStorage.instance;
+    const storage = SharedSecureStorage.instance;
     final savedSessionUuid = await storage.read(
       key: AppConstants.keyPetitBooSessionUuid,
     );
@@ -383,7 +411,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
           break;
         }
         state = state.copyWith(
-          error: event.error ?? 'An error occurred',
+          error: _safePetitBooErrorMessage(event.error),
           isStreaming: false,
         );
         break;
@@ -406,7 +434,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     String errorMessage = 'Erreur de connexion';
 
     if (error is PetitBooSseException) {
-      errorMessage = error.message;
+      errorMessage = _safePetitBooErrorMessage(error.message);
 
       if (error.code == 'auth_required') {
         errorMessage = 'Connectez-vous pour discuter avec Petit Boo';
@@ -477,7 +505,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     }
 
     state = state.copyWith(
-      error: error.toString(),
+      error: _safePetitBooErrorMessage(error),
       isStreaming: false,
     );
     _activeMessage = null;
@@ -486,7 +514,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   /// Save session UUID to secure storage
   Future<void> _saveSessionUuid(String uuid) async {
     try {
-      final storage = SharedSecureStorage.instance;
+      const storage = SharedSecureStorage.instance;
       await storage.write(
           key: AppConstants.keyPetitBooSessionUuid, value: uuid);
     } catch (e) {
@@ -524,7 +552,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
     // Clear saved session UUID
     try {
-      final storage = SharedSecureStorage.instance;
+      const storage = SharedSecureStorage.instance;
       await storage.delete(key: AppConstants.keyPetitBooSessionUuid);
     } catch (e) {
       if (kDebugMode) {
