@@ -9,8 +9,11 @@ import '../../data/repositories/messages_repository_impl.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
+import '../providers/admin_conversations_provider.dart';
 import '../providers/conversations_provider.dart';
 import '../providers/support_conversations_provider.dart';
+import '../providers/vendor_conversations_provider.dart';
+import '../providers/vendor_org_conversations_provider.dart';
 
 // ── Context sealed class ────────────────────────────────────────────────────
 
@@ -431,11 +434,25 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       }
 
       if (!mounted) return;
-      if (ctx is SupportConversationContext) {
-        ref.invalidate(supportConversationsProvider);
-      } else if (ctx is DashboardConversationContext ||
-          ctx is FromOrganizerConversationContext) {
-        ref.read(conversationsProvider.notifier).refresh();
+      // Refresh the relevant list so the newly created conversation appears
+      // immediately, regardless of user type (participant / vendor / admin / support).
+      // WS event `conversation.created` will also refresh on the recipient side.
+      switch (ctx) {
+        case SupportConversationContext():
+          ref.read(supportConversationsProvider.notifier).refresh();
+        case DashboardConversationContext():
+        case FromOrganizerConversationContext():
+          ref.read(conversationsProvider.notifier).refresh();
+        case AdminToUserConversationContext():
+          ref.read(adminConversationsProvider('user_support').notifier).refresh();
+        case AdminToOrgConversationContext():
+          ref.read(adminConversationsProvider('vendor_admin').notifier).refresh();
+        case VendorToParticipantConversationContext():
+          ref.read(vendorConversationsProvider.notifier).refresh();
+        case VendorToPartnerConversationContext():
+          ref.read(vendorOrgConversationsProvider.notifier).refresh();
+        case VendorSupportConversationContext():
+          ref.read(vendorSupportProvider.notifier).refresh();
       }
       Navigator.of(context).pop(true);
       // Use pushReplacement for contexts that are opened from a dedicated
