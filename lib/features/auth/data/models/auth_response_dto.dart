@@ -39,7 +39,9 @@ class UserDto with _$UserDto {
     @JsonKey(name: 'registered_at') String? registeredAt,
     @JsonKey(name: 'is_verified') @Default(false) bool isVerified,
     @Default(false) bool newsletter,
-    @JsonKey(name: 'push_notifications_enabled') @Default(false) bool pushNotificationsEnabled,
+    @JsonKey(name: 'push_notifications_enabled')
+    @Default(false)
+    bool pushNotificationsEnabled,
     @JsonKey(name: 'onesignal_id') String? onesignalId,
     UserCapabilitiesDto? capabilities,
   }) = _UserDto;
@@ -66,7 +68,7 @@ class TokensDto with _$TokensDto {
     @JsonKey(name: 'access_token') required String accessToken,
     @JsonKey(name: 'refresh_token') required String refreshToken,
     @JsonKey(name: 'token_type') @Default('Bearer') String tokenType,
-    @JsonKey(name: 'expires_in') @Default(604800) int expiresIn,
+    @JsonKey(name: 'expires_in') @Default(172800) int expiresIn,
   }) = _TokensDto;
 
   factory TokensDto.fromJson(Map<String, dynamic> json) =>
