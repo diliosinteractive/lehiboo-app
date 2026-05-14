@@ -252,6 +252,8 @@ class HibonsUpdateDto with _$HibonsUpdateDto {
     @JsonKey(name: 'new_rank_label') String? newRankLabel,
     @JsonKey(name: 'animation_label') String? animationLabel,
     String? pillar,
+    String? source,
+    @JsonKey(name: 'reward_message') String? rewardMessage,
   }) = _HibonsUpdateDto;
 
   factory HibonsUpdateDto.fromJson(Map<String, dynamic> json) =>

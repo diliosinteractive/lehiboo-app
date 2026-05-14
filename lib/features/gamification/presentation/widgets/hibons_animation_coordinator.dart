@@ -95,7 +95,18 @@ class _HibonsAnimationCoordinatorState
       debugPrint('🪙 HibonsAnimationCoordinator: no messenger, skipping snackbar');
       return;
     }
-    debugPrint('🪙 HibonsAnimationCoordinator: showing snackbar delta=${update.delta}');
+    debugPrint(
+      '🪙 HibonsAnimationCoordinator: showing snackbar delta=${update.delta} source=${update.source}',
+    );
+
+    // Règle de fallback (cf. HIBONS_REWARD_MESSAGE_MOBILE_SPEC §"Règle d'affichage mobile") :
+    // reward_message (i18n backend) → animation_label (générique "+N Hibons")
+    // → fallback dur si tout est null.
+    final fallback = update.delta > 0
+        ? '+${update.delta} Hibons 🪙 gagnés !'
+        : '${update.delta} Hibons';
+    final title = update.rewardMessage ?? update.animationLabel ?? fallback;
+
     if (update.delta > 0) {
       messenger
         ..hideCurrentSnackBar()
@@ -106,10 +117,12 @@ class _HibonsAnimationCoordinatorState
                 const Icon(Icons.monetization_on,
                     color: Color(0xFFFFB300), size: 22),
                 const SizedBox(width: 12),
-                Text(
-                  '+${update.delta} Hibons 🪙 gagnés !',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -128,7 +141,7 @@ class _HibonsAnimationCoordinatorState
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text('${update.delta} Hibons'),
+            content: Text(title),
             backgroundColor: const Color(0xFF6B7280),
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,

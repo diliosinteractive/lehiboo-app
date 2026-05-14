@@ -10,6 +10,8 @@ class HibonsUpdate {
   final String? newRankLabel;
   final String? animationLabel;
   final String? pillar;
+  final String? source;
+  final String? rewardMessage;
 
   const HibonsUpdate({
     required this.delta,
@@ -21,5 +23,7 @@ class HibonsUpdate {
     this.newRankLabel,
     this.animationLabel,
     this.pillar,
+    this.source,
+    this.rewardMessage,
   });
 }
