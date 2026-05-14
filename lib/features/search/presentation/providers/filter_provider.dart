@@ -543,16 +543,28 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
         clearLocation();
         break;
       case FilterChipType.thematique:
-        if (value != null) removeThematique(value);
+        if (value != null) {
+          removeThematique(value);
+        } else {
+          clearThematiques();
+        }
         break;
       case FilterChipType.category:
-        if (value != null) removeCategory(value);
+        if (value != null) {
+          removeCategory(value);
+        } else {
+          clearCategories();
+        }
         break;
       case FilterChipType.organizer:
         clearOrganizer();
         break;
       case FilterChipType.tag:
-        if (value != null) removeTag(value);
+        if (value != null) {
+          removeTag(value);
+        } else {
+          clearTags();
+        }
         break;
       case FilterChipType.eventTag:
         setEventTag(null);
@@ -562,6 +574,8 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
           setTargetAudiences(
             state.targetAudienceSlugs.where((slug) => slug != value).toList(),
           );
+        } else {
+          setTargetAudiences(const []);
         }
         break;
       case FilterChipType.specialEvent:
@@ -569,6 +583,8 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
           setSpecialEvents(
             state.specialEventSlugs.where((slug) => slug != value).toList(),
           );
+        } else {
+          setSpecialEvents(const []);
         }
         break;
       case FilterChipType.emotion:
@@ -576,6 +592,8 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
           setEmotions(
             state.emotionSlugs.where((slug) => slug != value).toList(),
           );
+        } else {
+          setEmotions(const []);
         }
         break;
       case FilterChipType.availability:
@@ -769,21 +787,48 @@ final filterPreviewCountProvider =
 final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   final filter = ref.watch(eventFilterProvider);
   final chips = <ActiveFilterChip>[];
+  final needsReferenceLabels = filter.thematiquesSlugs.isNotEmpty ||
+      filter.categoriesSlugs.isNotEmpty ||
+      filter.tagsSlugs.isNotEmpty ||
+      filter.eventTagSlug != null ||
+      filter.targetAudienceSlugs.isNotEmpty ||
+      filter.specialEventSlugs.isNotEmpty ||
+      filter.emotionSlugs.isNotEmpty;
+  final referenceData = needsReferenceLabels
+      ? ref.watch(eventReferenceDataProvider).valueOrNull
+      : null;
+  final categoryLabels = referenceData == null
+      ? const <String, String>{}
+      : _categoryLabelMap(referenceData.categories);
+  final themeLabels = referenceData == null
+      ? const <String, String>{}
+      : _optionLabelMap(referenceData.themes);
+  final eventTagLabels = referenceData == null
+      ? const <String, String>{}
+      : _optionLabelMap(referenceData.eventTags);
+  final targetAudienceLabels = referenceData == null
+      ? const <String, String>{}
+      : _audienceLabelMap(referenceData.audienceGroups);
+  final specialEventLabels = referenceData == null
+      ? const <String, String>{}
+      : _optionLabelMap(referenceData.specialEvents);
+  final emotionLabels = referenceData == null
+      ? const <String, String>{}
+      : _optionLabelMap(referenceData.emotions);
 
-  // Search query
-  if (filter.searchQuery.isNotEmpty) {
-    chips.add(ActiveFilterChip(
-      id: 'search',
-      label: '"${filter.searchQuery}"',
-      type: FilterChipType.search,
-    ));
-  }
+  // Search stays in the search bar, like web /events; it is not duplicated here.
 
-  // Date filter
-  if (filter.dateFilterLabel != null) {
+  // Date filter: quick date chips are already visible, so only custom ranges
+  // get an active-filter chip.
+  final showDateRangeChip = filter.dateFilterType == DateFilterType.custom ||
+      (filter.dateFilterType == null &&
+          (filter.startDate != null || filter.endDate != null));
+  if (showDateRangeChip) {
+    final from = _dateParam(filter.effectiveStartDate) ?? '...';
+    final to = _dateParam(filter.effectiveEndDate) ?? '...';
     chips.add(ActiveFilterChip(
       id: 'date',
-      label: filter.dateFilterLabel!,
+      label: '$from → $to',
       type: FilterChipType.date,
     ));
   }
@@ -801,7 +846,7 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   if (filter.cityName != null) {
     chips.add(ActiveFilterChip(
       id: 'city',
-      label: filter.cityName!,
+      label: '${filter.cityName!} · ${filter.effectiveCityRadiusKm} km',
       type: FilterChipType.city,
     ));
   }
@@ -816,22 +861,20 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   }
 
   // Thematiques
-  for (final slug in filter.thematiquesSlugs) {
+  if (filter.thematiquesSlugs.isNotEmpty) {
     chips.add(ActiveFilterChip(
-      id: 'thematique_$slug',
-      label: slug, // Will be replaced with actual name in UI
+      id: 'thematique',
+      label: _joinedLabels(filter.thematiquesSlugs, themeLabels),
       type: FilterChipType.thematique,
-      value: slug,
     ));
   }
 
   // Categories
-  for (final slug in filter.categoriesSlugs) {
+  if (filter.categoriesSlugs.isNotEmpty) {
     chips.add(ActiveFilterChip(
-      id: 'category_$slug',
-      label: slug,
+      id: 'category',
+      label: _joinedLabels(filter.categoriesSlugs, categoryLabels),
       type: FilterChipType.category,
-      value: slug,
     ));
   }
 
@@ -845,48 +888,45 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   }
 
   // Tags
-  for (final slug in filter.tagsSlugs) {
+  if (filter.tagsSlugs.isNotEmpty) {
     chips.add(ActiveFilterChip(
-      id: 'tag_$slug',
-      label: slug,
+      id: 'tag',
+      label: _joinedLabels(filter.tagsSlugs, eventTagLabels),
       type: FilterChipType.tag,
-      value: slug,
     ));
   }
 
   if (filter.eventTagSlug != null) {
     chips.add(ActiveFilterChip(
       id: 'event_tag',
-      label: filter.eventTagSlug!,
+      label: eventTagLabels[filter.eventTagSlug!] ??
+          _slugToDisplayName(filter.eventTagSlug!),
       type: FilterChipType.eventTag,
       value: filter.eventTagSlug,
     ));
   }
 
-  for (final slug in filter.targetAudienceSlugs) {
+  if (filter.targetAudienceSlugs.isNotEmpty) {
     chips.add(ActiveFilterChip(
-      id: 'target_audience_$slug',
-      label: slug,
+      id: 'target_audience',
+      label: _joinedLabels(filter.targetAudienceSlugs, targetAudienceLabels),
       type: FilterChipType.targetAudience,
-      value: slug,
     ));
   }
 
-  for (final slug in filter.specialEventSlugs) {
+  if (filter.specialEventSlugs.isNotEmpty) {
     chips.add(ActiveFilterChip(
-      id: 'special_event_$slug',
-      label: slug,
+      id: 'special_event',
+      label: _joinedLabels(filter.specialEventSlugs, specialEventLabels),
       type: FilterChipType.specialEvent,
-      value: slug,
     ));
   }
 
-  for (final slug in filter.emotionSlugs) {
+  if (filter.emotionSlugs.isNotEmpty) {
     chips.add(ActiveFilterChip(
-      id: 'emotion_$slug',
-      label: slug,
+      id: 'emotion',
+      label: _joinedLabels(filter.emotionSlugs, emotionLabels),
       type: FilterChipType.emotion,
-      value: slug,
     ));
   }
 
@@ -940,6 +980,56 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
 
   return chips;
 });
+
+Map<String, String> _categoryLabelMap(
+  List<EventReferenceCategoryDto> categories,
+) {
+  final labels = <String, String>{};
+
+  void collect(EventReferenceCategoryDto category) {
+    labels[category.slug] = category.name;
+    for (final child in category.children) {
+      collect(child);
+    }
+  }
+
+  for (final category in categories) {
+    collect(category);
+  }
+
+  return labels;
+}
+
+Map<String, String> _optionLabelMap(List<EventReferenceOptionDto> options) {
+  return {
+    for (final option in options)
+      if (option.slug.isNotEmpty) option.slug: option.name,
+  };
+}
+
+Map<String, String> _audienceLabelMap(
+  List<EventReferenceAudienceGroupDto> groups,
+) {
+  return {
+    for (final group in groups)
+      for (final audience in group.audiences)
+        if (audience.slug.isNotEmpty) audience.slug: audience.name,
+  };
+}
+
+String _joinedLabels(List<String> slugs, Map<String, String> labels) {
+  return slugs
+      .map((slug) => labels[slug] ?? _slugToDisplayName(slug))
+      .join(', ');
+}
+
+String _slugToDisplayName(String slug) {
+  return slug
+      .split(RegExp(r'[-_\s]+'))
+      .where((part) => part.isNotEmpty)
+      .map((part) => part[0].toUpperCase() + part.substring(1))
+      .join(' ');
+}
 
 String _locationTypeLabel(LocationTypeFilter type) {
   switch (type) {

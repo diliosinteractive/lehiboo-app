@@ -12,6 +12,7 @@ import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../widgets/airbnb_search_bar.dart';
 import '../widgets/airbnb_search_sheet.dart';
+import '../widgets/active_filter_chips.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/save_search_sheet.dart';
 
@@ -330,6 +331,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ],
                   ),
                 ),
+              ),
+            ),
+            const SliverToBoxAdapter(
+              child: ActiveFilterChips(
+                padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
               ),
             ),
 
