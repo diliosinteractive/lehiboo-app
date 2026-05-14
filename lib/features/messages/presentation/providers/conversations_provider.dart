@@ -242,6 +242,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         currentPage: 1,
         hasMore: result.hasMore,
       );
+      _refreshUnreadCount();
     } catch (_) {}
   }
 
