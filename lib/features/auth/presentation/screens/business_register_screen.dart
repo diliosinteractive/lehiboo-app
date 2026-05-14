@@ -3,6 +3,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../providers/auth_provider.dart';
 import '../providers/business_register_provider.dart';
 import '../widgets/step_indicator.dart';
@@ -17,10 +18,12 @@ class BusinessRegisterScreen extends ConsumerStatefulWidget {
   const BusinessRegisterScreen({super.key});
 
   @override
-  ConsumerState<BusinessRegisterScreen> createState() => _BusinessRegisterScreenState();
+  ConsumerState<BusinessRegisterScreen> createState() =>
+      _BusinessRegisterScreenState();
 }
 
-class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen> {
+class _BusinessRegisterScreenState
+    extends ConsumerState<BusinessRegisterScreen> {
   late PageController _pageController;
 
   @override
@@ -58,7 +61,9 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
 
     // Set authenticated user in auth provider
     if (state.authenticatedUser != null) {
-      ref.read(authProvider.notifier).setAuthenticatedUser(state.authenticatedUser!);
+      ref
+          .read(authProvider.notifier)
+          .setAuthenticatedUser(state.authenticatedUser!);
     }
 
     // Show success dialog and navigate to home
@@ -91,10 +96,12 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final state = ref.watch(businessRegisterProvider);
 
     // Listen for step changes and animate PageView
-    ref.listen<BusinessRegisterState>(businessRegisterProvider, (previous, next) {
+    ref.listen<BusinessRegisterState>(businessRegisterProvider,
+        (previous, next) {
       if (previous?.stepIndex != next.stepIndex) {
         _goToPage(next.stepIndex);
       }
@@ -115,7 +122,7 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
           onPressed: _handleBack,
         ),
         title: Text(
-          'Compte Professionnel',
+          l10n.authBusinessTitle,
           style: TextStyle(
             color: Colors.grey[800],
             fontSize: 16,
@@ -132,14 +139,12 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Annuler l\'inscription ?'),
-                  content: const Text(
-                    'Votre progression sera perdue.',
-                  ),
+                  title: Text(l10n.authBusinessCancelTitle),
+                  content: Text(l10n.authBusinessCancelContent),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Continuer'),
+                      child: Text(l10n.commonContinue),
                     ),
                     TextButton(
                       onPressed: () {
@@ -147,9 +152,9 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
                         ref.read(businessRegisterProvider.notifier).reset();
                         context.go('/login');
                       },
-                      child: const Text(
-                        'Annuler',
-                        style: TextStyle(color: Colors.red),
+                      child: Text(
+                        l10n.commonCancel,
+                        style: const TextStyle(color: Colors.red),
                       ),
                     ),
                   ],
@@ -183,7 +188,8 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.check_circle_outline, color: Colors.green.shade700, size: 20),
+                    Icon(Icons.check_circle_outline,
+                        color: Colors.green.shade700, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -197,7 +203,9 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
                     IconButton(
                       icon: const Icon(Icons.close, size: 18),
                       onPressed: () {
-                        ref.read(businessRegisterProvider.notifier).clearSuccess();
+                        ref
+                            .read(businessRegisterProvider.notifier)
+                            .clearSuccess();
                       },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -218,7 +226,8 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -232,7 +241,9 @@ class _BusinessRegisterScreenState extends ConsumerState<BusinessRegisterScreen>
                     IconButton(
                       icon: const Icon(Icons.close, size: 18),
                       onPressed: () {
-                        ref.read(businessRegisterProvider.notifier).clearError();
+                        ref
+                            .read(businessRegisterProvider.notifier)
+                            .clearError();
                       },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -305,7 +316,8 @@ class _SuccessDialogState extends State<_SuccessDialog> {
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    _confettiController =
+        ConfettiController(duration: const Duration(seconds: 3));
     // Start confetti animation
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _confettiController.play();
@@ -320,6 +332,8 @@ class _SuccessDialogState extends State<_SuccessDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Stack(
       children: [
         // Dialog
@@ -360,9 +374,9 @@ class _SuccessDialogState extends State<_SuccessDialog> {
                 const SizedBox(height: 24),
 
                 // Title
-                const Text(
-                  'Inscription réussie !',
-                  style: TextStyle(
+                Text(
+                  l10n.authBusinessSuccessTitle,
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2D3748),
@@ -374,8 +388,10 @@ class _SuccessDialogState extends State<_SuccessDialog> {
                 // Message
                 Text(
                   widget.organizationName != null
-                      ? 'Votre compte professionnel pour "${widget.organizationName}" a été créé avec succès.'
-                      : 'Votre compte professionnel a été créé avec succès.',
+                      ? l10n.authBusinessSuccessMessageWithOrg(
+                          widget.organizationName!,
+                        )
+                      : l10n.authBusinessSuccessMessage,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -384,7 +400,7 @@ class _SuccessDialogState extends State<_SuccessDialog> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Vous pouvez maintenant accéder à toutes les fonctionnalités de LeHiboo.',
+                  l10n.authBusinessSuccessAccess,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -407,9 +423,9 @@ class _SuccessDialogState extends State<_SuccessDialog> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Commencer',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.authStart,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),

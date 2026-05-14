@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
@@ -63,10 +64,10 @@ class HomeCategoriesSection extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: HomeSectionTitle(
-                  title: 'Explorer par catégorie',
+                  title: context.l10n.homeExploreByCategoryTitle,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF0B1220),
                 ),
@@ -112,7 +113,7 @@ class _CategoryTile extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Explorer $displayName',
+      label: context.l10n.homeExploreCategorySemantics(displayName),
       child: GestureDetector(
         onTap: () {
           context.push(

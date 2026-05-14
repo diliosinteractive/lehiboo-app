@@ -1153,6 +1153,1398 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Notifications déjà activées'**
   String get authPermissionNotificationsGranted;
+
+  /// No description provided for @authEmailAddressInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez entrer une adresse email valide'**
+  String get authEmailAddressInvalid;
+
+  /// No description provided for @authOtpEmailVerified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email vérifié !'**
+  String get authOtpEmailVerified;
+
+  /// No description provided for @authRegisterMissingVerificationToken.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur : token de vérification manquant. Veuillez recommencer.'**
+  String get authRegisterMissingVerificationToken;
+
+  /// No description provided for @authCustomerAccountCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte créé avec succès !'**
+  String get authCustomerAccountCreated;
+
+  /// No description provided for @authCustomerEmailSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencez par vérifier votre adresse email'**
+  String get authCustomerEmailSubtitle;
+
+  /// No description provided for @authReceiveCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recevoir le code'**
+  String get authReceiveCode;
+
+  /// No description provided for @authCreateBusinessAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un compte professionnel'**
+  String get authCreateBusinessAccount;
+
+  /// No description provided for @authVerificationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérification'**
+  String get authVerificationTitle;
+
+  /// No description provided for @authEditEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'email'**
+  String get authEditEmail;
+
+  /// No description provided for @authYourInformationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos informations'**
+  String get authYourInformationTitle;
+
+  /// No description provided for @authPhoneOptionalLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléphone (optionnel)'**
+  String get authPhoneOptionalLabel;
+
+  /// No description provided for @authPhoneHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'06 12 34 56 78'**
+  String get authPhoneHint;
+
+  /// No description provided for @authPhoneInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro de téléphone invalide'**
+  String get authPhoneInvalid;
+
+  /// No description provided for @authBirthDateLabelOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de naissance (optionnel)'**
+  String get authBirthDateLabelOptional;
+
+  /// No description provided for @authBirthDateHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de naissance'**
+  String get authBirthDateHelp;
+
+  /// No description provided for @authDateHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'JJ/MM/AAAA'**
+  String get authDateHint;
+
+  /// No description provided for @authCityOptionalLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville (optionnel)'**
+  String get authCityOptionalLabel;
+
+  /// No description provided for @authCityHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lyon, Paris...'**
+  String get authCityHint;
+
+  /// No description provided for @authMarketingOptIn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je souhaite recevoir les actualités et offres du Hiboo par e-mail.'**
+  String get authMarketingOptIn;
+
+  /// No description provided for @authStepEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email'**
+  String get authStepEmail;
+
+  /// No description provided for @authStepCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code'**
+  String get authStepCode;
+
+  /// No description provided for @authStepInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos'**
+  String get authStepInfo;
+
+  /// No description provided for @authProfessionalEmailLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email professionnel'**
+  String get authProfessionalEmailLabel;
+
+  /// No description provided for @authProfessionalEmailHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'votre@entreprise.com'**
+  String get authProfessionalEmailHint;
+
+  /// No description provided for @authValidationMin2Chars.
+  ///
+  /// In fr, this message translates to:
+  /// **'Min. 2 caractères'**
+  String get authValidationMin2Chars;
+
+  /// No description provided for @authValidationMin5Chars.
+  ///
+  /// In fr, this message translates to:
+  /// **'Min. 5 caractères'**
+  String get authValidationMin5Chars;
+
+  /// No description provided for @authPasswordMinLengthShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Min. 8 caractères'**
+  String get authPasswordMinLengthShort;
+
+  /// No description provided for @authPasswordNeedsUppercaseShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une majuscule requise'**
+  String get authPasswordNeedsUppercaseShort;
+
+  /// No description provided for @authPasswordNeedsNumberShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un chiffre requis'**
+  String get authPasswordNeedsNumberShort;
+
+  /// No description provided for @authPasswordNeedsSpecialShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un caractère spécial requis'**
+  String get authPasswordNeedsSpecialShort;
+
+  /// No description provided for @authPasswordStrengthWeak.
+  ///
+  /// In fr, this message translates to:
+  /// **'Faible'**
+  String get authPasswordStrengthWeak;
+
+  /// No description provided for @authPasswordStrengthFair.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moyen'**
+  String get authPasswordStrengthFair;
+
+  /// No description provided for @authPasswordStrengthGood.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bon'**
+  String get authPasswordStrengthGood;
+
+  /// No description provided for @authPasswordStrengthStrong.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fort'**
+  String get authPasswordStrengthStrong;
+
+  /// No description provided for @authPasswordRequirementMin8.
+  ///
+  /// In fr, this message translates to:
+  /// **'Au moins 8 caractères'**
+  String get authPasswordRequirementMin8;
+
+  /// No description provided for @authPasswordRequirementUppercase.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une lettre majuscule'**
+  String get authPasswordRequirementUppercase;
+
+  /// No description provided for @authPasswordRequirementNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un chiffre'**
+  String get authPasswordRequirementNumber;
+
+  /// No description provided for @authPasswordRequirementSpecial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un caractère spécial'**
+  String get authPasswordRequirementSpecial;
+
+  /// No description provided for @authBusinessTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Professionnel'**
+  String get authBusinessTitle;
+
+  /// No description provided for @authBusinessCancelTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler l\'inscription ?'**
+  String get authBusinessCancelTitle;
+
+  /// No description provided for @authBusinessCancelContent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre progression sera perdue.'**
+  String get authBusinessCancelContent;
+
+  /// No description provided for @authBusinessSuccessTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inscription réussie !'**
+  String get authBusinessSuccessTitle;
+
+  /// No description provided for @authBusinessSuccessMessageWithOrg.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre compte professionnel pour \"{organizationName}\" a été créé avec succès.'**
+  String authBusinessSuccessMessageWithOrg(String organizationName);
+
+  /// No description provided for @authBusinessSuccessMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre compte professionnel a été créé avec succès.'**
+  String get authBusinessSuccessMessage;
+
+  /// No description provided for @authBusinessSuccessAccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous pouvez maintenant accéder à toutes les fonctionnalités de LeHiboo.'**
+  String get authBusinessSuccessAccess;
+
+  /// No description provided for @authStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencer'**
+  String get authStart;
+
+  /// No description provided for @authBusinessStepInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos'**
+  String get authBusinessStepInfo;
+
+  /// No description provided for @authBusinessStepVerification.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérif.'**
+  String get authBusinessStepVerification;
+
+  /// No description provided for @authBusinessStepCompany.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entreprise'**
+  String get authBusinessStepCompany;
+
+  /// No description provided for @authBusinessStepUsage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Usage'**
+  String get authBusinessStepUsage;
+
+  /// No description provided for @authBusinessStepTerms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Termes'**
+  String get authBusinessStepTerms;
+
+  /// No description provided for @authPersonalInfoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Informations personnelles'**
+  String get authPersonalInfoTitle;
+
+  /// No description provided for @authPersonalInfoSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces informations seront utilisées pour créer votre compte'**
+  String get authPersonalInfoSubtitle;
+
+  /// No description provided for @authOrganizationCompanyLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entreprise'**
+  String get authOrganizationCompanyLabel;
+
+  /// No description provided for @authOrganizationAssociationLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Association'**
+  String get authOrganizationAssociationLabel;
+
+  /// No description provided for @authOrganizationMunicipalityLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Collectivité'**
+  String get authOrganizationMunicipalityLabel;
+
+  /// No description provided for @authOrganizationCompanyDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Société, TPE, PME, startup...'**
+  String get authOrganizationCompanyDescription;
+
+  /// No description provided for @authOrganizationAssociationDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Loi 1901, fondation...'**
+  String get authOrganizationAssociationDescription;
+
+  /// No description provided for @authOrganizationMunicipalityDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mairie, département, région...'**
+  String get authOrganizationMunicipalityDescription;
+
+  /// No description provided for @authOrganizationCompanyLower.
+  ///
+  /// In fr, this message translates to:
+  /// **'entreprise'**
+  String get authOrganizationCompanyLower;
+
+  /// No description provided for @authOrganizationAssociationLower.
+  ///
+  /// In fr, this message translates to:
+  /// **'association'**
+  String get authOrganizationAssociationLower;
+
+  /// No description provided for @authOrganizationMunicipalityLower.
+  ///
+  /// In fr, this message translates to:
+  /// **'collectivité'**
+  String get authOrganizationMunicipalityLower;
+
+  /// No description provided for @authOrganizationCompanyArticle.
+  ///
+  /// In fr, this message translates to:
+  /// **'l\'entreprise'**
+  String get authOrganizationCompanyArticle;
+
+  /// No description provided for @authOrganizationAssociationArticle.
+  ///
+  /// In fr, this message translates to:
+  /// **'l\'association'**
+  String get authOrganizationAssociationArticle;
+
+  /// No description provided for @authOrganizationMunicipalityArticle.
+  ///
+  /// In fr, this message translates to:
+  /// **'la collectivité'**
+  String get authOrganizationMunicipalityArticle;
+
+  /// No description provided for @authOrganizationCompanyPossessive.
+  ///
+  /// In fr, this message translates to:
+  /// **'votre entreprise'**
+  String get authOrganizationCompanyPossessive;
+
+  /// No description provided for @authOrganizationAssociationPossessive.
+  ///
+  /// In fr, this message translates to:
+  /// **'votre association'**
+  String get authOrganizationAssociationPossessive;
+
+  /// No description provided for @authOrganizationMunicipalityPossessive.
+  ///
+  /// In fr, this message translates to:
+  /// **'votre collectivité'**
+  String get authOrganizationMunicipalityPossessive;
+
+  /// No description provided for @authBusinessCompanyInfoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Informations de {organizationArticle}'**
+  String authBusinessCompanyInfoTitle(String organizationArticle);
+
+  /// No description provided for @authBusinessCompanyInfoSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces informations permettront d\'identifier {organizationPossessive}'**
+  String authBusinessCompanyInfoSubtitle(String organizationPossessive);
+
+  /// No description provided for @authOrganizationTypeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type d\'organisation'**
+  String get authOrganizationTypeLabel;
+
+  /// No description provided for @authOrganizationNameLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de {organizationArticle}'**
+  String authOrganizationNameLabel(String organizationArticle);
+
+  /// No description provided for @authCompanyNameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ma Société SAS'**
+  String get authCompanyNameHint;
+
+  /// No description provided for @authOptionalSuffix.
+  ///
+  /// In fr, this message translates to:
+  /// **'(optionnel)'**
+  String get authOptionalSuffix;
+
+  /// No description provided for @authSiretInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'SIRET invalide'**
+  String get authSiretInvalid;
+
+  /// No description provided for @authSiretHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'14 chiffres, sans espaces'**
+  String get authSiretHelp;
+
+  /// No description provided for @authIndustryLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Secteur d\'activité'**
+  String get authIndustryLabel;
+
+  /// No description provided for @authSelectHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner'**
+  String get authSelectHint;
+
+  /// No description provided for @authEmployeeCountLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effectif'**
+  String get authEmployeeCountLabel;
+
+  /// No description provided for @authBillingAddressLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse de facturation'**
+  String get authBillingAddressLabel;
+
+  /// No description provided for @authBillingAddressHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'123 rue de la Paix'**
+  String get authBillingAddressHint;
+
+  /// No description provided for @authPostalCodeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code postal'**
+  String get authPostalCodeLabel;
+
+  /// No description provided for @authPostalCodeHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'75001'**
+  String get authPostalCodeHint;
+
+  /// No description provided for @authCityLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville'**
+  String get authCityLabel;
+
+  /// No description provided for @authCityFieldHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paris'**
+  String get authCityFieldHint;
+
+  /// No description provided for @authCountryLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pays'**
+  String get authCountryLabel;
+
+  /// No description provided for @authCountryHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pays'**
+  String get authCountryHint;
+
+  /// No description provided for @authLoading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement...'**
+  String get authLoading;
+
+  /// No description provided for @authIndustryTechnology.
+  ///
+  /// In fr, this message translates to:
+  /// **'Technologie'**
+  String get authIndustryTechnology;
+
+  /// No description provided for @authIndustryFinance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Finance'**
+  String get authIndustryFinance;
+
+  /// No description provided for @authIndustryHealth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Santé'**
+  String get authIndustryHealth;
+
+  /// No description provided for @authIndustryEducation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Éducation'**
+  String get authIndustryEducation;
+
+  /// No description provided for @authIndustryCommerce.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commerce'**
+  String get authIndustryCommerce;
+
+  /// No description provided for @authIndustryServices.
+  ///
+  /// In fr, this message translates to:
+  /// **'Services'**
+  String get authIndustryServices;
+
+  /// No description provided for @authIndustryIndustry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Industrie'**
+  String get authIndustryIndustry;
+
+  /// No description provided for @authIndustryTransport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Transport'**
+  String get authIndustryTransport;
+
+  /// No description provided for @authIndustryRealEstate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Immobilier'**
+  String get authIndustryRealEstate;
+
+  /// No description provided for @authIndustryOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get authIndustryOther;
+
+  /// No description provided for @authCountryFrance.
+  ///
+  /// In fr, this message translates to:
+  /// **'France'**
+  String get authCountryFrance;
+
+  /// No description provided for @authCountryBelgium.
+  ///
+  /// In fr, this message translates to:
+  /// **'Belgique'**
+  String get authCountryBelgium;
+
+  /// No description provided for @authCountrySwitzerland.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suisse'**
+  String get authCountrySwitzerland;
+
+  /// No description provided for @authCountryLuxembourg.
+  ///
+  /// In fr, this message translates to:
+  /// **'Luxembourg'**
+  String get authCountryLuxembourg;
+
+  /// No description provided for @authCountryMonaco.
+  ///
+  /// In fr, this message translates to:
+  /// **'Monaco'**
+  String get authCountryMonaco;
+
+  /// No description provided for @authCountryGermany.
+  ///
+  /// In fr, this message translates to:
+  /// **'Allemagne'**
+  String get authCountryGermany;
+
+  /// No description provided for @authCountrySpain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Espagne'**
+  String get authCountrySpain;
+
+  /// No description provided for @authCountryItaly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Italie'**
+  String get authCountryItaly;
+
+  /// No description provided for @authCountryNetherlands.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pays-Bas'**
+  String get authCountryNetherlands;
+
+  /// No description provided for @authCountryUnitedKingdom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Royaume-Uni'**
+  String get authCountryUnitedKingdom;
+
+  /// No description provided for @authCountryOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get authCountryOther;
+
+  /// No description provided for @authCompanySearchTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche rapide'**
+  String get authCompanySearchTitle;
+
+  /// No description provided for @authCompanySearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher {organizationPossessive} par nom...'**
+  String authCompanySearchHint(String organizationPossessive);
+
+  /// No description provided for @authCompanySearchHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherchez {organizationPossessive} pour remplir automatiquement le formulaire'**
+  String authCompanySearchHelper(String organizationPossessive);
+
+  /// No description provided for @authSiretLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'SIRET : {siret}'**
+  String authSiretLine(String siret);
+
+  /// No description provided for @authUsageModeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode d\'utilisation'**
+  String get authUsageModeTitle;
+
+  /// No description provided for @authUsageModeSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment comptez-vous utiliser LeHiboo ?'**
+  String get authUsageModeSubtitle;
+
+  /// No description provided for @authUsageModePersonalLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisation personnelle'**
+  String get authUsageModePersonalLabel;
+
+  /// No description provided for @authUsageModePersonalDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je suis le seul à utiliser le compte'**
+  String get authUsageModePersonalDescription;
+
+  /// No description provided for @authUsageModeTeamLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe'**
+  String get authUsageModeTeamLabel;
+
+  /// No description provided for @authUsageModeTeamDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plusieurs personnes utiliseront le compte'**
+  String get authUsageModeTeamDescription;
+
+  /// No description provided for @authTeamEmailsLabelOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Emails des collaborateurs (optionnel)'**
+  String get authTeamEmailsLabelOptional;
+
+  /// No description provided for @authTeamEmailsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'email1@exemple.com, email2@exemple.com'**
+  String get authTeamEmailsHint;
+
+  /// No description provided for @authTeamEmailsHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Séparez les emails par des virgules'**
+  String get authTeamEmailsHelper;
+
+  /// No description provided for @authInvalidEmailWithValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email invalide : {email}'**
+  String authInvalidEmailWithValue(String email);
+
+  /// No description provided for @authDefaultMonthlyBudgetLabelOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Budget mensuel par défaut (optionnel)'**
+  String get authDefaultMonthlyBudgetLabelOptional;
+
+  /// No description provided for @authAmountInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez entrer un montant valide'**
+  String get authAmountInvalid;
+
+  /// No description provided for @authTermsFinalizationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Finalisation'**
+  String get authTermsFinalizationTitle;
+
+  /// No description provided for @authTermsFinalizationSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifiez vos informations et acceptez les conditions'**
+  String get authTermsFinalizationSubtitle;
+
+  /// No description provided for @authTermsSummaryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récapitulatif'**
+  String get authTermsSummaryTitle;
+
+  /// No description provided for @authTermsSummaryPersonal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Informations personnelles'**
+  String get authTermsSummaryPersonal;
+
+  /// No description provided for @authTermsSummaryOrganization.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisation'**
+  String get authTermsSummaryOrganization;
+
+  /// No description provided for @authTermsSummaryUsage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisation'**
+  String get authTermsSummaryUsage;
+
+  /// No description provided for @authTermsBudgetLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Budget : {budget} EUR/mois'**
+  String authTermsBudgetLine(String budget);
+
+  /// No description provided for @authTermsInvitationsLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitations : {count} collaborateurs'**
+  String authTermsInvitationsLine(int count);
+
+  /// No description provided for @authBusinessTermsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'conditions spécifiques aux comptes professionnels'**
+  String get authBusinessTermsLabel;
+
+  /// No description provided for @authCreateBusinessAccountButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer mon compte business'**
+  String get authCreateBusinessAccountButton;
+
+  /// No description provided for @authBusinessTermsHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'En créant un compte, vous confirmez que les informations fournies sont exactes et que vous êtes autorisé à représenter cette organisation.'**
+  String get authBusinessTermsHelper;
+
+  /// No description provided for @homeTooltipNotifications.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get homeTooltipNotifications;
+
+  /// No description provided for @homeTooltipCart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon panier'**
+  String get homeTooltipCart;
+
+  /// No description provided for @homeTooltipAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon compte'**
+  String get homeTooltipAccount;
+
+  /// No description provided for @homeViewMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir plus'**
+  String get homeViewMore;
+
+  /// No description provided for @homeViewAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir tout'**
+  String get homeViewAll;
+
+  /// No description provided for @homeNewActivitiesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveautés'**
+  String get homeNewActivitiesTitle;
+
+  /// No description provided for @homeNoNewActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune nouveauté trouvée.'**
+  String get homeNoNewActivities;
+
+  /// No description provided for @homeNearbyAvailableTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités disponibles à proximité'**
+  String get homeNearbyAvailableTitle;
+
+  /// No description provided for @homeWebCtaTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retrouvez vos événements en toute simplicité'**
+  String get homeWebCtaTitle;
+
+  /// No description provided for @homeWebCtaBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notre site web offre une expérience complète pour découvrir et réserver vos activités locales.'**
+  String get homeWebCtaBody;
+
+  /// No description provided for @homeWebCtaButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrir le site'**
+  String get homeWebCtaButton;
+
+  /// No description provided for @homeFallbackPopularCitiesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Où ça bouge en ce moment'**
+  String get homeFallbackPopularCitiesTitle;
+
+  /// No description provided for @homePopularCitiesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Villes populaires'**
+  String get homePopularCitiesTitle;
+
+  /// No description provided for @homeHeroGreetingMorning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour {firstName} !'**
+  String homeHeroGreetingMorning(String firstName);
+
+  /// No description provided for @homeHeroGreetingAfternoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bon après-midi {firstName} !'**
+  String homeHeroGreetingAfternoon(String firstName);
+
+  /// No description provided for @homeHeroGreetingEvening.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonsoir {firstName} !'**
+  String homeHeroGreetingEvening(String firstName);
+
+  /// No description provided for @homeHeroGreetingNight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonne nuit {firstName} !'**
+  String homeHeroGreetingNight(String firstName);
+
+  /// No description provided for @homeHeroNightTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sorties nocturnes'**
+  String get homeHeroNightTitle;
+
+  /// No description provided for @homeHeroNightTitleWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sorties nocturnes à {cityName}'**
+  String homeHeroNightTitleWithCity(String cityName);
+
+  /// No description provided for @homeHeroNightSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Concerts, spectacles et soirées'**
+  String get homeHeroNightSubtitle;
+
+  /// No description provided for @homeHeroWeekendTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce week-end'**
+  String get homeHeroWeekendTitle;
+
+  /// No description provided for @homeHeroWeekendTitleWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce week-end à {cityName}'**
+  String homeHeroWeekendTitleWithCity(String cityName);
+
+  /// No description provided for @homeHeroWeekendMorningSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les meilleures activités vous attendent'**
+  String get homeHeroWeekendMorningSubtitle;
+
+  /// No description provided for @homeHeroMorningTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonne journée'**
+  String get homeHeroMorningTitle;
+
+  /// No description provided for @homeHeroMorningTitleWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonne journée à {cityName}'**
+  String homeHeroMorningTitleWithCity(String cityName);
+
+  /// No description provided for @homeHeroMorningSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez les activités du jour'**
+  String get homeHeroMorningSubtitle;
+
+  /// No description provided for @homeHeroAfternoonTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet après-midi'**
+  String get homeHeroAfternoonTitle;
+
+  /// No description provided for @homeHeroAfternoonTitleWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet après-midi à {cityName}'**
+  String homeHeroAfternoonTitleWithCity(String cityName);
+
+  /// No description provided for @homeHeroWeekendAfternoonSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profitez de votre week-end'**
+  String get homeHeroWeekendAfternoonSubtitle;
+
+  /// No description provided for @homeHeroNearbyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités près de vous'**
+  String get homeHeroNearbyTitle;
+
+  /// No description provided for @homeHeroNearbyTitleWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités à {cityName}'**
+  String homeHeroNearbyTitleWithCity(String cityName);
+
+  /// No description provided for @homeHeroAfternoonSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour occuper votre après-midi'**
+  String get homeHeroAfternoonSubtitle;
+
+  /// No description provided for @homeHeroEveningTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce soir'**
+  String get homeHeroEveningTitle;
+
+  /// No description provided for @homeHeroEveningTitleWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce soir à {cityName}'**
+  String homeHeroEveningTitleWithCity(String cityName);
+
+  /// No description provided for @homeHeroEveningWeekendSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les sorties du week-end commencent'**
+  String get homeHeroEveningWeekendSubtitle;
+
+  /// No description provided for @homeHeroEveningWeekdaySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Après le travail, on se détend'**
+  String get homeHeroEveningWeekdaySubtitle;
+
+  /// No description provided for @homeHeroDiscoverTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez les activités'**
+  String get homeHeroDiscoverTitle;
+
+  /// No description provided for @homeHeroDiscoverTitleWithCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez {cityName}'**
+  String homeHeroDiscoverTitleWithCity(String cityName);
+
+  /// No description provided for @homeHeroDiscoverSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trouvez votre prochaine sortie'**
+  String get homeHeroDiscoverSubtitle;
+
+  /// No description provided for @homeHeroSummerSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profitez des activités estivales'**
+  String get homeHeroSummerSubtitle;
+
+  /// No description provided for @homeHeroWinterSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réchauffez vos soirées'**
+  String get homeHeroWinterSubtitle;
+
+  /// No description provided for @homeHeroSpringSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le printemps est là, sortez !'**
+  String get homeHeroSpringSubtitle;
+
+  /// No description provided for @homeHeroAutumnSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les couleurs de l\'automne vous attendent'**
+  String get homeHeroAutumnSubtitle;
+
+  /// No description provided for @homeSearchTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher'**
+  String get homeSearchTitle;
+
+  /// No description provided for @homeSearchNearby.
+  ///
+  /// In fr, this message translates to:
+  /// **'À proximité'**
+  String get homeSearchNearby;
+
+  /// No description provided for @homeSearchWhere.
+  ///
+  /// In fr, this message translates to:
+  /// **'Où ?'**
+  String get homeSearchWhere;
+
+  /// No description provided for @homeSearchWhen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quand ?'**
+  String get homeSearchWhen;
+
+  /// No description provided for @homeSearchWhat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quoi ?'**
+  String get homeSearchWhat;
+
+  /// No description provided for @homeSearchCategoryCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} cat.'**
+  String homeSearchCategoryCount(int count);
+
+  /// No description provided for @homeSearchFamily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Famille'**
+  String get homeSearchFamily;
+
+  /// No description provided for @homeExploreByCategoryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorer par catégorie'**
+  String get homeExploreByCategoryTitle;
+
+  /// No description provided for @homeExploreCategorySemantics.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorer {category}'**
+  String homeExploreCategorySemantics(String category);
+
+  /// No description provided for @homeStoriesFeaturedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'À la une'**
+  String get homeStoriesFeaturedTitle;
+
+  /// No description provided for @homeStoriesNewBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'NEW'**
+  String get homeStoriesNewBadge;
+
+  /// No description provided for @homeStoryViewActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir l\'activité'**
+  String get homeStoryViewActivity;
+
+  /// No description provided for @homeStoryBookingLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billetterie'**
+  String get homeStoryBookingLabel;
+
+  /// No description provided for @homeStoryDiscoveryLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découverte'**
+  String get homeStoryDiscoveryLabel;
+
+  /// No description provided for @homeDateAtTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'{date} à {time}'**
+  String homeDateAtTime(String date, String time);
+
+  /// No description provided for @homeTodayAtTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui à {time}'**
+  String homeTodayAtTime(String time);
+
+  /// No description provided for @homeTomorrowAtTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demain à {time}'**
+  String homeTomorrowAtTime(String time);
+
+  /// No description provided for @homeEventByOrganizer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Par {organizer}'**
+  String homeEventByOrganizer(String organizer);
+
+  /// No description provided for @homePriceFrom.
+  ///
+  /// In fr, this message translates to:
+  /// **'À partir de {price}'**
+  String homePriceFrom(String price);
+
+  /// No description provided for @homePriceFromShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dès {price}'**
+  String homePriceFromShort(String price);
+
+  /// No description provided for @homePrivateBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Privé'**
+  String get homePrivateBadge;
+
+  /// No description provided for @homeCountdownNow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Maintenant !'**
+  String get homeCountdownNow;
+
+  /// No description provided for @homeCountdownDayHour.
+  ///
+  /// In fr, this message translates to:
+  /// **'{days} jour {hours}h'**
+  String homeCountdownDayHour(int days, int hours);
+
+  /// No description provided for @homeCountdownDaysHours.
+  ///
+  /// In fr, this message translates to:
+  /// **'{days} jours {hours}h'**
+  String homeCountdownDaysHours(int days, int hours);
+
+  /// No description provided for @homeRemainingSpot.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} place'**
+  String homeRemainingSpot(int count);
+
+  /// No description provided for @homeRemainingSpots.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} places'**
+  String homeRemainingSpots(int count);
+
+  /// No description provided for @homeUrgencyRemainingSpots.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus que {count} places !'**
+  String homeUrgencyRemainingSpots(int count);
+
+  /// No description provided for @homeUrgencyLastHours.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernières heures pour réserver !'**
+  String get homeUrgencyLastHours;
+
+  /// No description provided for @homeBook.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réserver'**
+  String get homeBook;
+
+  /// No description provided for @homeUrgencyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avant qu\'il soit trop tard'**
+  String get homeUrgencyTitle;
+
+  /// No description provided for @homeUrgencySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces événements commencent bientôt'**
+  String get homeUrgencySubtitle;
+
+  /// No description provided for @homeCityNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville non trouvée'**
+  String get homeCityNotFound;
+
+  /// No description provided for @homeCityDescriptionFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez les activités à {cityName}.'**
+  String homeCityDescriptionFallback(String cityName);
+
+  /// No description provided for @homeCityAvailableEvent.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} événement disponible'**
+  String homeCityAvailableEvent(int count);
+
+  /// No description provided for @homeCityAvailableEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} événements disponibles'**
+  String homeCityAvailableEvents(int count);
+
+  /// No description provided for @homePopularActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités populaires'**
+  String get homePopularActivities;
+
+  /// No description provided for @homeFilter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtrer'**
+  String get homeFilter;
+
+  /// No description provided for @homeCityNoActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune activité trouvée dans cette ville'**
+  String get homeCityNoActivities;
+
+  /// No description provided for @homeErrorWithMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur : {message}'**
+  String homeErrorWithMessage(String message);
+
+  /// No description provided for @homeOffersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Offres et bons plans'**
+  String get homeOffersTitle;
+
+  /// No description provided for @homeSpecialOffer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Offre spéciale'**
+  String get homeSpecialOffer;
+
+  /// No description provided for @homeQuickToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui'**
+  String get homeQuickToday;
+
+  /// No description provided for @homeQuickWeekend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce week-end'**
+  String get homeQuickWeekend;
+
+  /// No description provided for @homeQuickFamily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Famille'**
+  String get homeQuickFamily;
+
+  /// No description provided for @homeQuickDistanceUnder2km.
+  ///
+  /// In fr, this message translates to:
+  /// **'< 2 km'**
+  String get homeQuickDistanceUnder2km;
+
+  /// No description provided for @homeCategoryAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get homeCategoryAll;
+
+  /// No description provided for @homeCategoryShows.
+  ///
+  /// In fr, this message translates to:
+  /// **'Spectacles'**
+  String get homeCategoryShows;
+
+  /// No description provided for @homeCategoryWorkshops.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ateliers'**
+  String get homeCategoryWorkshops;
+
+  /// No description provided for @homeCategorySport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sport'**
+  String get homeCategorySport;
+
+  /// No description provided for @homeCategoryCulture.
+  ///
+  /// In fr, this message translates to:
+  /// **'Culture'**
+  String get homeCategoryCulture;
+
+  /// No description provided for @homeCategoryMarkets.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marchés'**
+  String get homeCategoryMarkets;
+
+  /// No description provided for @homeCategoryLeisure.
+  ///
+  /// In fr, this message translates to:
+  /// **'Loisirs'**
+  String get homeCategoryLeisure;
+
+  /// No description provided for @homeBrowseByCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parcourir par ville'**
+  String get homeBrowseByCity;
 }
 
 class _AppLocalizationsDelegate

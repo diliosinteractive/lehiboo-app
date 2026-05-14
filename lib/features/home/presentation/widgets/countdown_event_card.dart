@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/home/presentation/utils/home_l10n_formatters.dart';
 import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 
 /// Card événement avec countdown FOMO pour créer l'urgence
@@ -84,26 +86,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
     });
   }
 
-  String _formatCountdown() {
-    if (_remaining == Duration.zero) {
-      return 'Maintenant !';
-    }
-
-    final hours = _remaining.inHours;
-    final minutes = _remaining.inMinutes.remainder(60);
-    final seconds = _remaining.inSeconds.remainder(60);
-
-    if (hours > 24) {
-      final days = _remaining.inDays;
-      return '$days jour${days > 1 ? 's' : ''} ${hours.remainder(24)}h';
-    } else if (hours > 0) {
-      return '${hours}h ${minutes}min';
-    } else if (minutes > 0) {
-      return '${minutes}min ${seconds}s';
-    } else {
-      return '${seconds}s';
-    }
-  }
+  String _formatCountdown(BuildContext context) =>
+      context.homeCountdown(_remaining);
 
   bool get _isUrgent => _remaining.inHours < 6;
 
@@ -237,7 +221,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                _formatCountdown(),
+                                _formatCountdown(context),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
@@ -267,7 +251,13 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '${widget.remainingSpots} place${widget.remainingSpots! > 1 ? 's' : ''}',
+                        widget.remainingSpots == 1
+                            ? context.l10n.homeRemainingSpot(
+                                widget.remainingSpots!,
+                              )
+                            : context.l10n.homeRemainingSpots(
+                                widget.remainingSpots!,
+                              ),
                         style: TextStyle(
                           color: widget.remainingSpots! <= 5
                               ? Colors.white
@@ -332,8 +322,10 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                       child: Text(
                         widget.urgencyMessage ??
                             (widget.remainingSpots != null
-                                ? 'Plus que ${widget.remainingSpots} places !'
-                                : 'Dernières heures pour réserver !'),
+                                ? context.l10n.homeUrgencyRemainingSpots(
+                                    widget.remainingSpots!,
+                                  )
+                                : context.l10n.homeUrgencyLastHours),
                         style: TextStyle(
                           color: _isUrgent
                               ? const Color(0xFFFF4444)
@@ -382,7 +374,10 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                             size: 14, color: Colors.grey[600]),
                         const SizedBox(width: 4),
                         Text(
-                          _formatDate(widget.activity.nextSlot!.startDateTime),
+                          _formatDate(
+                            context,
+                            widget.activity.nextSlot!.startDateTime,
+                          ),
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -407,7 +402,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                                   widget.activity.priceMax == 0);
                           if (isTrulyFree) {
                             return Text(
-                              'Gratuit',
+                              context.l10n.commonFree,
                               style: TextStyle(
                                 color: Colors.green[700],
                                 fontSize: 15,
@@ -426,7 +421,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                               ? widget.activity.priceMin!
                               : widget.activity.priceMax!;
                           return Text(
-                            'À partir de ${price.toStringAsFixed(0)}€',
+                            context.homePriceFrom(price),
                             style: const TextStyle(
                               color: HbColors.textSlate,
                               fontSize: 15,
@@ -452,18 +447,18 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                           ),
                           elevation: 0,
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Réserver',
-                              style: TextStyle(
+                              context.l10n.homeBook,
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(Icons.arrow_forward, size: 16),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward, size: 16),
                           ],
                         ),
                       ),
@@ -491,26 +486,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    String dayPart;
-    if (dateOnly == today) {
-      dayPart = 'Aujourd\'hui';
-    } else if (dateOnly == tomorrow) {
-      dayPart = 'Demain';
-    } else {
-      final weekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-      final year = (date.year % 100).toString().padLeft(2, '0');
-      dayPart = '${weekdays[date.weekday - 1]} ${date.day}/${date.month}/$year';
-    }
-
-    final timePart =
-        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    return '$dayPart à $timePart';
+  String _formatDate(BuildContext context, DateTime date) {
+    return context.homeFriendlyDateAtTime(date);
   }
 
   Event _activityToEvent() {
@@ -599,39 +576,12 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
     });
   }
 
-  String _formatCountdown() {
-    if (_remaining == Duration.zero) return 'Now!';
-    final hours = _remaining.inHours;
-    final minutes = _remaining.inMinutes.remainder(60);
-    if (hours > 0) {
-      return '${hours}h${minutes.toString().padLeft(2, '0')}';
-    } else {
-      return '${minutes}min';
-    }
+  String _formatCountdown(BuildContext context) {
+    return context.homeCompactCountdown(_remaining);
   }
 
-  String _formatSlotDateTime(DateTime dt) {
-    const days = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
-    const months = [
-      'jan.',
-      'fév.',
-      'mars',
-      'avr.',
-      'mai',
-      'juin',
-      'juil.',
-      'août',
-      'sep.',
-      'oct.',
-      'nov.',
-      'déc.',
-    ];
-    final dayName = days[dt.weekday - 1];
-    final monthName = months[dt.month - 1];
-    final time =
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    final year = (dt.year % 100).toString().padLeft(2, '0');
-    return '$dayName ${dt.day} $monthName $year à $time';
+  String _formatSlotDateTime(BuildContext context, DateTime dt) {
+    return context.homeDateAtTime(dt);
   }
 
   bool get _isUrgent => _remaining.inHours < 6;
@@ -685,7 +635,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                         const Icon(Icons.timer, color: Colors.white, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          _formatCountdown(),
+                          _formatCountdown(context),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -760,7 +710,9 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   // Organisateur
                   if (widget.activity.partner != null)
                     Text(
-                      'Par ${widget.activity.partner!.name}',
+                      context.l10n.homeEventByOrganizer(
+                        widget.activity.partner!.name,
+                      ),
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 13,
@@ -821,7 +773,9 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                         Expanded(
                           child: Text(
                             _formatSlotDateTime(
-                                widget.activity.nextSlot!.startDateTime),
+                              context,
+                              widget.activity.nextSlot!.startDateTime,
+                            ),
                             style: TextStyle(
                               color: Colors.grey[700],
                               fontSize: 12,
@@ -845,7 +799,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                               widget.activity.priceMax == 0);
                       if (isTrulyFree) {
                         return Text(
-                          'Gratuit',
+                          context.l10n.commonFree,
                           style: TextStyle(
                             color: Colors.green[700],
                             fontWeight: FontWeight.w600,
@@ -865,7 +819,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                           ? widget.activity.priceMin!
                           : widget.activity.priceMax!;
                       return Text(
-                        'À partir de ${price.toStringAsFixed(0)}€',
+                        context.homePriceFrom(price),
                         style: const TextStyle(
                           color: HbColors.brandPrimary,
                           fontWeight: FontWeight.w600,
@@ -943,11 +897,9 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
 /// Card compacte pour carousel horizontal (legacy)
 class _CompactCountdownCard extends StatefulWidget {
   final Activity activity;
-  final int? remainingSpots;
 
   const _CompactCountdownCard({
     required this.activity,
-    this.remainingSpots,
   });
 
   @override
@@ -986,15 +938,8 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
     });
   }
 
-  String _formatCountdown() {
-    if (_remaining == Duration.zero) return 'Now!';
-    final hours = _remaining.inHours;
-    final minutes = _remaining.inMinutes.remainder(60);
-    if (hours > 0) {
-      return '${hours}h${minutes.toString().padLeft(2, '0')}';
-    } else {
-      return '${minutes}min';
-    }
+  String _formatCountdown(BuildContext context) {
+    return context.homeCompactCountdown(_remaining);
   }
 
   bool get _isUrgent => _remaining.inHours < 6;
@@ -1061,7 +1006,7 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                               color: Colors.white, size: 11),
                           const SizedBox(width: 3),
                           Text(
-                            _formatCountdown(),
+                            _formatCountdown(context),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -1072,30 +1017,6 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                       ),
                     ),
                   ),
-                  // Places restantes
-                  if (widget.remainingSpots != null)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${widget.remainingSpots}',
-                          style: TextStyle(
-                            color: widget.remainingSpots! <= 5
-                                ? const Color(0xFFFF4444)
-                                : HbColors.textSlate,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -1127,7 +1048,7 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                               widget.activity.priceMax == 0);
                       if (isTrulyFree) {
                         return Text(
-                          'Gratuit',
+                          context.l10n.commonFree,
                           style: TextStyle(
                             color: Colors.green[700],
                             fontSize: 11,
@@ -1146,7 +1067,7 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                           ? widget.activity.priceMin!
                           : widget.activity.priceMax!;
                       return Text(
-                        'Dès ${price.toStringAsFixed(0)}€',
+                        context.homePriceFromShort(price),
                         style: const TextStyle(
                           color: HbColors.brandPrimary,
                           fontSize: 11,
@@ -1205,11 +1126,11 @@ class UrgencySection extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Title
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: HomeSectionTitle(
-                title: 'Avant qu\'il soit trop tard',
-                subtitle: 'Ces événements commencent bientôt',
+                title: context.l10n.homeUrgencyTitle,
+                subtitle: context.l10n.homeUrgencySubtitle,
                 fontSize: 17,
               ),
             ),

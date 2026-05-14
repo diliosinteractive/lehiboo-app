@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/services/volume_routing.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/home/presentation/utils/home_l10n_formatters.dart';
 import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 import 'package:lehiboo/features/home/presentation/widgets/story_video_player.dart';
 import 'package:lehiboo/features/stories/domain/entities/story.dart';
@@ -66,8 +68,8 @@ class EventStories extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                 child: Row(
                   children: [
-                    const HomeSectionTitle(
-                      title: 'À la une',
+                    HomeSectionTitle(
+                      title: context.l10n.homeStoriesFeaturedTitle,
                       fontSize: 18,
                     ),
                     const SizedBox(width: 8),
@@ -80,9 +82,9 @@ class EventStories extends ConsumerWidget {
                           color: HbColors.brandPrimary,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Text(
-                          'NEW',
-                          style: TextStyle(
+                        child: Text(
+                          context.l10n.homeStoriesNewBadge,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -875,7 +877,7 @@ class _StoryContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    _buildCategoryLabel(),
+                    _buildCategoryLabel(context),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -919,7 +921,7 @@ class _StoryContent extends StatelessWidget {
                       color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    _formatDate(story.startDate),
+                    _formatDate(context, story.startDate),
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
@@ -947,9 +949,9 @@ class _StoryContent extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Voir l\'activité',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.homeStoryViewActivity,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -963,7 +965,7 @@ class _StoryContent extends StatelessWidget {
     );
   }
 
-  String _buildCategoryLabel() {
+  String _buildCategoryLabel(BuildContext context) {
     final parts = <String>[];
     if (story.categoryName != null && story.categoryName!.isNotEmpty) {
       parts.add(story.categoryName!);
@@ -971,8 +973,9 @@ class _StoryContent extends StatelessWidget {
     if (story.eventTagName != null && story.eventTagName!.isNotEmpty) {
       parts.add(story.eventTagName!);
     }
-    parts.add(
-        story.eventBookingMode == 'booking' ? 'Billetterie' : 'Découverte');
+    parts.add(story.eventBookingMode == 'booking'
+        ? context.l10n.homeStoryBookingLabel
+        : context.l10n.homeStoryDiscoveryLabel);
     return parts.join(' \u00b7 ');
   }
 
@@ -989,20 +992,7 @@ class _StoryContent extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    if (dateOnly == today) {
-      return 'Aujourd\'hui';
-    } else if (dateOnly == tomorrow) {
-      return 'Demain';
-    } else {
-      final weekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-      final year = (date.year % 100).toString().padLeft(2, '0');
-      return '${weekdays[date.weekday - 1]} ${date.day}/${date.month}/$year';
-    }
+  String _formatDate(BuildContext context, DateTime date) {
+    return context.homeFriendlyDate(date);
   }
 }

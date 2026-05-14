@@ -590,4 +590,792 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authPermissionNotificationsGranted =>
       'Notifications already enabled';
+
+  @override
+  String get authEmailAddressInvalid => 'Please enter a valid email address';
+
+  @override
+  String get authOtpEmailVerified => 'Email verified!';
+
+  @override
+  String get authRegisterMissingVerificationToken =>
+      'Verification token is missing. Please start again.';
+
+  @override
+  String get authCustomerAccountCreated => 'Account created successfully!';
+
+  @override
+  String get authCustomerEmailSubtitle =>
+      'Start by verifying your email address';
+
+  @override
+  String get authReceiveCode => 'Receive code';
+
+  @override
+  String get authCreateBusinessAccount => 'Create a business account';
+
+  @override
+  String get authVerificationTitle => 'Verification';
+
+  @override
+  String get authEditEmail => 'Edit email';
+
+  @override
+  String get authYourInformationTitle => 'Your information';
+
+  @override
+  String get authPhoneOptionalLabel => 'Phone (optional)';
+
+  @override
+  String get authPhoneHint => '06 12 34 56 78';
+
+  @override
+  String get authPhoneInvalid => 'Invalid phone number';
+
+  @override
+  String get authBirthDateLabelOptional => 'Date of birth (optional)';
+
+  @override
+  String get authBirthDateHelp => 'Date of birth';
+
+  @override
+  String get authDateHint => 'MM/DD/YYYY';
+
+  @override
+  String get authCityOptionalLabel => 'City (optional)';
+
+  @override
+  String get authCityHint => 'London, Paris...';
+
+  @override
+  String get authMarketingOptIn =>
+      'I want to receive Le Hiboo news and offers by email.';
+
+  @override
+  String get authStepEmail => 'Email';
+
+  @override
+  String get authStepCode => 'Code';
+
+  @override
+  String get authStepInfo => 'Info';
+
+  @override
+  String get authProfessionalEmailLabel => 'Business email';
+
+  @override
+  String get authProfessionalEmailHint => 'you@company.com';
+
+  @override
+  String get authValidationMin2Chars => 'Min. 2 characters';
+
+  @override
+  String get authValidationMin5Chars => 'Min. 5 characters';
+
+  @override
+  String get authPasswordMinLengthShort => 'Min. 8 characters';
+
+  @override
+  String get authPasswordNeedsUppercaseShort => 'Uppercase required';
+
+  @override
+  String get authPasswordNeedsNumberShort => 'Number required';
+
+  @override
+  String get authPasswordNeedsSpecialShort => 'Special character required';
+
+  @override
+  String get authPasswordStrengthWeak => 'Weak';
+
+  @override
+  String get authPasswordStrengthFair => 'Fair';
+
+  @override
+  String get authPasswordStrengthGood => 'Good';
+
+  @override
+  String get authPasswordStrengthStrong => 'Strong';
+
+  @override
+  String get authPasswordRequirementMin8 => 'At least 8 characters';
+
+  @override
+  String get authPasswordRequirementUppercase => 'One uppercase letter';
+
+  @override
+  String get authPasswordRequirementNumber => 'One number';
+
+  @override
+  String get authPasswordRequirementSpecial => 'One special character';
+
+  @override
+  String get authBusinessTitle => 'Business Account';
+
+  @override
+  String get authBusinessCancelTitle => 'Cancel registration?';
+
+  @override
+  String get authBusinessCancelContent => 'Your progress will be lost.';
+
+  @override
+  String get authBusinessSuccessTitle => 'Registration successful!';
+
+  @override
+  String authBusinessSuccessMessageWithOrg(String organizationName) {
+    return 'Your business account for \"$organizationName\" was created successfully.';
+  }
+
+  @override
+  String get authBusinessSuccessMessage =>
+      'Your business account was created successfully.';
+
+  @override
+  String get authBusinessSuccessAccess =>
+      'You can now access all LeHiboo features.';
+
+  @override
+  String get authStart => 'Start';
+
+  @override
+  String get authBusinessStepInfo => 'Info';
+
+  @override
+  String get authBusinessStepVerification => 'Verify';
+
+  @override
+  String get authBusinessStepCompany => 'Company';
+
+  @override
+  String get authBusinessStepUsage => 'Usage';
+
+  @override
+  String get authBusinessStepTerms => 'Terms';
+
+  @override
+  String get authPersonalInfoTitle => 'Personal information';
+
+  @override
+  String get authPersonalInfoSubtitle =>
+      'This information will be used to create your account';
+
+  @override
+  String get authOrganizationCompanyLabel => 'Company';
+
+  @override
+  String get authOrganizationAssociationLabel => 'Association';
+
+  @override
+  String get authOrganizationMunicipalityLabel => 'Public body';
+
+  @override
+  String get authOrganizationCompanyDescription => 'Company, SMB, startup...';
+
+  @override
+  String get authOrganizationAssociationDescription =>
+      'Nonprofit, foundation...';
+
+  @override
+  String get authOrganizationMunicipalityDescription =>
+      'City hall, department, region...';
+
+  @override
+  String get authOrganizationCompanyLower => 'company';
+
+  @override
+  String get authOrganizationAssociationLower => 'association';
+
+  @override
+  String get authOrganizationMunicipalityLower => 'public body';
+
+  @override
+  String get authOrganizationCompanyArticle => 'the company';
+
+  @override
+  String get authOrganizationAssociationArticle => 'the association';
+
+  @override
+  String get authOrganizationMunicipalityArticle => 'the public body';
+
+  @override
+  String get authOrganizationCompanyPossessive => 'your company';
+
+  @override
+  String get authOrganizationAssociationPossessive => 'your association';
+
+  @override
+  String get authOrganizationMunicipalityPossessive => 'your public body';
+
+  @override
+  String authBusinessCompanyInfoTitle(String organizationArticle) {
+    return 'Information for $organizationArticle';
+  }
+
+  @override
+  String authBusinessCompanyInfoSubtitle(String organizationPossessive) {
+    return 'This information will identify $organizationPossessive';
+  }
+
+  @override
+  String get authOrganizationTypeLabel => 'Organization type';
+
+  @override
+  String authOrganizationNameLabel(String organizationArticle) {
+    return 'Name of $organizationArticle';
+  }
+
+  @override
+  String get authCompanyNameHint => 'My Company Inc.';
+
+  @override
+  String get authOptionalSuffix => '(optional)';
+
+  @override
+  String get authSiretInvalid => 'Invalid SIRET';
+
+  @override
+  String get authSiretHelp => '14 digits, no spaces';
+
+  @override
+  String get authIndustryLabel => 'Industry';
+
+  @override
+  String get authSelectHint => 'Select';
+
+  @override
+  String get authEmployeeCountLabel => 'Team size';
+
+  @override
+  String get authBillingAddressLabel => 'Billing address';
+
+  @override
+  String get authBillingAddressHint => '123 Peace Street';
+
+  @override
+  String get authPostalCodeLabel => 'Postal code';
+
+  @override
+  String get authPostalCodeHint => '75001';
+
+  @override
+  String get authCityLabel => 'City';
+
+  @override
+  String get authCityFieldHint => 'Paris';
+
+  @override
+  String get authCountryLabel => 'Country';
+
+  @override
+  String get authCountryHint => 'Country';
+
+  @override
+  String get authLoading => 'Loading...';
+
+  @override
+  String get authIndustryTechnology => 'Technology';
+
+  @override
+  String get authIndustryFinance => 'Finance';
+
+  @override
+  String get authIndustryHealth => 'Health';
+
+  @override
+  String get authIndustryEducation => 'Education';
+
+  @override
+  String get authIndustryCommerce => 'Commerce';
+
+  @override
+  String get authIndustryServices => 'Services';
+
+  @override
+  String get authIndustryIndustry => 'Industry';
+
+  @override
+  String get authIndustryTransport => 'Transport';
+
+  @override
+  String get authIndustryRealEstate => 'Real estate';
+
+  @override
+  String get authIndustryOther => 'Other';
+
+  @override
+  String get authCountryFrance => 'France';
+
+  @override
+  String get authCountryBelgium => 'Belgium';
+
+  @override
+  String get authCountrySwitzerland => 'Switzerland';
+
+  @override
+  String get authCountryLuxembourg => 'Luxembourg';
+
+  @override
+  String get authCountryMonaco => 'Monaco';
+
+  @override
+  String get authCountryGermany => 'Germany';
+
+  @override
+  String get authCountrySpain => 'Spain';
+
+  @override
+  String get authCountryItaly => 'Italy';
+
+  @override
+  String get authCountryNetherlands => 'Netherlands';
+
+  @override
+  String get authCountryUnitedKingdom => 'United Kingdom';
+
+  @override
+  String get authCountryOther => 'Other';
+
+  @override
+  String get authCompanySearchTitle => 'Quick search';
+
+  @override
+  String authCompanySearchHint(String organizationPossessive) {
+    return 'Search $organizationPossessive by name...';
+  }
+
+  @override
+  String authCompanySearchHelper(String organizationPossessive) {
+    return 'Search for $organizationPossessive to fill the form automatically';
+  }
+
+  @override
+  String authSiretLine(String siret) {
+    return 'SIRET: $siret';
+  }
+
+  @override
+  String get authUsageModeTitle => 'Usage mode';
+
+  @override
+  String get authUsageModeSubtitle => 'How do you plan to use LeHiboo?';
+
+  @override
+  String get authUsageModePersonalLabel => 'Personal use';
+
+  @override
+  String get authUsageModePersonalDescription =>
+      'I am the only one using the account';
+
+  @override
+  String get authUsageModeTeamLabel => 'Team';
+
+  @override
+  String get authUsageModeTeamDescription =>
+      'Several people will use the account';
+
+  @override
+  String get authTeamEmailsLabelOptional => 'Team member emails (optional)';
+
+  @override
+  String get authTeamEmailsHint => 'email1@example.com, email2@example.com';
+
+  @override
+  String get authTeamEmailsHelper => 'Separate emails with commas';
+
+  @override
+  String authInvalidEmailWithValue(String email) {
+    return 'Invalid email: $email';
+  }
+
+  @override
+  String get authDefaultMonthlyBudgetLabelOptional =>
+      'Default monthly budget (optional)';
+
+  @override
+  String get authAmountInvalid => 'Please enter a valid amount';
+
+  @override
+  String get authTermsFinalizationTitle => 'Finalization';
+
+  @override
+  String get authTermsFinalizationSubtitle =>
+      'Review your information and accept the terms';
+
+  @override
+  String get authTermsSummaryTitle => 'Summary';
+
+  @override
+  String get authTermsSummaryPersonal => 'Personal information';
+
+  @override
+  String get authTermsSummaryOrganization => 'Organization';
+
+  @override
+  String get authTermsSummaryUsage => 'Usage';
+
+  @override
+  String authTermsBudgetLine(String budget) {
+    return 'Budget: $budget EUR/month';
+  }
+
+  @override
+  String authTermsInvitationsLine(int count) {
+    return 'Invitations: $count team members';
+  }
+
+  @override
+  String get authBusinessTermsLabel => 'terms specific to business accounts';
+
+  @override
+  String get authCreateBusinessAccountButton => 'Create my business account';
+
+  @override
+  String get authBusinessTermsHelper =>
+      'By creating an account, you confirm that the information provided is accurate and that you are authorized to represent this organization.';
+
+  @override
+  String get homeTooltipNotifications => 'Notifications';
+
+  @override
+  String get homeTooltipCart => 'My cart';
+
+  @override
+  String get homeTooltipAccount => 'My account';
+
+  @override
+  String get homeViewMore => 'See more';
+
+  @override
+  String get homeViewAll => 'View all';
+
+  @override
+  String get homeNewActivitiesTitle => 'New';
+
+  @override
+  String get homeNoNewActivities => 'No new activities found.';
+
+  @override
+  String get homeNearbyAvailableTitle => 'Available activities nearby';
+
+  @override
+  String get homeWebCtaTitle => 'Find your events with ease';
+
+  @override
+  String get homeWebCtaBody =>
+      'Our website offers the full experience to discover and book local activities.';
+
+  @override
+  String get homeWebCtaButton => 'Visit the website';
+
+  @override
+  String get homeFallbackPopularCitiesTitle => 'Where things are happening now';
+
+  @override
+  String get homePopularCitiesTitle => 'Popular cities';
+
+  @override
+  String homeHeroGreetingMorning(String firstName) {
+    return 'Good morning $firstName!';
+  }
+
+  @override
+  String homeHeroGreetingAfternoon(String firstName) {
+    return 'Good afternoon $firstName!';
+  }
+
+  @override
+  String homeHeroGreetingEvening(String firstName) {
+    return 'Good evening $firstName!';
+  }
+
+  @override
+  String homeHeroGreetingNight(String firstName) {
+    return 'Good night $firstName!';
+  }
+
+  @override
+  String get homeHeroNightTitle => 'Nightlife outings';
+
+  @override
+  String homeHeroNightTitleWithCity(String cityName) {
+    return 'Nightlife in $cityName';
+  }
+
+  @override
+  String get homeHeroNightSubtitle => 'Concerts, shows, and evenings out';
+
+  @override
+  String get homeHeroWeekendTitle => 'This weekend';
+
+  @override
+  String homeHeroWeekendTitleWithCity(String cityName) {
+    return 'This weekend in $cityName';
+  }
+
+  @override
+  String get homeHeroWeekendMorningSubtitle =>
+      'The best activities are waiting for you';
+
+  @override
+  String get homeHeroMorningTitle => 'Have a great day';
+
+  @override
+  String homeHeroMorningTitleWithCity(String cityName) {
+    return 'Have a great day in $cityName';
+  }
+
+  @override
+  String get homeHeroMorningSubtitle => 'Discover today\'s activities';
+
+  @override
+  String get homeHeroAfternoonTitle => 'This afternoon';
+
+  @override
+  String homeHeroAfternoonTitleWithCity(String cityName) {
+    return 'This afternoon in $cityName';
+  }
+
+  @override
+  String get homeHeroWeekendAfternoonSubtitle =>
+      'Make the most of your weekend';
+
+  @override
+  String get homeHeroNearbyTitle => 'Activities near you';
+
+  @override
+  String homeHeroNearbyTitleWithCity(String cityName) {
+    return 'Activities in $cityName';
+  }
+
+  @override
+  String get homeHeroAfternoonSubtitle => 'Ideas for your afternoon';
+
+  @override
+  String get homeHeroEveningTitle => 'Tonight';
+
+  @override
+  String homeHeroEveningTitleWithCity(String cityName) {
+    return 'Tonight in $cityName';
+  }
+
+  @override
+  String get homeHeroEveningWeekendSubtitle => 'Weekend outings start now';
+
+  @override
+  String get homeHeroEveningWeekdaySubtitle => 'Relax after work';
+
+  @override
+  String get homeHeroDiscoverTitle => 'Discover activities';
+
+  @override
+  String homeHeroDiscoverTitleWithCity(String cityName) {
+    return 'Discover $cityName';
+  }
+
+  @override
+  String get homeHeroDiscoverSubtitle => 'Find your next outing';
+
+  @override
+  String get homeHeroSummerSubtitle => 'Enjoy summer activities';
+
+  @override
+  String get homeHeroWinterSubtitle => 'Warm up your evenings';
+
+  @override
+  String get homeHeroSpringSubtitle => 'Spring is here, get out there!';
+
+  @override
+  String get homeHeroAutumnSubtitle => 'Autumn colors are waiting for you';
+
+  @override
+  String get homeSearchTitle => 'Search';
+
+  @override
+  String get homeSearchNearby => 'Nearby';
+
+  @override
+  String get homeSearchWhere => 'Where?';
+
+  @override
+  String get homeSearchWhen => 'When?';
+
+  @override
+  String get homeSearchWhat => 'What?';
+
+  @override
+  String homeSearchCategoryCount(int count) {
+    return '$count cat.';
+  }
+
+  @override
+  String get homeSearchFamily => 'Family';
+
+  @override
+  String get homeExploreByCategoryTitle => 'Explore by category';
+
+  @override
+  String homeExploreCategorySemantics(String category) {
+    return 'Explore $category';
+  }
+
+  @override
+  String get homeStoriesFeaturedTitle => 'Featured';
+
+  @override
+  String get homeStoriesNewBadge => 'NEW';
+
+  @override
+  String get homeStoryViewActivity => 'View activity';
+
+  @override
+  String get homeStoryBookingLabel => 'Tickets';
+
+  @override
+  String get homeStoryDiscoveryLabel => 'Discovery';
+
+  @override
+  String homeDateAtTime(String date, String time) {
+    return '$date at $time';
+  }
+
+  @override
+  String homeTodayAtTime(String time) {
+    return 'Today at $time';
+  }
+
+  @override
+  String homeTomorrowAtTime(String time) {
+    return 'Tomorrow at $time';
+  }
+
+  @override
+  String homeEventByOrganizer(String organizer) {
+    return 'By $organizer';
+  }
+
+  @override
+  String homePriceFrom(String price) {
+    return 'From $price';
+  }
+
+  @override
+  String homePriceFromShort(String price) {
+    return 'From $price';
+  }
+
+  @override
+  String get homePrivateBadge => 'Private';
+
+  @override
+  String get homeCountdownNow => 'Now!';
+
+  @override
+  String homeCountdownDayHour(int days, int hours) {
+    return '$days day ${hours}h';
+  }
+
+  @override
+  String homeCountdownDaysHours(int days, int hours) {
+    return '$days days ${hours}h';
+  }
+
+  @override
+  String homeRemainingSpot(int count) {
+    return '$count spot';
+  }
+
+  @override
+  String homeRemainingSpots(int count) {
+    return '$count spots';
+  }
+
+  @override
+  String homeUrgencyRemainingSpots(int count) {
+    return 'Only $count spots left!';
+  }
+
+  @override
+  String get homeUrgencyLastHours => 'Last hours to book!';
+
+  @override
+  String get homeBook => 'Book';
+
+  @override
+  String get homeUrgencyTitle => 'Before it is too late';
+
+  @override
+  String get homeUrgencySubtitle => 'These events start soon';
+
+  @override
+  String get homeCityNotFound => 'City not found';
+
+  @override
+  String homeCityDescriptionFallback(String cityName) {
+    return 'Discover activities in $cityName.';
+  }
+
+  @override
+  String homeCityAvailableEvent(int count) {
+    return '$count event available';
+  }
+
+  @override
+  String homeCityAvailableEvents(int count) {
+    return '$count events available';
+  }
+
+  @override
+  String get homePopularActivities => 'Popular activities';
+
+  @override
+  String get homeFilter => 'Filter';
+
+  @override
+  String get homeCityNoActivities => 'No activity found in this city';
+
+  @override
+  String homeErrorWithMessage(String message) {
+    return 'Error: $message';
+  }
+
+  @override
+  String get homeOffersTitle => 'Offers and deals';
+
+  @override
+  String get homeSpecialOffer => 'Special offer';
+
+  @override
+  String get homeQuickToday => 'Today';
+
+  @override
+  String get homeQuickWeekend => 'This weekend';
+
+  @override
+  String get homeQuickFamily => 'Family';
+
+  @override
+  String get homeQuickDistanceUnder2km => '< 2 km';
+
+  @override
+  String get homeCategoryAll => 'All';
+
+  @override
+  String get homeCategoryShows => 'Shows';
+
+  @override
+  String get homeCategoryWorkshops => 'Workshops';
+
+  @override
+  String get homeCategorySport => 'Sport';
+
+  @override
+  String get homeCategoryCulture => 'Culture';
+
+  @override
+  String get homeCategoryMarkets => 'Markets';
+
+  @override
+  String get homeCategoryLeisure => 'Leisure';
+
+  @override
+  String get homeBrowseByCity => 'Browse by city';
 }

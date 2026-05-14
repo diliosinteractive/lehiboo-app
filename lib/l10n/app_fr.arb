@@ -234,5 +234,512 @@
   "authPermissionNotificationsBulletFavorites": "Les nouveautés de vos lieux favoris",
   "authPermissionNotificationsBulletReminders": "Vos rappels et alertes personnalisées",
   "authPermissionNotificationsBulletMessages": "Les réponses des organisateurs à vos messages",
-  "authPermissionNotificationsGranted": "Notifications déjà activées"
+  "authPermissionNotificationsGranted": "Notifications déjà activées",
+  "authEmailAddressInvalid": "Veuillez entrer une adresse email valide",
+  "authOtpEmailVerified": "Email vérifié !",
+  "authRegisterMissingVerificationToken": "Erreur : token de vérification manquant. Veuillez recommencer.",
+  "authCustomerAccountCreated": "Compte créé avec succès !",
+  "authCustomerEmailSubtitle": "Commencez par vérifier votre adresse email",
+  "authReceiveCode": "Recevoir le code",
+  "authCreateBusinessAccount": "Créer un compte professionnel",
+  "authVerificationTitle": "Vérification",
+  "authEditEmail": "Modifier l'email",
+  "authYourInformationTitle": "Vos informations",
+  "authPhoneOptionalLabel": "Téléphone (optionnel)",
+  "authPhoneHint": "06 12 34 56 78",
+  "authPhoneInvalid": "Numéro de téléphone invalide",
+  "authBirthDateLabelOptional": "Date de naissance (optionnel)",
+  "authBirthDateHelp": "Date de naissance",
+  "authDateHint": "JJ/MM/AAAA",
+  "authCityOptionalLabel": "Ville (optionnel)",
+  "authCityHint": "Lyon, Paris...",
+  "authMarketingOptIn": "Je souhaite recevoir les actualités et offres du Hiboo par e-mail.",
+  "authStepEmail": "Email",
+  "authStepCode": "Code",
+  "authStepInfo": "Infos",
+  "authProfessionalEmailLabel": "Email professionnel",
+  "authProfessionalEmailHint": "votre@entreprise.com",
+  "authValidationMin2Chars": "Min. 2 caractères",
+  "authValidationMin5Chars": "Min. 5 caractères",
+  "authPasswordMinLengthShort": "Min. 8 caractères",
+  "authPasswordNeedsUppercaseShort": "Une majuscule requise",
+  "authPasswordNeedsNumberShort": "Un chiffre requis",
+  "authPasswordNeedsSpecialShort": "Un caractère spécial requis",
+  "authPasswordStrengthWeak": "Faible",
+  "authPasswordStrengthFair": "Moyen",
+  "authPasswordStrengthGood": "Bon",
+  "authPasswordStrengthStrong": "Fort",
+  "authPasswordRequirementMin8": "Au moins 8 caractères",
+  "authPasswordRequirementUppercase": "Une lettre majuscule",
+  "authPasswordRequirementNumber": "Un chiffre",
+  "authPasswordRequirementSpecial": "Un caractère spécial",
+  "authBusinessTitle": "Compte Professionnel",
+  "authBusinessCancelTitle": "Annuler l'inscription ?",
+  "authBusinessCancelContent": "Votre progression sera perdue.",
+  "authBusinessSuccessTitle": "Inscription réussie !",
+  "authBusinessSuccessMessageWithOrg": "Votre compte professionnel pour \"{organizationName}\" a été créé avec succès.",
+  "@authBusinessSuccessMessageWithOrg": {
+    "placeholders": {
+      "organizationName": {
+        "type": "String"
+      }
+    }
+  },
+  "authBusinessSuccessMessage": "Votre compte professionnel a été créé avec succès.",
+  "authBusinessSuccessAccess": "Vous pouvez maintenant accéder à toutes les fonctionnalités de LeHiboo.",
+  "authStart": "Commencer",
+  "authBusinessStepInfo": "Infos",
+  "authBusinessStepVerification": "Vérif.",
+  "authBusinessStepCompany": "Entreprise",
+  "authBusinessStepUsage": "Usage",
+  "authBusinessStepTerms": "Termes",
+  "authPersonalInfoTitle": "Informations personnelles",
+  "authPersonalInfoSubtitle": "Ces informations seront utilisées pour créer votre compte",
+  "authOrganizationCompanyLabel": "Entreprise",
+  "authOrganizationAssociationLabel": "Association",
+  "authOrganizationMunicipalityLabel": "Collectivité",
+  "authOrganizationCompanyDescription": "Société, TPE, PME, startup...",
+  "authOrganizationAssociationDescription": "Loi 1901, fondation...",
+  "authOrganizationMunicipalityDescription": "Mairie, département, région...",
+  "authOrganizationCompanyLower": "entreprise",
+  "authOrganizationAssociationLower": "association",
+  "authOrganizationMunicipalityLower": "collectivité",
+  "authOrganizationCompanyArticle": "l'entreprise",
+  "authOrganizationAssociationArticle": "l'association",
+  "authOrganizationMunicipalityArticle": "la collectivité",
+  "authOrganizationCompanyPossessive": "votre entreprise",
+  "authOrganizationAssociationPossessive": "votre association",
+  "authOrganizationMunicipalityPossessive": "votre collectivité",
+  "authBusinessCompanyInfoTitle": "Informations de {organizationArticle}",
+  "@authBusinessCompanyInfoTitle": {
+    "placeholders": {
+      "organizationArticle": {
+        "type": "String"
+      }
+    }
+  },
+  "authBusinessCompanyInfoSubtitle": "Ces informations permettront d'identifier {organizationPossessive}",
+  "@authBusinessCompanyInfoSubtitle": {
+    "placeholders": {
+      "organizationPossessive": {
+        "type": "String"
+      }
+    }
+  },
+  "authOrganizationTypeLabel": "Type d'organisation",
+  "authOrganizationNameLabel": "Nom de {organizationArticle}",
+  "@authOrganizationNameLabel": {
+    "placeholders": {
+      "organizationArticle": {
+        "type": "String"
+      }
+    }
+  },
+  "authCompanyNameHint": "Ma Société SAS",
+  "authOptionalSuffix": "(optionnel)",
+  "authSiretInvalid": "SIRET invalide",
+  "authSiretHelp": "14 chiffres, sans espaces",
+  "authIndustryLabel": "Secteur d'activité",
+  "authSelectHint": "Sélectionner",
+  "authEmployeeCountLabel": "Effectif",
+  "authBillingAddressLabel": "Adresse de facturation",
+  "authBillingAddressHint": "123 rue de la Paix",
+  "authPostalCodeLabel": "Code postal",
+  "authPostalCodeHint": "75001",
+  "authCityLabel": "Ville",
+  "authCityFieldHint": "Paris",
+  "authCountryLabel": "Pays",
+  "authCountryHint": "Pays",
+  "authLoading": "Chargement...",
+  "authIndustryTechnology": "Technologie",
+  "authIndustryFinance": "Finance",
+  "authIndustryHealth": "Santé",
+  "authIndustryEducation": "Éducation",
+  "authIndustryCommerce": "Commerce",
+  "authIndustryServices": "Services",
+  "authIndustryIndustry": "Industrie",
+  "authIndustryTransport": "Transport",
+  "authIndustryRealEstate": "Immobilier",
+  "authIndustryOther": "Autre",
+  "authCountryFrance": "France",
+  "authCountryBelgium": "Belgique",
+  "authCountrySwitzerland": "Suisse",
+  "authCountryLuxembourg": "Luxembourg",
+  "authCountryMonaco": "Monaco",
+  "authCountryGermany": "Allemagne",
+  "authCountrySpain": "Espagne",
+  "authCountryItaly": "Italie",
+  "authCountryNetherlands": "Pays-Bas",
+  "authCountryUnitedKingdom": "Royaume-Uni",
+  "authCountryOther": "Autre",
+  "authCompanySearchTitle": "Recherche rapide",
+  "authCompanySearchHint": "Rechercher {organizationPossessive} par nom...",
+  "@authCompanySearchHint": {
+    "placeholders": {
+      "organizationPossessive": {
+        "type": "String"
+      }
+    }
+  },
+  "authCompanySearchHelper": "Recherchez {organizationPossessive} pour remplir automatiquement le formulaire",
+  "@authCompanySearchHelper": {
+    "placeholders": {
+      "organizationPossessive": {
+        "type": "String"
+      }
+    }
+  },
+  "authSiretLine": "SIRET : {siret}",
+  "@authSiretLine": {
+    "placeholders": {
+      "siret": {
+        "type": "String"
+      }
+    }
+  },
+  "authUsageModeTitle": "Mode d'utilisation",
+  "authUsageModeSubtitle": "Comment comptez-vous utiliser LeHiboo ?",
+  "authUsageModePersonalLabel": "Utilisation personnelle",
+  "authUsageModePersonalDescription": "Je suis le seul à utiliser le compte",
+  "authUsageModeTeamLabel": "Équipe",
+  "authUsageModeTeamDescription": "Plusieurs personnes utiliseront le compte",
+  "authTeamEmailsLabelOptional": "Emails des collaborateurs (optionnel)",
+  "authTeamEmailsHint": "email1@exemple.com, email2@exemple.com",
+  "authTeamEmailsHelper": "Séparez les emails par des virgules",
+  "authInvalidEmailWithValue": "Email invalide : {email}",
+  "@authInvalidEmailWithValue": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authDefaultMonthlyBudgetLabelOptional": "Budget mensuel par défaut (optionnel)",
+  "authAmountInvalid": "Veuillez entrer un montant valide",
+  "authTermsFinalizationTitle": "Finalisation",
+  "authTermsFinalizationSubtitle": "Vérifiez vos informations et acceptez les conditions",
+  "authTermsSummaryTitle": "Récapitulatif",
+  "authTermsSummaryPersonal": "Informations personnelles",
+  "authTermsSummaryOrganization": "Organisation",
+  "authTermsSummaryUsage": "Utilisation",
+  "authTermsBudgetLine": "Budget : {budget} EUR/mois",
+  "@authTermsBudgetLine": {
+    "placeholders": {
+      "budget": {
+        "type": "String"
+      }
+    }
+  },
+  "authTermsInvitationsLine": "Invitations : {count} collaborateurs",
+  "@authTermsInvitationsLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "authBusinessTermsLabel": "conditions spécifiques aux comptes professionnels",
+  "authCreateBusinessAccountButton": "Créer mon compte business",
+  "authBusinessTermsHelper": "En créant un compte, vous confirmez que les informations fournies sont exactes et que vous êtes autorisé à représenter cette organisation.",
+  "homeTooltipNotifications": "Notifications",
+  "homeTooltipCart": "Mon panier",
+  "homeTooltipAccount": "Mon compte",
+  "homeViewMore": "Voir plus",
+  "homeViewAll": "Voir tout",
+  "homeNewActivitiesTitle": "Nouveautés",
+  "homeNoNewActivities": "Aucune nouveauté trouvée.",
+  "homeNearbyAvailableTitle": "Activités disponibles à proximité",
+  "homeWebCtaTitle": "Retrouvez vos événements en toute simplicité",
+  "homeWebCtaBody": "Notre site web offre une expérience complète pour découvrir et réserver vos activités locales.",
+  "homeWebCtaButton": "Découvrir le site",
+  "homeFallbackPopularCitiesTitle": "Où ça bouge en ce moment",
+  "homePopularCitiesTitle": "Villes populaires",
+  "homeHeroGreetingMorning": "Bonjour {firstName} !",
+  "@homeHeroGreetingMorning": {
+    "placeholders": {
+      "firstName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroGreetingAfternoon": "Bon après-midi {firstName} !",
+  "@homeHeroGreetingAfternoon": {
+    "placeholders": {
+      "firstName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroGreetingEvening": "Bonsoir {firstName} !",
+  "@homeHeroGreetingEvening": {
+    "placeholders": {
+      "firstName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroGreetingNight": "Bonne nuit {firstName} !",
+  "@homeHeroGreetingNight": {
+    "placeholders": {
+      "firstName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroNightTitle": "Sorties nocturnes",
+  "homeHeroNightTitleWithCity": "Sorties nocturnes à {cityName}",
+  "@homeHeroNightTitleWithCity": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroNightSubtitle": "Concerts, spectacles et soirées",
+  "homeHeroWeekendTitle": "Ce week-end",
+  "homeHeroWeekendTitleWithCity": "Ce week-end à {cityName}",
+  "@homeHeroWeekendTitleWithCity": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroWeekendMorningSubtitle": "Les meilleures activités vous attendent",
+  "homeHeroMorningTitle": "Bonne journée",
+  "homeHeroMorningTitleWithCity": "Bonne journée à {cityName}",
+  "@homeHeroMorningTitleWithCity": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroMorningSubtitle": "Découvrez les activités du jour",
+  "homeHeroAfternoonTitle": "Cet après-midi",
+  "homeHeroAfternoonTitleWithCity": "Cet après-midi à {cityName}",
+  "@homeHeroAfternoonTitleWithCity": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroWeekendAfternoonSubtitle": "Profitez de votre week-end",
+  "homeHeroNearbyTitle": "Activités près de vous",
+  "homeHeroNearbyTitleWithCity": "Activités à {cityName}",
+  "@homeHeroNearbyTitleWithCity": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroAfternoonSubtitle": "Pour occuper votre après-midi",
+  "homeHeroEveningTitle": "Ce soir",
+  "homeHeroEveningTitleWithCity": "Ce soir à {cityName}",
+  "@homeHeroEveningTitleWithCity": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroEveningWeekendSubtitle": "Les sorties du week-end commencent",
+  "homeHeroEveningWeekdaySubtitle": "Après le travail, on se détend",
+  "homeHeroDiscoverTitle": "Découvrez les activités",
+  "homeHeroDiscoverTitleWithCity": "Découvrez {cityName}",
+  "@homeHeroDiscoverTitleWithCity": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroDiscoverSubtitle": "Trouvez votre prochaine sortie",
+  "homeHeroSummerSubtitle": "Profitez des activités estivales",
+  "homeHeroWinterSubtitle": "Réchauffez vos soirées",
+  "homeHeroSpringSubtitle": "Le printemps est là, sortez !",
+  "homeHeroAutumnSubtitle": "Les couleurs de l'automne vous attendent",
+  "homeSearchTitle": "Rechercher",
+  "homeSearchNearby": "À proximité",
+  "homeSearchWhere": "Où ?",
+  "homeSearchWhen": "Quand ?",
+  "homeSearchWhat": "Quoi ?",
+  "homeSearchCategoryCount": "{count} cat.",
+  "@homeSearchCategoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeSearchFamily": "Famille",
+  "homeExploreByCategoryTitle": "Explorer par catégorie",
+  "homeExploreCategorySemantics": "Explorer {category}",
+  "@homeExploreCategorySemantics": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "homeStoriesFeaturedTitle": "À la une",
+  "homeStoriesNewBadge": "NEW",
+  "homeStoryViewActivity": "Voir l'activité",
+  "homeStoryBookingLabel": "Billetterie",
+  "homeStoryDiscoveryLabel": "Découverte",
+  "homeDateAtTime": "{date} à {time}",
+  "@homeDateAtTime": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeTodayAtTime": "Aujourd'hui à {time}",
+  "@homeTodayAtTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeTomorrowAtTime": "Demain à {time}",
+  "@homeTomorrowAtTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeEventByOrganizer": "Par {organizer}",
+  "@homeEventByOrganizer": {
+    "placeholders": {
+      "organizer": {
+        "type": "String"
+      }
+    }
+  },
+  "homePriceFrom": "À partir de {price}",
+  "@homePriceFrom": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "homePriceFromShort": "Dès {price}",
+  "@homePriceFromShort": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "homePrivateBadge": "Privé",
+  "homeCountdownNow": "Maintenant !",
+  "homeCountdownDayHour": "{days} jour {hours}h",
+  "@homeCountdownDayHour": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "homeCountdownDaysHours": "{days} jours {hours}h",
+  "@homeCountdownDaysHours": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "homeRemainingSpot": "{count} place",
+  "@homeRemainingSpot": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeRemainingSpots": "{count} places",
+  "@homeRemainingSpots": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeUrgencyRemainingSpots": "Plus que {count} places !",
+  "@homeUrgencyRemainingSpots": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeUrgencyLastHours": "Dernières heures pour réserver !",
+  "homeBook": "Réserver",
+  "homeUrgencyTitle": "Avant qu'il soit trop tard",
+  "homeUrgencySubtitle": "Ces événements commencent bientôt",
+  "homeCityNotFound": "Ville non trouvée",
+  "homeCityDescriptionFallback": "Découvrez les activités à {cityName}.",
+  "@homeCityDescriptionFallback": {
+    "placeholders": {
+      "cityName": {
+        "type": "String"
+      }
+    }
+  },
+  "homeCityAvailableEvent": "{count} événement disponible",
+  "@homeCityAvailableEvent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeCityAvailableEvents": "{count} événements disponibles",
+  "@homeCityAvailableEvents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homePopularActivities": "Activités populaires",
+  "homeFilter": "Filtrer",
+  "homeCityNoActivities": "Aucune activité trouvée dans cette ville",
+  "homeErrorWithMessage": "Erreur : {message}",
+  "@homeErrorWithMessage": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "homeOffersTitle": "Offres et bons plans",
+  "homeSpecialOffer": "Offre spéciale",
+  "homeQuickToday": "Aujourd'hui",
+  "homeQuickWeekend": "Ce week-end",
+  "homeQuickFamily": "Famille",
+  "homeQuickDistanceUnder2km": "< 2 km",
+  "homeCategoryAll": "Tous",
+  "homeCategoryShows": "Spectacles",
+  "homeCategoryWorkshops": "Ateliers",
+  "homeCategorySport": "Sport",
+  "homeCategoryCulture": "Culture",
+  "homeCategoryMarkets": "Marchés",
+  "homeCategoryLeisure": "Loisirs",
+  "homeBrowseByCity": "Parcourir par ville"
 }

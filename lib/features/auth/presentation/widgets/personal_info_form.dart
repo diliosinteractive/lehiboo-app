@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../providers/business_register_provider.dart';
 import 'password_strength_indicator.dart';
 
@@ -61,26 +62,27 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
 
   void _saveToState() {
     ref.read(businessRegisterProvider.notifier).updatePersonalInfo(
-      firstName: _firstNameController.text,
-      lastName: _lastNameController.text,
-      email: _emailController.text,
-      phone: _phoneController.text,
-      birthDate: _birthDate != null
-          ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
-          : null,
-      membershipCity: _membershipCityController.text.trim().isNotEmpty
-          ? _membershipCityController.text.trim()
-          : null,
-      password: _passwordController.text,
-      passwordConfirmation: _confirmPasswordController.text,
-    );
+          firstName: _firstNameController.text,
+          lastName: _lastNameController.text,
+          email: _emailController.text,
+          phone: _phoneController.text,
+          birthDate: _birthDate != null
+              ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
+              : null,
+          membershipCity: _membershipCityController.text.trim().isNotEmpty
+              ? _membershipCityController.text.trim()
+              : null,
+          password: _passwordController.text,
+          passwordConfirmation: _confirmPasswordController.text,
+        );
   }
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
     _saveToState();
-    final success = await ref.read(businessRegisterProvider.notifier).submitPersonalInfo();
+    final success =
+        await ref.read(businessRegisterProvider.notifier).submitPersonalInfo();
     if (success) {
       widget.onSubmit();
     }
@@ -88,6 +90,7 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final state = ref.watch(businessRegisterProvider);
 
     return Form(
@@ -98,9 +101,9 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Title
-            const Text(
-              'Informations personnelles',
-              style: TextStyle(
+            Text(
+              l10n.authPersonalInfoTitle,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2D3748),
@@ -108,7 +111,7 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ces informations seront utilisées pour créer votre compte',
+              l10n.authPersonalInfoSubtitle,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -125,13 +128,13 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
                     decoration: _inputDecoration(
-                      label: 'Prénom',
-                      hint: 'Jean',
+                      label: l10n.authFirstNameLabel,
+                      hint: l10n.authFirstNameHint,
                       icon: Icons.person_outline,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().length < 2) {
-                        return 'Min. 2 caractères';
+                        return l10n.authValidationMin2Chars;
                       }
                       return null;
                     },
@@ -144,12 +147,12 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
                     decoration: _inputDecoration(
-                      label: 'Nom',
-                      hint: 'Dupont',
+                      label: l10n.authLastNameLabel,
+                      hint: l10n.authLastNameHint,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().length < 2) {
-                        return 'Min. 2 caractères';
+                        return l10n.authValidationMin2Chars;
                       }
                       return null;
                     },
@@ -165,16 +168,17 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               decoration: _inputDecoration(
-                label: 'Email professionnel',
-                hint: 'votre@entreprise.com',
+                label: l10n.authProfessionalEmailLabel,
+                hint: l10n.authProfessionalEmailHint,
                 icon: Icons.email_outlined,
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Veuillez entrer votre email';
+                  return l10n.authEmailRequired;
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                  return 'Veuillez entrer un email valide';
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                    .hasMatch(value)) {
+                  return l10n.authEmailInvalid;
                 }
                 return null;
               },
@@ -187,15 +191,15 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
               decoration: _inputDecoration(
-                label: 'Téléphone (optionnel)',
-                hint: '06 12 34 56 78',
+                label: l10n.authPhoneOptionalLabel,
+                hint: l10n.authPhoneHint,
                 icon: Icons.phone_outlined,
               ),
               validator: (value) {
                 if (value != null && value.isNotEmpty) {
                   final cleaned = value.replaceAll(RegExp(r'[\s\-\.]'), '');
                   if (!RegExp(r'^(\+33|0033|0)[1-9]\d{8}$').hasMatch(cleaned)) {
-                    return 'Numéro de téléphone invalide';
+                    return l10n.authPhoneInvalid;
                   }
                 }
                 return null;
@@ -206,13 +210,14 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
             // Birth date picker (optional)
             GestureDetector(
               onTap: () async {
-                final maxDate = DateTime.now().subtract(const Duration(days: 15 * 365));
+                final maxDate =
+                    DateTime.now().subtract(const Duration(days: 15 * 365));
                 final picked = await showDatePicker(
                   context: context,
                   initialDate: _birthDate ?? maxDate,
                   firstDate: DateTime(1920),
                   lastDate: maxDate,
-                  helpText: 'Date de naissance',
+                  helpText: l10n.authBirthDateHelp,
                   // locale: const Locale('fr'),
                 );
                 if (picked != null) {
@@ -222,8 +227,8 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
               child: AbsorbPointer(
                 child: TextFormField(
                   decoration: _inputDecoration(
-                    label: 'Date de naissance (optionnel)',
-                    hint: 'JJ/MM/AAAA',
+                    label: l10n.authBirthDateLabelOptional,
+                    hint: l10n.authDateHint,
                     icon: Icons.cake_outlined,
                     suffixIcon: _birthDate != null
                         ? IconButton(
@@ -234,7 +239,10 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
                   ),
                   controller: TextEditingController(
                     text: _birthDate != null
-                        ? '${_birthDate!.day.toString().padLeft(2, '0')}/${_birthDate!.month.toString().padLeft(2, '0')}/${_birthDate!.year}'
+                        ? context
+                            .appDateFormat('dd/MM/yyyy',
+                                enPattern: 'MM/dd/yyyy')
+                            .format(_birthDate!)
                         : '',
                   ),
                 ),
@@ -249,8 +257,8 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
               textInputAction: TextInputAction.next,
               maxLength: 120,
               decoration: _inputDecoration(
-                label: 'Ville (optionnel)',
-                hint: 'Lyon, Paris...',
+                label: l10n.authCityOptionalLabel,
+                hint: l10n.authCityHint,
                 icon: Icons.location_city_outlined,
               ),
             ),
@@ -263,8 +271,8 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
               textInputAction: TextInputAction.next,
               onChanged: (value) => setState(() {}),
               decoration: _inputDecoration(
-                label: 'Mot de passe',
-                hint: 'Minimum 8 caractères',
+                label: l10n.authPasswordLabel,
+                hint: l10n.authPasswordMinimumHint,
                 icon: Icons.lock_outlined,
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -279,19 +287,19 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Veuillez entrer un mot de passe';
+                  return l10n.authPasswordCreateRequired;
                 }
                 if (value.length < 8) {
-                  return 'Min. 8 caractères';
+                  return l10n.authPasswordMinLengthShort;
                 }
                 if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                  return 'Une majuscule requise';
+                  return l10n.authPasswordNeedsUppercaseShort;
                 }
                 if (!RegExp(r'[0-9]').hasMatch(value)) {
-                  return 'Un chiffre requis';
+                  return l10n.authPasswordNeedsNumberShort;
                 }
                 if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
-                  return 'Un caractère spécial requis';
+                  return l10n.authPasswordNeedsSpecialShort;
                 }
                 return null;
               },
@@ -310,12 +318,14 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
               textInputAction: TextInputAction.done,
               onFieldSubmitted: (_) => _handleSubmit(),
               decoration: _inputDecoration(
-                label: 'Confirmer le mot de passe',
-                hint: 'Retapez votre mot de passe',
+                label: l10n.authConfirmPasswordLabel,
+                hint: l10n.authConfirmPasswordHint,
                 icon: Icons.lock_outlined,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                    _obscureConfirmPassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
                   ),
                   onPressed: () {
                     setState(() {
@@ -326,10 +336,10 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Veuillez confirmer votre mot de passe';
+                  return l10n.authConfirmPasswordRequired;
                 }
                 if (value != _passwordController.text) {
-                  return 'Les mots de passe ne correspondent pas';
+                  return l10n.authPasswordsDoNotMatch;
                 }
                 return null;
               },
@@ -355,12 +365,13 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : const Text(
-                        'Continuer',
-                        style: TextStyle(
+                    : Text(
+                        l10n.commonContinue,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

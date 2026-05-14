@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
@@ -17,33 +18,56 @@ import 'hero_slides_carousel.dart';
 /// Images de villes pour le Hero (Unsplash - ambiances festives et colorées)
 const _cityImages = <String, String>{
   // Nord-Pas-de-Calais - Ambiances festives, marchés, concerts
-  'valenciennes': 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80', // Festival coloré
-  'lille': 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80', // Concert ambiance
-  'douai': 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800&q=80', // Festival musique
-  'cambrai': 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&q=80', // Fête foraine
-  'maubeuge': 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
-  'denain': 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
-  'anzin': 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
-  'saint-amand-les-eaux': 'https://images.unsplash.com/photo-1504680177321-2e6a879aac86?w=800&q=80', // Spa/détente
-  'roubaix': 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80',
-  'tourcoing': 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80',
-  'dunkerque': 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80', // Carnaval vibes
-  'arras': 'https://images.unsplash.com/photo-1506157786151-b8091532f063?w=800&q=80',
+  'valenciennes':
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80', // Festival coloré
+  'lille':
+      'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80', // Concert ambiance
+  'douai':
+      'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800&q=80', // Festival musique
+  'cambrai':
+      'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&q=80', // Fête foraine
+  'maubeuge':
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
+  'denain':
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
+  'anzin':
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
+  'saint-amand-les-eaux':
+      'https://images.unsplash.com/photo-1504680177321-2e6a879aac86?w=800&q=80', // Spa/détente
+  'roubaix':
+      'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80',
+  'tourcoing':
+      'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80',
+  'dunkerque':
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80', // Carnaval vibes
+  'arras':
+      'https://images.unsplash.com/photo-1506157786151-b8091532f063?w=800&q=80',
   // Grandes villes françaises - Ambiances de nuit et festives
-  'paris': 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80', // Concert Paris
-  'lyon': 'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&q=80', // Fête des Lumières vibes
-  'marseille': 'https://images.unsplash.com/photo-1506157786151-b8091532f063?w=800&q=80', // Fiesta
-  'bordeaux': 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80', // Terrasse festive
-  'toulouse': 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
-  'nantes': 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80', // Confettis
-  'strasbourg': 'https://images.unsplash.com/photo-1482575832494-771f74bf6857?w=800&q=80', // Marché Noël
-  'nice': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80', // Carnaval
-  'montpellier': 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
-  'rennes': 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80',
+  'paris':
+      'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80', // Concert Paris
+  'lyon':
+      'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&q=80', // Fête des Lumières vibes
+  'marseille':
+      'https://images.unsplash.com/photo-1506157786151-b8091532f063?w=800&q=80', // Fiesta
+  'bordeaux':
+      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80', // Terrasse festive
+  'toulouse':
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
+  'nantes':
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80', // Confettis
+  'strasbourg':
+      'https://images.unsplash.com/photo-1482575832494-771f74bf6857?w=800&q=80', // Marché Noël
+  'nice':
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80', // Carnaval
+  'montpellier':
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80',
+  'rennes':
+      'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80',
 };
 
 /// Image par défaut : ambiance concert/festival colorée
-const _defaultHeroImage = 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80';
+const _defaultHeroImage =
+    'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80';
 
 /// Hero contextuel avec titres dynamiques selon le contexte (heure, jour, saison, ville)
 /// et effet parallax au scroll.
@@ -75,7 +99,8 @@ class ContextualHero extends ConsumerWidget {
     final alertsState = ref.watch(alertsProvider);
 
     // Get config or default
-    final config = configAsyncValue.valueOrNull ?? MobileAppConfig.defaultConfig();
+    final config =
+        configAsyncValue.valueOrNull ?? MobileAppConfig.defaultConfig();
     final heroConfig = config.hero;
     final cityName = userLocationAsync.valueOrNull?.cityName;
 
@@ -91,8 +116,8 @@ class ContextualHero extends ConsumerWidget {
     }
 
     // Build context-aware content
-    final contextData = _buildContextualContent(cityName);
-    final greetingMessage = _buildGreeting(currentUser?.firstName);
+    final contextData = _buildContextualContent(context, cityName);
+    final greetingMessage = _buildGreeting(context, currentUser?.firstName);
 
     // Get saved searches (alerts)
     final savedAlerts = alertsState.valueOrNull?.take(5).toList() ?? [];
@@ -226,7 +251,9 @@ class ContextualHero extends ConsumerWidget {
                         alerts: savedAlerts,
                         onAlertTap: (alert) {
                           // Apply filter and navigate to search
-                          ref.read(eventFilterProvider.notifier).applyFilters(alert.filter);
+                          ref
+                              .read(eventFilterProvider.notifier)
+                              .applyFilters(alert.filter);
                           context.push('/search');
                         },
                       ),
@@ -261,27 +288,30 @@ class ContextualHero extends ConsumerWidget {
   }
 
   /// Build personalized greeting based on time of day
-  String? _buildGreeting(String? firstName) {
+  String? _buildGreeting(BuildContext context, String? firstName) {
     if (firstName == null || firstName.isEmpty) return null;
 
     final hour = DateTime.now().hour;
-    String greeting;
 
     if (hour >= 5 && hour < 12) {
-      greeting = 'Bonjour';
-    } else if (hour >= 12 && hour < 18) {
-      greeting = 'Bon après-midi';
-    } else if (hour >= 18 && hour < 22) {
-      greeting = 'Bonsoir';
-    } else {
-      greeting = 'Bonne nuit';
+      return context.l10n.homeHeroGreetingMorning(firstName);
+    }
+    if (hour >= 12 && hour < 18) {
+      return context.l10n.homeHeroGreetingAfternoon(firstName);
+    }
+    if (hour >= 18 && hour < 22) {
+      return context.l10n.homeHeroGreetingEvening(firstName);
     }
 
-    return '$greeting $firstName !';
+    return context.l10n.homeHeroGreetingNight(firstName);
   }
 
   /// Build contextual content based on time, day, season, and location
-  _ContextualContent _buildContextualContent(String? cityName) {
+  _ContextualContent _buildContextualContent(
+    BuildContext context,
+    String? cityName,
+  ) {
+    final l10n = context.l10n;
     final now = DateTime.now();
     final hour = now.hour;
     final weekday = now.weekday; // 1 = Monday, 7 = Sunday
@@ -303,75 +333,77 @@ class ContextualHero extends ConsumerWidget {
     // Build title
     String title;
     String subtitle;
+    var isDiscoveryTitle = false;
 
     if (isNight) {
       title = cityName != null
-          ? 'Sorties nocturnes à $cityName'
-          : 'Sorties nocturnes';
-      subtitle = 'Concerts, spectacles et soirées';
+          ? l10n.homeHeroNightTitleWithCity(cityName)
+          : l10n.homeHeroNightTitle;
+      subtitle = l10n.homeHeroNightSubtitle;
     } else if (isMorning) {
       if (isWeekend) {
         title = cityName != null
-            ? 'Ce week-end à $cityName'
-            : 'Ce week-end';
-        subtitle = 'Les meilleures activités vous attendent';
+            ? l10n.homeHeroWeekendTitleWithCity(cityName)
+            : l10n.homeHeroWeekendTitle;
+        subtitle = l10n.homeHeroWeekendMorningSubtitle;
       } else {
         title = cityName != null
-            ? 'Bonne journée à $cityName'
-            : 'Bonne journée';
-        subtitle = 'Découvrez les activités du jour';
+            ? l10n.homeHeroMorningTitleWithCity(cityName)
+            : l10n.homeHeroMorningTitle;
+        subtitle = l10n.homeHeroMorningSubtitle;
       }
     } else if (isAfternoon) {
       if (isWeekend) {
         title = cityName != null
-            ? 'Cet après-midi à $cityName'
-            : 'Cet après-midi';
-        subtitle = 'Profitez de votre week-end';
+            ? l10n.homeHeroAfternoonTitleWithCity(cityName)
+            : l10n.homeHeroAfternoonTitle;
+        subtitle = l10n.homeHeroWeekendAfternoonSubtitle;
       } else {
         title = cityName != null
-            ? 'Activités à $cityName'
-            : 'Activités près de vous';
-        subtitle = 'Pour occuper votre après-midi';
+            ? l10n.homeHeroNearbyTitleWithCity(cityName)
+            : l10n.homeHeroNearbyTitle;
+        subtitle = l10n.homeHeroAfternoonSubtitle;
       }
     } else if (isEvening) {
       if (isFriday || isWeekend) {
         title = cityName != null
-            ? 'Ce soir à $cityName'
-            : 'Ce soir';
-        subtitle = 'Les sorties du week-end commencent';
+            ? l10n.homeHeroEveningTitleWithCity(cityName)
+            : l10n.homeHeroEveningTitle;
+        subtitle = l10n.homeHeroEveningWeekendSubtitle;
       } else {
         title = cityName != null
-            ? 'Ce soir à $cityName'
-            : 'Ce soir';
-        subtitle = 'Après le travail, on se détend';
+            ? l10n.homeHeroEveningTitleWithCity(cityName)
+            : l10n.homeHeroEveningTitle;
+        subtitle = l10n.homeHeroEveningWeekdaySubtitle;
       }
     } else {
       title = cityName != null
-          ? 'Découvrez $cityName'
-          : 'Découvrez les activités';
-      subtitle = 'Trouvez votre prochaine sortie';
+          ? l10n.homeHeroDiscoverTitleWithCity(cityName)
+          : l10n.homeHeroDiscoverTitle;
+      subtitle = l10n.homeHeroDiscoverSubtitle;
+      isDiscoveryTitle = true;
     }
 
     // Add seasonal touch
     switch (season) {
       case _Season.summer:
-        if (title.contains('Découvrez')) {
-          subtitle = 'Profitez des activités estivales';
+        if (isDiscoveryTitle) {
+          subtitle = l10n.homeHeroSummerSubtitle;
         }
         break;
       case _Season.winter:
         if (isEvening || isNight) {
-          subtitle = 'Réchauffez vos soirées';
+          subtitle = l10n.homeHeroWinterSubtitle;
         }
         break;
       case _Season.spring:
         if (isMorning || isAfternoon) {
-          subtitle = 'Le printemps est là, sortez !';
+          subtitle = l10n.homeHeroSpringSubtitle;
         }
         break;
       case _Season.autumn:
         if (isWeekend) {
-          subtitle = 'Les couleurs de l\'automne vous attendent';
+          subtitle = l10n.homeHeroAutumnSubtitle;
         }
         break;
     }

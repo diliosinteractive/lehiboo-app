@@ -23,6 +23,8 @@ The localization infrastructure is in place and the first rollout slices are com
 2. Locale-aware dates, compact numbers, legal URLs, API language header, bottom nav, Settings language switch, and several shared/high-traffic widgets.
 3. Auth entry/access copy for login, forgot password, OTP verification, the guest-restriction dialog, and current guest-guard feature names.
 4. Registration entry and post-signup permission onboarding copy.
+5. Customer/business multi-step registration form copy.
+6. Active Home surface copy.
 
 The app is not fully translated yet. Many screens still contain hard-coded French UI copy, but the app now has the wiring needed to migrate them screen by screen.
 
@@ -182,9 +184,7 @@ Covered:
 - Guest-restriction dialog title, subtitle shell, inline login labels, validators, CTAs, close tooltip, and fallback incorrect-credentials message.
 - All current `GuestGuard.check(...)` / `GuestRestrictionDialog.show(...)` feature-name values found under `lib/` now come from `context.l10n`.
 
-Remaining in this area:
-
-- Large customer/business multi-step registration forms still contain hard-coded French copy.
+The large customer/business registration forms are covered in the registration slices below.
 
 ### Registration Entry And Permission Onboarding
 
@@ -202,7 +202,9 @@ Covered:
 - Legacy `/register-simple` labels, hints, validators, terms/privacy sentence, CTA, and login link.
 - First-launch/post-signup permission explainer titles, intro copy, bullets, reassurance, CTA, and granted-state labels.
 
-Remaining in this area:
+### Customer And Business Registration Forms
+
+Migrated:
 
 - `lib/features/auth/presentation/screens/customer_register_screen.dart`
 - `lib/features/auth/presentation/screens/business_register_screen.dart`
@@ -211,6 +213,52 @@ Remaining in this area:
 - `lib/features/auth/presentation/widgets/company_info_form.dart`
 - `lib/features/auth/presentation/widgets/usage_mode_form.dart`
 - `lib/features/auth/presentation/widgets/terms_acceptance_form.dart`
+- `lib/features/auth/presentation/widgets/company_autocomplete.dart`
+- `lib/features/auth/presentation/widgets/organization_type_card.dart`
+- `lib/features/auth/presentation/widgets/password_strength_indicator.dart`
+- `lib/features/auth/presentation/widgets/step_indicator.dart`
+- `lib/features/auth/presentation/utils/auth_registration_l10n.dart`
+
+Covered:
+
+- Customer email/code/profile/terms flow labels, validators, step labels, snackbars, and success/errors.
+- Business personal info, OTP, organization type, company autocomplete, company details, usage mode, terms summary, success dialog, and cancel dialog.
+- Shared registration-specific helpers for localized organization type and usage mode labels/descriptions.
+- Locale-aware date display for customer birth dates.
+
+### Active Home Surface
+
+Migrated:
+
+- `lib/features/home/presentation/screens/home_screen.dart`
+- `lib/features/home/presentation/screens/city_detail_screen.dart`
+- `lib/features/home/presentation/widgets/contextual_hero.dart`
+- `lib/features/home/presentation/widgets/home_categories_section.dart`
+- `lib/features/home/presentation/widgets/event_card.dart`
+- `lib/features/home/presentation/widgets/countdown_event_card.dart`
+- `lib/features/home/presentation/widgets/event_stories.dart`
+- `lib/features/home/presentation/widgets/ads_banners_section.dart`
+- `lib/features/home/presentation/widgets/home_cities_section.dart`
+- `lib/features/home/presentation/widgets/category_filter_chips.dart`
+- `lib/features/home/presentation/widgets/quick_filters.dart`
+- `lib/features/search/presentation/widgets/home_search_pill.dart`
+- `lib/features/home/presentation/utils/home_l10n_formatters.dart`
+
+Covered:
+
+- Home app bar tooltips, section titles, empty states, web CTA copy, city section fallbacks, and city detail labels.
+- Contextual hero greetings/titles/subtitles for time, day, season, and city variants.
+- Home category section title and semantics.
+- Event card price/date/organizer/private badge copy.
+- Countdown urgency labels, remaining-spots labels, CTA, and countdown/date text.
+- Stories title, new badge, CTA, booking/discovery labels, and friendly dates.
+- Ads section title and fallback banner copy.
+- Home search pill placeholders and active-filter labels.
+
+Not covered in this slice:
+
+- Disabled/legacy Home widgets that are not mounted by `home_screen.dart`, such as `recommended_section.dart`, `personalized_section.dart`, `partner_highlight.dart`, and `native_ad_card.dart`.
+- Search/filter sheet internals beyond the Home search pill.
 
 ## Verification Already Run
 
@@ -246,6 +294,31 @@ Result:
 
 - No issues found.
 
+Latest focused customer/business registration check:
+
+```sh
+flutter analyze --no-pub --no-fatal-infos lib/features/auth/presentation/screens/customer_register_screen.dart lib/features/auth/presentation/screens/business_register_screen.dart lib/features/auth/presentation/widgets/personal_info_form.dart lib/features/auth/presentation/widgets/otp_verification_form.dart lib/features/auth/presentation/widgets/company_info_form.dart lib/features/auth/presentation/widgets/usage_mode_form.dart lib/features/auth/presentation/widgets/terms_acceptance_form.dart lib/features/auth/presentation/widgets/password_strength_indicator.dart lib/features/auth/presentation/widgets/organization_type_card.dart lib/features/auth/presentation/widgets/company_autocomplete.dart lib/features/auth/presentation/widgets/step_indicator.dart lib/features/auth/presentation/utils/auth_registration_l10n.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+```
+
+Result:
+
+- No analyzer issues found.
+- Locale tests passed.
+
+Latest focused active Home check:
+
+```sh
+flutter analyze --no-pub --no-fatal-infos lib/features/home/presentation/screens/home_screen.dart lib/features/home/presentation/screens/city_detail_screen.dart lib/features/home/presentation/widgets/contextual_hero.dart lib/features/home/presentation/widgets/home_categories_section.dart lib/features/home/presentation/widgets/event_card.dart lib/features/home/presentation/widgets/countdown_event_card.dart lib/features/home/presentation/widgets/event_stories.dart lib/features/home/presentation/widgets/ads_banners_section.dart lib/features/home/presentation/widgets/quick_filters.dart lib/features/home/presentation/widgets/category_filter_chips.dart lib/features/home/presentation/widgets/home_cities_section.dart lib/features/search/presentation/widgets/home_search_pill.dart lib/features/home/presentation/utils/home_l10n_formatters.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- Analyzer output is only info-level existing style/deprecation notes in touched Home files, mainly `withOpacity`, `prefer_const_*`, and `sized_box_for_whitespace`.
+- Locale tests passed.
+
 Targeted analyzer checks:
 
 - Booking files no longer have analyzer errors after null-safety cleanup.
@@ -279,14 +352,22 @@ Known unrelated or pre-existing dirty entries observed during this work:
 
 - `.env.development`
 - `android/build/`
-- Some docs under `docs/`
-- Home/thematique files that were already being worked on in the tree
+- Unrelated docs under `docs/`:
+  - `docs/BLOG_API_MOBILE.md`
+  - `docs/MOBILE_EVENT_FILTERS_INTEGRATION.md`
+- Events/search files not touched by the active Home i18n slice were also observed dirty:
+  - `lib/features/events/data/datasources/events_api_datasource.dart`
+  - `lib/features/events/data/repositories/event_repository_impl.dart`
+  - `lib/features/events/domain/repositories/event_repository.dart`
+  - `lib/features/events/data/models/search_suggestions_dto.dart`
+  - `lib/features/search/presentation/providers/filter_provider.dart`
+  - `lib/features/search/presentation/widgets/filter_bottom_sheet.dart`
 
 Before committing or refining, review diffs by file instead of using bulk restore/reset commands.
 
 ## Where Work Stopped
 
-Stopped after completing the registration entry and permission onboarding copy slice.
+Stopped after completing the active Home surface copy slice.
 
 Current stable stopping point:
 
@@ -296,10 +377,12 @@ Current stable stopping point:
 - Hard-coded French date/number/speech/API locale scan is clean.
 - Login, forgot password, OTP verification, and guest-restriction dialog copy is localized.
 - Active register type selector, legacy simple register screen, and permission onboarding screens are localized.
+- Customer and business multi-step registration forms are localized.
+- Active Home surface chrome, hero, cards, stories, ads fallback, city detail, and Home search pill copy are localized.
 - Direct hard-coded `featureName: '...'` / `featureName: "..."` scan under `lib/` is clean.
 - Locale unit tests pass.
 
-Next work should continue with the large customer/business registration forms, not more locale plumbing.
+Next work should continue with Search and filters user-facing copy, not more locale plumbing.
 
 ## Remaining Task Queue
 
@@ -307,15 +390,13 @@ Next work should continue with the large customer/business registration forms, n
 
 Recommended order:
 
-1. Customer/business registration forms.
-2. Home.
-3. Search and filters.
-4. Event list/detail.
-5. Booking flow.
-6. Profile/settings subpages.
-7. Messages.
-8. Petit Boo chat and tool cards.
-9. Memberships/partners/check-in/admin surfaces.
+1. Search and filters.
+2. Event list/detail.
+3. Booking flow.
+4. Profile/settings subpages.
+5. Messages.
+6. Petit Boo chat and tool cards.
+7. Memberships/partners/check-in/admin surfaces.
 
 For each screen:
 

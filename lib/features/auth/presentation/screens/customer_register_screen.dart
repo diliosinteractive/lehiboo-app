@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../shared/legal/legal_links.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -19,19 +20,22 @@ class CustomerRegisterScreen extends ConsumerStatefulWidget {
   const CustomerRegisterScreen({super.key});
 
   @override
-  ConsumerState<CustomerRegisterScreen> createState() => _CustomerRegisterScreenState();
+  ConsumerState<CustomerRegisterScreen> createState() =>
+      _CustomerRegisterScreenState();
 }
 
 enum _RegistrationStep { email, otp, form }
 
-class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen> {
+class _CustomerRegisterScreenState
+    extends ConsumerState<CustomerRegisterScreen> {
   _RegistrationStep _currentStep = _RegistrationStep.email;
 
   // Controllers for email step
   final _emailController = TextEditingController();
 
   // Controllers for OTP step
-  final List<TextEditingController> _otpControllers = List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _otpControllers =
+      List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _otpFocusNodes = List.generate(6, (_) => FocusNode());
 
   // Controllers for form step
@@ -90,8 +94,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
 
   Future<void> _sendOtp() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-      _showError('Veuillez entrer une adresse email valide');
+    if (email.isEmpty ||
+        !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      _showError(context.l10n.authEmailAddressInvalid);
       return;
     }
 
@@ -141,7 +146,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
       if (!mounted) return;
 
       if (result.success) {
-        _showSuccess('Nouveau code envoyé');
+        _showSuccess(context.l10n.authOtpResent);
         _startCooldown();
         _clearOtpFields();
       }
@@ -158,7 +163,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
 
   Future<void> _verifyOtp() async {
     if (_otpCode.length != 6) {
-      _showError('Veuillez entrer le code à 6 chiffres');
+      _showError(context.l10n.authOtpIncompleteCode);
       return;
     }
 
@@ -176,7 +181,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
 
       if (result.verified && result.verifiedEmailToken != null) {
         _verifiedEmailToken = result.verifiedEmailToken;
-        _showSuccess('Email vérifié !');
+        _showSuccess(context.l10n.authOtpEmailVerified);
         setState(() => _currentStep = _RegistrationStep.form);
       } else {
         _showError(result.message);
@@ -236,12 +241,12 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
     if (!_formKey.currentState!.validate()) return;
 
     if (!_acceptTerms) {
-      _showError('Veuillez accepter les conditions d\'utilisation');
+      _showError(context.l10n.authAcceptTermsRequired);
       return;
     }
 
     if (_verifiedEmailToken == null) {
-      _showError('Erreur: token de vérification manquant. Veuillez recommencer.');
+      _showError(context.l10n.authRegisterMissingVerificationToken);
       setState(() => _currentStep = _RegistrationStep.email);
       return;
     }
@@ -257,11 +262,15 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
         email: _emailController.text.trim(),
         password: _passwordController.text,
         passwordConfirmation: _confirmPasswordController.text,
-        phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+        phone: _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
+            : null,
         birthDate: _birthDate != null
             ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
             : null,
-        membershipCity: _membershipCityController.text.trim().isNotEmpty ? _membershipCityController.text.trim() : null,
+        membershipCity: _membershipCityController.text.trim().isNotEmpty
+            ? _membershipCityController.text.trim()
+            : null,
         acceptTerms: _acceptTerms,
         acceptMarketing: _acceptMarketing,
       );
@@ -270,7 +279,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
 
       if (result.authResult != null) {
         // Direct authentication (no verification needed).
-        _showSuccess('Compte créé avec succès !');
+        _showSuccess(context.l10n.authCustomerAccountCreated);
         // If the registration was triggered from a GuestRestrictionDialog,
         // skip the navigation reset — the dialog's auth-state listener
         // will pop our pushed screens and the dialog itself, returning
@@ -397,6 +406,8 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
   }
 
   Widget _buildEmailStep() {
+    final l10n = context.l10n;
+
     return SingleChildScrollView(
       key: const ValueKey('email'),
       padding: const EdgeInsets.all(24),
@@ -422,9 +433,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
           const SizedBox(height: 24),
 
           // Title
-          const Text(
-            'Créer un compte',
-            style: TextStyle(
+          Text(
+            l10n.authCreateAccount,
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: HbColors.textSlate,
@@ -433,7 +444,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Commencez par vérifier votre adresse email',
+            l10n.authCustomerEmailSubtitle,
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -453,8 +464,8 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _sendOtp(),
             decoration: _inputDecoration(
-              label: 'Email',
-              hint: 'votre@email.com',
+              label: l10n.authEmailLabel,
+              hint: l10n.authEmailHint,
               icon: Icons.email_outlined,
             ),
           ),
@@ -482,9 +493,10 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text(
-                      'Recevoir le code',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  : Text(
+                      l10n.authReceiveCode,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
                     ),
             ),
           ),
@@ -494,9 +506,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
           Center(
             child: TextButton(
               onPressed: () => context.pushReplacement('/register/business'),
-              child: const Text(
-                'Créer un compte professionnel',
-                style: TextStyle(
+              child: Text(
+                l10n.authCreateBusinessAccount,
+                style: const TextStyle(
                   color: HbColors.brandPrimary,
                   fontWeight: FontWeight.w500,
                 ),
@@ -509,7 +521,10 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Déjà un compte ? ', style: TextStyle(color: Colors.grey[600])),
+              Text(
+                '${l10n.authAlreadyHaveAccount} ',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
               TextButton(
                 onPressed: () => context.go('/login'),
                 style: TextButton.styleFrom(
@@ -517,9 +532,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
-                  'Se connecter',
-                  style: TextStyle(
+                child: Text(
+                  l10n.authLoginSubmit,
+                  style: const TextStyle(
                     color: HbColors.brandPrimary,
                     fontWeight: FontWeight.w600,
                   ),
@@ -533,6 +548,8 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
   }
 
   Widget _buildOtpStep() {
+    final l10n = context.l10n;
+
     return SingleChildScrollView(
       key: const ValueKey('otp'),
       padding: const EdgeInsets.all(24),
@@ -558,9 +575,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
           const SizedBox(height: 24),
 
           // Title
-          const Text(
-            'Vérification',
-            style: TextStyle(
+          Text(
+            l10n.authVerificationTitle,
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: HbColors.textSlate,
@@ -569,7 +586,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Entrez le code à 6 chiffres envoyé à',
+            l10n.authOtpSubtitle,
             style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
@@ -665,9 +682,10 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text(
-                      'Vérifier',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  : Text(
+                      l10n.authOtpVerify,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
                     ),
             ),
           ),
@@ -678,12 +696,13 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Vous n\'avez pas reçu le code ? ',
+                l10n.authOtpNotReceived,
                 style: TextStyle(color: Colors.grey[600]),
               ),
+              const SizedBox(width: 4),
               if (_otpCooldownSeconds > 0)
                 Text(
-                  'Renvoyer dans ${_otpCooldownSeconds}s',
+                  l10n.authOtpResendIn(_otpCooldownSeconds),
                   style: TextStyle(
                     color: Colors.grey[400],
                     fontWeight: FontWeight.w500,
@@ -697,9 +716,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text(
-                    'Renvoyer',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.authOtpResend,
+                    style: const TextStyle(
                       color: HbColors.brandPrimary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -714,7 +733,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             child: TextButton.icon(
               onPressed: _goBack,
               icon: const Icon(Icons.arrow_back, size: 18),
-              label: const Text('Modifier l\'email'),
+              label: Text(l10n.authEditEmail),
               style: TextButton.styleFrom(foregroundColor: Colors.grey[600]),
             ),
           ),
@@ -724,6 +743,8 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
   }
 
   Widget _buildFormStep() {
+    final l10n = context.l10n;
+
     return SingleChildScrollView(
       key: const ValueKey('form'),
       padding: const EdgeInsets.all(24),
@@ -751,9 +772,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             const SizedBox(height: 24),
 
             // Title
-            const Text(
-              'Vos informations',
-              style: TextStyle(
+            Text(
+              l10n.authYourInformationTitle,
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textSlate,
@@ -791,13 +812,13 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
                     decoration: _inputDecoration(
-                      label: 'Prénom',
-                      hint: 'Jean',
+                      label: l10n.authFirstNameLabel,
+                      hint: l10n.authFirstNameHint,
                       icon: Icons.person_outline,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Requis';
+                        return l10n.authRequired;
                       }
                       return null;
                     },
@@ -810,12 +831,12 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
                     decoration: _inputDecoration(
-                      label: 'Nom',
-                      hint: 'Dupont',
+                      label: l10n.authLastNameLabel,
+                      hint: l10n.authLastNameHint,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Requis';
+                        return l10n.authRequired;
                       }
                       return null;
                     },
@@ -831,8 +852,8 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
               decoration: _inputDecoration(
-                label: 'Téléphone (optionnel)',
-                hint: '06 12 34 56 78',
+                label: l10n.authPhoneOptionalLabel,
+                hint: l10n.authPhoneHint,
                 icon: Icons.phone_outlined,
               ),
             ),
@@ -841,13 +862,14 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
             // Birth date picker (optional)
             GestureDetector(
               onTap: () async {
-                final maxDate = DateTime.now().subtract(const Duration(days: 15 * 365));
+                final maxDate =
+                    DateTime.now().subtract(const Duration(days: 15 * 365));
                 final picked = await showDatePicker(
                   context: context,
                   initialDate: _birthDate ?? maxDate,
                   firstDate: DateTime(1920),
                   lastDate: maxDate,
-                  helpText: 'Date de naissance',
+                  helpText: l10n.authBirthDateHelp,
                 );
                 if (picked != null) {
                   setState(() => _birthDate = picked);
@@ -856,8 +878,8 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               child: AbsorbPointer(
                 child: TextFormField(
                   decoration: _inputDecoration(
-                    label: 'Date de naissance (optionnel)',
-                    hint: 'JJ/MM/AAAA',
+                    label: l10n.authBirthDateLabelOptional,
+                    hint: l10n.authDateHint,
                     icon: Icons.cake_outlined,
                     suffixIcon: _birthDate != null
                         ? IconButton(
@@ -868,7 +890,10 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                   ),
                   controller: TextEditingController(
                     text: _birthDate != null
-                        ? '${_birthDate!.day.toString().padLeft(2, '0')}/${_birthDate!.month.toString().padLeft(2, '0')}/${_birthDate!.year}'
+                        ? context
+                            .appDateFormat('dd/MM/yyyy',
+                                enPattern: 'MM/dd/yyyy')
+                            .format(_birthDate!)
                         : '',
                   ),
                 ),
@@ -883,8 +908,8 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               textInputAction: TextInputAction.next,
               maxLength: 120,
               decoration: _inputDecoration(
-                label: 'Ville (optionnel)',
-                hint: 'Lyon, Paris...',
+                label: l10n.authCityOptionalLabel,
+                hint: l10n.authCityHint,
                 icon: Icons.location_city_outlined,
               ),
             ),
@@ -897,8 +922,8 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               textInputAction: TextInputAction.next,
               onChanged: (value) => setState(() {}),
               decoration: _inputDecoration(
-                label: 'Mot de passe',
-                hint: 'Minimum 8 caractères',
+                label: l10n.authPasswordLabel,
+                hint: l10n.authPasswordMinimumHint,
                 icon: Icons.lock_outlined,
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -911,16 +936,16 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Veuillez entrer un mot de passe';
+                  return l10n.authPasswordCreateRequired;
                 }
                 if (value.length < 8) {
-                  return 'Le mot de passe doit contenir au moins 8 caractères';
+                  return l10n.authPasswordMinLength;
                 }
                 if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                  return 'Le mot de passe doit contenir une majuscule';
+                  return l10n.authPasswordNeedsUppercase;
                 }
                 if (!RegExp(r'[0-9]').hasMatch(value)) {
-                  return 'Le mot de passe doit contenir un chiffre';
+                  return l10n.authPasswordNeedsNumber;
                 }
                 return null;
               },
@@ -938,24 +963,27 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
               textInputAction: TextInputAction.done,
               onFieldSubmitted: (_) => _handleRegister(),
               decoration: _inputDecoration(
-                label: 'Confirmer le mot de passe',
-                hint: 'Retapez votre mot de passe',
+                label: l10n.authConfirmPasswordLabel,
+                hint: l10n.authConfirmPasswordHint,
                 icon: Icons.lock_outlined,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                    _obscureConfirmPassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
                   ),
                   onPressed: () {
-                    setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                    setState(() =>
+                        _obscureConfirmPassword = !_obscureConfirmPassword);
                   },
                 ),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Veuillez confirmer votre mot de passe';
+                  return l10n.authConfirmPasswordRequired;
                 }
                 if (value != _passwordController.text) {
-                  return 'Les mots de passe ne correspondent pas';
+                  return l10n.authPasswordsDoNotMatch;
                 }
                 return null;
               },
@@ -984,7 +1012,7 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Je souhaite recevoir les actualités et offres du Hiboo par e-mail.',
+                    l10n.authMarketingOptIn,
                     style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ),
@@ -1016,9 +1044,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                     text: TextSpan(
                       style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       children: [
-                        const TextSpan(text: 'J\'accepte les '),
+                        TextSpan(text: l10n.authRegisterTermsPrefix),
                         TextSpan(
-                          text: 'conditions d\'utilisation',
+                          text: l10n.legalTerms,
                           style: const TextStyle(
                             color: HbColors.brandPrimary,
                             fontWeight: FontWeight.w600,
@@ -1029,9 +1057,9 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                                   LegalDocument.terms,
                                 ),
                         ),
-                        const TextSpan(text: ' et la '),
+                        TextSpan(text: l10n.authRegisterTermsConnector),
                         TextSpan(
-                          text: 'politique de confidentialité',
+                          text: l10n.legalPrivacy,
                           style: const TextStyle(
                             color: HbColors.brandPrimary,
                             fontWeight: FontWeight.w600,
@@ -1069,12 +1097,14 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : const Text(
-                        'Créer mon compte',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    : Text(
+                        l10n.authRegisterCreateMyAccount,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
                       ),
               ),
             ),
@@ -1086,14 +1116,16 @@ class _CustomerRegisterScreenState extends ConsumerState<CustomerRegisterScreen>
   }
 
   Widget _buildStepIndicator(int currentStep) {
+    final l10n = context.l10n;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildStepDot(1, currentStep >= 1, 'Email'),
+        _buildStepDot(1, currentStep >= 1, l10n.authStepEmail),
         _buildStepLine(currentStep >= 2),
-        _buildStepDot(2, currentStep >= 2, 'Code'),
+        _buildStepDot(2, currentStep >= 2, l10n.authStepCode),
         _buildStepLine(currentStep >= 3),
-        _buildStepDot(3, currentStep >= 3, 'Infos'),
+        _buildStepDot(3, currentStep >= 3, l10n.authStepInfo),
       ],
     );
   }

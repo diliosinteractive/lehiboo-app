@@ -154,14 +154,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const UrgencySection(),
                   _buildNearbyAvailableSection(context, ref),
                   _buildSectionTitle(
-                      'Nouveautés', '/explore?sort=published_at'),
+                    context.l10n.homeNewActivitiesTitle,
+                    '/explore?sort=published_at',
+                  ),
                   const SizedBox(height: 16),
                   newActivitiesAsyncValue.when(
                     data: (activities) {
                       if (activities.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: Text('Aucune nouveauté trouvée.'),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(context.l10n.homeNoNewActivities),
                         );
                       }
                       return SizedBox(
@@ -319,7 +321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         ),
         IconButton(
-          tooltip: 'Notifications',
+          tooltip: context.l10n.homeTooltipNotifications,
           icon: Badge(
             isLabelVisible: notificationCount > 0,
             label: Text('$notificationCount'),
@@ -337,7 +339,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         ),
         IconButton(
-          tooltip: 'Mon panier',
+          tooltip: context.l10n.homeTooltipCart,
           icon: Badge(
             isLabelVisible: cartCount > 0,
             label: Text('$cartCount'),
@@ -353,7 +355,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: IconButton(
-            tooltip: 'Mon compte',
+            tooltip: context.l10n.homeTooltipAccount,
             icon: avatarUrl != null && avatarUrl.isNotEmpty
                 ? CircleAvatar(
                     radius: 14,
@@ -391,9 +393,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (viewAllPath != null)
             TextButton(
               onPressed: () => context.push(viewAllPath),
-              child: const Text(
-                'Voir plus',
-                style: TextStyle(
+              child: Text(
+                context.l10n.homeViewMore,
+                style: const TextStyle(
                   color: HbColors.brandPrimary,
                   fontSize: 14,
                 ),
@@ -405,7 +407,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildNearbyAvailableSection(BuildContext context, WidgetRef ref) {
-    const title = 'Activités disponibles à proximité';
+    final title = context.l10n.homeNearbyAvailableTitle;
     final activitiesAsyncValue =
         ref.watch(homeNearbyAvailableActivitiesProvider);
 
@@ -417,7 +419,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: HomeSectionTitle(
                   title: title,
                   fontSize: 18,
@@ -519,7 +521,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Retrouvez vos événements en toute simplicité',
+            context.l10n.homeWebCtaTitle,
             style: GoogleFonts.montserrat(
               color: Colors.white,
               fontSize: 20,
@@ -528,7 +530,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Notre site web offre une expérience complète pour découvrir et réserver vos activités locales.',
+            context.l10n.homeWebCtaBody,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
@@ -544,7 +546,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Découvrir le site'),
+            child: Text(context.l10n.homeWebCtaButton),
           ),
         ],
       ),
@@ -559,8 +561,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (result.cities.isEmpty) return const SizedBox.shrink();
 
         final title = result.isFallback
-            ? 'Où ça bouge en ce moment'
-            : 'Villes populaires';
+            ? context.l10n.homeFallbackPopularCitiesTitle
+            : context.l10n.homePopularCitiesTitle;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

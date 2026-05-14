@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../providers/business_register_provider.dart';
+import '../utils/auth_registration_l10n.dart';
 
 /// Card widget for selecting organization type
 ///
@@ -19,17 +20,10 @@ class OrganizationTypeCard extends StatelessWidget {
 
   /// Get icon for organization type
   IconData get _icon => switch (type) {
-    OrganizationType.company => Icons.business_outlined,
-    OrganizationType.association => Icons.favorite_border,
-    OrganizationType.municipality => Icons.account_balance_outlined,
-  };
-
-  /// Get description for organization type
-  String get _description => switch (type) {
-    OrganizationType.company => 'Soci\u00e9t\u00e9, TPE, PME, startup...',
-    OrganizationType.association => 'Loi 1901, fondation...',
-    OrganizationType.municipality => 'Mairie, d\u00e9partement, r\u00e9gion...',
-  };
+        OrganizationType.company => Icons.business_outlined,
+        OrganizationType.association => Icons.favorite_border,
+        OrganizationType.municipality => Icons.account_balance_outlined,
+      };
 
   static const _orangeColor = Color(0xFFFF601F);
 
@@ -41,9 +35,8 @@ class OrganizationTypeCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected
-              ? _orangeColor.withValues(alpha: 0.08)
-              : Colors.white,
+          color:
+              isSelected ? _orangeColor.withValues(alpha: 0.08) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? _orangeColor : Colors.grey[300]!,
@@ -73,7 +66,7 @@ class OrganizationTypeCard extends StatelessWidget {
 
             // Title
             Text(
-              type.label,
+              context.organizationTypeLabel(type),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -85,7 +78,7 @@ class OrganizationTypeCard extends StatelessWidget {
 
             // Description
             Text(
-              _description,
+              context.organizationTypeDescription(type),
               style: TextStyle(
                 fontSize: 10,
                 color: Colors.grey[600],
