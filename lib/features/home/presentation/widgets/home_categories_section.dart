@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 
 const Map<String, String> _categoryImages = {
   'culture':
@@ -62,16 +63,12 @@ class HomeCategoriesSection extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Explorer par catégorie',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0B1220),
-                    height: 1.15,
-                  ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: HomeSectionTitle(
+                  title: 'Explorer par catégorie',
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0B1220),
                 ),
               ),
               const SizedBox(height: 20),

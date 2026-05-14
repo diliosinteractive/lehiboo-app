@@ -7,8 +7,6 @@ import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/events/domain/entities/popular_city.dart';
 import 'package:lehiboo/features/blog/presentation/widgets/blog_section.dart';
-import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_section.dart';
-import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/providers/hero_slides_provider.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
@@ -19,6 +17,7 @@ import 'package:lehiboo/features/stories/presentation/providers/stories_provider
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
 import '../widgets/home_categories_section.dart';
+import '../widgets/home_section_title.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -204,21 +203,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             //   child: PersonalizedSection(),
             // ),
 
-            // 9. Section thématiques
-            const SliverToBoxAdapter(
-              child: ThematiquesSection(),
-            ),
-
             // 10. Section Partenaire Premium (masquée en attendant l'API backend)
             // TODO: Réactiver quand l'API partners sera disponible
             // const SliverToBoxAdapter(
             //   child: PartnerHighlightSection(),
             // ),
-
-            // 11. Section Toutes les catégories (Chips list)
-            const SliverToBoxAdapter(
-              child: CategoriesChipsSection(),
-            ),
 
             // 12. Pub Native (masquée en attendant l'intégration backend)
             // TODO: Réactiver quand les pubs natives seront configurées via l'API
@@ -393,12 +382,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.montserrat(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textSlate,
+          Expanded(
+            child: HomeSectionTitle(
+              title: title,
             ),
           ),
           if (viewAllPath != null)
@@ -430,16 +416,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
-                child: Text(
-                  title,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: HbColors.textSlate,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              const Expanded(
+                child: HomeSectionTitle(
+                  title: title,
+                  fontSize: 18,
                 ),
               ),
               IconButton(
@@ -586,32 +566,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: HbColors.brandPrimary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.location_city,
-                      color: HbColors.brandPrimary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: GoogleFonts.montserrat(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: HbColors.textSlate,
-                      ),
-                    ),
-                  ),
-                ],
+              child: HomeSectionTitle(
+                title: title,
               ),
             ),
             const SizedBox(height: 16),

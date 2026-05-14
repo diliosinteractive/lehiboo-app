@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/config/env_config.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -22,12 +22,10 @@ class BlogSection extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Derniers articles',
-                style: GoogleFonts.montserrat(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1A1A1A),
+              const Expanded(
+                child: HomeSectionTitle(
+                  title: 'Derniers articles',
+                  color: Color(0xFF1A1A1A),
                 ),
               ),
               TextButton(
