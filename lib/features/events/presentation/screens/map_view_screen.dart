@@ -595,7 +595,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                                     strokeWidth: 2, color: Color(0xFFFF601F))),
                             const SizedBox(width: 8),
                             Text(context.l10n.eventMapSearching,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 12, fontWeight: FontWeight.w500)),
                           ],
                         ),
@@ -664,7 +664,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                             borderRadius: BorderRadius.circular(30),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -686,7 +686,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                               Flexible(
                                 child: Text(
                                   context.l10n.eventMapEmptyHelp,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
                                     color: Colors.black87,
@@ -880,7 +880,7 @@ class _MapActiveFilters extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF601F).withOpacity(0.15),
+                      color: const Color(0xFFFF601F).withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.close,
@@ -959,10 +959,10 @@ class _MapActiveFilters extends ConsumerWidget {
 
   String? _locationTypeLabel(BuildContext context, String? value) {
     return switch (value) {
-      'physical' => context.l10n.searchLocationTypePhysical,
-      'offline' => context.l10n.searchLocationTypeOffline,
+      'physical' => 'En intérieur',
+      'offline' => 'En extérieur',
       'online' => context.l10n.searchLocationTypeOnline,
-      'hybrid' => context.l10n.searchLocationTypeHybrid,
+      'hybrid' => 'Mixte (intérieur/extérieur)',
       _ => null,
     };
   }

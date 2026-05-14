@@ -7,8 +7,7 @@ import '../../../../core/themes/colors.dart';
 import '../providers/filter_provider.dart';
 import '../utils/search_l10n.dart';
 import '../../domain/models/event_filter.dart';
-import '../../../thematiques/presentation/providers/thematiques_provider.dart';
-import '../../../home/presentation/providers/home_providers.dart';
+import '../../../events/data/models/event_reference_data_dto.dart';
 
 /// Airbnb-style search bar widget
 class AirbnbSearchBar extends ConsumerStatefulWidget {
@@ -32,7 +31,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
   Widget build(BuildContext context) {
     final filter = ref.watch(eventFilterProvider);
     final activeChips = ref.watch(activeFilterChipsProvider);
-    final filterOptions = ref.watch(filterOptionsProvider);
+    final referenceData = ref.watch(eventReferenceDataProvider).valueOrNull;
 
     return Column(
       children: [
@@ -84,7 +83,10 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                       const SizedBox(height: 2),
                       Text(
                         _getSearchSubtitle(
-                            context, filter, filterOptions.categories),
+                          context,
+                          filter,
+                          referenceData?.categories ?? const [],
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -180,7 +182,7 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
   }
 
   String _getSearchSubtitle(BuildContext context, EventFilter filter,
-      List<EventCategoryInfo> categories) {
+      List<EventReferenceCategoryDto> categories) {
     final parts = <String>[];
 
     // 1. Où (Where) - Only if not already in Title
@@ -205,8 +207,8 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
 
     // Categories
     for (final slug in filter.categoriesSlugs) {
-      final match = categories.where((c) => c.slug == slug).firstOrNull;
-      if (match != null) whatParts.add(match.name);
+      final categoryName = _findReferenceCategoryName(categories, slug);
+      if (categoryName != null) whatParts.add(categoryName);
     }
 
     if (whatParts.isNotEmpty) {
@@ -223,6 +225,121 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
   }
 }
 
+String? _findReferenceCategoryName(
+  List<EventReferenceCategoryDto> categories,
+  String slug,
+) {
+  for (final category in categories) {
+    if (category.slug == slug) return category.name;
+    for (final child in category.children) {
+      if (child.slug == slug) return child.name;
+    }
+  }
+  return null;
+}
+
+List<EventReferenceCategoryDto> _flattenReferenceCategories(
+  List<EventReferenceCategoryDto> categories,
+) {
+  return [
+    for (final category in categories) ...[
+      category,
+      ...category.children,
+    ],
+  ];
+}
+
+const _fallbackPublicFilters = [
+  EventReferencePublicFilterDto(
+    key: 'family',
+    label: 'En famille',
+    param: 'public_filters',
+    value: 'family',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'pmr',
+    label: 'Accessible PMR',
+    param: 'public_filters',
+    value: 'pmr',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'group',
+    label: 'En groupe',
+    param: 'public_filters',
+    value: 'group',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'school',
+    label: 'Groupe scolaire',
+    param: 'public_filters',
+    value: 'school',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'professional',
+    label: 'Professionnel',
+    param: 'public_filters',
+    value: 'professional',
+  ),
+];
+
+List<EventReferencePublicFilterDto> _publicFilterOptions(
+  List<EventReferencePublicFilterDto> filters,
+) {
+  final options = filters.where((filter) {
+    return publicAudienceFilterKeys.contains(_publicFilterValue(filter));
+  }).toList();
+  if (options.isEmpty) return _fallbackPublicFilters;
+
+  final order = {
+    for (var i = 0; i < publicAudienceFilterKeys.length; i++)
+      publicAudienceFilterKeys.elementAt(i): i,
+  };
+  options.sort((a, b) {
+    final aOrder =
+        order[_publicFilterValue(a)] ?? publicAudienceFilterKeys.length;
+    final bOrder =
+        order[_publicFilterValue(b)] ?? publicAudienceFilterKeys.length;
+    return aOrder.compareTo(bOrder);
+  });
+
+  return options;
+}
+
+String _publicFilterValue(EventReferencePublicFilterDto filter) {
+  return filter.value.isNotEmpty ? filter.value : filter.key;
+}
+
+IconData _publicFilterIcon(String key) {
+  switch (key) {
+    case 'family':
+      return Icons.family_restroom;
+    case 'pmr':
+      return Icons.accessible;
+    case 'group':
+      return Icons.groups;
+    case 'school':
+      return Icons.school;
+    case 'professional':
+      return Icons.business_center;
+    default:
+      return Icons.people;
+  }
+}
+
+String _publicFilterLabel(
+  BuildContext context,
+  EventReferencePublicFilterDto filter,
+) {
+  return switch (_publicFilterValue(filter)) {
+    'family' => context.l10n.searchFamilyTitle,
+    'pmr' => context.l10n.searchAccessiblePmr,
+    'group' => context.l10n.searchAudienceGroup,
+    'school' => context.l10n.searchAudienceSchoolGroup,
+    'professional' => context.l10n.searchAudienceProfessional,
+    _ => filter.label,
+  };
+}
+
 /// Quick filter chips below search bar
 class QuickFilterChips extends ConsumerWidget {
   const QuickFilterChips({super.key});
@@ -231,6 +348,8 @@ class QuickFilterChips extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(eventFilterProvider);
     final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final selectedPublicFilters =
+        selectedPublicAudienceFilters(filter.targetAudienceSlugs);
 
     return SizedBox(
       height: 40,
@@ -284,10 +403,16 @@ class QuickFilterChips extends ConsumerWidget {
           const SizedBox(width: 8),
           _QuickFilterChip(
             label: context.l10n.searchFamilyTitle,
-            isSelected: filter.familyFriendly,
+            isSelected: selectedPublicFilters.contains('family'),
             icon: Icons.family_restroom,
-            onTap: () =>
-                filterNotifier.setFamilyFriendly(!filter.familyFriendly),
+            onTap: () => filterNotifier.applyFilters(
+              filter.copyWith(
+                targetAudienceSlugs:
+                    _toggleSlug(selectedPublicFilters, 'family'),
+                familyFriendly: false,
+                accessiblePMR: false,
+              ),
+            ),
           ),
           const SizedBox(width: 8),
           _QuickFilterChip(
@@ -520,7 +645,7 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
                     },
                     child: Text(
                       context.l10n.searchClearFilters,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.w500,
                       ),
@@ -547,7 +672,7 @@ class _ExpandedSearchBarState extends ConsumerState<ExpandedSearchBar> {
                   icon: const Icon(Icons.search, size: 20),
                   label: Text(
                     context.l10n.searchAction,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -735,7 +860,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
           // Geolocation button
           Text(
             context.l10n.searchMyPosition,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
               color: HbColors.textDark,
@@ -806,7 +931,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
             const SizedBox(height: 16),
             Text(
               context.l10n.searchRadiusLabel,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 13,
                 color: HbColors.textTertiary,
@@ -858,7 +983,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
           // Popular cities
           Text(
             context.l10n.searchPopularCities,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
               color: HbColors.textDark,
@@ -940,7 +1065,7 @@ class _WhenTab extends ConsumerWidget {
         children: [
           Text(
             context.l10n.searchChoosePeriod,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
               color: HbColors.textDark,
@@ -1079,169 +1204,168 @@ class _WhatTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(eventFilterProvider);
     final filterNotifier = ref.read(eventFilterProvider.notifier);
-    final filterOptions = ref.watch(filterOptionsProvider);
-    final thematiques = ref.watch(thematiquesProvider);
+    final referenceData = ref.watch(eventReferenceDataProvider);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Categories
-          if (filterOptions.categories.isNotEmpty) ...[
+    return referenceData.when(
+      data: (data) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Categories
+            if (data.categories.isNotEmpty) ...[
+              Text(
+                context.l10n.searchSectionCategories,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: HbColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _CategoriesFilter(
+                categories: _flattenReferenceCategories(data.categories),
+                selectedSlugs: filter.categoriesSlugs,
+                onChanged: (slug) => filterNotifier.toggleCategory(slug),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Thematiques
             Text(
-              context.l10n.searchSectionCategories,
-              style: TextStyle(
+              context.l10n.searchSectionThemes,
+              style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
                 color: HbColors.textDark,
               ),
             ),
             const SizedBox(height: 12),
-            _CategoriesFilter(
-              categories: filterOptions.categories,
-              selectedSlugs: filter.categoriesSlugs,
-              onChanged: (slug) => filterNotifier.toggleCategory(slug),
-            ),
-            const SizedBox(height: 24),
-          ],
-
-          // Thematiques
-          Text(
-            context.l10n.searchSectionThemes,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: HbColors.textDark,
-            ),
-          ),
-          const SizedBox(height: 12),
-          thematiques.when(
-            data: (data) {
-              if (data.isEmpty) {
-                return Text(context.l10n.searchNoThemeAvailable);
-              }
-              return Wrap(
+            if (data.themes.isEmpty)
+              Text(context.l10n.searchNoThemeAvailable)
+            else
+              Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: data.map((t) {
+                children: data.themes.map((theme) {
                   return _ThematiqueChip(
-                    name: t.name,
-                    slug: t.slug,
-                    // Basic icon mapping or default
+                    name: theme.name,
+                    slug: theme.slug,
                     icon: Icons.label_outline,
                   );
                 }).toList(),
-              );
-            },
-            loading: () => const CircularProgressIndicator(),
-            error: (_, __) => Text(context.l10n.searchLoadError),
-          ),
-          const SizedBox(height: 24),
+              ),
+            const SizedBox(height: 24),
 
-          // Price filter
-          Text(
-            context.l10n.searchSectionBudget,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: HbColors.textDark,
+            // Price filter
+            Text(
+              context.l10n.searchSectionBudget,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: HbColors.textDark,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _PriceChip(
-                label: context.l10n.commonFree,
-                isSelected: filter.onlyFree,
-                onTap: () => filterNotifier.setOnlyFree(!filter.onlyFree),
-              ),
-              const SizedBox(width: 8),
-              _PriceChip(
-                label: context.l10n.searchPricePaid,
-                isSelected: filter.priceFilterType == PriceFilterType.paid,
-                onTap: () =>
-                    filterNotifier.setPriceFilter(PriceFilterType.paid),
-              ),
-              const SizedBox(width: 8),
-              _PriceChip(
-                label: context.l10n.searchAll,
-                isSelected: filter.priceFilterType == null && !filter.onlyFree,
-                onTap: () => filterNotifier.clearPriceFilter(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _PriceChip(
+                  label: context.l10n.commonFree,
+                  isSelected: filter.onlyFree,
+                  onTap: () => filterNotifier.setOnlyFree(!filter.onlyFree),
+                ),
+                const SizedBox(width: 8),
+                _PriceChip(
+                  label: context.l10n.searchPricePaid,
+                  isSelected: filter.priceFilterType == PriceFilterType.paid,
+                  onTap: () =>
+                      filterNotifier.setPriceFilter(PriceFilterType.paid),
+                ),
+                const SizedBox(width: 8),
+                _PriceChip(
+                  label: context.l10n.searchAll,
+                  isSelected:
+                      filter.priceFilterType == null && !filter.onlyFree,
+                  onTap: () => filterNotifier.clearPriceFilter(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
 
-          // Audience
-          Text(
-            context.l10n.searchSectionAudience,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: HbColors.textDark,
+            // Audience
+            Text(
+              context.l10n.searchSectionAudience,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: HbColors.textDark,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _FilterToggleChip(
-                label: context.l10n.searchFamilyTitle,
-                icon: Icons.family_restroom,
-                isSelected: filter.familyFriendly,
-                onTap: () =>
-                    filterNotifier.setFamilyFriendly(!filter.familyFriendly),
+            const SizedBox(height: 12),
+            _PublicFilterChips(
+              filters: data.publicFilters,
+              selectedKeys: filter.targetAudienceSlugs,
+              onChanged: (keys) => filterNotifier.applyFilters(
+                filter.copyWith(
+                  targetAudienceSlugs: keys,
+                  familyFriendly: false,
+                  accessiblePMR: false,
+                ),
               ),
-              _FilterToggleChip(
-                label: context.l10n.searchAccessiblePmr,
-                icon: Icons.accessible,
-                isSelected: filter.accessiblePMR,
-                onTap: () =>
-                    filterNotifier.setAccessiblePMR(!filter.accessiblePMR),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
 
-          // Format
-          Text(
-            context.l10n.searchSectionFormat,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: HbColors.textDark,
+            // Format
+            Text(
+              context.l10n.searchSectionFormat,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: HbColors.textDark,
+              ),
             ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _FilterToggleChip(
+                  label: context.l10n.searchOnline,
+                  icon: Icons.videocam,
+                  isSelected: filter.onlineOnly,
+                  onTap: () => filterNotifier.setOnlineOnly(!filter.onlineOnly),
+                ),
+                _FilterToggleChip(
+                  label: context.l10n.searchInPerson,
+                  icon: Icons.location_on,
+                  isSelected: filter.inPersonOnly,
+                  onTap: () =>
+                      filterNotifier.setInPersonOnly(!filter.inPersonOnly),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: HbColors.brandPrimary,
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _FilterToggleChip(
-                label: context.l10n.searchOnline,
-                icon: Icons.videocam,
-                isSelected: filter.onlineOnly,
-                onTap: () => filterNotifier.setOnlineOnly(!filter.onlineOnly),
-              ),
-              _FilterToggleChip(
-                label: context.l10n.searchInPerson,
-                icon: Icons.location_on,
-                isSelected: filter.inPersonOnly,
-                onTap: () =>
-                    filterNotifier.setInPersonOnly(!filter.inPersonOnly),
-              ),
-            ],
-          ),
-        ],
+        ),
+      ),
+      error: (_, __) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(context.l10n.searchLoadError),
       ),
     );
   }
 }
 
 class _CategoriesFilter extends StatefulWidget {
-  final List<EventCategoryInfo> categories;
+  final List<EventReferenceCategoryDto> categories;
   final List<String> selectedSlugs;
   final ValueChanged<String> onChanged;
 
@@ -1431,6 +1555,50 @@ class _FilterToggleChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PublicFilterChips extends StatelessWidget {
+  final List<EventReferencePublicFilterDto> filters;
+  final List<String> selectedKeys;
+  final ValueChanged<List<String>> onChanged;
+
+  const _PublicFilterChips({
+    required this.filters,
+    required this.selectedKeys,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final options = _publicFilterOptions(filters);
+    final selectedPublicKeys = selectedPublicAudienceFilters(selectedKeys);
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options.map((filter) {
+        final value = _publicFilterValue(filter);
+        final isSelected = selectedPublicKeys.contains(value);
+
+        return _FilterToggleChip(
+          label: _publicFilterLabel(context, filter),
+          icon: _publicFilterIcon(value),
+          isSelected: isSelected,
+          onTap: () => onChanged(_toggleSlug(selectedPublicKeys, value)),
+        );
+      }).toList(),
+    );
+  }
+}
+
+List<String> _toggleSlug(List<String> selectedSlugs, String slug) {
+  final next = List<String>.from(selectedSlugs);
+  if (next.contains(slug)) {
+    next.remove(slug);
+  } else {
+    next.add(slug);
+  }
+  return next;
 }
 
 class _ThematiqueChip extends ConsumerWidget {

@@ -8,6 +8,7 @@ import '../mappers/event_mapper.dart';
 import '../models/event_dto.dart';
 import '../models/event_reference_data_dto.dart';
 import '../models/home_feed_response_dto.dart' show HomeFeedDataDto;
+import '../models/search_suggestions_dto.dart';
 import '../../../../domain/entities/city.dart';
 
 final eventRepositoryImplProvider = Provider<EventRepository>((ref) {
@@ -40,12 +41,14 @@ class EventRepositoryImpl implements EventRepository {
     bool? accessiblePmr,
     bool? onlineOnly,
     bool? inPersonOnly,
+    String? publicFilters,
     String? targetAudiences,
     String? eventTag,
     String? specialEvents,
     String? emotions,
     bool? availableOnly,
     String? locationType,
+    String? venueType,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -81,12 +84,14 @@ class EventRepositoryImpl implements EventRepository {
       accessiblePmr: accessiblePmr,
       onlineOnly: onlineOnly,
       inPersonOnly: inPersonOnly,
+      publicFilters: publicFilters,
       targetAudiences: targetAudiences,
       eventTag: eventTag,
       specialEvents: specialEvents,
       emotions: emotions,
       availableOnly: availableOnly,
       locationType: locationType,
+      venueType: venueType,
       indoor: indoor,
       outdoor: outdoor,
       ageMin: ageMin,
@@ -187,6 +192,19 @@ class EventRepositoryImpl implements EventRepository {
     bool onlyOnline = true,
   }) async {
     return await _apiDataSource.getEventReferenceData(onlyOnline: onlyOnline);
+  }
+
+  @override
+  Future<SearchSuggestionsDto> getSearchSuggestions({
+    required String query,
+    required List<String> types,
+    int limit = 5,
+  }) async {
+    return await _apiDataSource.getSearchSuggestions(
+      query: query,
+      types: types,
+      limit: limit,
+    );
   }
 
   @override

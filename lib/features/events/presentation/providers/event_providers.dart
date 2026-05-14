@@ -39,6 +39,13 @@ final eventsProvider = FutureProvider.autoDispose<EventsResult>((ref) async {
   // Note: We might need to handle pagination here or just fetch the first page for the map
   // Ideally, the map might need a specific provider if we want to fetch HUGE amounts of data or clustering.
   // For now, let's reuse the filter provider but maybe force a larger perPage for the map coverage.
+  final publicFilters =
+      selectedPublicAudienceFilters(filter.targetAudienceSlugs);
+  final targetAudiences =
+      selectedTargetAudienceSlugs(filter.targetAudienceSlugs);
+  final venueType = filter.locationType == null
+      ? null
+      : venueTypeToApiValue(filter.locationType!);
 
   return repository.getEvents(
     page: 1,
@@ -57,10 +64,20 @@ final eventsProvider = FutureProvider.autoDispose<EventsResult>((ref) async {
     priceMin: _priceMinParam(filter),
     priceMax: _priceMaxParam(filter),
     freeOnly: filter.onlyFree ? true : null,
-    familyFriendly: filter.familyFriendly ? true : null,
-    accessiblePmr: filter.accessiblePMR ? true : null,
+    familyFriendly: filter.familyFriendly && !publicFilters.contains('family')
+        ? true
+        : null,
+    accessiblePmr:
+        filter.accessiblePMR && !publicFilters.contains('pmr') ? true : null,
     onlineOnly: filter.onlineOnly ? true : null,
     inPersonOnly: filter.inPersonOnly ? true : null,
+    publicFilters: publicFilters.isNotEmpty ? publicFilters.join(',') : null,
+    targetAudiences:
+        targetAudiences.isNotEmpty ? targetAudiences.join(',') : null,
+    locationType: venueType == null && filter.locationType != null
+        ? locationTypeToApiValue(filter.locationType!)
+        : null,
+    venueType: venueType,
     lat: filter.latitude,
     lng: filter.longitude,
     radius: filter.latitude != null ? filter.radiusKm.toInt() : null,

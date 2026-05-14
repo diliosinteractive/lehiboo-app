@@ -318,10 +318,10 @@ class _ActiveChip extends StatelessWidget {
 
   String? _locationTypeLabel(BuildContext context, String? value) {
     return switch (value) {
-      'physical' => context.l10n.searchLocationTypePhysical,
-      'offline' => context.l10n.searchLocationTypeOffline,
+      'physical' => 'En intérieur',
+      'offline' => 'En extérieur',
       'online' => context.l10n.searchLocationTypeOnline,
-      'hybrid' => context.l10n.searchLocationTypeHybrid,
+      'hybrid' => 'Mixte (intérieur/extérieur)',
       _ => null,
     };
   }
@@ -513,10 +513,10 @@ class _CompactActiveChip extends StatelessWidget {
 
   String? _locationTypeLabel(BuildContext context, String? value) {
     return switch (value) {
-      'physical' => context.l10n.searchLocationTypePhysical,
-      'offline' => context.l10n.searchLocationTypeOffline,
+      'physical' => 'En intérieur',
+      'offline' => 'En extérieur',
       'online' => context.l10n.searchLocationTypeOnline,
-      'hybrid' => context.l10n.searchLocationTypeHybrid,
+      'hybrid' => 'Mixte (intérieur/extérieur)',
       _ => null,
     };
   }

@@ -65,6 +65,43 @@ void main() {
 
     expect(container.read(eventFilterProvider).categoriesSlugs, isEmpty);
   });
+
+  test('public filter chips use grouped backend labels and remove by key',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+
+    final notifier = EventFilterNotifier();
+    notifier.applyFilters(
+      const EventFilter(targetAudienceSlugs: ['family', 'pmr']),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        eventFilterProvider.overrideWith((ref) => notifier),
+        eventReferenceDataProvider.overrideWith((ref) => _referenceData),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(eventReferenceDataProvider.future);
+
+    final chips = container.read(activeFilterChipsProvider);
+    expect(chips.map((chip) => chip.id), [
+      'public_filter_family',
+      'public_filter_pmr',
+    ]);
+    expect(chips.firstWhere((chip) => chip.id == 'public_filter_family').label,
+        'En famille');
+    expect(chips.firstWhere((chip) => chip.id == 'public_filter_pmr').label,
+        'Accessible PMR');
+
+    notifier.removeFilterByType(
+      FilterChipType.targetAudience,
+      value: 'family',
+    );
+
+    expect(container.read(eventFilterProvider).targetAudienceSlugs, ['pmr']);
+  });
 }
 
 const _referenceData = EventReferenceDataDto(
@@ -85,6 +122,20 @@ const _referenceData = EventReferenceDataDto(
   ],
   eventTags: [],
   audienceGroups: [],
+  publicFilters: [
+    EventReferencePublicFilterDto(
+      key: 'family',
+      label: 'En famille',
+      param: 'public_filters',
+      value: 'family',
+    ),
+    EventReferencePublicFilterDto(
+      key: 'pmr',
+      label: 'Accessible PMR',
+      param: 'public_filters',
+      value: 'pmr',
+    ),
+  ],
   themes: [],
   specialEvents: [],
   emotions: [],

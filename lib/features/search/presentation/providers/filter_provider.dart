@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/features/events/data/models/event_reference_data_dto.dart';
+import 'package:lehiboo/features/events/data/models/search_suggestions_dto.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/thematiques/presentation/providers/thematiques_provider.dart';
@@ -11,6 +12,37 @@ import 'package:lehiboo/features/home/presentation/providers/home_providers.dart
 
 const _filterPersistenceKey = 'event_filter_state';
 const _defaultPriceMax = 500.0;
+const searchAutocompleteMinQueryLength = 3;
+
+class SearchSuggestionsRequest {
+  final String query;
+  final String types;
+  final int limit;
+
+  const SearchSuggestionsRequest({
+    required this.query,
+    required this.types,
+    this.limit = 5,
+  });
+
+  List<String> get typeList => types
+      .split(',')
+      .map((type) => type.trim())
+      .where((type) => type.isNotEmpty)
+      .toList();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is SearchSuggestionsRequest &&
+            other.query == query &&
+            other.types == types &&
+            other.limit == limit;
+  }
+
+  @override
+  int get hashCode => Object.hash(query, types, limit);
+}
 
 T? _enumByName<T extends Enum>(List<T> values, Object? name) {
   if (name is! String) return null;
@@ -575,7 +607,9 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
             state.targetAudienceSlugs.where((slug) => slug != value).toList(),
           );
         } else {
-          setTargetAudiences(const []);
+          setTargetAudiences(
+            selectedPublicAudienceFilters(state.targetAudienceSlugs),
+          );
         }
         break;
       case FilterChipType.specialEvent:
@@ -651,6 +685,13 @@ Future<EventsResult> _fetchEventsForFilter(
 }) async {
   final dateFromStr = _dateParam(filter.effectiveStartDate);
   final dateToStr = _dateParam(filter.effectiveEndDate);
+  final publicFilters =
+      selectedPublicAudienceFilters(filter.targetAudienceSlugs);
+  final targetAudiences =
+      selectedTargetAudienceSlugs(filter.targetAudienceSlugs);
+  final venueType = filter.locationType == null
+      ? null
+      : venueTypeToApiValue(filter.locationType!);
 
   return eventRepository.getEvents(
     search: filter.searchQuery.isNotEmpty ? filter.searchQuery : null,
@@ -667,13 +708,16 @@ Future<EventsResult> _fetchEventsForFilter(
     priceMin: _priceMinParam(filter),
     priceMax: _priceMaxParam(filter),
     freeOnly: filter.onlyFree ? true : null,
-    familyFriendly: filter.familyFriendly ? true : null,
-    accessiblePmr: filter.accessiblePMR ? true : null,
+    familyFriendly: filter.familyFriendly && !publicFilters.contains('family')
+        ? true
+        : null,
+    accessiblePmr:
+        filter.accessiblePMR && !publicFilters.contains('pmr') ? true : null,
     onlineOnly: filter.onlineOnly ? true : null,
     inPersonOnly: filter.inPersonOnly ? true : null,
-    targetAudiences: filter.targetAudienceSlugs.isNotEmpty
-        ? filter.targetAudienceSlugs.join(',')
-        : null,
+    publicFilters: publicFilters.isNotEmpty ? publicFilters.join(',') : null,
+    targetAudiences:
+        targetAudiences.isNotEmpty ? targetAudiences.join(',') : null,
     eventTag: filter.tagsSlugs.isNotEmpty
         ? filter.tagsSlugs.join(',')
         : filter.eventTagSlug,
@@ -683,9 +727,10 @@ Future<EventsResult> _fetchEventsForFilter(
     emotions:
         filter.emotionSlugs.isNotEmpty ? filter.emotionSlugs.join(',') : null,
     availableOnly: filter.availableOnly ? true : null,
-    locationType: filter.locationType != null
+    locationType: venueType == null && filter.locationType != null
         ? locationTypeToApiValue(filter.locationType!)
         : null,
+    venueType: venueType,
     lat: filter.latitude,
     lng: filter.longitude,
     radius: filter.latitude != null ? filter.radiusKm.toInt() : null,
@@ -768,6 +813,24 @@ final eventReferenceDataProvider =
   return result;
 });
 
+final searchSuggestionsProvider = FutureProvider.autoDispose
+    .family<SearchSuggestionsDto, SearchSuggestionsRequest>(
+        (ref, request) async {
+  final query = request.query.trim();
+  if (query.length < searchAutocompleteMinQueryLength) {
+    return const SearchSuggestionsDto.empty();
+  }
+
+  await Future<void>.delayed(const Duration(milliseconds: 250));
+
+  final eventRepository = ref.watch(eventRepositoryProvider);
+  return eventRepository.getSearchSuggestions(
+    query: query,
+    types: request.typeList,
+    limit: request.limit,
+  );
+});
+
 final filterPreviewCountProvider =
     FutureProvider.autoDispose.family<int, EventFilter>((ref, filter) async {
   final eventRepository = ref.watch(eventRepositoryProvider);
@@ -809,6 +872,11 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   final targetAudienceLabels = referenceData == null
       ? const <String, String>{}
       : _audienceLabelMap(referenceData.audienceGroups);
+  final publicFilterLabels = referenceData == null
+      ? _fallbackPublicFilterLabelMap()
+      : _publicFilterLabelMap(referenceData.publicFilters);
+  final selectedPublicFilters =
+      selectedPublicAudienceFilters(filter.targetAudienceSlugs);
   final specialEventLabels = referenceData == null
       ? const <String, String>{}
       : _optionLabelMap(referenceData.specialEvents);
@@ -846,8 +914,9 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   if (filter.cityName != null) {
     chips.add(ActiveFilterChip(
       id: 'city',
-      label: '${filter.cityName!} · ${filter.effectiveCityRadiusKm} km',
+      label: filter.cityName!,
       type: FilterChipType.city,
+      value: filter.effectiveCityRadiusKm.toString(),
     ));
   }
 
@@ -855,8 +924,9 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   if (filter.latitude != null && filter.longitude != null) {
     chips.add(ActiveFilterChip(
       id: 'location',
-      label: 'Autour de moi (${filter.radiusKm.toInt()} km)',
+      label: 'location',
       type: FilterChipType.location,
+      value: filter.radiusKm.toInt().toString(),
     ));
   }
 
@@ -907,11 +977,26 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   }
 
   if (filter.targetAudienceSlugs.isNotEmpty) {
-    chips.add(ActiveFilterChip(
-      id: 'target_audience',
-      label: _joinedLabels(filter.targetAudienceSlugs, targetAudienceLabels),
-      type: FilterChipType.targetAudience,
-    ));
+    final targetAudiences =
+        selectedTargetAudienceSlugs(filter.targetAudienceSlugs);
+
+    for (final publicFilter in selectedPublicFilters) {
+      chips.add(ActiveFilterChip(
+        id: 'public_filter_$publicFilter',
+        label: publicFilterLabels[publicFilter] ??
+            _slugToDisplayName(publicFilter),
+        type: FilterChipType.targetAudience,
+        value: publicFilter,
+      ));
+    }
+
+    if (targetAudiences.isNotEmpty) {
+      chips.add(ActiveFilterChip(
+        id: 'target_audience',
+        label: _joinedLabels(targetAudiences, targetAudienceLabels),
+        type: FilterChipType.targetAudience,
+      ));
+    }
   }
 
   if (filter.specialEventSlugs.isNotEmpty) {
@@ -933,7 +1018,7 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   if (filter.availableOnly) {
     chips.add(const ActiveFilterChip(
       id: 'available_only',
-      label: 'Places disponibles',
+      label: 'available_only',
       type: FilterChipType.availability,
     ));
   }
@@ -943,18 +1028,19 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
       id: 'location_type',
       label: _locationTypeLabel(filter.locationType!),
       type: FilterChipType.locationType,
+      value: filter.locationType!.name,
     ));
   }
 
   // Audience
-  if (filter.familyFriendly) {
+  if (filter.familyFriendly && !selectedPublicFilters.contains('family')) {
     chips.add(const ActiveFilterChip(
       id: 'family',
-      label: 'Famille',
+      label: 'En famille',
       type: FilterChipType.audience,
     ));
   }
-  if (filter.accessiblePMR) {
+  if (filter.accessiblePMR && !selectedPublicFilters.contains('pmr')) {
     chips.add(const ActiveFilterChip(
       id: 'pmr',
       label: 'Accessible PMR',
@@ -966,14 +1052,14 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   if (filter.onlineOnly) {
     chips.add(const ActiveFilterChip(
       id: 'online',
-      label: 'En ligne',
+      label: 'online',
       type: FilterChipType.format,
     ));
   }
   if (filter.inPersonOnly) {
     chips.add(const ActiveFilterChip(
       id: 'in_person',
-      label: 'En présentiel',
+      label: 'in_person',
       type: FilterChipType.format,
     ));
   }
@@ -1017,6 +1103,29 @@ Map<String, String> _audienceLabelMap(
   };
 }
 
+Map<String, String> _publicFilterLabelMap(
+  List<EventReferencePublicFilterDto> filters,
+) {
+  final labels = Map<String, String>.of(_fallbackPublicFilterLabelMap());
+  for (final filter in filters) {
+    final value = filter.value.isNotEmpty ? filter.value : filter.key;
+    if (value.isNotEmpty && filter.label.isNotEmpty) {
+      labels[value] = filter.label;
+    }
+  }
+  return labels;
+}
+
+Map<String, String> _fallbackPublicFilterLabelMap() {
+  return const {
+    'family': 'En famille',
+    'pmr': 'Accessible PMR',
+    'group': 'En groupe',
+    'school': 'Groupe scolaire',
+    'professional': 'Professionnel',
+  };
+}
+
 String _joinedLabels(List<String> slugs, Map<String, String> labels) {
   return slugs
       .map((slug) => labels[slug] ?? _slugToDisplayName(slug))
@@ -1034,13 +1143,13 @@ String _slugToDisplayName(String slug) {
 String _locationTypeLabel(LocationTypeFilter type) {
   switch (type) {
     case LocationTypeFilter.physical:
-      return 'Lieu physique';
+      return 'En intérieur';
     case LocationTypeFilter.offline:
-      return 'Hors ligne';
+      return 'En extérieur';
     case LocationTypeFilter.online:
       return 'En ligne';
     case LocationTypeFilter.hybrid:
-      return 'Hybride';
+      return 'Mixte (intérieur/extérieur)';
   }
 }
 

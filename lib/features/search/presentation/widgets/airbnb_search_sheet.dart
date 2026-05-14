@@ -11,6 +11,7 @@ import '../providers/filter_provider.dart';
 import '../utils/search_l10n.dart';
 import '../../domain/models/event_filter.dart';
 import '../../../events/data/models/event_reference_data_dto.dart';
+import '../../../events/data/models/search_suggestions_dto.dart';
 import '../../../home/presentation/providers/home_providers.dart';
 import 'filter_shared_components.dart';
 
@@ -139,6 +140,8 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
   int get _activeFilterCount {
     final filter = ref.read(eventFilterProvider);
+    final publicFilters =
+        selectedPublicAudienceFilters(filter.targetAudienceSlugs);
     int count = 0;
     if (filter.searchQuery.isNotEmpty) count++;
     if (filter.dateFilterType != null || filter.startDate != null) count++;
@@ -154,9 +157,9 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     if (filter.availableOnly) count++;
     if (filter.locationType != null) count++;
     if (filter.priceFilterType != null && !filter.onlyFree) count++;
-    if (filter.familyFriendly) count++;
+    if (filter.familyFriendly && !publicFilters.contains('family')) count++;
     if (filter.onlyFree) count++;
-    if (filter.accessiblePMR) count++;
+    if (filter.accessiblePMR && !publicFilters.contains('pmr')) count++;
     if (filter.onlineOnly) count++;
     return count;
   }
@@ -1197,14 +1200,16 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
               ),
             ),
             const SizedBox(height: 16),
-            if (categories.isEmpty)
-              Text(
-                context.l10n.searchNoCategoryFound,
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
+            if (_query.isNotEmpty && !_shouldShowAutocomplete(_query))
+              _AutocompleteMessage(
+                context.searchMinCharactersLabel(
+                  searchAutocompleteMinQueryLength,
                 ),
               )
+            else if (_shouldShowAutocomplete(_query))
+              _buildCategoryAutocompleteResults()
+            else if (categories.isEmpty)
+              _FilterMessage(context.l10n.searchNoCategoryFound)
             else
               ...categories.map(
                 (entry) => _buildCategoryGroup(
@@ -1230,6 +1235,44 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
           fontSize: 13,
           color: Colors.grey.shade600,
         ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryAutocompleteResults() {
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: _query,
+          types: 'categories',
+          limit: 10,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        if (data.categories.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoCategoryFound);
+        }
+
+        return _SuggestionList(
+          children: data.categories.map((category) {
+            final isSelected =
+                widget.filter.categoriesSlugs.contains(category.slug);
+            return _SuggestionTile(
+              icon: _iconForReference(null, category.slug),
+              label: category.label,
+              isSelected: isSelected,
+              onTap: () => _toggleSuggestionCategory(category, filterNotifier),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) => _AutocompleteMessage(
+        context.l10n.searchCategoriesUnavailable,
       ),
     );
   }
@@ -1293,7 +1336,7 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SelectableChip(
-            label: _labelWithCount(category.name, category.eventCount),
+            label: category.name,
             icon: _iconForReference(category.icon, category.slug),
             isSelected: fullySelected || partiallySelected,
             onTap: () =>
@@ -1310,7 +1353,7 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
                   final isSelected = selectedSlugs.contains(category.slug) ||
                       selectedSlugs.contains(child.slug);
                   return SelectableChip(
-                    label: _labelWithCount(child.name, child.eventCount),
+                    label: child.name,
                     icon: _iconForReference(child.icon, child.slug),
                     isSelected: isSelected,
                     onTap: () => _toggleChild(
@@ -1397,6 +1440,42 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
       widget.filter.copyWith(categoriesSlugs: next.toList()),
     );
   }
+
+  void _toggleSuggestionCategory(
+    SearchSuggestionItemDto suggestion,
+    EventFilterNotifier filterNotifier,
+  ) {
+    final match = _findCategoryMatch(suggestion.slug);
+    if (match != null && match.category.slug == match.child.slug) {
+      _toggleParent(match.category, match.category.children, filterNotifier);
+    } else if (match != null) {
+      _toggleChild(
+        match.category,
+        match.child,
+        match.category.children,
+        filterNotifier,
+      );
+    } else {
+      final next = _toggleSlug(widget.filter.categoriesSlugs, suggestion.slug);
+      filterNotifier.applyFilters(
+        widget.filter.copyWith(categoriesSlugs: next),
+      );
+    }
+  }
+
+  _CategoryMatch? _findCategoryMatch(String slug) {
+    final referenceData = ref.read(eventReferenceDataProvider).valueOrNull;
+    final categories = referenceData?.categories ?? const [];
+    for (final category in categories) {
+      if (category.slug == slug) {
+        return _CategoryMatch(category, category);
+      }
+      for (final child in category.children) {
+        if (child.slug == slug) return _CategoryMatch(category, child);
+      }
+    }
+    return null;
+  }
 }
 
 class _CategoryEntry {
@@ -1404,6 +1483,104 @@ class _CategoryEntry {
   final List<EventReferenceCategoryDto> children;
 
   const _CategoryEntry(this.category, this.children);
+}
+
+class _CategoryMatch {
+  final EventReferenceCategoryDto category;
+  final EventReferenceCategoryDto child;
+
+  const _CategoryMatch(this.category, this.child);
+}
+
+const _fallbackPublicFilters = [
+  EventReferencePublicFilterDto(
+    key: 'family',
+    label: 'En famille',
+    param: 'public_filters',
+    value: 'family',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'pmr',
+    label: 'Accessible PMR',
+    param: 'public_filters',
+    value: 'pmr',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'group',
+    label: 'En groupe',
+    param: 'public_filters',
+    value: 'group',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'school',
+    label: 'Groupe scolaire',
+    param: 'public_filters',
+    value: 'school',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'professional',
+    label: 'Professionnel',
+    param: 'public_filters',
+    value: 'professional',
+  ),
+];
+
+List<EventReferencePublicFilterDto> _publicFilterOptions(
+  List<EventReferencePublicFilterDto> filters,
+) {
+  final options = filters.where((filter) {
+    return publicAudienceFilterKeys.contains(_publicFilterValue(filter));
+  }).toList();
+  if (options.isEmpty) return _fallbackPublicFilters;
+
+  final order = {
+    for (var i = 0; i < publicAudienceFilterKeys.length; i++)
+      publicAudienceFilterKeys.elementAt(i): i,
+  };
+  options.sort((a, b) {
+    final aOrder =
+        order[_publicFilterValue(a)] ?? publicAudienceFilterKeys.length;
+    final bOrder =
+        order[_publicFilterValue(b)] ?? publicAudienceFilterKeys.length;
+    return aOrder.compareTo(bOrder);
+  });
+
+  return options;
+}
+
+String _publicFilterValue(EventReferencePublicFilterDto filter) {
+  return filter.value.isNotEmpty ? filter.value : filter.key;
+}
+
+IconData _publicFilterIcon(String key) {
+  switch (key) {
+    case 'family':
+      return Icons.family_restroom;
+    case 'pmr':
+      return Icons.accessible;
+    case 'group':
+      return Icons.groups;
+    case 'school':
+      return Icons.school;
+    case 'professional':
+      return Icons.business_center;
+    default:
+      return Icons.people;
+  }
+}
+
+String _publicFilterLabel(
+  BuildContext context,
+  EventReferencePublicFilterDto filter,
+) {
+  return switch (_publicFilterValue(filter)) {
+    'family' => context.l10n.searchFamilyTitle,
+    'pmr' => context.l10n.searchAccessiblePmr,
+    'group' => context.l10n.searchAudienceGroup,
+    'school' => context.l10n.searchAudienceSchoolGroup,
+    'professional' => context.l10n.searchAudienceProfessional,
+    _ => filter.label,
+  };
 }
 
 class _AudienceContent extends ConsumerWidget {
@@ -1418,46 +1595,31 @@ class _AudienceContent extends ConsumerWidget {
 
     return referenceData.when(
       data: (data) {
-        if (data.audienceGroups.isEmpty) {
-          return Text(
-            context.l10n.searchNoAudienceAvailable,
-            style: GoogleFonts.montserrat(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-            ),
-          );
+        final options = _publicFilterOptions(data.publicFilters);
+        final selectedKeys =
+            selectedPublicAudienceFilters(filter.targetAudienceSlugs);
+
+        if (options.isEmpty) {
+          return _FilterMessage(context.l10n.searchNoAudienceAvailable);
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: data.audienceGroups.map((group) {
-            if (group.audiences.isEmpty) return const SizedBox.shrink();
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((publicFilter) {
+            final value = _publicFilterValue(publicFilter);
+            final isSelected = selectedKeys.contains(value);
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SectionLabel(group.name),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: group.audiences.map((audience) {
-                      final isSelected =
-                          filter.targetAudienceSlugs.contains(audience.slug);
-                      return SelectableChip(
-                        label: audience.name,
-                        icon: Icons.groups,
-                        isSelected: isSelected,
-                        onTap: () => filterNotifier.setTargetAudiences(
-                          _toggleSlug(
-                              filter.targetAudienceSlugs, audience.slug),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+            return SelectableChip(
+              label: _publicFilterLabel(context, publicFilter),
+              icon: _publicFilterIcon(value),
+              isSelected: isSelected,
+              onTap: () => filterNotifier.applyFilters(
+                filter.copyWith(
+                  targetAudienceSlugs: _toggleSlug(selectedKeys, value),
+                  familyFriendly: false,
+                  accessiblePMR: false,
+                ),
               ),
             );
           }).toList(),
@@ -1628,6 +1790,7 @@ class _RefineContent extends ConsumerWidget {
             title: context.l10n.searchSectionThemes.toUpperCase(),
             options: data.themes,
             selectedSlugs: filter.thematiquesSlugs,
+            showCounts: false,
             onChanged: filterNotifier.setThematiques,
           ),
           _ReferenceMultiSection(
@@ -1669,12 +1832,14 @@ class _ReferenceMultiSection extends StatelessWidget {
   final String title;
   final List<EventReferenceOptionDto> options;
   final List<String> selectedSlugs;
+  final bool showCounts;
   final ValueChanged<List<String>> onChanged;
 
   const _ReferenceMultiSection({
     required this.title,
     required this.options,
     required this.selectedSlugs,
+    this.showCounts = true,
     required this.onChanged,
   });
 
@@ -1695,7 +1860,9 @@ class _ReferenceMultiSection extends StatelessWidget {
             children: options.map((option) {
               final isSelected = selectedSlugs.contains(option.slug);
               return SelectableChip(
-                label: _labelWithCount(option.name, option.eventCount),
+                label: showCounts
+                    ? _labelWithCount(option.name, option.eventCount)
+                    : option.name,
                 icon: _iconForReference(option.icon, option.slug),
                 isSelected: isSelected,
                 onTap: () => onChanged(_toggleSlug(selectedSlugs, option.slug)),
@@ -1729,19 +1896,19 @@ class _LocationTypeSection extends ConsumerWidget {
             runSpacing: 8,
             children: [
               _locationTypeChip(
-                label: context.l10n.searchLocationIndoor,
-                icon: Icons.storefront,
+                label: 'En intérieur',
+                icon: Icons.home_work_outlined,
                 type: LocationTypeFilter.physical,
                 filterNotifier: filterNotifier,
               ),
               _locationTypeChip(
-                label: context.l10n.searchLocationOutdoor,
-                icon: Icons.location_on_outlined,
+                label: 'En extérieur',
+                icon: Icons.park_outlined,
                 type: LocationTypeFilter.offline,
                 filterNotifier: filterNotifier,
               ),
               _locationTypeChip(
-                label: context.l10n.searchLocationMixed,
+                label: 'Mixte (intérieur/extérieur)',
                 icon: Icons.sync_alt,
                 type: LocationTypeFilter.hybrid,
                 filterNotifier: filterNotifier,
@@ -1783,6 +1950,131 @@ class _SectionLabel extends StatelessWidget {
         fontWeight: FontWeight.w700,
         color: Colors.grey.shade500,
         letterSpacing: 1,
+      ),
+    );
+  }
+}
+
+bool _shouldShowAutocomplete(String query) {
+  return query.trim().length >= searchAutocompleteMinQueryLength;
+}
+
+class _SuggestionList extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SuggestionList({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: Colors.grey.shade200),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SuggestionTile({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? HbColors.brandPrimary : Colors.grey.shade600,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? HbColors.brandPrimary : HbColors.textDark,
+                ),
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle,
+                size: 18,
+                color: HbColors.brandPrimary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterMessage extends StatelessWidget {
+  final String message;
+
+  const _FilterMessage(this.message);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      style: GoogleFonts.montserrat(
+        fontSize: 13,
+        color: Colors.grey.shade600,
+      ),
+    );
+  }
+}
+
+class _AutocompleteMessage extends StatelessWidget {
+  final String message;
+
+  const _AutocompleteMessage(this.message);
+
+  @override
+  Widget build(BuildContext context) => _FilterMessage(message);
+}
+
+class _AutocompleteLoading extends StatelessWidget {
+  const _AutocompleteLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(12),
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: HbColors.brandPrimary,
+        ),
       ),
     );
   }
