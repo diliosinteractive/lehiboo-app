@@ -18,7 +18,7 @@ import 'package:lehiboo/features/stories/presentation/providers/stories_provider
 
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
-import '../widgets/home_cities_section.dart';
+import '../widgets/home_categories_section.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -129,9 +129,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // 3. Section Filtre par Ville (chips)
+            // 3. Section Explorer par catégorie (source of truth: web homepage)
             const SliverToBoxAdapter(
-              child: HomeCitiesSection(),
+              child: HomeCategoriesSection(),
             ),
 
             // 5. "Pour vous" — server-driven personalized carousel.

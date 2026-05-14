@@ -428,14 +428,19 @@ class EventsApiDataSource {
     final response =
         await _dio.get('/categories', queryParameters: queryParams);
 
-    final categoriesJson = ApiResponseHandler.extractList(
-      response.data,
-      key: 'categories',
-    );
+    final categoriesJson = _extractCategoriesList(response.data);
     return categoriesJson
         .cast<Map<String, dynamic>>()
         .map(EventCategoryDto.fromJson)
         .toList();
+  }
+
+  List<dynamic> _extractCategoriesList(dynamic responseData) {
+    try {
+      return ApiResponseHandler.extractList(responseData, key: 'categories');
+    } on ApiFormatException {
+      return ApiResponseHandler.extractList(responseData);
+    }
   }
 
   Future<List<ThematiqueDto>> getThematiques() async {
