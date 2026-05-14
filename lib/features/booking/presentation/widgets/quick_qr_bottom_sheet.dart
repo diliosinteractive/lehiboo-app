@@ -65,7 +65,8 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
         opaque: false,
         pageBuilder: (_, __, ___) => FullscreenQRSheet(
           qrData: _getQRData(),
-          title: widget.booking.activity?.title ?? 'Billet',
+          title:
+              widget.booking.activity?.title ?? context.l10n.bookingTicketTitle,
           subtitle: _getSubtitle(),
         ),
         transitionsBuilder: (_, animation, __, child) {
@@ -146,7 +147,7 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
                 children: [
                   // Title
                   Text(
-                    activity?.title ?? 'Réservation',
+                    activity?.title ?? context.l10n.bookingReservationFallback,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -199,7 +200,7 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
                   const SizedBox(height: 16),
                   // Hint text
                   Text(
-                    'Appuyez sur le QR code pour l\'afficher en plein écran',
+                    context.l10n.bookingQrTapFullscreenHint,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade500,
@@ -230,9 +231,9 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Fermer',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.commonClose,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),

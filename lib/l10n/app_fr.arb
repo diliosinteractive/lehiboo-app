@@ -67,8 +67,229 @@
   "commonThisWeekend": "Ce week-end",
   "commonFree": "Gratuit",
   "commonUndefinedDate": "Date non définie",
+  "commonAdd": "Ajouter",
+  "commonRetry": "Réessayer",
+  "commonSave": "Enregistrer",
+  "commonValidate": "Valider",
   "settingsPushPermissionRequired": "Autorisation notifications requise",
   "settingsUpdateFailed": "Mise à jour impossible",
+  "profileTitle": "Profil",
+  "profileDefaultUser": "Utilisateur",
+  "profileBookingsTitle": "Mes réservations",
+  "profileBookingsSubtitle": "Voir vos billets et réservations",
+  "profileParticipantsTitle": "Mes participants",
+  "profileParticipantsSubtitle": "Famille et proches pour attribuer les billets",
+  "profileFavoritesTitle": "Mes favoris",
+  "profileFavoritesSubtitle": "Activités sauvegardées",
+  "profileFollowedOrganizersTitle": "Organisateurs suivis",
+  "profileFollowedOrganizersSubtitle": "Gérer les organisateurs que vous suivez",
+  "profileMembershipsTitle": "Mes adhésions",
+  "profileMembershipsSubtitle": "Adhésions, invitations, événements privés",
+  "profileMessagesTitle": "Mes messages",
+  "profileMessagesSubtitle": "Conversations avec les organisateurs",
+  "profileTripsTitle": "Mes sorties",
+  "profileTripsSubtitle": "Plans et itinéraires",
+  "profileRemindersTitle": "Mes rappels",
+  "profileRemindersSubtitle": "Rappels d'activités à venir",
+  "profileQuestionsTitle": "Mes questions",
+  "profileQuestionsSubtitle": "Vos questions sur les événements",
+  "profileReviewsTitle": "Mes avis",
+  "profileReviewsSubtitle": "Vos avis et réponses des organisateurs",
+  "profileAccountTitle": "Mon compte",
+  "profileAccountSubtitle": "Modifier vos informations",
+  "profileAlertsTitle": "Mes alertes & recherches",
+  "profileAlertsSubtitle": "Gérer vos recherches enregistrées",
+  "profileVendorScanTitle": "Scanner les billets",
+  "profileVendorScanSubtitle": "Mode vendeur - contrôle d'accès",
+  "profileSettingsSubtitle": "Langue, thème, confidentialité",
+  "profileHelpTitle": "Aide & support",
+  "profileHelpSubtitle": "FAQ et contact",
+  "profileLogout": "Déconnexion",
+  "profileSignInPromptTitle": "Connectez-vous",
+  "profileSignInPromptSubtitle": "Accédez à vos réservations, favoris et plus encore",
+  "profileCompletionFirstName": "Prénom",
+  "profileCompletionLastName": "Nom",
+  "profileCompletionPhoto": "Photo",
+  "profileCompletionBirthDate": "Date de naissance",
+  "profileCompletionMembershipCity": "Ville d'adhésion",
+  "profileCompletionComplete": "Profil complet",
+  "profileCompletionProgress": "Profil {completed}/{total} - gagne 50 Hibons",
+  "@profileCompletionProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "profileStatsBookings": "Réservations",
+  "profileStatsFavorites": "Favoris",
+  "profileStatsReviews": "Avis",
+  "profileLogoutDialogBody": "Êtes-vous sûr de vouloir vous déconnecter ?",
+  "profileHelpOpenFailed": "Impossible d'ouvrir l'aide",
+  "profileAvatarUpdated": "Photo de profil mise à jour",
+  "profileAvatarUploadError": "Erreur lors de l'upload : {message}",
+  "@profileAvatarUploadError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLoginRequired": "Veuillez vous connecter",
+  "profilePersonalInfoTitle": "Informations personnelles",
+  "profileFirstNameLabel": "Prénom",
+  "profileFirstNameRequired": "Le prénom est requis",
+  "profileLastNameLabel": "Nom",
+  "profileLastNameRequired": "Le nom est requis",
+  "profilePhoneLabel": "Téléphone",
+  "profileBirthDateLabel": "Date de naissance",
+  "profileBirthDateUnset": "Non renseigné",
+  "profileCityLabel": "Ville",
+  "profileEmailReadOnlyHelper": "L'email ne peut pas être modifié",
+  "profileChangePasswordCta": "Changer mon mot de passe",
+  "profileUploadImageError": "Erreur lors de l'upload de l'image : {message}",
+  "@profileUploadImageError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUpdateSuccess": "Profil mis à jour avec succès",
+  "profileGenericError": "Erreur : {message}",
+  "@profileGenericError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileChangePasswordTitle": "Changer le mot de passe",
+  "profileCurrentPasswordLabel": "Mot de passe actuel",
+  "profileNewPasswordLabel": "Nouveau mot de passe",
+  "profilePasswordChangeSuccess": "Mot de passe changé avec succès",
+  "profileChangePasswordSubmit": "Changer",
+  "profileParticipantsPersonalizationNotice": "Le prénom, la date de naissance, la ville et la relation aident Petit Boo et LeHiboo Expériences à vous proposer des offres et des événements plus pertinents.",
+  "profileParticipantsAddShort": "Ajouter",
+  "profileParticipantsLoadError": "Impossible de charger vos participants",
+  "profileParticipantAdded": "Participant ajouté",
+  "profileParticipantUpdated": "Participant modifié",
+  "profileParticipantDeleted": "Participant supprimé",
+  "profileParticipantsEmptyTitle": "Aucun participant",
+  "profileParticipantsEmptyBody": "Ajoutez vos enfants, proches ou participants récurrents pour les choisir rapidement au moment de réserver.",
+  "profileParticipantsAddCta": "Ajouter un participant",
+  "profileParticipantAddTitle": "Ajouter un participant",
+  "profileParticipantEditTitle": "Modifier le participant",
+  "profileParticipantFirstNameLabelRequired": "Prénom *",
+  "profileParticipantFirstNameRequired": "Prénom requis",
+  "profileParticipantLastNameLabelRequired": "Nom *",
+  "profileParticipantLastNameRequired": "Nom requis",
+  "profileParticipantNicknameLabel": "Surnom",
+  "profileParticipantRelationshipLabelRequired": "Relation *",
+  "profileParticipantRelationshipRequired": "Relation requise",
+  "profileParticipantBirthDateLabelRequired": "Date de naissance *",
+  "profileParticipantBirthDateRequired": "Date de naissance requise",
+  "profileParticipantBirthDateHint": "jj/mm/aaaa",
+  "profileParticipantCityLabelRequired": "Ville d'appartenance *",
+  "profileParticipantCityRequired": "Ville requise",
+  "messagesTitle": "Messages",
+  "messagesTabOrganizers": "Organisateurs",
+  "messagesTabSupportLeHiboo": "Support LeHiboo",
+  "messagesTabClients": "Clients",
+  "messagesTabBroadcasts": "Diffusions",
+  "messagesTabSupport": "Support",
+  "messagesTabUsers": "Utilisateurs",
+  "messagesTabReports": "Signalements",
+  "messagesNewMessage": "Nouveau message",
+  "messagesContactSupport": "Contacter le support",
+  "messagesContactParticipant": "Contacter un participant",
+  "messagesNewBroadcast": "Nouvelle diffusion",
+  "messagesSupportTicket": "Ticket support",
+  "messagesContactUser": "Contacter un utilisateur",
+  "messagesContactOrganizer": "Contacter un organisateur",
+  "messagesNoConversations": "Aucune conversation",
+  "messagesNoSupportConversations": "Aucune conversation avec le support",
+  "messagesNoClients": "Aucun client",
+  "messagesNoBroadcasts": "Aucune diffusion envoyée",
+  "messagesNoPartners": "Aucun partenaire",
+  "messagesNoSupportTickets": "Aucun ticket support",
+  "messagesNoReports": "Aucun signalement",
+  "messagesLoadError": "Erreur : {error}",
+  "@messagesLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "messagesSearchHint": "Rechercher…",
+  "messagesFilterReset": "Réinitialiser",
+  "messagesFilterUnread": "Non lus",
+  "messagesFilterOpen": "Ouverts",
+  "messagesFilterClosed": "Fermés",
+  "messagesFilterThisWeek": "Cette semaine",
+  "messagesFilterThisMonth": "Ce mois",
+  "messagesFilterOlder": "Plus ancien",
+  "messagesReasonInappropriate": "Contenu inapproprié",
+  "messagesReasonHarassment": "Harcèlement",
+  "messagesReasonSpam": "Spam",
+  "messagesReasonOther": "Autre",
+  "messagesReportLabel": "Signaler",
+  "messagesReportedLabel": "Signalé",
+  "messagesReportBadge": "Signalement",
+  "messagesStatusClosed": "Fermé",
+  "messagesStatusPending": "En attente",
+  "messagesStatusOpen": "Ouvert",
+  "messagesDeletedPreview": "Message supprimé",
+  "messagesRelativeJustNow": "À l'instant",
+  "messagesRelativeDaysShort": "{count}j",
+  "@messagesRelativeDaysShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesComposerHint": "Votre message…",
+  "messagesComposerClosed": "Cette conversation est fermée",
+  "messagesDeletedMessage": "Ce message a été supprimé",
+  "messagesEditedSuffix": "(modifié)",
+  "messagesEditAction": "Modifier",
+  "messagesCopyTextAction": "Copier le texte",
+  "messagesDeleteAction": "Supprimer",
+  "messagesReopenTooltip": "Rouvrir",
+  "messagesCloseConversation": "Fermer la conversation",
+  "messagesReadonlyBanner": "Mode lecture seule - conversation liée à un signalement. Vous observez les échanges entre les deux parties.",
+  "messagesClosedNotice": "Cette conversation est fermée.",
+  "messagesEmptyThread": "Aucun message. Soyez le premier à écrire !",
+  "messagesCloseConversationBody": "Voulez-vous fermer cette conversation ? Vous ne pourrez plus envoyer de messages.",
+  "messagesReportSheetTitle": "Signaler la conversation",
+  "messagesReportSheetSubtitle": "Aidez-nous à maintenir un environnement sûr en signalant les contenus inappropriés.",
+  "messagesReportReasonLabel": "Raison",
+  "messagesReportCommentLabel": "Commentaire",
+  "messagesReportMinCharsHint": "(min. 10 caractères)",
+  "messagesReportReasonRequired": "Veuillez sélectionner une raison.",
+  "messagesReportCommentMinError": "Minimum 10 caractères.",
+  "messagesReportCommentHint": "Décrivez le problème…",
+  "messagesReportSubmit": "Signaler",
+  "messagesReportSuccessTitle": "Signalement transmis",
+  "messagesReportSuccessBody": "Votre signalement a bien été transmis à l'équipe LeHiboo.",
+  "messagesReportSupportCreated": "Un ticket support a été créé pour le suivi.",
+  "messagesViewAction": "Voir",
+  "messagesAdminReportFallbackTitle": "Signalement {reportId}",
+  "@messagesAdminReportFallbackTitle": {
+    "placeholders": {
+      "reportId": {
+        "type": "String"
+      }
+    }
+  },
+  "messagesAdminReportStatusReviewed": "Traité",
+  "messagesAdminReportStatusDismissed": "Ignoré",
+  "messagesAdminReportStatusSuspended": "Suspendu",
   "legalTerms": "Conditions Générales d'Utilisation",
   "legalSales": "Conditions Générales de Vente",
   "legalPrivacy": "Politique de confidentialité",
@@ -1534,5 +1755,247 @@
   "bookingTicketsGeneratingOrder": "Vos billets sont en cours de génération. Vous les retrouverez dans Mes réservations.",
   "bookingViewMyBookings": "Voir mes réservations",
   "bookingBackHome": "Retour à l'accueil",
-  "bookingReservationFallback": "Réservation"
+  "bookingReservationFallback": "Réservation",
+  "bookingMyBookingsTitle": "Mes réservations",
+  "bookingSortTooltip": "Trier",
+  "bookingSortByTitle": "Trier par",
+  "bookingSortDateAsc": "Date (plus proche)",
+  "bookingSortDateDesc": "Date (plus lointaine)",
+  "bookingSortStatusAsc": "Statut",
+  "bookingFilterAll": "Tous",
+  "bookingFilterUpcoming": "À venir",
+  "bookingFilterPast": "Passés",
+  "bookingFilterCancelled": "Annulés",
+  "bookingLoadError": "Erreur de chargement : {message}",
+  "@bookingLoadError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingEmptyAllTitle": "Aucune réservation",
+  "bookingEmptyAllBody": "Vous n'avez pas encore de réservation.\nDécouvrez nos événements !",
+  "bookingEmptyUpcomingTitle": "Aucune réservation à venir",
+  "bookingEmptyUpcomingBody": "Vous n'avez pas de réservation prévue.\nExplorez nos événements !",
+  "bookingEmptyPastTitle": "Aucune réservation passée",
+  "bookingEmptyPastBody": "Vous n'avez pas encore participé à un événement.",
+  "bookingEmptyCancelledTitle": "Aucune réservation annulée",
+  "bookingEmptyCancelledBody": "Vous n'avez aucune réservation annulée.",
+  "bookingNotFoundTitle": "Réservation introuvable",
+  "bookingNotFoundBody": "Cette réservation n'existe pas ou a été supprimée.",
+  "bookingEventFallback": "Événement",
+  "bookingStandardTicket": "Standard",
+  "bookingShareBookingTitle": "Ma réservation Le Hiboo",
+  "bookingShareTicketTitle": "Mon billet Le Hiboo",
+  "bookingShareTicketCode": "Code : {code}",
+  "@bookingShareTicketCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingShareTicketsCount": "{count, plural, =1{1 billet} other{{count} billets}}",
+  "@bookingShareTicketsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingCalendarReference": "Réservation Le Hiboo : {reference}",
+  "@bookingCalendarReference": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingCalendarAdded": "Événement ajouté au calendrier",
+  "bookingCalendarAddFailed": "Impossible d'ajouter au calendrier",
+  "bookingCancelDialogTitle": "Annuler la réservation",
+  "bookingCancelDialogBody": "Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible.",
+  "bookingCancelDeadline": "Date limite : {deadline}",
+  "@bookingCancelDeadline": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingCancelReasonLabel": "Raison (optionnel)",
+  "bookingCancelReasonHint": "Empêchement personnel…",
+  "bookingCancelWarning": "Attention : aucun remboursement ne sera effectué après l'annulation.",
+  "bookingCancelKeep": "Non, garder",
+  "bookingCancelConfirm": "Oui, annuler",
+  "bookingCancelSuccess": "Réservation annulée. Aucun remboursement ne sera effectué.",
+  "bookingCancelForbidden": "L'annulation n'est plus possible (délai dépassé ou non autorisé par l'organisateur).",
+  "bookingCancelNotFound": "Cette réservation est introuvable.",
+  "bookingCancelValidationTooLong": "La raison saisie est trop longue (1000 caractères max).",
+  "bookingCancelGenericError": "Impossible d'annuler la réservation. Réessayez.",
+  "bookingPreparingPdf": "Préparation du PDF…",
+  "bookingTicketsSaved": "Billets enregistrés dans {location}",
+  "@bookingTicketsSaved": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingTicketSaved": "Billet enregistré dans {location}",
+  "@bookingTicketSaved": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingTicketsNotReady": "Vos billets sont en cours de génération, réessayez dans un instant.",
+  "bookingTicketNotReady": "Ce billet est en cours de génération, réessayez dans un instant.",
+  "bookingTicketsNotAuthorized": "Vous n'êtes pas autorisé à télécharger ces billets.",
+  "bookingTicketNotDownloadable": "Ce billet n'est plus téléchargeable.",
+  "bookingDownloadError": "Téléchargement impossible. Réessayez plus tard.",
+  "bookingDownloadSingleTicket": "Télécharger le billet PDF",
+  "bookingDownloadAllTickets": "Télécharger tous les billets",
+  "bookingTicketTitle": "Billet",
+  "bookingTicketNotFound": "Billet non trouvé",
+  "bookingTicketPosition": "Billet {current}/{total}",
+  "@bookingTicketPosition": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingTicketSwipeHint": "← Swipe pour voir les autres billets →",
+  "bookingQrTapFullscreenHint": "Appuyez sur le QR code pour l'afficher en plein écran",
+  "bookingQrTapCloseHint": "Appuyez n'importe où pour fermer",
+  "bookingParticipantDefault": "Participant",
+  "bookingParticipantNumber": "Participant {index}",
+  "@bookingParticipantNumber": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingAgeYears": "{age} ans",
+  "@bookingAgeYears": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingAddToCalendar": "Ajouter au calendrier",
+  "bookingContactOrganizer": "Contacter l'organisateur",
+  "bookingAdditionalInfoTitle": "Informations complémentaires",
+  "bookingSectionEvent": "ÉVÉNEMENT",
+  "bookingViewEvent": "Voir l'événement",
+  "bookingSectionSummary": "RÉSUMÉ",
+  "bookingDiscountFallback": "Réduction",
+  "bookingMyTicketsCount": "MES BILLETS ({count})",
+  "@bookingMyTicketsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingStatusPending": "En attente",
+  "bookingStatusConfirmed": "Confirmé",
+  "bookingStatusCancelled": "Annulé",
+  "bookingStatusCompleted": "Terminé",
+  "bookingStatusRefunded": "Remboursé",
+  "bookingTicketStatusActive": "Actif",
+  "bookingTicketStatusUsed": "Utilisé",
+  "bookingTicketStatusCancelled": "Annulé",
+  "bookingTicketStatusExpired": "Expiré",
+  "bookingLegacyReservationForEvent": "Réservation pour l'événement {eventId}",
+  "@bookingLegacyReservationForEvent": {
+    "placeholders": {
+      "eventId": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingLegacyReserveTitle": "Réserver : {eventTitle}",
+  "@bookingLegacyReserveTitle": {
+    "placeholders": {
+      "eventTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingLegacyStepSlot": "Créneau",
+  "bookingLegacyStepInfo": "Infos",
+  "bookingLegacyStepPayment": "Paiement",
+  "bookingLegacyChooseSlot": "Choisir un créneau",
+  "bookingLegacyNoSlotTitle": "Aucun créneau",
+  "bookingLegacyNoSlotBody": "Aucun créneau disponible pour le moment.",
+  "bookingLegacyParticipantsCountTitle": "Nombre de participants",
+  "bookingLegacyPeopleCount": "{count, plural, =1{1 personne} other{{count} personnes}}",
+  "@bookingLegacyPeopleCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingLegacyContinue": "Continuer",
+  "bookingLegacySelectSlotRequired": "Veuillez sélectionner un créneau.",
+  "bookingLegacyRequiredInfo": "Veuillez remplir toutes les informations obligatoires.",
+  "bookingLegacyOtherParticipantsLater": "Note : Les détails des autres participants seront demandés ultérieurement.",
+  "bookingConfirmReservation": "Confirmer la réservation",
+  "bookingGoToPayment": "Aller au paiement",
+  "bookingPaymentTitle": "Paiement",
+  "bookingPaymentCardSimulated": "Carte bancaire (simulée)",
+  "bookingCardNumberLabel": "Numéro de carte",
+  "bookingCardExpiryLabel": "MM/AA",
+  "bookingCardCvcLabel": "CVC",
+  "bookingPayAmount": "Payer {amount} {currency}",
+  "@bookingPayAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingConfirmedTitle": "Réservation confirmée !",
+  "bookingConfirmedBody": "Merci {firstName}, votre réservation pour \"{eventTitle}\" est validée.",
+  "@bookingConfirmedBody": {
+    "placeholders": {
+      "firstName": {
+        "type": "String"
+      },
+      "eventTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingTicketId": "Billet #{ticketId}",
+  "@bookingTicketId": {
+    "placeholders": {
+      "ticketId": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingTicketValid": "Valide",
+  "bookingSuccessThanks": "Merci pour votre confiance",
+  "bookingReferenceLabel": "Référence",
+  "bookingReferenceCopied": "Référence copiée",
+  "bookingCopyTooltip": "Copier",
+  "bookingYourTickets": "Vos billets",
+  "bookingTicketsGenerating": "Génération de vos billets...",
+  "bookingTicketsAvailableInBookings": "Vos billets seront disponibles\ndans votre espace \"Mes réservations\"",
+  "bookingConfirmationEmailSent": "Un email de confirmation avec vos billets vous a été envoyé.",
+  "bookingTicketsLoadError": "Impossible de charger les billets"
 }

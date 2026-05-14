@@ -9,6 +9,7 @@ import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/booking/presentation/utils/ticket_download_helper.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/large_qr_code.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/fullscreen_qr_sheet.dart';
@@ -90,7 +91,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         opaque: false,
         pageBuilder: (_, __, ___) => FullscreenQRSheet(
           qrData: ticket.qrCodeData ?? ticket.id,
-          title: widget.booking?.activity?.title ?? 'Billet',
+          title: widget.booking?.activity?.title ??
+              context.l10n.bookingTicketTitle,
           subtitle: _getEventSubtitle(),
         ),
         transitionsBuilder: (_, animation, __, child) {
@@ -115,18 +117,19 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
 
   Future<void> _shareTicket(Ticket ticket) async {
     final activity = widget.booking?.activity;
-    String shareText = 'Mon billet Le Hiboo\n';
+    String shareText = '${context.l10n.bookingShareTicketTitle}\n';
     if (activity != null) {
       shareText += '\n${activity.title}';
     }
-    shareText += '\n\nCode: ${ticket.qrCodeData ?? ticket.id}';
+    shareText +=
+        '\n\n${context.l10n.bookingShareTicketCode(ticket.qrCodeData ?? ticket.id)}';
     await SharePlus.instance.share(ShareParams(text: shareText));
   }
 
   Future<void> _downloadTicket(Ticket ticket) async {
     HapticFeedback.lightImpact();
 
-    _showInfoSnack('Préparation du PDF…');
+    _showInfoSnack(context.l10n.bookingPreparingPdf);
 
     try {
       final pdf = await ref
@@ -134,15 +137,17 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
           .downloadSingleTicket(ticket.id);
       _hideSnack();
       final saved = await shareTicketPdf(pdf);
-      _showInfoSnack('Billet enregistré dans ${saved.displayLocation}');
+      if (!mounted) return;
+      _showInfoSnack(context.l10n.bookingTicketSaved(saved.displayLocation));
     } on TicketsNotReadyException {
-      _showDownloadError(
-        'Ce billet est en cours de génération, réessayez dans un instant.',
-      );
+      if (!mounted) return;
+      _showDownloadError(context.l10n.bookingTicketNotReady);
     } on NotAuthorizedToDownloadException {
-      _showDownloadError("Ce billet n'est plus téléchargeable.");
+      if (!mounted) return;
+      _showDownloadError(context.l10n.bookingTicketNotDownloadable);
     } catch (_) {
-      _showDownloadError('Téléchargement impossible. Réessayez plus tard.');
+      if (!mounted) return;
+      _showDownloadError(context.l10n.bookingDownloadError);
     }
   }
 
@@ -200,14 +205,14 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
             icon: const Icon(Icons.arrow_back, color: HbColors.textPrimary),
             onPressed: () => context.pop(),
           ),
-          title: const Text(
-            'Billet',
-            style: TextStyle(
+          title: Text(
+            context.l10n.bookingTicketTitle,
+            style: const TextStyle(
                 color: HbColors.textPrimary, fontWeight: FontWeight.w700),
           ),
         ),
-        body: const Center(
-          child: Text('Billet non trouvé'),
+        body: Center(
+          child: Text(context.l10n.bookingTicketNotFound),
         ),
       );
     }
@@ -223,8 +228,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         ),
         title: Text(
           _tickets.length > 1
-              ? 'Billet ${_currentIndex + 1}/${_tickets.length}'
-              : 'Billet',
+              ? context.l10n
+                  .bookingTicketPosition(_currentIndex + 1, _tickets.length)
+              : context.l10n.bookingTicketTitle,
           style: const TextStyle(
             color: HbColors.textPrimary,
             fontWeight: FontWeight.w700,
@@ -281,7 +287,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                '← Swipe pour voir les autres billets →',
+                context.l10n.bookingTicketSwipeHint,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade500,
@@ -303,7 +309,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () => _downloadTicket(_tickets[_currentIndex]),
                   icon: const Icon(Icons.download, size: 20),
-                  label: const Text('Télécharger le billet PDF'),
+                  label: Text(context.l10n.bookingDownloadSingleTicket),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
@@ -329,8 +335,8 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     final status = TicketStatusExtension.fromString(ticket.status);
 
     final qrData = ticket.qrCodeData ?? ticket.id;
-    final ticketType = ticket.ticketType ?? 'Standard';
-    final participantLabel = 'Participant ${index + 1}';
+    final ticketType = ticket.ticketType ?? context.l10n.bookingStandardTicket;
+    final participantLabel = context.l10n.bookingParticipantNumber(index + 1);
 
     // Pull the matching attendee from the booking. Attendees are flattened in
     // the same order tickets are generated in the mapper, so index lines up.
@@ -379,7 +385,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: HbColors.brandPrimary.withOpacity(0.15),
+                        color: HbColors.brandPrimary.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -434,7 +440,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: status.color.withOpacity(0.12),
+                        color: status.color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -444,7 +450,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                               size: 14, color: status.color),
                           const SizedBox(width: 4),
                           Text(
-                            status.label,
+                            context.bookingTicketStatusLabel(ticket.status),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -462,7 +468,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                     age != null ||
                     (city != null && city.isNotEmpty)) ...[
                   const SizedBox(height: 12),
-                  Divider(height: 1, color: Colors.black.withOpacity(0.08)),
+                  Divider(
+                    height: 1,
+                    color: Colors.black.withValues(alpha: 0.08),
+                  ),
                   const SizedBox(height: 12),
                   if (email != null && email.isNotEmpty)
                     _buildInfoRow(icon: Icons.email_outlined, text: email),
@@ -474,7 +483,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                     const SizedBox(height: 6),
                     _buildInfoRow(
                       icon: Icons.cake_outlined,
-                      text: '$age ans',
+                      text: context.l10n.bookingAgeYears(age),
                     ),
                   ],
                   if (city != null && city.isNotEmpty) ...[
@@ -499,7 +508,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  activity?.title ?? 'Événement',
+                  activity?.title ?? context.l10n.bookingEventFallback,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -541,7 +550,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
           const SizedBox(height: 16),
           // Tap hint
           Text(
-            'Appuyez sur le QR code pour l\'afficher en plein écran',
+            context.l10n.bookingQrTapFullscreenHint,
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey.shade500,

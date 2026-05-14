@@ -440,6 +440,30 @@ abstract class AppLocalizations {
   /// **'Date non définie'**
   String get commonUndefinedDate;
 
+  /// No description provided for @commonAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter'**
+  String get commonAdd;
+
+  /// No description provided for @commonRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get commonRetry;
+
+  /// No description provided for @commonSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get commonSave;
+
+  /// No description provided for @commonValidate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valider'**
+  String get commonValidate;
+
   /// No description provided for @settingsPushPermissionRequired.
   ///
   /// In fr, this message translates to:
@@ -451,6 +475,996 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Mise à jour impossible'**
   String get settingsUpdateFailed;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil'**
+  String get profileTitle;
+
+  /// No description provided for @profileDefaultUser.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateur'**
+  String get profileDefaultUser;
+
+  /// No description provided for @profileBookingsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes réservations'**
+  String get profileBookingsTitle;
+
+  /// No description provided for @profileBookingsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir vos billets et réservations'**
+  String get profileBookingsSubtitle;
+
+  /// No description provided for @profileParticipantsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes participants'**
+  String get profileParticipantsTitle;
+
+  /// No description provided for @profileParticipantsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Famille et proches pour attribuer les billets'**
+  String get profileParticipantsSubtitle;
+
+  /// No description provided for @profileFavoritesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes favoris'**
+  String get profileFavoritesTitle;
+
+  /// No description provided for @profileFavoritesSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités sauvegardées'**
+  String get profileFavoritesSubtitle;
+
+  /// No description provided for @profileFollowedOrganizersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisateurs suivis'**
+  String get profileFollowedOrganizersTitle;
+
+  /// No description provided for @profileFollowedOrganizersSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gérer les organisateurs que vous suivez'**
+  String get profileFollowedOrganizersSubtitle;
+
+  /// No description provided for @profileMembershipsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes adhésions'**
+  String get profileMembershipsTitle;
+
+  /// No description provided for @profileMembershipsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adhésions, invitations, événements privés'**
+  String get profileMembershipsSubtitle;
+
+  /// No description provided for @profileMessagesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes messages'**
+  String get profileMessagesTitle;
+
+  /// No description provided for @profileMessagesSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversations avec les organisateurs'**
+  String get profileMessagesSubtitle;
+
+  /// No description provided for @profileTripsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes sorties'**
+  String get profileTripsTitle;
+
+  /// No description provided for @profileTripsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plans et itinéraires'**
+  String get profileTripsSubtitle;
+
+  /// No description provided for @profileRemindersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes rappels'**
+  String get profileRemindersTitle;
+
+  /// No description provided for @profileRemindersSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappels d\'activités à venir'**
+  String get profileRemindersSubtitle;
+
+  /// No description provided for @profileQuestionsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes questions'**
+  String get profileQuestionsTitle;
+
+  /// No description provided for @profileQuestionsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos questions sur les événements'**
+  String get profileQuestionsSubtitle;
+
+  /// No description provided for @profileReviewsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes avis'**
+  String get profileReviewsTitle;
+
+  /// No description provided for @profileReviewsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos avis et réponses des organisateurs'**
+  String get profileReviewsSubtitle;
+
+  /// No description provided for @profileAccountTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon compte'**
+  String get profileAccountTitle;
+
+  /// No description provided for @profileAccountSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier vos informations'**
+  String get profileAccountSubtitle;
+
+  /// No description provided for @profileAlertsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes alertes & recherches'**
+  String get profileAlertsTitle;
+
+  /// No description provided for @profileAlertsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gérer vos recherches enregistrées'**
+  String get profileAlertsSubtitle;
+
+  /// No description provided for @profileVendorScanTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Scanner les billets'**
+  String get profileVendorScanTitle;
+
+  /// No description provided for @profileVendorScanSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode vendeur - contrôle d\'accès'**
+  String get profileVendorScanSubtitle;
+
+  /// No description provided for @profileSettingsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue, thème, confidentialité'**
+  String get profileSettingsSubtitle;
+
+  /// No description provided for @profileHelpTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aide & support'**
+  String get profileHelpTitle;
+
+  /// No description provided for @profileHelpSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'FAQ et contact'**
+  String get profileHelpSubtitle;
+
+  /// No description provided for @profileLogout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déconnexion'**
+  String get profileLogout;
+
+  /// No description provided for @profileSignInPromptTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous'**
+  String get profileSignInPromptTitle;
+
+  /// No description provided for @profileSignInPromptSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accédez à vos réservations, favoris et plus encore'**
+  String get profileSignInPromptSubtitle;
+
+  /// No description provided for @profileCompletionFirstName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénom'**
+  String get profileCompletionFirstName;
+
+  /// No description provided for @profileCompletionLastName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get profileCompletionLastName;
+
+  /// No description provided for @profileCompletionPhoto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo'**
+  String get profileCompletionPhoto;
+
+  /// No description provided for @profileCompletionBirthDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de naissance'**
+  String get profileCompletionBirthDate;
+
+  /// No description provided for @profileCompletionMembershipCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville d\'adhésion'**
+  String get profileCompletionMembershipCity;
+
+  /// No description provided for @profileCompletionComplete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil complet'**
+  String get profileCompletionComplete;
+
+  /// No description provided for @profileCompletionProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil {completed}/{total} - gagne 50 Hibons'**
+  String profileCompletionProgress(int completed, int total);
+
+  /// No description provided for @profileStatsBookings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservations'**
+  String get profileStatsBookings;
+
+  /// No description provided for @profileStatsFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris'**
+  String get profileStatsFavorites;
+
+  /// No description provided for @profileStatsReviews.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis'**
+  String get profileStatsReviews;
+
+  /// No description provided for @profileLogoutDialogBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Êtes-vous sûr de vouloir vous déconnecter ?'**
+  String get profileLogoutDialogBody;
+
+  /// No description provided for @profileHelpOpenFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir l\'aide'**
+  String get profileHelpOpenFailed;
+
+  /// No description provided for @profileAvatarUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photo de profil mise à jour'**
+  String get profileAvatarUpdated;
+
+  /// No description provided for @profileAvatarUploadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur lors de l\'upload : {message}'**
+  String profileAvatarUploadError(String message);
+
+  /// No description provided for @profileLoginRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez vous connecter'**
+  String get profileLoginRequired;
+
+  /// No description provided for @profilePersonalInfoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Informations personnelles'**
+  String get profilePersonalInfoTitle;
+
+  /// No description provided for @profileFirstNameLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénom'**
+  String get profileFirstNameLabel;
+
+  /// No description provided for @profileFirstNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le prénom est requis'**
+  String get profileFirstNameRequired;
+
+  /// No description provided for @profileLastNameLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get profileLastNameLabel;
+
+  /// No description provided for @profileLastNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom est requis'**
+  String get profileLastNameRequired;
+
+  /// No description provided for @profilePhoneLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléphone'**
+  String get profilePhoneLabel;
+
+  /// No description provided for @profileBirthDateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de naissance'**
+  String get profileBirthDateLabel;
+
+  /// No description provided for @profileBirthDateUnset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non renseigné'**
+  String get profileBirthDateUnset;
+
+  /// No description provided for @profileCityLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville'**
+  String get profileCityLabel;
+
+  /// No description provided for @profileEmailReadOnlyHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'email ne peut pas être modifié'**
+  String get profileEmailReadOnlyHelper;
+
+  /// No description provided for @profileChangePasswordCta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer mon mot de passe'**
+  String get profileChangePasswordCta;
+
+  /// No description provided for @profileUploadImageError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur lors de l\'upload de l\'image : {message}'**
+  String profileUploadImageError(String message);
+
+  /// No description provided for @profileUpdateSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil mis à jour avec succès'**
+  String get profileUpdateSuccess;
+
+  /// No description provided for @profileGenericError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur : {message}'**
+  String profileGenericError(String message);
+
+  /// No description provided for @profileChangePasswordTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer le mot de passe'**
+  String get profileChangePasswordTitle;
+
+  /// No description provided for @profileCurrentPasswordLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mot de passe actuel'**
+  String get profileCurrentPasswordLabel;
+
+  /// No description provided for @profileNewPasswordLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau mot de passe'**
+  String get profileNewPasswordLabel;
+
+  /// No description provided for @profilePasswordChangeSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mot de passe changé avec succès'**
+  String get profilePasswordChangeSuccess;
+
+  /// No description provided for @profileChangePasswordSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer'**
+  String get profileChangePasswordSubmit;
+
+  /// No description provided for @profileParticipantsPersonalizationNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le prénom, la date de naissance, la ville et la relation aident Petit Boo et LeHiboo Expériences à vous proposer des offres et des événements plus pertinents.'**
+  String get profileParticipantsPersonalizationNotice;
+
+  /// No description provided for @profileParticipantsAddShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter'**
+  String get profileParticipantsAddShort;
+
+  /// No description provided for @profileParticipantsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos participants'**
+  String get profileParticipantsLoadError;
+
+  /// No description provided for @profileParticipantAdded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participant ajouté'**
+  String get profileParticipantAdded;
+
+  /// No description provided for @profileParticipantUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participant modifié'**
+  String get profileParticipantUpdated;
+
+  /// No description provided for @profileParticipantDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participant supprimé'**
+  String get profileParticipantDeleted;
+
+  /// No description provided for @profileParticipantsEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun participant'**
+  String get profileParticipantsEmptyTitle;
+
+  /// No description provided for @profileParticipantsEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez vos enfants, proches ou participants récurrents pour les choisir rapidement au moment de réserver.'**
+  String get profileParticipantsEmptyBody;
+
+  /// No description provided for @profileParticipantsAddCta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un participant'**
+  String get profileParticipantsAddCta;
+
+  /// No description provided for @profileParticipantAddTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un participant'**
+  String get profileParticipantAddTitle;
+
+  /// No description provided for @profileParticipantEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le participant'**
+  String get profileParticipantEditTitle;
+
+  /// No description provided for @profileParticipantFirstNameLabelRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénom *'**
+  String get profileParticipantFirstNameLabelRequired;
+
+  /// No description provided for @profileParticipantFirstNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénom requis'**
+  String get profileParticipantFirstNameRequired;
+
+  /// No description provided for @profileParticipantLastNameLabelRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom *'**
+  String get profileParticipantLastNameLabelRequired;
+
+  /// No description provided for @profileParticipantLastNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom requis'**
+  String get profileParticipantLastNameRequired;
+
+  /// No description provided for @profileParticipantNicknameLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Surnom'**
+  String get profileParticipantNicknameLabel;
+
+  /// No description provided for @profileParticipantRelationshipLabelRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relation *'**
+  String get profileParticipantRelationshipLabelRequired;
+
+  /// No description provided for @profileParticipantRelationshipRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relation requise'**
+  String get profileParticipantRelationshipRequired;
+
+  /// No description provided for @profileParticipantBirthDateLabelRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de naissance *'**
+  String get profileParticipantBirthDateLabelRequired;
+
+  /// No description provided for @profileParticipantBirthDateRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de naissance requise'**
+  String get profileParticipantBirthDateRequired;
+
+  /// No description provided for @profileParticipantBirthDateHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'jj/mm/aaaa'**
+  String get profileParticipantBirthDateHint;
+
+  /// No description provided for @profileParticipantCityLabelRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville d\'appartenance *'**
+  String get profileParticipantCityLabelRequired;
+
+  /// No description provided for @profileParticipantCityRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville requise'**
+  String get profileParticipantCityRequired;
+
+  /// No description provided for @messagesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Messages'**
+  String get messagesTitle;
+
+  /// No description provided for @messagesTabOrganizers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisateurs'**
+  String get messagesTabOrganizers;
+
+  /// No description provided for @messagesTabSupportLeHiboo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Support LeHiboo'**
+  String get messagesTabSupportLeHiboo;
+
+  /// No description provided for @messagesTabClients.
+  ///
+  /// In fr, this message translates to:
+  /// **'Clients'**
+  String get messagesTabClients;
+
+  /// No description provided for @messagesTabBroadcasts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Diffusions'**
+  String get messagesTabBroadcasts;
+
+  /// No description provided for @messagesTabSupport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Support'**
+  String get messagesTabSupport;
+
+  /// No description provided for @messagesTabUsers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateurs'**
+  String get messagesTabUsers;
+
+  /// No description provided for @messagesTabReports.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalements'**
+  String get messagesTabReports;
+
+  /// No description provided for @messagesNewMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau message'**
+  String get messagesNewMessage;
+
+  /// No description provided for @messagesContactSupport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contacter le support'**
+  String get messagesContactSupport;
+
+  /// No description provided for @messagesContactParticipant.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contacter un participant'**
+  String get messagesContactParticipant;
+
+  /// No description provided for @messagesNewBroadcast.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle diffusion'**
+  String get messagesNewBroadcast;
+
+  /// No description provided for @messagesSupportTicket.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ticket support'**
+  String get messagesSupportTicket;
+
+  /// No description provided for @messagesContactUser.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contacter un utilisateur'**
+  String get messagesContactUser;
+
+  /// No description provided for @messagesContactOrganizer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contacter un organisateur'**
+  String get messagesContactOrganizer;
+
+  /// No description provided for @messagesNoConversations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune conversation'**
+  String get messagesNoConversations;
+
+  /// No description provided for @messagesNoSupportConversations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune conversation avec le support'**
+  String get messagesNoSupportConversations;
+
+  /// No description provided for @messagesNoClients.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun client'**
+  String get messagesNoClients;
+
+  /// No description provided for @messagesNoBroadcasts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune diffusion envoyée'**
+  String get messagesNoBroadcasts;
+
+  /// No description provided for @messagesNoPartners.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun partenaire'**
+  String get messagesNoPartners;
+
+  /// No description provided for @messagesNoSupportTickets.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun ticket support'**
+  String get messagesNoSupportTickets;
+
+  /// No description provided for @messagesNoReports.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun signalement'**
+  String get messagesNoReports;
+
+  /// No description provided for @messagesLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur : {error}'**
+  String messagesLoadError(String error);
+
+  /// No description provided for @messagesSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher…'**
+  String get messagesSearchHint;
+
+  /// No description provided for @messagesFilterReset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réinitialiser'**
+  String get messagesFilterReset;
+
+  /// No description provided for @messagesFilterUnread.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non lus'**
+  String get messagesFilterUnread;
+
+  /// No description provided for @messagesFilterOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouverts'**
+  String get messagesFilterOpen;
+
+  /// No description provided for @messagesFilterClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermés'**
+  String get messagesFilterClosed;
+
+  /// No description provided for @messagesFilterThisWeek.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette semaine'**
+  String get messagesFilterThisWeek;
+
+  /// No description provided for @messagesFilterThisMonth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce mois'**
+  String get messagesFilterThisMonth;
+
+  /// No description provided for @messagesFilterOlder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus ancien'**
+  String get messagesFilterOlder;
+
+  /// No description provided for @messagesReasonInappropriate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contenu inapproprié'**
+  String get messagesReasonInappropriate;
+
+  /// No description provided for @messagesReasonHarassment.
+  ///
+  /// In fr, this message translates to:
+  /// **'Harcèlement'**
+  String get messagesReasonHarassment;
+
+  /// No description provided for @messagesReasonSpam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Spam'**
+  String get messagesReasonSpam;
+
+  /// No description provided for @messagesReasonOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get messagesReasonOther;
+
+  /// No description provided for @messagesReportLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signaler'**
+  String get messagesReportLabel;
+
+  /// No description provided for @messagesReportedLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalé'**
+  String get messagesReportedLabel;
+
+  /// No description provided for @messagesReportBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement'**
+  String get messagesReportBadge;
+
+  /// No description provided for @messagesStatusClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermé'**
+  String get messagesStatusClosed;
+
+  /// No description provided for @messagesStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get messagesStatusPending;
+
+  /// No description provided for @messagesStatusOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvert'**
+  String get messagesStatusOpen;
+
+  /// No description provided for @messagesDeletedPreview.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message supprimé'**
+  String get messagesDeletedPreview;
+
+  /// No description provided for @messagesRelativeJustNow.
+  ///
+  /// In fr, this message translates to:
+  /// **'À l\'instant'**
+  String get messagesRelativeJustNow;
+
+  /// No description provided for @messagesRelativeDaysShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count}j'**
+  String messagesRelativeDaysShort(int count);
+
+  /// No description provided for @messagesComposerHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre message…'**
+  String get messagesComposerHint;
+
+  /// No description provided for @messagesComposerClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette conversation est fermée'**
+  String get messagesComposerClosed;
+
+  /// No description provided for @messagesDeletedMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce message a été supprimé'**
+  String get messagesDeletedMessage;
+
+  /// No description provided for @messagesEditedSuffix.
+  ///
+  /// In fr, this message translates to:
+  /// **'(modifié)'**
+  String get messagesEditedSuffix;
+
+  /// No description provided for @messagesEditAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get messagesEditAction;
+
+  /// No description provided for @messagesCopyTextAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Copier le texte'**
+  String get messagesCopyTextAction;
+
+  /// No description provided for @messagesDeleteAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get messagesDeleteAction;
+
+  /// No description provided for @messagesReopenTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rouvrir'**
+  String get messagesReopenTooltip;
+
+  /// No description provided for @messagesCloseConversation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer la conversation'**
+  String get messagesCloseConversation;
+
+  /// No description provided for @messagesReadonlyBanner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mode lecture seule - conversation liée à un signalement. Vous observez les échanges entre les deux parties.'**
+  String get messagesReadonlyBanner;
+
+  /// No description provided for @messagesClosedNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette conversation est fermée.'**
+  String get messagesClosedNotice;
+
+  /// No description provided for @messagesEmptyThread.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun message. Soyez le premier à écrire !'**
+  String get messagesEmptyThread;
+
+  /// No description provided for @messagesCloseConversationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous fermer cette conversation ? Vous ne pourrez plus envoyer de messages.'**
+  String get messagesCloseConversationBody;
+
+  /// No description provided for @messagesReportSheetTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signaler la conversation'**
+  String get messagesReportSheetTitle;
+
+  /// No description provided for @messagesReportSheetSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aidez-nous à maintenir un environnement sûr en signalant les contenus inappropriés.'**
+  String get messagesReportSheetSubtitle;
+
+  /// No description provided for @messagesReportReasonLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Raison'**
+  String get messagesReportReasonLabel;
+
+  /// No description provided for @messagesReportCommentLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commentaire'**
+  String get messagesReportCommentLabel;
+
+  /// No description provided for @messagesReportMinCharsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'(min. 10 caractères)'**
+  String get messagesReportMinCharsHint;
+
+  /// No description provided for @messagesReportReasonRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner une raison.'**
+  String get messagesReportReasonRequired;
+
+  /// No description provided for @messagesReportCommentMinError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Minimum 10 caractères.'**
+  String get messagesReportCommentMinError;
+
+  /// No description provided for @messagesReportCommentHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décrivez le problème…'**
+  String get messagesReportCommentHint;
+
+  /// No description provided for @messagesReportSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signaler'**
+  String get messagesReportSubmit;
+
+  /// No description provided for @messagesReportSuccessTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement transmis'**
+  String get messagesReportSuccessTitle;
+
+  /// No description provided for @messagesReportSuccessBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre signalement a bien été transmis à l\'équipe LeHiboo.'**
+  String get messagesReportSuccessBody;
+
+  /// No description provided for @messagesReportSupportCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un ticket support a été créé pour le suivi.'**
+  String get messagesReportSupportCreated;
+
+  /// No description provided for @messagesViewAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir'**
+  String get messagesViewAction;
+
+  /// No description provided for @messagesAdminReportFallbackTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement {reportId}'**
+  String messagesAdminReportFallbackTitle(String reportId);
+
+  /// No description provided for @messagesAdminReportStatusReviewed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traité'**
+  String get messagesAdminReportStatusReviewed;
+
+  /// No description provided for @messagesAdminReportStatusDismissed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ignoré'**
+  String get messagesAdminReportStatusDismissed;
+
+  /// No description provided for @messagesAdminReportStatusSuspended.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suspendu'**
+  String get messagesAdminReportStatusSuspended;
 
   /// No description provided for @legalTerms.
   ///
@@ -5131,6 +6145,690 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Réservation'**
   String get bookingReservationFallback;
+
+  /// No description provided for @bookingMyBookingsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes réservations'**
+  String get bookingMyBookingsTitle;
+
+  /// No description provided for @bookingSortTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trier'**
+  String get bookingSortTooltip;
+
+  /// No description provided for @bookingSortByTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trier par'**
+  String get bookingSortByTitle;
+
+  /// No description provided for @bookingSortDateAsc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date (plus proche)'**
+  String get bookingSortDateAsc;
+
+  /// No description provided for @bookingSortDateDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date (plus lointaine)'**
+  String get bookingSortDateDesc;
+
+  /// No description provided for @bookingSortStatusAsc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statut'**
+  String get bookingSortStatusAsc;
+
+  /// No description provided for @bookingFilterAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get bookingFilterAll;
+
+  /// No description provided for @bookingFilterUpcoming.
+  ///
+  /// In fr, this message translates to:
+  /// **'À venir'**
+  String get bookingFilterUpcoming;
+
+  /// No description provided for @bookingFilterPast.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passés'**
+  String get bookingFilterPast;
+
+  /// No description provided for @bookingFilterCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulés'**
+  String get bookingFilterCancelled;
+
+  /// No description provided for @bookingLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur de chargement : {message}'**
+  String bookingLoadError(String message);
+
+  /// No description provided for @bookingEmptyAllTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune réservation'**
+  String get bookingEmptyAllTitle;
+
+  /// No description provided for @bookingEmptyAllBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez pas encore de réservation.\nDécouvrez nos événements !'**
+  String get bookingEmptyAllBody;
+
+  /// No description provided for @bookingEmptyUpcomingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune réservation à venir'**
+  String get bookingEmptyUpcomingTitle;
+
+  /// No description provided for @bookingEmptyUpcomingBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez pas de réservation prévue.\nExplorez nos événements !'**
+  String get bookingEmptyUpcomingBody;
+
+  /// No description provided for @bookingEmptyPastTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune réservation passée'**
+  String get bookingEmptyPastTitle;
+
+  /// No description provided for @bookingEmptyPastBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez pas encore participé à un événement.'**
+  String get bookingEmptyPastBody;
+
+  /// No description provided for @bookingEmptyCancelledTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune réservation annulée'**
+  String get bookingEmptyCancelledTitle;
+
+  /// No description provided for @bookingEmptyCancelledBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez aucune réservation annulée.'**
+  String get bookingEmptyCancelledBody;
+
+  /// No description provided for @bookingNotFoundTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservation introuvable'**
+  String get bookingNotFoundTitle;
+
+  /// No description provided for @bookingNotFoundBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette réservation n\'existe pas ou a été supprimée.'**
+  String get bookingNotFoundBody;
+
+  /// No description provided for @bookingEventFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement'**
+  String get bookingEventFallback;
+
+  /// No description provided for @bookingStandardTicket.
+  ///
+  /// In fr, this message translates to:
+  /// **'Standard'**
+  String get bookingStandardTicket;
+
+  /// No description provided for @bookingShareBookingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ma réservation Le Hiboo'**
+  String get bookingShareBookingTitle;
+
+  /// No description provided for @bookingShareTicketTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon billet Le Hiboo'**
+  String get bookingShareTicketTitle;
+
+  /// No description provided for @bookingShareTicketCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code : {code}'**
+  String bookingShareTicketCode(String code);
+
+  /// No description provided for @bookingShareTicketsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 billet} other{{count} billets}}'**
+  String bookingShareTicketsCount(int count);
+
+  /// No description provided for @bookingCalendarReference.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservation Le Hiboo : {reference}'**
+  String bookingCalendarReference(String reference);
+
+  /// No description provided for @bookingCalendarAdded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement ajouté au calendrier'**
+  String get bookingCalendarAdded;
+
+  /// No description provided for @bookingCalendarAddFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ajouter au calendrier'**
+  String get bookingCalendarAddFailed;
+
+  /// No description provided for @bookingCancelDialogTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler la réservation'**
+  String get bookingCancelDialogTitle;
+
+  /// No description provided for @bookingCancelDialogBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible.'**
+  String get bookingCancelDialogBody;
+
+  /// No description provided for @bookingCancelDeadline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date limite : {deadline}'**
+  String bookingCancelDeadline(String deadline);
+
+  /// No description provided for @bookingCancelReasonLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Raison (optionnel)'**
+  String get bookingCancelReasonLabel;
+
+  /// No description provided for @bookingCancelReasonHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Empêchement personnel…'**
+  String get bookingCancelReasonHint;
+
+  /// No description provided for @bookingCancelWarning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Attention : aucun remboursement ne sera effectué après l\'annulation.'**
+  String get bookingCancelWarning;
+
+  /// No description provided for @bookingCancelKeep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non, garder'**
+  String get bookingCancelKeep;
+
+  /// No description provided for @bookingCancelConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oui, annuler'**
+  String get bookingCancelConfirm;
+
+  /// No description provided for @bookingCancelSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservation annulée. Aucun remboursement ne sera effectué.'**
+  String get bookingCancelSuccess;
+
+  /// No description provided for @bookingCancelForbidden.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'annulation n\'est plus possible (délai dépassé ou non autorisé par l\'organisateur).'**
+  String get bookingCancelForbidden;
+
+  /// No description provided for @bookingCancelNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette réservation est introuvable.'**
+  String get bookingCancelNotFound;
+
+  /// No description provided for @bookingCancelValidationTooLong.
+  ///
+  /// In fr, this message translates to:
+  /// **'La raison saisie est trop longue (1000 caractères max).'**
+  String get bookingCancelValidationTooLong;
+
+  /// No description provided for @bookingCancelGenericError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'annuler la réservation. Réessayez.'**
+  String get bookingCancelGenericError;
+
+  /// No description provided for @bookingPreparingPdf.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préparation du PDF…'**
+  String get bookingPreparingPdf;
+
+  /// No description provided for @bookingTicketsSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billets enregistrés dans {location}'**
+  String bookingTicketsSaved(String location);
+
+  /// No description provided for @bookingTicketSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet enregistré dans {location}'**
+  String bookingTicketSaved(String location);
+
+  /// No description provided for @bookingTicketsNotReady.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos billets sont en cours de génération, réessayez dans un instant.'**
+  String get bookingTicketsNotReady;
+
+  /// No description provided for @bookingTicketNotReady.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce billet est en cours de génération, réessayez dans un instant.'**
+  String get bookingTicketNotReady;
+
+  /// No description provided for @bookingTicketsNotAuthorized.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'êtes pas autorisé à télécharger ces billets.'**
+  String get bookingTicketsNotAuthorized;
+
+  /// No description provided for @bookingTicketNotDownloadable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce billet n\'est plus téléchargeable.'**
+  String get bookingTicketNotDownloadable;
+
+  /// No description provided for @bookingDownloadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargement impossible. Réessayez plus tard.'**
+  String get bookingDownloadError;
+
+  /// No description provided for @bookingDownloadSingleTicket.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger le billet PDF'**
+  String get bookingDownloadSingleTicket;
+
+  /// No description provided for @bookingDownloadAllTickets.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger tous les billets'**
+  String get bookingDownloadAllTickets;
+
+  /// No description provided for @bookingTicketTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet'**
+  String get bookingTicketTitle;
+
+  /// No description provided for @bookingTicketNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet non trouvé'**
+  String get bookingTicketNotFound;
+
+  /// No description provided for @bookingTicketPosition.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet {current}/{total}'**
+  String bookingTicketPosition(int current, int total);
+
+  /// No description provided for @bookingTicketSwipeHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'← Swipe pour voir les autres billets →'**
+  String get bookingTicketSwipeHint;
+
+  /// No description provided for @bookingQrTapFullscreenHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuyez sur le QR code pour l\'afficher en plein écran'**
+  String get bookingQrTapFullscreenHint;
+
+  /// No description provided for @bookingQrTapCloseHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuyez n\'importe où pour fermer'**
+  String get bookingQrTapCloseHint;
+
+  /// No description provided for @bookingParticipantDefault.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participant'**
+  String get bookingParticipantDefault;
+
+  /// No description provided for @bookingParticipantNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participant {index}'**
+  String bookingParticipantNumber(int index);
+
+  /// No description provided for @bookingAgeYears.
+  ///
+  /// In fr, this message translates to:
+  /// **'{age} ans'**
+  String bookingAgeYears(int age);
+
+  /// No description provided for @bookingAddToCalendar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter au calendrier'**
+  String get bookingAddToCalendar;
+
+  /// No description provided for @bookingContactOrganizer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contacter l\'organisateur'**
+  String get bookingContactOrganizer;
+
+  /// No description provided for @bookingAdditionalInfoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Informations complémentaires'**
+  String get bookingAdditionalInfoTitle;
+
+  /// No description provided for @bookingSectionEvent.
+  ///
+  /// In fr, this message translates to:
+  /// **'ÉVÉNEMENT'**
+  String get bookingSectionEvent;
+
+  /// No description provided for @bookingViewEvent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir l\'événement'**
+  String get bookingViewEvent;
+
+  /// No description provided for @bookingSectionSummary.
+  ///
+  /// In fr, this message translates to:
+  /// **'RÉSUMÉ'**
+  String get bookingSectionSummary;
+
+  /// No description provided for @bookingDiscountFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réduction'**
+  String get bookingDiscountFallback;
+
+  /// No description provided for @bookingMyTicketsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'MES BILLETS ({count})'**
+  String bookingMyTicketsCount(int count);
+
+  /// No description provided for @bookingStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get bookingStatusPending;
+
+  /// No description provided for @bookingStatusConfirmed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmé'**
+  String get bookingStatusConfirmed;
+
+  /// No description provided for @bookingStatusCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulé'**
+  String get bookingStatusCancelled;
+
+  /// No description provided for @bookingStatusCompleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminé'**
+  String get bookingStatusCompleted;
+
+  /// No description provided for @bookingStatusRefunded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Remboursé'**
+  String get bookingStatusRefunded;
+
+  /// No description provided for @bookingTicketStatusActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get bookingTicketStatusActive;
+
+  /// No description provided for @bookingTicketStatusUsed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisé'**
+  String get bookingTicketStatusUsed;
+
+  /// No description provided for @bookingTicketStatusCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annulé'**
+  String get bookingTicketStatusCancelled;
+
+  /// No description provided for @bookingTicketStatusExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expiré'**
+  String get bookingTicketStatusExpired;
+
+  /// No description provided for @bookingLegacyReservationForEvent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservation pour l\'événement {eventId}'**
+  String bookingLegacyReservationForEvent(String eventId);
+
+  /// No description provided for @bookingLegacyReserveTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réserver : {eventTitle}'**
+  String bookingLegacyReserveTitle(String eventTitle);
+
+  /// No description provided for @bookingLegacyStepSlot.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créneau'**
+  String get bookingLegacyStepSlot;
+
+  /// No description provided for @bookingLegacyStepInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos'**
+  String get bookingLegacyStepInfo;
+
+  /// No description provided for @bookingLegacyStepPayment.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paiement'**
+  String get bookingLegacyStepPayment;
+
+  /// No description provided for @bookingLegacyChooseSlot.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un créneau'**
+  String get bookingLegacyChooseSlot;
+
+  /// No description provided for @bookingLegacyNoSlotTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun créneau'**
+  String get bookingLegacyNoSlotTitle;
+
+  /// No description provided for @bookingLegacyNoSlotBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun créneau disponible pour le moment.'**
+  String get bookingLegacyNoSlotBody;
+
+  /// No description provided for @bookingLegacyParticipantsCountTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nombre de participants'**
+  String get bookingLegacyParticipantsCountTitle;
+
+  /// No description provided for @bookingLegacyPeopleCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 personne} other{{count} personnes}}'**
+  String bookingLegacyPeopleCount(int count);
+
+  /// No description provided for @bookingLegacyContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer'**
+  String get bookingLegacyContinue;
+
+  /// No description provided for @bookingLegacySelectSlotRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner un créneau.'**
+  String get bookingLegacySelectSlotRequired;
+
+  /// No description provided for @bookingLegacyRequiredInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez remplir toutes les informations obligatoires.'**
+  String get bookingLegacyRequiredInfo;
+
+  /// No description provided for @bookingLegacyOtherParticipantsLater.
+  ///
+  /// In fr, this message translates to:
+  /// **'Note : Les détails des autres participants seront demandés ultérieurement.'**
+  String get bookingLegacyOtherParticipantsLater;
+
+  /// No description provided for @bookingConfirmReservation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer la réservation'**
+  String get bookingConfirmReservation;
+
+  /// No description provided for @bookingGoToPayment.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aller au paiement'**
+  String get bookingGoToPayment;
+
+  /// No description provided for @bookingPaymentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paiement'**
+  String get bookingPaymentTitle;
+
+  /// No description provided for @bookingPaymentCardSimulated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carte bancaire (simulée)'**
+  String get bookingPaymentCardSimulated;
+
+  /// No description provided for @bookingCardNumberLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro de carte'**
+  String get bookingCardNumberLabel;
+
+  /// No description provided for @bookingCardExpiryLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'MM/AA'**
+  String get bookingCardExpiryLabel;
+
+  /// No description provided for @bookingCardCvcLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'CVC'**
+  String get bookingCardCvcLabel;
+
+  /// No description provided for @bookingPayAmount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Payer {amount} {currency}'**
+  String bookingPayAmount(String amount, String currency);
+
+  /// No description provided for @bookingConfirmedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservation confirmée !'**
+  String get bookingConfirmedTitle;
+
+  /// No description provided for @bookingConfirmedBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Merci {firstName}, votre réservation pour \"{eventTitle}\" est validée.'**
+  String bookingConfirmedBody(String firstName, String eventTitle);
+
+  /// No description provided for @bookingTicketId.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet #{ticketId}'**
+  String bookingTicketId(String ticketId);
+
+  /// No description provided for @bookingTicketValid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valide'**
+  String get bookingTicketValid;
+
+  /// No description provided for @bookingSuccessThanks.
+  ///
+  /// In fr, this message translates to:
+  /// **'Merci pour votre confiance'**
+  String get bookingSuccessThanks;
+
+  /// No description provided for @bookingReferenceLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence'**
+  String get bookingReferenceLabel;
+
+  /// No description provided for @bookingReferenceCopied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence copiée'**
+  String get bookingReferenceCopied;
+
+  /// No description provided for @bookingCopyTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Copier'**
+  String get bookingCopyTooltip;
+
+  /// No description provided for @bookingYourTickets.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos billets'**
+  String get bookingYourTickets;
+
+  /// No description provided for @bookingTicketsGenerating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Génération de vos billets...'**
+  String get bookingTicketsGenerating;
+
+  /// No description provided for @bookingTicketsAvailableInBookings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos billets seront disponibles\ndans votre espace \"Mes réservations\"'**
+  String get bookingTicketsAvailableInBookings;
+
+  /// No description provided for @bookingConfirmationEmailSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un email de confirmation avec vos billets vous a été envoyé.'**
+  String get bookingConfirmationEmailSent;
+
+  /// No description provided for @bookingTicketsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les billets'**
+  String get bookingTicketsLoadError;
 }
 
 class _AppLocalizationsDelegate

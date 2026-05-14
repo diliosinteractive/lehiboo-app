@@ -28,6 +28,10 @@ The localization infrastructure is in place and the first rollout slices are com
 7. Search and filter user-facing copy.
 8. Event browse, core detail, and deep detail subwidget copy.
 9. Active booking checkout/cart/order confirmation copy.
+10. Booking management list/detail/ticket/QR copy.
+11. Legacy booking checkout/success copy.
+12. Profile screen, account edit, and saved participants copy.
+13. Core Messages inbox/detail/shared-widget copy.
 
 The app is not fully translated yet. Many screens still contain hard-coded French UI copy, but the app now has the wiring needed to migrate them screen by screen.
 
@@ -132,6 +136,51 @@ Covered:
 - Language picker.
 - Legal document labels.
 - Basic Settings snackbars/dialog strings.
+
+### Profile And Account Subpages
+
+Migrated:
+
+- `lib/features/profile/presentation/screens/profile_screen.dart`
+- `lib/features/profile/presentation/screens/profile_edit_screen.dart`
+- `lib/features/profile/presentation/screens/saved_participants_screen.dart`
+
+Covered:
+
+- Authenticated Profile menu titles/subtitles, unauthenticated prompt, stats labels, profile-completion card labels, logout dialog, FAQ failure snackbar, and avatar upload snackbars.
+- Account edit page title, login-required state, personal-info form labels/validators, date picker labels, email read-only helper, save/update copy, and change-password dialog copy.
+- Saved participants page title, add/retry/error/empty states, personalization notice, participant create/update/delete snackbars, relationship dropdown labels, form labels/validators, date picker actions, and locale-aware participant date display.
+
+Not covered in this slice:
+
+- Backend-owned user data such as names, emails, rank labels/icons, participant display names, API validation messages, and API error response bodies remain displayed as returned by their source.
+
+### Core Messages Inbox And Detail
+
+Migrated:
+
+- `lib/features/messages/presentation/screens/conversations_list_screen.dart`
+- `lib/features/messages/presentation/screens/conversation_detail_screen.dart`
+- `lib/features/messages/presentation/widgets/conversation_filters_bar.dart`
+- `lib/features/messages/presentation/widgets/conversation_tile.dart`
+- `lib/features/messages/presentation/widgets/message_composer.dart`
+- `lib/features/messages/presentation/widgets/message_bubble.dart`
+- `lib/features/messages/presentation/widgets/report_conversation_sheet.dart`
+
+Covered:
+
+- Messages tab titles, unread badges, new-message/contact/support/broadcast FAB labels, empty states, retry/error labels, report status/reason labels, and admin report list fallback/status labels.
+- Conversation filters search hint, reset chip, unread/status/period/reason chips.
+- Conversation detail load error, close/reopen/report menus, read-only banner, closed-conversation notice, empty thread copy, and close-confirmation dialog.
+- Message composer placeholder and closed state.
+- Message bubble deleted/edited copy, edit/copy/delete actions, and locale-aware relative/date labels in conversation tiles.
+- Report conversation sheet title/subtitle, reason/comment labels, validation messages, submit/cancel/success copy, and support-ticket follow-up snackbar.
+
+Not covered in this slice:
+
+- The large `new_conversation_form.dart` create-message flow still has hard-coded copy and should get its own focused pass.
+- Broadcast detail/create flows, support detail, vendor/admin new conversation screens, and admin report detail moderation copy still need follow-up migration.
+- Backend-owned conversation subjects, message bodies, event titles, user/org names, participant names, API error response bodies, and system message content remain displayed as returned by their source.
 
 ### API And Backend-Facing Locale
 
@@ -374,10 +423,68 @@ Covered:
 
 Not covered in this slice:
 
-- Legacy `/booking/:activityId` screens such as slot selection, participants, payment, and legacy confirmation.
 - Booking list/detail/ticket-management surfaces under `lib/features/booking/presentation/screens` and related widgets.
 - Backend-owned booking/event/ticket/user content such as event titles, ticket names, UUIDs, and API error messages returned by `ApiResponseHandler`.
 - Context-free legacy helpers such as `CheckoutParams.formattedDate`; the migrated UI now uses `context.bookingSlotLabel(...)` where the active flow needs locale-aware display.
+
+### Booking Management And Tickets
+
+Migrated:
+
+- `lib/features/booking/presentation/controllers/booking_list_controller.dart`
+- `lib/features/booking/presentation/screens/bookings_list_screen.dart`
+- `lib/features/booking/presentation/screens/booking_detail_screen.dart`
+- `lib/features/booking/presentation/screens/ticket_detail_screen.dart`
+- `lib/features/booking/presentation/widgets/booking_detail_summary_card.dart`
+- `lib/features/booking/presentation/widgets/booking_hero_header.dart`
+- `lib/features/booking/presentation/widgets/booking_list_card.dart`
+- `lib/features/booking/presentation/widgets/booking_status_badge.dart`
+- `lib/features/booking/presentation/widgets/event_info_card.dart`
+- `lib/features/booking/presentation/widgets/fullscreen_qr_sheet.dart`
+- `lib/features/booking/presentation/widgets/quick_qr_bottom_sheet.dart`
+- `lib/features/booking/presentation/widgets/ticket_preview_card.dart`
+- `lib/features/booking/presentation/utils/booking_l10n.dart`
+
+Covered:
+
+- Bookings list title, sort sheet, filter tabs, load error, empty states, and explore CTA.
+- Booking detail not-found state, share text, calendar export description/result snackbars, cancel dialog, cancel errors/success snackbar, download-all ticket snackbars, detail action buttons, additional-info header, and localized age display.
+- Ticket detail title/position, not-found state, share text, download snackbars/button, participant labels, ticket/event fallbacks, ticket status labels, localized age display, and QR/fullscreen hints.
+- Booking/ticket status badge labels, summary/event section headers, total/free/discount labels, per-ticket pricing text, view-event CTA, and QR bottom-sheet close text.
+
+Not covered in this slice:
+
+- Backend-owned booking/event/ticket/user content such as event titles, ticket names, organizer names, UUIDs, backend error text, and storage display locations remain displayed as returned by their source.
+
+### Legacy Booking Checkout And Success
+
+Migrated:
+
+- `lib/features/booking/presentation/controllers/booking_flow_controller.dart`
+- `lib/features/booking/presentation/screens/booking_screen.dart`
+- `lib/features/booking/presentation/screens/booking_slot_selection_screen.dart`
+- `lib/features/booking/presentation/screens/booking_participant_screen.dart`
+- `lib/features/booking/presentation/screens/booking_payment_screen.dart`
+- `lib/features/booking/presentation/screens/booking_confirmation_screen.dart`
+- `lib/features/booking/presentation/screens/booking_success_screen.dart`
+- `lib/features/booking/presentation/widgets/booking_summary_card.dart`
+- `lib/features/booking/presentation/widgets/booking_stepper_header.dart`
+- `lib/features/booking/presentation/utils/booking_l10n.dart`
+
+Covered:
+
+- Legacy `/booking/:activityId` placeholder screen title/body.
+- Slot selection title, empty state, selected-slot date formatting, participant count label, quantity pluralization, and continue CTA.
+- Contact-info screen title, section labels, fields, helper note, and free/paid CTA labels.
+- Context-free controller validation errors via `bookingCachedL10n()` and `AppLocaleCache`.
+- Simulated payment screen title, card labels, pay CTA, mounted navigation guard, and null-safe total amount display.
+- Legacy confirmation title/body, ticket ID/status labels, ticket-generation fallback, and home CTA.
+- Separate booking success screen title/subtitle, reference label/copy snackbar/tooltip, ticket section/loading/placeholder copy, email notice, navigation buttons, and locale-aware event date display.
+
+Not covered in this slice:
+
+- Legacy checkout still uses its existing mock/legacy slot source behavior. This batch only localized the visible UI and small async/null-safety rough edges.
+- Backend-owned booking/event/ticket/user content such as event titles, ticket names, QR/reference values, UUIDs, and backend error text remain displayed as returned by their source.
 
 ## Verification Already Run
 
@@ -498,6 +605,70 @@ Result:
 - No issues found in the focused booking slice.
 - Locale tests passed.
 
+Latest focused Booking management/tickets check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/booking/presentation/utils/booking_l10n.dart lib/features/booking/presentation/controllers/booking_list_controller.dart lib/features/booking/presentation/screens/bookings_list_screen.dart lib/features/booking/presentation/screens/booking_detail_screen.dart lib/features/booking/presentation/screens/ticket_detail_screen.dart lib/features/booking/presentation/widgets/booking_detail_summary_card.dart lib/features/booking/presentation/widgets/ticket_preview_card.dart lib/features/booking/presentation/widgets/quick_qr_bottom_sheet.dart lib/features/booking/presentation/widgets/fullscreen_qr_sheet.dart lib/features/booking/presentation/widgets/event_info_card.dart lib/features/booking/presentation/widgets/booking_hero_header.dart lib/features/booking/presentation/widgets/booking_status_badge.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/booking/presentation/utils/booking_l10n.dart lib/features/booking/presentation/controllers/booking_list_controller.dart lib/features/booking/presentation/screens/bookings_list_screen.dart lib/features/booking/presentation/screens/booking_detail_screen.dart lib/features/booking/presentation/screens/ticket_detail_screen.dart lib/features/booking/presentation/widgets/booking_detail_summary_card.dart lib/features/booking/presentation/widgets/ticket_preview_card.dart lib/features/booking/presentation/widgets/quick_qr_bottom_sheet.dart lib/features/booking/presentation/widgets/fullscreen_qr_sheet.dart lib/features/booking/presentation/widgets/event_info_card.dart lib/features/booking/presentation/widgets/booking_hero_header.dart lib/features/booking/presentation/widgets/booking_status_badge.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused booking management/tickets slice.
+- Locale tests passed.
+
+Latest focused Legacy Booking checkout/success check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/booking/presentation/controllers/booking_flow_controller.dart lib/features/booking/presentation/screens/booking_screen.dart lib/features/booking/presentation/screens/booking_slot_selection_screen.dart lib/features/booking/presentation/screens/booking_participant_screen.dart lib/features/booking/presentation/screens/booking_payment_screen.dart lib/features/booking/presentation/screens/booking_confirmation_screen.dart lib/features/booking/presentation/screens/booking_success_screen.dart lib/features/booking/presentation/widgets/booking_summary_card.dart lib/features/booking/presentation/widgets/booking_stepper_header.dart lib/features/booking/presentation/utils/booking_l10n.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/booking/presentation/controllers/booking_flow_controller.dart lib/features/booking/presentation/screens/booking_screen.dart lib/features/booking/presentation/screens/booking_slot_selection_screen.dart lib/features/booking/presentation/screens/booking_participant_screen.dart lib/features/booking/presentation/screens/booking_payment_screen.dart lib/features/booking/presentation/screens/booking_confirmation_screen.dart lib/features/booking/presentation/screens/booking_success_screen.dart lib/features/booking/presentation/widgets/booking_summary_card.dart lib/features/booking/presentation/widgets/booking_stepper_header.dart lib/features/booking/presentation/utils/booking_l10n.dart
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused legacy booking checkout/success slice.
+- Locale tests passed.
+
+Latest focused Profile/account subpages check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/profile/presentation/screens/profile_screen.dart lib/features/profile/presentation/screens/profile_edit_screen.dart lib/features/profile/presentation/screens/saved_participants_screen.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/profile/presentation/screens/profile_screen.dart lib/features/profile/presentation/screens/profile_edit_screen.dart lib/features/profile/presentation/screens/saved_participants_screen.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused profile/account subpages slice.
+- Locale tests passed.
+- Whitespace check passed.
+
+Latest focused Core Messages inbox/detail check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/messages/presentation/screens/conversations_list_screen.dart lib/features/messages/presentation/screens/conversation_detail_screen.dart lib/features/messages/presentation/widgets/conversation_filters_bar.dart lib/features/messages/presentation/widgets/conversation_tile.dart lib/features/messages/presentation/widgets/message_composer.dart lib/features/messages/presentation/widgets/message_bubble.dart lib/features/messages/presentation/widgets/report_conversation_sheet.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/messages/presentation/screens/conversations_list_screen.dart lib/features/messages/presentation/screens/conversation_detail_screen.dart lib/features/messages/presentation/widgets/conversation_filters_bar.dart lib/features/messages/presentation/widgets/conversation_tile.dart lib/features/messages/presentation/widgets/message_composer.dart lib/features/messages/presentation/widgets/message_bubble.dart lib/features/messages/presentation/widgets/report_conversation_sheet.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused core Messages inbox/detail slice.
+- Locale tests passed.
+- Whitespace check passed.
+
 Targeted analyzer checks:
 
 - Booking files no longer have analyzer errors after null-safety cleanup.
@@ -585,11 +756,54 @@ Booking checkout/cart files are now part of the i18n work:
 - `lib/features/booking/presentation/widgets/participants_overview_block.dart`
 - `lib/features/booking/presentation/utils/booking_l10n.dart`
 
+Booking management/ticket files are now part of the i18n work:
+
+- `lib/features/booking/presentation/controllers/booking_list_controller.dart`
+- `lib/features/booking/presentation/screens/bookings_list_screen.dart`
+- `lib/features/booking/presentation/screens/booking_detail_screen.dart`
+- `lib/features/booking/presentation/screens/ticket_detail_screen.dart`
+- `lib/features/booking/presentation/widgets/booking_detail_summary_card.dart`
+- `lib/features/booking/presentation/widgets/booking_hero_header.dart`
+- `lib/features/booking/presentation/widgets/booking_list_card.dart`
+- `lib/features/booking/presentation/widgets/booking_status_badge.dart`
+- `lib/features/booking/presentation/widgets/event_info_card.dart`
+- `lib/features/booking/presentation/widgets/fullscreen_qr_sheet.dart`
+- `lib/features/booking/presentation/widgets/quick_qr_bottom_sheet.dart`
+- `lib/features/booking/presentation/widgets/ticket_preview_card.dart`
+
+Legacy booking checkout/success files are now part of the i18n work:
+
+- `lib/features/booking/presentation/controllers/booking_flow_controller.dart`
+- `lib/features/booking/presentation/screens/booking_screen.dart`
+- `lib/features/booking/presentation/screens/booking_slot_selection_screen.dart`
+- `lib/features/booking/presentation/screens/booking_participant_screen.dart`
+- `lib/features/booking/presentation/screens/booking_payment_screen.dart`
+- `lib/features/booking/presentation/screens/booking_confirmation_screen.dart`
+- `lib/features/booking/presentation/screens/booking_success_screen.dart`
+- `lib/features/booking/presentation/widgets/booking_summary_card.dart`
+- `lib/features/booking/presentation/widgets/booking_stepper_header.dart`
+
+Profile/account files are now part of the i18n work:
+
+- `lib/features/profile/presentation/screens/profile_screen.dart`
+- `lib/features/profile/presentation/screens/profile_edit_screen.dart`
+- `lib/features/profile/presentation/screens/saved_participants_screen.dart`
+
+Core Messages inbox/detail files are now part of the i18n work:
+
+- `lib/features/messages/presentation/screens/conversations_list_screen.dart`
+- `lib/features/messages/presentation/screens/conversation_detail_screen.dart`
+- `lib/features/messages/presentation/widgets/conversation_filters_bar.dart`
+- `lib/features/messages/presentation/widgets/conversation_tile.dart`
+- `lib/features/messages/presentation/widgets/message_composer.dart`
+- `lib/features/messages/presentation/widgets/message_bubble.dart`
+- `lib/features/messages/presentation/widgets/report_conversation_sheet.dart`
+
 Before committing or refining, review diffs by file instead of using bulk restore/reset commands.
 
 ## Where Work Stopped
 
-Stopped after completing the active Booking checkout/cart/order confirmation slice.
+Stopped after completing the core Messages inbox/detail slice.
 
 Current stable stopping point:
 
@@ -605,10 +819,14 @@ Current stable stopping point:
 - Event list, map, map cards, core detail sections, core detail booking/cart sheet, compact header, and event badges are localized.
 - Deep Event detail subwidgets are localized, including date/ticket/sticky booking controls, practical info, accessibility, location, gallery, share, password/private access, organizer/similar sections, Q&A preview, full questions screen, ask-question sheet, and question cards.
 - Active Booking checkout, cart, cart summary, participant forms/overview, saved-participant picker, and order confirmation copy are localized.
+- Booking management list/detail/ticket/QR copy is localized, including booking/ticket statuses, cancel/download/calendar/share UI, QR hints, and summary/event/tickets section chrome.
+- Legacy Booking slot selection, contact details, simulated payment, confirmation, and success screens are localized.
+- Profile screen, account edit, and saved participants copy is localized.
+- Core Messages inbox/detail/shared-widget copy is localized, including filters, conversation tiles, composer, message bubble actions, report sheet, and admin report list labels.
 - Direct hard-coded `featureName: '...'` / `featureName: "..."` scan under `lib/` is clean.
 - Locale unit tests pass.
 
-Next work should continue with the remaining Booking management/legacy screens, not more locale plumbing.
+Next work should continue with either the remaining Messages create/admin/vendor/broadcast flows or Petit Boo chat/tool cards, not more locale plumbing.
 
 ## Remaining Task Queue
 
@@ -616,11 +834,9 @@ Next work should continue with the remaining Booking management/legacy screens, 
 
 Recommended order:
 
-1. Remaining Booking management and legacy checkout screens.
-2. Profile/settings subpages.
-3. Messages.
-4. Petit Boo chat and tool cards.
-5. Memberships/partners/check-in/admin surfaces.
+1. Remaining Messages create/admin/vendor/broadcast flows.
+2. Petit Boo chat and tool cards.
+3. Memberships/partners/check-in/admin surfaces.
 
 For each screen:
 

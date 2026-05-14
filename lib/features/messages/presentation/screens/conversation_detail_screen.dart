@@ -166,7 +166,7 @@ class _ConversationDetailScreenState
                                 fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => Text(
                                   titleInitial,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: _primaryColor,
@@ -245,7 +245,7 @@ class _ConversationDetailScreenState
                   if (canReopen)
                     IconButton(
                       icon: const Icon(Icons.lock_open),
-                      tooltip: 'Rouvrir',
+                      tooltip: context.l10n.messagesReopenTooltip,
                       onPressed: () async {
                         try {
                           await notifier.reopenConversation();
@@ -254,7 +254,10 @@ class _ConversationDetailScreenState
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                   content: Text(
-                                      'Erreur : ${ApiResponseHandler.extractError(e)}'),
+                                    context.l10n.messagesLoadError(
+                                      ApiResponseHandler.extractError(e),
+                                    ),
+                                  ),
                                   backgroundColor: Colors.red),
                             );
                           }
@@ -267,26 +270,28 @@ class _ConversationDetailScreenState
                           context, value, notifier, conversation.status),
                       itemBuilder: (ctx) => [
                         if (canClose)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'close',
                             child: Row(
                               children: [
-                                Icon(Icons.lock_outline, size: 18),
-                                SizedBox(width: 8),
-                                Text('Fermer la conversation'),
+                                const Icon(Icons.lock_outline, size: 18),
+                                const SizedBox(width: 8),
+                                Text(context.l10n.messagesCloseConversation),
                               ],
                             ),
                           ),
                         if (canReport && !conversation.userHasReported)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'report',
                             child: Row(
                               children: [
-                                Icon(Icons.flag_outlined,
+                                const Icon(Icons.flag_outlined,
                                     size: 18, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Signaler',
-                                    style: TextStyle(color: Colors.red)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  context.l10n.messagesReportLabel,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
                               ],
                             ),
                           ),
@@ -298,7 +303,7 @@ class _ConversationDetailScreenState
                                 Icon(Icons.flag,
                                     size: 18, color: Colors.orange.shade400),
                                 const SizedBox(width: 8),
-                                Text('Signalé',
+                                Text(context.l10n.messagesReportedLabel,
                                     style: TextStyle(
                                         color: Colors.orange.shade400,
                                         fontWeight: FontWeight.w600)),
@@ -311,10 +316,7 @@ class _ConversationDetailScreenState
               ),
               if (_isReadonly)
                 MaterialBanner(
-                  content: const Text(
-                    'Mode lecture seule — conversation liée à un signalement. '
-                    'Vous observez les échanges entre les deux parties.',
-                  ),
+                  content: Text(context.l10n.messagesReadonlyBanner),
                   leading: const Icon(Icons.visibility_outlined,
                       color: Colors.amber),
                   backgroundColor: Colors.amber.shade50,
@@ -338,7 +340,7 @@ class _ConversationDetailScreenState
                           size: 18, color: Colors.grey.shade600),
                       const SizedBox(width: 8),
                       Text(
-                        'Cette conversation est fermée.',
+                        context.l10n.messagesClosedNotice,
                         style: TextStyle(
                             color: Colors.grey.shade700, fontSize: 13),
                       ),
@@ -379,17 +381,19 @@ class _ConversationDetailScreenState
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Fermer la conversation'),
-          content: const Text(
-              'Voulez-vous fermer cette conversation ? Vous ne pourrez plus envoyer de messages.'),
+          title: Text(context.l10n.messagesCloseConversation),
+          content: Text(context.l10n.messagesCloseConversationBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler'),
+              child: Text(context.l10n.commonCancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Fermer', style: TextStyle(color: Colors.red)),
+              child: Text(
+                context.l10n.commonClose,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           ],
         ),
@@ -401,8 +405,9 @@ class _ConversationDetailScreenState
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content:
-                      Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
+                  content: Text(context.l10n.messagesLoadError(
+                    ApiResponseHandler.extractError(e),
+                  )),
                   backgroundColor: Colors.red),
             );
           }
@@ -479,9 +484,11 @@ class _MessagesListState extends State<_MessagesList> {
     final messages = widget.messages;
 
     if (messages.isEmpty) {
-      return const Center(
-        child: Text('Aucun message. Soyez le premier à écrire !',
-            style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text(
+          context.l10n.messagesEmptyThread,
+          style: const TextStyle(color: Colors.grey),
+        ),
       );
     }
 

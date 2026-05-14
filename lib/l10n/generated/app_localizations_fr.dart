@@ -186,11 +186,548 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonUndefinedDate => 'Date non définie';
 
   @override
+  String get commonAdd => 'Ajouter';
+
+  @override
+  String get commonRetry => 'Réessayer';
+
+  @override
+  String get commonSave => 'Enregistrer';
+
+  @override
+  String get commonValidate => 'Valider';
+
+  @override
   String get settingsPushPermissionRequired =>
       'Autorisation notifications requise';
 
   @override
   String get settingsUpdateFailed => 'Mise à jour impossible';
+
+  @override
+  String get profileTitle => 'Profil';
+
+  @override
+  String get profileDefaultUser => 'Utilisateur';
+
+  @override
+  String get profileBookingsTitle => 'Mes réservations';
+
+  @override
+  String get profileBookingsSubtitle => 'Voir vos billets et réservations';
+
+  @override
+  String get profileParticipantsTitle => 'Mes participants';
+
+  @override
+  String get profileParticipantsSubtitle =>
+      'Famille et proches pour attribuer les billets';
+
+  @override
+  String get profileFavoritesTitle => 'Mes favoris';
+
+  @override
+  String get profileFavoritesSubtitle => 'Activités sauvegardées';
+
+  @override
+  String get profileFollowedOrganizersTitle => 'Organisateurs suivis';
+
+  @override
+  String get profileFollowedOrganizersSubtitle =>
+      'Gérer les organisateurs que vous suivez';
+
+  @override
+  String get profileMembershipsTitle => 'Mes adhésions';
+
+  @override
+  String get profileMembershipsSubtitle =>
+      'Adhésions, invitations, événements privés';
+
+  @override
+  String get profileMessagesTitle => 'Mes messages';
+
+  @override
+  String get profileMessagesSubtitle => 'Conversations avec les organisateurs';
+
+  @override
+  String get profileTripsTitle => 'Mes sorties';
+
+  @override
+  String get profileTripsSubtitle => 'Plans et itinéraires';
+
+  @override
+  String get profileRemindersTitle => 'Mes rappels';
+
+  @override
+  String get profileRemindersSubtitle => 'Rappels d\'activités à venir';
+
+  @override
+  String get profileQuestionsTitle => 'Mes questions';
+
+  @override
+  String get profileQuestionsSubtitle => 'Vos questions sur les événements';
+
+  @override
+  String get profileReviewsTitle => 'Mes avis';
+
+  @override
+  String get profileReviewsSubtitle => 'Vos avis et réponses des organisateurs';
+
+  @override
+  String get profileAccountTitle => 'Mon compte';
+
+  @override
+  String get profileAccountSubtitle => 'Modifier vos informations';
+
+  @override
+  String get profileAlertsTitle => 'Mes alertes & recherches';
+
+  @override
+  String get profileAlertsSubtitle => 'Gérer vos recherches enregistrées';
+
+  @override
+  String get profileVendorScanTitle => 'Scanner les billets';
+
+  @override
+  String get profileVendorScanSubtitle => 'Mode vendeur - contrôle d\'accès';
+
+  @override
+  String get profileSettingsSubtitle => 'Langue, thème, confidentialité';
+
+  @override
+  String get profileHelpTitle => 'Aide & support';
+
+  @override
+  String get profileHelpSubtitle => 'FAQ et contact';
+
+  @override
+  String get profileLogout => 'Déconnexion';
+
+  @override
+  String get profileSignInPromptTitle => 'Connectez-vous';
+
+  @override
+  String get profileSignInPromptSubtitle =>
+      'Accédez à vos réservations, favoris et plus encore';
+
+  @override
+  String get profileCompletionFirstName => 'Prénom';
+
+  @override
+  String get profileCompletionLastName => 'Nom';
+
+  @override
+  String get profileCompletionPhoto => 'Photo';
+
+  @override
+  String get profileCompletionBirthDate => 'Date de naissance';
+
+  @override
+  String get profileCompletionMembershipCity => 'Ville d\'adhésion';
+
+  @override
+  String get profileCompletionComplete => 'Profil complet';
+
+  @override
+  String profileCompletionProgress(int completed, int total) {
+    return 'Profil $completed/$total - gagne 50 Hibons';
+  }
+
+  @override
+  String get profileStatsBookings => 'Réservations';
+
+  @override
+  String get profileStatsFavorites => 'Favoris';
+
+  @override
+  String get profileStatsReviews => 'Avis';
+
+  @override
+  String get profileLogoutDialogBody =>
+      'Êtes-vous sûr de vouloir vous déconnecter ?';
+
+  @override
+  String get profileHelpOpenFailed => 'Impossible d\'ouvrir l\'aide';
+
+  @override
+  String get profileAvatarUpdated => 'Photo de profil mise à jour';
+
+  @override
+  String profileAvatarUploadError(String message) {
+    return 'Erreur lors de l\'upload : $message';
+  }
+
+  @override
+  String get profileLoginRequired => 'Veuillez vous connecter';
+
+  @override
+  String get profilePersonalInfoTitle => 'Informations personnelles';
+
+  @override
+  String get profileFirstNameLabel => 'Prénom';
+
+  @override
+  String get profileFirstNameRequired => 'Le prénom est requis';
+
+  @override
+  String get profileLastNameLabel => 'Nom';
+
+  @override
+  String get profileLastNameRequired => 'Le nom est requis';
+
+  @override
+  String get profilePhoneLabel => 'Téléphone';
+
+  @override
+  String get profileBirthDateLabel => 'Date de naissance';
+
+  @override
+  String get profileBirthDateUnset => 'Non renseigné';
+
+  @override
+  String get profileCityLabel => 'Ville';
+
+  @override
+  String get profileEmailReadOnlyHelper => 'L\'email ne peut pas être modifié';
+
+  @override
+  String get profileChangePasswordCta => 'Changer mon mot de passe';
+
+  @override
+  String profileUploadImageError(String message) {
+    return 'Erreur lors de l\'upload de l\'image : $message';
+  }
+
+  @override
+  String get profileUpdateSuccess => 'Profil mis à jour avec succès';
+
+  @override
+  String profileGenericError(String message) {
+    return 'Erreur : $message';
+  }
+
+  @override
+  String get profileChangePasswordTitle => 'Changer le mot de passe';
+
+  @override
+  String get profileCurrentPasswordLabel => 'Mot de passe actuel';
+
+  @override
+  String get profileNewPasswordLabel => 'Nouveau mot de passe';
+
+  @override
+  String get profilePasswordChangeSuccess => 'Mot de passe changé avec succès';
+
+  @override
+  String get profileChangePasswordSubmit => 'Changer';
+
+  @override
+  String get profileParticipantsPersonalizationNotice =>
+      'Le prénom, la date de naissance, la ville et la relation aident Petit Boo et LeHiboo Expériences à vous proposer des offres et des événements plus pertinents.';
+
+  @override
+  String get profileParticipantsAddShort => 'Ajouter';
+
+  @override
+  String get profileParticipantsLoadError =>
+      'Impossible de charger vos participants';
+
+  @override
+  String get profileParticipantAdded => 'Participant ajouté';
+
+  @override
+  String get profileParticipantUpdated => 'Participant modifié';
+
+  @override
+  String get profileParticipantDeleted => 'Participant supprimé';
+
+  @override
+  String get profileParticipantsEmptyTitle => 'Aucun participant';
+
+  @override
+  String get profileParticipantsEmptyBody =>
+      'Ajoutez vos enfants, proches ou participants récurrents pour les choisir rapidement au moment de réserver.';
+
+  @override
+  String get profileParticipantsAddCta => 'Ajouter un participant';
+
+  @override
+  String get profileParticipantAddTitle => 'Ajouter un participant';
+
+  @override
+  String get profileParticipantEditTitle => 'Modifier le participant';
+
+  @override
+  String get profileParticipantFirstNameLabelRequired => 'Prénom *';
+
+  @override
+  String get profileParticipantFirstNameRequired => 'Prénom requis';
+
+  @override
+  String get profileParticipantLastNameLabelRequired => 'Nom *';
+
+  @override
+  String get profileParticipantLastNameRequired => 'Nom requis';
+
+  @override
+  String get profileParticipantNicknameLabel => 'Surnom';
+
+  @override
+  String get profileParticipantRelationshipLabelRequired => 'Relation *';
+
+  @override
+  String get profileParticipantRelationshipRequired => 'Relation requise';
+
+  @override
+  String get profileParticipantBirthDateLabelRequired => 'Date de naissance *';
+
+  @override
+  String get profileParticipantBirthDateRequired => 'Date de naissance requise';
+
+  @override
+  String get profileParticipantBirthDateHint => 'jj/mm/aaaa';
+
+  @override
+  String get profileParticipantCityLabelRequired => 'Ville d\'appartenance *';
+
+  @override
+  String get profileParticipantCityRequired => 'Ville requise';
+
+  @override
+  String get messagesTitle => 'Messages';
+
+  @override
+  String get messagesTabOrganizers => 'Organisateurs';
+
+  @override
+  String get messagesTabSupportLeHiboo => 'Support LeHiboo';
+
+  @override
+  String get messagesTabClients => 'Clients';
+
+  @override
+  String get messagesTabBroadcasts => 'Diffusions';
+
+  @override
+  String get messagesTabSupport => 'Support';
+
+  @override
+  String get messagesTabUsers => 'Utilisateurs';
+
+  @override
+  String get messagesTabReports => 'Signalements';
+
+  @override
+  String get messagesNewMessage => 'Nouveau message';
+
+  @override
+  String get messagesContactSupport => 'Contacter le support';
+
+  @override
+  String get messagesContactParticipant => 'Contacter un participant';
+
+  @override
+  String get messagesNewBroadcast => 'Nouvelle diffusion';
+
+  @override
+  String get messagesSupportTicket => 'Ticket support';
+
+  @override
+  String get messagesContactUser => 'Contacter un utilisateur';
+
+  @override
+  String get messagesContactOrganizer => 'Contacter un organisateur';
+
+  @override
+  String get messagesNoConversations => 'Aucune conversation';
+
+  @override
+  String get messagesNoSupportConversations =>
+      'Aucune conversation avec le support';
+
+  @override
+  String get messagesNoClients => 'Aucun client';
+
+  @override
+  String get messagesNoBroadcasts => 'Aucune diffusion envoyée';
+
+  @override
+  String get messagesNoPartners => 'Aucun partenaire';
+
+  @override
+  String get messagesNoSupportTickets => 'Aucun ticket support';
+
+  @override
+  String get messagesNoReports => 'Aucun signalement';
+
+  @override
+  String messagesLoadError(String error) {
+    return 'Erreur : $error';
+  }
+
+  @override
+  String get messagesSearchHint => 'Rechercher…';
+
+  @override
+  String get messagesFilterReset => 'Réinitialiser';
+
+  @override
+  String get messagesFilterUnread => 'Non lus';
+
+  @override
+  String get messagesFilterOpen => 'Ouverts';
+
+  @override
+  String get messagesFilterClosed => 'Fermés';
+
+  @override
+  String get messagesFilterThisWeek => 'Cette semaine';
+
+  @override
+  String get messagesFilterThisMonth => 'Ce mois';
+
+  @override
+  String get messagesFilterOlder => 'Plus ancien';
+
+  @override
+  String get messagesReasonInappropriate => 'Contenu inapproprié';
+
+  @override
+  String get messagesReasonHarassment => 'Harcèlement';
+
+  @override
+  String get messagesReasonSpam => 'Spam';
+
+  @override
+  String get messagesReasonOther => 'Autre';
+
+  @override
+  String get messagesReportLabel => 'Signaler';
+
+  @override
+  String get messagesReportedLabel => 'Signalé';
+
+  @override
+  String get messagesReportBadge => 'Signalement';
+
+  @override
+  String get messagesStatusClosed => 'Fermé';
+
+  @override
+  String get messagesStatusPending => 'En attente';
+
+  @override
+  String get messagesStatusOpen => 'Ouvert';
+
+  @override
+  String get messagesDeletedPreview => 'Message supprimé';
+
+  @override
+  String get messagesRelativeJustNow => 'À l\'instant';
+
+  @override
+  String messagesRelativeDaysShort(int count) {
+    return '${count}j';
+  }
+
+  @override
+  String get messagesComposerHint => 'Votre message…';
+
+  @override
+  String get messagesComposerClosed => 'Cette conversation est fermée';
+
+  @override
+  String get messagesDeletedMessage => 'Ce message a été supprimé';
+
+  @override
+  String get messagesEditedSuffix => '(modifié)';
+
+  @override
+  String get messagesEditAction => 'Modifier';
+
+  @override
+  String get messagesCopyTextAction => 'Copier le texte';
+
+  @override
+  String get messagesDeleteAction => 'Supprimer';
+
+  @override
+  String get messagesReopenTooltip => 'Rouvrir';
+
+  @override
+  String get messagesCloseConversation => 'Fermer la conversation';
+
+  @override
+  String get messagesReadonlyBanner =>
+      'Mode lecture seule - conversation liée à un signalement. Vous observez les échanges entre les deux parties.';
+
+  @override
+  String get messagesClosedNotice => 'Cette conversation est fermée.';
+
+  @override
+  String get messagesEmptyThread =>
+      'Aucun message. Soyez le premier à écrire !';
+
+  @override
+  String get messagesCloseConversationBody =>
+      'Voulez-vous fermer cette conversation ? Vous ne pourrez plus envoyer de messages.';
+
+  @override
+  String get messagesReportSheetTitle => 'Signaler la conversation';
+
+  @override
+  String get messagesReportSheetSubtitle =>
+      'Aidez-nous à maintenir un environnement sûr en signalant les contenus inappropriés.';
+
+  @override
+  String get messagesReportReasonLabel => 'Raison';
+
+  @override
+  String get messagesReportCommentLabel => 'Commentaire';
+
+  @override
+  String get messagesReportMinCharsHint => '(min. 10 caractères)';
+
+  @override
+  String get messagesReportReasonRequired =>
+      'Veuillez sélectionner une raison.';
+
+  @override
+  String get messagesReportCommentMinError => 'Minimum 10 caractères.';
+
+  @override
+  String get messagesReportCommentHint => 'Décrivez le problème…';
+
+  @override
+  String get messagesReportSubmit => 'Signaler';
+
+  @override
+  String get messagesReportSuccessTitle => 'Signalement transmis';
+
+  @override
+  String get messagesReportSuccessBody =>
+      'Votre signalement a bien été transmis à l\'équipe LeHiboo.';
+
+  @override
+  String get messagesReportSupportCreated =>
+      'Un ticket support a été créé pour le suivi.';
+
+  @override
+  String get messagesViewAction => 'Voir';
+
+  @override
+  String messagesAdminReportFallbackTitle(String reportId) {
+    return 'Signalement $reportId';
+  }
+
+  @override
+  String get messagesAdminReportStatusReviewed => 'Traité';
+
+  @override
+  String get messagesAdminReportStatusDismissed => 'Ignoré';
+
+  @override
+  String get messagesAdminReportStatusSuspended => 'Suspendu';
 
   @override
   String get legalTerms => 'Conditions Générales d\'Utilisation';
@@ -2890,4 +3427,415 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get bookingReservationFallback => 'Réservation';
+
+  @override
+  String get bookingMyBookingsTitle => 'Mes réservations';
+
+  @override
+  String get bookingSortTooltip => 'Trier';
+
+  @override
+  String get bookingSortByTitle => 'Trier par';
+
+  @override
+  String get bookingSortDateAsc => 'Date (plus proche)';
+
+  @override
+  String get bookingSortDateDesc => 'Date (plus lointaine)';
+
+  @override
+  String get bookingSortStatusAsc => 'Statut';
+
+  @override
+  String get bookingFilterAll => 'Tous';
+
+  @override
+  String get bookingFilterUpcoming => 'À venir';
+
+  @override
+  String get bookingFilterPast => 'Passés';
+
+  @override
+  String get bookingFilterCancelled => 'Annulés';
+
+  @override
+  String bookingLoadError(String message) {
+    return 'Erreur de chargement : $message';
+  }
+
+  @override
+  String get bookingEmptyAllTitle => 'Aucune réservation';
+
+  @override
+  String get bookingEmptyAllBody =>
+      'Vous n\'avez pas encore de réservation.\nDécouvrez nos événements !';
+
+  @override
+  String get bookingEmptyUpcomingTitle => 'Aucune réservation à venir';
+
+  @override
+  String get bookingEmptyUpcomingBody =>
+      'Vous n\'avez pas de réservation prévue.\nExplorez nos événements !';
+
+  @override
+  String get bookingEmptyPastTitle => 'Aucune réservation passée';
+
+  @override
+  String get bookingEmptyPastBody =>
+      'Vous n\'avez pas encore participé à un événement.';
+
+  @override
+  String get bookingEmptyCancelledTitle => 'Aucune réservation annulée';
+
+  @override
+  String get bookingEmptyCancelledBody =>
+      'Vous n\'avez aucune réservation annulée.';
+
+  @override
+  String get bookingNotFoundTitle => 'Réservation introuvable';
+
+  @override
+  String get bookingNotFoundBody =>
+      'Cette réservation n\'existe pas ou a été supprimée.';
+
+  @override
+  String get bookingEventFallback => 'Événement';
+
+  @override
+  String get bookingStandardTicket => 'Standard';
+
+  @override
+  String get bookingShareBookingTitle => 'Ma réservation Le Hiboo';
+
+  @override
+  String get bookingShareTicketTitle => 'Mon billet Le Hiboo';
+
+  @override
+  String bookingShareTicketCode(String code) {
+    return 'Code : $code';
+  }
+
+  @override
+  String bookingShareTicketsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count billets',
+      one: '1 billet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bookingCalendarReference(String reference) {
+    return 'Réservation Le Hiboo : $reference';
+  }
+
+  @override
+  String get bookingCalendarAdded => 'Événement ajouté au calendrier';
+
+  @override
+  String get bookingCalendarAddFailed => 'Impossible d\'ajouter au calendrier';
+
+  @override
+  String get bookingCancelDialogTitle => 'Annuler la réservation';
+
+  @override
+  String get bookingCancelDialogBody =>
+      'Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible.';
+
+  @override
+  String bookingCancelDeadline(String deadline) {
+    return 'Date limite : $deadline';
+  }
+
+  @override
+  String get bookingCancelReasonLabel => 'Raison (optionnel)';
+
+  @override
+  String get bookingCancelReasonHint => 'Empêchement personnel…';
+
+  @override
+  String get bookingCancelWarning =>
+      'Attention : aucun remboursement ne sera effectué après l\'annulation.';
+
+  @override
+  String get bookingCancelKeep => 'Non, garder';
+
+  @override
+  String get bookingCancelConfirm => 'Oui, annuler';
+
+  @override
+  String get bookingCancelSuccess =>
+      'Réservation annulée. Aucun remboursement ne sera effectué.';
+
+  @override
+  String get bookingCancelForbidden =>
+      'L\'annulation n\'est plus possible (délai dépassé ou non autorisé par l\'organisateur).';
+
+  @override
+  String get bookingCancelNotFound => 'Cette réservation est introuvable.';
+
+  @override
+  String get bookingCancelValidationTooLong =>
+      'La raison saisie est trop longue (1000 caractères max).';
+
+  @override
+  String get bookingCancelGenericError =>
+      'Impossible d\'annuler la réservation. Réessayez.';
+
+  @override
+  String get bookingPreparingPdf => 'Préparation du PDF…';
+
+  @override
+  String bookingTicketsSaved(String location) {
+    return 'Billets enregistrés dans $location';
+  }
+
+  @override
+  String bookingTicketSaved(String location) {
+    return 'Billet enregistré dans $location';
+  }
+
+  @override
+  String get bookingTicketsNotReady =>
+      'Vos billets sont en cours de génération, réessayez dans un instant.';
+
+  @override
+  String get bookingTicketNotReady =>
+      'Ce billet est en cours de génération, réessayez dans un instant.';
+
+  @override
+  String get bookingTicketsNotAuthorized =>
+      'Vous n\'êtes pas autorisé à télécharger ces billets.';
+
+  @override
+  String get bookingTicketNotDownloadable =>
+      'Ce billet n\'est plus téléchargeable.';
+
+  @override
+  String get bookingDownloadError =>
+      'Téléchargement impossible. Réessayez plus tard.';
+
+  @override
+  String get bookingDownloadSingleTicket => 'Télécharger le billet PDF';
+
+  @override
+  String get bookingDownloadAllTickets => 'Télécharger tous les billets';
+
+  @override
+  String get bookingTicketTitle => 'Billet';
+
+  @override
+  String get bookingTicketNotFound => 'Billet non trouvé';
+
+  @override
+  String bookingTicketPosition(int current, int total) {
+    return 'Billet $current/$total';
+  }
+
+  @override
+  String get bookingTicketSwipeHint => '← Swipe pour voir les autres billets →';
+
+  @override
+  String get bookingQrTapFullscreenHint =>
+      'Appuyez sur le QR code pour l\'afficher en plein écran';
+
+  @override
+  String get bookingQrTapCloseHint => 'Appuyez n\'importe où pour fermer';
+
+  @override
+  String get bookingParticipantDefault => 'Participant';
+
+  @override
+  String bookingParticipantNumber(int index) {
+    return 'Participant $index';
+  }
+
+  @override
+  String bookingAgeYears(int age) {
+    return '$age ans';
+  }
+
+  @override
+  String get bookingAddToCalendar => 'Ajouter au calendrier';
+
+  @override
+  String get bookingContactOrganizer => 'Contacter l\'organisateur';
+
+  @override
+  String get bookingAdditionalInfoTitle => 'Informations complémentaires';
+
+  @override
+  String get bookingSectionEvent => 'ÉVÉNEMENT';
+
+  @override
+  String get bookingViewEvent => 'Voir l\'événement';
+
+  @override
+  String get bookingSectionSummary => 'RÉSUMÉ';
+
+  @override
+  String get bookingDiscountFallback => 'Réduction';
+
+  @override
+  String bookingMyTicketsCount(int count) {
+    return 'MES BILLETS ($count)';
+  }
+
+  @override
+  String get bookingStatusPending => 'En attente';
+
+  @override
+  String get bookingStatusConfirmed => 'Confirmé';
+
+  @override
+  String get bookingStatusCancelled => 'Annulé';
+
+  @override
+  String get bookingStatusCompleted => 'Terminé';
+
+  @override
+  String get bookingStatusRefunded => 'Remboursé';
+
+  @override
+  String get bookingTicketStatusActive => 'Actif';
+
+  @override
+  String get bookingTicketStatusUsed => 'Utilisé';
+
+  @override
+  String get bookingTicketStatusCancelled => 'Annulé';
+
+  @override
+  String get bookingTicketStatusExpired => 'Expiré';
+
+  @override
+  String bookingLegacyReservationForEvent(String eventId) {
+    return 'Réservation pour l\'événement $eventId';
+  }
+
+  @override
+  String bookingLegacyReserveTitle(String eventTitle) {
+    return 'Réserver : $eventTitle';
+  }
+
+  @override
+  String get bookingLegacyStepSlot => 'Créneau';
+
+  @override
+  String get bookingLegacyStepInfo => 'Infos';
+
+  @override
+  String get bookingLegacyStepPayment => 'Paiement';
+
+  @override
+  String get bookingLegacyChooseSlot => 'Choisir un créneau';
+
+  @override
+  String get bookingLegacyNoSlotTitle => 'Aucun créneau';
+
+  @override
+  String get bookingLegacyNoSlotBody =>
+      'Aucun créneau disponible pour le moment.';
+
+  @override
+  String get bookingLegacyParticipantsCountTitle => 'Nombre de participants';
+
+  @override
+  String bookingLegacyPeopleCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personnes',
+      one: '1 personne',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bookingLegacyContinue => 'Continuer';
+
+  @override
+  String get bookingLegacySelectSlotRequired =>
+      'Veuillez sélectionner un créneau.';
+
+  @override
+  String get bookingLegacyRequiredInfo =>
+      'Veuillez remplir toutes les informations obligatoires.';
+
+  @override
+  String get bookingLegacyOtherParticipantsLater =>
+      'Note : Les détails des autres participants seront demandés ultérieurement.';
+
+  @override
+  String get bookingConfirmReservation => 'Confirmer la réservation';
+
+  @override
+  String get bookingGoToPayment => 'Aller au paiement';
+
+  @override
+  String get bookingPaymentTitle => 'Paiement';
+
+  @override
+  String get bookingPaymentCardSimulated => 'Carte bancaire (simulée)';
+
+  @override
+  String get bookingCardNumberLabel => 'Numéro de carte';
+
+  @override
+  String get bookingCardExpiryLabel => 'MM/AA';
+
+  @override
+  String get bookingCardCvcLabel => 'CVC';
+
+  @override
+  String bookingPayAmount(String amount, String currency) {
+    return 'Payer $amount $currency';
+  }
+
+  @override
+  String get bookingConfirmedTitle => 'Réservation confirmée !';
+
+  @override
+  String bookingConfirmedBody(String firstName, String eventTitle) {
+    return 'Merci $firstName, votre réservation pour \"$eventTitle\" est validée.';
+  }
+
+  @override
+  String bookingTicketId(String ticketId) {
+    return 'Billet #$ticketId';
+  }
+
+  @override
+  String get bookingTicketValid => 'Valide';
+
+  @override
+  String get bookingSuccessThanks => 'Merci pour votre confiance';
+
+  @override
+  String get bookingReferenceLabel => 'Référence';
+
+  @override
+  String get bookingReferenceCopied => 'Référence copiée';
+
+  @override
+  String get bookingCopyTooltip => 'Copier';
+
+  @override
+  String get bookingYourTickets => 'Vos billets';
+
+  @override
+  String get bookingTicketsGenerating => 'Génération de vos billets...';
+
+  @override
+  String get bookingTicketsAvailableInBookings =>
+      'Vos billets seront disponibles\ndans votre espace \"Mes réservations\"';
+
+  @override
+  String get bookingConfirmationEmailSent =>
+      'Un email de confirmation avec vos billets vous a été envoyé.';
+
+  @override
+  String get bookingTicketsLoadError => 'Impossible de charger les billets';
 }

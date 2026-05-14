@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lehiboo/core/themes/hb_theme.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/widgets/cards/hb_card.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 
@@ -10,6 +10,12 @@ class BookingSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final totalPrice = state.totalPrice ?? 0;
+    final currency = state.currency ?? 'EUR';
+    final totalLabel = state.isFree
+        ? context.l10n.commonFree
+        : '${totalPrice.toStringAsFixed(2)} $currency';
+
     return HbCard.elevated(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,23 +54,31 @@ class BookingSummaryCard extends StatelessWidget {
           if (state.selectedSlot != null) ...[
             _RowInfo(
               icon: Icons.calendar_today,
-              text: state.selectedSlot!.startDateTime.toString(), // Format date properly in real app
+              text: context
+                  .appDateFormat(
+                    'EEEE d MMMM yyyy HH:mm',
+                    enPattern: 'EEEE, MMMM d, yyyy HH:mm',
+                  )
+                  .format(state.selectedSlot!.startDateTime),
             ),
             const SizedBox(height: 8),
             _RowInfo(
               icon: Icons.people,
-              text: '${state.quantity} personne${state.quantity > 1 ? 's' : ''}',
+              text: context.l10n.bookingLegacyPeopleCount(state.quantity),
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Total', style: Theme.of(context).textTheme.titleSmall),
                 Text(
-                  state.isFree ? 'Gratuit' : '${state.totalPrice?.toStringAsFixed(2)} ${state.currency}',
+                  context.l10n.bookingTotal,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                Text(
+                  totalLabel,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Theme.of(context).primaryColor,
-                  ),
+                        color: Theme.of(context).primaryColor,
+                      ),
                 ),
               ],
             ),

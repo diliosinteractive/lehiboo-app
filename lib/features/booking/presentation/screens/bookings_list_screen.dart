@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/core/themes/lehiboo_tokens.dart';
 import 'package:lehiboo/core/widgets/feedback/hb_feedback.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_list_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/filter_tabs_row.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/quick_qr_bottom_sheet.dart';
@@ -82,11 +84,11 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
               ),
               const SizedBox(height: 16),
               // Title
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  'Trier par',
-                  style: TextStyle(
+                  context.l10n.bookingSortByTitle,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: HbColors.textPrimary,
@@ -100,13 +102,17 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                 return ListTile(
                   leading: Icon(
                     _getSortIcon(option),
-                    color: isSelected ? HbColors.brandPrimary : Colors.grey[600],
+                    color:
+                        isSelected ? HbColors.brandPrimary : Colors.grey[600],
                   ),
                   title: Text(
-                    option.label,
+                    context.bookingSortLabel(option),
                     style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: isSelected ? HbColors.brandPrimary : HbColors.textPrimary,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected
+                          ? HbColors.brandPrimary
+                          : HbColors.textPrimary,
                     ),
                   ),
                   trailing: isSelected
@@ -114,7 +120,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                       : null,
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    ref.read(bookingsListControllerProvider.notifier).setSortOption(option);
+                    ref
+                        .read(bookingsListControllerProvider.notifier)
+                        .setSortOption(option);
                     Navigator.pop(context);
                   },
                 );
@@ -167,10 +175,11 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
       }
       return FilterTab(
         id: filter.id,
-        label: filter.label,
+        label: context.bookingFilterLabel(filter),
         icon: icon,
         color: color,
-        count: state.allBookings.isNotEmpty ? state.countForFilter(filter) : null,
+        count:
+            state.allBookings.isNotEmpty ? state.countForFilter(filter) : null,
       );
     }).toList();
 
@@ -179,9 +188,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Mes réservations',
-          style: TextStyle(
+        title: Text(
+          context.l10n.bookingMyBookingsTitle,
+          style: const TextStyle(
             color: HbColors.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -200,7 +209,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.sort, color: HbColors.textPrimary),
-            tooltip: 'Trier',
+            tooltip: context.l10n.bookingSortTooltip,
             onPressed: _showSortOptions,
           ),
         ],
@@ -215,7 +224,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
               selectedTabId: state.currentFilter.id,
               onTabSelected: (id) {
                 HapticFeedback.selectionClick();
-                ref.read(bookingsListControllerProvider.notifier).setFilterById(id);
+                ref
+                    .read(bookingsListControllerProvider.notifier)
+                    .setFilterById(id);
               },
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
@@ -245,8 +256,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
 
     if (state.error != null && state.allBookings.isEmpty) {
       return HbErrorView(
-        message: 'Erreur de chargement: ${state.error}',
-        onRetry: () => ref.read(bookingsListControllerProvider.notifier).loadBookings(),
+        message: context.l10n.bookingLoadError(state.error!),
+        onRetry: () =>
+            ref.read(bookingsListControllerProvider.notifier).loadBookings(),
       );
     }
 
@@ -257,7 +269,8 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(bookingsListControllerProvider.notifier).refresh(),
+      onRefresh: () =>
+          ref.read(bookingsListControllerProvider.notifier).refresh(),
       color: HbColors.brandPrimary,
       child: ListView.builder(
         controller: _scrollController,
@@ -306,23 +319,23 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
 
     switch (filter) {
       case BookingFilterType.all:
-        title = 'Aucune réservation';
-        message = 'Vous n\'avez pas encore de réservation.\nDécouvrez nos événements !';
+        title = context.l10n.bookingEmptyAllTitle;
+        message = context.l10n.bookingEmptyAllBody;
         icon = Icons.calendar_today_outlined;
         break;
       case BookingFilterType.upcoming:
-        title = 'Aucune réservation à venir';
-        message = 'Vous n\'avez pas de réservation prévue.\nExplorez nos événements !';
+        title = context.l10n.bookingEmptyUpcomingTitle;
+        message = context.l10n.bookingEmptyUpcomingBody;
         icon = Icons.event_available_outlined;
         break;
       case BookingFilterType.past:
-        title = 'Aucune réservation passée';
-        message = 'Vous n\'avez pas encore participé à un événement.';
+        title = context.l10n.bookingEmptyPastTitle;
+        message = context.l10n.bookingEmptyPastBody;
         icon = Icons.history_outlined;
         break;
       case BookingFilterType.cancelled:
-        title = 'Aucune réservation annulée';
-        message = 'Vous n\'avez aucune réservation annulée.';
+        title = context.l10n.bookingEmptyCancelledTitle;
+        message = context.l10n.bookingEmptyCancelledBody;
         icon = Icons.cancel_outlined;
         break;
     }
@@ -336,7 +349,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: HbColors.brandPrimary.withOpacity(0.1),
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -381,9 +394,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-                child: const Text(
-                  'Explorer les événements',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.bookingExploreEvents,
+                  style: const TextStyle(
                     fontWeight: FontWeight.w600,
                   ),
                 ),

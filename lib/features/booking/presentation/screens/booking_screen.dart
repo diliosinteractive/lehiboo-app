@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 
 class BookingScreen extends StatelessWidget {
   final String eventId;
@@ -9,10 +10,10 @@ class BookingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Réservation'),
+        title: Text(context.l10n.bookingReservationFallback),
       ),
       body: Center(
-        child: Text('Réservation pour l\'événement $eventId'),
+        child: Text(context.l10n.bookingLegacyReservationForEvent(eventId)),
       ),
     );
   }

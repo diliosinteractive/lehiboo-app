@@ -90,7 +90,7 @@ class BookingListCard extends StatelessWidget {
                           children: [
                             // Title
                             Text(
-                              activity?.title ?? 'Événement',
+                              activity?.title ?? context.l10n.bookingEventFallback,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
-
-const _participantPersonalizationNoticeText =
-    'Le prénom, la date de naissance, la ville et la relation aident Petit Boo et LeHiboo Expériences à vous proposer des offres et des événements plus pertinents.';
 
 class SavedParticipantsScreen extends ConsumerStatefulWidget {
   const SavedParticipantsScreen({super.key});
@@ -26,7 +24,7 @@ class _SavedParticipantsScreenState
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Mes participants'),
+        title: Text(context.l10n.profileParticipantsTitle),
         backgroundColor: Colors.white,
         foregroundColor: HbColors.textPrimary,
         elevation: 0,
@@ -36,7 +34,7 @@ class _SavedParticipantsScreenState
         backgroundColor: HbColors.brandPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Ajouter'),
+        label: Text(context.l10n.profileParticipantsAddShort),
       ),
       body: Column(
         children: [
@@ -80,12 +78,12 @@ class _SavedParticipantsScreenState
                         size: 42,
                       ),
                       const SizedBox(height: 12),
-                      const Text('Impossible de charger vos participants'),
+                      Text(context.l10n.profileParticipantsLoadError),
                       const SizedBox(height: 16),
                       OutlinedButton(
                         onPressed: () =>
                             ref.invalidate(savedParticipantsProvider),
-                        child: const Text('Reessayer'),
+                        child: Text(context.l10n.commonRetry),
                       ),
                     ],
                   ),
@@ -103,6 +101,8 @@ class _SavedParticipantsScreenState
     SavedParticipant? participant,
   ]) async {
     final messenger = ScaffoldMessenger.of(context);
+    final addedMessage = context.l10n.profileParticipantAdded;
+    final updatedMessage = context.l10n.profileParticipantUpdated;
     final result = await showModalBottomSheet<SavedParticipant>(
       context: context,
       isScrollControlled: true,
@@ -123,7 +123,7 @@ class _SavedParticipantsScreenState
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            participant == null ? 'Participant ajoute' : 'Participant modifie',
+            participant == null ? addedMessage : updatedMessage,
           ),
         ),
       );
@@ -144,7 +144,7 @@ class _SavedParticipantsScreenState
       await ref.read(savedParticipantsActionsProvider).delete(participant.uuid);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Participant supprime')),
+        SnackBar(content: Text(context.l10n.profileParticipantDeleted)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -173,19 +173,19 @@ class _ParticipantPersonalizationNotice extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFFED7AA)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.auto_awesome_outlined,
             size: 18,
             color: noticeColor,
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              _participantPersonalizationNoticeText,
-              style: TextStyle(
+              context.l10n.profileParticipantsPersonalizationNotice,
+              style: const TextStyle(
                 fontSize: 13,
                 height: 1.35,
                 fontWeight: FontWeight.w600,
@@ -226,9 +226,9 @@ class _EmptyParticipantsState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Aucun participant',
-              style: TextStyle(
+            Text(
+              context.l10n.profileParticipantsEmptyTitle,
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textPrimary,
@@ -236,7 +236,7 @@ class _EmptyParticipantsState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ajoutez vos enfants, proches ou personnes recurrentes pour les choisir rapidement au checkout.',
+              context.l10n.profileParticipantsEmptyBody,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade600),
             ),
@@ -244,7 +244,7 @@ class _EmptyParticipantsState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add),
-              label: const Text('Ajouter un participant'),
+              label: Text(context.l10n.profileParticipantsAddCta),
               style: ElevatedButton.styleFrom(
                 backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
@@ -303,7 +303,7 @@ class _ParticipantTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   [
-                    participant.birthDate,
+                    _formatBirthDate(context, participant.birthDate),
                     participant.membershipCity,
                   ].whereType<String>().where((v) => v.isNotEmpty).join(' - '),
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
@@ -322,6 +322,15 @@ class _ParticipantTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String? _formatBirthDate(BuildContext context, String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final parsed = DateTime.tryParse(raw.trim());
+    if (parsed == null) return raw;
+    return context
+        .appDateFormat('dd/MM/yyyy', enPattern: 'MM/dd/yyyy')
+        .format(parsed);
   }
 }
 
@@ -345,8 +354,6 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
   DateTime? _birthDate;
   String? _relationship;
   bool _birthDateMissing = false;
-
-  static final DateFormat _displayDateFormat = DateFormat('dd/MM/yyyy');
 
   @override
   void initState() {
@@ -393,9 +400,9 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
       initialDate: initial,
       firstDate: DateTime(1900),
       lastDate: now,
-      helpText: 'Date de naissance',
-      cancelText: 'Annuler',
-      confirmText: 'Valider',
+      helpText: context.l10n.profileBirthDateLabel,
+      cancelText: context.l10n.commonCancel,
+      confirmText: context.l10n.commonValidate,
     );
     if (picked != null && mounted) {
       setState(() {
@@ -421,8 +428,8 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
             children: [
               Text(
                 widget.participant == null
-                    ? 'Ajouter un participant'
-                    : 'Modifier le participant',
+                    ? context.l10n.profileParticipantAddTitle
+                    : context.l10n.profileParticipantEditTitle,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -434,53 +441,85 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _firstNameCtrl,
-                decoration: _inputDecoration('Prenom *'),
+                decoration: _inputDecoration(
+                    context.l10n.profileParticipantFirstNameLabelRequired),
                 validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Prenom requis'
+                    ? context.l10n.profileParticipantFirstNameRequired
                     : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _lastNameCtrl,
-                decoration: _inputDecoration('Nom *'),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Nom requis' : null,
+                decoration: _inputDecoration(
+                    context.l10n.profileParticipantLastNameLabelRequired),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? context.l10n.profileParticipantLastNameRequired
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _labelCtrl,
-                decoration: _inputDecoration('Surnom'),
+                decoration: _inputDecoration(
+                    context.l10n.profileParticipantNicknameLabel),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _relationship,
-                decoration: _inputDecoration('Relation *'),
-                items: const [
-                  DropdownMenuItem(value: 'self', child: Text('Moi')),
-                  DropdownMenuItem(value: 'child', child: Text('Enfant')),
-                  DropdownMenuItem(value: 'spouse', child: Text('Conjoint')),
-                  DropdownMenuItem(value: 'family', child: Text('Famille')),
-                  DropdownMenuItem(value: 'friend', child: Text('Ami')),
-                  DropdownMenuItem(value: 'other', child: Text('Autre')),
+                decoration: _inputDecoration(
+                    context.l10n.profileParticipantRelationshipLabelRequired),
+                items: [
+                  DropdownMenuItem(
+                    value: 'self',
+                    child: Text(context.l10n.bookingRelationshipSelf),
+                  ),
+                  DropdownMenuItem(
+                    value: 'child',
+                    child: Text(context.l10n.bookingRelationshipChild),
+                  ),
+                  DropdownMenuItem(
+                    value: 'spouse',
+                    child: Text(context.l10n.bookingRelationshipSpouse),
+                  ),
+                  DropdownMenuItem(
+                    value: 'family',
+                    child: Text(context.l10n.bookingRelationshipFamily),
+                  ),
+                  DropdownMenuItem(
+                    value: 'friend',
+                    child: Text(context.l10n.bookingRelationshipFriend),
+                  ),
+                  DropdownMenuItem(
+                    value: 'other',
+                    child: Text(context.l10n.bookingRelationshipOther),
+                  ),
                 ],
                 onChanged: (value) => setState(() => _relationship = value),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Relation requise' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? context.l10n.profileParticipantRelationshipRequired
+                    : null,
               ),
               const SizedBox(height: 12),
               InkWell(
                 onTap: _pickBirthDate,
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
-                  decoration: _inputDecoration('Date de naissance *').copyWith(
+                  decoration: _inputDecoration(
+                    context.l10n.profileParticipantBirthDateLabelRequired,
+                  ).copyWith(
                     suffixIcon: const Icon(Icons.calendar_today_outlined),
-                    errorText:
-                        _birthDateMissing ? 'Date de naissance requise' : null,
+                    errorText: _birthDateMissing
+                        ? context.l10n.profileParticipantBirthDateRequired
+                        : null,
                   ),
                   child: Text(
                     _birthDate != null
-                        ? _displayDateFormat.format(_birthDate!)
-                        : 'jj/mm/aaaa',
+                        ? context
+                            .appDateFormat(
+                              'dd/MM/yyyy',
+                              enPattern: 'MM/dd/yyyy',
+                            )
+                            .format(_birthDate!)
+                        : context.l10n.profileParticipantBirthDateHint,
                     style: TextStyle(
                       color: _birthDate != null
                           ? HbColors.textPrimary
@@ -492,22 +531,23 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _cityCtrl,
-                decoration: _inputDecoration('Ville d appartenance *'),
+                decoration: _inputDecoration(
+                    context.l10n.profileParticipantCityLabelRequired),
                 textCapitalization: TextCapitalization.words,
                 validator: (value) => value == null || value.trim().isEmpty
-                    ? 'Ville requise'
+                    ? context.l10n.profileParticipantCityRequired
                     : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _emailCtrl,
-                decoration: _inputDecoration('Email'),
+                decoration: _inputDecoration(context.l10n.authEmailLabel),
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _phoneCtrl,
-                decoration: _inputDecoration('Telephone'),
+                decoration: _inputDecoration(context.l10n.profilePhoneLabel),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 20),
@@ -520,7 +560,7 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: const Text('Enregistrer'),
+                  child: Text(context.l10n.commonSave),
                 ),
               ),
             ],

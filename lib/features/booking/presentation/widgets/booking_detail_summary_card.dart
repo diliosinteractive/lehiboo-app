@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
@@ -41,7 +42,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
     // For now, we create a simple line from booking data
     final items = <BookingLineItem>[
       BookingLineItem(
-        label: 'Billet',
+        label: '',
         quantity: booking.quantity ?? 1,
         unitPrice: (booking.totalPrice ?? 0) / (booking.quantity ?? 1),
         currency: symbol,
@@ -83,7 +84,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -98,7 +99,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: HbColors.brandPrimary.withOpacity(0.1),
+                  color: HbColors.brandPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -108,9 +109,9 @@ class BookingDetailSummaryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'RÉSUMÉ',
-                style: TextStyle(
+              Text(
+                context.l10n.bookingSectionSummary,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: HbColors.textSecondary,
@@ -121,11 +122,11 @@ class BookingDetailSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Line items
-          ...items.map((item) => _buildLineItem(item)),
+          ...items.map((item) => _buildLineItem(context, item)),
           // Discount if any
           if (discount != null && discount! > 0) ...[
             const SizedBox(height: 8),
-            _buildDiscountLine(),
+            _buildDiscountLine(context),
           ],
           const SizedBox(height: 12),
           // Divider
@@ -138,16 +139,18 @@ class BookingDetailSummaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total',
-                style: TextStyle(
+              Text(
+                context.l10n.bookingTotal,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: HbColors.textPrimary,
                 ),
               ),
               Text(
-                isFree ? 'Gratuit' : '${totalPrice.toStringAsFixed(2)}$currency',
+                isFree
+                    ? context.l10n.commonFree
+                    : '${totalPrice.toStringAsFixed(2)}$currency',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -161,8 +164,10 @@ class BookingDetailSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLineItem(BookingLineItem item) {
+  Widget _buildLineItem(BuildContext context, BookingLineItem item) {
     final showUnitBreakdown = item.quantity > 1 && item.unitPrice > 0;
+    final label =
+        item.label.isEmpty ? context.l10n.bookingTicketFallback : item.label;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -174,7 +179,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${item.quantity}× ${item.label}',
+                  '${item.quantity}× $label',
                   style: const TextStyle(
                     fontSize: 14,
                     color: HbColors.textPrimary,
@@ -183,7 +188,9 @@ class BookingDetailSummaryCard extends StatelessWidget {
                 if (showUnitBreakdown) ...[
                   const SizedBox(height: 2),
                   Text(
-                    '${item.unitPrice.toStringAsFixed(2)}${item.currency} / billet',
+                    context.l10n.bookingPerTicket(
+                      '${item.unitPrice.toStringAsFixed(2)}${item.currency}',
+                    ),
                     style: const TextStyle(
                       fontSize: 12,
                       color: HbColors.textSecondary,
@@ -207,7 +214,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDiscountLine() {
+  Widget _buildDiscountLine(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -216,7 +223,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
             const Icon(Icons.local_offer, size: 14, color: HbColors.success),
             const SizedBox(width: 6),
             Text(
-              promoCode ?? 'Réduction',
+              promoCode ?? context.l10n.bookingDiscountFallback,
               style: const TextStyle(
                 fontSize: 14,
                 color: HbColors.success,
