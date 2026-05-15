@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/repositories/in_app_notifications_repository_impl.dart';
 import '../../domain/entities/in_app_notification.dart';
@@ -84,19 +85,40 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
   void _bootstrapAuthListener() {
     final authState = _ref.read(authProvider);
     if (authState.isAuthenticated) {
+      state = state.copyWith(context: _contextFor(authState));
       refreshUnreadCount();
     }
 
     _ref.listen<AuthState>(authProvider, (previous, next) {
       if (next.isAuthenticated) {
+        final nextContext = _contextFor(next);
+        final contextChanged = state.context != nextContext;
+        if (contextChanged) {
+          state = state.copyWith(
+            context: nextContext,
+            notifications: const AsyncValue.data([]),
+            hasLoadedInbox: false,
+            currentPage: AppConstants.initialPage,
+            hasMore: false,
+            clearOrganizationId: true,
+          );
+        }
         refreshUnreadCount();
-        if (state.hasLoadedInbox) {
+        if (state.hasLoadedInbox && !contextChanged) {
           load(refresh: true);
         }
       } else if (next.status == AuthStatus.unauthenticated) {
         state = const InAppNotificationsState();
       }
     });
+  }
+
+  String _contextFor(AuthState authState) {
+    return switch (authState.user?.role) {
+      UserRole.partner => 'vendor',
+      UserRole.admin => 'admin',
+      _ => 'participant',
+    };
   }
 
   @override

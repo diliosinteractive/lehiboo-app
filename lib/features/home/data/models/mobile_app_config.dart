@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 part 'mobile_app_config.freezed.dart';
 part 'mobile_app_config.g.dart';
 
@@ -16,27 +18,30 @@ class MobileAppConfig with _$MobileAppConfig {
       _$MobileAppConfigFromJson(json);
 
   /// Default config when API is unavailable
-  factory MobileAppConfig.defaultConfig() => const MobileAppConfig(
-        hero: HeroConfig(
-          image: '',
-          title: 'Trouvez votre prochaine aventure locale',
-          subtitle: 'Découvrez les meilleurs événements près de chez vous',
-          showSearch: true,
-          showQuickFilters: true,
-        ),
-        ads: AdsConfig(
-          enabled: false,
-          banners: [],
-        ),
-        texts: TextsConfig(
-          eventsSectionTitle: 'Retrouvez tous vos événements',
-          eventsSectionDescription: 'Explorez notre sélection d\'événements locaux',
-          thematiquesSectionTitle: 'Explorez par thématique',
-          citiesSectionTitle: 'Événements par ville',
-          exploreButtonText: 'Explorer les activités',
-        ),
-        media: MediaConfig(),
-      );
+  factory MobileAppConfig.defaultConfig() {
+    final l10n = cachedAppLocalizations();
+    return MobileAppConfig(
+      hero: HeroConfig(
+        image: '',
+        title: l10n.homeMobileConfigDefaultHeroTitle,
+        subtitle: l10n.homeMobileConfigDefaultHeroSubtitle,
+        showSearch: true,
+        showQuickFilters: true,
+      ),
+      ads: const AdsConfig(
+        enabled: false,
+        banners: [],
+      ),
+      texts: TextsConfig(
+        eventsSectionTitle: l10n.homeMobileConfigEventsSectionTitle,
+        eventsSectionDescription: l10n.homeMobileConfigEventsSectionDescription,
+        thematiquesSectionTitle: l10n.homeMobileConfigThematiquesSectionTitle,
+        citiesSectionTitle: l10n.homeMobileConfigCitiesSectionTitle,
+        exploreButtonText: l10n.homeMobileConfigExploreButton,
+      ),
+      media: const MediaConfig(),
+    );
+  }
 }
 
 @freezed
@@ -56,7 +61,8 @@ class HeroConfig with _$HeroConfig {
   const factory HeroConfig({
     @Default('') String image,
     @Default('Trouvez votre prochaine aventure locale') String title,
-    @Default('Découvrez les meilleurs événements près de chez vous') String subtitle,
+    @Default('Découvrez les meilleurs événements près de chez vous')
+    String subtitle,
     @JsonKey(name: 'show_search') @Default(true) bool showSearch,
     @JsonKey(name: 'show_quick_filters') @Default(true) bool showQuickFilters,
   }) = _HeroConfig;

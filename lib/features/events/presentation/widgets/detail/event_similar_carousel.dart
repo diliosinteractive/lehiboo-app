@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/presentation/utils/open_event.dart';
@@ -28,10 +29,8 @@ class EventSimilarCarousel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Filtrer l'événement actuel
-    final filteredEvents = events
-        .where((e) => e.id != currentEventId)
-        .take(10)
-        .toList();
+    final filteredEvents =
+        events.where((e) => e.id != currentEventId).take(10).toList();
 
     if (filteredEvents.isEmpty) return const SizedBox.shrink();
 
@@ -44,9 +43,9 @@ class EventSimilarCarousel extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Événements similaires',
-                style: TextStyle(
+              Text(
+                context.l10n.eventSimilarEvents,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: HbColors.textPrimary,
@@ -55,9 +54,9 @@ class EventSimilarCarousel extends StatelessWidget {
               if (onViewAll != null)
                 TextButton(
                   onPressed: onViewAll,
-                  child: const Text(
-                    'Voir tout',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.eventShowMore,
+                    style: const TextStyle(
                       color: HbColors.brandPrimary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -147,7 +146,8 @@ class _SimilarEventCard extends ConsumerWidget {
                     fit: StackFit.expand,
                     children: [
                       CachedNetworkImage(
-                        imageUrl: event.images.isNotEmpty ? event.images.first : '',
+                        imageUrl:
+                            event.images.isNotEmpty ? event.images.first : '',
                         fit: BoxFit.cover,
                         placeholder: (_, __) => Container(
                           color: Colors.grey.shade200,
@@ -164,7 +164,7 @@ class _SimilarEventCard extends ConsumerWidget {
                       Positioned(
                         top: 8,
                         right: 8,
-                        child: _buildPriceBadge(),
+                        child: _buildPriceBadge(context),
                       ),
                     ],
                   ),
@@ -238,7 +238,7 @@ class _SimilarEventCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildPriceBadge() {
+  Widget _buildPriceBadge(BuildContext context) {
     final isFree = event.priceType == PriceType.free ||
         (event.minPrice == 0 && event.maxPrice == 0);
 
@@ -249,9 +249,9 @@ class _SimilarEventCard extends ConsumerWidget {
           color: Colors.green,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Text(
-          'Gratuit',
-          style: TextStyle(
+        child: Text(
+          context.l10n.commonFree,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 10,
             fontWeight: FontWeight.bold,

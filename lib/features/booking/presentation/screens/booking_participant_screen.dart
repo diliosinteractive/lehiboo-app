@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lehiboo/core/themes/hb_theme.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/widgets/buttons/hb_button.dart';
 import 'package:lehiboo/core/widgets/inputs/hb_text_field.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
@@ -16,12 +16,14 @@ class BookingParticipantScreen extends ConsumerStatefulWidget {
   final Activity activity;
 
   @override
-  ConsumerState<BookingParticipantScreen> createState() => _BookingParticipantScreenState();
+  ConsumerState<BookingParticipantScreen> createState() =>
+      _BookingParticipantScreenState();
 }
 
-class _BookingParticipantScreenState extends ConsumerState<BookingParticipantScreen> {
+class _BookingParticipantScreenState
+    extends ConsumerState<BookingParticipantScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _firstNameCtrl;
   late TextEditingController _lastNameCtrl;
   late TextEditingController _emailCtrl;
@@ -78,35 +80,37 @@ class _BookingParticipantScreenState extends ConsumerState<BookingParticipantScr
   }
 
   void _onSave() {
-      if (_formKey.currentState!.validate()) {
-          final provider = bookingFlowControllerProvider(widget.activity);
-          final controller = ref.read(provider.notifier);
-          
-          controller.updateBuyerInfo(BuyerInfo(
-             firstName: _firstNameCtrl.text,
-             lastName: _lastNameCtrl.text,
-             email: _emailCtrl.text,
-             phone: _phoneCtrl.text,
-             birthDate: _customerBirthDate,
-             town: _townCtrl.text.isNotEmpty ? _townCtrl.text : null,
-          ));
+    if (_formKey.currentState!.validate()) {
+      final provider = bookingFlowControllerProvider(widget.activity);
+      final controller = ref.read(provider.notifier);
 
-          controller.goToPaymentStep().then((_) {
-              final updatedState = ref.read(provider);
-              if (updatedState.errorMessage == null) {
-                  if (updatedState.isFree) {
-                       // Direct confirmation flow
-                       context.push('/booking/${widget.activity.id}/confirmation', extra: widget.activity);
-                  } else {
-                       context.push('/booking/${widget.activity.id}/payment', extra: widget.activity);
-                  }
-              } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(updatedState.errorMessage ?? 'Erreur'))
-                  );
-              }
-          });
-      }
+      controller.updateBuyerInfo(BuyerInfo(
+        firstName: _firstNameCtrl.text,
+        lastName: _lastNameCtrl.text,
+        email: _emailCtrl.text,
+        phone: _phoneCtrl.text,
+        birthDate: _customerBirthDate,
+        town: _townCtrl.text.isNotEmpty ? _townCtrl.text : null,
+      ));
+
+      controller.goToPaymentStep().then((_) {
+        if (!mounted) return;
+        final updatedState = ref.read(provider);
+        if (updatedState.errorMessage == null) {
+          if (updatedState.isFree) {
+            // Direct confirmation flow
+            context.push('/booking/${widget.activity.id}/confirmation',
+                extra: widget.activity);
+          } else {
+            context.push('/booking/${widget.activity.id}/payment',
+                extra: widget.activity);
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(updatedState.errorMessage!)));
+        }
+      });
+    }
   }
 
   @override
@@ -115,7 +119,7 @@ class _BookingParticipantScreenState extends ConsumerState<BookingParticipantScr
     final state = ref.watch(provider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Vos informations')),
+      appBar: AppBar(title: Text(context.l10n.bookingContactDetailsTitle)),
       body: Column(
         children: [
           BookingStepperHeader(step: state.step),
@@ -127,35 +131,37 @@ class _BookingParticipantScreenState extends ConsumerState<BookingParticipantScr
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Informations de contact', style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      context.l10n.bookingBuyerContactTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 16),
                     HbTextField(
                       controller: _lastNameCtrl,
-                      label: 'Nom',
-
+                      label: context.l10n.bookingLastNameLabel,
                     ),
                     const SizedBox(height: 16),
                     HbTextField(
                       controller: _firstNameCtrl,
-                      label: 'Prénom',
+                      label: context.l10n.bookingFirstNameLabelRequired,
                     ),
                     const SizedBox(height: 16),
                     HbTextField(
                       controller: _emailCtrl,
-                      label: 'Email',
-                      hint: 'exemple@email.com',
+                      label: context.l10n.authEmailLabel,
+                      hint: context.l10n.authEmailHint,
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),
                     HbTextField(
                       controller: _phoneCtrl,
-                      label: 'Téléphone',
+                      label: context.l10n.bookingPhoneLabel,
                       keyboardType: TextInputType.phone,
                     ),
 
                     const SizedBox(height: 24),
                     Text(
-                      'Informations complémentaires (optionnel)',
+                      context.l10n.bookingAdditionalInfoOptional,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -165,7 +171,7 @@ class _BookingParticipantScreenState extends ConsumerState<BookingParticipantScr
                     const SizedBox(height: 12),
                     HbTextField(
                       controller: _ageCtrl,
-                      label: 'Age',
+                      label: context.l10n.bookingAgeLabel,
                       keyboardType: TextInputType.number,
                       onChanged: (value) {
                         final age = int.tryParse(value);
@@ -179,13 +185,15 @@ class _BookingParticipantScreenState extends ConsumerState<BookingParticipantScr
                     const SizedBox(height: 12),
                     HbTextField(
                       controller: _townCtrl,
-                      label: 'Ville d\'appartenance',
+                      label: context.l10n.bookingMembershipCityLabel,
                     ),
 
                     const SizedBox(height: 32),
-                     // Participant details logic omitted for brevity as per prompt, handling buyer as main contact
-                     if (state.quantity > 1) 
-                         const Text('Note : Les détails des autres participants seront demandés ultérieurement.', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
+                    // Participant details logic omitted for brevity as per prompt, handling buyer as main contact
+                    if (state.quantity > 1)
+                      Text(context.l10n.bookingLegacyOtherParticipantsLater,
+                          style: const TextStyle(
+                              fontStyle: FontStyle.italic, color: Colors.grey)),
                   ],
                 ),
               ),
@@ -194,7 +202,9 @@ class _BookingParticipantScreenState extends ConsumerState<BookingParticipantScr
           Padding(
             padding: const EdgeInsets.all(16),
             child: HbButton.primary(
-              label: state.isFree ? 'Confirmer la réservation' : 'Aller au paiement',
+              label: state.isFree
+                  ? context.l10n.bookingConfirmReservation
+                  : context.l10n.bookingGoToPayment,
               isLoading: state.isSubmitting,
               onTap: _onSave,
             ),

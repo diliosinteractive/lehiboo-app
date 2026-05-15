@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../notifications/presentation/providers/push_notification_provider.dart';
 import '../../../profile/data/datasources/profile_api_datasource.dart';
 import '../providers/auth_provider.dart';
@@ -29,9 +30,7 @@ class _PermissionNotificationsScreenState
         PushNotificationStatus.initialized;
     final grantedNow = alreadyGranted
         ? true
-        : await ref
-            .read(pushNotificationProvider.notifier)
-            .requestPermission();
+        : await ref.read(pushNotificationProvider.notifier).requestPermission();
 
     // Persist the user's notification preference on the backend whenever
     // the OS permission ends up granted. Silent failure — a network blip
@@ -54,27 +53,27 @@ class _PermissionNotificationsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final alreadyGranted = ref.watch(pushNotificationProvider).status ==
         PushNotificationStatus.initialized;
+
     return PermissionExplainerScaffold(
       icon: Icons.notifications_active_outlined,
-      title: 'Ne ratez rien des bons plans',
-      intro:
-          'Activez les notifications pour recevoir l\'essentiel directement '
-          'sur votre téléphone.',
-      bullets: const [
-        'Vos billets et confirmations de réservation',
-        'Les événements qui matchent vos alertes',
-        'Les nouveautés de vos lieux favoris',
-        'Vos rappels et alertes personnalisées',
-        'Les réponses des organisateurs à vos messages',
+      title: l10n.authPermissionNotificationsTitle,
+      intro: l10n.authPermissionNotificationsIntro,
+      bullets: [
+        l10n.authPermissionNotificationsBulletTickets,
+        l10n.authPermissionNotificationsBulletAlerts,
+        l10n.authPermissionNotificationsBulletFavorites,
+        l10n.authPermissionNotificationsBulletReminders,
+        l10n.authPermissionNotificationsBulletMessages,
       ],
-      reassurance:
-          'Vous pouvez changer cet accès à tout moment dans les réglages.',
-      ctaLabel: 'Continuer',
+      reassurance: l10n.authPermissionReassurance,
+      ctaLabel: l10n.commonContinue,
       busy: _busy,
       onContinue: _onContinue,
-      grantedLabel: alreadyGranted ? 'Notifications déjà activées' : null,
+      grantedLabel:
+          alreadyGranted ? l10n.authPermissionNotificationsGranted : null,
     );
   }
 }

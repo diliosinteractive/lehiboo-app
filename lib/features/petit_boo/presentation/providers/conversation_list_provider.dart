@@ -4,12 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/conversation_dto.dart';
 import '../../domain/repositories/petit_boo_repository.dart';
 
+enum ConversationListError {
+  authRequired,
+  loadFailed,
+}
+
 /// State for the conversations list
 class ConversationListState {
   final List<ConversationDto> conversations;
   final bool isLoading;
   final bool isLoadingMore;
-  final String? error;
+  final ConversationListError? error;
   final int currentPage;
   final int totalPages;
   final bool hasMore;
@@ -28,7 +33,7 @@ class ConversationListState {
     List<ConversationDto>? conversations,
     bool? isLoading,
     bool? isLoadingMore,
-    String? error,
+    ConversationListError? error,
     int? currentPage,
     int? totalPages,
     bool? hasMore,
@@ -46,8 +51,8 @@ class ConversationListState {
 }
 
 /// Provider for the conversation list state notifier
-final conversationListProvider =
-    StateNotifierProvider.autoDispose<ConversationListNotifier, ConversationListState>(
+final conversationListProvider = StateNotifierProvider.autoDispose<
+    ConversationListNotifier, ConversationListState>(
   (ref) {
     final repository = ref.watch(petitBooRepositoryProvider);
     return ConversationListNotifier(repository);
@@ -83,8 +88,10 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
       );
 
       if (kDebugMode) {
-        debugPrint('🦉 ConversationList: Got ${result.conversations.length} conversations');
-        debugPrint('🦉 ConversationList: Page ${result.currentPage}/${result.totalPages}');
+        debugPrint(
+            '🦉 ConversationList: Got ${result.conversations.length} conversations');
+        debugPrint(
+            '🦉 ConversationList: Page ${result.currentPage}/${result.totalPages}');
       }
 
       state = state.copyWith(
@@ -100,7 +107,7 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
       }
       state = state.copyWith(
         isLoading: false,
-        error: _getErrorMessage(e),
+        error: _getError(e),
       );
     }
   }
@@ -127,7 +134,7 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     } catch (e) {
       state = state.copyWith(
         isLoadingMore: false,
-        error: _getErrorMessage(e),
+        error: _getError(e),
       );
     }
   }
@@ -148,14 +155,13 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
 
       // Remove from local list
       state = state.copyWith(
-        conversations: state.conversations
-            .where((c) => c.uuid != uuid)
-            .toList(),
+        conversations:
+            state.conversations.where((c) => c.uuid != uuid).toList(),
       );
 
       return true;
     } catch (e) {
-      state = state.copyWith(error: _getErrorMessage(e));
+      state = state.copyWith(error: _getError(e));
       return false;
     }
   }
@@ -165,17 +171,17 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     state = state.copyWith(error: null);
   }
 
-  String _getErrorMessage(dynamic error) {
+  ConversationListError _getError(dynamic error) {
     if (error.toString().contains('401')) {
-      return 'Connectez-vous pour voir vos conversations';
+      return ConversationListError.authRequired;
     }
-    return 'Impossible de charger les conversations';
+    return ConversationListError.loadFailed;
   }
 }
 
 /// Provider for a single conversation detail
-final conversationDetailProvider =
-    FutureProvider.autoDispose.family<ConversationDto, String>((ref, uuid) async {
+final conversationDetailProvider = FutureProvider.autoDispose
+    .family<ConversationDto, String>((ref, uuid) async {
   final repository = ref.watch(petitBooRepositoryProvider);
   return repository.getConversation(uuid);
 });

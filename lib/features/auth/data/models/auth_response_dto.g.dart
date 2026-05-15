@@ -91,7 +91,7 @@ _$TokensDtoImpl _$$TokensDtoImplFromJson(Map<String, dynamic> json) =>
       accessToken: json['access_token'] as String,
       refreshToken: json['refresh_token'] as String,
       tokenType: json['token_type'] as String? ?? 'Bearer',
-      expiresIn: (json['expires_in'] as num?)?.toInt() ?? 604800,
+      expiresIn: (json['expires_in'] as num?)?.toInt() ?? 172800,
     );
 
 Map<String, dynamic> _$$TokensDtoImplToJson(_$TokensDtoImpl instance) =>

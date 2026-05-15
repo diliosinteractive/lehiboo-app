@@ -5,10 +5,12 @@ import 'dart:convert';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/city.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../events/domain/entities/popular_city.dart';
 import '../../../events/domain/entities/event.dart';
 import '../../../events/domain/entities/event_submodels.dart';
 import '../../../events/domain/repositories/event_repository.dart';
+import '../../../events/data/models/event_dto.dart';
 import '../../../events/data/mappers/event_to_activity_mapper.dart';
 import '../../data/models/mobile_app_config.dart';
 import '../../data/datasources/mobile_config_datasource.dart';
@@ -367,15 +369,7 @@ class CategoriesNotifier
 
     final categories = await eventRepository.getCategories();
     ref.keepAlive();
-    return categories
-        .map((cat) => EventCategoryInfo(
-              id: cat.id.toString(),
-              name: cat.name,
-              slug: cat.slug,
-              icon: cat.icon,
-              eventCount: cat.eventCount ?? 0,
-            ))
-        .toList();
+    return categories.map(EventCategoryInfo.fromDto).toList();
   }
 
   Future<void> refresh() async {
@@ -516,18 +510,52 @@ String _getCityImageUrl(String cityName) {
 /// Simple class to hold category info
 class EventCategoryInfo {
   final String id;
+  final String? parentId;
   final String name;
   final String slug;
   final String? icon;
+  final String? imageUrl;
+  final String? imageAlt;
+  final int directEventCount;
   final int eventCount;
+  final List<EventCategoryInfo> children;
 
   EventCategoryInfo({
     required this.id,
+    this.parentId,
     required this.name,
     required this.slug,
     this.icon,
+    this.imageUrl,
+    this.imageAlt,
+    this.directEventCount = 0,
     required this.eventCount,
+    this.children = const [],
   });
+
+  factory EventCategoryInfo.fromDto(EventCategoryDto category) {
+    final children = category.children.map(EventCategoryInfo.fromDto).toList();
+    final directEventCount = category.eventCount ?? 0;
+    final childrenEventCount = children.fold<int>(
+      0,
+      (sum, child) => sum + child.eventCount,
+    );
+
+    return EventCategoryInfo(
+      id: category.id.toString(),
+      parentId: category.parentId?.toString(),
+      name: category.name,
+      slug: category.slug,
+      icon: category.icon,
+      imageUrl: category.imageUrl,
+      imageAlt: category.imageAlt,
+      directEventCount: directEventCount,
+      eventCount: directEventCount + childrenEventCount,
+      children: children,
+    );
+  }
+
+  int get childrenEventCount => eventCount - directEventCount;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -610,8 +638,9 @@ class SavedSearch {
     if (cityName != null) parts.add(cityName!);
     if (thematiqueName != null) parts.add(thematiqueName!);
 
-    if (parts.isEmpty && hasAlert) return 'Alerte personnalisée';
-    if (parts.isEmpty) return 'Recherche sauvegardée';
+    final l10n = cachedAppLocalizations();
+    if (parts.isEmpty && hasAlert) return l10n.homeSavedSearchAlertFallback;
+    if (parts.isEmpty) return l10n.homeSavedSearchFallback;
 
     return parts.join(' • ');
   }

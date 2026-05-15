@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../../features/petit_boo/presentation/providers/engagement_provider.dart';
+import '../../l10n/l10n.dart';
 import '../../utils/guest_guard.dart';
 import 'animated_ring.dart';
 import 'pulse_waves.dart';
@@ -51,7 +52,11 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
   void initState() {
     super.initState();
     _initAnimations();
-    _initSpeech();
+    _speech = stt.SpeechToText();
+    // Speech recognizer is initialized lazily on long-press in _startListening:
+    // speech_to_text's initialize() triggers the OS microphone prompt on first
+    // call, and we don't want that to fire just because the FAB is on screen.
+    // The mic permission explainer is shown once during onboarding instead.
     VoiceFabSounds.init();
   }
 
@@ -76,7 +81,6 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
   }
 
   Future<void> _initSpeech() async {
-    _speech = stt.SpeechToText();
     try {
       _speechEnabled = await _speech.initialize(
         onStatus: (status) {
@@ -88,7 +92,7 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
         },
         onError: (error) {
           if (mounted) {
-            _showError('Erreur micro: ${error.errorMsg}');
+            _showError(context.l10n.voiceMicrophoneError(error.errorMsg));
             _stopListening(sendMessage: false);
           }
         },
@@ -125,7 +129,7 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
   void _showHintTooltip() {
     setState(() {
       _showTooltip = true;
-      _tooltipMessage = 'Maintiens pour parler';
+      _tooltipMessage = context.l10n.voiceTooltipHoldToTalk;
     });
     _bubbleController.forward();
 
@@ -170,7 +174,7 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'discuter avec Petit Boo',
+      featureName: context.l10n.guestFeaturePetitBoo,
     );
     if (!allowed) return;
     ref.read(petitBooEngagementProvider.notifier).onUserClickChat();
@@ -181,17 +185,20 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
 
   /// Démarre l'écoute (appui prolongé)
   Future<void> _startListening() async {
+    final l10n = context.l10n;
+    final localeName = context.appLocaleName;
+
     // Vérifier la permission microphone
     var micStatus = await Permission.microphone.status;
     if (!micStatus.isGranted) {
       micStatus = await Permission.microphone.request();
       if (micStatus.isPermanentlyDenied) {
-        _showError('Autorise le micro dans Réglages');
+        _showError(l10n.voiceAllowMicrophoneSettings);
         openAppSettings();
         return;
       }
       if (!micStatus.isGranted) {
-        _showError('Autorise le micro dans Réglages');
+        _showError(l10n.voiceAllowMicrophoneSettings);
         return;
       }
     }
@@ -201,12 +208,12 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
     if (!speechStatus.isGranted) {
       speechStatus = await Permission.speech.request();
       if (speechStatus.isPermanentlyDenied) {
-        _showError('Autorise la reconnaissance vocale dans Réglages');
+        _showError(l10n.voiceAllowSpeechSettings);
         openAppSettings();
         return;
       }
       if (!speechStatus.isGranted) {
-        _showError('Autorise la reconnaissance vocale dans Réglages');
+        _showError(l10n.voiceAllowSpeechSettings);
         return;
       }
     }
@@ -214,7 +221,7 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
     if (!_speechEnabled) {
       await _initSpeech();
       if (!_speechEnabled) {
-        _showError('Le micro n\'est pas disponible');
+        _showError(l10n.voiceMicrophoneUnavailable);
         return;
       }
     }
@@ -247,7 +254,7 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
           });
         }
       },
-      localeId: 'fr_FR',
+      localeId: localeName,
       listenOptions: stt.SpeechListenOptions(
         listenMode: stt.ListenMode.dictation,
         cancelOnError: false,
@@ -274,19 +281,21 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
 
     if (sendMessage && mounted) {
       if (transcriptionText.isEmpty) {
-        _showError('Je n\'ai rien entendu');
+        _showError(context.l10n.voiceNothingHeard);
       } else {
         // Vérifier l'authentification avant de naviguer
         final allowed = await GuestGuard.check(
           context: context,
           ref: ref,
-          featureName: 'discuter avec Petit Boo',
+          featureName: context.l10n.guestFeaturePetitBoo,
         );
         if (!allowed) return;
         // Naviguer vers le chat avec le message
         ref.read(petitBooEngagementProvider.notifier).onUserClickChat();
         if (mounted) {
-          context.push('/petit-boo?message=${Uri.encodeComponent(transcriptionText)}');
+          context.push(
+            '/petit-boo?message=${Uri.encodeComponent(transcriptionText)}',
+          );
         }
       }
     }
@@ -349,9 +358,8 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
                   border: Border.all(color: Colors.white, width: 4),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFF601F).withValues(alpha:
-                        _isListening ? 0.6 : 0.4
-                      ),
+                      color: const Color(0xFFFF601F)
+                          .withValues(alpha: _isListening ? 0.6 : 0.4),
                       blurRadius: _isListening ? 20 : 15,
                       spreadRadius: _isListening ? 4 : 2,
                       offset: const Offset(0, 8),
@@ -371,7 +379,8 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
                             'assets/images/petit_boo.png',
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.search, color: Colors.white, size: 30),
+                                const Icon(Icons.search,
+                                    color: Colors.white, size: 30),
                           ),
                         ),
                 ),
@@ -384,14 +393,17 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
             Positioned(
               bottom: 70,
               child: ScaleTransition(
-                scale: _showTooltip ? _bubbleAnimation : const AlwaysStoppedAnimation(1.0),
+                scale: _showTooltip
+                    ? _bubbleAnimation
+                    : const AlwaysStoppedAnimation(1.0),
                 alignment: Alignment.bottomCenter,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Bulle
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
                       constraints: const BoxConstraints(maxWidth: 200),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF601F),
@@ -434,7 +446,8 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
             Positioned(
               bottom: 100,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 constraints: const BoxConstraints(maxWidth: 250),
                 decoration: BoxDecoration(
                   color: Colors.white,

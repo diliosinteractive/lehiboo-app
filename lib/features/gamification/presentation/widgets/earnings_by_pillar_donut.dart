@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../data/models/earnings_by_pillar_entry.dart';
 import '../providers/gamification_provider.dart';
 
@@ -44,9 +45,9 @@ class EarningsByPillarDonut extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Répartition par pilier',
-                style: TextStyle(
+              Text(
+                context.l10n.gamificationEarningsByPillarTitle,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF2D3748),
@@ -74,9 +75,9 @@ class EarningsByPillarDonut extends ConsumerWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const Text(
-                              'Hibons',
-                              style: TextStyle(
+                            Text(
+                              context.l10n.gamificationHibonsUnit,
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: Color(0xFF6B7280),
                               ),

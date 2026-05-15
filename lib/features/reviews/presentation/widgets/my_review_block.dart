@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/entities/review.dart';
 import '../providers/reviews_actions_provider.dart';
@@ -60,8 +61,8 @@ class MyReviewBlock extends ConsumerWidget {
           ref.read(userReviewsProvider.notifier).removeLocal(review.uuid);
         } catch (_) {}
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Avis supprimé'),
+          SnackBar(
+            content: Text(context.l10n.reviewsDeleteSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -90,9 +91,9 @@ class MyReviewBlock extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Text(
-                'Votre avis',
-                style: TextStyle(
+              Text(
+                context.l10n.reviewsYourReviewLabel,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: HbColors.brandPrimary,
@@ -105,13 +106,13 @@ class MyReviewBlock extends ConsumerWidget {
               const SizedBox(width: 4),
               _buildIconAction(
                 icon: Icons.edit_outlined,
-                tooltip: 'Modifier',
+                tooltip: context.l10n.reviewsEditAction,
                 color: HbColors.brandPrimary,
                 onPressed: () => _handleEdit(context),
               ),
               _buildIconAction(
                 icon: Icons.delete_outline,
-                tooltip: 'Supprimer',
+                tooltip: context.l10n.reviewsDeleteAction,
                 color: Colors.red.shade400,
                 onPressed: () => _handleDelete(context, ref),
               ),
@@ -148,7 +149,7 @@ class MyReviewBlock extends ConsumerWidget {
           ],
           if (review.response != null) ...[
             const SizedBox(height: 10),
-            _buildResponseBlock(),
+            _buildResponseBlock(context),
           ],
         ],
       ),
@@ -171,7 +172,7 @@ class MyReviewBlock extends ConsumerWidget {
     );
   }
 
-  Widget _buildResponseBlock() {
+  Widget _buildResponseBlock(BuildContext context) {
     final r = review.response!;
     return Container(
       padding: const EdgeInsets.all(10),
@@ -191,7 +192,7 @@ class MyReviewBlock extends ConsumerWidget {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  'Réponse de ${r.organizationName}',
+                  context.l10n.organizerReplyBy(r.organizationName),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,

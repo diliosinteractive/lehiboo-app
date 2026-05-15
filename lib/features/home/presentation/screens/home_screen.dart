@@ -3,12 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/events/domain/entities/popular_city.dart';
 import 'package:lehiboo/features/blog/presentation/widgets/blog_section.dart';
-import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_section.dart';
-import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/providers/hero_slides_provider.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
@@ -18,7 +17,8 @@ import 'package:lehiboo/features/stories/presentation/providers/stories_provider
 
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
-import '../widgets/home_cities_section.dart';
+import '../widgets/home_categories_section.dart';
+import '../widgets/home_section_title.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -129,9 +129,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // 3. Section Filtre par Ville (chips)
+            // 3. Section Explorer par catégorie (source of truth: web homepage)
             const SliverToBoxAdapter(
-              child: HomeCitiesSection(),
+              child: HomeCategoriesSection(),
             ),
 
             // 5. "Pour vous" — server-driven personalized carousel.
@@ -154,14 +154,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const UrgencySection(),
                   _buildNearbyAvailableSection(context, ref),
                   _buildSectionTitle(
-                      'Nouveautés', '/explore?sort=published_at'),
+                    context.l10n.homeNewActivitiesTitle,
+                    '/explore?sort=published_at',
+                  ),
                   const SizedBox(height: 16),
                   newActivitiesAsyncValue.when(
                     data: (activities) {
                       if (activities.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: Text('Aucune nouveauté trouvée.'),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(context.l10n.homeNoNewActivities),
                         );
                       }
                       return SizedBox(
@@ -204,21 +206,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             //   child: PersonalizedSection(),
             // ),
 
-            // 9. Section thématiques
-            const SliverToBoxAdapter(
-              child: ThematiquesSection(),
-            ),
-
             // 10. Section Partenaire Premium (masquée en attendant l'API backend)
             // TODO: Réactiver quand l'API partners sera disponible
             // const SliverToBoxAdapter(
             //   child: PartnerHighlightSection(),
             // ),
-
-            // 11. Section Toutes les catégories (Chips list)
-            const SliverToBoxAdapter(
-              child: CategoriesChipsSection(),
-            ),
 
             // 12. Pub Native (masquée en attendant l'intégration backend)
             // TODO: Réactiver quand les pubs natives seront configurées via l'API
@@ -296,7 +288,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             final allowed = await GuestGuard.check(
               context: context,
               ref: ref,
-              featureName: 'voir vos favoris',
+              featureName: context.l10n.guestFeatureViewFavorites,
             );
             if (allowed && mounted) {
               context.push('/favorites');
@@ -319,7 +311,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final allowed = await GuestGuard.check(
                   context: context,
                   ref: ref,
-                  featureName: 'voir vos messages',
+                  featureName: context.l10n.guestFeatureViewMessages,
                 );
                 if (allowed && context.mounted) {
                   context.push('/messages');
@@ -329,7 +321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         ),
         IconButton(
-          tooltip: 'Notifications',
+          tooltip: context.l10n.homeTooltipNotifications,
           icon: Badge(
             isLabelVisible: notificationCount > 0,
             label: Text('$notificationCount'),
@@ -339,7 +331,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             final allowed = await GuestGuard.check(
               context: context,
               ref: ref,
-              featureName: 'voir vos notifications',
+              featureName: context.l10n.guestFeatureViewNotifications,
             );
             if (allowed && mounted) {
               context.push('/notifications');
@@ -347,7 +339,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         ),
         IconButton(
-          tooltip: 'Mon panier',
+          tooltip: context.l10n.homeTooltipCart,
           icon: Badge(
             isLabelVisible: cartCount > 0,
             label: Text('$cartCount'),
@@ -363,7 +355,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: IconButton(
-            tooltip: 'Mon compte',
+            tooltip: context.l10n.homeTooltipAccount,
             icon: avatarUrl != null && avatarUrl.isNotEmpty
                 ? CircleAvatar(
                     radius: 14,
@@ -375,7 +367,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final allowed = await GuestGuard.check(
                 context: context,
                 ref: ref,
-                featureName: 'accéder à votre profil',
+                featureName: context.l10n.guestFeatureAccessProfile,
               );
               if (allowed && mounted) {
                 context.push('/profile');
@@ -393,20 +385,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.montserrat(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textSlate,
+          Expanded(
+            child: HomeSectionTitle(
+              title: title,
             ),
           ),
           if (viewAllPath != null)
             TextButton(
               onPressed: () => context.push(viewAllPath),
-              child: const Text(
-                'Voir plus',
-                style: TextStyle(
+              child: Text(
+                context.l10n.homeViewMore,
+                style: const TextStyle(
                   color: HbColors.brandPrimary,
                   fontSize: 14,
                 ),
@@ -418,7 +407,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildNearbyAvailableSection(BuildContext context, WidgetRef ref) {
-    const title = 'Activités disponibles à proximité';
+    final title = context.l10n.homeNearbyAvailableTitle;
     final activitiesAsyncValue =
         ref.watch(homeNearbyAvailableActivitiesProvider);
 
@@ -430,16 +419,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
-                child: Text(
-                  title,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: HbColors.textSlate,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: HomeSectionTitle(
+                  title: title,
+                  fontSize: 18,
                 ),
               ),
               IconButton(
@@ -538,7 +521,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Retrouvez vos événements en toute simplicité',
+            context.l10n.homeWebCtaTitle,
             style: GoogleFonts.montserrat(
               color: Colors.white,
               fontSize: 20,
@@ -547,7 +530,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Notre site web offre une expérience complète pour découvrir et réserver vos activités locales.',
+            context.l10n.homeWebCtaBody,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
@@ -563,7 +546,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Découvrir le site'),
+            child: Text(context.l10n.homeWebCtaButton),
           ),
         ],
       ),
@@ -578,40 +561,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (result.cities.isEmpty) return const SizedBox.shrink();
 
         final title = result.isFallback
-            ? 'Où ça bouge en ce moment'
-            : 'Villes populaires';
+            ? context.l10n.homeFallbackPopularCitiesTitle
+            : context.l10n.homePopularCitiesTitle;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: HbColors.brandPrimary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.location_city,
-                      color: HbColors.brandPrimary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: GoogleFonts.montserrat(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: HbColors.textSlate,
-                      ),
-                    ),
-                  ),
-                ],
+              child: HomeSectionTitle(
+                title: title,
               ),
             ),
             const SizedBox(height: 16),

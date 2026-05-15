@@ -1,8 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../shared/legal/legal_links.dart';
 import '../providers/business_register_provider.dart';
+import '../utils/auth_registration_l10n.dart';
 
 /// Step 5: Terms Acceptance and Summary Form
 class TermsAcceptanceForm extends ConsumerStatefulWidget {
@@ -16,7 +18,8 @@ class TermsAcceptanceForm extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<TermsAcceptanceForm> createState() => _TermsAcceptanceFormState();
+  ConsumerState<TermsAcceptanceForm> createState() =>
+      _TermsAcceptanceFormState();
 }
 
 class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
@@ -33,14 +36,15 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
 
   void _updateTerms() {
     ref.read(businessRegisterProvider.notifier).updateTerms(
-      acceptTerms: _acceptTerms,
-      acceptBusinessTerms: _acceptBusinessTerms,
-    );
+          acceptTerms: _acceptTerms,
+          acceptBusinessTerms: _acceptBusinessTerms,
+        );
   }
 
   Future<void> _handleSubmit() async {
     _updateTerms();
-    final success = await ref.read(businessRegisterProvider.notifier).submitRegistration();
+    final success =
+        await ref.read(businessRegisterProvider.notifier).submitRegistration();
     if (success) {
       widget.onSubmit();
     }
@@ -48,11 +52,14 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final state = ref.watch(businessRegisterProvider);
 
     // Listen for errors
-    ref.listen<BusinessRegisterState>(businessRegisterProvider, (previous, next) {
-      if (next.errorMessage != null && previous?.errorMessage != next.errorMessage) {
+    ref.listen<BusinessRegisterState>(businessRegisterProvider,
+        (previous, next) {
+      if (next.errorMessage != null &&
+          previous?.errorMessage != next.errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
@@ -69,9 +76,9 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Title
-          const Text(
-            'Finalisation',
-            style: TextStyle(
+          Text(
+            l10n.authTermsFinalizationTitle,
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Color(0xFF2D3748),
@@ -79,7 +86,7 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Vérifiez vos informations et acceptez les conditions',
+            l10n.authTermsFinalizationSubtitle,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -98,9 +105,9 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Récapitulatif',
-                  style: TextStyle(
+                Text(
+                  l10n.authTermsSummaryTitle,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF2D3748),
@@ -111,7 +118,7 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                 // Personal info
                 _buildSummarySection(
                   icon: Icons.person_outline,
-                  title: 'Informations personnelles',
+                  title: l10n.authTermsSummaryPersonal,
                   items: [
                     '${state.firstName} ${state.lastName}',
                     state.email,
@@ -123,11 +130,11 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                 // Company info
                 _buildSummarySection(
                   icon: Icons.business_outlined,
-                  title: 'Organisation',
+                  title: l10n.authTermsSummaryOrganization,
                   items: [
                     state.companyName,
-                    state.organizationType.label,
-                    if (state.siret.isNotEmpty) 'SIRET: ${state.siret}',
+                    context.organizationTypeLabel(state.organizationType),
+                    if (state.siret.isNotEmpty) l10n.authSiretLine(state.siret),
                     '${state.address}, ${state.postalCode} ${state.city}',
                   ],
                 ),
@@ -136,14 +143,19 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                 // Usage mode
                 _buildSummarySection(
                   icon: Icons.settings_outlined,
-                  title: 'Utilisation',
+                  title: l10n.authTermsSummaryUsage,
                   items: [
-                    state.usageMode.label,
+                    context.usageModeLabel(state.usageMode),
                     if (state.defaultBudget.isNotEmpty)
-                      'Budget: ${state.defaultBudget} EUR/mois',
+                      l10n.authTermsBudgetLine(state.defaultBudget),
                     if (state.usageMode == UsageMode.team &&
                         state.teamEmails.isNotEmpty)
-                      'Invitations: ${state.teamEmails.split(',').where((e) => e.trim().isNotEmpty).length} collaborateurs',
+                      l10n.authTermsInvitationsLine(
+                        state.teamEmails
+                            .split(',')
+                            .where((e) => e.trim().isNotEmpty)
+                            .length,
+                      ),
                   ],
                 ),
               ],
@@ -175,9 +187,9 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                         color: Colors.grey[700],
                       ),
                       children: [
-                        const TextSpan(text: 'J\'accepte les '),
+                        TextSpan(text: l10n.authRegisterTermsPrefix),
                         TextSpan(
-                          text: 'conditions générales d\'utilisation',
+                          text: l10n.legalTerms,
                           style: const TextStyle(
                             color: Color(0xFFFF601F),
                             fontWeight: FontWeight.w600,
@@ -189,9 +201,9 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                                   LegalDocument.terms,
                                 ),
                         ),
-                        const TextSpan(text: ' et la '),
+                        TextSpan(text: l10n.authRegisterTermsConnector),
                         TextSpan(
-                          text: 'politique de confidentialité',
+                          text: l10n.legalPrivacy,
                           style: const TextStyle(
                             color: Color(0xFFFF601F),
                             fontWeight: FontWeight.w600,
@@ -224,9 +236,9 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                         color: Colors.grey[700],
                       ),
                       children: [
-                        const TextSpan(text: 'J\'accepte les '),
+                        TextSpan(text: l10n.authRegisterTermsPrefix),
                         TextSpan(
-                          text: 'conditions spécifiques aux comptes professionnels',
+                          text: l10n.authBusinessTermsLabel,
                           style: const TextStyle(
                             color: Color(0xFFFF601F),
                             fontWeight: FontWeight.w600,
@@ -253,11 +265,10 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
           SizedBox(
             height: 56,
             child: ElevatedButton(
-              onPressed: state.isLoading ||
-                      !_acceptTerms ||
-                      !_acceptBusinessTerms
-                  ? null
-                  : _handleSubmit,
+              onPressed:
+                  state.isLoading || !_acceptTerms || !_acceptBusinessTerms
+                      ? null
+                      : _handleSubmit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF601F),
                 foregroundColor: Colors.white,
@@ -276,18 +287,18 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Créer mon compte business',
-                          style: TextStyle(
+                          l10n.authCreateBusinessAccountButton,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward, size: 20),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward, size: 20),
                       ],
                     ),
             ),
@@ -299,7 +310,7 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
             child: TextButton.icon(
               onPressed: widget.onBack,
               icon: const Icon(Icons.arrow_back, size: 18),
-              label: const Text('Retour'),
+              label: Text(l10n.commonBack),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.grey[600],
               ),
@@ -309,7 +320,7 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
           // Helper text
           const SizedBox(height: 24),
           Text(
-            'En créant un compte, vous confirmez que les informations fournies sont exactes et que vous êtes autorisé à représenter cette organisation.',
+            l10n.authBusinessTermsHelper,
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[500],
@@ -357,15 +368,15 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
               ),
               const SizedBox(height: 4),
               ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(
-                  item,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              )),
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  )),
             ],
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_constants.dart';
+import '../core/l10n/l10n.dart';
 import '../core/providers/shared_preferences_provider.dart';
 import '../features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -27,6 +28,7 @@ import '../features/auth/presentation/screens/customer_register_screen.dart';
 import '../features/auth/presentation/screens/business_register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/otp_verification_screen.dart';
+import '../features/auth/presentation/screens/permission_audio_screen.dart';
 import '../features/auth/presentation/screens/permission_location_screen.dart';
 import '../features/auth/presentation/screens/permission_notifications_screen.dart';
 import '../features/reminders/presentation/screens/reminders_list_screen.dart';
@@ -445,12 +447,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'register-business',
         builder: (context, state) => const BusinessRegisterScreen(),
       ),
-      // Post-signup permission screens (location → notifications → home).
-      // Top-level, outside the ShellRoute, so the bottom nav stays hidden.
+      // Permission explainer screens. Top-level, outside the ShellRoute,
+      // so the bottom nav stays hidden.
+      //
+      // Location + audio are the last two steps of first-launch onboarding
+      // (carousel → location → audio → /login). Notifications fires only
+      // after a successful signup (customer/business → notifications → /).
       GoRoute(
         path: '/post-signup/location',
         name: 'post-signup-location',
         builder: (context, state) => const PermissionLocationScreen(),
+      ),
+      GoRoute(
+        path: '/post-signup/audio',
+        name: 'post-signup-audio',
+        builder: (context, state) => const PermissionAudioScreen(),
       ),
       GoRoute(
         path: '/post-signup/notifications',
@@ -510,8 +521,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           final eventId = state.pathParameters['id']!;
           final extra = state.extra;
           final title = extra is Map<String, dynamic>
-              ? (extra['title']?.toString() ?? 'Événement')
-              : 'Événement';
+              ? (extra['title']?.toString() ??
+                  context.l10n.routeEventFallbackTitle)
+              : context.l10n.routeEventFallbackTitle;
           return EventQuestionsScreen(
             eventSlug: eventId,
             eventTitle: title,
@@ -761,8 +773,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/recommended',
         name: 'recommended',
-        builder: (context, state) => const EventListScreen(
-          title: 'Recommandés pour vous',
+        builder: (context, state) => EventListScreen(
+          title: context.l10n.routeRecommendedTitle,
           filterType: 'recommended',
         ),
       ),
@@ -911,16 +923,16 @@ class ErrorScreen extends StatelessWidget {
               color: Colors.red,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Oops! Page non trouvée',
+            Text(
+              context.l10n.routeNotFoundTitle,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'La page que vous recherchez n\'existe pas',
+            Text(
+              context.l10n.routeNotFoundBody,
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
@@ -939,8 +951,8 @@ class ErrorScreen extends StatelessWidget {
                   vertical: 12,
                 ),
               ),
-              child: const Text(
-                'Retour à l\'accueil',
+              child: Text(
+                context.l10n.bookingBackHome,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,

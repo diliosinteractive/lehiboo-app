@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/guest_restriction_dialog.dart';
@@ -27,7 +28,9 @@ class OrganizerFollowButton extends ConsumerWidget {
     final isFollowing = state?.isFollowed ?? false;
     final isLoading = state?.isInFlight ?? false;
 
-    final label = isFollowing ? 'Ne plus suivre' : 'Suivre';
+    final label = isFollowing
+        ? context.l10n.organizerUnfollowAction
+        : context.l10n.organizerFollowAction;
     final icon = isFollowing ? Icons.person_remove_outlined : Icons.add;
 
     final filled = !isFollowing;
@@ -78,12 +81,10 @@ class OrganizerFollowButton extends ConsumerWidget {
           PendingOrganizerAction.follow;
       GuestRestrictionDialog.show(
         context,
-        featureName: 'suivre cet organisateur',
+        featureName: context.l10n.guestFeatureFollowOrganizer,
       );
       return;
     }
-    ref
-        .read(followStateControllerProvider(organizerUuid).notifier)
-        .toggle();
+    ref.read(followStateControllerProvider(organizerUuid).notifier).toggle();
   }
 }

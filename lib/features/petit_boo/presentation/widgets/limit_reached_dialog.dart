@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../gamification/data/models/hibons_wallet.dart';
 import '../../../gamification/presentation/providers/gamification_provider.dart';
@@ -21,6 +22,8 @@ class LimitReachedDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       backgroundColor: Colors.transparent,
@@ -103,8 +106,8 @@ class LimitReachedDialog extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  const Text(
-                    "Oups, c'est déjà fini ?",
+                  Text(
+                    l10n.petitBooLimitTitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
@@ -114,9 +117,7 @@ class LimitReachedDialog extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "Petit Boo a besoin d'énergie pour continuer à chercher "
-                    "des pépites pour vous ! Rechargez son stock de Hibons "
-                    "pour débloquer la conversation.",
+                    l10n.petitBooLimitBody,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,
@@ -141,7 +142,9 @@ class LimitReachedDialog extends ConsumerWidget {
                         ),
                         error: (e, s) => Padding(
                           padding: const EdgeInsets.all(20),
-                          child: Text('Erreur: $e'),
+                          child: Text(
+                            l10n.petitBooErrorWithMessage(e.toString()),
+                          ),
                         ),
                         data: (wallet) =>
                             _buildWalletActions(context, ref, wallet),
@@ -182,7 +185,7 @@ class LimitReachedDialog extends ConsumerWidget {
               const Icon(Icons.monetization_on, color: Colors.amber, size: 20),
               const SizedBox(width: 8),
               Text(
-                "Solde : $balance Hibons",
+                context.l10n.petitBooLimitWalletBalance(balance),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.amber.shade900,
@@ -214,10 +217,18 @@ class LimitReachedDialog extends ConsumerWidget {
                   children: [
                     const Icon(Icons.chat_bubble_outline, color: Colors.white),
                     const SizedBox(width: 8),
-                    Text(
-                      "Continuer pour $unlockCost Hibons (+$unlockMessages msg)",
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
+                    Flexible(
+                      child: Text(
+                        context.l10n.petitBooLimitContinue(
+                          unlockCost,
+                          unlockMessages,
+                        ),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -240,14 +251,20 @@ class LimitReachedDialog extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.play_circle_fill, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Text(
-                    "Regarder une pub (+20 Hibons)",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  const Icon(Icons.play_circle_fill, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      context.l10n.petitBooLimitWatchAdReward(20),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -260,7 +277,7 @@ class LimitReachedDialog extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              "Reviens demain pour de nouveaux messages !",
+              context.l10n.petitBooLimitComeBackTomorrow,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600], fontSize: 13),
             ),
@@ -269,9 +286,9 @@ class LimitReachedDialog extends ConsumerWidget {
         // Close button
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
-            "Peut-être plus tard",
-            style: TextStyle(color: Colors.grey),
+          child: Text(
+            context.l10n.petitBooMaybeLater,
+            style: const TextStyle(color: Colors.grey),
           ),
         ),
       ],
@@ -287,17 +304,25 @@ class LimitReachedDialog extends ConsumerWidget {
         await ref.read(petitBooChatProvider.notifier).resetLimit();
         if (context.mounted) {
           Navigator.pop(context);
-          PetitBooToast.success(context, 'Conversation débloquée !');
+          PetitBooToast.success(
+            context,
+            context.l10n.petitBooConversationUnlocked,
+          );
         }
       } else {
         if (context.mounted) {
           PetitBooToast.error(
-              context, 'Impossible de débloquer la conversation');
+            context,
+            context.l10n.petitBooUnlockFailed,
+          );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        PetitBooToast.error(context, 'Erreur: $e');
+        PetitBooToast.error(
+          context,
+          context.l10n.petitBooErrorWithMessage(e.toString()),
+        );
       }
     }
   }
@@ -317,7 +342,7 @@ class LimitReachedDialog extends ConsumerWidget {
       Navigator.pop(context); // Close loading
       // Note: Cette fonctionnalité n'est pas supportée côté API
       // On affiche juste un message d'information
-      PetitBooToast.success(context, 'Fonctionnalité bientôt disponible !');
+      PetitBooToast.success(context, context.l10n.petitBooComingSoon);
     }
   }
 }

@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/env_config.dart';
+import '../../core/l10n/app_locale.dart';
+import '../../core/l10n/l10n.dart';
 
 /// The five canonical legal documents seeded on the backend.
 ///
 /// Slugs are a stable contract with the backend; see
 /// `docs/LEGAL_PAGES_MOBILE_SPEC.md` §1.
 enum LegalDocument {
-  terms('cgu', "Conditions Générales d'Utilisation",
-      Icons.description_outlined),
-  sales('cgv', 'Conditions Générales de Vente', Icons.shopping_bag_outlined),
-  privacy('privacy', 'Politique de confidentialité', Icons.privacy_tip_outlined),
-  cookies('cookies', 'Politique cookies', Icons.cookie_outlined),
-  legalNotices('mentions-legales', 'Mentions légales', Icons.gavel_outlined);
+  terms('cgu', Icons.description_outlined),
+  sales('cgv', Icons.shopping_bag_outlined),
+  privacy('privacy', Icons.privacy_tip_outlined),
+  cookies('cookies', Icons.cookie_outlined),
+  legalNotices('mentions-legales', Icons.gavel_outlined);
 
-  const LegalDocument(this.slug, this.label, this.icon);
+  const LegalDocument(this.slug, this.icon);
 
   final String slug;
-  final String label;
   final IconData icon;
 }
 
@@ -29,14 +29,27 @@ enum LegalDocument {
 class LegalLinks {
   LegalLinks._();
 
-  // TODO(i18n): derive from app locale once localization is wired up.
-  static const String _currentLocale = 'fr';
+  static Uri urlFor(LegalDocument doc, {String? languageCode}) {
+    final locale =
+        normalizeLanguageCode(languageCode) ?? fallbackAppLocale.languageCode;
+    return Uri.parse('${EnvConfig.websiteUrl}/$locale/${doc.slug}');
+  }
 
-  static Uri urlFor(LegalDocument doc) =>
-      Uri.parse('${EnvConfig.websiteUrl}/$_currentLocale/${doc.slug}');
+  static String labelFor(BuildContext context, LegalDocument doc) {
+    final l10n = context.l10n;
+    return switch (doc) {
+      LegalDocument.terms => l10n.legalTerms,
+      LegalDocument.sales => l10n.legalSales,
+      LegalDocument.privacy => l10n.legalPrivacy,
+      LegalDocument.cookies => l10n.legalCookies,
+      LegalDocument.legalNotices => l10n.legalNotices,
+    };
+  }
 
   static Future<void> open(BuildContext context, LegalDocument doc) async {
-    final uri = urlFor(doc);
+    final docLabel = labelFor(context, doc);
+    final failedMessage = context.l10n.legalOpenFailed(docLabel);
+    final uri = urlFor(doc, languageCode: context.appLanguageCode);
     final ok = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
     if (ok) return;
     if (!context.mounted) return;
@@ -47,7 +60,7 @@ class LegalLinks {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Impossible d'ouvrir ${doc.label}")),
+      SnackBar(content: Text(failedMessage)),
     );
   }
 }

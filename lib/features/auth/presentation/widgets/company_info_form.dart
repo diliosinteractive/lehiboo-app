@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../data/services/company_search_service.dart';
 import '../providers/business_register_provider.dart';
+import '../utils/auth_registration_l10n.dart';
 import 'company_autocomplete.dart';
 import 'organization_type_card.dart';
 
@@ -42,25 +44,6 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
 
   static const _orangeColor = Color(0xFFFF601F);
 
-  // Dynamic wording based on organization type
-  String get _organizationName => switch (_organizationType) {
-    OrganizationType.company => 'entreprise',
-    OrganizationType.association => 'association',
-    OrganizationType.municipality => 'collectivité',
-  };
-
-  String get _organizationArticle => switch (_organizationType) {
-    OrganizationType.company => 'l\'entreprise',
-    OrganizationType.association => 'l\'association',
-    OrganizationType.municipality => 'la collectivité',
-  };
-
-  String get _organizationPossessive => switch (_organizationType) {
-    OrganizationType.company => 'votre entreprise',
-    OrganizationType.association => 'votre association',
-    OrganizationType.municipality => 'votre collectivité',
-  };
-
   final List<String> _employeeCountOptions = [
     '1-10',
     '11-50',
@@ -69,32 +52,38 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
     '500+',
   ];
 
-  final List<String> _industryOptions = [
-    'Technologie',
-    'Finance',
-    'Sant\u00e9',
-    '\u00c9ducation',
-    'Commerce',
-    'Services',
-    'Industrie',
-    'Transport',
-    'Immobilier',
-    'Autre',
-  ];
+  List<String> _industryOptions(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      l10n.authIndustryTechnology,
+      l10n.authIndustryFinance,
+      l10n.authIndustryHealth,
+      l10n.authIndustryEducation,
+      l10n.authIndustryCommerce,
+      l10n.authIndustryServices,
+      l10n.authIndustryIndustry,
+      l10n.authIndustryTransport,
+      l10n.authIndustryRealEstate,
+      l10n.authIndustryOther,
+    ];
+  }
 
-  final Map<String, String> _countryOptions = {
-    'FR': 'France',
-    'BE': 'Belgique',
-    'CH': 'Suisse',
-    'LU': 'Luxembourg',
-    'MC': 'Monaco',
-    'DE': 'Allemagne',
-    'ES': 'Espagne',
-    'IT': 'Italie',
-    'NL': 'Pays-Bas',
-    'GB': 'Royaume-Uni',
-    'OTHER': 'Autre',
-  };
+  Map<String, String> _countryOptions(BuildContext context) {
+    final l10n = context.l10n;
+    return {
+      'FR': l10n.authCountryFrance,
+      'BE': l10n.authCountryBelgium,
+      'CH': l10n.authCountrySwitzerland,
+      'LU': l10n.authCountryLuxembourg,
+      'MC': l10n.authCountryMonaco,
+      'DE': l10n.authCountryGermany,
+      'ES': l10n.authCountrySpain,
+      'IT': l10n.authCountryItaly,
+      'NL': l10n.authCountryNetherlands,
+      'GB': l10n.authCountryUnitedKingdom,
+      'OTHER': l10n.authCountryOther,
+    };
+  }
 
   @override
   void initState() {
@@ -125,29 +114,33 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
 
   void _saveToState() {
     ref.read(businessRegisterProvider.notifier).updateCompanyInfo(
-      organizationType: _organizationType,
-      companyName: _companyNameController.text,
-      siret: _siretController.text,
-      industry: _industryController.text,
-      employeeCount: _employeeCount,
-      address: _addressController.text,
-      city: _cityController.text,
-      postalCode: _postalCodeController.text,
-      country: _country,
-    );
+          organizationType: _organizationType,
+          companyName: _companyNameController.text,
+          siret: _siretController.text,
+          industry: _industryController.text,
+          employeeCount: _employeeCount,
+          address: _addressController.text,
+          city: _cityController.text,
+          postalCode: _postalCodeController.text,
+          country: _country,
+        );
   }
 
   void _handleSubmit() {
     if (!_formKey.currentState!.validate()) return;
 
     _saveToState();
-    final success = ref.read(businessRegisterProvider.notifier).submitCompanyInfo();
+    final success =
+        ref.read(businessRegisterProvider.notifier).submitCompanyInfo();
     if (success) {
       widget.onSubmit();
     }
   }
 
-  void _onCompanySelected(CompanySearchResult company) {
+  void _onCompanySelected(
+    CompanySearchResult company,
+    List<String> industryOptions,
+  ) {
     setState(() {
       _companyNameController.text = company.name;
       _siretController.text = CompanySearchService.cleanSiret(company.siret);
@@ -158,7 +151,7 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
       // Try to match activity to industry
       if (company.activity != null) {
         final activity = company.activity!.toLowerCase();
-        for (final industry in _industryOptions) {
+        for (final industry in industryOptions) {
           if (activity.contains(industry.toLowerCase())) {
             _industryController.text = industry;
             break;
@@ -170,6 +163,14 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final organizationName = context.organizationTypeLower(_organizationType);
+    final organizationArticle =
+        context.organizationTypeArticle(_organizationType);
+    final organizationPossessive =
+        context.organizationTypePossessive(_organizationType);
+    final industryOptions = _industryOptions(context);
+    final countryOptions = _countryOptions(context);
     final state = ref.watch(businessRegisterProvider);
 
     return Form(
@@ -181,7 +182,7 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
           children: [
             // Title
             Text(
-              'Informations de $_organizationArticle',
+              l10n.authBusinessCompanyInfoTitle(organizationArticle),
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -190,7 +191,7 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ces informations permettront d\'identifier $_organizationPossessive',
+              l10n.authBusinessCompanyInfoSubtitle(organizationPossessive),
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -210,7 +211,7 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Organization type label
-                  _buildLabel('Type d\u2019organisation', required: true),
+                  _buildLabel(l10n.authOrganizationTypeLabel, required: true),
                   const SizedBox(height: 12),
 
                   // Organization type cards in a row
@@ -236,25 +237,29 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
 
                   // Company search autocomplete
                   CompanyAutocomplete(
-                    onSelect: _onCompanySelected,
-                    organizationName: _organizationName,
-                    organizationPossessive: _organizationPossessive,
+                    onSelect: (company) =>
+                        _onCompanySelected(company, industryOptions),
+                    organizationName: organizationName,
+                    organizationPossessive: organizationPossessive,
                   ),
                   const SizedBox(height: 24),
 
                   // Company name
-                  _buildLabel('Nom de $_organizationArticle', required: true),
+                  _buildLabel(
+                    l10n.authOrganizationNameLabel(organizationArticle),
+                    required: true,
+                  ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _companyNameController,
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
                     decoration: _inputDecoration(
-                      hint: 'Ma Soci\u00e9t\u00e9 SAS',
+                      hint: l10n.authCompanyNameHint,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().length < 2) {
-                        return 'Min. 2 caract\u00e8res';
+                        return l10n.authValidationMin2Chars;
                       }
                       return null;
                     },
@@ -270,7 +275,11 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('SIRET', required: false, suffix: '(optionnel)'),
+                            _buildLabel(
+                              'SIRET',
+                              required: false,
+                              suffix: l10n.authOptionalSuffix,
+                            ),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _siretController,
@@ -281,9 +290,10 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                               ),
                               validator: (value) {
                                 if (value != null && value.isNotEmpty) {
-                                  final cleaned = value.replaceAll(RegExp(r'\s'), '');
+                                  final cleaned =
+                                      value.replaceAll(RegExp(r'\s'), '');
                                   if (!RegExp(r'^\d{14}$').hasMatch(cleaned)) {
-                                    return 'SIRET invalide';
+                                    return l10n.authSiretInvalid;
                                   }
                                 }
                                 return null;
@@ -291,7 +301,7 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '14 chiffres, sans espaces',
+                              l10n.authSiretHelp,
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.grey[500],
@@ -307,17 +317,20 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Secteur d\u2019activit\u00e9', required: false),
+                            _buildLabel(
+                              l10n.authIndustryLabel,
+                              required: false,
+                            ),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
-                              value: _industryController.text.isNotEmpty
+                              initialValue: _industryController.text.isNotEmpty
                                   ? _industryController.text
                                   : null,
                               decoration: _inputDecoration(
-                                hint: 'S\u00e9lectionner',
+                                hint: l10n.authSelectHint,
                               ),
                               isExpanded: true,
-                              items: _industryOptions.map((industry) {
+                              items: industryOptions.map((industry) {
                                 return DropdownMenuItem(
                                   value: industry,
                                   child: Text(
@@ -338,12 +351,13 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                   const SizedBox(height: 16),
 
                   // Employee count (full width)
-                  _buildLabel('Effectif', required: false),
+                  _buildLabel(l10n.authEmployeeCountLabel, required: false),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _employeeCount.isNotEmpty ? _employeeCount : null,
+                    initialValue:
+                        _employeeCount.isNotEmpty ? _employeeCount : null,
                     decoration: _inputDecoration(
-                      hint: 'S\u00e9lectionner',
+                      hint: l10n.authSelectHint,
                     ),
                     isExpanded: true,
                     items: _employeeCountOptions.map((count) {
@@ -361,18 +375,18 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                   const SizedBox(height: 24),
 
                   // Address section
-                  _buildLabel('Adresse de facturation', required: true),
+                  _buildLabel(l10n.authBillingAddressLabel, required: true),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _addressController,
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
                     decoration: _inputDecoration(
-                      hint: '123 rue de la Paix',
+                      hint: l10n.authBillingAddressHint,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().length < 5) {
-                        return 'Min. 5 caract\u00e8res';
+                        return l10n.authValidationMin5Chars;
                       }
                       return null;
                     },
@@ -389,18 +403,19 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Code postal', required: true),
+                            _buildLabel(l10n.authPostalCodeLabel,
+                                required: true),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _postalCodeController,
                               keyboardType: TextInputType.number,
                               textInputAction: TextInputAction.next,
                               decoration: _inputDecoration(
-                                hint: '75001',
+                                hint: l10n.authPostalCodeHint,
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().length < 3) {
-                                  return 'Requis';
+                                  return l10n.authRequired;
                                 }
                                 return null;
                               },
@@ -416,18 +431,18 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Ville', required: true),
+                            _buildLabel(l10n.authCityLabel, required: true),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _cityController,
                               textCapitalization: TextCapitalization.words,
                               textInputAction: TextInputAction.next,
                               decoration: _inputDecoration(
-                                hint: 'Paris',
+                                hint: l10n.authCityFieldHint,
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().length < 2) {
-                                  return 'Requis';
+                                  return l10n.authRequired;
                                 }
                                 return null;
                               },
@@ -443,15 +458,15 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Pays', required: true),
+                            _buildLabel(l10n.authCountryLabel, required: true),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
-                              value: _country,
+                              initialValue: _country,
                               decoration: _inputDecoration(
-                                hint: 'Pays',
+                                hint: l10n.authCountryHint,
                               ),
                               isExpanded: true,
-                              items: _countryOptions.entries.map((entry) {
+                              items: countryOptions.entries.map((entry) {
                                 return DropdownMenuItem(
                                   value: entry.key,
                                   child: Text(
@@ -481,7 +496,7 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                       TextButton.icon(
                         onPressed: widget.onBack,
                         icon: const Icon(Icons.arrow_back, size: 18),
-                        label: const Text('Retour'),
+                        label: Text(l10n.commonBack),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.grey[600],
                           padding: const EdgeInsets.symmetric(
@@ -510,7 +525,11 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                           label: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(state.isLoading ? 'Chargement...' : 'Continuer'),
+                              Text(
+                                state.isLoading
+                                    ? l10n.authLoading
+                                    : l10n.commonContinue,
+                              ),
                               if (!state.isLoading) ...[
                                 const SizedBox(width: 8),
                                 const Icon(Icons.arrow_forward, size: 18),

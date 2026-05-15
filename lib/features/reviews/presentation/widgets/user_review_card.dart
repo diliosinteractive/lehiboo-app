@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/entities/review_enums.dart';
 import '../../domain/entities/user_review.dart';
@@ -42,7 +43,7 @@ class UserReviewCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildEventHeader(),
+              _buildEventHeader(context),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -64,15 +65,15 @@ class UserReviewCard extends StatelessWidget {
                           ? Icons.refresh
                           : Icons.edit_outlined,
                       tooltip: review.status == ReviewStatus.rejected
-                          ? 'Réécrire'
-                          : 'Modifier',
+                          ? context.l10n.reviewsRewriteAction
+                          : context.l10n.reviewsEditAction,
                       color: HbColors.brandPrimary,
                       onPressed: onEdit!,
                     ),
                   if (onDelete != null)
                     _buildIconAction(
                       icon: Icons.delete_outline,
-                      tooltip: 'Supprimer',
+                      tooltip: context.l10n.reviewsDeleteAction,
                       color: Colors.red.shade400,
                       onPressed: onDelete!,
                     ),
@@ -102,7 +103,7 @@ class UserReviewCard extends StatelessWidget {
               ),
               if (review.hasResponse) ...[
                 const SizedBox(height: 8),
-                _buildResponseHint(),
+                _buildResponseHint(context),
               ],
             ],
           ),
@@ -127,7 +128,7 @@ class UserReviewCard extends StatelessWidget {
     );
   }
 
-  Widget _buildEventHeader() {
+  Widget _buildEventHeader(BuildContext context) {
     final cover = review.eventCoverImage;
     return Row(
       children: [
@@ -156,7 +157,7 @@ class UserReviewCard extends StatelessWidget {
               Text(
                 review.eventTitle.isNotEmpty
                     ? review.eventTitle
-                    : 'Événement',
+                    : context.l10n.reviewsEventFallback,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -191,21 +192,21 @@ class UserReviewCard extends StatelessWidget {
     );
   }
 
-  Widget _buildResponseHint() {
+  Widget _buildResponseHint(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: HbColors.brandPrimary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.reply, size: 14, color: HbColors.brandPrimary),
-          SizedBox(width: 6),
+          const Icon(Icons.reply, size: 14, color: HbColors.brandPrimary),
+          const SizedBox(width: 6),
           Text(
-            'L\'organisateur a répondu',
-            style: TextStyle(
+            context.l10n.reviewsOrganizerReplied,
+            style: const TextStyle(
               fontSize: 12,
               color: HbColors.brandPrimary,
               fontWeight: FontWeight.w600,
@@ -215,5 +216,4 @@ class UserReviewCard extends StatelessWidget {
       ),
     );
   }
-
 }

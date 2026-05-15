@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 enum PartnerType {
   association,
   venue, // Salle de spectacle
@@ -9,12 +11,7 @@ enum PartnerType {
   municipality // Mairie
 }
 
-enum SubscriptionPlan {
-  free,
-  basic,
-  premium,
-  enterprise
-}
+enum SubscriptionPlan { free, basic, premium, enterprise }
 
 class Partner extends Equatable {
   final String id;
@@ -91,8 +88,9 @@ class Partner extends Equatable {
     this.metadata,
   });
 
-  bool get isPremium => subscriptionPlan == SubscriptionPlan.premium ||
-                         subscriptionPlan == SubscriptionPlan.enterprise;
+  bool get isPremium =>
+      subscriptionPlan == SubscriptionPlan.premium ||
+      subscriptionPlan == SubscriptionPlan.enterprise;
 
   bool get isSubscriptionActive {
     if (subscriptionPlan == SubscriptionPlan.free) return true;
@@ -101,32 +99,34 @@ class Partner extends Equatable {
   }
 
   String get typeLabel {
+    final l10n = cachedAppLocalizations();
     switch (type) {
       case PartnerType.association:
-        return 'Association';
+        return l10n.authOrganizationAssociationLabel;
       case PartnerType.venue:
-        return 'Salle/Lieu';
+        return l10n.partnerTypeVenue;
       case PartnerType.organizer:
-        return 'Organisateur';
+        return l10n.partnerTypeOrganizer;
       case PartnerType.company:
-        return 'Entreprise';
+        return l10n.authOrganizationCompanyLabel;
       case PartnerType.individual:
-        return 'Particulier';
+        return l10n.partnerTypeIndividual;
       case PartnerType.municipality:
-        return 'Municipalité';
+        return l10n.authOrganizationMunicipalityLabel;
     }
   }
 
   String get subscriptionLabel {
+    final l10n = cachedAppLocalizations();
     switch (subscriptionPlan) {
       case SubscriptionPlan.free:
-        return 'Gratuit';
+        return l10n.commonFree;
       case SubscriptionPlan.basic:
-        return 'Basique';
+        return l10n.partnerSubscriptionBasic;
       case SubscriptionPlan.premium:
         return 'Premium';
       case SubscriptionPlan.enterprise:
-        return 'Enterprise';
+        return l10n.partnerSubscriptionEnterprise;
     }
   }
 
@@ -176,7 +176,8 @@ class Partner extends Equatable {
       coverImage: coverImage ?? this.coverImage,
       type: type ?? this.type,
       subscriptionPlan: subscriptionPlan ?? this.subscriptionPlan,
-      subscriptionExpiresAt: subscriptionExpiresAt ?? this.subscriptionExpiresAt,
+      subscriptionExpiresAt:
+          subscriptionExpiresAt ?? this.subscriptionExpiresAt,
       website: website ?? this.website,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       address: address ?? this.address,

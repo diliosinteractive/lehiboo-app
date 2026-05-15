@@ -349,6 +349,8 @@ _$HibonsUpdateDtoImpl _$$HibonsUpdateDtoImplFromJson(
       newRankLabel: json['new_rank_label'] as String?,
       animationLabel: json['animation_label'] as String?,
       pillar: json['pillar'] as String?,
+      source: json['source'] as String?,
+      rewardMessage: json['reward_message'] as String?,
     );
 
 Map<String, dynamic> _$$HibonsUpdateDtoImplToJson(
@@ -363,6 +365,8 @@ Map<String, dynamic> _$$HibonsUpdateDtoImplToJson(
       'new_rank_label': instance.newRankLabel,
       'animation_label': instance.animationLabel,
       'pillar': instance.pillar,
+      'source': instance.source,
+      'reward_message': instance.rewardMessage,
     };
 
 _$ActionsCatalogEntryDtoImpl _$$ActionsCatalogEntryDtoImplFromJson(

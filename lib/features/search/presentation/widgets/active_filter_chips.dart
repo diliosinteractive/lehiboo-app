@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/filter_provider.dart';
+import '../utils/search_l10n.dart';
 import '../../domain/models/event_filter.dart';
 
 /// Displays active filter chips with remove functionality
@@ -24,53 +26,86 @@ class ActiveFilterChips extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with clear all button
-          if (showClearAll)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${activeChips.length} filtre${activeChips.length > 1 ? 's' : ''} actif${activeChips.length > 1 ? 's' : ''}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
+    // Single-row horizontal scroll. Bounded height so the chips no longer
+    // eat vertical space as more filters accumulate; users swipe sideways
+    // to reach the ones that overflow. "Tout effacer" sits as a trailing
+    // pinned pill so it's discoverable but won't be tapped by accident.
+    final itemCount = activeChips.length + (showClearAll ? 1 : 0);
+    // Caller's padding may mix horizontal (gutter) and vertical (breathing
+    // room above/below the row). Apply vertical to the outer Padding and
+    // horizontal to the ListView so chips never get clipped.
+    final p = padding ?? const EdgeInsets.symmetric(horizontal: 20);
+
+    return Padding(
+      padding: EdgeInsets.only(top: p.top, bottom: p.bottom),
+      child: SizedBox(
+        height: 44,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: p.horizontal / 2),
+          itemCount: itemCount,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            if (index < activeChips.length) {
+              final chip = activeChips[index];
+              return Center(
+                child: _ActiveChip(
+                  chip: chip,
+                  onRemove: () {
+                    filterNotifier.removeFilterByType(chip.type,
+                        value: chip.value);
+                  },
                 ),
-                GestureDetector(
-                  onTap: () => filterNotifier.resetAll(),
-                  child: const Text(
-                    'Tout effacer',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: HbColors.brandPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          if (showClearAll) const SizedBox(height: 12),
-          // Filter chips
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: activeChips.map((chip) {
-              return _ActiveChip(
-                chip: chip,
-                onRemove: () {
-                  filterNotifier.removeFilterByType(chip.type,
-                      value: chip.value);
-                },
               );
-            }).toList(),
+            }
+            return Center(
+              child: _ClearAllPill(
+                count: activeChips.length,
+                onTap: () => filterNotifier.resetAll(),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ClearAllPill extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+
+  const _ClearAllPill({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: HbColors.brandPrimary.withValues(alpha: 0.5),
+            width: 1,
           ),
-        ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.delete_sweep_outlined,
+                size: 14, color: HbColors.brandPrimary),
+            const SizedBox(width: 6),
+            Text(
+              context.searchClearAllLabel(count),
+              style: const TextStyle(
+                fontSize: 13,
+                color: HbColors.brandPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -87,13 +122,15 @@ class _ActiveChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = _getChipColor(chip.type);
+
     return Container(
       padding: const EdgeInsets.only(left: 12, right: 4, top: 6, bottom: 6),
       decoration: BoxDecoration(
-        color: _getChipColor(chip.type).withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _getChipColor(chip.type).withValues(alpha: 0.3),
+          color: color.withValues(alpha: 0.28),
           width: 1,
         ),
       ),
@@ -103,15 +140,22 @@ class _ActiveChip extends StatelessWidget {
           Icon(
             _getChipIcon(chip.type),
             size: 14,
-            color: _getChipColor(chip.type),
+            color: color,
           ),
           const SizedBox(width: 6),
-          Text(
-            _formatLabel(chip),
-            style: TextStyle(
-              fontSize: 13,
-              color: _getChipColor(chip.type),
-              fontWeight: FontWeight.w500,
+          ConstrainedBox(
+            // Cap so a single long label can't dominate the horizontal scroll.
+            // ~15-20 chars depending on letterforms before ellipsis kicks in.
+            constraints: const BoxConstraints(maxWidth: 180),
+            child: Text(
+              _formatLabel(context, chip),
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: 13,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: 4),
@@ -120,13 +164,13 @@ class _ActiveChip extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: _getChipColor(chip.type).withValues(alpha: 0.2),
+                color: color.withValues(alpha: 0.16),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.close,
                 size: 12,
-                color: _getChipColor(chip.type),
+                color: color,
               ),
             ),
           ),
@@ -138,39 +182,39 @@ class _ActiveChip extends StatelessWidget {
   Color _getChipColor(FilterChipType type) {
     switch (type) {
       case FilterChipType.search:
-        return const Color(0xFF6366F1);
+        return HbColors.brandPrimary;
       case FilterChipType.date:
         return HbColors.brandPrimary;
       case FilterChipType.price:
         return const Color(0xFF10B981);
       case FilterChipType.city:
-        return const Color(0xFF0EA5E9);
+        return HbColors.brandPrimary;
       case FilterChipType.location:
-        return const Color(0xFF22C55E);
+        return HbColors.brandPrimary;
       case FilterChipType.thematique:
-        return const Color(0xFFEC4899);
+        return HbColors.brandPrimary;
       case FilterChipType.category:
-        return const Color(0xFF8B5CF6);
+        return HbColors.brandPrimary;
       case FilterChipType.organizer:
-        return const Color(0xFFF59E0B);
+        return HbColors.brandPrimary;
       case FilterChipType.tag:
-        return const Color(0xFF14B8A6);
+        return HbColors.brandPrimary;
       case FilterChipType.eventTag:
-        return const Color(0xFF14B8A6);
+        return HbColors.brandPrimary;
       case FilterChipType.targetAudience:
-        return const Color(0xFFEF4444);
+        return HbColors.brandPrimary;
       case FilterChipType.specialEvent:
-        return const Color(0xFFF97316);
+        return HbColors.brandPrimary;
       case FilterChipType.emotion:
-        return const Color(0xFFEC4899);
+        return HbColors.brandPrimary;
       case FilterChipType.availability:
         return const Color(0xFF10B981);
       case FilterChipType.locationType:
-        return const Color(0xFF64748B);
+        return HbColors.brandPrimary;
       case FilterChipType.audience:
-        return const Color(0xFFEF4444);
+        return HbColors.brandPrimary;
       case FilterChipType.format:
-        return const Color(0xFF64748B);
+        return HbColors.brandPrimary;
     }
   }
 
@@ -213,7 +257,10 @@ class _ActiveChip extends StatelessWidget {
     }
   }
 
-  String _formatLabel(ActiveFilterChip chip) {
+  String _formatLabel(BuildContext context, ActiveFilterChip chip) {
+    final localized = _localizedSystemChipLabel(context, chip);
+    if (localized != null) return localized;
+
     // Format thematique/category slugs to readable names
     if (chip.type == FilterChipType.thematique ||
         chip.type == FilterChipType.category ||
@@ -222,6 +269,72 @@ class _ActiveChip extends StatelessWidget {
         chip.type == FilterChipType.specialEvent ||
         chip.type == FilterChipType.emotion) {
       return _slugToName(chip.label);
+    }
+    return chip.label;
+  }
+
+  String? _localizedSystemChipLabel(
+    BuildContext context,
+    ActiveFilterChip chip,
+  ) {
+    switch (chip.id) {
+      case 'price':
+        return _priceLabel(context, chip);
+      case 'city':
+        final radius = int.tryParse(chip.value ?? '');
+        return radius == null
+            ? chip.label
+            : context.searchCityRadiusLabel(chip.label, radius);
+      case 'location':
+        final radius = int.tryParse(chip.value ?? '');
+        return context.searchAroundMeLabel(radius ?? 10);
+      case 'available_only':
+        return context.l10n.searchAvailablePlaces;
+      case 'family':
+        return context.l10n.searchFamilyTitle;
+      case 'pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_family':
+        return context.l10n.searchFamilyTitle;
+      case 'public_filter_pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_group':
+        return context.l10n.searchAudienceGroup;
+      case 'public_filter_school':
+        return context.l10n.searchAudienceSchoolGroup;
+      case 'public_filter_professional':
+        return context.l10n.searchAudienceProfessional;
+      case 'online':
+        return context.l10n.searchOnline;
+      case 'in_person':
+        return context.l10n.searchInPerson;
+      case 'location_type':
+        return _locationTypeLabel(context, chip.value);
+    }
+    return null;
+  }
+
+  String? _locationTypeLabel(BuildContext context, String? value) {
+    return switch (value) {
+      'physical' => context.l10n.searchLocationIndoor,
+      'offline' => context.l10n.searchLocationOutdoor,
+      'online' => context.l10n.searchLocationTypeOnline,
+      'hybrid' => context.l10n.searchLocationMixed,
+      _ => null,
+    };
+  }
+
+  String _priceLabel(BuildContext context, ActiveFilterChip chip) {
+    final value = chip.value ?? chip.label;
+    if (value == 'free') return context.l10n.commonFree;
+    if (value == 'paid') return context.l10n.searchPricePaid;
+    if (value.startsWith('range:')) {
+      final parts = value.split(':');
+      final min = parts.length > 1 ? int.tryParse(parts[1]) : null;
+      final max = parts.length > 2 ? int.tryParse(parts[2]) : null;
+      if (min != null && max != null) {
+        return context.l10n.searchPriceRange(min, max);
+      }
     }
     return chip.label;
   }
@@ -275,7 +388,7 @@ class HorizontalActiveFilterChips extends ConsumerWidget {
                     Icon(Icons.clear_all, size: 16, color: Colors.grey[700]),
                     const SizedBox(width: 4),
                     Text(
-                      'Effacer',
+                      context.l10n.searchClear,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[700],
@@ -325,7 +438,7 @@ class _CompactActiveChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            _formatLabel(chip),
+            _formatLabel(context, chip),
             style: const TextStyle(
               fontSize: 13,
               color: HbColors.brandPrimary,
@@ -353,7 +466,10 @@ class _CompactActiveChip extends StatelessWidget {
     );
   }
 
-  String _formatLabel(ActiveFilterChip chip) {
+  String _formatLabel(BuildContext context, ActiveFilterChip chip) {
+    final localized = _localizedSystemChipLabel(context, chip);
+    if (localized != null) return localized;
+
     if (chip.type == FilterChipType.thematique ||
         chip.type == FilterChipType.category ||
         chip.type == FilterChipType.eventTag ||
@@ -361,6 +477,72 @@ class _CompactActiveChip extends StatelessWidget {
         chip.type == FilterChipType.specialEvent ||
         chip.type == FilterChipType.emotion) {
       return _slugToName(chip.label);
+    }
+    return chip.label;
+  }
+
+  String? _localizedSystemChipLabel(
+    BuildContext context,
+    ActiveFilterChip chip,
+  ) {
+    switch (chip.id) {
+      case 'price':
+        return _priceLabel(context, chip);
+      case 'city':
+        final radius = int.tryParse(chip.value ?? '');
+        return radius == null
+            ? chip.label
+            : context.searchCityRadiusLabel(chip.label, radius);
+      case 'location':
+        final radius = int.tryParse(chip.value ?? '');
+        return context.searchAroundMeLabel(radius ?? 10);
+      case 'available_only':
+        return context.l10n.searchAvailablePlaces;
+      case 'family':
+        return context.l10n.searchFamilyTitle;
+      case 'pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_family':
+        return context.l10n.searchFamilyTitle;
+      case 'public_filter_pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_group':
+        return context.l10n.searchAudienceGroup;
+      case 'public_filter_school':
+        return context.l10n.searchAudienceSchoolGroup;
+      case 'public_filter_professional':
+        return context.l10n.searchAudienceProfessional;
+      case 'online':
+        return context.l10n.searchOnline;
+      case 'in_person':
+        return context.l10n.searchInPerson;
+      case 'location_type':
+        return _locationTypeLabel(context, chip.value);
+    }
+    return null;
+  }
+
+  String? _locationTypeLabel(BuildContext context, String? value) {
+    return switch (value) {
+      'physical' => context.l10n.searchLocationIndoor,
+      'offline' => context.l10n.searchLocationOutdoor,
+      'online' => context.l10n.searchLocationTypeOnline,
+      'hybrid' => context.l10n.searchLocationMixed,
+      _ => null,
+    };
+  }
+
+  String _priceLabel(BuildContext context, ActiveFilterChip chip) {
+    final value = chip.value ?? chip.label;
+    if (value == 'free') return context.l10n.commonFree;
+    if (value == 'paid') return context.l10n.searchPricePaid;
+    if (value.startsWith('range:')) {
+      final parts = value.split(':');
+      final min = parts.length > 1 ? int.tryParse(parts[1]) : null;
+      final max = parts.length > 2 ? int.tryParse(parts[2]) : null;
+      if (min != null && max != null) {
+        return context.l10n.searchPriceRange(min, max);
+      }
     }
     return chip.label;
   }

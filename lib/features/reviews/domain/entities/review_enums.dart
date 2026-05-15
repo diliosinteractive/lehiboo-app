@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 /// Statut de modération d'un avis (cf. spec REVIEWS_API_MOBILE.md §1)
 enum ReviewStatus {
   pending,
@@ -30,13 +32,14 @@ enum ReviewStatus {
   }
 
   String get displayLabel {
+    final l10n = cachedAppLocalizations();
     switch (this) {
       case ReviewStatus.pending:
-        return 'En attente';
+        return l10n.reviewsStatusPending;
       case ReviewStatus.approved:
-        return 'Publié';
+        return l10n.reviewsStatusApproved;
       case ReviewStatus.rejected:
-        return 'Refusé';
+        return l10n.reviewsStatusRejected;
     }
   }
 
@@ -87,17 +90,18 @@ enum CanReviewReason {
   }
 
   String get displayMessage {
+    final l10n = cachedAppLocalizations();
     switch (this) {
       case CanReviewReason.alreadyReviewed:
-        return 'Vous avez déjà laissé un avis sur cet événement.';
+        return l10n.reviewsCannotReviewAlreadyReviewed;
       case CanReviewReason.organizerCannotReview:
-        return 'Vous ne pouvez pas noter vos propres événements.';
+        return l10n.reviewsCannotReviewOrganizer;
       case CanReviewReason.eventNotEnded:
-        return 'Vous pourrez laisser un avis une fois l\'événement passé.';
+        return l10n.reviewsCannotReviewEventNotEnded;
       case CanReviewReason.notParticipated:
-        return 'Seuls les participants à l\'événement peuvent laisser un avis.';
+        return l10n.reviewsCannotReviewNotParticipated;
       case CanReviewReason.unknown:
-        return 'Vous ne pouvez pas laisser d\'avis pour le moment.';
+        return l10n.reviewsCannotReviewUnknown;
     }
   }
 
@@ -141,17 +145,18 @@ enum ReportReason {
   }
 
   String get displayLabel {
+    final l10n = cachedAppLocalizations();
     switch (this) {
       case ReportReason.spam:
-        return 'Spam';
+        return l10n.reviewsReportReasonSpam;
       case ReportReason.inappropriate:
-        return 'Contenu inapproprié';
+        return l10n.reviewsReportReasonInappropriate;
       case ReportReason.fake:
-        return 'Faux avis';
+        return l10n.reviewsReportReasonFake;
       case ReportReason.offensive:
-        return 'Propos offensants';
+        return l10n.reviewsReportReasonOffensive;
       case ReportReason.other:
-        return 'Autre';
+        return l10n.reviewsReportReasonOther;
     }
   }
 }
@@ -174,13 +179,14 @@ enum ReviewSortBy {
   }
 
   String get displayLabel {
+    final l10n = cachedAppLocalizations();
     switch (this) {
       case ReviewSortBy.helpful:
-        return 'Plus utiles';
+        return l10n.reviewsSortMostHelpful;
       case ReviewSortBy.rating:
-        return 'Note';
+        return l10n.reviewsSortRating;
       case ReviewSortBy.createdAt:
-        return 'Plus récents';
+        return l10n.reviewsSortNewest;
     }
   }
 }

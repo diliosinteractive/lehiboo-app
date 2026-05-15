@@ -21,34 +21,10 @@ enum BookingSortOption {
 }
 
 extension BookingSortOptionExtension on BookingSortOption {
-  String get label {
-    switch (this) {
-      case BookingSortOption.dateAsc:
-        return 'Date (plus proche)';
-      case BookingSortOption.dateDesc:
-        return 'Date (plus lointaine)';
-      case BookingSortOption.statusAsc:
-        return 'Statut';
-    }
-  }
-
   String get id => name;
 }
 
 extension BookingFilterTypeExtension on BookingFilterType {
-  String get label {
-    switch (this) {
-      case BookingFilterType.all:
-        return 'Tous';
-      case BookingFilterType.upcoming:
-        return 'À venir';
-      case BookingFilterType.past:
-        return 'Passés';
-      case BookingFilterType.cancelled:
-        return 'Annulés';
-    }
-  }
-
   String get id => name;
 }
 
@@ -97,8 +73,9 @@ class BookingsListState {
         }).toList();
         break;
       case BookingFilterType.cancelled:
-        filtered = allBookings.where((b) =>
-            b.status == 'cancelled' || b.status == 'refunded').toList();
+        filtered = allBookings
+            .where((b) => b.status == 'cancelled' || b.status == 'refunded')
+            .toList();
         break;
     }
 
@@ -146,8 +123,9 @@ class BookingsListState {
           return slotDate != null && slotDate.isBefore(now);
         }).length;
       case BookingFilterType.cancelled:
-        return allBookings.where((b) =>
-            b.status == 'cancelled' || b.status == 'refunded').length;
+        return allBookings
+            .where((b) => b.status == 'cancelled' || b.status == 'refunded')
+            .length;
     }
   }
 
@@ -284,15 +262,16 @@ class BookingListController extends StateNotifier<BookingsListState> {
 }
 
 // Legacy provider for backward compatibility
-final legacyBookingsListControllerProvider =
-    StateNotifierProvider<LegacyBookingListController, AsyncValue<List<Booking>>>(
+final legacyBookingsListControllerProvider = StateNotifierProvider<
+    LegacyBookingListController, AsyncValue<List<Booking>>>(
   (ref) {
     final repo = ref.watch(bookingRepositoryProvider);
     return LegacyBookingListController(bookingRepository: repo)..load();
   },
 );
 
-class LegacyBookingListController extends StateNotifier<AsyncValue<List<Booking>>> {
+class LegacyBookingListController
+    extends StateNotifier<AsyncValue<List<Booking>>> {
   LegacyBookingListController({required this.bookingRepository})
       : super(const AsyncValue.loading());
 

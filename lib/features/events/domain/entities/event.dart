@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+
+import '../../../../core/l10n/l10n.dart';
 import 'event_submodels.dart';
 
 enum EventCategory {
@@ -131,6 +133,7 @@ class Event extends Equatable {
   final int? version;
   final String? timezone;
   final String? calendarMode;
+
   /// Spec §4.2: "offline" | "online" | "hybrid". Distinct from the legacy
   /// taxonomy term `eventTypeTerm`.
   final String? eventTypeMode;
@@ -142,6 +145,7 @@ class Event extends Equatable {
 
   // §4.5 / §4.6 — pricing & capacity (top-level)
   final int? capacityGlobal;
+
   /// Spec §4.6: "available" | "unavailable". Drives Book CTA gating.
   final String? availabilityStatus;
 
@@ -157,6 +161,7 @@ class Event extends Equatable {
   /// `status: EventStatus`.
   final String? publicationStatus;
   final String? visibility;
+
   /// Spec §4.8 caveat: gates the password modal. Not the same as
   /// `hasPassword`, which is informational only.
   final bool isPasswordProtected;
@@ -171,9 +176,11 @@ class Event extends Equatable {
   final bool canAcceptBookings;
   final bool canAcceptDiscovery;
   final bool isDiscovery;
+
   /// Spec §4.9: only present when `bookingMode == "discovery"`.
   final int? participationCount;
   final bool isParticipating;
+
   /// Spec §4.9: when set, the mobile UI opens this URL instead of the
   /// in-app booking flow.
   final String? externalTicketingUrl;
@@ -365,75 +372,81 @@ class Event extends Equatable {
   }
 
   String get formattedPrice {
+    final l10n = cachedAppLocalizations();
     if (priceType == PriceType.free) {
-      return 'Gratuit';
+      return l10n.commonFree;
     } else if (priceType == PriceType.donation) {
-      return 'Participation libre';
+      return l10n.eventPriceDonation;
     } else if (price != null) {
       return '${price!.toStringAsFixed(2)} €';
     } else if (minPrice != null && maxPrice != null) {
-      return 'De ${minPrice!.toStringAsFixed(0)} à ${maxPrice!.toStringAsFixed(0)} €';
+      return l10n.eventPriceRange(
+        '${minPrice!.toStringAsFixed(0)} €',
+        '${maxPrice!.toStringAsFixed(0)} €',
+      );
     }
-    return priceDetails ?? 'Prix variable';
+    return priceDetails ?? l10n.eventPriceVariable;
   }
 
   String get categoryLabel {
+    final l10n = cachedAppLocalizations();
     // Prefer the new TaxonomyTerm if available
     if (eventTypeTerm != null) {
       return eventTypeTerm!.name;
     }
     switch (category) {
       case EventCategory.show:
-        return 'Spectacle';
+        return l10n.eventCategoryShow;
       case EventCategory.workshop:
-        return 'Atelier';
+        return l10n.eventCategoryWorkshop;
       case EventCategory.sport:
-        return 'Sport';
+        return l10n.eventCategorySport;
       case EventCategory.culture:
-        return 'Culture';
+        return l10n.eventCategoryCulture;
       case EventCategory.market:
-        return 'Marché';
+        return l10n.eventCategoryMarket;
       case EventCategory.leisure:
-        return 'Loisirs';
+        return l10n.eventCategoryLeisure;
       case EventCategory.outdoor:
-        return 'Plein air';
+        return l10n.eventCategoryOutdoor;
       case EventCategory.indoor:
-        return 'Intérieur';
+        return l10n.eventCategoryIndoor;
       case EventCategory.festival:
-        return 'Festival';
+        return l10n.eventCategoryFestival;
       case EventCategory.exhibition:
-        return 'Exposition';
+        return l10n.eventCategoryExhibition;
       case EventCategory.concert:
-        return 'Concert';
+        return l10n.eventCategoryConcert;
       case EventCategory.theater:
-        return 'Théâtre';
+        return l10n.eventCategoryTheater;
       case EventCategory.cinema:
-        return 'Cinéma';
+        return l10n.eventCategoryCinema;
       case EventCategory.other:
-        return 'Autre';
+        return l10n.eventCategoryOther;
     }
   }
 
   String get audienceLabel {
+    final l10n = cachedAppLocalizations();
     // Prefer new TaxonomyTerms
     if (targetAudienceTerms.isNotEmpty) {
       return targetAudienceTerms.map((t) => t.name).join(', ');
     }
     if (targetAudiences.contains(EventAudience.all)) {
-      return 'Tout public';
+      return l10n.eventAudienceAll;
     }
     return targetAudiences.map((a) {
       switch (a) {
         case EventAudience.family:
-          return 'Famille';
+          return l10n.eventAudienceFamily;
         case EventAudience.children:
-          return 'Enfants';
+          return l10n.eventAudienceChildren;
         case EventAudience.teenagers:
-          return 'Adolescents';
+          return l10n.eventAudienceTeenagers;
         case EventAudience.adults:
-          return 'Adultes';
+          return l10n.eventAudienceAdults;
         case EventAudience.seniors:
-          return 'Seniors';
+          return l10n.eventAudienceSeniors;
         default:
           return '';
       }
@@ -441,16 +454,18 @@ class Event extends Equatable {
   }
 
   String? get ageRangeLabel {
+    final l10n = cachedAppLocalizations();
     if (minAge == null && maxAge == null) return null;
-    if (minAge != null && maxAge == null) return '$minAge ans et +';
-    if (minAge == null && maxAge != null) return 'Jusqu\'à $maxAge ans';
-    return '$minAge-$maxAge ans';
+    if (minAge != null && maxAge == null) return l10n.eventAgeMinimum(minAge!);
+    if (minAge == null && maxAge != null) return l10n.eventAgeMaximum(maxAge!);
+    return l10n.eventAgeRange(minAge!, maxAge!);
   }
 
   String get locationTypeLabel {
-    if (isIndoor && isOutdoor) return 'Intérieur/Extérieur';
-    if (isIndoor) return 'Intérieur';
-    if (isOutdoor) return 'Extérieur';
+    final l10n = cachedAppLocalizations();
+    if (isIndoor && isOutdoor) return l10n.eventLocationIndoorOutdoor;
+    if (isIndoor) return l10n.searchLocationIndoor;
+    if (isOutdoor) return l10n.searchLocationOutdoor;
     return '';
   }
 

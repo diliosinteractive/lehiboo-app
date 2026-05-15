@@ -6,10 +6,12 @@ import 'package:confetti/confetti.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart';
@@ -31,7 +33,8 @@ class BookingSuccessScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BookingSuccessScreen> createState() => _BookingSuccessScreenState();
+  ConsumerState<BookingSuccessScreen> createState() =>
+      _BookingSuccessScreenState();
 }
 
 class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
@@ -50,7 +53,8 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
     super.initState();
 
     // Confetti controller
-    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    _confettiController =
+        ConfettiController(duration: const Duration(seconds: 3));
 
     // Scale animation for the success icon
     _scaleController = AnimationController(
@@ -102,7 +106,8 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
       final delays = [1, 1, 2, 2, 3, 3, 4, 4];
 
       for (var attempt = 0; attempt < maxAttempts; attempt++) {
-        debugPrint('🎫 Polling tickets attempt ${attempt + 1}/$maxAttempts for booking: ${widget.bookingId}');
+        debugPrint(
+            '🎫 Polling tickets attempt ${attempt + 1}/$maxAttempts for booking: ${widget.bookingId}');
         try {
           final tickets = await bookingDataSource.getBookingTickets(
             bookingUuid: widget.bookingId,
@@ -139,7 +144,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Impossible de charger les billets';
+          _errorMessage = context.l10n.bookingTicketsLoadError;
           _isLoadingTickets = false;
         });
       }
@@ -252,9 +257,9 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          'Réservation confirmée !',
-          style: TextStyle(
+        Text(
+          context.l10n.bookingConfirmedTitle,
+          style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             color: HbColors.textPrimary,
@@ -263,7 +268,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
         ),
         const SizedBox(height: 8),
         Text(
-          'Merci pour votre confiance',
+          context.l10n.bookingSuccessThanks,
           style: TextStyle(
             fontSize: 16,
             color: Colors.grey.shade600,
@@ -275,7 +280,8 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   }
 
   Widget _buildBookingReference() {
-    final reference = widget.bookingResponse?.reference ?? 'HB-${widget.bookingId}';
+    final reference =
+        widget.bookingResponse?.reference ?? 'HB-${widget.bookingId}';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -293,7 +299,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Référence',
+                  context.l10n.bookingReferenceLabel,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
@@ -320,11 +326,11 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
             onPressed: () {
               Clipboard.setData(ClipboardData(text: reference));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Référence copiée')),
+                SnackBar(content: Text(context.l10n.bookingReferenceCopied)),
               );
             },
             color: HbColors.brandPrimary,
-            tooltip: 'Copier',
+            tooltip: context.l10n.bookingCopyTooltip,
           ),
         ],
       ),
@@ -378,11 +384,13 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.calendar_today,
+                          size: 14, color: Colors.grey.shade600),
                       const SizedBox(width: 4),
                       Text(
                         _formatDate(widget.selectedSlot!),
-                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                        style: TextStyle(
+                            fontSize: 13, color: Colors.grey.shade600),
                       ),
                     ],
                   ),
@@ -390,11 +398,13 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
+                        Icon(Icons.access_time,
+                            size: 14, color: Colors.grey.shade600),
                         const SizedBox(width: 4),
                         Text(
                           _formatTimeRange(widget.selectedSlot!)!,
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                          style: TextStyle(
+                              fontSize: 13, color: Colors.grey.shade600),
                         ),
                       ],
                     ),
@@ -412,16 +422,15 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Vos billets',
-          style: TextStyle(
+        Text(
+          context.l10n.bookingYourTickets,
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: HbColors.textPrimary,
           ),
         ),
         const SizedBox(height: 16),
-
         if (_isLoadingTickets)
           Center(
             child: Padding(
@@ -431,7 +440,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
                   const CircularProgressIndicator(color: HbColors.brandPrimary),
                   const SizedBox(height: 12),
                   Text(
-                    'Génération de vos billets...',
+                    context.l10n.bookingTicketsGenerating,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade600,
@@ -527,7 +536,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
           Icon(Icons.qr_code_2, size: 80, color: Colors.grey.shade400),
           const SizedBox(height: 12),
           Text(
-            'Vos billets seront disponibles\ndans votre espace "Mes réservations"',
+            context.l10n.bookingTicketsAvailableInBookings,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade600,
@@ -552,7 +561,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Un email de confirmation avec vos billets vous a été envoyé.',
+              context.l10n.bookingConfirmationEmailSent,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade700,
@@ -576,7 +585,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
               context.go('/my-bookings');
             },
             icon: const Icon(Icons.receipt_long),
-            label: const Text('Voir mes réservations'),
+            label: Text(context.l10n.bookingViewMyBookings),
             style: ElevatedButton.styleFrom(
               backgroundColor: HbColors.brandPrimary,
               foregroundColor: Colors.white,
@@ -599,7 +608,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
               context.go('/');
             },
             icon: const Icon(Icons.home_outlined),
-            label: const Text('Retour à l\'accueil'),
+            label: Text(context.l10n.bookingBackHome),
             style: OutlinedButton.styleFrom(
               foregroundColor: HbColors.textPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -615,28 +624,15 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   }
 
   String _formatDate(CalendarDateSlot slot) {
-    const months = [
-      'Jan', 'Fév', 'Mars', 'Avr', 'Mai', 'Juin',
-      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'
-    ];
-    const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-
-    final dayName = days[slot.date.weekday - 1];
-    final monthName = months[slot.date.month - 1];
-    return '$dayName ${slot.date.day} $monthName ${slot.date.year}';
+    return context
+        .appDateFormat('E d MMM yyyy', enPattern: 'EEE, MMM d, yyyy')
+        .format(slot.date);
   }
 
   String? _formatTimeRange(CalendarDateSlot slot) {
-    final start = _trimSeconds(slot.startTime);
-    if (start == null) return null;
-    final end = _trimSeconds(slot.endTime);
-    return end == null ? start : '$start - $end';
-  }
-
-  String? _trimSeconds(String? time) {
-    if (time == null || time.isEmpty) return null;
-    final parts = time.split(':');
-    if (parts.length < 2) return time;
-    return '${parts[0]}:${parts[1]}';
+    final start = formatBookingTime(slot.startTime);
+    if (start.isEmpty) return null;
+    final end = formatBookingTime(slot.endTime);
+    return end.isEmpty ? start : '$start - $end';
   }
 }

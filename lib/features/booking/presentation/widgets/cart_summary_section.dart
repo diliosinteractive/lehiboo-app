@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/booking/domain/models/order_cart_item.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 
 /// Récapitulatif du panier groupé par événement, avec compteurs +/− et total.
 /// Aligné sur le récap sticky du panier desktop (Next.js).
@@ -21,28 +23,6 @@ class CartSummarySection extends StatelessWidget {
       return '${value.toInt()} €';
     }
     return '${value.toStringAsFixed(2).replaceAll('.', ',')} €';
-  }
-
-  String _formatSlot(OrderCartItem item) {
-    final slot = item.selectedSlot;
-    if (slot == null) return '';
-    final date =
-        '${slot.date.day.toString().padLeft(2, '0')}/${slot.date.month.toString().padLeft(2, '0')}/${slot.date.year}';
-    final start = _formatTime(slot.startTime);
-    return start.isEmpty ? date : '$date · $start';
-  }
-
-  String _formatTime(String? raw) {
-    final value = raw?.trim() ?? '';
-    if (value.isEmpty) return '';
-
-    final match =
-        RegExp(r'(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?').firstMatch(value);
-    if (match == null) return value;
-
-    final hour = match.group(1)!.padLeft(2, '0');
-    final minute = match.group(2)!;
-    return '$hour:$minute';
   }
 
   @override
@@ -70,17 +50,17 @@ class CartSummarySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.receipt_long_outlined,
                 size: 20,
                 color: HbColors.brandPrimary,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Recapitulatif',
-                style: TextStyle(
+                context.l10n.bookingRecapTitle,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: HbColors.textPrimary,
@@ -95,7 +75,6 @@ class CartSummarySection extends StatelessWidget {
               onUpdateQuantity: onUpdateQuantity,
               onRemove: onRemove,
               formatPrice: _formatPrice,
-              formatSlot: _formatSlot,
             ),
             const SizedBox(height: 10),
           ],
@@ -105,7 +84,7 @@ class CartSummarySection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total billets',
+                context.l10n.bookingTotalTickets,
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
               ),
               Text(
@@ -122,9 +101,9 @@ class CartSummarySection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total',
-                style: TextStyle(
+              Text(
+                context.l10n.bookingTotal,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: HbColors.textPrimary,
@@ -151,14 +130,12 @@ class _EventGroup extends StatelessWidget {
   final void Function(String itemId, int quantity)? onUpdateQuantity;
   final void Function(String itemId)? onRemove;
   final String Function(double) formatPrice;
-  final String Function(OrderCartItem) formatSlot;
 
   const _EventGroup({
     required this.items,
     required this.onUpdateQuantity,
     required this.onRemove,
     required this.formatPrice,
-    required this.formatSlot,
   });
 
   @override
@@ -203,7 +180,7 @@ class _EventGroup extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        if (formatSlot(items.first).isNotEmpty) ...[
+        if (context.bookingCartItemSlotLabel(items.first).isNotEmpty) ...[
           const SizedBox(height: 2),
           Row(
             children: [
@@ -211,7 +188,7 @@ class _EventGroup extends StatelessWidget {
                   size: 12, color: Colors.grey.shade500),
               const SizedBox(width: 4),
               Text(
-                formatSlot(items.first),
+                context.bookingCartItemSlotLabel(items.first),
                 style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500),
               ),
             ],
@@ -274,7 +251,9 @@ class _CartLineRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${formatPrice(item.ticket.price)} / billet',
+                      context.l10n.bookingPerTicket(
+                        formatPrice(item.ticket.price),
+                      ),
                       style:
                           TextStyle(fontSize: 11, color: Colors.grey.shade500),
                     ),
@@ -334,9 +313,9 @@ class _CartLineRow extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                     ),
                     icon: const Icon(Icons.delete_outline, size: 16),
-                    label: const Text(
-                      'Retirer',
-                      style: TextStyle(
+                    label: Text(
+                      context.l10n.bookingRemove,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),

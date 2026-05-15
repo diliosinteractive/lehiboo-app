@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
@@ -68,12 +69,6 @@ class _VendorNewConversationScreenState
     }
   }
 
-  void _showSnack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
-  }
-
   // ── Search modals ─────────────────────────────────────────────────────────────
 
   Future<void> _openParticipantSearch() async {
@@ -105,12 +100,12 @@ class _VendorNewConversationScreenState
 
     if (widget.mode != VendorConversationMode.supportThread) {
       if (subject.isEmpty) {
-        setState(() => _error = 'Le sujet est requis.');
+        setState(() => _error = context.l10n.messagesSubjectRequired);
         return;
       }
     }
     if (message.isEmpty) {
-      setState(() => _error = 'Le message est requis.');
+      setState(() => _error = context.l10n.messagesMessageRequired);
       return;
     }
 
@@ -128,7 +123,7 @@ class _VendorNewConversationScreenState
         case VendorConversationMode.toParticipant:
           if (_selectedParticipant == null) {
             setState(() {
-              _error = 'Veuillez sélectionner un participant.';
+              _error = context.l10n.messagesSelectParticipantRequired;
               _submitting = false;
             });
             return;
@@ -144,7 +139,7 @@ class _VendorNewConversationScreenState
         case VendorConversationMode.toPartner:
           if (_selectedPartner == null) {
             setState(() {
-              _error = 'Veuillez sélectionner un partenaire.';
+              _error = context.l10n.messagesSelectPartnerRequired;
               _submitting = false;
             });
             return;
@@ -159,7 +154,8 @@ class _VendorNewConversationScreenState
 
         case VendorConversationMode.supportThread:
           final conv = await repo.createVendorSupportThread(
-            subject: subject.isEmpty ? 'Support' : subject,
+            subject:
+                subject.isEmpty ? context.l10n.messagesTabSupport : subject,
             message: message,
           );
           convUuid = conv.uuid;
@@ -177,24 +173,27 @@ class _VendorNewConversationScreenState
         setState(() {
           _submitting = false;
           _error = e.toString().contains('403')
-              ? _forbiddenMessage()
-              : 'Erreur : $e';
+              ? _forbiddenMessage(context)
+              : context.l10n.messagesLoadError(e.toString());
         });
       }
     }
   }
 
-  String _forbiddenMessage() => switch (widget.mode) {
+  String _forbiddenMessage(BuildContext context) => switch (widget.mode) {
         VendorConversationMode.toParticipant =>
-          'Ce participant n\'a pas d\'interaction avec votre organisation.',
-        VendorConversationMode.toPartner => 'Ce partenariat n\'est pas accepté.',
-        _ => 'Accès refusé.',
+          context.l10n.messagesVendorParticipantAccessDenied,
+        VendorConversationMode.toPartner =>
+          context.l10n.messagesVendorPartnerAccessDenied,
+        _ => context.l10n.messagesAccessDenied,
       };
 
-  String get _title => switch (widget.mode) {
-        VendorConversationMode.toParticipant => 'Contacter un participant',
-        VendorConversationMode.toPartner => 'Contacter un partenaire',
-        VendorConversationMode.supportThread => 'Ticket support',
+  String _title(BuildContext context) => switch (widget.mode) {
+        VendorConversationMode.toParticipant =>
+          context.l10n.messagesContactParticipant,
+        VendorConversationMode.toPartner => context.l10n.messagesContactPartner,
+        VendorConversationMode.supportThread =>
+          context.l10n.messagesSupportTicket,
       };
 
   // ── Build ─────────────────────────────────────────────────────────────────────
@@ -202,7 +201,7 @@ class _VendorNewConversationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_title)),
+      appBar: AppBar(title: Text(_title(context))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -221,8 +220,14 @@ class _VendorNewConversationScreenState
               maxLength: 100,
               decoration: InputDecoration(
                 labelText: widget.mode == VendorConversationMode.supportThread
-                    ? 'Sujet (optionnel)'
-                    : 'Sujet *',
+                    ? _optionalLabel(
+                        context,
+                        context.l10n.messagesSubjectLabel,
+                      )
+                    : _requiredLabel(
+                        context,
+                        context.l10n.messagesSubjectLabel,
+                      ),
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -232,9 +237,10 @@ class _VendorNewConversationScreenState
               maxLines: 5,
               maxLength: 2000,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Message *',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText:
+                    _requiredLabel(context, context.l10n.messagesMessageLabel),
+                border: const OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
             ),
@@ -257,7 +263,7 @@ class _VendorNewConversationScreenState
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Envoyer'),
+                  : Text(context.l10n.messagesSend),
             ),
           ],
         ),
@@ -271,7 +277,7 @@ class _VendorNewConversationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Participant *',
+        Text(_requiredLabel(context, context.l10n.messagesParticipantLabel),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
         if (_selectedParticipant != null)
@@ -283,7 +289,7 @@ class _VendorNewConversationScreenState
           )
         else
           _SearchTapField(
-            hint: 'Rechercher un participant…',
+            hint: context.l10n.messagesSearchParticipantPlaceholder,
             icon: Icons.person_search_outlined,
             onTap: _openParticipantSearch,
           ),
@@ -295,7 +301,7 @@ class _VendorNewConversationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Partenaire *',
+        Text(_requiredLabel(context, context.l10n.messagesPartnerLabel),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
         if (_selectedPartner != null)
@@ -313,15 +319,19 @@ class _VendorNewConversationScreenState
                   ),
                 )
               : _SearchTapField(
-                  hint: 'Rechercher un partenaire…',
+                  hint: context.l10n.messagesSearchPartnerPlaceholder,
                   icon: Icons.handshake_outlined,
                   onTap: _openPartnerSearch,
                 ),
       ],
     );
   }
-
 }
+
+String _requiredLabel(BuildContext context, String label) => '$label *';
+
+String _optionalLabel(BuildContext context, String label) =>
+    '$label ${context.l10n.messagesOptionalLabel}';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared selector UI
@@ -357,8 +367,7 @@ class _SearchTapField extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(hint,
-                  style:
-                      TextStyle(color: Colors.grey.shade500, fontSize: 15)),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 15)),
             ),
             Icon(icon, size: 18, color: _primaryColor),
           ],
@@ -415,12 +424,11 @@ class _SelectedCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
                 if (subtitle != null)
                   Text(subtitle!,
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600)),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               ],
             ),
           ),
@@ -529,21 +537,23 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
       builder: (_, scrollCtrl) => Column(
         children: [
           _dragHandle(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Text('Rechercher un participant',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              context.l10n.messagesSearchParticipantTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
             child: Text(
-              'Seuls les participants ayant interagi avec votre organisation.',
+              context.l10n.messagesVendorParticipantSearchHelper,
               style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: _searchField(onChanged: _onChanged),
+            child: _searchField(context, onChanged: _onChanged),
           ),
           Expanded(
             child: _loading
@@ -552,19 +562,18 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
                     ? _emptyState(
                         icon: Icons.person_search,
                         label: !_searched
-                            ? 'Chargement…'
-                            : 'Aucun résultat',
+                            ? context.l10n.commonLoading
+                            : context.l10n.messagesNoResults,
                       )
                     : ListView.builder(
                         controller: scrollCtrl,
                         itemCount: _results.length,
                         itemBuilder: (ctx, i) {
                           final p = _results[i];
-                          final hasUrl = p.avatarUrl != null &&
-                              p.avatarUrl!.isNotEmpty;
-                          final initial = p.name.isNotEmpty
-                              ? p.name[0].toUpperCase()
-                              : '?';
+                          final hasUrl =
+                              p.avatarUrl != null && p.avatarUrl!.isNotEmpty;
+                          final initial =
+                              p.name.isNotEmpty ? p.name[0].toUpperCase() : '?';
                           return ListTile(
                             leading: CircleAvatar(
                               backgroundColor:
@@ -584,8 +593,7 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
                                     fontWeight: FontWeight.w500)),
                             subtitle: Text(p.email,
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600)),
+                                    fontSize: 12, color: Colors.grey.shade600)),
                             onTap: () => Navigator.pop(ctx, p),
                           );
                         },
@@ -634,14 +642,17 @@ class _PartnerSearchSheetState extends State<_PartnerSearchSheet> {
       builder: (_, scrollCtrl) => Column(
         children: [
           _dragHandle(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text('Rechercher un partenaire',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              context.l10n.messagesSearchPartnerTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: _searchField(
+              context,
               onChanged: (v) => setState(() => _query = v.trim()),
             ),
           ),
@@ -650,8 +661,8 @@ class _PartnerSearchSheetState extends State<_PartnerSearchSheet> {
                 ? _emptyState(
                     icon: Icons.handshake_outlined,
                     label: widget.partners.isEmpty
-                        ? 'Aucun partenaire accepté'
-                        : 'Aucun résultat',
+                        ? context.l10n.messagesNoAcceptedPartners
+                        : context.l10n.messagesNoResults,
                   )
                 : ListView.builder(
                     controller: scrollCtrl,
@@ -665,11 +676,9 @@ class _PartnerSearchSheetState extends State<_PartnerSearchSheet> {
                           : '?';
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor:
-                              _primaryColor.withValues(alpha: 0.1),
-                          backgroundImage: hasUrl
-                              ? CachedNetworkImageProvider(url)
-                              : null,
+                          backgroundColor: _primaryColor.withValues(alpha: 0.1),
+                          backgroundImage:
+                              hasUrl ? CachedNetworkImageProvider(url) : null,
                           child: hasUrl
                               ? null
                               : Text(initial,
@@ -683,8 +692,7 @@ class _PartnerSearchSheetState extends State<_PartnerSearchSheet> {
                         subtitle: p.organizationName != p.companyName
                             ? Text(p.organizationName,
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600))
+                                    fontSize: 12, color: Colors.grey.shade600))
                             : null,
                         onTap: () => Navigator.pop(ctx, p),
                       );
@@ -715,12 +723,15 @@ Widget _dragHandle() => Center(
       ),
     );
 
-Widget _searchField({required void Function(String) onChanged}) {
+Widget _searchField(
+  BuildContext context, {
+  required void Function(String) onChanged,
+}) {
   return TextField(
     autofocus: true,
     onChanged: onChanged,
     decoration: InputDecoration(
-      hintText: 'Rechercher…',
+      hintText: context.l10n.messagesSearchHint,
       prefixIcon: const Icon(Icons.search, size: 20),
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(vertical: 10),

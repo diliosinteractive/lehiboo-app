@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../reviews/data/models/review_dto.dart';
 import '../providers/organizer_reviews_providers.dart';
@@ -50,7 +51,7 @@ class _OrganizerReviewsTabState extends ConsumerState<OrganizerReviewsTab> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'Impossible de charger les avis.',
+            context.l10n.organizerReviewsLoadError,
             style: TextStyle(color: Colors.grey[700]),
           ),
         ),
@@ -169,13 +170,13 @@ class _HistogramHeader extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Sur $total ${total > 1 ? "avis" : "avis"}',
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[700]),
+                        context.l10n.organizerReviewsTotal(total),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                       ),
                       if (verified > 0)
                         Text(
-                          'dont $verified ${verified > 1 ? "achats vérifiés" : "achat vérifié"}',
+                          context.l10n
+                              .organizerVerifiedPurchasesCount(verified),
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey[600],
@@ -297,12 +298,11 @@ class _NoReviewsState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.reviews_outlined,
-                size: 56, color: Colors.grey[400]),
+            Icon(Icons.reviews_outlined, size: 56, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            const Text(
-              "Aucun avis pour le moment",
-              style: TextStyle(
+            Text(
+              context.l10n.organizerNoReviewsTitle,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: HbColors.textPrimary,
@@ -311,7 +311,7 @@ class _NoReviewsState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "Soyez parmi les premiers à laisser un avis sur l'un de ses événements.",
+              context.l10n.organizerNoReviewsBody,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey[600]),
             ),

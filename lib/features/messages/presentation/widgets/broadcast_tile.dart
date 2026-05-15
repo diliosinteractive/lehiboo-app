@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import '../../domain/entities/broadcast.dart';
 
 class BroadcastTile extends StatelessWidget {
@@ -14,15 +14,18 @@ class BroadcastTile extends StatelessWidget {
 
   static const _primaryColor = Color(0xFFFF601F);
 
-  String _formatDate(DateTime? dt) {
+  String _formatDate(BuildContext context, DateTime? dt) {
     if (dt == null) return '';
-    return DateFormat('d MMM yyyy', 'fr_FR').format(dt);
+    return context
+        .appDateFormat('d MMM yyyy', enPattern: 'MMM d, yyyy')
+        .format(dt);
   }
 
   @override
   Widget build(BuildContext context) {
     final isSent = broadcast.isSent;
     final sentDate = broadcast.sentAt ?? broadcast.createdAt;
+    final formattedDate = _formatDate(context, sentDate);
 
     return InkWell(
       onTap: onTap,
@@ -64,7 +67,7 @@ class BroadcastTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _formatDate(sentDate),
+                        formattedDate,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade500,
@@ -86,7 +89,7 @@ class BroadcastTile extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'En cours d\'envoi...',
+                          context.l10n.messagesBroadcastSending,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.orange.shade700,
@@ -153,7 +156,8 @@ class _StatBadge extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           '$count',
-          style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500),
+          style: TextStyle(
+              fontSize: 11, color: color, fontWeight: FontWeight.w500),
         ),
       ],
     );

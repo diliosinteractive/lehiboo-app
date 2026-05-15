@@ -73,10 +73,12 @@ class HibonsService {
       newRankLabel: dto.newRankLabel,
       animationLabel: dto.animationLabel,
       pillar: dto.pillar,
+      source: dto.source,
+      rewardMessage: dto.rewardMessage,
     );
 
     debugPrint(
-      '🪙 HibonsService: parsed update delta=${update.delta} balance=${update.newBalance} rankChanged=${update.rankChanged}',
+      '🪙 HibonsService: parsed update delta=${update.delta} balance=${update.newBalance} source=${update.source} rankChanged=${update.rankChanged}',
     );
 
     // Mise à jour du state Riverpod

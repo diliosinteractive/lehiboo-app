@@ -4,12 +4,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/entities/user.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../routes/app_router.dart';
 
 /// Provides the DeepLinkService
 final deepLinkServiceProvider = Provider<DeepLinkService>((ref) {
   final router = ref.watch(routerProvider);
-  return DeepLinkService(router: router);
+  final role = ref.watch(authProvider.select((state) => state.user?.role));
+  return DeepLinkService(router: router, currentRole: role);
 });
 
 /// Deep Link Service
@@ -19,8 +22,13 @@ final deepLinkServiceProvider = Provider<DeepLinkService>((ref) {
 /// `data.type` and never navigate to `data.action` (which is a web URL).
 class DeepLinkService {
   final GoRouter _router;
+  final UserRole? _currentRole;
 
-  DeepLinkService({required GoRouter router}) : _router = router;
+  DeepLinkService({
+    required GoRouter router,
+    UserRole? currentRole,
+  })  : _router = router,
+        _currentRole = currentRole;
 
   /// Navigate to a path directly. Used by tests and for the local-notification
   /// payload path that already carries a resolved mobile route.
@@ -76,6 +84,11 @@ class DeepLinkService {
     required String type,
     required Map<String, dynamic> data,
   }) {
+    if (type.toLowerCase() == 'new_message') {
+      push(routeForType(type, data) ?? _routeFromActionUrl(actionUrl) ?? '/messages');
+      return;
+    }
+
     final actionRoute = _routeFromActionUrl(actionUrl);
     push(actionRoute ?? routeForType(type, data) ?? '/notifications');
   }
@@ -150,7 +163,10 @@ class DeepLinkService {
 
     if (normalized == 'new_message') {
       final uuid = firstPresent(['conversation_uuid', 'conversation_id']);
-      return uuid != null ? '/messages/$uuid' : '/messages';
+      return _messageRoute(
+        uuid,
+        firstPresent(['conversation_type', 'conversationType']),
+      );
     }
 
     if (normalized.startsWith('booking_')) {
@@ -253,7 +269,10 @@ class DeepLinkService {
       // -- Messages --
       case 'new_message':
         final uuid = str('conversation_uuid');
-        return uuid != null ? '/messages/$uuid' : '/messages';
+        return _messageRoute(
+          uuid,
+          str('conversation_type') ?? str('conversationType'),
+        );
 
       // -- Saved-search alerts --
       case 'new_alert_events':
@@ -305,5 +324,21 @@ class DeepLinkService {
         debugPrint('DeepLinkService: Unknown type "$type"');
         return null;
     }
+  }
+
+  String _messageRoute(String? uuid, String? conversationType) {
+    if (uuid == null || uuid.isEmpty) return '/messages';
+
+    return switch (_currentRole) {
+      UserRole.partner => switch (conversationType) {
+          'organization_organization' => '/messages/vendor-org/$uuid',
+          _ => '/messages/vendor/$uuid',
+        },
+      UserRole.admin => '/messages/admin/$uuid',
+      _ => switch (conversationType) {
+          'user_support' => '/messages/support/$uuid',
+          _ => '/messages/$uuid',
+        },
+    };
   }
 }

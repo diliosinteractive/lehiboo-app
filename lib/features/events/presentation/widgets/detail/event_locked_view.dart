@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 
 import '../../../domain/entities/locked_event_shell.dart';
@@ -189,7 +190,7 @@ class _LockCard extends StatelessWidget {
           Text(
             (subtitle != null && subtitle!.trim().isNotEmpty)
                 ? subtitle!
-                : 'Cet événement est privé. Entre le mot de passe communiqué par l\'organisateur.',
+                : context.l10n.eventPrivateFallbackSubtitle,
             style: TextStyle(
               fontSize: 14,
               height: 1.5,
@@ -203,7 +204,7 @@ class _LockCard extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: onUnlockPressed,
               icon: const Icon(Icons.lock_open, size: 18),
-              label: const Text('Entrer le mot de passe'),
+              label: Text(context.l10n.eventEnterPassword),
               style: ElevatedButton.styleFrom(
                 backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,

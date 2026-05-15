@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/petit_boo_theme.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import '../../providers/petit_boo_chat_provider.dart';
@@ -48,11 +48,11 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
     return data;
   }
 
-  List<_TripStop> get _stops {
+  List<_TripStop> _localizedStops(AppLocalizations l10n) {
     final stopsData = _plan['stops'] as List<dynamic>? ?? [];
     return stopsData.map((stop) {
       if (stop is! Map<String, dynamic>) {
-        return const _TripStop(order: 0, eventTitle: 'Étape');
+        return _TripStop(order: 0, eventTitle: l10n.petitBooTripFallbackStop);
       }
 
       // Extract coordinates from nested or flat structure
@@ -70,23 +70,26 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
         order: (stop['order'] as num?)?.toInt() ?? 0,
         eventUuid: stop['event_uuid'] as String?,
         eventTitle: stop['event_title'] as String? ??
-                    stop['title'] as String? ??
-                    'Étape',
+            stop['title'] as String? ??
+            l10n.petitBooTripFallbackStop,
         venueName: stop['venue_name'] as String?,
         address: stop['address'] as String?,
         city: stop['city'] as String?,
         arrivalTime: stop['arrival_time'] as String?,
         departureTime: stop['departure_time'] as String?,
         durationMinutes: (stop['duration_minutes'] as num?)?.toInt(),
-        travelFromPreviousKm: (stop['travel_from_previous_km'] as num?)?.toDouble(),
-        travelFromPreviousMinutes: (stop['travel_from_previous_minutes'] as num?)?.toInt(),
+        travelFromPreviousKm:
+            (stop['travel_from_previous_km'] as num?)?.toDouble(),
+        travelFromPreviousMinutes:
+            (stop['travel_from_previous_minutes'] as num?)?.toInt(),
         latitude: lat,
         longitude: lng,
       );
     }).toList();
   }
 
-  String get _title => _plan['title'] as String? ?? 'Ton itinéraire';
+  String _title(AppLocalizations l10n) =>
+      _plan['title'] as String? ?? l10n.petitBooToolPlanTripTitle;
 
   String? get _plannedDate => _plan['planned_date'] as String?;
 
@@ -94,14 +97,18 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
 
   String? get _endTime => _plan['end_time'] as String?;
 
-  int? get _totalDurationMinutes => (_plan['total_duration_minutes'] as num?)?.toInt();
+  int? get _totalDurationMinutes =>
+      (_plan['total_duration_minutes'] as num?)?.toInt();
 
-  double? get _totalDistanceKm => (_plan['total_distance_km'] as num?)?.toDouble();
+  double? get _totalDistanceKm =>
+      (_plan['total_distance_km'] as num?)?.toDouble();
 
   double? get _score => (_plan['score'] as num?)?.toDouble();
 
-  bool get _isSaved => widget.data['saved'] == true ||
-                       (widget.data['data'] is Map && (widget.data['data'] as Map)['saved'] == true);
+  bool get _isSaved =>
+      widget.data['saved'] == true ||
+      (widget.data['data'] is Map &&
+          (widget.data['data'] as Map)['saved'] == true);
 
   List<String> get _recommendations {
     final recs = _plan['recommendations'] as List<dynamic>?;
@@ -111,8 +118,9 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final accentColor = parseHexColor(widget.schema.color);
-    final stops = _stops;
+    final stops = _localizedStops(l10n);
 
     // Don't show the card if there are no stops
     if (stops.isEmpty) {
@@ -133,13 +141,12 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with title, date, stats
-          _buildHeader(accentColor),
+          _buildHeader(accentColor, stops),
 
           const Divider(height: 1, color: PetitBooTheme.border),
 
           // Map (collapsible)
-          if (validStops.isNotEmpty)
-            _buildMap(validStops, accentColor),
+          if (validStops.isNotEmpty) _buildMap(validStops, accentColor),
 
           // Timeline
           _buildTimeline(stops, accentColor),
@@ -158,7 +165,9 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
     );
   }
 
-  Widget _buildHeader(Color accentColor) {
+  Widget _buildHeader(Color accentColor, List<_TripStop> stops) {
+    final l10n = context.l10n;
+
     return Padding(
       padding: const EdgeInsets.all(PetitBooTheme.spacing16),
       child: Column(
@@ -186,14 +195,14 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _title,
+                      _title(l10n),
                       style: PetitBooTheme.headingSm.copyWith(
                         color: PetitBooTheme.textPrimary,
                       ),
                     ),
                     if (_plannedDate != null)
                       Text(
-                        _formatDate(_plannedDate!),
+                        _formatDate(context, _plannedDate!),
                         style: PetitBooTheme.bodySm.copyWith(
                           color: PetitBooTheme.textTertiary,
                         ),
@@ -261,7 +270,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                 ),
               _buildStatChip(
                 Icons.flag,
-                '${_stops.length} étape${_stops.length > 1 ? 's' : ''}',
+                l10n.petitBooTripStopsCount(stops.length),
                 accentColor,
               ),
             ],
@@ -397,7 +406,9 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _mapExpanded ? 'Réduire' : 'Agrandir la carte',
+                        _mapExpanded
+                            ? context.l10n.petitBooTripCollapseMap
+                            : context.l10n.petitBooTripExpandMap,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -459,7 +470,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Conseils',
+                context.l10n.petitBooTripTipsTitle,
                 style: PetitBooTheme.label.copyWith(
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFFF39C12),
@@ -506,7 +517,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
               child: OutlinedButton.icon(
                 onPressed: _onSavePlan,
                 icon: const Icon(Icons.bookmark_border, size: 18),
-                label: const Text('Sauvegarder'),
+                label: Text(context.l10n.petitBooTripSave),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: accentColor,
                   side: BorderSide(color: accentColor),
@@ -531,7 +542,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                     Icon(Icons.bookmark, size: 18, color: accentColor),
                     const SizedBox(width: 6),
                     Text(
-                      'Sauvegardé',
+                      context.l10n.petitBooTripSaved,
                       style: PetitBooTheme.label.copyWith(
                         color: accentColor,
                         fontWeight: FontWeight.w600,
@@ -555,7 +566,11 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                   _mapExpanded ? Icons.map : Icons.map_outlined,
                   size: 18,
                 ),
-                label: Text(_mapExpanded ? 'Masquer carte' : 'Voir carte'),
+                label: Text(
+                  _mapExpanded
+                      ? context.l10n.petitBooTripHideMap
+                      : context.l10n.petitBooTripShowMap,
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentColor,
                   foregroundColor: Colors.white,
@@ -577,14 +592,17 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
     // Le LLM a le contexte du plan qu'il vient de générer (date + event_uuids)
     // Pas besoin de passer l'UUID - il n'existe qu'après sauvegarde
     ref.read(petitBooChatProvider.notifier).sendMessage(
-      'Sauvegarde ce plan de sortie',
-    );
+          context.l10n.petitBooTripSavePlanPrompt,
+        );
   }
 
-  String _formatDate(String dateStr) {
+  String _formatDate(BuildContext context, String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      final formatter = DateFormat('EEEE d MMMM', 'fr_FR');
+      final formatter = context.appDateFormat(
+        'EEEE d MMMM',
+        enPattern: 'EEEE, MMMM d',
+      );
       final formatted = formatter.format(date);
       // Capitalize first letter
       return formatted[0].toUpperCase() + formatted.substring(1);
@@ -653,8 +671,8 @@ class _TimelineStopWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasTravel = !isLast &&
-        (travelToNextMinutes != null && travelToNextMinutes! > 0);
+    final hasTravel =
+        !isLast && (travelToNextMinutes != null && travelToNextMinutes! > 0);
 
     return InkWell(
       onTap: onTap,
@@ -736,7 +754,9 @@ class _TimelineStopWidget extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(
-                    bottom: isLast ? PetitBooTheme.spacing8 : PetitBooTheme.spacing16,
+                    bottom: isLast
+                        ? PetitBooTheme.spacing8
+                        : PetitBooTheme.spacing16,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -852,7 +872,8 @@ class _TimelineStopWidget extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _formatTravel(travelToNextMinutes, travelToNextKm),
+                                  _formatTravel(
+                                      travelToNextMinutes, travelToNextKm),
                                   style: PetitBooTheme.caption.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),

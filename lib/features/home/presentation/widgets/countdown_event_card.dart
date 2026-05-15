@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/home/presentation/utils/home_l10n_formatters.dart';
+import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 
 /// Card événement avec countdown FOMO pour créer l'urgence
 /// Affiche un timer en temps réel jusqu'à la date de l'événement ou la deadline de réservation
@@ -68,7 +71,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
   }
 
   void _calculateRemaining() {
-    final targetDate = widget.deadline ?? widget.activity.nextSlot?.startDateTime;
+    final targetDate =
+        widget.deadline ?? widget.activity.nextSlot?.startDateTime;
     if (targetDate == null) {
       setState(() => _remaining = Duration.zero);
       return;
@@ -82,33 +86,16 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
     });
   }
 
-  String _formatCountdown() {
-    if (_remaining == Duration.zero) {
-      return 'Maintenant !';
-    }
-
-    final hours = _remaining.inHours;
-    final minutes = _remaining.inMinutes.remainder(60);
-    final seconds = _remaining.inSeconds.remainder(60);
-
-    if (hours > 24) {
-      final days = _remaining.inDays;
-      return '$days jour${days > 1 ? 's' : ''} ${hours.remainder(24)}h';
-    } else if (hours > 0) {
-      return '${hours}h ${minutes}min';
-    } else if (minutes > 0) {
-      return '${minutes}min ${seconds}s';
-    } else {
-      return '${seconds}s';
-    }
-  }
+  String _formatCountdown(BuildContext context) =>
+      context.homeCountdown(_remaining);
 
   bool get _isUrgent => _remaining.inHours < 6;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/event/${widget.activity.id}', extra: widget.activity),
+      onTap: () =>
+          context.push('/event/${widget.activity.id}', extra: widget.activity),
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -135,8 +122,9 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
           ),
           boxShadow: [
             BoxShadow(
-              color: (_isUrgent ? const Color(0xFFFF4444) : HbColors.brandPrimary)
-                  .withValues(alpha: 0.15),
+              color:
+                  (_isUrgent ? const Color(0xFFFF4444) : HbColors.brandPrimary)
+                      .withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -150,7 +138,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
               children: [
                 // Main image
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(18)),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
                     child: widget.activity.imageUrl != null
@@ -160,10 +149,12 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                             placeholder: (context, url) => Container(
                               color: Colors.grey[200],
                               child: const Center(
-                                child: CircularProgressIndicator(color: HbColors.brandPrimary),
+                                child: CircularProgressIndicator(
+                                    color: HbColors.brandPrimary),
                               ),
                             ),
-                            errorWidget: (context, url, error) => _buildFallbackImage(),
+                            errorWidget: (context, url, error) =>
+                                _buildFallbackImage(),
                           )
                         : _buildFallbackImage(),
                   ),
@@ -173,7 +164,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(18)),
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -201,7 +193,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                       return Transform.scale(
                         scale: scale,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: _isUrgent
                                 ? const Color(0xFFFF4444)
@@ -228,7 +221,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                _formatCountdown(),
+                                _formatCountdown(context),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
@@ -249,7 +242,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                     top: 12,
                     right: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: widget.remainingSpots! <= 5
                             ? const Color(0xFFFF4444)
@@ -257,7 +251,13 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '${widget.remainingSpots} place${widget.remainingSpots! > 1 ? 's' : ''}',
+                        widget.remainingSpots == 1
+                            ? context.l10n.homeRemainingSpot(
+                                widget.remainingSpots!,
+                              )
+                            : context.l10n.homeRemainingSpots(
+                                widget.remainingSpots!,
+                              ),
                         style: TextStyle(
                           color: widget.remainingSpots! <= 5
                               ? Colors.white
@@ -275,15 +275,20 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                     bottom: 12,
                     left: 12,
                     child: GestureDetector(
-                      onTap: () => context.push('/search?categorySlug=${widget.activity.category!.slug}'),
+                      onTap: () => context.push(
+                          '/search?categorySlug=${widget.activity.category!.slug}'),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          widget.activity.category!.name,
+                          context.homeActivityCategoryLabel(
+                            slug: widget.activity.category!.slug,
+                            fallback: widget.activity.category!.name,
+                          ),
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 10,
@@ -320,8 +325,10 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                       child: Text(
                         widget.urgencyMessage ??
                             (widget.remainingSpots != null
-                                ? 'Plus que ${widget.remainingSpots} places !'
-                                : 'Dernières heures pour réserver !'),
+                                ? context.l10n.homeUrgencyRemainingSpots(
+                                    widget.remainingSpots!,
+                                  )
+                                : context.l10n.homeUrgencyLastHours),
                         style: TextStyle(
                           color: _isUrgent
                               ? const Color(0xFFFF4444)
@@ -350,7 +357,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                   // Location & Date row
                   Row(
                     children: [
-                      Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
+                      Icon(Icons.location_on_outlined,
+                          size: 16, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -365,10 +373,14 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                       ),
                       if (widget.activity.nextSlot != null) ...[
                         const SizedBox(width: 12),
-                        Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey[600]),
+                        Icon(Icons.calendar_today_outlined,
+                            size: 14, color: Colors.grey[600]),
                         const SizedBox(width: 4),
                         Text(
-                          _formatDate(widget.activity.nextSlot!.startDateTime),
+                          _formatDate(
+                            context,
+                            widget.activity.nextSlot!.startDateTime,
+                          ),
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -385,13 +397,15 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Price
-                      if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
+                      if (widget.activity.priceMin != null &&
+                          widget.activity.priceMin != -1)
                         Builder(builder: (context) {
                           final isTrulyFree = widget.activity.priceMin == 0 &&
-                              (widget.activity.priceMax == null || widget.activity.priceMax == 0);
+                              (widget.activity.priceMax == null ||
+                                  widget.activity.priceMax == 0);
                           if (isTrulyFree) {
                             return Text(
-                              'Gratuit',
+                              context.l10n.commonFree,
                               style: TextStyle(
                                 color: Colors.green[700],
                                 fontSize: 15,
@@ -410,7 +424,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                               ? widget.activity.priceMin!
                               : widget.activity.priceMax!;
                           return Text(
-                            'À partir de ${price.toStringAsFixed(0)}€',
+                            context.homePriceFrom(price),
                             style: const TextStyle(
                               color: HbColors.textSlate,
                               fontSize: 15,
@@ -421,30 +435,33 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
 
                       // CTA Button
                       ElevatedButton(
-                        onPressed: () => context.push('/event/${widget.activity.id}', extra: widget.activity),
+                        onPressed: () => context.push(
+                            '/event/${widget.activity.id}',
+                            extra: widget.activity),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _isUrgent
                               ? const Color(0xFFFF4444)
                               : HbColors.brandPrimary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),
                           ),
                           elevation: 0,
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Réserver',
-                              style: TextStyle(
+                              context.l10n.homeBook,
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(Icons.arrow_forward, size: 16),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward, size: 16),
                           ],
                         ),
                       ),
@@ -472,25 +489,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    String dayPart;
-    if (dateOnly == today) {
-      dayPart = 'Aujourd\'hui';
-    } else if (dateOnly == tomorrow) {
-      dayPart = 'Demain';
-    } else {
-      final weekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-      final year = (date.year % 100).toString().padLeft(2, '0');
-      dayPart = '${weekdays[date.weekday - 1]} ${date.day}/${date.month}/$year';
-    }
-
-    final timePart = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    return '$dayPart à $timePart';
+  String _formatDate(BuildContext context, DateTime date) {
+    return context.homeFriendlyDateAtTime(date);
   }
 
   Event _activityToEvent() {
@@ -510,9 +510,11 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
       postalCode: '',
       latitude: 0,
       longitude: 0,
-      images: widget.activity.imageUrl != null ? [widget.activity.imageUrl!] : [],
+      images:
+          widget.activity.imageUrl != null ? [widget.activity.imageUrl!] : [],
       coverImage: widget.activity.imageUrl,
-      priceType: widget.activity.priceMin == 0 ? PriceType.free : PriceType.paid,
+      priceType:
+          widget.activity.priceMin == 0 ? PriceType.free : PriceType.paid,
       minPrice: widget.activity.priceMin,
       maxPrice: widget.activity.priceMax,
       isIndoor: false,
@@ -577,28 +579,12 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
     });
   }
 
-  String _formatCountdown() {
-    if (_remaining == Duration.zero) return 'Now!';
-    final hours = _remaining.inHours;
-    final minutes = _remaining.inMinutes.remainder(60);
-    if (hours > 0) {
-      return '${hours}h${minutes.toString().padLeft(2, '0')}';
-    } else {
-      return '${minutes}min';
-    }
+  String _formatCountdown(BuildContext context) {
+    return context.homeCompactCountdown(_remaining);
   }
 
-  String _formatSlotDateTime(DateTime dt) {
-    const days = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
-    const months = [
-      'jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin',
-      'juil.', 'août', 'sep.', 'oct.', 'nov.', 'déc.',
-    ];
-    final dayName = days[dt.weekday - 1];
-    final monthName = months[dt.month - 1];
-    final time = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    final year = (dt.year % 100).toString().padLeft(2, '0');
-    return '$dayName ${dt.day} $monthName $year à $time';
+  String _formatSlotDateTime(BuildContext context, DateTime dt) {
+    return context.homeDateAtTime(dt);
   }
 
   bool get _isUrgent => _remaining.inHours < 6;
@@ -606,7 +592,8 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/event/${widget.activity.id}', extra: widget.activity),
+      onTap: () =>
+          context.push('/event/${widget.activity.id}', extra: widget.activity),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -624,8 +611,10 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                         ? CachedNetworkImage(
                             imageUrl: widget.activity.imageUrl!,
                             fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(color: Colors.grey[200]),
-                            errorWidget: (context, url, error) => _buildFallback(),
+                            placeholder: (context, url) =>
+                                Container(color: Colors.grey[200]),
+                            errorWidget: (context, url, error) =>
+                                _buildFallback(),
                           )
                         : _buildFallback(),
                   ),
@@ -635,9 +624,12 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   top: 10,
                   left: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: _isUrgent ? const Color(0xFFFF4444) : HbColors.brandPrimary,
+                      color: _isUrgent
+                          ? const Color(0xFFFF4444)
+                          : HbColors.brandPrimary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -646,7 +638,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                         const Icon(Icons.timer, color: Colors.white, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          _formatCountdown(),
+                          _formatCountdown(context),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -663,15 +655,20 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                     bottom: 10,
                     left: 10,
                     child: GestureDetector(
-                      onTap: () => context.push('/search?categorySlug=${widget.activity.category!.slug}'),
+                      onTap: () => context.push(
+                          '/search?categorySlug=${widget.activity.category!.slug}'),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          widget.activity.category!.name,
+                          context.homeActivityCategoryLabel(
+                            slug: widget.activity.category!.slug,
+                            fallback: widget.activity.category!.name,
+                          ),
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 10,
@@ -697,7 +694,8 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
           // Contenu - même design que EventCard
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 4),
+              padding:
+                  const EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -718,7 +716,9 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   // Organisateur
                   if (widget.activity.partner != null)
                     Text(
-                      'Par ${widget.activity.partner!.name}',
+                      context.l10n.homeEventByOrganizer(
+                        widget.activity.partner!.name,
+                      ),
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 13,
@@ -728,12 +728,15 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   // Rating (only if real data exists)
-                  if (widget.activity.rating != null && widget.activity.rating! > 0 &&
-                      widget.activity.reviewsCount != null && widget.activity.reviewsCount! > 0) ...[
+                  if (widget.activity.rating != null &&
+                      widget.activity.rating! > 0 &&
+                      widget.activity.reviewsCount != null &&
+                      widget.activity.reviewsCount! > 0) ...[
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded, size: 14, color: HbColors.brandPrimary),
+                        const Icon(Icons.star_rounded,
+                            size: 14, color: HbColors.brandPrimary),
                         const SizedBox(width: 4),
                         Text(
                           widget.activity.rating!.toStringAsFixed(1),
@@ -759,7 +762,8 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   // Location
                   Text(
                     widget.activity.city?.name ?? 'France',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
+                    style: TextStyle(
+                        color: Colors.grey[600], fontSize: 13, height: 1.1),
                   ),
                   // Date below address — same style as recommendations cards
                   if (widget.activity.nextSlot != null) ...[
@@ -774,7 +778,10 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            _formatSlotDateTime(widget.activity.nextSlot!.startDateTime),
+                            _formatSlotDateTime(
+                              context,
+                              widget.activity.nextSlot!.startDateTime,
+                            ),
                             style: TextStyle(
                               color: Colors.grey[700],
                               fontSize: 12,
@@ -790,13 +797,15 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   ],
                   const SizedBox(height: 4),
                   // Prix
-                  if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
+                  if (widget.activity.priceMin != null &&
+                      widget.activity.priceMin != -1)
                     Builder(builder: (context) {
                       final isTrulyFree = widget.activity.priceMin == 0 &&
-                          (widget.activity.priceMax == null || widget.activity.priceMax == 0);
+                          (widget.activity.priceMax == null ||
+                              widget.activity.priceMax == 0);
                       if (isTrulyFree) {
                         return Text(
-                          'Gratuit',
+                          context.l10n.commonFree,
                           style: TextStyle(
                             color: Colors.green[700],
                             fontWeight: FontWeight.w600,
@@ -816,7 +825,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                           ? widget.activity.priceMin!
                           : widget.activity.priceMax!;
                       return Text(
-                        'À partir de ${price.toStringAsFixed(0)}€',
+                        context.homePriceFrom(price),
                         style: const TextStyle(
                           color: HbColors.brandPrimary,
                           fontWeight: FontWeight.w600,
@@ -842,7 +851,8 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
           'assets/images/logo_picto_lehiboo.png',
           width: 60,
           height: 60,
-          errorBuilder: (_, __, ___) => const Icon(Icons.event, color: Colors.white, size: 40),
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.event, color: Colors.white, size: 40),
         ),
       ),
     );
@@ -865,9 +875,11 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
       postalCode: '',
       latitude: 0,
       longitude: 0,
-      images: widget.activity.imageUrl != null ? [widget.activity.imageUrl!] : [],
+      images:
+          widget.activity.imageUrl != null ? [widget.activity.imageUrl!] : [],
       coverImage: widget.activity.imageUrl,
-      priceType: widget.activity.priceMin == 0 ? PriceType.free : PriceType.paid,
+      priceType:
+          widget.activity.priceMin == 0 ? PriceType.free : PriceType.paid,
       minPrice: widget.activity.priceMin,
       maxPrice: widget.activity.priceMax,
       isIndoor: false,
@@ -891,11 +903,9 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
 /// Card compacte pour carousel horizontal (legacy)
 class _CompactCountdownCard extends StatefulWidget {
   final Activity activity;
-  final int? remainingSpots;
 
   const _CompactCountdownCard({
     required this.activity,
-    this.remainingSpots,
   });
 
   @override
@@ -934,15 +944,8 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
     });
   }
 
-  String _formatCountdown() {
-    if (_remaining == Duration.zero) return 'Now!';
-    final hours = _remaining.inHours;
-    final minutes = _remaining.inMinutes.remainder(60);
-    if (hours > 0) {
-      return '${hours}h${minutes.toString().padLeft(2, '0')}';
-    } else {
-      return '${minutes}min';
-    }
+  String _formatCountdown(BuildContext context) {
+    return context.homeCompactCountdown(_remaining);
   }
 
   bool get _isUrgent => _remaining.inHours < 6;
@@ -950,7 +953,8 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/event/${widget.activity.id}', extra: widget.activity),
+      onTap: () =>
+          context.push('/event/${widget.activity.id}', extra: widget.activity),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -971,7 +975,8 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(14)),
                     child: SizedBox(
                       width: double.infinity,
                       height: double.infinity,
@@ -979,8 +984,10 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                           ? CachedNetworkImage(
                               imageUrl: widget.activity.imageUrl!,
                               fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(color: Colors.grey[200]),
-                              errorWidget: (context, url, error) => _buildFallback(),
+                              placeholder: (context, url) =>
+                                  Container(color: Colors.grey[200]),
+                              errorWidget: (context, url, error) =>
+                                  _buildFallback(),
                             )
                           : _buildFallback(),
                     ),
@@ -990,18 +997,22 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _isUrgent ? const Color(0xFFFF4444) : HbColors.brandPrimary,
+                        color: _isUrgent
+                            ? const Color(0xFFFF4444)
+                            : HbColors.brandPrimary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.timer, color: Colors.white, size: 11),
+                          const Icon(Icons.timer,
+                              color: Colors.white, size: 11),
                           const SizedBox(width: 3),
                           Text(
-                            _formatCountdown(),
+                            _formatCountdown(context),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -1012,27 +1023,6 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                       ),
                     ),
                   ),
-                  // Places restantes
-                  if (widget.remainingSpots != null)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${widget.remainingSpots}',
-                          style: TextStyle(
-                            color: widget.remainingSpots! <= 5 ? const Color(0xFFFF4444) : HbColors.textSlate,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -1056,13 +1046,15 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                   ),
                   const SizedBox(height: 4),
                   // Prix
-                  if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
+                  if (widget.activity.priceMin != null &&
+                      widget.activity.priceMin != -1)
                     Builder(builder: (context) {
                       final isTrulyFree = widget.activity.priceMin == 0 &&
-                          (widget.activity.priceMax == null || widget.activity.priceMax == 0);
+                          (widget.activity.priceMax == null ||
+                              widget.activity.priceMax == 0);
                       if (isTrulyFree) {
                         return Text(
-                          'Gratuit',
+                          context.l10n.commonFree,
                           style: TextStyle(
                             color: Colors.green[700],
                             fontSize: 11,
@@ -1081,7 +1073,7 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                           ? widget.activity.priceMin!
                           : widget.activity.priceMax!;
                       return Text(
-                        'Dès ${price.toStringAsFixed(0)}€',
+                        context.homePriceFromShort(price),
                         style: const TextStyle(
                           color: HbColors.brandPrimary,
                           fontSize: 11,
@@ -1106,7 +1098,8 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
           'assets/images/logo_picto_lehiboo.png',
           width: 40,
           height: 40,
-          errorBuilder: (_, __, ___) => const Icon(Icons.event, color: Colors.white, size: 32),
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.event, color: Colors.white, size: 32),
         ),
       ),
     );
@@ -1124,11 +1117,14 @@ class UrgencySection extends ConsumerWidget {
     return activitiesAsync.when(
       data: (activities) {
         final now = DateTime.now();
-        final urgentActivities = activities.where((activity) {
-          if (activity.nextSlot == null) return false;
-          final diff = activity.nextSlot!.startDateTime.difference(now);
-          return diff.inHours >= 0 && diff.inHours <= 12;
-        }).take(6).toList();
+        final urgentActivities = activities
+            .where((activity) {
+              if (activity.nextSlot == null) return false;
+              final diff = activity.nextSlot!.startDateTime.difference(now);
+              return diff.inHours >= 0 && diff.inHours <= 12;
+            })
+            .take(6)
+            .toList();
 
         if (urgentActivities.isEmpty) return const SizedBox.shrink();
 
@@ -1138,41 +1134,10 @@ class UrgencySection extends ConsumerWidget {
             // Title
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF4444).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.local_fire_department,
-                      color: Color(0xFFFF4444),
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Avant qu\'il soit trop tard',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: HbColors.textSlate,
-                          ),
-                        ),
-                        Text(
-                          'Ces événements commencent bientôt',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              child: HomeSectionTitle(
+                title: context.l10n.homeUrgencyTitle,
+                subtitle: context.l10n.homeUrgencySubtitle,
+                fontSize: 17,
               ),
             ),
 

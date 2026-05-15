@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/message.dart';
 
 class MessageBubble extends StatefulWidget {
@@ -8,6 +9,7 @@ class MessageBubble extends StatefulWidget {
   final bool isLastOwn;
   final void Function(String messageUuid, String content)? onEdit;
   final void Function(String messageUuid)? onDelete;
+
   /// Logo URL of the organisation involved in the conversation.
   /// Used instead of the sender's personal avatar when senderType == 'organization'.
   final String? organizationLogoUrl;
@@ -35,8 +37,7 @@ class _MessageBubbleState extends State<MessageBubble> {
   @override
   void initState() {
     super.initState();
-    _editController =
-        TextEditingController(text: widget.message.content ?? '');
+    _editController = TextEditingController(text: widget.message.content ?? '');
   }
 
   @override
@@ -62,14 +63,12 @@ class _MessageBubbleState extends State<MessageBubble> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline,
-                  size: 14, color: Colors.grey.shade600),
+              Icon(Icons.info_outline, size: 14, color: Colors.grey.shade600),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   msg.content ?? '',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -84,71 +83,69 @@ class _MessageBubbleState extends State<MessageBubble> {
     return Opacity(
       opacity: isOptimistic ? 0.6 : 1.0,
       child: Align(
-      alignment:
-          msg.isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: msg.isMine && !msg.isDeleted && !isOptimistic
-            ? () => _showContextMenu(context)
-            : null,
-        child: Container(
-          margin: EdgeInsets.only(
-            left: msg.isMine ? 48 : 8,
-            right: msg.isMine ? 8 : 48,
-            top: 2,
-            bottom: 2,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (!msg.isMine) ...[
-                _buildAvatar(msg, isMine: false),
-                const SizedBox(width: 6),
-              ],
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: msg.isMine
-                      ? CrossAxisAlignment.end
-                      : CrossAxisAlignment.start,
-                  children: [
-                    // Sender name above non-own messages
-                    if (!msg.isMine && msg.sender?.name.isNotEmpty == true)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4, bottom: 3),
-                        child: Text(
-                          msg.sender!.name,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: _primaryColor,
+        alignment: msg.isMine ? Alignment.centerRight : Alignment.centerLeft,
+        child: GestureDetector(
+          onLongPress: msg.isMine && !msg.isDeleted && !isOptimistic
+              ? () => _showContextMenu(context)
+              : null,
+          child: Container(
+            margin: EdgeInsets.only(
+              left: msg.isMine ? 48 : 8,
+              right: msg.isMine ? 8 : 48,
+              top: 2,
+              bottom: 2,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (!msg.isMine) ...[
+                  _buildAvatar(msg, isMine: false),
+                  const SizedBox(width: 6),
+                ],
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: msg.isMine
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      // Sender name above non-own messages
+                      if (!msg.isMine && msg.sender?.name.isNotEmpty == true)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 3),
+                          child: Text(
+                            msg.sender!.name,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: _primaryColor,
+                            ),
                           ),
                         ),
-                      ),
-                    _buildBubble(context, msg),
-                    if (widget.isLastOwn && msg.isMine && !msg.isDeleted)
-                      isOptimistic
-                          ? const Padding(
-                              padding: EdgeInsets.only(right: 4, top: 2),
-                              child: SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 1.5,
-                                    color: Colors.grey),
-                              ),
-                            )
-                          : _buildDeliveryTicks(msg),
-                  ],
+                      _buildBubble(context, msg),
+                      if (widget.isLastOwn && msg.isMine && !msg.isDeleted)
+                        isOptimistic
+                            ? const Padding(
+                                padding: EdgeInsets.only(right: 4, top: 2),
+                                child: SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 1.5, color: Colors.grey),
+                                ),
+                              )
+                            : _buildDeliveryTicks(msg),
+                    ],
+                  ),
                 ),
-              ),
-              if (msg.isMine) ...[
-                const SizedBox(width: 6),
-                _buildAvatar(msg, isMine: true),
+                if (msg.isMine) ...[
+                  const SizedBox(width: 6),
+                  _buildAvatar(msg, isMine: true),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -198,7 +195,7 @@ class _MessageBubbleState extends State<MessageBubble> {
           borderRadius: _bubbleRadius(isMine),
         ),
         child: Text(
-          'Ce message a été supprimé',
+          context.l10n.messagesDeletedMessage,
           style: TextStyle(
               color: Colors.grey.shade500,
               fontStyle: FontStyle.italic,
@@ -247,7 +244,7 @@ class _MessageBubbleState extends State<MessageBubble> {
               if (msg.isEdited) ...[
                 const SizedBox(width: 4),
                 Text(
-                  '(modifié)',
+                  context.l10n.messagesEditedSuffix,
                   style: TextStyle(
                     fontSize: 10,
                     color: isMine
@@ -297,7 +294,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             children: [
               TextButton(
                 onPressed: () => setState(() => _isEditing = false),
-                child: const Text('Annuler'),
+                child: Text(context.l10n.commonCancel),
               ),
               TextButton(
                 onPressed: () {
@@ -307,8 +304,10 @@ class _MessageBubbleState extends State<MessageBubble> {
                   }
                   setState(() => _isEditing = false);
                 },
-                child: const Text('Valider',
-                    style: TextStyle(color: _primaryColor)),
+                child: Text(
+                  context.l10n.commonValidate,
+                  style: const TextStyle(color: _primaryColor),
+                ),
               ),
             ],
           ),
@@ -357,7 +356,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             ),
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Modifier'),
+              title: Text(context.l10n.messagesEditAction),
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _isEditing = true);
@@ -366,7 +365,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             if (widget.message.content?.isNotEmpty == true)
               ListTile(
                 leading: const Icon(Icons.copy_outlined),
-                title: const Text('Copier le texte'),
+                title: Text(context.l10n.messagesCopyTextAction),
                 onTap: () {
                   Navigator.pop(ctx);
                   Clipboard.setData(
@@ -374,10 +373,11 @@ class _MessageBubbleState extends State<MessageBubble> {
                 },
               ),
             ListTile(
-              leading:
-                  const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Supprimer',
-                  style: TextStyle(color: Colors.red)),
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: Text(
+                context.l10n.messagesDeleteAction,
+                style: const TextStyle(color: Colors.red),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 widget.onDelete?.call(widget.message.uuid);

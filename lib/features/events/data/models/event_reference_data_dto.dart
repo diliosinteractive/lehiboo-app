@@ -2,6 +2,7 @@ class EventReferenceDataDto {
   final List<EventReferenceCategoryDto> categories;
   final List<EventReferenceOptionDto> eventTags;
   final List<EventReferenceAudienceGroupDto> audienceGroups;
+  final List<EventReferencePublicFilterDto> publicFilters;
   final List<EventReferenceOptionDto> themes;
   final List<EventReferenceOptionDto> specialEvents;
   final List<EventReferenceOptionDto> emotions;
@@ -10,6 +11,7 @@ class EventReferenceDataDto {
     required this.categories,
     required this.eventTags,
     required this.audienceGroups,
+    this.publicFilters = const [],
     required this.themes,
     required this.specialEvents,
     required this.emotions,
@@ -26,6 +28,9 @@ class EventReferenceDataDto {
       audienceGroups: _asList(json['audience_groups'])
           .map(EventReferenceAudienceGroupDto.fromJson)
           .toList(),
+      publicFilters: _asList(json['public_filters'])
+          .map(EventReferencePublicFilterDto.fromJson)
+          .toList(),
       themes: _asList(json['themes'])
           .map(EventReferenceOptionDto.fromJson)
           .toList(),
@@ -35,6 +40,39 @@ class EventReferenceDataDto {
       emotions: _asList(json['emotions'])
           .map(EventReferenceOptionDto.fromJson)
           .toList(),
+    );
+  }
+}
+
+class EventReferencePublicFilterDto {
+  final String key;
+  final String label;
+  final String param;
+  final String value;
+  final List<String> targetAudienceSlugs;
+  final int? eventCount;
+
+  const EventReferencePublicFilterDto({
+    required this.key,
+    required this.label,
+    required this.param,
+    required this.value,
+    this.targetAudienceSlugs = const [],
+    this.eventCount,
+  });
+
+  factory EventReferencePublicFilterDto.fromJson(Map<String, dynamic> json) {
+    return EventReferencePublicFilterDto(
+      key: _asString(json['key']),
+      label: _asString(json['label']),
+      param: _asString(json['param']),
+      value: _asString(json['value']),
+      targetAudienceSlugs: _asStringList(
+        json['targetAudienceSlugs'] ?? json['target_audience_slugs'],
+      ),
+      eventCount: _asNullableInt(
+        json['eventsCount'] ?? json['event_count'] ?? json['count'],
+      ),
     );
   }
 }
@@ -142,6 +180,16 @@ List<Map<String, dynamic>> _asList(dynamic value) {
   }
 
   return const [];
+}
+
+List<String> _asStringList(dynamic value) {
+  if (value is! List) return const [];
+
+  return value
+      .map(_asNullableString)
+      .whereType<String>()
+      .where((item) => item.isNotEmpty)
+      .toList();
 }
 
 String _asString(dynamic value) {

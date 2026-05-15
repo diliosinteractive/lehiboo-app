@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/entities/review.dart';
 import 'rating_stars.dart';
@@ -58,11 +59,11 @@ class ReviewCard extends StatelessWidget {
           ),
           if (review.response != null) ...[
             const SizedBox(height: 12),
-            _buildResponseBlock(),
+            _buildResponseBlock(context),
           ],
           if (onVote != null || onReport != null) ...[
             const SizedBox(height: 12),
-            _buildActionsRow(),
+            _buildActionsRow(context),
           ],
         ],
       ),
@@ -76,9 +77,8 @@ class ReviewCard extends StatelessWidget {
         CircleAvatar(
           radius: 20,
           backgroundColor: HbColors.brandPrimary.withValues(alpha: 0.1),
-          backgroundImage: author?.avatar != null
-              ? NetworkImage(author!.avatar!)
-              : null,
+          backgroundImage:
+              author?.avatar != null ? NetworkImage(author!.avatar!) : null,
           child: author?.avatar == null
               ? Text(
                   author?.displayInitials ?? '?',
@@ -101,7 +101,7 @@ class ReviewCard extends StatelessWidget {
                     child: Text(
                       author?.name.isNotEmpty == true
                           ? author!.name
-                          : 'Anonyme',
+                          : context.l10n.eventAnonymous,
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -112,7 +112,7 @@ class ReviewCard extends StatelessWidget {
                   ),
                   if (review.isVerifiedPurchase) ...[
                     const SizedBox(width: 6),
-                    _buildVerifiedBadge(),
+                    _buildVerifiedBadge(context),
                   ],
                 ],
               ),
@@ -132,21 +132,21 @@ class ReviewCard extends StatelessWidget {
     );
   }
 
-  Widget _buildVerifiedBadge() {
+  Widget _buildVerifiedBadge(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: Colors.green.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.verified, size: 10, color: Colors.green),
-          SizedBox(width: 2),
+          const Icon(Icons.verified, size: 10, color: Colors.green),
+          const SizedBox(width: 2),
           Text(
-            'Vérifié',
-            style: TextStyle(
+            context.l10n.organizerVerifiedPurchase,
+            style: const TextStyle(
               fontSize: 9,
               color: Colors.green,
               fontWeight: FontWeight.w600,
@@ -157,7 +157,7 @@ class ReviewCard extends StatelessWidget {
     );
   }
 
-  Widget _buildResponseBlock() {
+  Widget _buildResponseBlock(BuildContext context) {
     final r = review.response!;
     return Container(
       padding: const EdgeInsets.all(12),
@@ -177,7 +177,7 @@ class ReviewCard extends StatelessWidget {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  'Réponse de ${r.organizationName}',
+                  context.l10n.organizerReplyBy(r.organizationName),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -210,7 +210,7 @@ class ReviewCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionsRow() {
+  Widget _buildActionsRow(BuildContext context) {
     // Quand l'utilisateur a déjà voté, on désactive les deux boutons :
     // l'actif garde sa couleur (indique son choix), l'inactif passe en grisé.
     // Le serveur refuse de re-voter (422 "already voted") sans unvote préalable
@@ -243,7 +243,7 @@ class ReviewCard extends StatelessWidget {
           IconButton(
             visualDensity: VisualDensity.compact,
             iconSize: 18,
-            tooltip: 'Signaler',
+            tooltip: context.l10n.reviewsReportAction,
             color: Colors.grey.shade500,
             icon: const Icon(Icons.flag_outlined),
             onPressed: () {

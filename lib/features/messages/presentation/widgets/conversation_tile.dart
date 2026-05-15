@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
 
@@ -24,8 +24,8 @@ class ConversationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final lastMsg = conversation.latestMessage;
     final hasUnread = conversation.unreadCount > 0;
-    final previewText = _buildPreviewText(lastMsg);
-    final displayName = _displayName();
+    final previewText = _buildPreviewText(context, lastMsg);
+    final displayName = _displayName(context);
     final hasNameEntity = conversation.participant != null ||
         conversation.organization != null ||
         conversation.partnerOrganization != null;
@@ -95,10 +95,10 @@ class ConversationTile extends StatelessWidget {
                             ),
                             const SizedBox(width: 5),
                             if (conversation.isSignalement) ...[
-                              _signalementBadge(),
+                              _signalementBadge(context),
                               const SizedBox(width: 4),
                             ],
-                            _buildStatusBadge(),
+                            _buildStatusBadge(context),
                           ],
                         ),
                       ),
@@ -106,15 +106,14 @@ class ConversationTile extends StatelessWidget {
                       if (conversation.lastMessageAt != null) ...[
                         const SizedBox(width: 6),
                         Text(
-                          _formatTime(conversation.lastMessageAt!),
+                          _formatTime(context, conversation.lastMessageAt!),
                           style: TextStyle(
                               fontSize: 11, color: Colors.grey.shade500),
                         ),
                       ],
-                      if (onReport != null ||
-                          conversation.userHasReported) ...[
+                      if (onReport != null || conversation.userHasReported) ...[
                         const SizedBox(width: 6),
-                        _buildReportWidget(),
+                        _buildReportWidget(context),
                       ],
                     ],
                   ),
@@ -178,8 +177,8 @@ class ConversationTile extends StatelessWidget {
     );
   }
 
-  String _displayName() {
-    if (showLehibooAvatar) return 'Support LeHiboo';
+  String _displayName(BuildContext context) {
+    if (showLehibooAvatar) return context.l10n.messagesTabSupportLeHiboo;
     switch (conversation.conversationType) {
       case 'organization_organization':
         return conversation.partnerOrganization?.companyName ??
@@ -188,7 +187,7 @@ class ConversationTile extends StatelessWidget {
         if (conversation.organization != null) {
           return conversation.organization!.companyName;
         }
-        return 'Support LeHiboo';
+        return context.l10n.messagesTabSupportLeHiboo;
       case 'participant_vendor':
       case 'user_support':
         if (conversation.participant != null) {
@@ -253,9 +252,8 @@ class ConversationTile extends StatelessWidget {
         backgroundImage: CachedNetworkImageProvider(url),
       );
     }
-    final initial = participant.name.isNotEmpty
-        ? participant.name[0].toUpperCase()
-        : '?';
+    final initial =
+        participant.name.isNotEmpty ? participant.name[0].toUpperCase() : '?';
     return CircleAvatar(
       radius: 24,
       backgroundColor: _primaryColor,
@@ -275,7 +273,7 @@ class ConversationTile extends StatelessWidget {
     );
   }
 
-  Widget _buildReportWidget() {
+  Widget _buildReportWidget(BuildContext context) {
     if (conversation.userHasReported) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -289,7 +287,7 @@ class ConversationTile extends StatelessWidget {
             Icon(Icons.flag, size: 10, color: Colors.orange.shade700),
             const SizedBox(width: 3),
             Text(
-              'Signalé',
+              context.l10n.messagesReportedLabel,
               style: TextStyle(
                   fontSize: 10,
                   color: Colors.orange.shade700,
@@ -314,7 +312,7 @@ class ConversationTile extends StatelessWidget {
             Icon(Icons.flag_outlined, size: 10, color: Colors.grey.shade600),
             const SizedBox(width: 3),
             Text(
-              'Signaler',
+              context.l10n.messagesReportLabel,
               style: TextStyle(
                   fontSize: 10,
                   color: Colors.grey.shade600,
@@ -326,7 +324,7 @@ class ConversationTile extends StatelessWidget {
     );
   }
 
-  Widget _signalementBadge() {
+  Widget _signalementBadge(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
       decoration: BoxDecoration(
@@ -334,20 +332,22 @@ class ConversationTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        'Signalement',
+        context.l10n.messagesReportBadge,
         style: TextStyle(
-            fontSize: 9, color: Colors.red.shade700, fontWeight: FontWeight.w600),
+            fontSize: 9,
+            color: Colors.red.shade700,
+            fontWeight: FontWeight.w600),
       ),
     );
   }
 
-  Widget _buildStatusBadge() {
+  Widget _buildStatusBadge(BuildContext context) {
     final isClosed = conversation.status == 'closed';
     final hasUnread = conversation.unreadCount > 0;
 
     if (isClosed) {
       return _statusPill(
-        label: 'Fermé',
+        label: context.l10n.messagesStatusClosed,
         icon: Icons.lock_outline,
         bg: Colors.grey.shade100,
         fg: Colors.grey.shade600,
@@ -355,13 +355,13 @@ class ConversationTile extends StatelessWidget {
     }
     if (hasUnread) {
       return _statusPill(
-        label: 'En attente',
+        label: context.l10n.messagesStatusPending,
         bg: Colors.orange.shade100,
         fg: Colors.orange.shade700,
       );
     }
     return _statusPill(
-      label: 'Ouvert',
+      label: context.l10n.messagesStatusOpen,
       bg: Colors.green.shade100,
       fg: Colors.green.shade700,
     );
@@ -435,19 +435,21 @@ class ConversationTile extends StatelessWidget {
     );
   }
 
-  String? _buildPreviewText(Message? latest) {
+  String? _buildPreviewText(BuildContext context, Message? latest) {
     if (latest == null) return null;
-    if (latest.isDeleted) return 'Message supprimé';
+    if (latest.isDeleted) return context.l10n.messagesDeletedPreview;
     return latest.content;
   }
 
-  String _formatTime(DateTime dt) {
+  String _formatTime(BuildContext context, DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return "À l'instant";
+    if (diff.inMinutes < 1) return context.l10n.messagesRelativeJustNow;
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
-    if (diff.inDays < 7) return '${diff.inDays}j';
-    return DateFormat('dd/MM').format(dt);
+    if (diff.inDays < 7) {
+      return context.l10n.messagesRelativeDaysShort(diff.inDays);
+    }
+    return context.appDateFormat('dd/MM', enPattern: 'MM/dd').format(dt);
   }
 }

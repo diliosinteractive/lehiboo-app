@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import '../../domain/entities/broadcast.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 
@@ -20,8 +20,7 @@ class BroadcastDetailScreen extends ConsumerStatefulWidget {
       _BroadcastDetailScreenState();
 }
 
-class _BroadcastDetailScreenState
-    extends ConsumerState<BroadcastDetailScreen> {
+class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
   Timer? _pollTimer;
 
   @override
@@ -45,8 +44,7 @@ class _BroadcastDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    final async =
-        ref.watch(_broadcastDetailProvider(widget.broadcastUuid));
+    final async = ref.watch(_broadcastDetailProvider(widget.broadcastUuid));
 
     // Manage polling based on isSent state
     async.whenData((broadcast) {
@@ -59,7 +57,7 @@ class _BroadcastDetailScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Diffusion'),
+        title: Text(context.l10n.messagesBroadcastTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -76,14 +74,14 @@ class _BroadcastDetailScreenState
             children: [
               const Icon(Icons.error_outline, color: Colors.red, size: 40),
               const SizedBox(height: 8),
-              Text('Erreur : $e',
+              Text(context.l10n.messagesLoadError(e.toString()),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => ref.invalidate(
-                    _broadcastDetailProvider(widget.broadcastUuid)),
-                child: const Text('Réessayer'),
+                onPressed: () => ref
+                    .invalidate(_broadcastDetailProvider(widget.broadcastUuid)),
+                child: Text(context.l10n.commonRetry),
               ),
             ],
           ),
@@ -101,9 +99,14 @@ class _BroadcastDetail extends StatelessWidget {
 
   static const _primaryColor = Color(0xFFFF601F);
 
-  String _formatDate(DateTime? dt) {
+  String _formatDate(BuildContext context, DateTime? dt) {
     if (dt == null) return '–';
-    return DateFormat('d MMMM yyyy, HH\'h\'mm', 'fr_FR').format(dt);
+    return context
+        .appDateFormat(
+          "d MMMM yyyy 'à' HH:mm",
+          enPattern: 'MMMM d, yyyy, HH:mm',
+        )
+        .format(dt);
   }
 
   @override
@@ -118,8 +121,7 @@ class _BroadcastDetail extends StatelessWidget {
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 16),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.orange.shade50,
                 borderRadius: BorderRadius.circular(8),
@@ -137,9 +139,9 @@ class _BroadcastDetail extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'L\'envoi est en cours de traitement par le serveur.',
-                    style: TextStyle(
-                        color: Colors.orange.shade800, fontSize: 13),
+                    context.l10n.messagesBroadcastProcessing,
+                    style:
+                        TextStyle(color: Colors.orange.shade800, fontSize: 13),
                   ),
                 ],
               ),
@@ -199,7 +201,9 @@ class _BroadcastDetail extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        broadcast.isSent ? 'Envoyée' : 'En cours',
+                        broadcast.isSent
+                            ? context.l10n.messagesBroadcastStatusSent
+                            : context.l10n.messagesBroadcastStatusInProgress,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -214,10 +218,12 @@ class _BroadcastDetail extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   broadcast.isSent
-                      ? 'Envoyée le ${_formatDate(broadcast.sentAt)}'
-                      : 'Créée le ${_formatDate(broadcast.createdAt)}',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade600),
+                      ? context.l10n.broadcastSentOn(
+                          _formatDate(context, broadcast.sentAt))
+                      : context.l10n.broadcastCreatedOn(
+                          _formatDate(context, broadcast.createdAt),
+                        ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -230,7 +236,7 @@ class _BroadcastDetail extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   icon: Icons.people_outline,
-                  label: 'Destinataires',
+                  label: context.l10n.messagesRecipientsLabel,
                   value: '${broadcast.recipientsCount}',
                   color: Colors.blue.shade700,
                 ),
@@ -239,7 +245,7 @@ class _BroadcastDetail extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   icon: Icons.visibility_outlined,
-                  label: 'Lus',
+                  label: context.l10n.messagesBroadcastReadLabel,
                   value: '${broadcast.readCount}',
                   color: Colors.green.shade700,
                 ),
@@ -248,7 +254,7 @@ class _BroadcastDetail extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   icon: Icons.chat_bubble_outline,
-                  label: 'Conversations',
+                  label: context.l10n.messagesBroadcastConversationsLabel,
                   value: '${broadcast.conversationsCreated}',
                   color: Colors.purple.shade700,
                 ),
@@ -259,9 +265,9 @@ class _BroadcastDetail extends StatelessWidget {
 
           // Events targeted
           if (broadcast.events.isNotEmpty) ...[
-            const Text(
-              'Événements ciblés',
-              style: TextStyle(
+            Text(
+              context.l10n.messagesBroadcastTargetedEventsLabel,
+              style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87),
@@ -272,13 +278,12 @@ class _BroadcastDetail extends StatelessWidget {
               runSpacing: 6,
               children: broadcast.events
                   .map((e) => Chip(
-                        label: Text(e.title,
-                            style: const TextStyle(fontSize: 12)),
+                        label:
+                            Text(e.title, style: const TextStyle(fontSize: 12)),
                         backgroundColor: Colors.grey.shade100,
                         side: BorderSide(color: Colors.grey.shade300),
                         padding: EdgeInsets.zero,
-                        materialTapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ))
                   .toList(),
             ),
@@ -286,9 +291,9 @@ class _BroadcastDetail extends StatelessWidget {
           ],
 
           // Message body
-          const Text(
-            'Message',
-            style: TextStyle(
+          Text(
+            context.l10n.messagesMessageLabel,
+            style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87),

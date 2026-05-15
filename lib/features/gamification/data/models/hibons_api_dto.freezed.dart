@@ -3881,6 +3881,9 @@ mixin _$HibonsUpdateDto {
   @JsonKey(name: 'animation_label')
   String? get animationLabel => throw _privateConstructorUsedError;
   String? get pillar => throw _privateConstructorUsedError;
+  String? get source => throw _privateConstructorUsedError;
+  @JsonKey(name: 'reward_message')
+  String? get rewardMessage => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -3903,7 +3906,9 @@ abstract class $HibonsUpdateDtoCopyWith<$Res> {
       @JsonKey(name: 'new_rank') String? newRank,
       @JsonKey(name: 'new_rank_label') String? newRankLabel,
       @JsonKey(name: 'animation_label') String? animationLabel,
-      String? pillar});
+      String? pillar,
+      String? source,
+      @JsonKey(name: 'reward_message') String? rewardMessage});
 }
 
 /// @nodoc
@@ -3928,6 +3933,8 @@ class _$HibonsUpdateDtoCopyWithImpl<$Res, $Val extends HibonsUpdateDto>
     Object? newRankLabel = freezed,
     Object? animationLabel = freezed,
     Object? pillar = freezed,
+    Object? source = freezed,
+    Object? rewardMessage = freezed,
   }) {
     return _then(_value.copyWith(
       delta: null == delta
@@ -3966,6 +3973,14 @@ class _$HibonsUpdateDtoCopyWithImpl<$Res, $Val extends HibonsUpdateDto>
           ? _value.pillar
           : pillar // ignore: cast_nullable_to_non_nullable
               as String?,
+      source: freezed == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rewardMessage: freezed == rewardMessage
+          ? _value.rewardMessage
+          : rewardMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -3987,7 +4002,9 @@ abstract class _$$HibonsUpdateDtoImplCopyWith<$Res>
       @JsonKey(name: 'new_rank') String? newRank,
       @JsonKey(name: 'new_rank_label') String? newRankLabel,
       @JsonKey(name: 'animation_label') String? animationLabel,
-      String? pillar});
+      String? pillar,
+      String? source,
+      @JsonKey(name: 'reward_message') String? rewardMessage});
 }
 
 /// @nodoc
@@ -4010,6 +4027,8 @@ class __$$HibonsUpdateDtoImplCopyWithImpl<$Res>
     Object? newRankLabel = freezed,
     Object? animationLabel = freezed,
     Object? pillar = freezed,
+    Object? source = freezed,
+    Object? rewardMessage = freezed,
   }) {
     return _then(_$HibonsUpdateDtoImpl(
       delta: null == delta
@@ -4048,6 +4067,14 @@ class __$$HibonsUpdateDtoImplCopyWithImpl<$Res>
           ? _value.pillar
           : pillar // ignore: cast_nullable_to_non_nullable
               as String?,
+      source: freezed == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rewardMessage: freezed == rewardMessage
+          ? _value.rewardMessage
+          : rewardMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -4064,7 +4091,9 @@ class _$HibonsUpdateDtoImpl implements _HibonsUpdateDto {
       @JsonKey(name: 'new_rank') this.newRank,
       @JsonKey(name: 'new_rank_label') this.newRankLabel,
       @JsonKey(name: 'animation_label') this.animationLabel,
-      this.pillar});
+      this.pillar,
+      this.source,
+      @JsonKey(name: 'reward_message') this.rewardMessage});
 
   factory _$HibonsUpdateDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$HibonsUpdateDtoImplFromJson(json);
@@ -4095,10 +4124,15 @@ class _$HibonsUpdateDtoImpl implements _HibonsUpdateDto {
   final String? animationLabel;
   @override
   final String? pillar;
+  @override
+  final String? source;
+  @override
+  @JsonKey(name: 'reward_message')
+  final String? rewardMessage;
 
   @override
   String toString() {
-    return 'HibonsUpdateDto(delta: $delta, newBalance: $newBalance, newLifetime: $newLifetime, lifetimeDelta: $lifetimeDelta, rankChanged: $rankChanged, newRank: $newRank, newRankLabel: $newRankLabel, animationLabel: $animationLabel, pillar: $pillar)';
+    return 'HibonsUpdateDto(delta: $delta, newBalance: $newBalance, newLifetime: $newLifetime, lifetimeDelta: $lifetimeDelta, rankChanged: $rankChanged, newRank: $newRank, newRankLabel: $newRankLabel, animationLabel: $animationLabel, pillar: $pillar, source: $source, rewardMessage: $rewardMessage)';
   }
 
   @override
@@ -4120,7 +4154,10 @@ class _$HibonsUpdateDtoImpl implements _HibonsUpdateDto {
                 other.newRankLabel == newRankLabel) &&
             (identical(other.animationLabel, animationLabel) ||
                 other.animationLabel == animationLabel) &&
-            (identical(other.pillar, pillar) || other.pillar == pillar));
+            (identical(other.pillar, pillar) || other.pillar == pillar) &&
+            (identical(other.source, source) || other.source == source) &&
+            (identical(other.rewardMessage, rewardMessage) ||
+                other.rewardMessage == rewardMessage));
   }
 
   @JsonKey(ignore: true)
@@ -4135,7 +4172,9 @@ class _$HibonsUpdateDtoImpl implements _HibonsUpdateDto {
       newRank,
       newRankLabel,
       animationLabel,
-      pillar);
+      pillar,
+      source,
+      rewardMessage);
 
   @JsonKey(ignore: true)
   @override
@@ -4154,15 +4193,18 @@ class _$HibonsUpdateDtoImpl implements _HibonsUpdateDto {
 
 abstract class _HibonsUpdateDto implements HibonsUpdateDto {
   const factory _HibonsUpdateDto(
-      {final int delta,
-      @JsonKey(name: 'new_balance') final int newBalance,
-      @JsonKey(name: 'new_lifetime') final int newLifetime,
-      @JsonKey(name: 'lifetime_delta') final int lifetimeDelta,
-      @JsonKey(name: 'rank_changed') final bool rankChanged,
-      @JsonKey(name: 'new_rank') final String? newRank,
-      @JsonKey(name: 'new_rank_label') final String? newRankLabel,
-      @JsonKey(name: 'animation_label') final String? animationLabel,
-      final String? pillar}) = _$HibonsUpdateDtoImpl;
+          {final int delta,
+          @JsonKey(name: 'new_balance') final int newBalance,
+          @JsonKey(name: 'new_lifetime') final int newLifetime,
+          @JsonKey(name: 'lifetime_delta') final int lifetimeDelta,
+          @JsonKey(name: 'rank_changed') final bool rankChanged,
+          @JsonKey(name: 'new_rank') final String? newRank,
+          @JsonKey(name: 'new_rank_label') final String? newRankLabel,
+          @JsonKey(name: 'animation_label') final String? animationLabel,
+          final String? pillar,
+          final String? source,
+          @JsonKey(name: 'reward_message') final String? rewardMessage}) =
+      _$HibonsUpdateDtoImpl;
 
   factory _HibonsUpdateDto.fromJson(Map<String, dynamic> json) =
       _$HibonsUpdateDtoImpl.fromJson;
@@ -4192,6 +4234,11 @@ abstract class _HibonsUpdateDto implements HibonsUpdateDto {
   String? get animationLabel;
   @override
   String? get pillar;
+  @override
+  String? get source;
+  @override
+  @JsonKey(name: 'reward_message')
+  String? get rewardMessage;
   @override
   @JsonKey(ignore: true)
   _$$HibonsUpdateDtoImplCopyWith<_$HibonsUpdateDtoImpl> get copyWith =>

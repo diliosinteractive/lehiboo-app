@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/petit_boo_theme.dart';
 import '../../../../favorites/presentation/providers/favorite_lists_provider.dart';
 import '../../../data/models/tool_schema_dto.dart';
@@ -21,7 +22,7 @@ class FavoriteListsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lists = _extractLists();
+    final lists = _extractLists(context);
     final accentColor = schema.color != null
         ? parseHexColor(schema.color)
         : const Color(0xFFE74C3C);
@@ -60,13 +61,14 @@ class FavoriteListsCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        schema.title ?? 'Mes listes de favoris',
+                        schema.title ??
+                            context.l10n.petitBooToolFavoriteListsTitle,
                         style: PetitBooTheme.headingSm.copyWith(
                           color: PetitBooTheme.textPrimary,
                         ),
                       ),
                       Text(
-                        '${lists.length} liste${lists.length > 1 ? 's' : ''}',
+                        context.l10n.petitBooFavoriteListsCount(lists.length),
                         style: PetitBooTheme.bodySm.copyWith(
                           color: PetitBooTheme.textTertiary,
                         ),
@@ -88,7 +90,7 @@ class FavoriteListsCard extends ConsumerWidget {
 
           // Lists
           if (lists.isEmpty)
-            _buildEmptyState()
+            _buildEmptyState(context)
           else
             ListView.separated(
               shrinkWrap: true,
@@ -123,7 +125,7 @@ class FavoriteListsCard extends ConsumerWidget {
     return data;
   }
 
-  List<_FavoriteListData> _extractLists() {
+  List<_FavoriteListData> _extractLists(BuildContext context) {
     final unwrapped = _unwrapData();
 
     // Try multiple possible keys for the lists array
@@ -147,7 +149,8 @@ class FavoriteListsCard extends ConsumerWidget {
     }
 
     if (listsData == null || listsData.isEmpty) {
-      debugPrint('📂 FavoriteListsCard: No lists found. Data keys: ${unwrapped.keys.toList()}');
+      debugPrint(
+          '📂 FavoriteListsCard: No lists found. Data keys: ${unwrapped.keys.toList()}');
       debugPrint('📂 FavoriteListsCard: Full data: $data');
       return [];
     }
@@ -158,7 +161,9 @@ class FavoriteListsCard extends ConsumerWidget {
       if (item is Map<String, dynamic>) {
         return _FavoriteListData(
           id: item['id']?.toString() ?? item['uuid']?.toString() ?? '',
-          name: item['name']?.toString() ?? item['title']?.toString() ?? 'Sans nom',
+          name: item['name']?.toString() ??
+              item['title']?.toString() ??
+              context.l10n.petitBooFavoriteListsNoName,
           eventsCount: _extractEventCount(item),
           emoji: _extractValidEmoji(item),
         );
@@ -183,7 +188,13 @@ class FavoriteListsCard extends ConsumerWidget {
 
   int _extractEventCount(Map<String, dynamic> item) {
     // Try multiple keys for event count
-    for (final key in ['events_count', 'count', 'total', 'items_count', 'nb_events']) {
+    for (final key in [
+      'events_count',
+      'count',
+      'total',
+      'items_count',
+      'nb_events'
+    ]) {
       final value = item[key];
       if (value is int) return value;
       if (value is String) return int.tryParse(value) ?? 0;
@@ -210,7 +221,7 @@ class FavoriteListsCard extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Voir tout',
+                context.l10n.petitBooFavoriteListsViewAll,
                 style: PetitBooTheme.label.copyWith(
                   color: accentColor,
                   fontWeight: FontWeight.w600,
@@ -229,7 +240,7 @@ class FavoriteListsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(PetitBooTheme.spacing24),
       child: Center(
@@ -242,14 +253,14 @@ class FavoriteListsCard extends ConsumerWidget {
             ),
             const SizedBox(height: PetitBooTheme.spacing12),
             Text(
-              'Aucune liste pour le moment',
+              context.l10n.petitBooFavoriteListsEmptyTitle,
               style: PetitBooTheme.bodyMd.copyWith(
                 color: PetitBooTheme.textTertiary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Demande-moi d\'en créer une !',
+              context.l10n.petitBooFavoriteListsEmptyBody,
               style: PetitBooTheme.bodySm.copyWith(
                 color: PetitBooTheme.textTertiary,
               ),
@@ -272,7 +283,8 @@ class FavoriteListsCard extends ConsumerWidget {
       onTap: () {
         HapticFeedback.selectionClick();
         // Select this specific list before navigating
-        ref.read(selectedFavoriteListProvider.notifier).state = list.id.isNotEmpty ? list.id : null;
+        ref.read(selectedFavoriteListProvider.notifier).state =
+            list.id.isNotEmpty ? list.id : null;
         context.push('/favorites');
       },
       child: Padding(
@@ -320,7 +332,7 @@ class FavoriteListsCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _formatEventsCount(list.eventsCount),
+                    _formatEventsCount(context, list.eventsCount),
                     style: PetitBooTheme.bodySm.copyWith(
                       color: PetitBooTheme.textTertiary,
                     ),
@@ -341,10 +353,9 @@ class FavoriteListsCard extends ConsumerWidget {
     );
   }
 
-  String _formatEventsCount(int count) {
-    if (count == 0) return 'Vide';
-    if (count == 1) return '1 événement';
-    return '$count événements';
+  String _formatEventsCount(BuildContext context, int count) {
+    if (count == 0) return context.l10n.petitBooFavoriteListEventsEmpty;
+    return context.l10n.petitBooFavoriteListEventsCount(count);
   }
 }
 

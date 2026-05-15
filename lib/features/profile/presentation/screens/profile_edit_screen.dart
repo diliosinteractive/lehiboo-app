@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/profile_api_datasource.dart';
@@ -42,7 +43,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       String lastName = user.lastName ?? '';
 
       // If both are empty but displayName exists, try to parse it
-      if (firstName.isEmpty && lastName.isEmpty && user.displayName.isNotEmpty) {
+      if (firstName.isEmpty &&
+          lastName.isEmpty &&
+          user.displayName.isNotEmpty) {
         final parts = user.displayName.trim().split(' ');
         if (parts.isNotEmpty) {
           firstName = parts.first;
@@ -76,15 +79,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Mon Compte')),
-        body: const Center(child: Text('Veuillez vous connecter')),
+        appBar: AppBar(title: Text(context.l10n.profileAccountTitle)),
+        body: Center(child: Text(context.l10n.profileLoginRequired)),
       );
     }
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Mon Compte'),
+        title: Text(context.l10n.profileAccountTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -116,7 +119,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red.shade600, size: 20),
+                      Icon(Icons.error_outline,
+                          color: Colors.red.shade600, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -145,9 +149,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Informations personnelles',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.profilePersonalInfoTitle,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: HbColors.textSlate,
@@ -156,11 +160,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     const SizedBox(height: 20),
                     _buildTextField(
                       controller: _firstNameController,
-                      label: 'Prénom',
+                      label: context.l10n.profileFirstNameLabel,
                       icon: Icons.person_outline,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Le prénom est requis';
+                          return context.l10n.profileFirstNameRequired;
                         }
                         return null;
                       },
@@ -168,11 +172,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: _lastNameController,
-                      label: 'Nom',
+                      label: context.l10n.profileLastNameLabel,
                       icon: Icons.person_outline,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Le nom est requis';
+                          return context.l10n.profileLastNameRequired;
                         }
                         return null;
                       },
@@ -180,7 +184,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: _phoneController,
-                      label: 'Téléphone',
+                      label: context.l10n.profilePhoneLabel,
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                     ),
@@ -188,13 +192,14 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     // Birth date
                     GestureDetector(
                       onTap: () async {
-                        final maxDate = DateTime.now().subtract(const Duration(days: 15 * 365));
+                        final maxDate = DateTime.now()
+                            .subtract(const Duration(days: 15 * 365));
                         final picked = await showDatePicker(
                           context: context,
                           initialDate: _birthDate ?? maxDate,
                           firstDate: DateTime(1920),
                           lastDate: maxDate,
-                          helpText: 'Date de naissance',
+                          helpText: context.l10n.profileBirthDateLabel,
                           // locale: const Locale('fr'),
                         );
                         if (picked != null) {
@@ -205,17 +210,24 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         child: TextFormField(
                           controller: TextEditingController(
                             text: _birthDate != null
-                                ? '${_birthDate!.day.toString().padLeft(2, '0')}/${_birthDate!.month.toString().padLeft(2, '0')}/${_birthDate!.year}'
+                                ? context
+                                    .appDateFormat(
+                                      'dd/MM/yyyy',
+                                      enPattern: 'MM/dd/yyyy',
+                                    )
+                                    .format(_birthDate!)
                                 : '',
                           ),
                           decoration: InputDecoration(
-                            labelText: 'Date de naissance',
-                            hintText: 'Non renseigné',
-                            prefixIcon: const Icon(Icons.cake_outlined, color: HbColors.brandPrimary),
+                            labelText: context.l10n.profileBirthDateLabel,
+                            hintText: context.l10n.profileBirthDateUnset,
+                            prefixIcon: const Icon(Icons.cake_outlined,
+                                color: HbColors.brandPrimary),
                             suffixIcon: _birthDate != null
                                 ? IconButton(
                                     icon: const Icon(Icons.clear, size: 20),
-                                    onPressed: () => setState(() => _birthDate = null),
+                                    onPressed: () =>
+                                        setState(() => _birthDate = null),
                                   )
                                 : null,
                             filled: true,
@@ -226,11 +238,13 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade200),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                              borderSide: const BorderSide(
+                                  color: HbColors.brandPrimary, width: 2),
                             ),
                           ),
                         ),
@@ -240,17 +254,17 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     // Membership city
                     _buildTextField(
                       controller: _membershipCityController,
-                      label: 'Ville',
+                      label: context.l10n.profileCityLabel,
                       icon: Icons.location_city_outlined,
                     ),
                     const SizedBox(height: 16),
                     // Email (read-only)
                     _buildTextField(
                       initialValue: user.email,
-                      label: 'Email',
+                      label: context.l10n.authEmailLabel,
                       icon: Icons.email_outlined,
                       enabled: false,
-                      helperText: 'L\'email ne peut pas être modifié',
+                      helperText: context.l10n.profileEmailReadOnlyHelper,
                     ),
                   ],
                 ),
@@ -280,9 +294,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text(
-                          'Enregistrer',
-                          style: TextStyle(
+                      : Text(
+                          context.l10n.commonSave,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -295,7 +309,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               TextButton.icon(
                 onPressed: () => _showChangePasswordDialog(),
                 icon: const Icon(Icons.lock_outline, size: 20),
-                label: const Text('Changer mon mot de passe'),
+                label: Text(context.l10n.profileChangePasswordCta),
                 style: TextButton.styleFrom(
                   foregroundColor: HbColors.brandPrimary,
                 ),
@@ -314,7 +328,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         ? user.displayName
         : '${user.firstName ?? ''} ${user.lastName ?? ''}'.trim();
     final initials = displayName.isNotEmpty
-        ? displayName.split(' ').take(2).map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').join()
+        ? displayName
+            .split(' ')
+            .take(2)
+            .map((e) => e.isNotEmpty ? e[0].toUpperCase() : '')
+            .join()
         : 'U';
 
     return Center(
@@ -356,7 +374,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                                   strokeWidth: 2,
                                 ),
                               ),
-                              errorWidget: (context, url, error) => _buildDefaultAvatar(initials),
+                              errorWidget: (context, url, error) =>
+                                  _buildDefaultAvatar(initials),
                             ),
                           )
                         : _buildDefaultAvatar(initials),
@@ -371,7 +390,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 border: Border.all(color: Colors.white, width: 3),
               ),
               child: IconButton(
-                icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                icon:
+                    const Icon(Icons.camera_alt, color: Colors.white, size: 20),
                 onPressed: _pickImage,
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),
@@ -483,16 +503,18 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Photo de profil mise à jour'),
+          SnackBar(
+            content: Text(context.l10n.profileAvatarUpdated),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Erreur lors de l\'upload de l\'image: ${e.toString()}';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = context.l10n.profileUploadImageError(e.toString());
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -516,7 +538,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       final updatedUser = await profileDataSource.updateProfile(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
-        phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+        phone: _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
+            : null,
         birthDate: _birthDate != null
             ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
             : null,
@@ -524,7 +548,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         membershipCity: _membershipCityController.text.trim().isNotEmpty
             ? _membershipCityController.text.trim()
             : null,
-        clearMembershipCity: _membershipCityController.text.trim().isEmpty && (user?.membershipCity ?? '').isNotEmpty,
+        clearMembershipCity: _membershipCityController.text.trim().isEmpty &&
+            (user?.membershipCity ?? '').isNotEmpty,
       );
 
       // Update auth state with new user data
@@ -532,17 +557,19 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profil mis à jour avec succès'),
+          SnackBar(
+            content: Text(context.l10n.profileUpdateSuccess),
             backgroundColor: Colors.green,
           ),
         );
         context.pop();
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Erreur: ${e.toString()}';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = context.l10n.profileGenericError(e.toString());
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -553,6 +580,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   void _showChangePasswordDialog() {
+    final l10n = context.l10n;
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
@@ -562,8 +590,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Changer le mot de passe'),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(l10n.profileChangePasswordTitle),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -572,8 +601,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   controller: currentPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Mot de passe actuel',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    labelText: l10n.profileCurrentPasswordLabel,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -581,8 +611,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   controller: newPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Nouveau mot de passe',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    labelText: l10n.profileNewPasswordLabel,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -590,8 +621,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   controller: confirmPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Confirmer le mot de passe',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    labelText: l10n.authConfirmPasswordLabel,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               ],
@@ -600,16 +632,18 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Annuler', style: TextStyle(color: Colors.grey[600])),
+              child: Text(l10n.commonCancel,
+                  style: TextStyle(color: Colors.grey[600])),
             ),
             ElevatedButton(
               onPressed: isLoading
                   ? null
                   : () async {
-                      if (newPasswordController.text != confirmPasswordController.text) {
+                      if (newPasswordController.text !=
+                          confirmPasswordController.text) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Les mots de passe ne correspondent pas'),
+                          SnackBar(
+                            content: Text(l10n.authPasswordsDoNotMatch),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -619,7 +653,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       setDialogState(() => isLoading = true);
 
                       try {
-                        final profileDataSource = ref.read(profileApiDataSourceProvider);
+                        final profileDataSource =
+                            ref.read(profileApiDataSourceProvider);
                         await profileDataSource.updatePassword(
                           currentPassword: currentPasswordController.text,
                           newPassword: newPasswordController.text,
@@ -629,8 +664,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         if (context.mounted) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Mot de passe changé avec succès'),
+                            SnackBar(
+                              content: Text(l10n.profilePasswordChangeSuccess),
                               backgroundColor: Colors.green,
                             ),
                           );
@@ -639,13 +674,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Erreur: ${e.toString()}'),
+                              content:
+                                  Text(l10n.profileGenericError(e.toString())),
                               backgroundColor: Colors.red,
                             ),
                           );
                         }
                       } finally {
-                        setDialogState(() => isLoading = false);
+                        if (context.mounted) {
+                          setDialogState(() => isLoading = false);
+                        }
                       }
                     },
               style: ElevatedButton.styleFrom(
@@ -656,9 +694,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
                     )
-                  : const Text('Changer'),
+                  : Text(l10n.profileChangePasswordSubmit),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -109,7 +110,7 @@ class PracticalInfoSheet extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Disponible',
+                            context.l10n.eventAvailable,
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade600,
@@ -156,7 +157,8 @@ class PracticalInfoSheet extends StatelessWidget {
                       ),
                       errorWidget: (context, url, error) => Container(
                         color: Colors.grey.shade200,
-                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                        child:
+                            const Icon(Icons.broken_image, color: Colors.grey),
                       ),
                     ),
                   ),
@@ -178,9 +180,9 @@ class PracticalInfoSheet extends StatelessWidget {
 
                 // Actions
                 if (actions != null && actions!.isNotEmpty) ...[
-                  const Text(
-                    'Actions rapides',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.eventQuickActions,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: HbColors.textSecondary,
@@ -204,9 +206,7 @@ class PracticalInfoSheet extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: action.isPrimary
-            ? color
-            : color.withValues(alpha: 0.1),
+        color: action.isPrimary ? color : color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: action.onTap,
@@ -265,13 +265,14 @@ class PracticalInfoAction {
 /// Helper pour créer les actions de transport/parking
 class PracticalInfoActions {
   static PracticalInfoAction googleMaps({
+    required BuildContext context,
     required double lat,
     required double lng,
     String? label,
   }) {
     return PracticalInfoAction(
       icon: Icons.directions_car,
-      label: label ?? 'Itinéraire en voiture',
+      label: label ?? context.l10n.eventDrivingDirections,
       isPrimary: true,
       onTap: () async {
         final url = Uri.parse(
@@ -285,12 +286,13 @@ class PracticalInfoActions {
   }
 
   static PracticalInfoAction walkingDirections({
+    required BuildContext context,
     required double lat,
     required double lng,
   }) {
     return PracticalInfoAction(
       icon: Icons.directions_walk,
-      label: 'Y aller à pied',
+      label: context.l10n.eventWalkingDirections,
       onTap: () async {
         final url = Uri.parse(
           'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=walking',
@@ -303,12 +305,13 @@ class PracticalInfoActions {
   }
 
   static PracticalInfoAction publicTransport({
+    required BuildContext context,
     required double lat,
     required double lng,
   }) {
     return PracticalInfoAction(
       icon: Icons.directions_transit,
-      label: 'Transports en commun',
+      label: context.l10n.eventPublicTransportDirections,
       onTap: () async {
         final url = Uri.parse(
           'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=transit',
@@ -326,14 +329,14 @@ class PracticalInfoActions {
   }) {
     return PracticalInfoAction(
       icon: Icons.copy,
-      label: 'Copier l\'adresse',
+      label: context.l10n.eventCopyAddress,
       onTap: () {
         Clipboard.setData(ClipboardData(text: address));
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Adresse copiée'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.eventAddressCopied),
+            duration: const Duration(seconds: 2),
           ),
         );
       },

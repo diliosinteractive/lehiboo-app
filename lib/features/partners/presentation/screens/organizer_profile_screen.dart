@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import '../providers/organizer_profile_providers.dart';
@@ -36,8 +37,8 @@ class _OrganizerProfileScreenState
   @override
   Widget build(BuildContext context) {
     if (widget.identifier.trim().isEmpty) {
-      return const Scaffold(
-        body: Center(child: Text('Identifiant organisateur invalide')),
+      return Scaffold(
+        body: Center(child: Text(context.l10n.organizerInvalidIdentifier)),
       );
     }
 
@@ -57,12 +58,11 @@ class _OrganizerProfileScreenState
           onCoordinatesToggle: (open) =>
               setState(() => _coordinatesOpen = open),
           onRefresh: () async {
-            ref.invalidate(
-                organizerProfileFutureProvider(widget.identifier));
+            ref.invalidate(organizerProfileFutureProvider(widget.identifier));
             ref.invalidate(
                 organizerEventsControllerProvider(widget.identifier));
-            await ref.read(
-                organizerProfileFutureProvider(widget.identifier).future);
+            await ref
+                .read(organizerProfileFutureProvider(widget.identifier).future);
           },
         ),
       ),
@@ -131,19 +131,19 @@ class _Content extends ConsumerWidget {
             SliverPersistentHeader(
               pinned: true,
               delegate: _TabBarDelegate(
-                const TabBar(
+                TabBar(
                   isScrollable: false,
                   indicatorColor: HbColors.brandPrimary,
                   indicatorWeight: 3,
                   labelColor: HbColors.brandPrimary,
                   unselectedLabelColor: Colors.grey,
-                  labelStyle: TextStyle(
+                  labelStyle: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
                   tabs: [
-                    Tab(text: 'Activités'),
-                    Tab(text: 'Avis'),
+                    Tab(text: context.l10n.organizerActivitiesTab),
+                    Tab(text: context.l10n.organizerReviewsTab),
                   ],
                 ),
               ),
@@ -307,7 +307,7 @@ class _ErrorState extends StatelessWidget {
             const Icon(Icons.error_outline, size: 56, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              'Impossible de charger ce profil.',
+              context.l10n.organizerProfileLoadError,
               style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               textAlign: TextAlign.center,
             ),
@@ -315,7 +315,7 @@ class _ErrorState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onBack,
               icon: const Icon(Icons.arrow_back),
-              label: const Text('Retour'),
+              label: Text(context.l10n.commonBack),
               style: ElevatedButton.styleFrom(
                 backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,

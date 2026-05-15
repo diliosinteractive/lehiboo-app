@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../data/models/membership_dto.dart';
 import '../providers/membership_state_providers.dart';
@@ -80,6 +81,7 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final listAsync = ref.watch(myMembershipsListProvider);
     final invitationsAsync = ref.watch(myInvitationsProvider);
     final searchQuery = ref.watch(membershipsSearchProvider).toLowerCase();
@@ -92,15 +94,12 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
             return name.contains(searchQuery);
           }).toList();
 
-    final active = filtered
-        .where((m) => m.status == MembershipStatus.active)
-        .toList();
-    final pending = filtered
-        .where((m) => m.status == MembershipStatus.pending)
-        .toList();
-    final rejected = filtered
-        .where((m) => m.status == MembershipStatus.rejected)
-        .toList();
+    final active =
+        filtered.where((m) => m.status == MembershipStatus.active).toList();
+    final pending =
+        filtered.where((m) => m.status == MembershipStatus.pending).toList();
+    final rejected =
+        filtered.where((m) => m.status == MembershipStatus.rejected).toList();
     final invitations = invitationsAsync.valueOrNull ?? const [];
 
     return Scaffold(
@@ -108,9 +107,9 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Mes adhésions',
-          style: TextStyle(
+        title: Text(
+          l10n.profileMembershipsTitle,
+          style: const TextStyle(
             color: HbColors.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -127,7 +126,7 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
                   controller: _searchController,
                   onChanged: _onSearchChanged,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher une organisation…',
+                    hintText: l10n.membershipSearchOrganizationHint,
                     hintStyle: GoogleFonts.figtree(
                       fontSize: 14,
                       color: Colors.grey[500],
@@ -155,10 +154,12 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
                   fontWeight: FontWeight.w600,
                 ),
                 tabs: [
-                  Tab(text: 'Actifs (${active.length})'),
-                  Tab(text: 'En attente (${pending.length})'),
-                  Tab(text: 'Refusées (${rejected.length})'),
-                  Tab(text: 'Invitations (${invitations.length})'),
+                  Tab(text: l10n.membershipTabActive(active.length)),
+                  Tab(text: l10n.membershipTabPending(pending.length)),
+                  Tab(text: l10n.membershipTabRejected(rejected.length)),
+                  Tab(
+                    text: l10n.membershipTabInvitations(invitations.length),
+                  ),
                 ],
               ),
             ],
@@ -178,17 +179,16 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
             children: [
               _MembershipList(
                 items: active,
-                emptyCopy: 'Aucune adhésion active.\nRejoignez vos organisations '
-                    'préférées pour ne rien manquer.',
+                emptyCopy: l10n.membershipEmptyActive,
                 showDiscoverCta: true,
               ),
               _MembershipList(
                 items: pending,
-                emptyCopy: "Vous n'avez pas de demande en attente.",
+                emptyCopy: l10n.membershipEmptyPending,
               ),
               _MembershipList(
                 items: rejected,
-                emptyCopy: 'Aucune demande refusée.',
+                emptyCopy: l10n.membershipEmptyRejected,
               ),
               _InvitationsList(
                 items: invitations,
@@ -239,7 +239,7 @@ class _MembershipList extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: () => context.push('/search'),
                     icon: const Icon(Icons.explore_outlined, size: 18),
-                    label: const Text('Découvrir les organisations'),
+                    label: Text(context.l10n.membershipDiscoverOrganizations),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: HbColors.brandPrimary,
                       foregroundColor: Colors.white,
@@ -256,8 +256,7 @@ class _MembershipList extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 6),
       itemCount: items.length,
-      itemBuilder: (context, index) =>
-          MembershipCard(membership: items[index]),
+      itemBuilder: (context, index) => MembershipCard(membership: items[index]),
     );
   }
 }
@@ -282,7 +281,7 @@ class _InvitationsList extends StatelessWidget {
                     size: 56, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
-                  'Aucune invitation pour le moment.',
+                  context.l10n.membershipEmptyInvitations,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.figtree(
                     fontSize: 14,
@@ -323,7 +322,7 @@ class _ErrorState extends StatelessWidget {
             const Icon(Icons.error_outline, size: 56, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              'Impossible de charger vos adhésions.',
+              context.l10n.membershipLoadError,
               style: GoogleFonts.figtree(
                 fontSize: 16,
                 color: Colors.grey[700],
@@ -334,7 +333,7 @@ class _ErrorState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Réessayer'),
+              label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,

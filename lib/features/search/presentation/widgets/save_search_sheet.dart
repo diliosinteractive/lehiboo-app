@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/models/event_filter.dart';
+import '../utils/search_l10n.dart';
 
 /// Result returned when user saves a search
 class SaveSearchResult {
@@ -54,13 +55,23 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
   late TextEditingController _nameController;
   bool _enablePush = true;
   bool _enableEmail = false;
+  bool _didSetInitialName = false;
   String? _nameError;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: _generateDefaultName());
+    _nameController = TextEditingController();
     _nameController.addListener(_clearError);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didSetInitialName) {
+      _nameController.text = _generateDefaultName(context);
+      _didSetInitialName = true;
+    }
   }
 
   @override
@@ -76,17 +87,17 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
     }
   }
 
-  String _generateDefaultName() {
+  String _generateDefaultName(BuildContext context) {
     final filter = widget.filter;
     if (filter.searchQuery.isNotEmpty) return filter.searchQuery;
     if (filter.cityName != null) return filter.cityName!;
     if (filter.categoriesSlugs.isNotEmpty) {
-      return 'Ma recherche';
+      return context.l10n.searchDefaultName;
     }
-    return 'Ma recherche';
+    return context.l10n.searchDefaultName;
   }
 
-  String _buildFilterSummary() {
+  String _buildFilterSummary(BuildContext context) {
     final filter = widget.filter;
     final parts = <String>[];
 
@@ -97,25 +108,27 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
 
     // Location
     if (filter.cityName != null) {
-      parts.add('à ${filter.cityName}');
+      parts.add(filter.cityName!);
     } else if (filter.latitude != null) {
-      parts.add('à ${filter.radiusKm.toInt()} km');
+      parts.add(context.searchAroundMeLabel(filter.radiusKm));
     }
 
     // Date
-    if (filter.dateFilterLabel != null) {
-      parts.add(filter.dateFilterLabel!.toLowerCase());
+    final dateLabel = context.searchDateFilterLabelOrNull(filter);
+    if (dateLabel != null) {
+      parts.add(dateLabel);
     } else if (filter.startDate != null) {
-      final formatter = DateFormat('d MMM yyyy', 'fr_FR');
-      parts.add('à partir du ${formatter.format(filter.startDate!)}');
+      final formatter =
+          context.appDateFormat('d MMM yyyy', enPattern: 'MMM d, yyyy');
+      parts.add(formatter.format(filter.startDate!));
     }
 
     // Other filters
-    if (filter.familyFriendly) parts.add('famille');
-    if (filter.onlyFree) parts.add('gratuit');
-    if (filter.accessiblePMR) parts.add('PMR');
+    if (filter.familyFriendly) parts.add(context.l10n.searchFamilyTitle);
+    if (filter.onlyFree) parts.add(context.l10n.commonFree);
+    if (filter.accessiblePMR) parts.add(context.l10n.searchAccessiblePmr);
 
-    if (parts.isEmpty) return 'Tous les événements';
+    if (parts.isEmpty) return context.l10n.searchAllEvents;
     return parts.join(', ');
   }
 
@@ -124,13 +137,13 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
 
     // Validate name
     if (name.isEmpty) {
-      setState(() => _nameError = 'Veuillez entrer un nom pour la recherche');
+      setState(() => _nameError = context.l10n.searchNameRequired);
       return;
     }
 
     // Check if name is already used
     if (widget.isNameAlreadyUsed != null && widget.isNameAlreadyUsed!(name)) {
-      setState(() => _nameError = 'Ce nom est déjà utilisé. Choisissez un autre nom.');
+      setState(() => _nameError = context.l10n.searchNameAlreadyUsed);
       return;
     }
 
@@ -183,7 +196,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Sauvegarder la recherche',
+                            context.l10n.searchSaveSheetTitle,
                             style: GoogleFonts.montserrat(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -192,7 +205,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Retrouvez facilement cette recherche et recevez des alertes pour les nouveaux événements.',
+                            context.l10n.searchSaveSheetSubtitle,
                             style: GoogleFonts.montserrat(
                               fontSize: 14,
                               color: Colors.grey.shade600,
@@ -244,7 +257,9 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Filtres : ${_buildFilterSummary()}',
+                          context.l10n.searchSummaryPrefix(
+                            _buildFilterSummary(context),
+                          ),
                           style: GoogleFonts.montserrat(
                             fontSize: 13,
                             color: Colors.grey.shade700,
@@ -267,7 +282,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Nom de la recherche',
+                      context.l10n.searchNameLabel,
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -279,7 +294,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                       controller: _nameController,
                       style: GoogleFonts.montserrat(fontSize: 15),
                       decoration: InputDecoration(
-                        hintText: 'Ex: Concerts à Paris ce week-end',
+                        hintText: context.l10n.searchNameHint,
                         hintStyle: GoogleFonts.montserrat(
                           fontSize: 14,
                           color: Colors.grey.shade400,
@@ -349,7 +364,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Notifications',
+                      context.l10n.searchNotificationsTitle,
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -361,8 +376,8 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                     // Push toggle
                     _NotificationToggle(
                       icon: Icons.notifications_outlined,
-                      title: 'Push',
-                      subtitle: 'Notifications sur l\'app mobile',
+                      title: context.l10n.searchPushTitle,
+                      subtitle: context.l10n.searchPushSubtitle,
                       value: _enablePush,
                       onChanged: (v) => setState(() => _enablePush = v),
                     ),
@@ -372,8 +387,8 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                     // Email toggle
                     _NotificationToggle(
                       icon: Icons.mail_outline,
-                      title: 'Email',
-                      subtitle: 'Recevez un email pour chaque nouvel événement',
+                      title: context.l10n.searchEmailTitle,
+                      subtitle: context.l10n.searchEmailSubtitle,
                       value: _enableEmail,
                       onChanged: (v) => setState(() => _enableEmail = v),
                     ),
@@ -400,7 +415,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                           ),
                         ),
                         child: Text(
-                          'Annuler',
+                          context.l10n.commonCancel,
                           style: GoogleFonts.montserrat(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -427,7 +442,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                           ),
                         ),
                         child: Text(
-                          'Sauvegarder',
+                          context.l10n.searchSaveButton,
                           style: GoogleFonts.montserrat(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -472,7 +487,9 @@ class _NotificationToggle extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: value ? HbColors.brandPrimary.withValues(alpha: 0.3) : Colors.grey.shade200,
+            color: value
+                ? HbColors.brandPrimary.withValues(alpha: 0.3)
+                : Colors.grey.shade200,
           ),
           boxShadow: [
             BoxShadow(

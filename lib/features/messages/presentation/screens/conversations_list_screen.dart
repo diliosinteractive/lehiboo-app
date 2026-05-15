@@ -15,6 +15,7 @@ import '../widgets/new_conversation_form.dart';
 import '../widgets/report_conversation_sheet.dart';
 import '../../domain/entities/conversation.dart';
 import 'package:lehiboo/domain/entities/user.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
@@ -34,15 +35,17 @@ class _ConversationsListScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authState = ref.read(authProvider);
       if (authState.status == AuthStatus.unauthenticated) {
-        GuestRestrictionDialog.show(context, featureName: 'voir vos messages');
+        GuestRestrictionDialog.show(
+          context,
+          featureName: context.l10n.guestFeatureViewMessages,
+        );
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final role =
-        ref.watch(authProvider).user?.role ?? UserRole.subscriber;
+    final role = ref.watch(authProvider).user?.role ?? UserRole.subscriber;
 
     return switch (role) {
       UserRole.partner => const _VendorInbox(key: ValueKey('vendor')),
@@ -82,6 +85,7 @@ class _UnreadBadge extends StatelessWidget {
 }
 
 Widget _buildConversationList<N extends StateNotifier<S>, S>({
+  required BuildContext context,
   required AsyncValue<List> asyncConversations,
   required bool hasMore,
   required VoidCallback onLoadMore,
@@ -99,11 +103,14 @@ Widget _buildConversationList<N extends StateNotifier<S>, S>({
         children: [
           const Icon(Icons.error_outline, color: Colors.red, size: 40),
           const SizedBox(height: 8),
-          Text('Erreur : $e',
+          Text(context.l10n.messagesLoadError('$e'),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.red)),
           const SizedBox(height: 16),
-          ElevatedButton(onPressed: onRefresh, child: const Text('Réessayer')),
+          ElevatedButton(
+            onPressed: onRefresh,
+            child: Text(context.l10n.commonRetry),
+          ),
         ],
       ),
     ),
@@ -119,8 +126,7 @@ Widget _buildConversationList<N extends StateNotifier<S>, S>({
         },
         child: ListView.separated(
           itemCount: conversations.length + (hasMore ? 1 : 0),
-          separatorBuilder: (_, __) =>
-              const Divider(height: 1, indent: 72),
+          separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
           itemBuilder: (ctx, i) {
             if (i == conversations.length) {
               return const Padding(
@@ -153,14 +159,14 @@ Future<void> _showVendorReportSheet(
       ref: ref,
     );
 
-Widget _emptyConversations([String? label]) => Center(
+Widget _emptyConversations(BuildContext context, [String? label]) => Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.forum_outlined, size: 56, color: Colors.grey),
           const SizedBox(height: 12),
           Text(
-            label ?? 'Aucune conversation',
+            label ?? context.l10n.messagesNoConversations,
             style: const TextStyle(fontSize: 16, color: Colors.grey),
           ),
         ],
@@ -210,7 +216,7 @@ class _SubscriberInboxState extends ConsumerState<_SubscriberInbox>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Messages'),
+        title: Text(context.l10n.messagesTitle),
         bottom: TabBar(
           controller: _tabController,
           labelColor: _primaryColor,
@@ -221,7 +227,7 @@ class _SubscriberInboxState extends ConsumerState<_SubscriberInbox>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Organisateurs'),
+                  Text(context.l10n.messagesTabOrganizers),
                   if (vendorUnread > 0) ...[
                     const SizedBox(width: 6),
                     _UnreadBadge(count: vendorUnread),
@@ -233,7 +239,7 @@ class _SubscriberInboxState extends ConsumerState<_SubscriberInbox>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Support LeHiboo'),
+                  Text(context.l10n.messagesTabSupportLeHiboo),
                   if (supportUnread > 0) ...[
                     const SizedBox(width: 6),
                     _UnreadBadge(count: supportUnread),
@@ -259,16 +265,16 @@ class _SubscriberInboxState extends ConsumerState<_SubscriberInbox>
               onPressed: () => context.push('/messages/new'),
               backgroundColor: _primaryColor,
               icon: const Icon(Icons.edit_outlined, color: Colors.white),
-              label: const Text('Nouveau message',
-                  style: TextStyle(color: Colors.white)),
+              label: Text(context.l10n.messagesNewMessage,
+                  style: const TextStyle(color: Colors.white)),
             );
           }
           return FloatingActionButton.extended(
             onPressed: () => context.push('/messages/support/new'),
             backgroundColor: _primaryColor,
             icon: const Icon(Icons.support_agent, color: Colors.white),
-            label: const Text('Contacter le support',
-                style: TextStyle(color: Colors.white)),
+            label: Text(context.l10n.messagesContactSupport,
+                style: const TextStyle(color: Colors.white)),
           );
         },
       ),
@@ -306,12 +312,13 @@ class _SubscriberOrgTab extends ConsumerWidget {
           ),
           Expanded(
             child: _buildConversationList(
+              context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
               onLoadMore: notifier.loadMore,
               onRefresh: notifier.refresh,
               routeFor: (conv) => '/messages/${conv.uuid}',
-              emptyWidget: _emptyConversations(),
+              emptyWidget: _emptyConversations(context),
             ),
           ),
         ],
@@ -351,21 +358,23 @@ class _SupportTab extends ConsumerWidget {
           ),
           Expanded(
             child: _buildConversationList(
+              context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
               onLoadMore: notifier.loadMore,
               onRefresh: notifier.refresh,
               routeFor: (conv) => '/messages/support/${conv.uuid}',
               showLehibooAvatar: true,
-              emptyWidget: const Center(
+              emptyWidget: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.support_agent, size: 56, color: Colors.grey),
-                    SizedBox(height: 12),
+                    const Icon(Icons.support_agent,
+                        size: 56, color: Colors.grey),
+                    const SizedBox(height: 12),
                     Text(
-                      'Aucune conversation avec le support',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      context.l10n.messagesNoSupportConversations,
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                   ],
                 ),
@@ -424,7 +433,7 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Messages'),
+        title: Text(context.l10n.messagesTitle),
         bottom: TabBar(
           controller: _tabController,
           labelColor: _primaryColor,
@@ -437,7 +446,7 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Clients'),
+                  Text(context.l10n.messagesTabClients),
                   if (clientUnread > 0) ...[
                     const SizedBox(width: 6),
                     _UnreadBadge(count: clientUnread),
@@ -445,13 +454,13 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
                 ],
               ),
             ),
-            const Tab(text: 'Diffusions'),
+            Tab(text: context.l10n.messagesTabBroadcasts),
             // TODO v2: restore Partenaires tab
             Tab(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Support'),
+                  Text(context.l10n.messagesTabSupport),
                   if (supportUnread > 0) ...[
                     const SizedBox(width: 6),
                     _UnreadBadge(count: supportUnread),
@@ -480,19 +489,17 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
                     conversationContext:
                         VendorToParticipantConversationContext()),
                 backgroundColor: _primaryColor,
-                icon: const Icon(Icons.person_add_outlined,
-                    color: Colors.white),
-                label: const Text('Contacter un participant',
-                    style: TextStyle(color: Colors.white)),
+                icon:
+                    const Icon(Icons.person_add_outlined, color: Colors.white),
+                label: Text(context.l10n.messagesContactParticipant,
+                    style: const TextStyle(color: Colors.white)),
               ),
             1 => FloatingActionButton.extended(
-                onPressed: () =>
-                    ctx.push('/messages/vendor/broadcasts/new'),
+                onPressed: () => ctx.push('/messages/vendor/broadcasts/new'),
                 backgroundColor: _primaryColor,
-                icon: const Icon(Icons.campaign_outlined,
-                    color: Colors.white),
-                label: const Text('Nouvelle diffusion',
-                    style: TextStyle(color: Colors.white)),
+                icon: const Icon(Icons.campaign_outlined, color: Colors.white),
+                label: Text(context.l10n.messagesNewBroadcast,
+                    style: const TextStyle(color: Colors.white)),
               ),
             // TODO v2: case 2 => Partenaires FAB
             2 => FloatingActionButton.extended(
@@ -500,8 +507,8 @@ class _VendorInboxState extends ConsumerState<_VendorInbox>
                     conversationContext: VendorSupportConversationContext()),
                 backgroundColor: _primaryColor,
                 icon: const Icon(Icons.support_agent, color: Colors.white),
-                label: const Text('Ticket support',
-                    style: TextStyle(color: Colors.white)),
+                label: Text(context.l10n.messagesSupportTicket,
+                    style: const TextStyle(color: Colors.white)),
               ),
             _ => const SizedBox.shrink(),
           };
@@ -541,12 +548,14 @@ class _VendorClientsTab extends ConsumerWidget {
           ),
           Expanded(
             child: _buildConversationList(
+              context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
               onLoadMore: notifier.loadMore,
               onRefresh: notifier.refresh,
               routeFor: (conv) => '/messages/vendor/${conv.uuid}',
-              emptyWidget: _emptyConversations('Aucun client'),
+              emptyWidget:
+                  _emptyConversations(context, context.l10n.messagesNoClients),
               onReportTap: (conv) =>
                   _showVendorReportSheet(context, ref, conv as Conversation),
             ),
@@ -585,8 +594,7 @@ class _VendorBroadcastsTab extends ConsumerWidget {
           ),
           Expanded(
             child: state.broadcasts.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -594,30 +602,30 @@ class _VendorBroadcastsTab extends ConsumerWidget {
                     const Icon(Icons.error_outline,
                         color: Colors.red, size: 40),
                     const SizedBox(height: 8),
-                    Text('Erreur : $e',
+                    Text(context.l10n.messagesLoadError('$e'),
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: notifier.refresh,
-                      child: const Text('Réessayer'),
+                      child: Text(context.l10n.commonRetry),
                     ),
                   ],
                 ),
               ),
               data: (broadcasts) {
                 if (broadcasts.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.campaign_outlined,
+                        const Icon(Icons.campaign_outlined,
                             size: 56, color: Colors.grey),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         Text(
-                          'Aucune diffusion envoyée',
+                          context.l10n.messagesNoBroadcasts,
                           style:
-                              TextStyle(fontSize: 16, color: Colors.grey),
+                              const TextStyle(fontSize: 16, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -626,23 +634,20 @@ class _VendorBroadcastsTab extends ConsumerWidget {
                 return NotificationListener<ScrollNotification>(
                   onNotification: (n) {
                     if (n is ScrollUpdateNotification &&
-                        n.metrics.pixels >=
-                            n.metrics.maxScrollExtent * 0.8) {
+                        n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
                       notifier.loadMore();
                     }
                     return false;
                   },
                   child: ListView.separated(
-                    itemCount:
-                        broadcasts.length + (state.hasMore ? 1 : 0),
+                    itemCount: broadcasts.length + (state.hasMore ? 1 : 0),
                     separatorBuilder: (_, __) =>
                         const Divider(height: 1, indent: 72),
                     itemBuilder: (ctx, i) {
                       if (i == broadcasts.length) {
                         return const Padding(
                           padding: EdgeInsets.all(16),
-                          child: Center(
-                              child: CircularProgressIndicator()),
+                          child: Center(child: CircularProgressIndicator()),
                         );
                       }
                       final broadcast = broadcasts[i];
@@ -663,6 +668,8 @@ class _VendorBroadcastsTab extends ConsumerWidget {
   }
 }
 
+// TODO v2: restore the partners tab in `_VendorInbox`.
+// ignore: unused_element
 class _VendorPartnersTab extends ConsumerWidget {
   const _VendorPartnersTab();
 
@@ -693,12 +700,14 @@ class _VendorPartnersTab extends ConsumerWidget {
           ),
           Expanded(
             child: _buildConversationList(
+              context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
               onLoadMore: notifier.loadMore,
               onRefresh: notifier.refresh,
               routeFor: (conv) => '/messages/vendor-org/${conv.uuid}',
-              emptyWidget: _emptyConversations('Aucun partenaire'),
+              emptyWidget:
+                  _emptyConversations(context, context.l10n.messagesNoPartners),
               onReportTap: (conv) =>
                   _showVendorReportSheet(context, ref, conv as Conversation),
             ),
@@ -721,12 +730,14 @@ class _VendorSupportTab extends ConsumerWidget {
       onRefresh: notifier.refresh,
       color: const Color(0xFFFF601F),
       child: _buildConversationList(
+        context: context,
         asyncConversations: state.conversations,
         hasMore: state.hasMore,
         onLoadMore: notifier.loadMore,
         onRefresh: notifier.refresh,
         routeFor: (conv) => '/messages/vendor/${conv.uuid}',
-        emptyWidget: _emptyConversations('Aucun ticket support'),
+        emptyWidget:
+            _emptyConversations(context, context.l10n.messagesNoSupportTickets),
         showLehibooAvatar: true,
       ),
     );
@@ -764,10 +775,8 @@ class _AdminInboxState extends ConsumerState<_AdminInbox>
 
   @override
   Widget build(BuildContext context) {
-    final usersState =
-        ref.watch(adminConversationsProvider('user_support'));
-    final orgsState =
-        ref.watch(adminConversationsProvider('vendor_admin'));
+    final usersState = ref.watch(adminConversationsProvider('user_support'));
+    final orgsState = ref.watch(adminConversationsProvider('vendor_admin'));
     final reportStats = ref.watch(adminReportStatsProvider);
 
     final usersUnread = usersState.conversations.valueOrNull
@@ -780,7 +789,7 @@ class _AdminInboxState extends ConsumerState<_AdminInbox>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Messages'),
+        title: Text(context.l10n.messagesTitle),
         bottom: TabBar(
           controller: _tabController,
           labelColor: _primaryColor,
@@ -793,7 +802,7 @@ class _AdminInboxState extends ConsumerState<_AdminInbox>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Utilisateurs'),
+                  Text(context.l10n.messagesTabUsers),
                   if (usersUnread > 0) ...[
                     const SizedBox(width: 6),
                     _UnreadBadge(count: usersUnread),
@@ -805,7 +814,7 @@ class _AdminInboxState extends ConsumerState<_AdminInbox>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Organisateurs'),
+                  Text(context.l10n.messagesTabOrganizers),
                   if (orgsUnread > 0) ...[
                     const SizedBox(width: 6),
                     _UnreadBadge(count: orgsUnread),
@@ -817,7 +826,7 @@ class _AdminInboxState extends ConsumerState<_AdminInbox>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Signalements'),
+                  Text(context.l10n.messagesTabReports),
                   if (pendingReports > 0) ...[
                     const SizedBox(width: 6),
                     _UnreadBadge(count: pendingReports),
@@ -844,19 +853,18 @@ class _AdminInboxState extends ConsumerState<_AdminInbox>
                 onPressed: () => NewConversationForm.show(ctx,
                     conversationContext: AdminToUserConversationContext()),
                 backgroundColor: _primaryColor,
-                icon: const Icon(Icons.person_add_outlined,
-                    color: Colors.white),
-                label: const Text('Contacter un utilisateur',
-                    style: TextStyle(color: Colors.white)),
+                icon:
+                    const Icon(Icons.person_add_outlined, color: Colors.white),
+                label: Text(context.l10n.messagesContactUser,
+                    style: const TextStyle(color: Colors.white)),
               ),
             1 => FloatingActionButton.extended(
                 onPressed: () => NewConversationForm.show(ctx,
                     conversationContext: AdminToOrgConversationContext()),
                 backgroundColor: _primaryColor,
-                icon: const Icon(Icons.business_outlined,
-                    color: Colors.white),
-                label: const Text('Contacter un organisateur',
-                    style: TextStyle(color: Colors.white)),
+                icon: const Icon(Icons.business_outlined, color: Colors.white),
+                label: Text(context.l10n.messagesContactOrganizer,
+                    style: const TextStyle(color: Colors.white)),
               ),
             _ => const SizedBox.shrink(),
           };
@@ -899,12 +907,13 @@ class _AdminConvTab extends ConsumerWidget {
           ),
           Expanded(
             child: _buildConversationList(
+              context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
               onLoadMore: notifier.loadMore,
               onRefresh: notifier.refresh,
               routeFor: (conv) => '/messages/admin/${conv.uuid}',
-              emptyWidget: _emptyConversations(),
+              emptyWidget: _emptyConversations(context),
             ),
           ),
         ],
@@ -942,149 +951,168 @@ class _AdminReportsTab extends ConsumerWidget {
           ),
           Expanded(
             child: state.reports.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 40),
-              const SizedBox(height: 8),
-              Text('Erreur : $e',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: notifier.refresh,
-                child: const Text('Réessayer'),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 40),
+                    const SizedBox(height: 8),
+                    Text(context.l10n.messagesLoadError('$e'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: notifier.refresh,
+                      child: Text(context.l10n.commonRetry),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
-        data: (reports) {
-          if (reports.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.flag_outlined, size: 56, color: Colors.grey),
-                  SizedBox(height: 12),
-                  Text('Aucun signalement',
-                      style:
-                          TextStyle(fontSize: 16, color: Colors.grey)),
-                ],
-              ),
-            );
-          }
-          return NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              if (n is ScrollUpdateNotification &&
-                  n.metrics.pixels >=
-                      n.metrics.maxScrollExtent * 0.8) {
-                notifier.loadMore();
-              }
-              return false;
-            },
-            child: ListView.separated(
-              itemCount: reports.length + (state.hasMore ? 1 : 0),
-              separatorBuilder: (_, __) =>
-                  const Divider(height: 1, indent: 16),
-              itemBuilder: (ctx, i) {
-                if (i == reports.length) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: CircularProgressIndicator()),
+              data: (reports) {
+                if (reports.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.flag_outlined,
+                            size: 56, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        Text(
+                          context.l10n.messagesNoReports,
+                          style:
+                              const TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ],
+                    ),
                   );
                 }
-                final report = reports[i];
-                final (statusLabel, statusColor) = switch (report.status) {
-                  'pending' => ('En attente', Colors.orange),
-                  'reviewed' => ('Traité', Colors.green),
-                  'dismissed' => ('Ignoré', Colors.grey.shade600),
-                  'suspended' => ('Suspendu', Colors.red),
-                  _ => (report.status, Colors.grey.shade600),
-                };
-                final reasonLabel = switch (report.reason) {
-                  'inappropriate' => 'Contenu inapproprié',
-                  'harassment' => 'Harcèlement',
-                  'spam' => 'Spam',
-                  _ => 'Autre',
-                };
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 4),
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.flag, size: 18, color: statusColor),
-                  ),
-                  title: Text(
-                    report.conversationSubject ??
-                        'Signalement ${report.uuid.substring(0, 8)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 2),
-                      Text(
-                        '${report.reporter?.name ?? '–'} → ${report.againstWhom?.name ?? '–'}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(4),
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (n) {
+                    if (n is ScrollUpdateNotification &&
+                        n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
+                      notifier.loadMore();
+                    }
+                    return false;
+                  },
+                  child: ListView.separated(
+                    itemCount: reports.length + (state.hasMore ? 1 : 0),
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, indent: 16),
+                    itemBuilder: (ctx, i) {
+                      if (i == reports.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      final report = reports[i];
+                      final (statusLabel, statusColor) =
+                          switch (report.status) {
+                        'pending' => (
+                            context.l10n.messagesStatusPending,
+                            Colors.orange
+                          ),
+                        'reviewed' => (
+                            context.l10n.messagesAdminReportStatusReviewed,
+                            Colors.green
+                          ),
+                        'dismissed' => (
+                            context.l10n.messagesAdminReportStatusDismissed,
+                            Colors.grey.shade600
+                          ),
+                        'suspended' => (
+                            context.l10n.messagesAdminReportStatusSuspended,
+                            Colors.red
+                          ),
+                        _ => (report.status, Colors.grey.shade600),
+                      };
+                      final reasonLabel = switch (report.reason) {
+                        'inappropriate' =>
+                          context.l10n.messagesReasonInappropriate,
+                        'harassment' => context.l10n.messagesReasonHarassment,
+                        'spam' => context.l10n.messagesReasonSpam,
+                        _ => context.l10n.messagesReasonOther,
+                      };
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.flag, size: 18, color: statusColor),
                         ),
-                        child: Text(
-                          reasonLabel,
-                          style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade700,
-                              fontWeight: FontWeight.w500),
+                        title: Text(
+                          report.conversationSubject ??
+                              context.l10n.messagesAdminReportFallbackTitle(
+                                report.uuid.substring(0, 8),
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w500),
                         ),
-                      ),
-                    ],
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 2),
+                            Text(
+                              '${report.reporter?.name ?? '–'} → ${report.againstWhom?.name ?? '–'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade600),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                reasonLabel,
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                                color: statusColor.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            statusLabel,
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: statusColor,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        onTap: () =>
+                            ctx.push('/messages/admin/reports/${report.uuid}'),
+                      );
+                    },
                   ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                          color: statusColor.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(
-                      statusLabel,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: statusColor,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  onTap: () => ctx.push(
-                      '/messages/admin/reports/${report.uuid}'),
                 );
               },
             ),
-          );
-        },
-      ),
-    ),   // Expanded
+          ), // Expanded
         ],
-      ),   // Column
+      ), // Column
     );
   }
 }

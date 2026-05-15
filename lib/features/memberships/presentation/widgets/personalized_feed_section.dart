@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../domain/entities/activity.dart';
 import '../../../events/data/mappers/event_to_activity_mapper.dart';
@@ -9,6 +9,7 @@ import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
 import '../../../events/domain/entities/event_submodels.dart';
 import '../../../home/presentation/widgets/event_card.dart';
+import '../../../home/presentation/widgets/home_section_title.dart';
 import '../../data/models/personalized_feed_dto.dart';
 import '../providers/personalized_feed_provider.dart';
 
@@ -239,13 +240,11 @@ class PersonalizedFeedSection extends ConsumerWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'Pour vous',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: HbColors.textPrimary,
-                  ),
+                child: HomeSectionTitle(
+                  title: context.l10n.personalizedFeedTitle,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: HbColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 
@@ -35,9 +35,9 @@ class EventDateSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (slots.isEmpty) return _buildEmptyState();
+    if (slots.isEmpty) return _buildEmptyState(context);
 
-    final grouped = _groupSlotsByMonth(slots);
+    final grouped = _groupSlotsByMonth(context, slots);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,7 +49,9 @@ class EventDateSelector extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _isReminderMode ? 'Dates disponibles' : 'Choisissez une date',
+                _isReminderMode
+                    ? context.l10n.eventDatesAvailable
+                    : context.l10n.eventChooseDate,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -60,7 +62,7 @@ class EventDateSelector extends StatelessWidget {
                 TextButton(
                   onPressed: onViewAllDates,
                   child: Text(
-                    'Voir tout (${slots.length})',
+                    context.l10n.eventViewAllCount(slots.length),
                     style: const TextStyle(
                       color: HbColors.brandPrimary,
                       fontWeight: FontWeight.w600,
@@ -123,7 +125,7 @@ class EventDateSelector extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
@@ -132,22 +134,22 @@ class EventDateSelector extends StatelessWidget {
           color: Colors.grey.shade100,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Column(
+        child: Column(
           children: [
-            Icon(Icons.event_busy_outlined, size: 48, color: Colors.grey),
-            SizedBox(height: 12),
+            const Icon(Icons.event_busy_outlined, size: 48, color: Colors.grey),
+            const SizedBox(height: 12),
             Text(
-              'Aucune date disponible',
-              style: TextStyle(
+              context.l10n.eventNoDateAvailable,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: HbColors.textPrimary,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
-              'Cet événement n\'a pas de créneaux ouverts',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+              context.l10n.eventNoOpenSlots,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
           ],
@@ -157,10 +159,12 @@ class EventDateSelector extends StatelessWidget {
   }
 
   Map<String, List<CalendarDateSlot>> _groupSlotsByMonth(
-      List<CalendarDateSlot> slots) {
+      BuildContext context, List<CalendarDateSlot> slots) {
     final grouped = <String, List<CalendarDateSlot>>{};
     for (final slot in slots) {
-      final monthKey = DateFormat('MMMM yyyy', 'fr_FR').format(slot.date);
+      final monthKey = context
+          .appDateFormat('MMMM yyyy', enPattern: 'MMMM yyyy')
+          .format(slot.date);
       grouped.putIfAbsent(monthKey, () => []);
       grouped[monthKey]!.add(slot);
     }
@@ -281,7 +285,7 @@ class _DateChipState extends State<_DateChip>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Day number + abbreviated day name
-              _buildDayRow(),
+              _buildDayRow(context),
               const SizedBox(height: 6),
               // Time range
               _buildTimeRange(),
@@ -293,13 +297,11 @@ class _DateChipState extends State<_DateChip>
                       ? Icons.notifications_active
                       : Icons.notifications_none,
                   size: 18,
-                  color: _isHighlighted
-                      ? Colors.white
-                      : HbColors.brandPrimary,
+                  color: _isHighlighted ? Colors.white : HbColors.brandPrimary,
                 ),
               ] else if (widget.slot.spotsRemaining != null) ...[
                 const SizedBox(height: 4),
-                _buildSpots(),
+                _buildSpots(context),
               ],
             ],
           ),
@@ -308,10 +310,10 @@ class _DateChipState extends State<_DateChip>
     );
   }
 
-  Widget _buildDayRow() {
+  Widget _buildDayRow(BuildContext context) {
     final dayNumber = widget.slot.date.day.toString();
     final dayAbbrev =
-        '${DateFormat('E', 'fr_FR').format(widget.slot.date)}.';
+        '${context.appDateFormat('E', enPattern: 'E').format(widget.slot.date)}.';
 
     final color = _isFull && !widget.isReminderMode
         ? Colors.grey
@@ -366,12 +368,12 @@ class _DateChipState extends State<_DateChip>
     );
   }
 
-  Widget _buildSpots() {
+  Widget _buildSpots(BuildContext context) {
     final spots = widget.slot.spotsRemaining!;
 
     if (_isFull) {
       return Text(
-        'Complet',
+        context.l10n.eventFull,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
@@ -381,7 +383,7 @@ class _DateChipState extends State<_DateChip>
     }
 
     return Text(
-      '$spots place${spots > 1 ? 's' : ''} restante${spots > 1 ? 's' : ''}',
+      context.l10n.eventSpotsRemaining(spots),
       style: TextStyle(
         fontSize: 11,
         color: _isHighlighted

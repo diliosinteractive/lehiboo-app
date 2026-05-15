@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/petit_boo_theme.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -36,7 +37,8 @@ class _BrainMemoryCardState extends State<BrainMemoryCard> {
   }
 
   bool _hasAnyData() {
-    final memoryData = widget.data['memory'] as Map<String, dynamic>? ?? widget.data;
+    final memoryData =
+        widget.data['memory'] as Map<String, dynamic>? ?? widget.data;
     final sections = widget.schema.sectionSchemas ?? [];
 
     for (final section in sections) {
@@ -53,8 +55,9 @@ class _BrainMemoryCardState extends State<BrainMemoryCard> {
   @override
   Widget build(BuildContext context) {
     final accentColor = parseHexColor(widget.schema.color);
-    final memoryData = widget.data['memory'] as Map<String, dynamic>? ?? widget.data;
-    final sections = widget.schema.sectionSchemas ?? _defaultSections;
+    final memoryData =
+        widget.data['memory'] as Map<String, dynamic>? ?? widget.data;
+    final sections = widget.schema.sectionSchemas ?? _defaultSections(context);
     final hasData = _hasAnyData();
 
     return Container(
@@ -91,7 +94,7 @@ class _BrainMemoryCardState extends State<BrainMemoryCard> {
                 // Title
                 Expanded(
                   child: Text(
-                    widget.schema.title ?? 'Ce que je sais de toi',
+                    widget.schema.title ?? context.l10n.petitBooToolBrainTitle,
                     style: PetitBooTheme.headingSm,
                   ),
                 ),
@@ -108,7 +111,7 @@ class _BrainMemoryCardState extends State<BrainMemoryCard> {
             // Sections
             ...sections.map((section) {
               final sectionData = memoryData[section.key];
-              final items = _extractItems(sectionData);
+              final items = _extractItems(context, sectionData);
 
               if (items.isEmpty) return const SizedBox.shrink();
 
@@ -134,7 +137,7 @@ class _BrainMemoryCardState extends State<BrainMemoryCard> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Gérer ma mémoire',
+                    context.l10n.petitBooBrainManageMemory,
                     style: PetitBooTheme.bodySm.copyWith(
                       color: PetitBooTheme.primary,
                       fontWeight: FontWeight.w500,
@@ -179,7 +182,7 @@ class _BrainMemoryCardState extends State<BrainMemoryCard> {
           ),
           const SizedBox(height: PetitBooTheme.spacing16),
           Text(
-            widget.schema.emptyMessage ?? 'Je ne sais encore rien. Discutons !',
+            widget.schema.emptyMessage ?? context.l10n.petitBooToolBrainEmpty,
             style: PetitBooTheme.bodyMd.copyWith(
               color: PetitBooTheme.textSecondary,
             ),
@@ -187,7 +190,7 @@ class _BrainMemoryCardState extends State<BrainMemoryCard> {
           ),
           const SizedBox(height: PetitBooTheme.spacing16),
           Text(
-            'Parle-moi de toi pour que je puisse te faire de meilleures recommandations.',
+            context.l10n.petitBooBrainRecommendationHint,
             style: PetitBooTheme.bodySm.copyWith(
               color: PetitBooTheme.textTertiary,
             ),
@@ -198,17 +201,21 @@ class _BrainMemoryCardState extends State<BrainMemoryCard> {
     );
   }
 
-  List<String> _extractItems(dynamic sectionData) {
+  List<String> _extractItems(BuildContext context, dynamic sectionData) {
     if (sectionData == null) return [];
 
     if (sectionData is List) {
-      return sectionData.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+      return sectionData
+          .map((e) => e.toString())
+          .where((s) => s.isNotEmpty)
+          .toList();
     }
 
     if (sectionData is Map) {
       // Convert map entries to readable strings
       return sectionData.entries
-          .map((e) => '${e.key}: ${e.value}')
+          .map((e) =>
+              '${_memoryKeyLabel(context, e.key.toString())}: ${e.value}')
           .where((s) => s.isNotEmpty)
           .toList();
     }
@@ -220,12 +227,55 @@ class _BrainMemoryCardState extends State<BrainMemoryCard> {
     return [];
   }
 
-  static const _defaultSections = [
-    BrainSectionSchemaDto(key: 'family', title: 'Famille', icon: 'family_restroom'),
-    BrainSectionSchemaDto(key: 'location', title: 'Localisation', icon: 'location_on'),
-    BrainSectionSchemaDto(key: 'preferences', title: 'Préférences', icon: 'thumb_up'),
-    BrainSectionSchemaDto(key: 'constraints', title: 'Contraintes', icon: 'block'),
-  ];
+  List<BrainSectionSchemaDto> _defaultSections(BuildContext context) => [
+        BrainSectionSchemaDto(
+          key: 'family',
+          title: context.l10n.petitBooToolBrainSectionFamily,
+          icon: 'family_restroom',
+        ),
+        BrainSectionSchemaDto(
+          key: 'location',
+          title: context.l10n.petitBooToolBrainSectionLocation,
+          icon: 'location_on',
+        ),
+        BrainSectionSchemaDto(
+          key: 'preferences',
+          title: context.l10n.petitBooToolBrainSectionPreferences,
+          icon: 'thumb_up',
+        ),
+        BrainSectionSchemaDto(
+          key: 'constraints',
+          title: context.l10n.petitBooToolBrainSectionConstraints,
+          icon: 'block',
+        ),
+      ];
+
+  String _memoryKeyLabel(BuildContext context, String key) {
+    final l10n = context.l10n;
+
+    return switch (key) {
+      'first_name' || 'name' || 'prenom' => l10n.petitBooMemoryLabelFirstName,
+      'last_name' => l10n.petitBooMemoryLabelLastName,
+      'nickname' => l10n.petitBooMemoryLabelNickname,
+      'age' => l10n.petitBooMemoryLabelAge,
+      'city' || 'ville' || 'location' => l10n.petitBooMemoryLabelCity,
+      'region' => l10n.petitBooMemoryLabelRegion,
+      'country' => l10n.petitBooMemoryLabelCountry,
+      'children' ||
+      'enfants' ||
+      'children_ages' =>
+        l10n.petitBooMemoryLabelChildrenAges,
+      'interests' || 'interets' => l10n.petitBooMemoryLabelInterests,
+      'budget' ||
+      'budget_preference' =>
+        l10n.petitBooMemoryLabelBudgetPreference,
+      'accessibility' ||
+      'handicap' =>
+        l10n.petitBooMemoryLabelMobilityConstraints,
+      'dietary' || 'alimentation' => l10n.petitBooMemoryLabelDietaryPreferences,
+      _ => key.replaceAll('_', ' ').replaceAll('-', ' '),
+    };
+  }
 }
 
 /// Collapsible section for brain memory

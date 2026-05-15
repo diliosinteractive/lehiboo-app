@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
@@ -66,12 +67,13 @@ class CategoryHistoryNotifier extends StateNotifier<Map<String, int>> {
 }
 
 /// Provider pour les activités personnalisées avec scoring
-final personalizedActivitiesProvider =
-    AutoDisposeAsyncNotifierProvider<PersonalizedActivitiesNotifier, List<ScoredActivity>>(
+final personalizedActivitiesProvider = AutoDisposeAsyncNotifierProvider<
+    PersonalizedActivitiesNotifier, List<ScoredActivity>>(
   PersonalizedActivitiesNotifier.new,
 );
 
-class PersonalizedActivitiesNotifier extends AutoDisposeAsyncNotifier<List<ScoredActivity>> {
+class PersonalizedActivitiesNotifier
+    extends AutoDisposeAsyncNotifier<List<ScoredActivity>> {
   @override
   Future<List<ScoredActivity>> build() async {
     final allActivities = await ref.watch(homeActivitiesProvider.future);
@@ -191,7 +193,7 @@ class PersonalizedSection extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Pour vous',
+                          context.l10n.homePersonalizedTitle,
                           style: GoogleFonts.montserrat(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -199,7 +201,7 @@ class PersonalizedSection extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          'Basé sur vos préférences',
+                          context.l10n.homePersonalizedSubtitle,
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey[600],
@@ -210,8 +212,8 @@ class PersonalizedSection extends ConsumerWidget {
                   ),
                   TextButton(
                     onPressed: () => context.push('/search'),
-                    child: const Text(
-                      'Voir tout',
+                    child: Text(
+                      context.l10n.homeViewAll,
                       style: TextStyle(
                         color: Color(0xFFFF601F),
                         fontSize: 14,

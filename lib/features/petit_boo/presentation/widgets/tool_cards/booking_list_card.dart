@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -20,6 +20,7 @@ class BookingListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final responseSchema = schema.responseSchema;
     final itemsKey = responseSchema?.itemsKey ?? 'bookings';
     final totalKey = responseSchema?.totalKey ?? 'total';
@@ -28,7 +29,7 @@ class BookingListCard extends StatelessWidget {
     final total = data[totalKey] as int? ?? items.length;
 
     if (items.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(context);
     }
 
     final accentColor = parseHexColor(schema.color);
@@ -79,7 +80,7 @@ class BookingListCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '$total élément${total != 1 ? 's' : ''}',
+                        l10n.petitBooToolItemCount(total),
                         style: TextStyle(
                           fontSize: 13,
                           color: HbColors.textSecondary,
@@ -112,7 +113,7 @@ class BookingListCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Voir les $total éléments',
+                      l10n.petitBooToolViewItems(total),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -140,7 +141,8 @@ class BookingListCard extends StatelessWidget {
   ) {
     // Debug: afficher la structure des données
     debugPrint('🎫 BookingListCard._extractItems: itemsKey=$itemsKey');
-    debugPrint('🎫 BookingListCard._extractItems: data.keys=${data.keys.toList()}');
+    debugPrint(
+        '🎫 BookingListCard._extractItems: data.keys=${data.keys.toList()}');
 
     // Essayer directement
     var items = data[itemsKey];
@@ -148,7 +150,8 @@ class BookingListCard extends StatelessWidget {
     // Si pas trouvé, essayer dans data['data'] (structure imbriquée)
     if (items == null && data['data'] is Map<String, dynamic>) {
       final nested = data['data'] as Map<String, dynamic>;
-      debugPrint('🎫 BookingListCard._extractItems: nested.keys=${nested.keys.toList()}');
+      debugPrint(
+          '🎫 BookingListCard._extractItems: nested.keys=${nested.keys.toList()}');
       items = nested[itemsKey];
     }
 
@@ -157,7 +160,8 @@ class BookingListCard extends StatelessWidget {
       items = data['data'];
     }
 
-    debugPrint('🎫 BookingListCard._extractItems: items is ${items?.runtimeType}, length=${items is List ? items.length : 'N/A'}');
+    debugPrint(
+        '🎫 BookingListCard._extractItems: items is ${items?.runtimeType}, length=${items is List ? items.length : 'N/A'}');
 
     if (items is List) {
       try {
@@ -176,7 +180,7 @@ class BookingListCard extends StatelessWidget {
     context.go('/my-bookings');
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -192,7 +196,7 @@ class BookingListCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            schema.emptyMessage ?? 'Aucun élément',
+            schema.emptyMessage ?? context.l10n.petitBooToolEmptyListFallback,
             style: const TextStyle(
               fontSize: 14,
               color: HbColors.textSecondary,
@@ -228,22 +232,27 @@ class _BookingItem extends StatelessWidget {
           color: Colors.red.shade50,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text('Erreur: $e', style: const TextStyle(color: Colors.red)),
+        child: Text(
+          context.l10n.petitBooErrorWithMessage(e.toString()),
+          style: const TextStyle(color: Colors.red),
+        ),
       );
     }
   }
 
   Widget _buildContent(BuildContext context) {
-    final title = _safeString(_getValue(schema?.titleField, 'event_title')) ?? 'Sans titre';
+    final title = _safeString(_getValue(schema?.titleField, 'event_title')) ??
+        context.l10n.petitBooToolUntitled;
     final imageUrl = _safeString(_getValue(schema?.imageField, 'event_image'));
     final dateStr = _safeString(_getValue(schema?.dateField, 'slot_date'));
     final timeStr = _safeString(_getValue(schema?.timeField, 'slot_time'));
     final status = _safeString(_getValue(schema?.statusField, 'status'));
-    final ticketsCount = _safeInt(item['tickets_count']) ?? _safeInt(item['quantity']) ?? 1;
+    final ticketsCount =
+        _safeInt(item['tickets_count']) ?? _safeInt(item['quantity']) ?? 1;
     final totalPrice = _parsePrice(item['total_price'] ?? item['total_amount']);
 
     // Parse et format la date
-    final formattedDate = _formatDate(dateStr);
+    final formattedDate = _formatDate(context, dateStr);
     final formattedTime = _formatTime(timeStr);
 
     return InkWell(
@@ -326,7 +335,9 @@ class _BookingItem extends StatelessWidget {
                               const SizedBox(width: 8),
                             ],
                             Text(
-                              ticketsCount > 1 ? '$ticketsCount billets' : '1 billet',
+                              context.l10n.bookingShareTicketsCount(
+                                ticketsCount,
+                              ),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: HbColors.textSecondary,
@@ -393,8 +404,10 @@ class _BookingItem extends StatelessWidget {
     );
   }
 
-  String _formatDate(String? dateStr) {
-    if (dateStr == null || dateStr.isEmpty) return 'Date non définie';
+  String _formatDate(BuildContext context, String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) {
+      return context.l10n.commonUndefinedDate;
+    }
 
     try {
       DateTime date;
@@ -413,11 +426,13 @@ class _BookingItem extends StatelessWidget {
       final dateOnly = DateTime(date.year, date.month, date.day);
 
       if (dateOnly == today) {
-        return "Aujourd'hui";
+        return context.l10n.commonToday;
       } else if (dateOnly == tomorrow) {
-        return 'Demain';
+        return context.l10n.commonTomorrow;
       } else {
-        return DateFormat('E d MMM yyyy', 'fr_FR').format(date);
+        return context
+            .appDateFormat('E d MMM yyyy', enPattern: 'EEE, MMM d, yyyy')
+            .format(date);
       }
     } catch (e) {
       return dateStr;
@@ -469,7 +484,8 @@ class _BookingItem extends StatelessWidget {
 
   void _navigate(BuildContext context) {
     final nav = schema?.navigation;
-    debugPrint('🎫 _BookingItem._navigate: schema.navigation=$nav, item.keys=${item.keys.toList()}');
+    debugPrint(
+        '🎫 _BookingItem._navigate: schema.navigation=$nav, item.keys=${item.keys.toList()}');
 
     if (nav != null) {
       final id = item[nav.idField];
@@ -483,7 +499,8 @@ class _BookingItem extends StatelessWidget {
         // Fallback: essayer uuid ou id
         final uuid = item['uuid'] ?? item['id'];
         if (uuid != null) {
-          debugPrint('🎫 _BookingItem._navigate: Fallback navigating to /booking-detail/$uuid');
+          debugPrint(
+              '🎫 _BookingItem._navigate: Fallback navigating to /booking-detail/$uuid');
           context.push('/booking-detail/$uuid');
         }
       }
@@ -491,7 +508,8 @@ class _BookingItem extends StatelessWidget {
       // Fallback
       final uuid = item['uuid'] ?? item['id'];
       if (uuid != null) {
-        debugPrint('🎫 _BookingItem._navigate: No schema, navigating to /booking-detail/$uuid');
+        debugPrint(
+            '🎫 _BookingItem._navigate: No schema, navigating to /booking-detail/$uuid');
         context.push('/booking-detail/$uuid');
       }
     }
@@ -505,7 +523,7 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (color, bgColor, label) = _getStatusStyle();
+    final (color, bgColor, label) = _getStatusStyle(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -524,7 +542,8 @@ class _StatusBadge extends StatelessWidget {
     );
   }
 
-  (Color, Color, String) _getStatusStyle() {
+  (Color, Color, String) _getStatusStyle(BuildContext context) {
+    final l10n = context.l10n;
     switch (status.toLowerCase()) {
       case 'confirmed':
       case 'confirme':
@@ -532,26 +551,30 @@ class _StatusBadge extends StatelessWidget {
         return (
           HbColors.success,
           HbColors.success.withOpacity(0.1),
-          'Confirmé'
+          l10n.bookingStatusConfirmed
         );
       case 'pending':
       case 'en_attente':
         return (
           HbColors.warning,
           HbColors.warning.withOpacity(0.1),
-          'En attente'
+          l10n.bookingStatusPending
         );
       case 'cancelled':
       case 'annule':
       case 'annulé':
-        return (HbColors.error, HbColors.error.withOpacity(0.1), 'Annulé');
+        return (
+          HbColors.error,
+          HbColors.error.withOpacity(0.1),
+          l10n.bookingStatusCancelled
+        );
       case 'used':
       case 'utilise':
       case 'utilisé':
         return (
           HbColors.textSecondary,
           Colors.grey.shade100,
-          'Utilisé'
+          l10n.bookingTicketStatusUsed
         );
       default:
         return (HbColors.textSecondary, Colors.grey.shade100, status);

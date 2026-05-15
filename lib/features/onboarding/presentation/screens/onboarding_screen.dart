@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/models/onboarding_content.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -15,28 +16,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingContent> _contents = [
-    const OnboardingContent(
-      title: 'Vibrez au rythme de votre ville',
-      description: 'Découvrez les concerts, festivals et soirées qui font bouger votre région. Ne ratez plus aucun événement musical.',
-      imagePath: 'assets/images/onboarding_n_1.png',
-    ),
-    const OnboardingContent(
-      title: 'Savourez chaque instant',
-      description: 'Des marchés gourmands aux meilleures adresses de street food, trouvez les pépites culinaires autour de vous.',
-      imagePath: 'assets/images/onboarding_n_2.png',
-    ),
-    const OnboardingContent(
-      title: 'Restez Connecté',
-      description: 'Recevez toutes les communications de la ville, restez informé des événements de votre municipalité et gardez le contact avec votre mairie.',
-      imagePath: 'assets/images/onboarding_city_comms.png',
-    ),
-    const OnboardingContent(
-      title: 'Libérez votre créativité',
-      description: 'Participez à des ateliers uniques : poterie, peinture, et bien plus. Rencontrez des passionnés et apprenez en vous amusant.',
-      imagePath: 'assets/images/onboarding_n_3.png',
-    ),
-  ];
+  List<OnboardingContent> _contents(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      OnboardingContent(
+        title: l10n.onboardingExploreTitle,
+        description: l10n.onboardingExploreDescription,
+        imagePath: 'assets/images/onboarding_screen_1.png',
+      ),
+      OnboardingContent(
+        title: l10n.onboardingMusicTitle,
+        description: l10n.onboardingMusicDescription,
+        imagePath: 'assets/images/onboarding_n_1.png',
+      ),
+      OnboardingContent(
+        title: l10n.onboardingLocalTitle,
+        description: l10n.onboardingLocalDescription,
+        imagePath: 'assets/images/onboarding_n_2.png',
+      ),
+      OnboardingContent(
+        title: l10n.onboardingAssociationTitle,
+        description: l10n.onboardingAssociationDescription,
+        imagePath: 'assets/images/onboarding_association.png',
+      ),
+    ];
+  }
 
   @override
   void dispose() {
@@ -49,36 +53,68 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool(AppConstants.keyOnboardingCompleted, true);
 
     if (mounted) {
-      context.go('/login');
+      // Location permission is the last step of first-launch onboarding.
+      // Marking the flag completed BEFORE navigation means if the user kills
+      // the app on the permission screen, the next launch goes straight to
+      // /login — they don't get the carousel again. On-demand location
+      // requests in search filters still re-prompt if needed.
+      context.go('/post-signup/location');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final contents = _contents(context);
+    final l10n = context.l10n;
+
     return Scaffold(
       body: Stack(
         children: [
           // Background Image with PageView
           PageView.builder(
             controller: _pageController,
-            itemCount: _contents.length,
+            itemCount: contents.length,
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
               });
             },
             itemBuilder: (context, index) {
-              return _buildPage(_contents[index]);
+              return _buildPage(contents[index]);
             },
+          ),
+
+          // Top gradient to keep the logo and skip button readable.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: MediaQuery.of(context).padding.top + 130,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.0, 0.55, 1.0],
+                    colors: [
+                      Colors.black.withValues(alpha: 0.55),
+                      Colors.black.withValues(alpha: 0.28),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
 
           // LeHiboo Logo
           Positioned(
-            top: MediaQuery.of(context).padding.top + 20,
-            left: 20,
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 12,
             child: Image.asset(
-              'assets/images/logo_lehiboo_blanc_x3_2.png',
-              width: 100, // Adjust size as needed
+              'assets/images/logo_lehiboo_experience.png',
+              width: 120,
               fit: BoxFit.contain,
             ),
           ),
@@ -96,9 +132,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text(
-                'Passer',
-                style: TextStyle(
+              child: Text(
+                l10n.onboardingSkip,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -117,7 +153,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // Indicators
                 Row(
                   children: List.generate(
-                    _contents.length,
+                    contents.length,
                     (index) => _buildDot(index),
                   ),
                 ),
@@ -125,7 +161,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // Next / Finish Button
                 ElevatedButton(
                   onPressed: () {
-                    if (_currentPage == _contents.length - 1) {
+                    if (_currentPage == contents.length - 1) {
                       _completeOnboarding();
                     } else {
                       _pageController.nextPage(
@@ -137,14 +173,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF601F),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                     elevation: 0,
                   ),
                   child: Text(
-                    _currentPage == _contents.length - 1 ? 'C\'est parti' : 'Suivant',
+                    _currentPage == contents.length - 1
+                        ? l10n.onboardingGetStarted
+                        : l10n.commonNext,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -171,7 +210,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               return Container(
                 color: Colors.grey[900],
                 child: const Center(
-                  child: Icon(Icons.image_not_supported, color: Colors.white54, size: 50),
+                  child: Icon(Icons.image_not_supported,
+                      color: Colors.white54, size: 50),
                 ),
               );
             },

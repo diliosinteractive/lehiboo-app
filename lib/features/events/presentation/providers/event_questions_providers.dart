@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/event_social_api_datasource.dart';
 import '../../data/repositories/event_questions_repository_impl.dart';
@@ -188,15 +189,12 @@ class EventQuestionsActionsController extends StateNotifier<AsyncValue<void>> {
     required String text,
   }) async {
     final trimmed = text.trim();
+    final l10n = cachedAppLocalizations();
     if (trimmed.length < 10) {
-      return const CreateQuestionValidationFailure(
-        'Votre question doit contenir au moins 10 caractères.',
-      );
+      return CreateQuestionValidationFailure(l10n.eventQuestionMinLength);
     }
     if (trimmed.length > 1000) {
-      return const CreateQuestionValidationFailure(
-        'Votre question est trop longue (1000 caractères max).',
-      );
+      return CreateQuestionValidationFailure(l10n.eventQuestionTooLong);
     }
 
     state = const AsyncValue.loading();
@@ -214,14 +212,14 @@ class EventQuestionsActionsController extends StateNotifier<AsyncValue<void>> {
       return const CreateQuestionAlreadyExists();
     } on QuestionValidationException catch (e) {
       state = const AsyncValue.data(null);
-      debugPrint('[QA] createQuestion validation: ${e.firstError}');
-      return CreateQuestionValidationFailure(e.firstError);
+      final errorMessage =
+          e.errors.isNotEmpty ? e.errors.first : l10n.eventQuestionInvalid;
+      debugPrint('[QA] createQuestion validation: $errorMessage');
+      return CreateQuestionValidationFailure(errorMessage);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       debugPrint('[QA] createQuestion FAILED: $e');
-      return const CreateQuestionFailure(
-        'Une erreur est survenue lors de l\'envoi de la question.',
-      );
+      return CreateQuestionFailure(l10n.commonGenericRetryError);
     }
   }
 

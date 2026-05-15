@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:html_unescape/html_unescape.dart';
-import '../providers/thematiques_provider.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 import '../../../home/presentation/providers/home_providers.dart';
-import '../../data/models/thematique_dto.dart';
 
 class ThematiquesSection extends ConsumerWidget {
   const ThematiquesSection({super.key});
@@ -37,19 +35,19 @@ class ThematiquesSection extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "Explorer par type d'événement",
-                    style: GoogleFonts.montserrat(
-                      fontSize: 19, // Slightly smaller to fit "type d'événement"
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: HomeSectionTitle(
+                      title: context.l10n.thematiquesExploreByTypeTitle,
+                      fontSize: 19,
                       color: const Color(0xFF2D3748),
                     ),
                   ),
                   TextButton(
-                    onPressed: () => _showAllCategoriesBottomSheet(context, sortedCategories),
-                    child: const Text(
-                      'Voir tout',
-                      style: TextStyle(
+                    onPressed: () => _showAllCategoriesBottomSheet(
+                        context, sortedCategories),
+                    child: Text(
+                      context.l10n.thematiquesSeeAll,
+                      style: const TextStyle(
                         color: Color(0xFFFF601F),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -112,12 +110,14 @@ class ThematiquesSection extends ConsumerWidget {
     );
   }
 
-  void _showAllCategoriesBottomSheet(BuildContext context, List<EventCategoryInfo> allCategories) {
+  void _showAllCategoriesBottomSheet(
+      BuildContext context, List<EventCategoryInfo> allCategories) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _AllCategoriesBottomSheet(categories: allCategories),
+      builder: (context) =>
+          _AllCategoriesBottomSheet(categories: allCategories),
     );
   }
 }
@@ -128,7 +128,8 @@ class _AllCategoriesBottomSheet extends StatefulWidget {
   const _AllCategoriesBottomSheet({required this.categories});
 
   @override
-  State<_AllCategoriesBottomSheet> createState() => _AllCategoriesBottomSheetState();
+  State<_AllCategoriesBottomSheet> createState() =>
+      _AllCategoriesBottomSheetState();
 }
 
 class _AllCategoriesBottomSheetState extends State<_AllCategoriesBottomSheet> {
@@ -165,7 +166,9 @@ class _AllCategoriesBottomSheetState extends State<_AllCategoriesBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Tous les types (${widget.categories.length})',
+                  context.l10n.thematiquesAllTypesCount(
+                    widget.categories.length,
+                  ),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -183,7 +186,7 @@ class _AllCategoriesBottomSheetState extends State<_AllCategoriesBottomSheet> {
             child: TextField(
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
-                hintText: "Rechercher un type d'événement...",
+                hintText: context.l10n.thematiquesSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey[100],
@@ -191,7 +194,8 @@ class _AllCategoriesBottomSheetState extends State<_AllCategoriesBottomSheet> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
           ),
@@ -224,14 +228,15 @@ class CategoryTypeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unescape = HtmlUnescape();
-    
+
     // Check for local asset based on slug
     final localAsset = _getLocalAsset(category.slug);
 
     return GestureDetector(
       onTap: () {
         context.push(
-          Uri(path: '/search', queryParameters: {'categorySlug': category.slug}).toString(),
+          Uri(path: '/search', queryParameters: {'categorySlug': category.slug})
+              .toString(),
         );
       },
       child: Container(
@@ -250,15 +255,16 @@ class CategoryTypeCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // Background image (Priority: Local Asset -> Color)
-             if (localAsset != null)
+            if (localAsset != null)
               Image.asset(
                 localAsset,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildPlaceholder(),
               )
             else
               _buildPlaceholder(),
-              
+
             // Gradient overlay
             Container(
               decoration: BoxDecoration(
@@ -305,9 +311,9 @@ class CategoryTypeCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                   if (category.eventCount > 0)
+                  if (category.eventCount > 0)
                     Text(
-                      '${category.eventCount} événement${category.eventCount > 1 ? 's' : ''}',
+                      context.l10n.thematiquesEventCount(category.eventCount),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 12,
@@ -387,7 +393,7 @@ class CategoryTypeCard extends StatelessWidget {
       case 'celebration':
       case 'festival':
         return Icons.celebration;
-       case 'shopping_basket':
+      case 'shopping_basket':
       case 'marche':
         return Icons.shopping_basket;
       default:

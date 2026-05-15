@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/blog_post_dto.dart';
 
@@ -30,12 +31,12 @@ class BlogPostCard extends StatelessWidget {
           ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: isCompact ? _buildCompactCard() : _buildFullCard(),
+        child: isCompact ? _buildCompactCard(context) : _buildFullCard(context),
       ),
     );
   }
 
-  Widget _buildCompactCard() {
+  Widget _buildCompactCard(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -69,7 +70,7 @@ class BlogPostCard extends StatelessWidget {
                     Icon(Icons.access_time, size: 12, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
-                      '${post.readingTime} min',
+                      context.l10n.blogReadingTimeMinutes(post.readingTime!),
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey[500],
@@ -85,7 +86,7 @@ class BlogPostCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFullCard() {
+  Widget _buildFullCard(BuildContext context) {
     return Row(
       children: [
         // Image on left
@@ -161,7 +162,7 @@ class BlogPostCard extends StatelessWidget {
                           size: 12, color: Colors.grey[500]),
                       const SizedBox(width: 4),
                       Text(
-                        '${post.readingTime} min',
+                        context.l10n.blogReadingTimeMinutes(post.readingTime!),
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[500],

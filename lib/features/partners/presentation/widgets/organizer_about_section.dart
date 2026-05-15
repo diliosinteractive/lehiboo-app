@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import 'organizer_social_link_row.dart';
 
@@ -30,7 +31,7 @@ class OrganizerAboutSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionTitle('À propos'),
+          _SectionTitle(context.l10n.organizerAboutTitle),
           const SizedBox(height: 8),
           if (hasDescription) ...[
             Text(
@@ -44,7 +45,7 @@ class OrganizerAboutSection extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           if (hasTypes) ...[
-            const _SectionTitle('Types d\'établissement'),
+            _SectionTitle(context.l10n.organizerEstablishmentTypesTitle),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -52,8 +53,8 @@ class OrganizerAboutSection extends StatelessWidget {
               children: [
                 for (final type in types)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(20),
@@ -72,7 +73,7 @@ class OrganizerAboutSection extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           if (hasSocials) ...[
-            const _SectionTitle('Réseaux sociaux'),
+            _SectionTitle(context.l10n.organizerSocialLinksTitle),
             const SizedBox(height: 12),
             OrganizerSocialLinkRow(links: organizer.socialLinks!),
           ],

@@ -263,14 +263,18 @@ class EventAvailabilityDto with _$EventAvailabilityDto {
 class EventCategoryDto with _$EventCategoryDto {
   const factory EventCategoryDto({
     @JsonKey(fromJson: _parseInt) @Default(0) int id,
+    @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull) int? parentId,
     @JsonKey(fromJson: _parseHtmlString) @Default('') String name,
     @JsonKey(fromJson: _parseHtmlString) @Default('') String slug,
     @JsonKey(fromJson: _parseHtmlString) String? description,
     @JsonKey(fromJson: _parseStringOrNull) String? icon,
     @JsonKey(fromJson: _parseStringOrNull) String? color,
-    @JsonKey(name: 'event_count', fromJson: _parseIntOrNull) int? eventCount,
+    @JsonKey(name: 'event_count', readValue: _readCategoryEventCount, fromJson: _parseIntOrNull) int? eventCount,
+    @JsonKey(name: 'image_url', readValue: _readImageUrl, fromJson: _parseStringOrNull) String? imageUrl,
+    @JsonKey(name: 'image_alt', readValue: _readImageAlt, fromJson: _parseStringOrNull) String? imageAlt,
     @JsonKey(name: 'is_primary', fromJson: _parseBool) @Default(false) bool isPrimary,
     @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent,
+    @JsonKey(fromJson: _parseCategoriesListOrEmpty) @Default([]) List<EventCategoryDto> children,
   }) = _EventCategoryDto;
 
   factory EventCategoryDto.fromJson(Map<String, dynamic> json) =>
@@ -368,6 +372,18 @@ Object? _readEventTypeString(Map map, Object key) {
   return value is String ? value : null;
 }
 
+Object? _readCategoryEventCount(Map map, Object key) {
+  return map['event_count'] ?? map['events_count'] ?? map['eventsCount'];
+}
+
+Object? _readImageUrl(Map map, Object key) {
+  return map['image_url'] ?? map['imageUrl'];
+}
+
+Object? _readImageAlt(Map map, Object key) {
+  return map['image_alt'] ?? map['imageAlt'];
+}
+
 /// HOME_FEED §4.3 location object uses `name`; legacy /events uses
 /// `venue_name`. Prefer the spec key, fall back to legacy.
 Object? _readLocationName(Map map, Object key) {
@@ -436,6 +452,10 @@ List<EventCategoryDto>? _parseCategoriesList(dynamic value) {
       .whereType<Map<String, dynamic>>()
       .map((e) => EventCategoryDto.fromJson(e))
       .toList();
+}
+
+List<EventCategoryDto> _parseCategoriesListOrEmpty(dynamic value) {
+  return _parseCategoriesList(value) ?? [];
 }
 
 /// Alias for backward compatibility (used by EventOrganizerDto.categories)

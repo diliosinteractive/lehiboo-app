@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 
 import 'package:html_unescape/html_unescape.dart';
 import '../providers/thematiques_provider.dart';
@@ -34,10 +35,11 @@ class CategoriesChipsSection extends ConsumerWidget {
         final Map<String, String> thematiqueImages = {};
         if (thematiquesAsync.hasValue) {
           for (final t in thematiquesAsync.value!) {
-             final imageUrl = t.image?.thumbnail ?? t.image?.medium ?? t.image?.large;
-             if (imageUrl != null) {
-               thematiqueImages[t.slug] = imageUrl;
-             }
+            final imageUrl =
+                t.image?.thumbnail ?? t.image?.medium ?? t.image?.large;
+            if (imageUrl != null) {
+              thematiqueImages[t.slug] = imageUrl;
+            }
           }
         }
 
@@ -50,19 +52,18 @@ class CategoriesChipsSection extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Toutes les catégories',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: HomeSectionTitle(
+                      title: context.l10n.categoriesAllTitle,
                       color: const Color(0xFF2D3748),
                     ),
                   ),
                   TextButton(
-                    onPressed: () => _showAllCategoriesBottomSheet(context, sortedCategories, thematiqueImages),
-                    child: const Text(
-                      'Voir tout',
-                      style: TextStyle(
+                    onPressed: () => _showAllCategoriesBottomSheet(
+                        context, sortedCategories, thematiqueImages),
+                    child: Text(
+                      context.l10n.thematiquesSeeAll,
+                      style: const TextStyle(
                         color: Color(0xFFFF601F),
                         fontWeight: FontWeight.w600,
                       ),
@@ -109,7 +110,8 @@ class CategoriesChipsSection extends ConsumerWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () => _showAllCategoriesBottomSheet(context, sortedCategories, thematiqueImages),
+                  onPressed: () => _showAllCategoriesBottomSheet(
+                      context, sortedCategories, thematiqueImages),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF2D3748),
                     side: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -119,7 +121,7 @@ class CategoriesChipsSection extends ConsumerWidget {
                     ),
                     backgroundColor: Colors.white,
                   ),
-                  child: const Text('Voir toutes les catégories'),
+                  child: Text(context.l10n.categoriesSeeAll),
                 ),
               ),
             ),
@@ -133,19 +135,17 @@ class CategoriesChipsSection extends ConsumerWidget {
           spacing: 12,
           runSpacing: 12,
           children: List.generate(6, (index) {
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                 final double itemWidth = (constraints.maxWidth - 12) / 2;
-                 return Container(
-                  width: itemWidth,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                );
-              }
-            );
+            return LayoutBuilder(builder: (context, constraints) {
+              final double itemWidth = (constraints.maxWidth - 12) / 2;
+              return Container(
+                width: itemWidth,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              );
+            });
           }),
         ),
       ),
@@ -154,10 +154,10 @@ class CategoriesChipsSection extends ConsumerWidget {
   }
 
   void _showAllCategoriesBottomSheet(
-      BuildContext context,
-      List<EventCategoryInfo> allCategories,
-      Map<String, String> thematiqueImages,
-      ) {
+    BuildContext context,
+    List<EventCategoryInfo> allCategories,
+    Map<String, String> thematiqueImages,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -217,7 +217,10 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
         final lowerQuery = query.toLowerCase();
         final unescape = HtmlUnescape();
         _filteredCategories = widget.categories.where((category) {
-          return unescape.convert(category.name).toLowerCase().contains(lowerQuery);
+          return unescape
+              .convert(category.name)
+              .toLowerCase()
+              .contains(lowerQuery);
         }).toList();
       }
     });
@@ -242,7 +245,7 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header & Search
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -253,7 +256,7 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Toutes les catégories (${widget.categories.length})',
+                      context.l10n.categoriesAllCount(widget.categories.length),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -272,11 +275,13 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
                   controller: _searchController,
                   onChanged: _filterCategories,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher une catégorie...',
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                    hintText: context.l10n.categoriesSearchHint,
+                    prefixIcon:
+                        const Icon(Icons.search, color: Color(0xFF9CA3AF)),
                     filled: true,
                     fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -294,7 +299,7 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
               ],
             ),
           ),
-          
+
           // List
           Expanded(
             child: _filteredCategories.isEmpty
@@ -302,10 +307,11 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                        Icon(Icons.search_off,
+                            size: 48, color: Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
-                          'Aucune catégorie trouvée',
+                          context.l10n.categoriesEmptySearch,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 16,
@@ -321,8 +327,9 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
                     itemBuilder: (context, index) {
                       final category = _filteredCategories[index];
                       // Try to find an image from thematiques with same slug
-                      final fallbackImage = widget.thematiqueImages[category.slug];
-                      
+                      final fallbackImage =
+                          widget.thematiqueImages[category.slug];
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: CategoryCard(
@@ -341,7 +348,6 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
     );
   }
 }
-
 
 class CategoryCard extends StatelessWidget {
   final String name;
@@ -368,7 +374,8 @@ class CategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         context.push(
-          Uri(path: '/search', queryParameters: {'categorySlug': slug}).toString(),
+          Uri(path: '/search', queryParameters: {'categorySlug': slug})
+              .toString(),
         );
       },
       child: Container(
@@ -391,7 +398,9 @@ class CategoryCard extends StatelessWidget {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: imageUrl != null ? Colors.grey[100] : color.withOpacity(0.1),
+                color: imageUrl != null
+                    ? Colors.grey[100]
+                    : color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
                 image: imageUrl != null
                     ? DecorationImage(
@@ -422,7 +431,7 @@ class CategoryCard extends StatelessWidget {
                   : null,
             ),
             const SizedBox(width: 12),
-            
+
             // Text content
             Expanded(
               child: Column(
@@ -443,7 +452,7 @@ class CategoryCard extends StatelessWidget {
                   if (eventCount != null && eventCount! > 0) ...[
                     const SizedBox(height: 2),
                     Text(
-                      '$eventCount événement${eventCount! > 1 ? 's' : ''}',
+                      context.l10n.thematiquesEventCount(eventCount!),
                       style: TextStyle(
                         color: Colors.grey[500],
                         fontSize: 12,
@@ -454,7 +463,7 @@ class CategoryCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Chevron
             Icon(
               Icons.chevron_right_rounded,
@@ -507,19 +516,33 @@ class CategoryCard extends StatelessWidget {
   IconData _getIconData(String iconName) {
     // Basic mapping based on slug keywords
     final lower = iconName.toLowerCase();
-    if (lower.contains('musique') || lower.contains('concert')) return Icons.music_note_rounded;
-    if (lower.contains('theatre') || lower.contains('spectacle') || lower.contains('cinema')) return Icons.movie_filter_rounded;
-    if (lower.contains('sport') || lower.contains('bien-etre')) return Icons.pool_rounded;
-    if (lower.contains('cuisine') || lower.contains('gastronomie')) return Icons.restaurant_menu_rounded;
-    if (lower.contains('nature') || lower.contains('environnement')) return Icons.eco_rounded;
-    if (lower.contains('famille') || lower.contains('enfant')) return Icons.family_restroom_rounded;
-    if (lower.contains('art') || lower.contains('culture') || lower.contains('exposition')) return Icons.palette_rounded;
-    if (lower.contains('litterature') || lower.contains('lecture')) return Icons.menu_book_rounded;
-    if (lower.contains('numerique') || lower.contains('technologie')) return Icons.computer_rounded;
-    if (lower.contains('histoire') || lower.contains('patrimoine')) return Icons.castle_rounded;
-    if (lower.contains('formation') || lower.contains('education')) return Icons.school_rounded;
-    if (lower.contains('mode') || lower.contains('design')) return Icons.checkroom_rounded;
-    
+    if (lower.contains('musique') || lower.contains('concert'))
+      return Icons.music_note_rounded;
+    if (lower.contains('theatre') ||
+        lower.contains('spectacle') ||
+        lower.contains('cinema')) return Icons.movie_filter_rounded;
+    if (lower.contains('sport') || lower.contains('bien-etre'))
+      return Icons.pool_rounded;
+    if (lower.contains('cuisine') || lower.contains('gastronomie'))
+      return Icons.restaurant_menu_rounded;
+    if (lower.contains('nature') || lower.contains('environnement'))
+      return Icons.eco_rounded;
+    if (lower.contains('famille') || lower.contains('enfant'))
+      return Icons.family_restroom_rounded;
+    if (lower.contains('art') ||
+        lower.contains('culture') ||
+        lower.contains('exposition')) return Icons.palette_rounded;
+    if (lower.contains('litterature') || lower.contains('lecture'))
+      return Icons.menu_book_rounded;
+    if (lower.contains('numerique') || lower.contains('technologie'))
+      return Icons.computer_rounded;
+    if (lower.contains('histoire') || lower.contains('patrimoine'))
+      return Icons.castle_rounded;
+    if (lower.contains('formation') || lower.contains('education'))
+      return Icons.school_rounded;
+    if (lower.contains('mode') || lower.contains('design'))
+      return Icons.checkroom_rounded;
+
     return Icons.category_rounded;
   }
 }

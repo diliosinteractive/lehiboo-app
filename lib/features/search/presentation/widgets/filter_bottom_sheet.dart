@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../providers/filter_provider.dart';
+import '../utils/search_l10n.dart';
 import '../../domain/models/event_filter.dart';
 import '../../../events/data/models/event_reference_data_dto.dart';
+import '../../../events/data/models/search_suggestions_dto.dart';
 import '../../../home/presentation/providers/home_providers.dart';
 import 'category_cascade.dart';
 
@@ -39,6 +42,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
 
   /// Compte les filtres actifs pour le badge
   int get _activeFilterCount {
+    final publicFilters =
+        selectedPublicAudienceFilters(_tempFilter.targetAudienceSlugs);
     int count = 0;
     if (_tempFilter.searchQuery.isNotEmpty) {
       count++;
@@ -65,8 +70,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     count += _tempFilter.emotionSlugs.length;
     if (_tempFilter.availableOnly) count++;
     if (_tempFilter.locationType != null) count++;
-    if (_tempFilter.familyFriendly) count++;
-    if (_tempFilter.accessiblePMR) count++;
+    if (_tempFilter.familyFriendly && !publicFilters.contains('family')) {
+      count++;
+    }
+    if (_tempFilter.accessiblePMR && !publicFilters.contains('pmr')) count++;
     if (_tempFilter.onlineOnly) count++;
     if (_tempFilter.inPersonOnly) count++;
     if (_tempFilter.hasExplicitSort) count++;
@@ -75,11 +82,16 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
 
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoadingLocation = true);
+    final locationDisabled = context.l10n.searchLocationDisabled;
+    final permissionDenied = context.l10n.searchPermissionDenied;
+    final locationSettingsRequired =
+        context.l10n.searchLocationSettingsRequired;
+    final locationNotFound = context.l10n.searchLocationNotFound;
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _showError('Activez la localisation');
+        _showError(locationDisabled);
         return;
       }
 
@@ -87,13 +99,13 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showError('Permission refusée');
+          _showError(permissionDenied);
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showError('Activez la localisation dans les paramètres');
+        _showError(locationSettingsRequired);
         return;
       }
 
@@ -113,7 +125,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         );
       });
     } catch (e) {
-      _showError('Position introuvable');
+      _showError(locationNotFound);
     } finally {
       setState(() => _isLoadingLocation = false);
     }
@@ -299,10 +311,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         if (referenceData.themes.isNotEmpty) ...[
                           _FilterCard(
                             child: _ReferenceMultiSelectSection(
-                              title: 'Thématiques',
+                              title: context.l10n.searchSectionThemes,
                               icon: Icons.category,
                               selectedSlugs: _tempFilter.thematiquesSlugs,
                               options: referenceData.themes,
+                              showCounts: false,
                               onChanged: (slugs) {
                                 setState(() {
                                   _tempFilter = _tempFilter.copyWith(
@@ -316,27 +329,15 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ],
                         _FilterCard(
                           child: _AudienceFilterSection(
-                            familyFriendly: _tempFilter.familyFriendly,
-                            accessiblePMR: _tempFilter.accessiblePMR,
-                            selectedAudienceSlugs:
+                            selectedPublicFilterKeys:
                                 _tempFilter.targetAudienceSlugs,
-                            audienceGroups: referenceData.audienceGroups,
-                            onFamilyChanged: (value) {
-                              setState(() {
-                                _tempFilter =
-                                    _tempFilter.copyWith(familyFriendly: value);
-                              });
-                            },
-                            onPMRChanged: (value) {
-                              setState(() {
-                                _tempFilter =
-                                    _tempFilter.copyWith(accessiblePMR: value);
-                              });
-                            },
-                            onTargetAudiencesChanged: (slugs) {
+                            publicFilters: referenceData.publicFilters,
+                            onPublicFiltersChanged: (keys) {
                               setState(() {
                                 _tempFilter = _tempFilter.copyWith(
-                                  targetAudienceSlugs: slugs,
+                                  targetAudienceSlugs: keys,
+                                  familyFriendly: false,
+                                  accessiblePMR: false,
                                 );
                               });
                             },
@@ -346,7 +347,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         if (referenceData.eventTags.isNotEmpty) ...[
                           _FilterCard(
                             child: _ReferenceSingleSelectSection(
-                              title: "Type d'événement",
+                              title: context.l10n.searchSectionEventType,
                               icon: Icons.local_activity,
                               selectedSlug: _tempFilter.eventTagSlug,
                               options: referenceData.eventTags,
@@ -432,7 +433,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         if (referenceData.specialEvents.isNotEmpty) ...[
                           _FilterCard(
                             child: _ReferenceMultiSelectSection(
-                              title: 'Temps forts',
+                              title: context.l10n.searchSectionSpecialEvents,
                               icon: Icons.celebration,
                               selectedSlugs: _tempFilter.specialEventSlugs,
                               options: referenceData.specialEvents,
@@ -450,10 +451,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         if (referenceData.emotions.isNotEmpty) ...[
                           _FilterCard(
                             child: _ReferenceMultiSelectSection(
-                              title: 'Ambiance',
+                              title: context.l10n.searchSectionMood,
                               icon: Icons.mood,
                               selectedSlugs: _tempFilter.emotionSlugs,
                               options: referenceData.emotions,
+                              showCounts: false,
                               onChanged: (slugs) {
                                 setState(() {
                                   _tempFilter = _tempFilter.copyWith(
@@ -536,7 +538,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           const Spacer(),
           // Titre centré
           Text(
-            'Filtres',
+            context.l10n.searchFiltersTitle,
             style: GoogleFonts.montserrat(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -551,7 +553,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               setState(() => _tempFilter = const EventFilter());
             },
             child: Text(
-              'Effacer',
+              context.l10n.searchClear,
               style: GoogleFonts.montserrat(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -572,9 +574,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       filterPreviewCountProvider(_tempFilter.copyWith(page: 1, perPage: 1)),
     );
     final actionLabel = previewCount.when(
-      data: (count) => 'Rechercher · $count activité${count > 1 ? 's' : ''}',
-      loading: () => 'Rechercher',
-      error: (_, __) => 'Rechercher',
+      data: context.searchActionLabel,
+      loading: () => context.l10n.searchAction,
+      error: (_, __) => context.l10n.searchAction,
     );
 
     return Container(
@@ -717,7 +719,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _SearchFilterSection extends StatefulWidget {
+class _SearchFilterSection extends ConsumerStatefulWidget {
   final String query;
   final ValueChanged<String> onChanged;
 
@@ -727,10 +729,11 @@ class _SearchFilterSection extends StatefulWidget {
   });
 
   @override
-  State<_SearchFilterSection> createState() => _SearchFilterSectionState();
+  ConsumerState<_SearchFilterSection> createState() =>
+      _SearchFilterSectionState();
 }
 
-class _SearchFilterSectionState extends State<_SearchFilterSection> {
+class _SearchFilterSectionState extends ConsumerState<_SearchFilterSection> {
   late final TextEditingController _controller;
 
   @override
@@ -761,14 +764,14 @@ class _SearchFilterSectionState extends State<_SearchFilterSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Recherche', icon: Icons.search),
+        _SectionTitle(title: context.l10n.searchTitle, icon: Icons.search),
         const SizedBox(height: 16),
         TextField(
           controller: _controller,
           onChanged: widget.onChanged,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Événement ou organisation',
+            hintText: context.l10n.searchHintEventOrOrganization,
             prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
             suffixIcon: widget.query.isEmpty
                 ? null
@@ -796,7 +799,52 @@ class _SearchFilterSectionState extends State<_SearchFilterSection> {
             ),
           ),
         ),
+        if (_shouldShowAutocomplete(widget.query)) ...[
+          const SizedBox(height: 12),
+          _buildEventOrganizationSuggestions(),
+        ],
       ],
+    );
+  }
+
+  Widget _buildEventOrganizationSuggestions() {
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: widget.query,
+          types: 'events,organizations',
+          limit: 5,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        final items = [...data.events, ...data.organizations];
+        if (items.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoSuggestions);
+        }
+
+        return _SuggestionList(
+          children: items.map((item) {
+            final isOrganization = item.type == 'organization';
+            return _SuggestionTile(
+              icon: isOrganization ? Icons.apartment : Icons.event,
+              label: item.label,
+              subtitle: item.subtitle,
+              onTap: () {
+                _controller.text = item.label;
+                _controller.selection = TextSelection.collapsed(
+                  offset: _controller.text.length,
+                );
+                widget.onChanged(item.label);
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }
@@ -852,7 +900,10 @@ class _LocationFilterSectionState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Localisation', icon: Icons.location_on),
+        _SectionTitle(
+          title: context.l10n.searchSectionLocation,
+          icon: Icons.location_on,
+        ),
         const SizedBox(height: 20),
 
         // Géolocalisation
@@ -905,7 +956,7 @@ class _LocationFilterSectionState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'À proximité',
+                        context.l10n.homeSearchNearby,
                         style: GoogleFonts.montserrat(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -914,8 +965,8 @@ class _LocationFilterSectionState
                       ),
                       Text(
                         hasLocation
-                            ? 'Dans un rayon de ${filter.radiusKm.toInt()} km'
-                            : 'Utiliser ma position actuelle',
+                            ? context.searchWithinRadiusLabel(filter.radiusKm)
+                            : context.l10n.searchUseCurrentLocation,
                         style: GoogleFonts.montserrat(
                           fontSize: 13,
                           color: Colors.grey.shade600,
@@ -941,7 +992,7 @@ class _LocationFilterSectionState
           Row(
             children: [
               Text(
-                'Rayon : ',
+                context.l10n.searchRadiusLabel,
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   color: Colors.grey.shade700,
@@ -981,7 +1032,7 @@ class _LocationFilterSectionState
           controller: _citySearchController,
           onChanged: (value) => setState(() => _cityQuery = value.trim()),
           decoration: InputDecoration(
-            hintText: 'Rechercher une ville',
+            hintText: context.l10n.searchHintCity,
             prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
             suffixIcon: _cityQuery.isEmpty
                 ? null
@@ -1016,7 +1067,9 @@ class _LocationFilterSectionState
             children: [
               Expanded(
                 child: Text(
-                  'Rayon autour de ${filter.cityName ?? filter.citySlug}',
+                  context.searchRadiusAroundCityLabel(
+                    filter.cityName ?? filter.citySlug!,
+                  ),
                   style: GoogleFonts.montserrat(
                     fontSize: 14,
                     color: Colors.grey.shade700,
@@ -1052,7 +1105,9 @@ class _LocationFilterSectionState
 
         // Villes populaires
         Text(
-          _cityQuery.isEmpty ? 'VILLES POPULAIRES' : 'RÉSULTATS',
+          _cityQuery.isEmpty
+              ? context.l10n.searchPopularCities
+              : context.l10n.searchResults,
           style: GoogleFonts.montserrat(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -1064,6 +1119,18 @@ class _LocationFilterSectionState
 
         citiesAsync.when(
           data: (cities) {
+            if (_cityQuery.isNotEmpty && !_shouldShowAutocomplete(_cityQuery)) {
+              return _AutocompleteMessage(
+                context.searchMinCharactersLabel(
+                  searchAutocompleteMinQueryLength,
+                ),
+              );
+            }
+
+            if (_shouldShowAutocomplete(_cityQuery)) {
+              return _buildCityAutocompleteResults(filter);
+            }
+
             final normalizedQuery = _cityQuery.toLowerCase();
             final displayedCities = normalizedQuery.isEmpty
                 ? cities.take(6).toList()
@@ -1078,7 +1145,7 @@ class _LocationFilterSectionState
 
             if (displayedCities.isEmpty) {
               return Text(
-                'Aucune ville trouvée',
+                context.l10n.searchNoCityFound,
                 style: GoogleFonts.montserrat(
                   fontSize: 13,
                   color: Colors.grey.shade600,
@@ -1145,6 +1212,47 @@ class _LocationFilterSectionState
       ],
     );
   }
+
+  Widget _buildCityAutocompleteResults(EventFilter filter) {
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: _cityQuery,
+          types: 'cities',
+          limit: 10,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        if (data.cities.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoCityFound);
+        }
+
+        return _SuggestionList(
+          children: data.cities.map((city) {
+            final isSelected = filter.citySlug == city.slug;
+            return _SuggestionTile(
+              icon: Icons.location_city,
+              label: _labelWithCount(city.label, city.eventsCount),
+              isSelected: isSelected,
+              onTap: () {
+                if (isSelected) {
+                  widget.onClearCity();
+                } else {
+                  widget.onCitySelected(city.slug, city.label);
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) =>
+          _AutocompleteMessage(context.l10n.searchCitiesUnavailable),
+    );
+  }
 }
 
 // =============================================================================
@@ -1175,7 +1283,7 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
 
   String _formatDateRange() {
     if (widget.startDate == null) return '';
-    final formatter = DateFormat('d MMM', 'fr_FR');
+    final formatter = context.appDateFormat('d MMM', enPattern: 'MMM d');
     if (widget.endDate == null || widget.startDate == widget.endDate) {
       return formatter.format(widget.startDate!);
     }
@@ -1198,7 +1306,10 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Date', icon: Icons.calendar_today),
+        _SectionTitle(
+          title: context.l10n.searchSectionDate,
+          icon: Icons.calendar_today,
+        ),
         const SizedBox(height: 16),
 
         // Quick date chips
@@ -1207,8 +1318,10 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
           runSpacing: 10,
           children: [
             _DateQuickChip(
-              label: "Aujourd'hui",
-              subtitle: DateFormat('d MMM', 'fr_FR').format(today),
+              label: context.l10n.commonToday,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(today),
               isSelected: widget.selectedType == DateFilterType.today,
               onTap: () => widget.onTypeChanged(
                 widget.selectedType == DateFilterType.today
@@ -1217,8 +1330,10 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
               ),
             ),
             _DateQuickChip(
-              label: 'Demain',
-              subtitle: DateFormat('d MMM', 'fr_FR').format(tomorrow),
+              label: context.l10n.commonTomorrow,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(tomorrow),
               isSelected: widget.selectedType == DateFilterType.tomorrow,
               onTap: () => widget.onTypeChanged(
                 widget.selectedType == DateFilterType.tomorrow
@@ -1227,9 +1342,9 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
               ),
             ),
             _DateQuickChip(
-              label: 'Ce week-end',
+              label: context.l10n.commonThisWeekend,
               subtitle:
-                  '${DateFormat('d').format(saturday)}-${DateFormat('d MMM', 'fr_FR').format(sunday)}',
+                  '${DateFormat('d').format(saturday)}-${context.appDateFormat('d MMM', enPattern: 'MMM d').format(sunday)}',
               isSelected: widget.selectedType == DateFilterType.thisWeekend,
               onTap: () => widget.onTypeChanged(
                 widget.selectedType == DateFilterType.thisWeekend
@@ -1238,7 +1353,7 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
               ),
             ),
             _DateQuickChip(
-              label: 'Cette semaine',
+              label: context.l10n.searchDateThisWeek,
               isSelected: widget.selectedType == DateFilterType.thisWeek,
               onTap: () => widget.onTypeChanged(
                 widget.selectedType == DateFilterType.thisWeek
@@ -1247,7 +1362,7 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
               ),
             ),
             _DateQuickChip(
-              label: 'Ce mois',
+              label: context.l10n.searchDateThisMonth,
               isSelected: widget.selectedType == DateFilterType.thisMonth,
               onTap: () => widget.onTypeChanged(
                 widget.selectedType == DateFilterType.thisMonth
@@ -1293,7 +1408,7 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
                     widget.selectedType == DateFilterType.custom &&
                             widget.startDate != null
                         ? _formatDateRange()
-                        : 'Choisir des dates personnalisées',
+                        : context.l10n.searchChooseCustomDates,
                     style: GoogleFonts.montserrat(
                       fontSize: 14,
                       fontWeight: widget.selectedType == DateFilterType.custom
@@ -1466,7 +1581,9 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                 },
               ),
               Text(
-                DateFormat('MMMM yyyy', 'fr_FR').format(_currentMonth),
+                context
+                    .appDateFormat('MMMM yyyy', enPattern: 'MMMM yyyy')
+                    .format(_currentMonth),
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1634,13 +1751,14 @@ class _PriceFilterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Budget', icon: Icons.euro),
+        _SectionTitle(
+            title: context.l10n.searchSectionBudget, icon: Icons.euro),
         const SizedBox(height: 16),
 
         // Toggle gratuit
         _ToggleRow(
-          title: 'Gratuit uniquement',
-          subtitle: 'Afficher seulement les activités gratuites',
+          title: context.l10n.searchFreeOnlyTitle,
+          subtitle: context.l10n.searchFreeOnlySubtitle,
           icon: Icons.local_offer,
           isSelected: onlyFree,
           onTap: () => onFreeChanged(!onlyFree),
@@ -1652,7 +1770,7 @@ class _PriceFilterSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Fourchette de prix',
+                context.l10n.searchPriceRangeTitle,
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -1700,7 +1818,7 @@ class _PriceFilterSection extends StatelessWidget {
 // SECTION CATEGORIES
 // =============================================================================
 
-class _CategoriesFilterSection extends StatefulWidget {
+class _CategoriesFilterSection extends ConsumerStatefulWidget {
   final List<String> selectedSlugs;
   final List<EventReferenceCategoryDto> categories;
   final ValueChanged<List<String>> onChanged;
@@ -1712,11 +1830,12 @@ class _CategoriesFilterSection extends StatefulWidget {
   });
 
   @override
-  State<_CategoriesFilterSection> createState() =>
+  ConsumerState<_CategoriesFilterSection> createState() =>
       _CategoriesFilterSectionState();
 }
 
-class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
+class _CategoriesFilterSectionState
+    extends ConsumerState<_CategoriesFilterSection> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
@@ -1730,18 +1849,22 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
   Widget build(BuildContext context) {
     if (widget.categories.isEmpty) return const SizedBox();
 
-    final displayedCategories = _filteredCategories();
+    final displayedCategories =
+        _query.isEmpty ? _filteredCategories() : <EventReferenceCategoryDto>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Catégories', icon: Icons.grid_view_rounded),
+        _SectionTitle(
+          title: context.l10n.searchSectionCategories,
+          icon: Icons.grid_view_rounded,
+        ),
         const SizedBox(height: 16),
         TextField(
           controller: _searchController,
           onChanged: (value) => setState(() => _query = value.trim()),
           decoration: InputDecoration(
-            hintText: 'Rechercher une catégorie',
+            hintText: context.l10n.searchHintCategory,
             prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
             filled: true,
             fillColor: Colors.grey.shade50,
@@ -1761,16 +1884,62 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
           ),
         ),
         const SizedBox(height: 16),
-        ...displayedCategories.map(_buildCategoryGroup),
-        if (displayedCategories.isEmpty)
-          Text(
-            'Aucune catégorie trouvée',
-            style: GoogleFonts.montserrat(
-              fontSize: 13,
-              color: Colors.grey.shade600,
+        if (_query.isNotEmpty && !_shouldShowAutocomplete(_query))
+          _AutocompleteMessage(
+            context.searchMinCharactersLabel(
+              searchAutocompleteMinQueryLength,
             ),
-          ),
+          )
+        else if (_shouldShowAutocomplete(_query))
+          _buildCategoryAutocompleteResults()
+        else ...[
+          ...displayedCategories.map(_buildCategoryGroup),
+          if (displayedCategories.isEmpty)
+            Text(
+              context.l10n.searchNoCategoryFound,
+              style: GoogleFonts.montserrat(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+            ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildCategoryAutocompleteResults() {
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: _query,
+          types: 'categories',
+          limit: 10,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        if (data.categories.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoCategoryFound);
+        }
+
+        return _SuggestionList(
+          children: data.categories.map((category) {
+            final isSelected = widget.selectedSlugs.contains(category.slug);
+            return _SuggestionTile(
+              icon: _iconForReference(null, category.slug),
+              label: category.label,
+              isSelected: isSelected,
+              onTap: () => _toggleSuggestionCategory(category),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) => _AutocompleteMessage(
+        context.l10n.searchCategoriesUnavailable,
+      ),
     );
   }
 
@@ -1806,7 +1975,7 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SelectableChip(
-            label: _labelWithCount(category.name, category.eventCount),
+            label: category.name,
             icon: _iconForReference(category.icon, category.slug),
             isSelected: isSelected,
             onTap: () => _toggleParent(category),
@@ -1822,7 +1991,7 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
                   final isChildSelected =
                       widget.selectedSlugs.contains(child.slug);
                   return _SelectableChip(
-                    label: _labelWithCount(child.name, child.eventCount),
+                    label: child.name,
                     icon: _iconForReference(child.icon, child.slug),
                     isSelected: isChildSelected,
                     onTap: () => _toggleChild(child.slug),
@@ -1846,6 +2015,16 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
     widget.onChanged(newList);
   }
 
+  void _toggleSuggestionCategory(SearchSuggestionItemDto suggestion) {
+    final category = _findCategoryBySlug(suggestion.slug);
+    if (category != null && category.children.isNotEmpty) {
+      _toggleParent(category);
+      return;
+    }
+
+    _toggleChild(suggestion.slug);
+  }
+
   void _toggleParent(EventReferenceCategoryDto category) {
     final childSlugs = category.children.map((c) => c.slug).toList();
     final newList = cascadeParentSelection(
@@ -1855,6 +2034,16 @@ class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
     );
     widget.onChanged(newList);
   }
+
+  EventReferenceCategoryDto? _findCategoryBySlug(String slug) {
+    for (final category in widget.categories) {
+      if (category.slug == slug) return category;
+      for (final child in category.children) {
+        if (child.slug == slug) return child;
+      }
+    }
+    return null;
+  }
 }
 
 class _ReferenceMultiSelectSection extends StatelessWidget {
@@ -1862,6 +2051,7 @@ class _ReferenceMultiSelectSection extends StatelessWidget {
   final IconData icon;
   final List<String> selectedSlugs;
   final List<EventReferenceOptionDto> options;
+  final bool showCounts;
   final ValueChanged<List<String>> onChanged;
 
   const _ReferenceMultiSelectSection({
@@ -1869,6 +2059,7 @@ class _ReferenceMultiSelectSection extends StatelessWidget {
     required this.icon,
     required this.selectedSlugs,
     required this.options,
+    this.showCounts = true,
     required this.onChanged,
   });
 
@@ -1888,7 +2079,9 @@ class _ReferenceMultiSelectSection extends StatelessWidget {
             final isSelected = selectedSlugs.contains(option.slug);
 
             return _SelectableChip(
-              label: _labelWithCount(option.name, option.eventCount),
+              label: showCounts
+                  ? _labelWithCount(option.name, option.eventCount)
+                  : option.name,
               icon: _iconForReference(option.icon, option.slug),
               isSelected: isSelected,
               onTap: () {
@@ -1956,96 +2149,147 @@ class _ReferenceSingleSelectSection extends StatelessWidget {
 // =============================================================================
 
 class _AudienceFilterSection extends StatelessWidget {
-  final bool familyFriendly;
-  final bool accessiblePMR;
-  final List<String> selectedAudienceSlugs;
-  final List<EventReferenceAudienceGroupDto> audienceGroups;
-  final ValueChanged<bool> onFamilyChanged;
-  final ValueChanged<bool> onPMRChanged;
-  final ValueChanged<List<String>> onTargetAudiencesChanged;
+  final List<String> selectedPublicFilterKeys;
+  final List<EventReferencePublicFilterDto> publicFilters;
+  final ValueChanged<List<String>> onPublicFiltersChanged;
 
   const _AudienceFilterSection({
-    required this.familyFriendly,
-    required this.accessiblePMR,
-    required this.selectedAudienceSlugs,
-    required this.audienceGroups,
-    required this.onFamilyChanged,
-    required this.onPMRChanged,
-    required this.onTargetAudiencesChanged,
+    required this.selectedPublicFilterKeys,
+    required this.publicFilters,
+    required this.onPublicFiltersChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    final options = _publicFilterOptions(publicFilters);
+    final selectedKeys =
+        selectedPublicAudienceFilters(selectedPublicFilterKeys);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Public', icon: Icons.people),
+        _SectionTitle(
+          title: context.l10n.searchSectionAudience,
+          icon: Icons.people,
+        ),
         const SizedBox(height: 16),
-        _ToggleRow(
-          title: 'En famille',
-          subtitle: 'Activités adaptées aux enfants',
-          icon: Icons.family_restroom,
-          isSelected: familyFriendly,
-          onTap: () => onFamilyChanged(!familyFriendly),
-        ),
-        const Divider(height: 24),
-        _ToggleRow(
-          title: 'Accessible PMR',
-          subtitle: 'Accessibilité mobilité réduite',
-          icon: Icons.accessible,
-          isSelected: accessiblePMR,
-          onTap: () => onPMRChanged(!accessiblePMR),
-        ),
-        if (audienceGroups.isNotEmpty) ...[
-          const Divider(height: 24),
-          ...audienceGroups.map((group) {
-            if (group.audiences.isEmpty) return const SizedBox();
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((filter) {
+            final value = _publicFilterValue(filter);
+            final isSelected = selectedKeys.contains(value);
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    group.name,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: group.audiences.map((audience) {
-                      final isSelected =
-                          selectedAudienceSlugs.contains(audience.slug);
-                      return _SelectableChip(
-                        label: audience.name,
-                        icon: Icons.groups,
-                        isSelected: isSelected,
-                        onTap: () {
-                          final newList =
-                              List<String>.from(selectedAudienceSlugs);
-                          if (isSelected) {
-                            newList.remove(audience.slug);
-                          } else {
-                            newList.add(audience.slug);
-                          }
-                          onTargetAudiencesChanged(newList);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
+            return _SelectableChip(
+              label: _publicFilterLabel(context, filter),
+              icon: _publicFilterIcon(value),
+              isSelected: isSelected,
+              onTap: () {
+                final newList = List<String>.from(selectedKeys);
+                if (isSelected) {
+                  newList.remove(value);
+                } else {
+                  newList.add(value);
+                }
+                onPublicFiltersChanged(newList);
+              },
             );
-          }),
-        ],
+          }).toList(),
+        ),
       ],
     );
   }
+}
+
+const _fallbackPublicFilters = [
+  EventReferencePublicFilterDto(
+    key: 'family',
+    label: '',
+    param: 'public_filters',
+    value: 'family',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'pmr',
+    label: '',
+    param: 'public_filters',
+    value: 'pmr',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'group',
+    label: '',
+    param: 'public_filters',
+    value: 'group',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'school',
+    label: '',
+    param: 'public_filters',
+    value: 'school',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'professional',
+    label: '',
+    param: 'public_filters',
+    value: 'professional',
+  ),
+];
+
+List<EventReferencePublicFilterDto> _publicFilterOptions(
+  List<EventReferencePublicFilterDto> filters,
+) {
+  final options = filters.where((filter) {
+    return publicAudienceFilterKeys.contains(_publicFilterValue(filter));
+  }).toList();
+  if (options.isEmpty) return _fallbackPublicFilters;
+
+  final order = {
+    for (var i = 0; i < publicAudienceFilterKeys.length; i++)
+      publicAudienceFilterKeys.elementAt(i): i,
+  };
+  options.sort((a, b) {
+    final aOrder =
+        order[_publicFilterValue(a)] ?? publicAudienceFilterKeys.length;
+    final bOrder =
+        order[_publicFilterValue(b)] ?? publicAudienceFilterKeys.length;
+    return aOrder.compareTo(bOrder);
+  });
+
+  return options;
+}
+
+String _publicFilterValue(EventReferencePublicFilterDto filter) {
+  return filter.value.isNotEmpty ? filter.value : filter.key;
+}
+
+IconData _publicFilterIcon(String key) {
+  switch (key) {
+    case 'family':
+      return Icons.family_restroom;
+    case 'pmr':
+      return Icons.accessible;
+    case 'group':
+      return Icons.groups;
+    case 'school':
+      return Icons.school;
+    case 'professional':
+      return Icons.business_center;
+    default:
+      return Icons.people;
+  }
+}
+
+String _publicFilterLabel(
+  BuildContext context,
+  EventReferencePublicFilterDto filter,
+) {
+  return switch (_publicFilterValue(filter)) {
+    'family' => context.l10n.searchFamilyTitle,
+    'pmr' => context.l10n.searchAccessiblePmr,
+    'group' => context.l10n.searchAudienceGroup,
+    'school' => context.l10n.searchAudienceSchoolGroup,
+    'professional' => context.l10n.searchAudienceProfessional,
+    _ => filter.label,
+  };
 }
 
 // =============================================================================
@@ -2070,19 +2314,22 @@ class _FormatFilterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Format', icon: Icons.videocam),
+        _SectionTitle(
+          title: context.l10n.searchSectionFormat,
+          icon: Icons.videocam,
+        ),
         const SizedBox(height: 16),
         _ToggleRow(
-          title: 'En ligne',
-          subtitle: 'Activités virtuelles',
+          title: context.l10n.searchOnline,
+          subtitle: context.l10n.searchOnlineSubtitle,
           icon: Icons.videocam_outlined,
           isSelected: onlineOnly,
           onTap: () => onOnlineChanged(!onlineOnly),
         ),
         const Divider(height: 24),
         _ToggleRow(
-          title: 'En présentiel',
-          subtitle: 'Activités sur place',
+          title: context.l10n.searchInPerson,
+          subtitle: context.l10n.searchInPersonSubtitle,
           icon: Icons.location_on_outlined,
           isSelected: inPersonOnly,
           onTap: () => onInPersonChanged(!inPersonOnly),
@@ -2106,12 +2353,14 @@ class _AvailabilityFilterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(
-            title: 'Disponibilités', icon: Icons.event_available),
+        _SectionTitle(
+          title: context.l10n.searchAvailabilityTitle,
+          icon: Icons.event_available,
+        ),
         const SizedBox(height: 16),
         _ToggleRow(
-          title: 'Places disponibles',
-          subtitle: 'Masquer les activités complètes',
+          title: context.l10n.searchAvailablePlaces,
+          subtitle: context.l10n.searchAvailabilitySubtitle,
           icon: Icons.confirmation_number_outlined,
           isSelected: availableOnly,
           onTap: () => onChanged(!availableOnly),
@@ -2135,15 +2384,18 @@ class _LocationTypeFilterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Type de lieu', icon: Icons.place),
+        _SectionTitle(
+          title: context.l10n.searchSectionLocationType,
+          icon: Icons.place,
+        ),
         const SizedBox(height: 16),
         Wrap(
           spacing: 10,
           runSpacing: 10,
           children: [
             _SelectableChip(
-              label: 'Lieu physique',
-              icon: Icons.storefront,
+              label: context.l10n.searchLocationIndoor,
+              icon: Icons.home_work_outlined,
               isSelected: selectedType == LocationTypeFilter.physical,
               onTap: () => onChanged(
                 selectedType == LocationTypeFilter.physical
@@ -2152,8 +2404,8 @@ class _LocationTypeFilterSection extends StatelessWidget {
               ),
             ),
             _SelectableChip(
-              label: 'Hors ligne',
-              icon: Icons.location_on_outlined,
+              label: context.l10n.searchLocationOutdoor,
+              icon: Icons.park_outlined,
               isSelected: selectedType == LocationTypeFilter.offline,
               onTap: () => onChanged(
                 selectedType == LocationTypeFilter.offline
@@ -2162,17 +2414,7 @@ class _LocationTypeFilterSection extends StatelessWidget {
               ),
             ),
             _SelectableChip(
-              label: 'En ligne',
-              icon: Icons.videocam_outlined,
-              isSelected: selectedType == LocationTypeFilter.online,
-              onTap: () => onChanged(
-                selectedType == LocationTypeFilter.online
-                    ? null
-                    : LocationTypeFilter.online,
-              ),
-            ),
-            _SelectableChip(
-              label: 'Hybride',
+              label: context.l10n.searchLocationMixed,
               icon: Icons.sync_alt,
               isSelected: selectedType == LocationTypeFilter.hybrid,
               onTap: () => onChanged(
@@ -2206,44 +2448,44 @@ class _SortFilterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Trier par', icon: Icons.sort),
+        _SectionTitle(title: context.l10n.searchSortBy, icon: Icons.sort),
         const SizedBox(height: 16),
         Wrap(
           spacing: 10,
           runSpacing: 10,
           children: [
             _SelectableChip(
-              label: 'Pertinence',
+              label: context.l10n.searchSortRelevance,
               isSelected: selectedSort == SortOption.relevance,
               onTap: () => onChanged(SortOption.relevance),
             ),
             _SelectableChip(
-              label: 'Nouveautés',
+              label: context.l10n.searchSortNewest,
               isSelected: selectedSort == SortOption.newest,
               onTap: () => onChanged(SortOption.newest),
             ),
             _SelectableChip(
-              label: 'Date (proche)',
+              label: context.l10n.searchSortDateAsc,
               isSelected: selectedSort == SortOption.dateAsc,
               onTap: () => onChanged(SortOption.dateAsc),
             ),
             _SelectableChip(
-              label: 'Distance',
+              label: context.l10n.searchSortDistance,
               isSelected: selectedSort == SortOption.distance,
               onTap: () => onChanged(SortOption.distance),
             ),
             _SelectableChip(
-              label: 'Prix croissant',
+              label: context.l10n.searchSortPriceAsc,
               isSelected: selectedSort == SortOption.priceAsc,
               onTap: () => onChanged(SortOption.priceAsc),
             ),
             _SelectableChip(
-              label: 'Prix décroissant',
+              label: context.l10n.searchSortPriceDesc,
               isSelected: selectedSort == SortOption.priceDesc,
               onTap: () => onChanged(SortOption.priceDesc),
             ),
             _SelectableChip(
-              label: 'Popularité',
+              label: context.l10n.searchSortPopularity,
               isSelected: selectedSort == SortOption.popularity,
               onTap: () => onChanged(SortOption.popularity),
             ),
@@ -2257,6 +2499,143 @@ class _SortFilterSection extends StatelessWidget {
 // =============================================================================
 // COMPOSANTS REUTILISABLES
 // =============================================================================
+
+bool _shouldShowAutocomplete(String query) {
+  return query.trim().length >= searchAutocompleteMinQueryLength;
+}
+
+class _SuggestionList extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SuggestionList({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: Colors.grey.shade200),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SuggestionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.subtitle,
+    this.isSelected = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? HbColors.brandPrimary : Colors.grey.shade600,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? HbColors.brandPrimary
+                          : HbColors.textDark,
+                    ),
+                  ),
+                  if (subtitle != null && subtitle!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle,
+                size: 18,
+                color: HbColors.brandPrimary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AutocompleteMessage extends StatelessWidget {
+  final String message;
+
+  const _AutocompleteMessage(this.message);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      style: GoogleFonts.montserrat(
+        fontSize: 13,
+        color: Colors.grey.shade600,
+      ),
+    );
+  }
+}
+
+class _AutocompleteLoading extends StatelessWidget {
+  const _AutocompleteLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(12),
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: HbColors.brandPrimary,
+        ),
+      ),
+    );
+  }
+}
 
 String _labelWithCount(String label, int? count) {
   if (count == null || count <= 0) return label;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/auth_provider.dart';
 
@@ -10,7 +11,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key, this.initialEmail});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
@@ -29,8 +31,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final success = await ref.read(authProvider.notifier).forgotPassword(
-      _emailController.text.trim(),
-    );
+          _emailController.text.trim(),
+        );
 
     if (success && mounted) {
       setState(() {
@@ -68,13 +70,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: _emailSent ? _buildSuccessContent() : _buildFormContent(authState),
+          child: _emailSent
+              ? _buildSuccessContent()
+              : _buildFormContent(authState),
         ),
       ),
     );
   }
 
   Widget _buildFormContent(AuthState authState) {
+    final l10n = context.l10n;
+
     return Form(
       key: _formKey,
       child: Column(
@@ -99,9 +105,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ),
           const SizedBox(height: 32),
           // Title
-          const Text(
-            'Mot de passe oublié ?',
-            style: TextStyle(
+          Text(
+            l10n.authForgotPasswordTitle,
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: HbColors.textSlate,
@@ -110,7 +116,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.',
+            l10n.authForgotPasswordSubtitle,
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -127,8 +133,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _handleResetPassword(),
             decoration: InputDecoration(
-              labelText: 'Email',
-              hintText: 'votre@email.com',
+              labelText: l10n.authEmailLabel,
+              hintText: l10n.authEmailHint,
               prefixIcon: const Icon(Icons.email_outlined),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -139,15 +145,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+                borderSide:
+                    const BorderSide(color: HbColors.brandPrimary, width: 2),
               ),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Veuillez entrer votre email';
+                return l10n.authEmailRequired;
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                return 'Veuillez entrer un email valide';
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                  .hasMatch(value)) {
+                return l10n.authEmailInvalid;
               }
               return null;
             },
@@ -176,9 +184,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text(
-                      'Envoyer le lien',
-                      style: TextStyle(
+                  : Text(
+                      l10n.authForgotPasswordSubmit,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -204,9 +212,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
-                  'Retour à la connexion',
-                  style: TextStyle(
+                child: Text(
+                  l10n.authBackToLogin,
+                  style: const TextStyle(
                     color: HbColors.brandPrimary,
                     fontWeight: FontWeight.w600,
                   ),
@@ -220,6 +228,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 
   Widget _buildSuccessContent() {
+    final l10n = context.l10n;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -242,9 +252,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 32),
         // Success title
-        const Text(
-          'Email envoyé !',
-          style: TextStyle(
+        Text(
+          l10n.authForgotPasswordSuccessTitle,
+          style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             color: HbColors.textSlate,
@@ -253,7 +263,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Nous avons envoyé un lien de réinitialisation à',
+          l10n.authForgotPasswordSuccessPrefix,
           style: TextStyle(
             fontSize: 16,
             color: Colors.grey[600],
@@ -287,7 +297,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Vérifiez votre boîte de réception et vos spams. Le lien expire dans 1 heure.',
+                  l10n.authForgotPasswordSuccessInfo,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.blue[800],
@@ -312,9 +322,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               ),
               elevation: 0,
             ),
-            child: const Text(
-              'Retour à la connexion',
-              style: TextStyle(
+            child: Text(
+              l10n.authBackToLogin,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -331,9 +341,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 _emailSent = false;
               });
             },
-            child: const Text(
-              'Renvoyer l\'email',
-              style: TextStyle(
+            child: Text(
+              l10n.authForgotPasswordResend,
+              style: const TextStyle(
                 color: HbColors.brandPrimary,
                 fontWeight: FontWeight.w600,
               ),

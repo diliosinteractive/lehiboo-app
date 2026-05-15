@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 /// Password strength levels
 enum PasswordStrength {
   weak,
@@ -19,19 +21,6 @@ extension PasswordStrengthExtension on PasswordStrength {
         return const Color(0xFFECC94B); // Yellow
       case PasswordStrength.strong:
         return const Color(0xFF48BB78); // Green
-    }
-  }
-
-  String get label {
-    switch (this) {
-      case PasswordStrength.weak:
-        return 'Faible';
-      case PasswordStrength.fair:
-        return 'Moyen';
-      case PasswordStrength.good:
-        return 'Bon';
-      case PasswordStrength.strong:
-        return 'Fort';
     }
   }
 
@@ -63,7 +52,7 @@ class PasswordStrengthIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strength = _calculateStrength(password);
-    final requirements = _getRequirements(password);
+    final requirements = _getRequirements(context, password);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,7 +73,7 @@ class PasswordStrengthIndicator extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              password.isEmpty ? '' : strength.label,
+              password.isEmpty ? '' : _strengthLabel(context, strength),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -101,6 +90,16 @@ class PasswordStrengthIndicator extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  String _strengthLabel(BuildContext context, PasswordStrength strength) {
+    final l10n = context.l10n;
+    return switch (strength) {
+      PasswordStrength.weak => l10n.authPasswordStrengthWeak,
+      PasswordStrength.fair => l10n.authPasswordStrengthFair,
+      PasswordStrength.good => l10n.authPasswordStrengthGood,
+      PasswordStrength.strong => l10n.authPasswordStrengthStrong,
+    };
   }
 
   PasswordStrength _calculateStrength(String password) {
@@ -124,22 +123,23 @@ class PasswordStrengthIndicator extends StatelessWidget {
     return PasswordStrength.strong;
   }
 
-  List<_Requirement> _getRequirements(String password) {
+  List<_Requirement> _getRequirements(BuildContext context, String password) {
+    final l10n = context.l10n;
     return [
       _Requirement(
-        label: 'Au moins 8 caractères',
+        label: l10n.authPasswordRequirementMin8,
         isMet: password.length >= 8,
       ),
       _Requirement(
-        label: 'Une lettre majuscule',
+        label: l10n.authPasswordRequirementUppercase,
         isMet: RegExp(r'[A-Z]').hasMatch(password),
       ),
       _Requirement(
-        label: 'Un chiffre',
+        label: l10n.authPasswordRequirementNumber,
         isMet: RegExp(r'[0-9]').hasMatch(password),
       ),
       _Requirement(
-        label: 'Un caractère spécial',
+        label: l10n.authPasswordRequirementSpecial,
         isMet: RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password),
       ),
     ];
@@ -153,9 +153,8 @@ class PasswordStrengthIndicator extends StatelessWidget {
           Icon(
             requirement.isMet ? Icons.check_circle : Icons.circle_outlined,
             size: 16,
-            color: requirement.isMet
-                ? const Color(0xFF48BB78)
-                : Colors.grey[400],
+            color:
+                requirement.isMet ? const Color(0xFF48BB78) : Colors.grey[400],
           ),
           const SizedBox(width: 8),
           Text(

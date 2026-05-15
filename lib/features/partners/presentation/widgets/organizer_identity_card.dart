@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../memberships/presentation/widgets/organizer_join_button.dart';
 import '../../data/models/organizer_profile_dto.dart';
@@ -137,7 +137,8 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = NumberFormat.compact(locale: 'fr');
+    final compact = context.appCompactNumberFormat;
+    final l10n = context.l10n;
     final showRating = (averageRating ?? 0) > 0;
 
     return Wrap(
@@ -146,27 +147,35 @@ class _StatsRow extends StatelessWidget {
       children: [
         _stat(
           icon: Icons.local_activity_outlined,
-          label: '${compact.format(eventsCount)} '
-              '${eventsCount > 1 ? 'événements' : 'événement'}',
+          label: l10n.organizerEventsCount(
+            compact.format(eventsCount),
+            eventsCount,
+          ),
         ),
         _stat(
           icon: Icons.favorite_outline,
           iconColor: Colors.red.shade400,
-          label: '${compact.format(followersCount)} '
-              '${followersCount > 1 ? 'abonnés' : 'abonné'}',
+          label: l10n.organizerFollowersCount(
+            compact.format(followersCount),
+            followersCount,
+          ),
         ),
         _stat(
           icon: Icons.groups_outlined,
-          label: '${compact.format(membersCount)} '
-              '${membersCount > 1 ? 'membres' : 'membre'}',
+          label: l10n.organizerMembersCount(
+            compact.format(membersCount),
+            membersCount,
+          ),
         ),
         if (showRating)
           _stat(
             icon: Icons.star_rounded,
             iconColor: HbColors.brandPrimary,
-            label: '${averageRating!.toStringAsFixed(1)}'
-                ' (${compact.format(reviewsCount)} '
-                '${reviewsCount > 1 ? 'avis' : 'avis'})',
+            label: l10n.organizerRatingWithReviews(
+              averageRating!.toStringAsFixed(1),
+              compact.format(reviewsCount),
+              reviewsCount,
+            ),
           ),
       ],
     );

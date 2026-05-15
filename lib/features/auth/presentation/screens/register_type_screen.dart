@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 /// Account type selection
 enum AccountType { customer, business }
 
@@ -29,6 +31,8 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -46,9 +50,9 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Section label
-              const Text(
-                'TYPE DE COMPTE',
-                style: TextStyle(
+              Text(
+                l10n.authRegisterTypeEyebrow,
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: _orangeColor,
@@ -58,9 +62,9 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
               const SizedBox(height: 12),
 
               // Title
-              const Text(
-                'Vous \u00eates...',
-                style: TextStyle(
+              Text(
+                l10n.authRegisterTypeTitle,
+                style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF2D3748),
@@ -70,7 +74,7 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
 
               // Subtitle
               Text(
-                'S\u00e9lectionnez votre profil pour personnaliser votre exp\u00e9rience',
+                l10n.authRegisterTypeSubtitle,
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey[600],
@@ -81,22 +85,23 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
               // Customer option - Un particulier
               _AccountTypeCard(
                 icon: Icons.person_outline,
-                title: 'Un particulier',
-                description: 'Je r\u00e9serve des activit\u00e9s pour moi ou mes proches.',
+                title: l10n.authRegisterTypeCustomerTitle,
+                description: l10n.authRegisterTypeCustomerDescription,
                 isSelected: _selectedType == AccountType.customer,
-                onTap: () => setState(() => _selectedType = AccountType.customer),
+                onTap: () =>
+                    setState(() => _selectedType = AccountType.customer),
               ),
               const SizedBox(height: 16),
 
               // Business option - Une organisation (temporarily disabled)
               _AccountTypeCard(
                 icon: Icons.business_outlined,
-                title: 'Une organisation',
-                description: 'Entreprise, association ou collectivit\u00e9 - je r\u00e9serve pour mon \u00e9quipe.',
+                title: l10n.authRegisterTypeBusinessTitle,
+                description: l10n.authRegisterTypeBusinessDescription,
                 isSelected: false,
                 onTap: () {},
                 disabled: true,
-                badge: 'Bient\u00f4t disponible',
+                badge: l10n.authRegisterTypeComingSoon,
               ),
 
               const Spacer(),
@@ -116,9 +121,9 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Cr\u00e9er mon compte',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.authRegisterCreateMyAccount,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -132,7 +137,7 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'D\u00e9j\u00e0 un compte ? ',
+                    '${l10n.authAlreadyHaveAccount} ',
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                   TextButton(
@@ -142,9 +147,9 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
-                      'Se connecter',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.authLoginSubmit,
+                      style: const TextStyle(
                         color: _orangeColor,
                         fontWeight: FontWeight.w600,
                       ),
@@ -190,10 +195,14 @@ class _AccountTypeCard extends StatelessWidget {
         : (isSelected ? _orangeColor : const Color(0xFF2D3748));
     final Color descColor = disabled
         ? Colors.grey[400]!
-        : (isSelected ? _orangeColor.withValues(alpha: 0.8) : Colors.grey[600]!);
+        : (isSelected
+            ? _orangeColor.withValues(alpha: 0.8)
+            : Colors.grey[600]!);
     final Color iconBg = disabled
         ? Colors.grey[100]!
-        : (isSelected ? _orangeColor.withValues(alpha: 0.15) : Colors.grey[100]!);
+        : (isSelected
+            ? _orangeColor.withValues(alpha: 0.15)
+            : Colors.grey[100]!);
     final Color iconColor = disabled
         ? Colors.grey[400]!
         : (isSelected ? _orangeColor : Colors.grey[600]!);
@@ -215,7 +224,9 @@ class _AccountTypeCard extends StatelessWidget {
           ),
           color: disabled
               ? Colors.grey[50]
-              : (isSelected ? _orangeColor.withValues(alpha: 0.06) : Colors.white),
+              : (isSelected
+                  ? _orangeColor.withValues(alpha: 0.06)
+                  : Colors.white),
         ),
         child: Row(
           children: [

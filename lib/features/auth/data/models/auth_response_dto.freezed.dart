@@ -1102,7 +1102,7 @@ class _$TokensDtoImpl implements _TokensDto {
       {@JsonKey(name: 'access_token') required this.accessToken,
       @JsonKey(name: 'refresh_token') required this.refreshToken,
       @JsonKey(name: 'token_type') this.tokenType = 'Bearer',
-      @JsonKey(name: 'expires_in') this.expiresIn = 604800});
+      @JsonKey(name: 'expires_in') this.expiresIn = 172800});
 
   factory _$TokensDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$TokensDtoImplFromJson(json);

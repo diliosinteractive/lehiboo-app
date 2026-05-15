@@ -203,7 +203,8 @@ class AuthRepositoryImpl implements AuthRepository {
         phone: phone,
         avatarUrl: avatarUrl,
         role: parsedRole,
-        birthDate: birthDateStr != null ? DateTime.tryParse(birthDateStr) : null,
+        birthDate:
+            birthDateStr != null ? DateTime.tryParse(birthDateStr) : null,
         membershipCity: membershipCity,
         newsletter: newsletter ?? false,
         pushNotificationsEnabled: pushNotifications ?? false,
@@ -327,12 +328,17 @@ class AuthRepositoryImpl implements AuthRepository {
 
     // If we have a token and user, save and return auth result
     AuthResult? authResult;
-    if (response.token != null && response.user != null) {
+    final tokens = response.tokens ??
+        (response.token != null
+            ? TokensDto(
+                accessToken: response.token!,
+                refreshToken: response.token!,
+                expiresIn: 172800,
+              )
+            : null);
+
+    if (tokens != null && response.user != null) {
       final user = AuthMapper.toUser(response.user!);
-      final tokens = TokensDto(
-        accessToken: response.token!,
-        refreshToken: response.token!,
-      );
 
       await _secureStorage.saveAccessToken(tokens.accessToken);
       await _secureStorage.saveRefreshToken(tokens.refreshToken);
@@ -342,7 +348,7 @@ class AuthRepositoryImpl implements AuthRepository {
         user: user,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        expiresIn: 604800,
+        expiresIn: tokens.expiresIn,
       );
     }
 
@@ -363,10 +369,12 @@ class AuthRepositoryImpl implements AuthRepository {
     final response = await _apiDataSource.registerBusiness(dto: dto);
 
     final user = AuthMapper.toUser(response.user);
-    final tokens = TokensDto(
-      accessToken: response.token,
-      refreshToken: response.token,
-    );
+    final tokens = response.tokens ??
+        TokensDto(
+          accessToken: response.token,
+          refreshToken: response.token,
+          expiresIn: 172800,
+        );
 
     // Save auth data
     await _secureStorage.saveAccessToken(tokens.accessToken);
@@ -377,7 +385,7 @@ class AuthRepositoryImpl implements AuthRepository {
       user: user,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      expiresIn: 604800,
+      expiresIn: tokens.expiresIn,
     );
 
     OrganizationInfo? orgInfo;

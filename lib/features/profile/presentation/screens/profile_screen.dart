@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../config/env_config.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../checkin/presentation/providers/vendor_eligibility_provider.dart';
@@ -33,7 +34,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profil'),
+        title: Text(context.l10n.profileTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -81,7 +82,9 @@ class ProfileScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      displayName.isNotEmpty ? displayName : 'Utilisateur',
+                      displayName.isNotEmpty
+                          ? displayName
+                          : context.l10n.profileDefaultUser,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -129,117 +132,117 @@ class ProfileScreen extends ConsumerWidget {
         const SizedBox(height: 24),
 
         // Statistics Section
-        _buildStatisticsSection(ref),
+        _buildStatisticsSection(context, ref),
         const SizedBox(height: 24),
 
         // Menu Items
         _buildMenuItem(
           context,
           icon: Icons.confirmation_number_outlined,
-          title: 'Mes Réservations',
-          subtitle: 'Voir vos billets et réservations',
+          title: context.l10n.profileBookingsTitle,
+          subtitle: context.l10n.profileBookingsSubtitle,
           onTap: () => context.push('/my-bookings'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.person_add_alt_1_outlined,
-          title: 'Mes participants',
-          subtitle: 'Famille et proches pour attribuer les billets',
+          title: context.l10n.profileParticipantsTitle,
+          subtitle: context.l10n.profileParticipantsSubtitle,
           onTap: () => context.push('/participants'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.favorite_outline,
-          title: 'Mes Favoris',
-          subtitle: 'Activités sauvegardées',
+          title: context.l10n.profileFavoritesTitle,
+          subtitle: context.l10n.profileFavoritesSubtitle,
           onTap: () => context.push('/favorites'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.groups_outlined,
-          title: 'Organisateurs suivis',
-          subtitle: 'Gérer les organisateurs que vous suivez',
+          title: context.l10n.profileFollowedOrganizersTitle,
+          subtitle: context.l10n.profileFollowedOrganizersSubtitle,
           onTap: () => context.push('/me/followed-organizers'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.workspaces_outline,
-          title: 'Mes adhésions',
-          subtitle: 'Adhésions, invitations, événements privés',
+          title: context.l10n.profileMembershipsTitle,
+          subtitle: context.l10n.profileMembershipsSubtitle,
           onTap: () => context.push('/me/memberships'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.mail_outline,
-          title: 'Mes Messages',
-          subtitle: 'Conversations avec les organisateurs',
+          title: context.l10n.profileMessagesTitle,
+          subtitle: context.l10n.profileMessagesSubtitle,
           badge: ref.watch(unreadCountProvider),
           onTap: () => context.push('/messages'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.route,
-          title: 'Mes Sorties',
-          subtitle: 'Plans et itinéraires',
+          title: context.l10n.profileTripsTitle,
+          subtitle: context.l10n.profileTripsSubtitle,
           onTap: () => context.push('/trip-plans'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.notifications_active_outlined,
-          title: 'Mes Rappels',
-          subtitle: 'Rappels d\'activités à venir',
+          title: context.l10n.profileRemindersTitle,
+          subtitle: context.l10n.profileRemindersSubtitle,
           onTap: () => context.push('/my-reminders'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.question_answer_outlined,
-          title: 'Mes Questions',
-          subtitle: 'Vos questions sur les événements',
+          title: context.l10n.profileQuestionsTitle,
+          subtitle: context.l10n.profileQuestionsSubtitle,
           onTap: () => context.push('/my-questions'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.rate_review_outlined,
-          title: 'Mes Avis',
-          subtitle: 'Vos avis et réponses des organisateurs',
+          title: context.l10n.profileReviewsTitle,
+          subtitle: context.l10n.profileReviewsSubtitle,
           badge: ref.watch(pendingReviewCountProvider).valueOrNull,
           onTap: () => context.push('/my-reviews'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.person_outline,
-          title: 'Mon Compte',
-          subtitle: 'Modifier vos informations',
+          title: context.l10n.profileAccountTitle,
+          subtitle: context.l10n.profileAccountSubtitle,
           onTap: () => context.push('/account'),
         ),
         _buildMenuItem(
           context,
           icon: Icons
               .notifications_none_rounded, // Slightly more modern icon if possible
-          title: 'Mes Alertes & Recherches',
-          subtitle: 'Gérer vos recherches enregistrées',
+          title: context.l10n.profileAlertsTitle,
+          subtitle: context.l10n.profileAlertsSubtitle,
           onTap: () => context.push('/alerts'),
         ),
         if (ref.watch(vendorEligibilityProvider))
           _buildMenuItem(
             context,
             icon: Icons.qr_code_scanner_outlined,
-            title: 'Scanner les billets',
-            subtitle: 'Mode vendeur — contrôle d\'accès',
+            title: context.l10n.profileVendorScanTitle,
+            subtitle: context.l10n.profileVendorScanSubtitle,
             onTap: () => context.push('/vendor/scan'),
           ),
         _buildMenuItem(
           context,
           icon: Icons.settings_outlined,
-          title: 'Paramètres',
-          subtitle: 'Langue, thème, confidentialité',
+          title: context.l10n.settingsTitle,
+          subtitle: context.l10n.profileSettingsSubtitle,
           onTap: () => context.push('/settings'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.help_outline,
-          title: 'Aide & Support',
-          subtitle: 'FAQ et contact',
+          title: context.l10n.profileHelpTitle,
+          subtitle: context.l10n.profileHelpSubtitle,
           onTap: () => _openFaq(context),
         ),
         const SizedBox(height: 24),
@@ -259,9 +262,9 @@ class ProfileScreen extends ConsumerWidget {
               ),
               child: const Icon(Icons.logout, color: Colors.red, size: 20),
             ),
-            title: const Text(
-              'Déconnexion',
-              style: TextStyle(
+            title: Text(
+              context.l10n.profileLogout,
+              style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 color: Colors.red,
               ),
@@ -307,9 +310,9 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Connectez-vous',
-              style: TextStyle(
+            Text(
+              context.l10n.profileSignInPromptTitle,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textSlate,
@@ -317,7 +320,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Accédez à vos réservations, favoris et bien plus encore',
+              context.l10n.profileSignInPromptSubtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -338,9 +341,9 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Se connecter',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.authLoginSubmit,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -360,9 +363,9 @@ class ProfileScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Créer un compte',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.authCreateAccount,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -374,7 +377,7 @@ class ProfileScreen extends ConsumerWidget {
             TextButton(
               onPressed: () => context.go('/'),
               child: Text(
-                'Continuer sans compte',
+                context.l10n.authContinueAsGuest,
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 14,
@@ -392,11 +395,16 @@ class ProfileScreen extends ConsumerWidget {
   /// Récompense de 50 Hibons (1×/lifetime) au passage à 5/5.
   Widget _buildProfileCompletionCard(BuildContext context, user) {
     final fields = <_ProfileField>[
-      _ProfileField('Prénom', _isFilled(user.firstName)),
-      _ProfileField('Nom', _isFilled(user.lastName)),
-      _ProfileField('Photo', _isFilled(user.avatarUrl)),
-      _ProfileField('Date de naissance', user.birthDate != null),
-      _ProfileField('Ville d\'adhésion', _isFilled(user.membershipCity)),
+      _ProfileField(
+          context.l10n.profileCompletionFirstName, _isFilled(user.firstName)),
+      _ProfileField(
+          context.l10n.profileCompletionLastName, _isFilled(user.lastName)),
+      _ProfileField(
+          context.l10n.profileCompletionPhoto, _isFilled(user.avatarUrl)),
+      _ProfileField(
+          context.l10n.profileCompletionBirthDate, user.birthDate != null),
+      _ProfileField(context.l10n.profileCompletionMembershipCity,
+          _isFilled(user.membershipCity)),
     ];
     final completed = fields.where((f) => f.filled).length;
     final isComplete = completed == fields.length;
@@ -437,8 +445,11 @@ class ProfileScreen extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     isComplete
-                        ? 'Profil complet'
-                        : 'Profil $completed/${fields.length} — gagne 50 Hibons',
+                        ? context.l10n.profileCompletionComplete
+                        : context.l10n.profileCompletionProgress(
+                            completed,
+                            fields.length,
+                          ),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -502,8 +513,11 @@ class ProfileScreen extends ConsumerWidget {
 
   bool _isFilled(String? value) => value != null && value.trim().isNotEmpty;
 
-  Widget _buildStatisticsSection(WidgetRef ref) {
+  Widget _buildStatisticsSection(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(userStatsProvider);
+    final bookingsLabel = context.l10n.profileStatsBookings;
+    final favoritesLabel = context.l10n.profileStatsFavorites;
+    final reviewsLabel = context.l10n.profileStatsReviews;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -518,30 +532,30 @@ class ProfileScreen extends ConsumerWidget {
             _buildStatItem(
               icon: Icons.confirmation_number,
               value: stats.bookingsCount.toString(),
-              label: 'Réservations',
+              label: bookingsLabel,
             ),
             Container(width: 1, height: 40, color: Colors.grey[200]),
             _buildStatItem(
               icon: Icons.favorite,
               value: stats.favoritesCount.toString(),
-              label: 'Favoris',
+              label: favoritesLabel,
             ),
             Container(width: 1, height: 40, color: Colors.grey[200]),
             _buildStatItem(
               icon: Icons.star,
               value: stats.reviewsCount.toString(),
-              label: 'Avis',
+              label: reviewsLabel,
             ),
           ],
         ),
         loading: () => Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildStatItemLoading(label: 'Réservations'),
+            _buildStatItemLoading(label: bookingsLabel),
             Container(width: 1, height: 40, color: Colors.grey[200]),
-            _buildStatItemLoading(label: 'Favoris'),
+            _buildStatItemLoading(label: favoritesLabel),
             Container(width: 1, height: 40, color: Colors.grey[200]),
-            _buildStatItemLoading(label: 'Avis'),
+            _buildStatItemLoading(label: reviewsLabel),
           ],
         ),
         error: (_, __) => Row(
@@ -550,19 +564,19 @@ class ProfileScreen extends ConsumerWidget {
             _buildStatItem(
               icon: Icons.confirmation_number,
               value: '-',
-              label: 'Réservations',
+              label: bookingsLabel,
             ),
             Container(width: 1, height: 40, color: Colors.grey[200]),
             _buildStatItem(
               icon: Icons.favorite,
               value: '-',
-              label: 'Favoris',
+              label: favoritesLabel,
             ),
             Container(width: 1, height: 40, color: Colors.grey[200]),
             _buildStatItem(
               icon: Icons.star,
               value: '-',
-              label: 'Avis',
+              label: reviewsLabel,
             ),
           ],
         ),
@@ -745,14 +759,14 @@ class ProfileScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Déconnexion'),
-        content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
+        title: Text(context.l10n.profileLogout),
+        content: Text(context.l10n.profileLogoutDialogBody),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
-              'Annuler',
+              context.l10n.commonCancel,
               style: TextStyle(color: Colors.grey[600]),
             ),
           ),
@@ -765,7 +779,7 @@ class ProfileScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Déconnexion'),
+            child: Text(context.l10n.profileLogout),
           ),
         ],
       ),
@@ -791,7 +805,7 @@ class ProfileScreen extends ConsumerWidget {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Impossible d'ouvrir l'aide")),
+      SnackBar(content: Text(context.l10n.profileHelpOpenFailed)),
     );
   }
 }
@@ -951,8 +965,8 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Photo de profil mise à jour'),
+          SnackBar(
+            content: Text(context.l10n.profileAvatarUpdated),
             backgroundColor: Colors.green,
           ),
         );
@@ -962,7 +976,7 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
         setState(() => _selectedImage = null);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de l\'upload: ${e.toString()}'),
+            content: Text(context.l10n.profileAvatarUploadError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );

@@ -4098,6 +4098,8 @@ EventCategoryDto _$EventCategoryDtoFromJson(Map<String, dynamic> json) {
 mixin _$EventCategoryDto {
   @JsonKey(fromJson: _parseInt)
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull)
+  int? get parentId => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseHtmlString)
   String get name => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseHtmlString)
@@ -4108,12 +4110,23 @@ mixin _$EventCategoryDto {
   String? get icon => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseStringOrNull)
   String? get color => throw _privateConstructorUsedError;
-  @JsonKey(name: 'event_count', fromJson: _parseIntOrNull)
+  @JsonKey(
+      name: 'event_count',
+      readValue: _readCategoryEventCount,
+      fromJson: _parseIntOrNull)
   int? get eventCount => throw _privateConstructorUsedError;
+  @JsonKey(
+      name: 'image_url', readValue: _readImageUrl, fromJson: _parseStringOrNull)
+  String? get imageUrl => throw _privateConstructorUsedError;
+  @JsonKey(
+      name: 'image_alt', readValue: _readImageAlt, fromJson: _parseStringOrNull)
+  String? get imageAlt => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_primary', fromJson: _parseBool)
   bool get isPrimary => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseCategoryOrNull)
   EventCategoryDto? get parent => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+  List<EventCategoryDto> get children => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -4129,14 +4142,31 @@ abstract class $EventCategoryDtoCopyWith<$Res> {
   @useResult
   $Res call(
       {@JsonKey(fromJson: _parseInt) int id,
+      @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull) int? parentId,
       @JsonKey(fromJson: _parseHtmlString) String name,
       @JsonKey(fromJson: _parseHtmlString) String slug,
       @JsonKey(fromJson: _parseHtmlString) String? description,
       @JsonKey(fromJson: _parseStringOrNull) String? icon,
       @JsonKey(fromJson: _parseStringOrNull) String? color,
-      @JsonKey(name: 'event_count', fromJson: _parseIntOrNull) int? eventCount,
+      @JsonKey(
+          name: 'event_count',
+          readValue: _readCategoryEventCount,
+          fromJson: _parseIntOrNull)
+      int? eventCount,
+      @JsonKey(
+          name: 'image_url',
+          readValue: _readImageUrl,
+          fromJson: _parseStringOrNull)
+      String? imageUrl,
+      @JsonKey(
+          name: 'image_alt',
+          readValue: _readImageAlt,
+          fromJson: _parseStringOrNull)
+      String? imageAlt,
       @JsonKey(name: 'is_primary', fromJson: _parseBool) bool isPrimary,
-      @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent});
+      @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent,
+      @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+      List<EventCategoryDto> children});
 
   $EventCategoryDtoCopyWith<$Res>? get parent;
 }
@@ -4155,20 +4185,28 @@ class _$EventCategoryDtoCopyWithImpl<$Res, $Val extends EventCategoryDto>
   @override
   $Res call({
     Object? id = null,
+    Object? parentId = freezed,
     Object? name = null,
     Object? slug = null,
     Object? description = freezed,
     Object? icon = freezed,
     Object? color = freezed,
     Object? eventCount = freezed,
+    Object? imageUrl = freezed,
+    Object? imageAlt = freezed,
     Object? isPrimary = null,
     Object? parent = freezed,
+    Object? children = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      parentId: freezed == parentId
+          ? _value.parentId
+          : parentId // ignore: cast_nullable_to_non_nullable
+              as int?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -4193,6 +4231,14 @@ class _$EventCategoryDtoCopyWithImpl<$Res, $Val extends EventCategoryDto>
           ? _value.eventCount
           : eventCount // ignore: cast_nullable_to_non_nullable
               as int?,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imageAlt: freezed == imageAlt
+          ? _value.imageAlt
+          : imageAlt // ignore: cast_nullable_to_non_nullable
+              as String?,
       isPrimary: null == isPrimary
           ? _value.isPrimary
           : isPrimary // ignore: cast_nullable_to_non_nullable
@@ -4201,6 +4247,10 @@ class _$EventCategoryDtoCopyWithImpl<$Res, $Val extends EventCategoryDto>
           ? _value.parent
           : parent // ignore: cast_nullable_to_non_nullable
               as EventCategoryDto?,
+      children: null == children
+          ? _value.children
+          : children // ignore: cast_nullable_to_non_nullable
+              as List<EventCategoryDto>,
     ) as $Val);
   }
 
@@ -4227,14 +4277,31 @@ abstract class _$$EventCategoryDtoImplCopyWith<$Res>
   @useResult
   $Res call(
       {@JsonKey(fromJson: _parseInt) int id,
+      @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull) int? parentId,
       @JsonKey(fromJson: _parseHtmlString) String name,
       @JsonKey(fromJson: _parseHtmlString) String slug,
       @JsonKey(fromJson: _parseHtmlString) String? description,
       @JsonKey(fromJson: _parseStringOrNull) String? icon,
       @JsonKey(fromJson: _parseStringOrNull) String? color,
-      @JsonKey(name: 'event_count', fromJson: _parseIntOrNull) int? eventCount,
+      @JsonKey(
+          name: 'event_count',
+          readValue: _readCategoryEventCount,
+          fromJson: _parseIntOrNull)
+      int? eventCount,
+      @JsonKey(
+          name: 'image_url',
+          readValue: _readImageUrl,
+          fromJson: _parseStringOrNull)
+      String? imageUrl,
+      @JsonKey(
+          name: 'image_alt',
+          readValue: _readImageAlt,
+          fromJson: _parseStringOrNull)
+      String? imageAlt,
       @JsonKey(name: 'is_primary', fromJson: _parseBool) bool isPrimary,
-      @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent});
+      @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent,
+      @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+      List<EventCategoryDto> children});
 
   @override
   $EventCategoryDtoCopyWith<$Res>? get parent;
@@ -4252,20 +4319,28 @@ class __$$EventCategoryDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? parentId = freezed,
     Object? name = null,
     Object? slug = null,
     Object? description = freezed,
     Object? icon = freezed,
     Object? color = freezed,
     Object? eventCount = freezed,
+    Object? imageUrl = freezed,
+    Object? imageAlt = freezed,
     Object? isPrimary = null,
     Object? parent = freezed,
+    Object? children = null,
   }) {
     return _then(_$EventCategoryDtoImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      parentId: freezed == parentId
+          ? _value.parentId
+          : parentId // ignore: cast_nullable_to_non_nullable
+              as int?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -4290,6 +4365,14 @@ class __$$EventCategoryDtoImplCopyWithImpl<$Res>
           ? _value.eventCount
           : eventCount // ignore: cast_nullable_to_non_nullable
               as int?,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imageAlt: freezed == imageAlt
+          ? _value.imageAlt
+          : imageAlt // ignore: cast_nullable_to_non_nullable
+              as String?,
       isPrimary: null == isPrimary
           ? _value.isPrimary
           : isPrimary // ignore: cast_nullable_to_non_nullable
@@ -4298,6 +4381,10 @@ class __$$EventCategoryDtoImplCopyWithImpl<$Res>
           ? _value.parent
           : parent // ignore: cast_nullable_to_non_nullable
               as EventCategoryDto?,
+      children: null == children
+          ? _value._children
+          : children // ignore: cast_nullable_to_non_nullable
+              as List<EventCategoryDto>,
     ));
   }
 }
@@ -4307,14 +4394,32 @@ class __$$EventCategoryDtoImplCopyWithImpl<$Res>
 class _$EventCategoryDtoImpl implements _EventCategoryDto {
   const _$EventCategoryDtoImpl(
       {@JsonKey(fromJson: _parseInt) this.id = 0,
+      @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull) this.parentId,
       @JsonKey(fromJson: _parseHtmlString) this.name = '',
       @JsonKey(fromJson: _parseHtmlString) this.slug = '',
       @JsonKey(fromJson: _parseHtmlString) this.description,
       @JsonKey(fromJson: _parseStringOrNull) this.icon,
       @JsonKey(fromJson: _parseStringOrNull) this.color,
-      @JsonKey(name: 'event_count', fromJson: _parseIntOrNull) this.eventCount,
+      @JsonKey(
+          name: 'event_count',
+          readValue: _readCategoryEventCount,
+          fromJson: _parseIntOrNull)
+      this.eventCount,
+      @JsonKey(
+          name: 'image_url',
+          readValue: _readImageUrl,
+          fromJson: _parseStringOrNull)
+      this.imageUrl,
+      @JsonKey(
+          name: 'image_alt',
+          readValue: _readImageAlt,
+          fromJson: _parseStringOrNull)
+      this.imageAlt,
       @JsonKey(name: 'is_primary', fromJson: _parseBool) this.isPrimary = false,
-      @JsonKey(fromJson: _parseCategoryOrNull) this.parent});
+      @JsonKey(fromJson: _parseCategoryOrNull) this.parent,
+      @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+      final List<EventCategoryDto> children = const []})
+      : _children = children;
 
   factory _$EventCategoryDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$EventCategoryDtoImplFromJson(json);
@@ -4322,6 +4427,9 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
   @override
   @JsonKey(fromJson: _parseInt)
   final int id;
+  @override
+  @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull)
+  final int? parentId;
   @override
   @JsonKey(fromJson: _parseHtmlString)
   final String name;
@@ -4338,18 +4446,37 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
   @JsonKey(fromJson: _parseStringOrNull)
   final String? color;
   @override
-  @JsonKey(name: 'event_count', fromJson: _parseIntOrNull)
+  @JsonKey(
+      name: 'event_count',
+      readValue: _readCategoryEventCount,
+      fromJson: _parseIntOrNull)
   final int? eventCount;
+  @override
+  @JsonKey(
+      name: 'image_url', readValue: _readImageUrl, fromJson: _parseStringOrNull)
+  final String? imageUrl;
+  @override
+  @JsonKey(
+      name: 'image_alt', readValue: _readImageAlt, fromJson: _parseStringOrNull)
+  final String? imageAlt;
   @override
   @JsonKey(name: 'is_primary', fromJson: _parseBool)
   final bool isPrimary;
   @override
   @JsonKey(fromJson: _parseCategoryOrNull)
   final EventCategoryDto? parent;
+  final List<EventCategoryDto> _children;
+  @override
+  @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+  List<EventCategoryDto> get children {
+    if (_children is EqualUnmodifiableListView) return _children;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_children);
+  }
 
   @override
   String toString() {
-    return 'EventCategoryDto(id: $id, name: $name, slug: $slug, description: $description, icon: $icon, color: $color, eventCount: $eventCount, isPrimary: $isPrimary, parent: $parent)';
+    return 'EventCategoryDto(id: $id, parentId: $parentId, name: $name, slug: $slug, description: $description, icon: $icon, color: $color, eventCount: $eventCount, imageUrl: $imageUrl, imageAlt: $imageAlt, isPrimary: $isPrimary, parent: $parent, children: $children)';
   }
 
   @override
@@ -4358,6 +4485,8 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
         (other.runtimeType == runtimeType &&
             other is _$EventCategoryDtoImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.parentId, parentId) ||
+                other.parentId == parentId) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.slug, slug) || other.slug == slug) &&
             (identical(other.description, description) ||
@@ -4366,15 +4495,33 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
             (identical(other.color, color) || other.color == color) &&
             (identical(other.eventCount, eventCount) ||
                 other.eventCount == eventCount) &&
+            (identical(other.imageUrl, imageUrl) ||
+                other.imageUrl == imageUrl) &&
+            (identical(other.imageAlt, imageAlt) ||
+                other.imageAlt == imageAlt) &&
             (identical(other.isPrimary, isPrimary) ||
                 other.isPrimary == isPrimary) &&
-            (identical(other.parent, parent) || other.parent == parent));
+            (identical(other.parent, parent) || other.parent == parent) &&
+            const DeepCollectionEquality().equals(other._children, _children));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, slug, description,
-      icon, color, eventCount, isPrimary, parent);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      parentId,
+      name,
+      slug,
+      description,
+      icon,
+      color,
+      eventCount,
+      imageUrl,
+      imageAlt,
+      isPrimary,
+      parent,
+      const DeepCollectionEquality().hash(_children));
 
   @JsonKey(ignore: true)
   @override
@@ -4394,16 +4541,32 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
 abstract class _EventCategoryDto implements EventCategoryDto {
   const factory _EventCategoryDto(
       {@JsonKey(fromJson: _parseInt) final int id,
+      @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull)
+      final int? parentId,
       @JsonKey(fromJson: _parseHtmlString) final String name,
       @JsonKey(fromJson: _parseHtmlString) final String slug,
       @JsonKey(fromJson: _parseHtmlString) final String? description,
       @JsonKey(fromJson: _parseStringOrNull) final String? icon,
       @JsonKey(fromJson: _parseStringOrNull) final String? color,
-      @JsonKey(name: 'event_count', fromJson: _parseIntOrNull)
+      @JsonKey(
+          name: 'event_count',
+          readValue: _readCategoryEventCount,
+          fromJson: _parseIntOrNull)
       final int? eventCount,
+      @JsonKey(
+          name: 'image_url',
+          readValue: _readImageUrl,
+          fromJson: _parseStringOrNull)
+      final String? imageUrl,
+      @JsonKey(
+          name: 'image_alt',
+          readValue: _readImageAlt,
+          fromJson: _parseStringOrNull)
+      final String? imageAlt,
       @JsonKey(name: 'is_primary', fromJson: _parseBool) final bool isPrimary,
-      @JsonKey(fromJson: _parseCategoryOrNull)
-      final EventCategoryDto? parent}) = _$EventCategoryDtoImpl;
+      @JsonKey(fromJson: _parseCategoryOrNull) final EventCategoryDto? parent,
+      @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+      final List<EventCategoryDto> children}) = _$EventCategoryDtoImpl;
 
   factory _EventCategoryDto.fromJson(Map<String, dynamic> json) =
       _$EventCategoryDtoImpl.fromJson;
@@ -4411,6 +4574,9 @@ abstract class _EventCategoryDto implements EventCategoryDto {
   @override
   @JsonKey(fromJson: _parseInt)
   int get id;
+  @override
+  @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull)
+  int? get parentId;
   @override
   @JsonKey(fromJson: _parseHtmlString)
   String get name;
@@ -4427,14 +4593,28 @@ abstract class _EventCategoryDto implements EventCategoryDto {
   @JsonKey(fromJson: _parseStringOrNull)
   String? get color;
   @override
-  @JsonKey(name: 'event_count', fromJson: _parseIntOrNull)
+  @JsonKey(
+      name: 'event_count',
+      readValue: _readCategoryEventCount,
+      fromJson: _parseIntOrNull)
   int? get eventCount;
+  @override
+  @JsonKey(
+      name: 'image_url', readValue: _readImageUrl, fromJson: _parseStringOrNull)
+  String? get imageUrl;
+  @override
+  @JsonKey(
+      name: 'image_alt', readValue: _readImageAlt, fromJson: _parseStringOrNull)
+  String? get imageAlt;
   @override
   @JsonKey(name: 'is_primary', fromJson: _parseBool)
   bool get isPrimary;
   @override
   @JsonKey(fromJson: _parseCategoryOrNull)
   EventCategoryDto? get parent;
+  @override
+  @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+  List<EventCategoryDto> get children;
   @override
   @JsonKey(ignore: true)
   _$$EventCategoryDtoImplCopyWith<_$EventCategoryDtoImpl> get copyWith =>

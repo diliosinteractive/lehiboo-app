@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
+import '../widgets/conversation_load_error_view.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
 import '../widgets/new_conversation_form.dart';
@@ -74,18 +75,19 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Fermer la conversation'),
-        content: const Text(
-            'Voulez-vous fermer cette conversation ? Vous ne pourrez plus envoyer de messages.'),
+        title: Text(context.l10n.messagesCloseConversation),
+        content: Text(context.l10n.messagesCloseConversationBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Fermer',
-                style: TextStyle(color: Colors.red)),
+            child: Text(
+              context.l10n.commonClose,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -97,7 +99,11 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
+              content: Text(
+                context.l10n.messagesLoadError(
+                  ApiResponseHandler.extractError(e),
+                ),
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -118,7 +124,7 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
             content: Text(next.sendError!),
             backgroundColor: Colors.red,
             action: SnackBarAction(
-              label: 'OK',
+              label: context.l10n.commonOk,
               textColor: Colors.white,
               onPressed: notifier.clearSendError,
             ),
@@ -131,21 +137,22 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
     return Scaffold(
       body: state.conversation.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 40),
-              const SizedBox(height: 8),
-              Text('Erreur : ${ApiResponseHandler.extractError(e)}',
-                  style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: notifier.load,
-                child: const Text('Réessayer'),
+        error: (e, _) => Column(
+          children: [
+            AppBar(
+              leading: BackButton(
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/messages'),
               ),
-            ],
-          ),
+              title: const Text('Support LeHiboo'),
+            ),
+            Expanded(
+              child: ConversationLoadErrorView(
+                error: e,
+                onRetry: notifier.load,
+              ),
+            ),
+          ],
         ),
         data: (conversation) {
           final isClosed = conversation.status == 'closed';
@@ -161,7 +168,8 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(0xFFFF601F).withValues(alpha: 0.15),
+                      backgroundColor:
+                          const Color(0xFFFF601F).withValues(alpha: 0.15),
                       child: const Icon(
                         Icons.support_agent,
                         size: 20,
@@ -173,9 +181,9 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Support LeHiboo',
-                            style: TextStyle(fontSize: 16),
+                          Text(
+                            context.l10n.messagesTabSupportLeHiboo,
+                            style: const TextStyle(fontSize: 16),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -201,13 +209,13 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                         if (value == 'close') _handleClose(notifier);
                       },
                       itemBuilder: (_) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'close',
                           child: Row(
                             children: [
-                              Icon(Icons.lock_outline, size: 18),
-                              SizedBox(width: 8),
-                              Text('Fermer la conversation'),
+                              const Icon(Icons.lock_outline, size: 18),
+                              const SizedBox(width: 8),
+                              Text(context.l10n.messagesCloseConversation),
                             ],
                           ),
                         ),
@@ -219,14 +227,17 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                 Container(
                   width: double.infinity,
                   color: Colors.grey.shade100,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     children: [
-                      Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade600),
+                      Icon(Icons.lock_outline,
+                          size: 18, color: Colors.grey.shade600),
                       const SizedBox(width: 8),
                       Text(
-                        'Cette conversation est fermée.',
-                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                        context.l10n.messagesClosedNotice,
+                        style: TextStyle(
+                            color: Colors.grey.shade700, fontSize: 13),
                       ),
                     ],
                   ),
@@ -261,9 +272,11 @@ class _MessagesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (messages.isEmpty) {
-      return const Center(
-        child: Text('Aucun message. Soyez le premier à écrire !',
-            style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text(
+          context.l10n.messagesEmptyThread,
+          style: const TextStyle(color: Colors.grey),
+        ),
       );
     }
 
@@ -283,7 +296,7 @@ class _MessagesList extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = items[index];
         if (item is _DateSeparator) {
-          return _buildDateChip(item.date);
+          return _buildDateChip(context, item.date);
         }
         final msg = (item as _MessageItem).message;
         final originalIndex = messages.indexOf(msg);
@@ -324,18 +337,20 @@ class _MessagesList extends StatelessWidget {
     return items;
   }
 
-  Widget _buildDateChip(DateTime date) {
+  Widget _buildDateChip(BuildContext context, DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
 
     String label;
     if (date == today) {
-      label = "Aujourd'hui";
+      label = context.l10n.commonToday;
     } else if (date == yesterday) {
-      label = 'Hier';
+      label = context.l10n.commonYesterday;
     } else {
-      label = DateFormat('d MMMM yyyy', 'fr_FR').format(date);
+      label = context
+          .appDateFormat('d MMMM yyyy', enPattern: 'MMMM d, yyyy')
+          .format(date);
     }
 
     return Center(

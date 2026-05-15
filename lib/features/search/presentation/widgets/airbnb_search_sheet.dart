@@ -3,12 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../providers/filter_provider.dart';
+import '../utils/search_l10n.dart';
 import '../../domain/models/event_filter.dart';
 import '../../../events/data/models/event_reference_data_dto.dart';
+import '../../../events/data/models/search_suggestions_dto.dart';
 import '../../../home/presentation/providers/home_providers.dart';
 import 'filter_shared_components.dart';
 
@@ -137,6 +140,8 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
   int get _activeFilterCount {
     final filter = ref.read(eventFilterProvider);
+    final publicFilters =
+        selectedPublicAudienceFilters(filter.targetAudienceSlugs);
     int count = 0;
     if (filter.searchQuery.isNotEmpty) count++;
     if (filter.dateFilterType != null || filter.startDate != null) count++;
@@ -152,20 +157,25 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     if (filter.availableOnly) count++;
     if (filter.locationType != null) count++;
     if (filter.priceFilterType != null && !filter.onlyFree) count++;
-    if (filter.familyFriendly) count++;
+    if (filter.familyFriendly && !publicFilters.contains('family')) count++;
     if (filter.onlyFree) count++;
-    if (filter.accessiblePMR) count++;
+    if (filter.accessiblePMR && !publicFilters.contains('pmr')) count++;
     if (filter.onlineOnly) count++;
     return count;
   }
 
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoadingLocation = true);
+    final locationDisabled = context.l10n.searchLocationDisabled;
+    final permissionDenied = context.l10n.searchPermissionDenied;
+    final locationSettingsRequired =
+        context.l10n.searchLocationSettingsRequired;
+    final locationNotFound = context.l10n.searchLocationNotFound;
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _showError('Activez la localisation');
+        _showError(locationDisabled);
         return;
       }
 
@@ -173,13 +183,13 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showError('Permission refusée');
+          _showError(permissionDenied);
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showError('Activez la localisation dans les paramètres');
+        _showError(locationSettingsRequired);
         return;
       }
 
@@ -193,7 +203,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
       filterNotifier.setLocation(position.latitude, position.longitude, 20);
       filterNotifier.clearCity();
     } catch (e) {
-      _showError('Position introuvable');
+      _showError(locationNotFound);
     } finally {
       setState(() => _isLoadingLocation = false);
     }
@@ -244,7 +254,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
                         // Panel 0: Où ?
                         _AccordionPanel(
                           key: _panelKeys[_wherePanel],
-                          title: 'Où ?',
+                          title: context.l10n.homeSearchWhere,
                           subtitle: _getWhereSubtitle(filter),
                           icon: Icons.location_on,
                           isExpanded: _expandedPanel == _wherePanel,
@@ -261,7 +271,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
                         // Panel 1: Quand ?
                         _AccordionPanel(
                           key: _panelKeys[_whenPanel],
-                          title: 'Quand ?',
+                          title: context.l10n.homeSearchWhen,
                           subtitle: _getWhenSubtitle(filter),
                           icon: Icons.calendar_today,
                           isExpanded: _expandedPanel == _whenPanel,
@@ -274,7 +284,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
                         // Panel 2: Quoi ?
                         _AccordionPanel(
                           key: _panelKeys[_whatPanel],
-                          title: 'Quoi ?',
+                          title: context.l10n.homeSearchWhat,
                           subtitle: _getWhatSubtitle(filter),
                           icon: Icons.category,
                           isExpanded: _expandedPanel == _whatPanel,
@@ -286,7 +296,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
                         _AccordionPanel(
                           key: _panelKeys[_searchPanel],
-                          title: 'Recherche',
+                          title: context.l10n.searchTitle,
                           subtitle: _getSearchSubtitle(filter),
                           icon: Icons.search,
                           isExpanded: _expandedPanel == _searchPanel,
@@ -298,7 +308,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
                         _AccordionPanel(
                           key: _panelKeys[_audiencePanel],
-                          title: 'Pour qui ?',
+                          title: context.l10n.searchForWhom,
                           subtitle: _getAudienceSubtitle(filter),
                           icon: Icons.people,
                           isExpanded: _expandedPanel == _audiencePanel,
@@ -310,7 +320,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
                         _AccordionPanel(
                           key: _panelKeys[_pricePanel],
-                          title: 'Prix',
+                          title: context.l10n.searchSectionBudget,
                           subtitle: _getPriceSubtitle(filter),
                           icon: Icons.euro,
                           isExpanded: _expandedPanel == _pricePanel,
@@ -322,10 +332,10 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
                         _AccordionPanel(
                           key: _panelKeys[_availabilityPanel],
-                          title: 'Disponibilité',
+                          title: context.l10n.searchAvailabilityPanelTitle,
                           subtitle: filter.availableOnly
-                              ? 'Places disponibles'
-                              : 'Toutes les activités',
+                              ? context.l10n.searchAvailablePlaces
+                              : context.l10n.searchAllActivities,
                           icon: Icons.event_available,
                           isExpanded: _expandedPanel == _availabilityPanel,
                           onTap: () => _expandPanel(_availabilityPanel),
@@ -336,7 +346,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
                         _AccordionPanel(
                           key: _panelKeys[_refinePanel],
-                          title: 'Affiner la recherche',
+                          title: context.l10n.searchRefineTitle,
                           subtitle: _getRefineSubtitle(filter),
                           icon: Icons.tune,
                           isExpanded: _expandedPanel == _refinePanel,
@@ -357,7 +367,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
             right: 0,
             bottom: 0,
             child: FilterFooterWithClear(
-              buttonText: 'Rechercher',
+              buttonText: context.l10n.searchAction,
               buttonIcon: Icons.search,
               activeFilterCount: _activeFilterCount,
               hasFilters: filter.hasActiveFilters,
@@ -407,7 +417,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
           // Titre centré
           Text(
-            'Recherche',
+            context.l10n.searchTitle,
             style: GoogleFonts.montserrat(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -437,7 +447,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
       },
       onSubmitted: (_) => widget.onSearch?.call(),
       decoration: InputDecoration(
-        hintText: 'Rechercher un titre, un organisateur',
+        hintText: context.l10n.searchHintEventOrOrganization,
         prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
         suffixIcon: filter.searchQuery.isEmpty
             ? null
@@ -463,61 +473,70 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
   String _getWhereSubtitle(EventFilter filter) {
     if (filter.latitude != null) {
-      return 'À proximité · ${filter.radiusKm.toInt()} km';
+      return context.searchAroundMeLabel(filter.radiusKm);
     }
     if (filter.cityName != null) {
-      return 'Autour de ${filter.cityName} · ${filter.effectiveCityRadiusKm} km';
+      return context.searchCityRadiusLabel(
+        filter.cityName!,
+        filter.effectiveCityRadiusKm,
+      );
     }
-    return 'N\'importe où';
+    return context.l10n.searchAnywhere;
   }
 
   String _getWhenSubtitle(EventFilter filter) {
-    if (filter.dateFilterLabel != null) return filter.dateFilterLabel!;
+    final dateLabel = context.searchDateFilterLabelOrNull(filter);
+    if (dateLabel != null) return dateLabel;
     if (filter.startDate != null) {
-      final formatter = DateFormat('d MMM', 'fr_FR');
+      final formatter = context.appDateFormat('d MMM', enPattern: 'MMM d');
       if (filter.endDate != null && filter.startDate != filter.endDate) {
         return '${formatter.format(filter.startDate!)} - ${formatter.format(filter.endDate!)}';
       }
       return formatter.format(filter.startDate!);
     }
-    return 'N\'importe quand';
+    return context.l10n.searchAnytime;
   }
 
   String _getWhatSubtitle(EventFilter filter) {
-    if (filter.categoriesSlugs.length == 1) return '1 catégorie';
-    if (filter.categoriesSlugs.isNotEmpty) {
-      return '${filter.categoriesSlugs.length} catégories';
+    if (filter.categoriesSlugs.length == 1) {
+      return context.l10n.searchCategorySingular;
     }
-    return 'Tout type d\'activité';
+    if (filter.categoriesSlugs.isNotEmpty) {
+      return context.l10n.searchCategoriesCount(filter.categoriesSlugs.length);
+    }
+    return context.l10n.searchAnyActivityType;
   }
 
   String _getSearchSubtitle(EventFilter filter) {
     if (filter.searchQuery.trim().isEmpty) {
-      return 'Titre, organisateur';
+      return context.l10n.searchSearchSubtitleDefault;
     }
     return '"${filter.searchQuery.trim()}"';
   }
 
   String _getAudienceSubtitle(EventFilter filter) {
-    if (filter.targetAudienceSlugs.length == 1) return '1 public';
-    if (filter.targetAudienceSlugs.isNotEmpty) {
-      return '${filter.targetAudienceSlugs.length} publics';
+    if (filter.targetAudienceSlugs.length == 1) {
+      return context.l10n.searchAudienceSingular;
     }
-    return 'Tous les publics';
+    if (filter.targetAudienceSlugs.isNotEmpty) {
+      return context.l10n
+          .searchAudiencesCount(filter.targetAudienceSlugs.length);
+    }
+    return context.l10n.searchAllAudiences;
   }
 
   String _getPriceSubtitle(EventFilter filter) {
     if (filter.onlyFree || filter.priceFilterType == PriceFilterType.free) {
-      return 'Gratuit';
+      return context.l10n.commonFree;
     }
     if (filter.priceFilterType == PriceFilterType.paid ||
         filter.priceFilterType == PriceFilterType.range) {
       if (filter.priceFilterType == PriceFilterType.range) {
         return '${filter.priceMin.toInt()}€ - ${filter.priceMax.toInt()}€${filter.priceMax >= 500 ? '+' : ''}';
       }
-      return 'Payant';
+      return context.l10n.searchPricePaid;
     }
-    return 'Tous';
+    return context.l10n.searchAll;
   }
 
   String _getRefineSubtitle(EventFilter filter) {
@@ -528,8 +547,10 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     count += filter.emotionSlugs.length;
     count += filter.specialEventSlugs.length;
     if (filter.locationType != null) count++;
-    if (count == 0) return 'Type, thématique, ambiance';
-    return count == 1 ? '1 filtre' : '$count filtres';
+    if (count == 0) return context.l10n.searchRefineSubtitleDefault;
+    return count == 1
+        ? context.l10n.searchFilterSingular
+        : context.l10n.searchFiltersCount(count);
   }
 }
 
@@ -754,7 +775,7 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'À proximité',
+                        context.l10n.homeSearchNearby,
                         style: GoogleFonts.montserrat(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -763,8 +784,8 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
                       ),
                       Text(
                         hasLocation
-                            ? 'Dans un rayon de ${filter.radiusKm.toInt()} km'
-                            : 'Utiliser ma position',
+                            ? context.searchWithinRadiusLabel(filter.radiusKm)
+                            : context.l10n.searchUseCurrentLocation,
                         style: GoogleFonts.montserrat(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -790,7 +811,7 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
           controller: _citySearchController,
           onChanged: (value) => setState(() => _cityQuery = value.trim()),
           decoration: InputDecoration(
-            hintText: 'Rechercher une ville',
+            hintText: context.l10n.searchHintCity,
             prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
             suffixIcon: _cityQuery.isEmpty
                 ? null
@@ -815,7 +836,7 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
         if (hasLocation || hasCity) ...[
           const SizedBox(height: 16),
           Text(
-            'RAYON',
+            context.l10n.searchRadiusLabel.replaceAll(':', '').toUpperCase(),
             style: GoogleFonts.montserrat(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -860,7 +881,9 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
 
         // Villes populaires
         Text(
-          _cityQuery.isEmpty ? 'VILLES POPULAIRES' : 'RÉSULTATS',
+          _cityQuery.isEmpty
+              ? context.l10n.searchPopularCities
+              : context.l10n.searchResults,
           style: GoogleFonts.montserrat(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -887,7 +910,7 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
 
             if (displayedCities.isEmpty) {
               return Text(
-                'Aucune ville trouvée',
+                context.l10n.searchNoCityFound,
                 style: GoogleFonts.montserrat(
                   fontSize: 13,
                   color: Colors.grey.shade600,
@@ -930,7 +953,7 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
             ),
           ),
           error: (_, __) => Text(
-            'Villes indisponibles',
+            context.l10n.searchCitiesUnavailable,
             style: GoogleFonts.montserrat(
               fontSize: 13,
               color: Colors.grey.shade600,
@@ -981,8 +1004,10 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
           runSpacing: 8,
           children: [
             DateQuickChip(
-              label: "Aujourd'hui",
-              subtitle: DateFormat('d MMM', 'fr_FR').format(today),
+              label: context.l10n.commonToday,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(today),
               isSelected: widget.filter.dateFilterType == DateFilterType.today,
               onTap: () {
                 if (widget.filter.dateFilterType == DateFilterType.today) {
@@ -993,8 +1018,10 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
               },
             ),
             DateQuickChip(
-              label: 'Demain',
-              subtitle: DateFormat('d MMM', 'fr_FR').format(tomorrow),
+              label: context.l10n.commonTomorrow,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(tomorrow),
               isSelected:
                   widget.filter.dateFilterType == DateFilterType.tomorrow,
               onTap: () {
@@ -1006,9 +1033,9 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
               },
             ),
             DateQuickChip(
-              label: 'Ce week-end',
+              label: context.l10n.commonThisWeekend,
               subtitle:
-                  '${DateFormat('d').format(saturday)}-${DateFormat('d MMM', 'fr_FR').format(sunday)}',
+                  '${DateFormat('d').format(saturday)}-${context.appDateFormat('d MMM', enPattern: 'MMM d').format(sunday)}',
               isSelected:
                   widget.filter.dateFilterType == DateFilterType.thisWeekend,
               onTap: () {
@@ -1021,7 +1048,7 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
               },
             ),
             DateQuickChip(
-              label: 'Ce mois-ci',
+              label: context.l10n.searchDateThisMonth,
               isSelected:
                   widget.filter.dateFilterType == DateFilterType.thisMonth,
               onTap: () {
@@ -1065,7 +1092,7 @@ class _WhenContentState extends ConsumerState<_WhenContent> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Dates personnalisées',
+                    context.l10n.searchDateCustom,
                     style: GoogleFonts.montserrat(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -1150,7 +1177,7 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
               controller: _categorySearchController,
               onChanged: (value) => setState(() => _query = value.trim()),
               decoration: InputDecoration(
-                hintText: 'Rechercher une catégorie',
+                hintText: context.l10n.searchHintCategory,
                 prefixIcon:
                     const Icon(Icons.search, color: HbColors.brandPrimary),
                 suffixIcon: _query.isEmpty
@@ -1173,14 +1200,16 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
               ),
             ),
             const SizedBox(height: 16),
-            if (categories.isEmpty)
-              Text(
-                'Aucune catégorie',
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
+            if (_query.isNotEmpty && !_shouldShowAutocomplete(_query))
+              _AutocompleteMessage(
+                context.searchMinCharactersLabel(
+                  searchAutocompleteMinQueryLength,
                 ),
               )
+            else if (_shouldShowAutocomplete(_query))
+              _buildCategoryAutocompleteResults()
+            else if (categories.isEmpty)
+              _FilterMessage(context.l10n.searchNoCategoryFound)
             else
               ...categories.map(
                 (entry) => _buildCategoryGroup(
@@ -1201,11 +1230,49 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
         ),
       ),
       error: (_, __) => Text(
-        'Catégories indisponibles',
+        context.l10n.searchCategoriesUnavailable,
         style: GoogleFonts.montserrat(
           fontSize: 13,
           color: Colors.grey.shade600,
         ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryAutocompleteResults() {
+    final filterNotifier = ref.read(eventFilterProvider.notifier);
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: _query,
+          types: 'categories',
+          limit: 10,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        if (data.categories.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoCategoryFound);
+        }
+
+        return _SuggestionList(
+          children: data.categories.map((category) {
+            final isSelected =
+                widget.filter.categoriesSlugs.contains(category.slug);
+            return _SuggestionTile(
+              icon: _iconForReference(null, category.slug),
+              label: category.label,
+              isSelected: isSelected,
+              onTap: () => _toggleSuggestionCategory(category, filterNotifier),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) => _AutocompleteMessage(
+        context.l10n.searchCategoriesUnavailable,
       ),
     );
   }
@@ -1269,7 +1336,7 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SelectableChip(
-            label: _labelWithCount(category.name, category.eventCount),
+            label: category.name,
             icon: _iconForReference(category.icon, category.slug),
             isSelected: fullySelected || partiallySelected,
             onTap: () =>
@@ -1286,7 +1353,7 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
                   final isSelected = selectedSlugs.contains(category.slug) ||
                       selectedSlugs.contains(child.slug);
                   return SelectableChip(
-                    label: _labelWithCount(child.name, child.eventCount),
+                    label: child.name,
                     icon: _iconForReference(child.icon, child.slug),
                     isSelected: isSelected,
                     onTap: () => _toggleChild(
@@ -1373,6 +1440,42 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
       widget.filter.copyWith(categoriesSlugs: next.toList()),
     );
   }
+
+  void _toggleSuggestionCategory(
+    SearchSuggestionItemDto suggestion,
+    EventFilterNotifier filterNotifier,
+  ) {
+    final match = _findCategoryMatch(suggestion.slug);
+    if (match != null && match.category.slug == match.child.slug) {
+      _toggleParent(match.category, match.category.children, filterNotifier);
+    } else if (match != null) {
+      _toggleChild(
+        match.category,
+        match.child,
+        match.category.children,
+        filterNotifier,
+      );
+    } else {
+      final next = _toggleSlug(widget.filter.categoriesSlugs, suggestion.slug);
+      filterNotifier.applyFilters(
+        widget.filter.copyWith(categoriesSlugs: next),
+      );
+    }
+  }
+
+  _CategoryMatch? _findCategoryMatch(String slug) {
+    final referenceData = ref.read(eventReferenceDataProvider).valueOrNull;
+    final categories = referenceData?.categories ?? const [];
+    for (final category in categories) {
+      if (category.slug == slug) {
+        return _CategoryMatch(category, category);
+      }
+      for (final child in category.children) {
+        if (child.slug == slug) return _CategoryMatch(category, child);
+      }
+    }
+    return null;
+  }
 }
 
 class _CategoryEntry {
@@ -1380,6 +1483,104 @@ class _CategoryEntry {
   final List<EventReferenceCategoryDto> children;
 
   const _CategoryEntry(this.category, this.children);
+}
+
+class _CategoryMatch {
+  final EventReferenceCategoryDto category;
+  final EventReferenceCategoryDto child;
+
+  const _CategoryMatch(this.category, this.child);
+}
+
+const _fallbackPublicFilters = [
+  EventReferencePublicFilterDto(
+    key: 'family',
+    label: '',
+    param: 'public_filters',
+    value: 'family',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'pmr',
+    label: '',
+    param: 'public_filters',
+    value: 'pmr',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'group',
+    label: '',
+    param: 'public_filters',
+    value: 'group',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'school',
+    label: '',
+    param: 'public_filters',
+    value: 'school',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'professional',
+    label: '',
+    param: 'public_filters',
+    value: 'professional',
+  ),
+];
+
+List<EventReferencePublicFilterDto> _publicFilterOptions(
+  List<EventReferencePublicFilterDto> filters,
+) {
+  final options = filters.where((filter) {
+    return publicAudienceFilterKeys.contains(_publicFilterValue(filter));
+  }).toList();
+  if (options.isEmpty) return _fallbackPublicFilters;
+
+  final order = {
+    for (var i = 0; i < publicAudienceFilterKeys.length; i++)
+      publicAudienceFilterKeys.elementAt(i): i,
+  };
+  options.sort((a, b) {
+    final aOrder =
+        order[_publicFilterValue(a)] ?? publicAudienceFilterKeys.length;
+    final bOrder =
+        order[_publicFilterValue(b)] ?? publicAudienceFilterKeys.length;
+    return aOrder.compareTo(bOrder);
+  });
+
+  return options;
+}
+
+String _publicFilterValue(EventReferencePublicFilterDto filter) {
+  return filter.value.isNotEmpty ? filter.value : filter.key;
+}
+
+IconData _publicFilterIcon(String key) {
+  switch (key) {
+    case 'family':
+      return Icons.family_restroom;
+    case 'pmr':
+      return Icons.accessible;
+    case 'group':
+      return Icons.groups;
+    case 'school':
+      return Icons.school;
+    case 'professional':
+      return Icons.business_center;
+    default:
+      return Icons.people;
+  }
+}
+
+String _publicFilterLabel(
+  BuildContext context,
+  EventReferencePublicFilterDto filter,
+) {
+  return switch (_publicFilterValue(filter)) {
+    'family' => context.l10n.searchFamilyTitle,
+    'pmr' => context.l10n.searchAccessiblePmr,
+    'group' => context.l10n.searchAudienceGroup,
+    'school' => context.l10n.searchAudienceSchoolGroup,
+    'professional' => context.l10n.searchAudienceProfessional,
+    _ => filter.label,
+  };
 }
 
 class _AudienceContent extends ConsumerWidget {
@@ -1394,46 +1595,31 @@ class _AudienceContent extends ConsumerWidget {
 
     return referenceData.when(
       data: (data) {
-        if (data.audienceGroups.isEmpty) {
-          return Text(
-            'Aucun public disponible',
-            style: GoogleFonts.montserrat(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-            ),
-          );
+        final options = _publicFilterOptions(data.publicFilters);
+        final selectedKeys =
+            selectedPublicAudienceFilters(filter.targetAudienceSlugs);
+
+        if (options.isEmpty) {
+          return _FilterMessage(context.l10n.searchNoAudienceAvailable);
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: data.audienceGroups.map((group) {
-            if (group.audiences.isEmpty) return const SizedBox.shrink();
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((publicFilter) {
+            final value = _publicFilterValue(publicFilter);
+            final isSelected = selectedKeys.contains(value);
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SectionLabel(group.name),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: group.audiences.map((audience) {
-                      final isSelected =
-                          filter.targetAudienceSlugs.contains(audience.slug);
-                      return SelectableChip(
-                        label: audience.name,
-                        icon: Icons.groups,
-                        isSelected: isSelected,
-                        onTap: () => filterNotifier.setTargetAudiences(
-                          _toggleSlug(
-                              filter.targetAudienceSlugs, audience.slug),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+            return SelectableChip(
+              label: _publicFilterLabel(context, publicFilter),
+              icon: _publicFilterIcon(value),
+              isSelected: isSelected,
+              onTap: () => filterNotifier.applyFilters(
+                filter.copyWith(
+                  targetAudienceSlugs: _toggleSlug(selectedKeys, value),
+                  familyFriendly: false,
+                  accessiblePMR: false,
+                ),
               ),
             );
           }).toList(),
@@ -1449,7 +1635,7 @@ class _AudienceContent extends ConsumerWidget {
         ),
       ),
       error: (_, __) => Text(
-        'Publics indisponibles',
+        context.l10n.searchAudiencesUnavailable,
         style: GoogleFonts.montserrat(
           fontSize: 13,
           color: Colors.grey.shade600,
@@ -1486,18 +1672,18 @@ class _PriceContent extends ConsumerWidget {
           runSpacing: 8,
           children: [
             SelectableChip(
-              label: 'Tout',
+              label: context.l10n.searchAll,
               isSelected: !isFree && !isPaid,
               onTap: filterNotifier.clearPriceFilter,
             ),
             SelectableChip(
-              label: 'Gratuit',
+              label: context.l10n.commonFree,
               icon: Icons.local_offer_outlined,
               isSelected: isFree,
               onTap: () => filterNotifier.setOnlyFree(!isFree),
             ),
             SelectableChip(
-              label: 'Payant',
+              label: context.l10n.searchPricePaid,
               isSelected: isPaid,
               onTap: () {
                 if (isPaid) {
@@ -1519,7 +1705,7 @@ class _PriceContent extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Fourchette de prix',
+                context.l10n.searchPriceRangeTitle,
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -1563,8 +1749,8 @@ class _AvailabilityContent extends ConsumerWidget {
     final filterNotifier = ref.read(eventFilterProvider.notifier);
 
     return ToggleRow(
-      title: 'Places disponibles uniquement',
-      subtitle: 'Masquer les activités complètes',
+      title: context.l10n.searchAvailableOnlyTitle,
+      subtitle: context.l10n.searchAvailabilitySubtitle,
       icon: Icons.confirmation_number_outlined,
       isSelected: filter.availableOnly,
       onTap: () => filterNotifier.setAvailableOnly(!filter.availableOnly),
@@ -1592,7 +1778,7 @@ class _RefineContent extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _ReferenceMultiSection(
-            title: 'TYPE D\'ÉVÉNEMENT',
+            title: context.l10n.searchSectionEventType.toUpperCase(),
             options: data.eventTags,
             selectedSlugs: selectedEventTags,
             onChanged: (slugs) {
@@ -1601,20 +1787,21 @@ class _RefineContent extends ConsumerWidget {
             },
           ),
           _ReferenceMultiSection(
-            title: 'THÉMATIQUES',
+            title: context.l10n.searchSectionThemes.toUpperCase(),
             options: data.themes,
             selectedSlugs: filter.thematiquesSlugs,
+            showCounts: false,
             onChanged: filterNotifier.setThematiques,
           ),
           _ReferenceMultiSection(
-            title: 'AMBIANCE',
+            title: context.l10n.searchSectionMood.toUpperCase(),
             options: data.emotions,
             selectedSlugs: filter.emotionSlugs,
             onChanged: filterNotifier.setEmotions,
           ),
           _LocationTypeSection(filter: filter),
           _ReferenceMultiSection(
-            title: 'ÉVÉNEMENTS SPÉCIAUX',
+            title: context.l10n.searchSectionSpecialEvents.toUpperCase(),
             options: data.specialEvents,
             selectedSlugs: filter.specialEventSlugs,
             onChanged: filterNotifier.setSpecialEvents,
@@ -1631,7 +1818,7 @@ class _RefineContent extends ConsumerWidget {
         ),
       ),
       error: (_, __) => Text(
-        'Options indisponibles',
+        context.l10n.searchOptionsUnavailable,
         style: GoogleFonts.montserrat(
           fontSize: 13,
           color: Colors.grey.shade600,
@@ -1645,12 +1832,14 @@ class _ReferenceMultiSection extends StatelessWidget {
   final String title;
   final List<EventReferenceOptionDto> options;
   final List<String> selectedSlugs;
+  final bool showCounts;
   final ValueChanged<List<String>> onChanged;
 
   const _ReferenceMultiSection({
     required this.title,
     required this.options,
     required this.selectedSlugs,
+    this.showCounts = true,
     required this.onChanged,
   });
 
@@ -1671,7 +1860,9 @@ class _ReferenceMultiSection extends StatelessWidget {
             children: options.map((option) {
               final isSelected = selectedSlugs.contains(option.slug);
               return SelectableChip(
-                label: _labelWithCount(option.name, option.eventCount),
+                label: showCounts
+                    ? _labelWithCount(option.name, option.eventCount)
+                    : option.name,
                 icon: _iconForReference(option.icon, option.slug),
                 isSelected: isSelected,
                 onTap: () => onChanged(_toggleSlug(selectedSlugs, option.slug)),
@@ -1698,26 +1889,26 @@ class _LocationTypeSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionLabel('TYPE DE LIEU'),
+          _SectionLabel(context.l10n.searchSectionLocationType.toUpperCase()),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               _locationTypeChip(
-                label: 'En intérieur',
-                icon: Icons.storefront,
+                label: context.l10n.searchLocationIndoor,
+                icon: Icons.home_work_outlined,
                 type: LocationTypeFilter.physical,
                 filterNotifier: filterNotifier,
               ),
               _locationTypeChip(
-                label: 'En extérieur',
-                icon: Icons.location_on_outlined,
+                label: context.l10n.searchLocationOutdoor,
+                icon: Icons.park_outlined,
                 type: LocationTypeFilter.offline,
                 filterNotifier: filterNotifier,
               ),
               _locationTypeChip(
-                label: 'Mixte',
+                label: context.l10n.searchLocationMixed,
                 icon: Icons.sync_alt,
                 type: LocationTypeFilter.hybrid,
                 filterNotifier: filterNotifier,
@@ -1759,6 +1950,131 @@ class _SectionLabel extends StatelessWidget {
         fontWeight: FontWeight.w700,
         color: Colors.grey.shade500,
         letterSpacing: 1,
+      ),
+    );
+  }
+}
+
+bool _shouldShowAutocomplete(String query) {
+  return query.trim().length >= searchAutocompleteMinQueryLength;
+}
+
+class _SuggestionList extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SuggestionList({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: Colors.grey.shade200),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SuggestionTile({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? HbColors.brandPrimary : Colors.grey.shade600,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? HbColors.brandPrimary : HbColors.textDark,
+                ),
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle,
+                size: 18,
+                color: HbColors.brandPrimary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterMessage extends StatelessWidget {
+  final String message;
+
+  const _FilterMessage(this.message);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      style: GoogleFonts.montserrat(
+        fontSize: 13,
+        color: Colors.grey.shade600,
+      ),
+    );
+  }
+}
+
+class _AutocompleteMessage extends StatelessWidget {
+  final String message;
+
+  const _AutocompleteMessage(this.message);
+
+  @override
+  Widget build(BuildContext context) => _FilterMessage(message);
+}
+
+class _AutocompleteLoading extends StatelessWidget {
+  const _AutocompleteLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(12),
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: HbColors.brandPrimary,
+        ),
       ),
     );
   }
