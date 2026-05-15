@@ -458,7 +458,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                 urlTemplate:
                     'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
-                userAgentPackageName: 'com.dilios.lehiboo',
+                userAgentPackageName: 'com.dilios.lehibooexperience',
               ),
               Builder(
                 builder: (context) {

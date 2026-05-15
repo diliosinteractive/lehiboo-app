@@ -329,7 +329,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.lehiboo.app',
+                  userAgentPackageName: 'com.dilios.lehibooexperience',
                 ),
                 // Route polyline
                 if (validStops.length > 1)

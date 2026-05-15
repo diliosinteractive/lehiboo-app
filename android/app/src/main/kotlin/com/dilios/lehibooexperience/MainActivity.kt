@@ -1,4 +1,4 @@
-package com.dilios.lehiboo
+package com.dilios.lehibooexperience
 
 import android.content.ContentValues
 import android.media.AudioManager
