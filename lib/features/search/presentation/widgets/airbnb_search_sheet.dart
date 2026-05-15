@@ -720,7 +720,6 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
     final filter = widget.filter;
     final hasLocation = filter.latitude != null;
     final hasCity = filter.citySlug != null;
-    final citiesAsync = ref.watch(homeCitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -893,74 +892,130 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
         ),
         const SizedBox(height: 12),
 
-        citiesAsync.when(
-          data: (cities) {
-            final query = _cityQuery.toLowerCase();
-            final displayedCities = query.isEmpty
-                ? cities.take(6).toList()
-                : cities
-                    .where(
-                      (city) =>
-                          city.name.toLowerCase().contains(query) ||
-                          city.slug.toLowerCase().contains(query) ||
-                          (city.region ?? '').toLowerCase().contains(query),
-                    )
-                    .take(10)
-                    .toList();
-
-            if (displayedCities.isEmpty) {
-              return Text(
-                context.l10n.searchNoCityFound,
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
-              );
-            }
-
-            return Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: displayedCities.map((city) {
-                final isSelected = filter.citySlug == city.slug;
-                return SelectableChip(
-                  label: city.name,
-                  icon: Icons.location_city,
-                  isSelected: isSelected,
-                  onTap: () {
-                    if (isSelected) {
-                      filterNotifier.clearCity();
-                    } else {
-                      filterNotifier.setCity(
-                        city.slug,
-                        city.name,
-                        radiusKm: filter.effectiveCityRadiusKm.toDouble(),
-                      );
-                      filterNotifier.clearLocation();
-                    }
-                  },
-                );
-              }).toList(),
-            );
-          },
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: HbColors.brandPrimary,
-              ),
+        if (_cityQuery.isNotEmpty && !_shouldShowAutocomplete(_cityQuery))
+          _AutocompleteMessage(
+            context.searchMinCharactersLabel(
+              searchAutocompleteMinQueryLength,
             ),
-          ),
-          error: (_, __) => Text(
-            context.l10n.searchCitiesUnavailable,
+          )
+        else if (_shouldShowAutocomplete(_cityQuery))
+          _buildCityAutocompleteResults(filter, filterNotifier)
+        else
+          _buildPopularCityChips(filter, filterNotifier),
+      ],
+    );
+  }
+
+  Widget _buildPopularCityChips(
+    EventFilter filter,
+    EventFilterNotifier filterNotifier,
+  ) {
+    final popularCities = ref.watch(popularCitiesProvider);
+
+    return popularCities.when(
+      data: (result) {
+        final displayedCities = result.cities.take(6).toList();
+
+        if (displayedCities.isEmpty) {
+          return Text(
+            context.l10n.searchNoCityFound,
             style: GoogleFonts.montserrat(
               fontSize: 13,
               color: Colors.grey.shade600,
             ),
+          );
+        }
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: displayedCities.map((city) {
+            final isSelected = filter.citySlug == city.slug;
+            return SelectableChip(
+              label: city.name,
+              icon: Icons.location_city,
+              isSelected: isSelected,
+              onTap: () {
+                if (isSelected) {
+                  filterNotifier.clearCity();
+                } else {
+                  filterNotifier.setCity(
+                    city.slug,
+                    city.name,
+                    radiusKm: filter.effectiveCityRadiusKm.toDouble(),
+                  );
+                  filterNotifier.clearLocation();
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: HbColors.brandPrimary,
           ),
         ),
-      ],
+      ),
+      error: (_, __) => Text(
+        context.l10n.searchCitiesUnavailable,
+        style: GoogleFonts.montserrat(
+          fontSize: 13,
+          color: Colors.grey.shade600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCityAutocompleteResults(
+    EventFilter filter,
+    EventFilterNotifier filterNotifier,
+  ) {
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: _cityQuery,
+          types: 'cities',
+          limit: 10,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        if (data.cities.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoCityFound);
+        }
+
+        return _SuggestionList(
+          children: data.cities.map((city) {
+            final isSelected = filter.citySlug == city.slug;
+            return _SuggestionTile(
+              icon: Icons.location_city,
+              label: _labelWithCount(city.label, city.eventsCount),
+              isSelected: isSelected,
+              onTap: () {
+                if (isSelected) {
+                  filterNotifier.clearCity();
+                } else {
+                  filterNotifier.setCity(
+                    city.slug,
+                    city.label,
+                    radiusKm: filter.effectiveCityRadiusKm.toDouble(),
+                  );
+                  filterNotifier.clearLocation();
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) =>
+          _AutocompleteMessage(context.l10n.searchCitiesUnavailable),
     );
   }
 }

@@ -895,7 +895,6 @@ class _LocationFilterSectionState
     final filter = widget.filter;
     final hasLocation = filter.latitude != null;
     final hasCity = filter.citySlug != null;
-    final citiesAsync = ref.watch(homeCitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1117,99 +1116,73 @@ class _LocationFilterSectionState
         ),
         const SizedBox(height: 12),
 
-        citiesAsync.when(
-          data: (cities) {
-            if (_cityQuery.isNotEmpty && !_shouldShowAutocomplete(_cityQuery)) {
-              return _AutocompleteMessage(
-                context.searchMinCharactersLabel(
-                  searchAutocompleteMinQueryLength,
-                ),
-              );
-            }
-
-            if (_shouldShowAutocomplete(_cityQuery)) {
-              return _buildCityAutocompleteResults(filter);
-            }
-
-            final normalizedQuery = _cityQuery.toLowerCase();
-            final displayedCities = normalizedQuery.isEmpty
-                ? cities.take(6).toList()
-                : cities
-                    .where(
-                      (city) =>
-                          city.name.toLowerCase().contains(normalizedQuery) ||
-                          city.slug.toLowerCase().contains(normalizedQuery),
-                    )
-                    .take(10)
-                    .toList();
-
-            if (displayedCities.isEmpty) {
-              return Text(
-                context.l10n.searchNoCityFound,
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
-              );
-            }
-
-            return Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: displayedCities.map((city) {
-                final isSelected = filter.citySlug == city.slug;
-                return _SelectableChip(
-                  label: city.name,
-                  icon: Icons.location_city,
-                  isSelected: isSelected,
-                  onTap: () {
-                    if (isSelected) {
-                      widget.onClearCity();
-                    } else {
-                      widget.onCitySelected(city.slug, city.name);
-                    }
-                  },
-                );
-              }).toList(),
-            );
-          },
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: HbColors.brandPrimary,
-              ),
+        if (_cityQuery.isNotEmpty && !_shouldShowAutocomplete(_cityQuery))
+          _AutocompleteMessage(
+            context.searchMinCharactersLabel(
+              searchAutocompleteMinQueryLength,
             ),
-          ),
-          error: (_, __) => Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              ('Paris', 'paris'),
-              ('Lyon', 'lyon'),
-              ('Marseille', 'marseille'),
-              ('Bordeaux', 'bordeaux'),
-              ('Toulouse', 'toulouse'),
-              ('Nantes', 'nantes'),
-            ].map((city) {
-              final isSelected = filter.citySlug == city.$2;
-              return _SelectableChip(
-                label: city.$1,
-                icon: Icons.location_city,
-                isSelected: isSelected,
-                onTap: () {
-                  if (isSelected) {
-                    widget.onClearCity();
-                  } else {
-                    widget.onCitySelected(city.$2, city.$1);
-                  }
-                },
-              );
-            }).toList(),
+          )
+        else if (_shouldShowAutocomplete(_cityQuery))
+          _buildCityAutocompleteResults(filter)
+        else
+          _buildPopularCityChips(filter),
+      ],
+    );
+  }
+
+  Widget _buildPopularCityChips(EventFilter filter) {
+    final popularCities = ref.watch(popularCitiesProvider);
+
+    return popularCities.when(
+      data: (result) {
+        final displayedCities = result.cities.take(6).toList();
+
+        if (displayedCities.isEmpty) {
+          return Text(
+            context.l10n.searchNoCityFound,
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+          );
+        }
+
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: displayedCities.map((city) {
+            final isSelected = filter.citySlug == city.slug;
+            return _SelectableChip(
+              label: city.name,
+              icon: Icons.location_city,
+              isSelected: isSelected,
+              onTap: () {
+                if (isSelected) {
+                  widget.onClearCity();
+                } else {
+                  widget.onCitySelected(city.slug, city.name);
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: HbColors.brandPrimary,
           ),
         ),
-      ],
+      ),
+      error: (_, __) => Text(
+        context.l10n.searchCitiesUnavailable,
+        style: GoogleFonts.montserrat(
+          fontSize: 13,
+          color: Colors.grey.shade600,
+        ),
+      ),
     );
   }
 

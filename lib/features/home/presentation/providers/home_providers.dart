@@ -475,9 +475,9 @@ class PopularCitiesNotifier
   }
 }
 
-/// Placeholder image fallback for the legacy [homeCitiesProvider], which still
-/// powers the search/filter sheets. The home "Villes populaires" section uses
-/// [popularCitiesProvider] and the server-provided image instead.
+/// Placeholder image fallback for the legacy [homeCitiesProvider]. The curated
+/// "Villes populaires" surfaces use [popularCitiesProvider] and the
+/// server-provided image instead.
 String _getCityImageUrl(String cityName) {
   // Map of known cities to image URLs
   final cityImages = {
