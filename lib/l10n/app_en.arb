@@ -1950,7 +1950,7 @@
   "searchOnlineSubtitle": "Virtual activities",
   "searchInPersonSubtitle": "On-site activities",
   "searchAvailabilityTitle": "Availability",
-  "searchAvailabilitySubtitle": "Hide full activities",
+  "searchAvailabilitySubtitle": "Bookings only",
   "searchAvailabilityPanelTitle": "Availability",
   "searchAllActivities": "All activities",
   "searchAvailableOnlyTitle": "Available spots only",

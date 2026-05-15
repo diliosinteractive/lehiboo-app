@@ -7872,7 +7872,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchAvailabilitySubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Masquer les activités complètes'**
+  /// **'Billetterie uniquement'**
   String get searchAvailabilitySubtitle;
 
   /// No description provided for @searchAvailabilityPanelTitle.

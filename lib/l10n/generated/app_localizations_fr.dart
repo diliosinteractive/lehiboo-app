@@ -4564,7 +4564,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchAvailabilityTitle => 'Disponibilités';
 
   @override
-  String get searchAvailabilitySubtitle => 'Masquer les activités complètes';
+  String get searchAvailabilitySubtitle => 'Billetterie uniquement';
 
   @override
   String get searchAvailabilityPanelTitle => 'Disponibilité';

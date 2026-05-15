@@ -4532,7 +4532,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchAvailabilityTitle => 'Availability';
 
   @override
-  String get searchAvailabilitySubtitle => 'Hide full activities';
+  String get searchAvailabilitySubtitle => 'Bookings only';
 
   @override
   String get searchAvailabilityPanelTitle => 'Availability';
