@@ -40,8 +40,9 @@ void main() {
     ]);
     expect(chips.firstWhere((chip) => chip.id == 'date').label,
         '2026-05-15 → 2026-05-15');
-    expect(
-        chips.firstWhere((chip) => chip.id == 'city').label, 'Denain · 10 km');
+    final cityChip = chips.firstWhere((chip) => chip.id == 'city');
+    expect(cityChip.label, 'Denain');
+    expect(cityChip.value, '10');
     expect(chips.firstWhere((chip) => chip.id == 'category').label,
         'Arts Plastiques, Couture');
   });

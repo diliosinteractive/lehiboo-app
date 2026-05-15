@@ -191,6 +191,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   /// Check if memory is enabled
   bool get isMemoryEnabled => _contextStorage.getMemoryEnabled();
 
+  AppLocalizations get _l10n => lookupAppLocalizations(
+        Locale(AppLocaleCache.languageCode),
+      );
+
   // ==================== Brain/Context Methods ====================
 
   /// Update a single context key

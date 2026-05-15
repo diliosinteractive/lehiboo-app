@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_form_card.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
+import 'package:lehiboo/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets(
@@ -57,6 +58,8 @@ class _Subject extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: SingleChildScrollView(
           child: ParticipantFormCard(
