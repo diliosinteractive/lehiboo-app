@@ -3092,6 +3092,582 @@ abstract class AppLocalizations {
   /// **'+{amount} Hibons gagnés !'**
   String petitBooHibonsEarned(int amount);
 
+  /// No description provided for @petitBooToolFavoritesDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes événements favoris'**
+  String get petitBooToolFavoritesDescription;
+
+  /// No description provided for @petitBooToolFavoritesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes favoris'**
+  String get petitBooToolFavoritesTitle;
+
+  /// No description provided for @petitBooToolFavoritesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun favori'**
+  String get petitBooToolFavoritesEmpty;
+
+  /// No description provided for @petitBooToolSearchEventsDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche d\'événements'**
+  String get petitBooToolSearchEventsDescription;
+
+  /// No description provided for @petitBooToolSearchEventsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événements trouvés'**
+  String get petitBooToolSearchEventsTitle;
+
+  /// No description provided for @petitBooToolSearchEventsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun événement trouvé avec ces critères'**
+  String get petitBooToolSearchEventsEmpty;
+
+  /// No description provided for @petitBooToolFreeBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gratuit'**
+  String get petitBooToolFreeBadge;
+
+  /// No description provided for @petitBooToolBookingsDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes réservations'**
+  String get petitBooToolBookingsDescription;
+
+  /// No description provided for @petitBooToolBookingsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes réservations'**
+  String get petitBooToolBookingsTitle;
+
+  /// No description provided for @petitBooToolBookingsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune réservation'**
+  String get petitBooToolBookingsEmpty;
+
+  /// No description provided for @petitBooToolTicketsDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes billets'**
+  String get petitBooToolTicketsDescription;
+
+  /// No description provided for @petitBooToolTicketsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes billets'**
+  String get petitBooToolTicketsTitle;
+
+  /// No description provided for @petitBooToolTicketsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun billet'**
+  String get petitBooToolTicketsEmpty;
+
+  /// No description provided for @petitBooToolEventDetailsDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détails d\'un événement'**
+  String get petitBooToolEventDetailsDescription;
+
+  /// No description provided for @petitBooToolAlertsDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes alertes'**
+  String get petitBooToolAlertsDescription;
+
+  /// No description provided for @petitBooToolAlertsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes alertes'**
+  String get petitBooToolAlertsTitle;
+
+  /// No description provided for @petitBooToolAlertsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune alerte'**
+  String get petitBooToolAlertsEmpty;
+
+  /// No description provided for @petitBooToolProfileDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon profil'**
+  String get petitBooToolProfileDescription;
+
+  /// No description provided for @petitBooToolProfileStatBookings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservations'**
+  String get petitBooToolProfileStatBookings;
+
+  /// No description provided for @petitBooToolProfileStatParticipations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participations'**
+  String get petitBooToolProfileStatParticipations;
+
+  /// No description provided for @petitBooToolProfileStatFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris'**
+  String get petitBooToolProfileStatFavorites;
+
+  /// No description provided for @petitBooToolProfileStatAlerts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alertes'**
+  String get petitBooToolProfileStatAlerts;
+
+  /// No description provided for @petitBooToolNotificationsDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes notifications'**
+  String get petitBooToolNotificationsDescription;
+
+  /// No description provided for @petitBooToolNotificationsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes notifications'**
+  String get petitBooToolNotificationsTitle;
+
+  /// No description provided for @petitBooToolNotificationsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune notification'**
+  String get petitBooToolNotificationsEmpty;
+
+  /// No description provided for @petitBooToolBrainDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ma mémoire'**
+  String get petitBooToolBrainDescription;
+
+  /// No description provided for @petitBooToolBrainTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce que je sais de toi'**
+  String get petitBooToolBrainTitle;
+
+  /// No description provided for @petitBooToolBrainEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je ne sais encore rien. Discutons.'**
+  String get petitBooToolBrainEmpty;
+
+  /// No description provided for @petitBooToolBrainSectionFamily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Famille'**
+  String get petitBooToolBrainSectionFamily;
+
+  /// No description provided for @petitBooToolBrainSectionLocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Localisation'**
+  String get petitBooToolBrainSectionLocation;
+
+  /// No description provided for @petitBooToolBrainSectionPreferences.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préférences'**
+  String get petitBooToolBrainSectionPreferences;
+
+  /// No description provided for @petitBooToolBrainSectionConstraints.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contraintes'**
+  String get petitBooToolBrainSectionConstraints;
+
+  /// No description provided for @petitBooToolUpdateBrainDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour ma mémoire'**
+  String get petitBooToolUpdateBrainDescription;
+
+  /// No description provided for @petitBooToolAddFavoriteDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter aux favoris'**
+  String get petitBooToolAddFavoriteDescription;
+
+  /// No description provided for @petitBooToolRemoveFavoriteDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer des favoris'**
+  String get petitBooToolRemoveFavoriteDescription;
+
+  /// No description provided for @petitBooToolCreateFavoriteListDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer une liste de favoris'**
+  String get petitBooToolCreateFavoriteListDescription;
+
+  /// No description provided for @petitBooToolMoveToListDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déplacer vers une liste'**
+  String get petitBooToolMoveToListDescription;
+
+  /// No description provided for @petitBooToolFavoriteListsDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir mes listes de favoris'**
+  String get petitBooToolFavoriteListsDescription;
+
+  /// No description provided for @petitBooToolFavoriteListsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes listes de favoris'**
+  String get petitBooToolFavoriteListsTitle;
+
+  /// No description provided for @petitBooToolUpdateFavoriteListDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renommer une liste'**
+  String get petitBooToolUpdateFavoriteListDescription;
+
+  /// No description provided for @petitBooToolDeleteFavoriteListDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer une liste'**
+  String get petitBooToolDeleteFavoriteListDescription;
+
+  /// No description provided for @petitBooToolPlanTripDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Planifier un itinéraire'**
+  String get petitBooToolPlanTripDescription;
+
+  /// No description provided for @petitBooToolPlanTripTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton itinéraire'**
+  String get petitBooToolPlanTripTitle;
+
+  /// No description provided for @petitBooToolSaveTripPlanDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sauvegarder un plan de sortie'**
+  String get petitBooToolSaveTripPlanDescription;
+
+  /// No description provided for @petitBooToolTripPlansDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes plans de sortie'**
+  String get petitBooToolTripPlansDescription;
+
+  /// No description provided for @petitBooToolTripPlansTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes sorties planifiées'**
+  String get petitBooToolTripPlansTitle;
+
+  /// No description provided for @petitBooToolTripPlansEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune sortie planifiée'**
+  String get petitBooToolTripPlansEmpty;
+
+  /// No description provided for @petitBooToolItemCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 élément} other{{count} éléments}}'**
+  String petitBooToolItemCount(int count);
+
+  /// No description provided for @petitBooToolViewItems.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir {count, plural, =1{1 élément} other{les {count} éléments}}'**
+  String petitBooToolViewItems(int count);
+
+  /// No description provided for @petitBooToolEmptyListFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun élément'**
+  String get petitBooToolEmptyListFallback;
+
+  /// No description provided for @petitBooToolUntitled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans titre'**
+  String get petitBooToolUntitled;
+
+  /// No description provided for @petitBooToolStatusActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Active'**
+  String get petitBooToolStatusActive;
+
+  /// No description provided for @petitBooToolStatusInactive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inactive'**
+  String get petitBooToolStatusInactive;
+
+  /// No description provided for @petitBooBrainManageMemory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gérer ma mémoire'**
+  String get petitBooBrainManageMemory;
+
+  /// No description provided for @petitBooBrainRecommendationHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parle-moi de toi pour que je puisse te faire de meilleures recommandations.'**
+  String get petitBooBrainRecommendationHint;
+
+  /// No description provided for @petitBooToolHibonsBalance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Solde Hibons'**
+  String get petitBooToolHibonsBalance;
+
+  /// No description provided for @petitBooToolHibonsAmount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{amount} Hibons'**
+  String petitBooToolHibonsAmount(int amount);
+
+  /// No description provided for @petitBooActionView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir'**
+  String get petitBooActionView;
+
+  /// No description provided for @petitBooActionMyFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes favoris'**
+  String get petitBooActionMyFavorites;
+
+  /// No description provided for @petitBooActionAddedSuccessfully.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouté avec succès'**
+  String get petitBooActionAddedSuccessfully;
+
+  /// No description provided for @petitBooActionRemovedSuccessfully.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retiré avec succès'**
+  String get petitBooActionRemovedSuccessfully;
+
+  /// No description provided for @petitBooActionBrainNoted.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est noté !'**
+  String get petitBooActionBrainNoted;
+
+  /// No description provided for @petitBooActionListCreatedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste créée'**
+  String get petitBooActionListCreatedTitle;
+
+  /// No description provided for @petitBooActionNewListCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle liste créée'**
+  String get petitBooActionNewListCreated;
+
+  /// No description provided for @petitBooActionListCreatedWithName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste \"{name}\" créée'**
+  String petitBooActionListCreatedWithName(String name);
+
+  /// No description provided for @petitBooActionViewList.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la liste'**
+  String get petitBooActionViewList;
+
+  /// No description provided for @petitBooActionMovedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déplacé'**
+  String get petitBooActionMovedTitle;
+
+  /// No description provided for @petitBooActionMovedToList.
+  ///
+  /// In fr, this message translates to:
+  /// **'\"{eventTitle}\" déplacé vers \"{listName}\"'**
+  String petitBooActionMovedToList(String eventTitle, String listName);
+
+  /// No description provided for @petitBooActionMovedSuccessfully.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déplacé avec succès'**
+  String get petitBooActionMovedSuccessfully;
+
+  /// No description provided for @petitBooActionMovedToListFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déplacé vers la liste'**
+  String get petitBooActionMovedToListFallback;
+
+  /// No description provided for @petitBooActionMyLists.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes listes'**
+  String get petitBooActionMyLists;
+
+  /// No description provided for @petitBooActionListRenamedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste renommée'**
+  String get petitBooActionListRenamedTitle;
+
+  /// No description provided for @petitBooActionListRenamedWithName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste renommée en \"{name}\"'**
+  String petitBooActionListRenamedWithName(String name);
+
+  /// No description provided for @petitBooActionListDeletedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste supprimée'**
+  String get petitBooActionListDeletedTitle;
+
+  /// No description provided for @petitBooActionListDeletedWithName.
+  ///
+  /// In fr, this message translates to:
+  /// **'\"{name}\" supprimée'**
+  String petitBooActionListDeletedWithName(String name);
+
+  /// No description provided for @petitBooActionDoneTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Action effectuée'**
+  String get petitBooActionDoneTitle;
+
+  /// No description provided for @petitBooActionDoneSuccessfully.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effectué avec succès'**
+  String get petitBooActionDoneSuccessfully;
+
+  /// No description provided for @petitBooActionBrainProfileUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil mis à jour'**
+  String get petitBooActionBrainProfileUpdated;
+
+  /// No description provided for @petitBooActionBrainFamilyUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Famille mise à jour'**
+  String get petitBooActionBrainFamilyUpdated;
+
+  /// No description provided for @petitBooActionBrainPreferenceSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préférence notée'**
+  String get petitBooActionBrainPreferenceSaved;
+
+  /// No description provided for @petitBooActionBrainConstraintSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contrainte notée'**
+  String get petitBooActionBrainConstraintSaved;
+
+  /// No description provided for @petitBooActionBrainMemoryUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mémoire mise à jour'**
+  String get petitBooActionBrainMemoryUpdated;
+
+  /// No description provided for @petitBooActionBrainNotedValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Noté : {value}'**
+  String petitBooActionBrainNotedValue(String value);
+
+  /// No description provided for @petitBooActionBrainRememberFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je me souviendrai de ça'**
+  String get petitBooActionBrainRememberFallback;
+
+  /// No description provided for @petitBooActionListRenamedFromTo.
+  ///
+  /// In fr, this message translates to:
+  /// **'\"{oldName}\" → \"{newName}\"'**
+  String petitBooActionListRenamedFromTo(String oldName, String newName);
+
+  /// No description provided for @petitBooActionListNewName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau nom : \"{name}\"'**
+  String petitBooActionListNewName(String name);
+
+  /// No description provided for @petitBooActionListRenamedSuccessfully.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste renommée avec succès'**
+  String get petitBooActionListRenamedSuccessfully;
+
+  /// No description provided for @petitBooActionErrorTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec'**
+  String get petitBooActionErrorTitle;
+
+  /// No description provided for @petitBooActionGenericError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue'**
+  String get petitBooActionGenericError;
+
+  /// No description provided for @petitBooFavoriteListsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 liste} other{{count} listes}}'**
+  String petitBooFavoriteListsCount(int count);
+
+  /// No description provided for @petitBooFavoriteListsNoName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans nom'**
+  String get petitBooFavoriteListsNoName;
+
+  /// No description provided for @petitBooFavoriteListsViewAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir tout'**
+  String get petitBooFavoriteListsViewAll;
+
+  /// No description provided for @petitBooFavoriteListsEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune liste pour le moment'**
+  String get petitBooFavoriteListsEmptyTitle;
+
+  /// No description provided for @petitBooFavoriteListsEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande-moi d\'en créer une.'**
+  String get petitBooFavoriteListsEmptyBody;
+
+  /// No description provided for @petitBooFavoriteListEventsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vide'**
+  String get petitBooFavoriteListEventsEmpty;
+
+  /// No description provided for @petitBooFavoriteListEventsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 événement} other{{count} événements}}'**
+  String petitBooFavoriteListEventsCount(int count);
+
   /// No description provided for @bookingTicketSingular.
   ///
   /// In fr, this message translates to:

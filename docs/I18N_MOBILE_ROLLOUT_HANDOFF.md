@@ -38,6 +38,7 @@ The localization infrastructure is in place and the first rollout slices are com
 17. Legacy standalone Messages admin/vendor new-conversation screens.
 18. Petit Boo chat shell and conversation history copy.
 19. Petit Boo brain, quota/limit dialog, and toast copy.
+20. Petit Boo tool schemas and shared tool-card copy.
 
 The app is not fully translated yet. Many screens still contain hard-coded French UI copy, but the app now has the wiring needed to migrate them screen by screen.
 
@@ -306,9 +307,40 @@ Covered:
 
 Not covered in this slice:
 
-- Petit Boo tool cards, tool schema fallback titles/descriptions, API/data-source fallback labels, and backend/LLM-generated chat content remain follow-up work.
+- Petit Boo shared tool schemas and common tool cards are covered in the next Petit Boo slice below.
+- Petit Boo event/booking/trip-specific tool cards, API/data-source fallback labels, and backend/LLM-generated chat content remain follow-up work.
 - Legacy static French helpers in `PetitBooContextStorage` remain in the data layer for now, but the migrated brain screen no longer uses them for visible labels/values.
 - Existing `prefer_const_constructors`, `withOpacity`, and `activeColor` info-level analyzer notes in the touched Petit Boo widgets were left as style debt.
+
+### Petit Boo Tool Schemas And Shared Tool Cards
+
+Migrated:
+
+- `lib/features/petit_boo/presentation/providers/tool_schemas_provider.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/dynamic_tool_result_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/generic_list_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/unknown_tool_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/brain_memory_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/profile_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/action_confirmation_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/favorite_lists_card.dart`
+
+Covered:
+
+- Default tool schemas now rebuild from the active app language instead of storing French copy in a static fallback map.
+- Tool schema fallback descriptions, titles, empty states, badges, stats labels, brain section labels, and trip/favorite/list/action descriptions are localized.
+- Dynamic tool-card loading copy, generic/unknown card item counts, empty list fallback, untitled fallback, active/inactive labels, and view-all copy are localized.
+- Brain memory tool-card title, empty state, recommendation hint, manage-memory link, default section labels, and known memory key labels are localized.
+- Profile tool-card Hibons balance/action labels, stat fallbacks, and default user name are localized.
+- Action confirmation card titles, subtitles, toasts, route labels, brain update messages, list create/move/rename/delete copy, and error state are localized.
+- Favorite lists tool-card title, count, view-all action, empty state, unnamed-list fallback, and event-count labels are localized.
+
+Not covered in this slice:
+
+- Event, booking, trip-plan, trip-plans-list, and favorite/event detail tool cards still have visible hard-coded French fallbacks and should be the next Petit Boo batch.
+- Data-source/provider error fallbacks in `petit_boo_chat_provider.dart`, `petit_boo_api_datasource.dart`, and `petit_boo_context_storage.dart` still need a separate non-widget/context-aware pass.
+- Backend-owned event/list/profile values and LLM-generated chat content remain displayed as returned by their source.
+- Existing `prefer_const_constructors` and `withOpacity` info-level analyzer notes in the touched tool-card widgets were left as style debt.
 
 ### API And Backend-Facing Locale
 
@@ -900,6 +932,24 @@ Result:
 - Locale tests passed.
 - Whitespace check passed.
 
+Latest focused Petit Boo tool schema/shared-card check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/petit_boo/presentation/providers/tool_schemas_provider.dart lib/features/petit_boo/presentation/widgets/tool_cards/dynamic_tool_result_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/generic_list_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/unknown_tool_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/brain_memory_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/profile_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/action_confirmation_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/favorite_lists_card.dart lib/l10n/generated
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/petit_boo/presentation/providers/tool_schemas_provider.dart lib/features/petit_boo/presentation/widgets/tool_cards/dynamic_tool_result_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/generic_list_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/unknown_tool_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/brain_memory_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/profile_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/action_confirmation_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/favorite_lists_card.dart lib/core/l10n lib/l10n/generated
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No warning/error issues found in the focused Petit Boo tool schema/shared-card slice.
+- Analyzer output still includes existing `prefer_const_constructors` and `withOpacity` info-level notes in the touched tool-card widgets.
+- Locale tests passed.
+- Whitespace check passed.
+
 Targeted analyzer checks:
 
 - Booking files no longer have analyzer errors after null-safety cleanup.
@@ -1065,11 +1115,22 @@ Petit Boo brain/quota/limit/toast files are now part of the i18n work:
 - `lib/features/petit_boo/presentation/widgets/limit_reached_dialog.dart`
 - `lib/features/petit_boo/presentation/widgets/animated_toast.dart`
 
+Petit Boo tool schema/shared-card files are now part of the i18n work:
+
+- `lib/features/petit_boo/presentation/providers/tool_schemas_provider.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/dynamic_tool_result_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/generic_list_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/unknown_tool_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/brain_memory_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/profile_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/action_confirmation_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/favorite_lists_card.dart`
+
 Before committing or refining, review diffs by file instead of using bulk restore/reset commands.
 
 ## Where Work Stopped
 
-Stopped after completing the Petit Boo brain/quota/limit/toast slice.
+Stopped after completing the Petit Boo tool schema/shared-card slice.
 
 Current stable stopping point:
 
@@ -1095,10 +1156,11 @@ Current stable stopping point:
 - Legacy standalone Messages admin/vendor new-conversation screens are localized, including recipient selectors, form labels, validation, actions, access-denied fallbacks, and search sheets.
 - Petit Boo chat shell/history copy is localized, including app bar statuses/tooltips, service banner, personalized greetings/subtitles, quick prompts, suggestions, history empty state, delete confirmation, relative dates, and message-count badge.
 - Petit Boo brain/quota/limit/toast copy is localized, including memory labels/actions/dialogs, quota explanation and reset text, limit dialog wallet/actions/toasts, favorite toasts, and Hibons reward toasts.
+- Petit Boo default tool schemas and shared tool-card copy are localized, including schema titles/descriptions/empty states, generic/unknown list cards, brain memory card, profile card, action confirmation card, and favorite-lists card.
 - Direct hard-coded `featureName: '...'` / `featureName: "..."` scan under `lib/` is clean.
 - Locale unit tests pass.
 
-Next work should continue with remaining Petit Boo tool schemas/tool cards and context-free fallback labels, then memberships/partners/check-in/admin surfaces, not more locale plumbing.
+Next work should continue with the remaining Petit Boo event/booking/trip-specific tool cards and data-source/provider fallbacks, then memberships/partners/check-in/admin surfaces, not more locale plumbing.
 
 ## Remaining Task Queue
 
@@ -1106,7 +1168,7 @@ Next work should continue with remaining Petit Boo tool schemas/tool cards and c
 
 Recommended order:
 
-1. Remaining Petit Boo tool schema, tool-card, and context-free fallback label surfaces.
+1. Remaining Petit Boo event/booking/trip-specific tool cards and data-source/provider fallback labels.
 2. Memberships/partners/check-in/admin surfaces.
 3. Any remaining niche/disabled screens found by hard-coded copy scans.
 

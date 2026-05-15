@@ -787,6 +787,192 @@
       }
     }
   },
+  "petitBooToolFavoritesDescription": "My favorite events",
+  "petitBooToolFavoritesTitle": "Your favorites",
+  "petitBooToolFavoritesEmpty": "No favorites",
+  "petitBooToolSearchEventsDescription": "Event search",
+  "petitBooToolSearchEventsTitle": "Events found",
+  "petitBooToolSearchEventsEmpty": "No events found with these criteria",
+  "petitBooToolFreeBadge": "Free",
+  "petitBooToolBookingsDescription": "My bookings",
+  "petitBooToolBookingsTitle": "Your bookings",
+  "petitBooToolBookingsEmpty": "No bookings",
+  "petitBooToolTicketsDescription": "My tickets",
+  "petitBooToolTicketsTitle": "Your tickets",
+  "petitBooToolTicketsEmpty": "No tickets",
+  "petitBooToolEventDetailsDescription": "Event details",
+  "petitBooToolAlertsDescription": "My alerts",
+  "petitBooToolAlertsTitle": "Your alerts",
+  "petitBooToolAlertsEmpty": "No alerts",
+  "petitBooToolProfileDescription": "My profile",
+  "petitBooToolProfileStatBookings": "Bookings",
+  "petitBooToolProfileStatParticipations": "Participations",
+  "petitBooToolProfileStatFavorites": "Favorites",
+  "petitBooToolProfileStatAlerts": "Alerts",
+  "petitBooToolNotificationsDescription": "My notifications",
+  "petitBooToolNotificationsTitle": "Your notifications",
+  "petitBooToolNotificationsEmpty": "No notifications",
+  "petitBooToolBrainDescription": "My memory",
+  "petitBooToolBrainTitle": "What I know about you",
+  "petitBooToolBrainEmpty": "I do not know anything yet. Let us chat.",
+  "petitBooToolBrainSectionFamily": "Family",
+  "petitBooToolBrainSectionLocation": "Location",
+  "petitBooToolBrainSectionPreferences": "Preferences",
+  "petitBooToolBrainSectionConstraints": "Constraints",
+  "petitBooToolUpdateBrainDescription": "Update my memory",
+  "petitBooToolAddFavoriteDescription": "Add to favorites",
+  "petitBooToolRemoveFavoriteDescription": "Remove from favorites",
+  "petitBooToolCreateFavoriteListDescription": "Create a favorites list",
+  "petitBooToolMoveToListDescription": "Move to a list",
+  "petitBooToolFavoriteListsDescription": "View my favorites lists",
+  "petitBooToolFavoriteListsTitle": "My favorites lists",
+  "petitBooToolUpdateFavoriteListDescription": "Rename a list",
+  "petitBooToolDeleteFavoriteListDescription": "Delete a list",
+  "petitBooToolPlanTripDescription": "Plan an itinerary",
+  "petitBooToolPlanTripTitle": "Your itinerary",
+  "petitBooToolSaveTripPlanDescription": "Save an outing plan",
+  "petitBooToolTripPlansDescription": "My outing plans",
+  "petitBooToolTripPlansTitle": "Your planned outings",
+  "petitBooToolTripPlansEmpty": "No planned outings",
+  "petitBooToolItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@petitBooToolItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooToolViewItems": "View {count, plural, =1{1 item} other{{count} items}}",
+  "@petitBooToolViewItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooToolEmptyListFallback": "No items",
+  "petitBooToolUntitled": "Untitled",
+  "petitBooToolStatusActive": "Active",
+  "petitBooToolStatusInactive": "Inactive",
+  "petitBooBrainManageMemory": "Manage my memory",
+  "petitBooBrainRecommendationHint": "Tell me about yourself so I can give you better recommendations.",
+  "petitBooToolHibonsBalance": "Hibons balance",
+  "petitBooToolHibonsAmount": "{amount} Hibons",
+  "@petitBooToolHibonsAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooActionView": "View",
+  "petitBooActionMyFavorites": "My favorites",
+  "petitBooActionAddedSuccessfully": "Added successfully",
+  "petitBooActionRemovedSuccessfully": "Removed successfully",
+  "petitBooActionBrainNoted": "Got it.",
+  "petitBooActionListCreatedTitle": "List created",
+  "petitBooActionNewListCreated": "New list created",
+  "petitBooActionListCreatedWithName": "List \"{name}\" created",
+  "@petitBooActionListCreatedWithName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooActionViewList": "View list",
+  "petitBooActionMovedTitle": "Moved",
+  "petitBooActionMovedToList": "\"{eventTitle}\" moved to \"{listName}\"",
+  "@petitBooActionMovedToList": {
+    "placeholders": {
+      "eventTitle": {
+        "type": "String"
+      },
+      "listName": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooActionMovedSuccessfully": "Moved successfully",
+  "petitBooActionMovedToListFallback": "Moved to list",
+  "petitBooActionMyLists": "My lists",
+  "petitBooActionListRenamedTitle": "List renamed",
+  "petitBooActionListRenamedWithName": "List renamed to \"{name}\"",
+  "@petitBooActionListRenamedWithName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooActionListDeletedTitle": "List deleted",
+  "petitBooActionListDeletedWithName": "\"{name}\" deleted",
+  "@petitBooActionListDeletedWithName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooActionDoneTitle": "Action completed",
+  "petitBooActionDoneSuccessfully": "Completed successfully",
+  "petitBooActionBrainProfileUpdated": "Profile updated",
+  "petitBooActionBrainFamilyUpdated": "Family updated",
+  "petitBooActionBrainPreferenceSaved": "Preference saved",
+  "petitBooActionBrainConstraintSaved": "Constraint saved",
+  "petitBooActionBrainMemoryUpdated": "Memory updated",
+  "petitBooActionBrainNotedValue": "Noted: {value}",
+  "@petitBooActionBrainNotedValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooActionBrainRememberFallback": "I will remember that",
+  "petitBooActionListRenamedFromTo": "\"{oldName}\" → \"{newName}\"",
+  "@petitBooActionListRenamedFromTo": {
+    "placeholders": {
+      "oldName": {
+        "type": "String"
+      },
+      "newName": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooActionListNewName": "New name: \"{name}\"",
+  "@petitBooActionListNewName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooActionListRenamedSuccessfully": "List renamed successfully",
+  "petitBooActionErrorTitle": "Failed",
+  "petitBooActionGenericError": "Something went wrong",
+  "petitBooFavoriteListsCount": "{count, plural, =1{1 list} other{{count} lists}}",
+  "@petitBooFavoriteListsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooFavoriteListsNoName": "Unnamed",
+  "petitBooFavoriteListsViewAll": "View all",
+  "petitBooFavoriteListsEmptyTitle": "No lists yet",
+  "petitBooFavoriteListsEmptyBody": "Ask me to create one.",
+  "petitBooFavoriteListEventsEmpty": "Empty",
+  "petitBooFavoriteListEventsCount": "{count, plural, =1{1 event} other{{count} events}}",
+  "@petitBooFavoriteListEventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "bookingTicketSingular": "1 ticket",
   "bookingTicketPlural": "{count} tickets",
   "bookingLifecycleCancelled": "Cancelled",

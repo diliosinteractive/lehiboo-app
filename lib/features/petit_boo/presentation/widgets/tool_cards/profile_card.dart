@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -81,7 +82,7 @@ class ProfileCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _getDisplayName(firstName, lastName),
+                          _getDisplayName(context, firstName, lastName),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -132,15 +133,17 @@ class ProfileCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Solde Hiboos',
+                            Text(
+                              context.l10n.petitBooToolHibonsBalance,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: HbColors.textSecondary,
                               ),
                             ),
                             Text(
-                              '$hiboosBalance Hiboos',
+                              context.l10n.petitBooToolHibonsAmount(
+                                hiboosBalance,
+                              ),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -152,7 +155,7 @@ class ProfileCard extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () => context.push('/hibons-dashboard'),
-                        child: const Text('Voir'),
+                        child: Text(context.l10n.petitBooActionView),
                       ),
                     ],
                   ),
@@ -162,7 +165,7 @@ class ProfileCard extends StatelessWidget {
 
               // Stats
               if (statsData != null || schema.responseSchema?.stats != null)
-                _buildStats(statsData),
+                _buildStats(context, statsData),
             ],
           ),
         ),
@@ -170,7 +173,7 @@ class ProfileCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStats(Map<String, dynamic>? statsData) {
+  Widget _buildStats(BuildContext context, Map<String, dynamic>? statsData) {
     final statSchemas = schema.responseSchema?.stats;
 
     // Use schema-defined stats if available
@@ -193,22 +196,22 @@ class ProfileCard extends StatelessWidget {
         children: [
           _StatItem(
             icon: Icons.confirmation_number_outlined,
-            label: 'Réservations',
+            label: context.l10n.petitBooToolProfileStatBookings,
             value: (statsData['total_bookings'] ?? 0).toString(),
           ),
           _StatItem(
             icon: Icons.event_available,
-            label: 'Participations',
+            label: context.l10n.petitBooToolProfileStatParticipations,
             value: (statsData['total_events_attended'] ?? 0).toString(),
           ),
           _StatItem(
             icon: Icons.favorite_border,
-            label: 'Favoris',
+            label: context.l10n.petitBooToolProfileStatFavorites,
             value: (statsData['total_favorites'] ?? 0).toString(),
           ),
           _StatItem(
             icon: Icons.notifications_outlined,
-            label: 'Alertes',
+            label: context.l10n.petitBooToolProfileStatAlerts,
             value: (statsData['total_alerts'] ?? 0).toString(),
           ),
         ],
@@ -218,18 +221,24 @@ class ProfileCard extends StatelessWidget {
     return const SizedBox.shrink();
   }
 
-  String _getDisplayName(String? firstName, String? lastName) {
+  String _getDisplayName(
+    BuildContext context,
+    String? firstName,
+    String? lastName,
+  ) {
     if (firstName != null || lastName != null) {
       return '${firstName ?? ''} ${lastName ?? ''}'.trim();
     }
-    return 'Utilisateur';
+    return context.l10n.profileDefaultUser;
   }
 
   String _getInitials(String? firstName, String? lastName) {
-    final first =
-        firstName != null && firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
-    final last =
-        lastName != null && lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
+    final first = firstName != null && firstName.isNotEmpty
+        ? firstName[0].toUpperCase()
+        : '';
+    final last = lastName != null && lastName.isNotEmpty
+        ? lastName[0].toUpperCase()
+        : '';
     return '$first$last'.isNotEmpty ? '$first$last' : '?';
   }
 }

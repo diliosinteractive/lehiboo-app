@@ -1691,6 +1691,347 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get petitBooToolFavoritesDescription => 'My favorite events';
+
+  @override
+  String get petitBooToolFavoritesTitle => 'Your favorites';
+
+  @override
+  String get petitBooToolFavoritesEmpty => 'No favorites';
+
+  @override
+  String get petitBooToolSearchEventsDescription => 'Event search';
+
+  @override
+  String get petitBooToolSearchEventsTitle => 'Events found';
+
+  @override
+  String get petitBooToolSearchEventsEmpty =>
+      'No events found with these criteria';
+
+  @override
+  String get petitBooToolFreeBadge => 'Free';
+
+  @override
+  String get petitBooToolBookingsDescription => 'My bookings';
+
+  @override
+  String get petitBooToolBookingsTitle => 'Your bookings';
+
+  @override
+  String get petitBooToolBookingsEmpty => 'No bookings';
+
+  @override
+  String get petitBooToolTicketsDescription => 'My tickets';
+
+  @override
+  String get petitBooToolTicketsTitle => 'Your tickets';
+
+  @override
+  String get petitBooToolTicketsEmpty => 'No tickets';
+
+  @override
+  String get petitBooToolEventDetailsDescription => 'Event details';
+
+  @override
+  String get petitBooToolAlertsDescription => 'My alerts';
+
+  @override
+  String get petitBooToolAlertsTitle => 'Your alerts';
+
+  @override
+  String get petitBooToolAlertsEmpty => 'No alerts';
+
+  @override
+  String get petitBooToolProfileDescription => 'My profile';
+
+  @override
+  String get petitBooToolProfileStatBookings => 'Bookings';
+
+  @override
+  String get petitBooToolProfileStatParticipations => 'Participations';
+
+  @override
+  String get petitBooToolProfileStatFavorites => 'Favorites';
+
+  @override
+  String get petitBooToolProfileStatAlerts => 'Alerts';
+
+  @override
+  String get petitBooToolNotificationsDescription => 'My notifications';
+
+  @override
+  String get petitBooToolNotificationsTitle => 'Your notifications';
+
+  @override
+  String get petitBooToolNotificationsEmpty => 'No notifications';
+
+  @override
+  String get petitBooToolBrainDescription => 'My memory';
+
+  @override
+  String get petitBooToolBrainTitle => 'What I know about you';
+
+  @override
+  String get petitBooToolBrainEmpty =>
+      'I do not know anything yet. Let us chat.';
+
+  @override
+  String get petitBooToolBrainSectionFamily => 'Family';
+
+  @override
+  String get petitBooToolBrainSectionLocation => 'Location';
+
+  @override
+  String get petitBooToolBrainSectionPreferences => 'Preferences';
+
+  @override
+  String get petitBooToolBrainSectionConstraints => 'Constraints';
+
+  @override
+  String get petitBooToolUpdateBrainDescription => 'Update my memory';
+
+  @override
+  String get petitBooToolAddFavoriteDescription => 'Add to favorites';
+
+  @override
+  String get petitBooToolRemoveFavoriteDescription => 'Remove from favorites';
+
+  @override
+  String get petitBooToolCreateFavoriteListDescription =>
+      'Create a favorites list';
+
+  @override
+  String get petitBooToolMoveToListDescription => 'Move to a list';
+
+  @override
+  String get petitBooToolFavoriteListsDescription => 'View my favorites lists';
+
+  @override
+  String get petitBooToolFavoriteListsTitle => 'My favorites lists';
+
+  @override
+  String get petitBooToolUpdateFavoriteListDescription => 'Rename a list';
+
+  @override
+  String get petitBooToolDeleteFavoriteListDescription => 'Delete a list';
+
+  @override
+  String get petitBooToolPlanTripDescription => 'Plan an itinerary';
+
+  @override
+  String get petitBooToolPlanTripTitle => 'Your itinerary';
+
+  @override
+  String get petitBooToolSaveTripPlanDescription => 'Save an outing plan';
+
+  @override
+  String get petitBooToolTripPlansDescription => 'My outing plans';
+
+  @override
+  String get petitBooToolTripPlansTitle => 'Your planned outings';
+
+  @override
+  String get petitBooToolTripPlansEmpty => 'No planned outings';
+
+  @override
+  String petitBooToolItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String petitBooToolViewItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return 'View $_temp0';
+  }
+
+  @override
+  String get petitBooToolEmptyListFallback => 'No items';
+
+  @override
+  String get petitBooToolUntitled => 'Untitled';
+
+  @override
+  String get petitBooToolStatusActive => 'Active';
+
+  @override
+  String get petitBooToolStatusInactive => 'Inactive';
+
+  @override
+  String get petitBooBrainManageMemory => 'Manage my memory';
+
+  @override
+  String get petitBooBrainRecommendationHint =>
+      'Tell me about yourself so I can give you better recommendations.';
+
+  @override
+  String get petitBooToolHibonsBalance => 'Hibons balance';
+
+  @override
+  String petitBooToolHibonsAmount(int amount) {
+    return '$amount Hibons';
+  }
+
+  @override
+  String get petitBooActionView => 'View';
+
+  @override
+  String get petitBooActionMyFavorites => 'My favorites';
+
+  @override
+  String get petitBooActionAddedSuccessfully => 'Added successfully';
+
+  @override
+  String get petitBooActionRemovedSuccessfully => 'Removed successfully';
+
+  @override
+  String get petitBooActionBrainNoted => 'Got it.';
+
+  @override
+  String get petitBooActionListCreatedTitle => 'List created';
+
+  @override
+  String get petitBooActionNewListCreated => 'New list created';
+
+  @override
+  String petitBooActionListCreatedWithName(String name) {
+    return 'List \"$name\" created';
+  }
+
+  @override
+  String get petitBooActionViewList => 'View list';
+
+  @override
+  String get petitBooActionMovedTitle => 'Moved';
+
+  @override
+  String petitBooActionMovedToList(String eventTitle, String listName) {
+    return '\"$eventTitle\" moved to \"$listName\"';
+  }
+
+  @override
+  String get petitBooActionMovedSuccessfully => 'Moved successfully';
+
+  @override
+  String get petitBooActionMovedToListFallback => 'Moved to list';
+
+  @override
+  String get petitBooActionMyLists => 'My lists';
+
+  @override
+  String get petitBooActionListRenamedTitle => 'List renamed';
+
+  @override
+  String petitBooActionListRenamedWithName(String name) {
+    return 'List renamed to \"$name\"';
+  }
+
+  @override
+  String get petitBooActionListDeletedTitle => 'List deleted';
+
+  @override
+  String petitBooActionListDeletedWithName(String name) {
+    return '\"$name\" deleted';
+  }
+
+  @override
+  String get petitBooActionDoneTitle => 'Action completed';
+
+  @override
+  String get petitBooActionDoneSuccessfully => 'Completed successfully';
+
+  @override
+  String get petitBooActionBrainProfileUpdated => 'Profile updated';
+
+  @override
+  String get petitBooActionBrainFamilyUpdated => 'Family updated';
+
+  @override
+  String get petitBooActionBrainPreferenceSaved => 'Preference saved';
+
+  @override
+  String get petitBooActionBrainConstraintSaved => 'Constraint saved';
+
+  @override
+  String get petitBooActionBrainMemoryUpdated => 'Memory updated';
+
+  @override
+  String petitBooActionBrainNotedValue(String value) {
+    return 'Noted: $value';
+  }
+
+  @override
+  String get petitBooActionBrainRememberFallback => 'I will remember that';
+
+  @override
+  String petitBooActionListRenamedFromTo(String oldName, String newName) {
+    return '\"$oldName\" → \"$newName\"';
+  }
+
+  @override
+  String petitBooActionListNewName(String name) {
+    return 'New name: \"$name\"';
+  }
+
+  @override
+  String get petitBooActionListRenamedSuccessfully =>
+      'List renamed successfully';
+
+  @override
+  String get petitBooActionErrorTitle => 'Failed';
+
+  @override
+  String get petitBooActionGenericError => 'Something went wrong';
+
+  @override
+  String petitBooFavoriteListsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lists',
+      one: '1 list',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get petitBooFavoriteListsNoName => 'Unnamed';
+
+  @override
+  String get petitBooFavoriteListsViewAll => 'View all';
+
+  @override
+  String get petitBooFavoriteListsEmptyTitle => 'No lists yet';
+
+  @override
+  String get petitBooFavoriteListsEmptyBody => 'Ask me to create one.';
+
+  @override
+  String get petitBooFavoriteListEventsEmpty => 'Empty';
+
+  @override
+  String petitBooFavoriteListEventsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events',
+      one: '1 event',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get bookingTicketSingular => '1 ticket';
 
   @override
