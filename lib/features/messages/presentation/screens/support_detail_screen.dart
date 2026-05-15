@@ -124,7 +124,7 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
             content: Text(next.sendError!),
             backgroundColor: Colors.red,
             action: SnackBarAction(
-              label: 'OK',
+              label: context.l10n.commonOk,
               textColor: Colors.white,
               onPressed: notifier.clearSendError,
             ),

@@ -195,7 +195,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
               padding: const EdgeInsets.only(right: 8),
               child: CompactInfoChip(
                 icon: Icons.wifi,
-                label: 'Wi-Fi',
+                label: context.l10n.eventWifiLabel,
                 color: Colors.teal,
                 onTap: () => _showAccessibilitySheet(
                   icon: Icons.wifi,

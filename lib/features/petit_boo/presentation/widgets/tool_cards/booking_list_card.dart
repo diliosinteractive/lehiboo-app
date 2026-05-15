@@ -20,6 +20,7 @@ class BookingListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final responseSchema = schema.responseSchema;
     final itemsKey = responseSchema?.itemsKey ?? 'bookings';
     final totalKey = responseSchema?.totalKey ?? 'total';
@@ -28,7 +29,7 @@ class BookingListCard extends StatelessWidget {
     final total = data[totalKey] as int? ?? items.length;
 
     if (items.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(context);
     }
 
     final accentColor = parseHexColor(schema.color);
@@ -79,7 +80,7 @@ class BookingListCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '$total élément${total != 1 ? 's' : ''}',
+                        l10n.petitBooToolItemCount(total),
                         style: TextStyle(
                           fontSize: 13,
                           color: HbColors.textSecondary,
@@ -112,7 +113,7 @@ class BookingListCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Voir les $total éléments',
+                      l10n.petitBooToolViewItems(total),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -179,7 +180,7 @@ class BookingListCard extends StatelessWidget {
     context.go('/my-bookings');
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -195,7 +196,7 @@ class BookingListCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            schema.emptyMessage ?? 'Aucun élément',
+            schema.emptyMessage ?? context.l10n.petitBooToolEmptyListFallback,
             style: const TextStyle(
               fontSize: 14,
               color: HbColors.textSecondary,
@@ -231,14 +232,17 @@ class _BookingItem extends StatelessWidget {
           color: Colors.red.shade50,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text('Erreur: $e', style: const TextStyle(color: Colors.red)),
+        child: Text(
+          context.l10n.petitBooErrorWithMessage(e.toString()),
+          style: const TextStyle(color: Colors.red),
+        ),
       );
     }
   }
 
   Widget _buildContent(BuildContext context) {
     final title = _safeString(_getValue(schema?.titleField, 'event_title')) ??
-        'Sans titre';
+        context.l10n.petitBooToolUntitled;
     final imageUrl = _safeString(_getValue(schema?.imageField, 'event_image'));
     final dateStr = _safeString(_getValue(schema?.dateField, 'slot_date'));
     final timeStr = _safeString(_getValue(schema?.timeField, 'slot_time'));
@@ -331,9 +335,9 @@ class _BookingItem extends StatelessWidget {
                               const SizedBox(width: 8),
                             ],
                             Text(
-                              ticketsCount > 1
-                                  ? '$ticketsCount billets'
-                                  : '1 billet',
+                              context.l10n.bookingShareTicketsCount(
+                                ticketsCount,
+                              ),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: HbColors.textSecondary,
@@ -519,7 +523,7 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (color, bgColor, label) = _getStatusStyle();
+    final (color, bgColor, label) = _getStatusStyle(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -538,7 +542,8 @@ class _StatusBadge extends StatelessWidget {
     );
   }
 
-  (Color, Color, String) _getStatusStyle() {
+  (Color, Color, String) _getStatusStyle(BuildContext context) {
+    final l10n = context.l10n;
     switch (status.toLowerCase()) {
       case 'confirmed':
       case 'confirme':
@@ -546,23 +551,31 @@ class _StatusBadge extends StatelessWidget {
         return (
           HbColors.success,
           HbColors.success.withOpacity(0.1),
-          'Confirmé'
+          l10n.bookingStatusConfirmed
         );
       case 'pending':
       case 'en_attente':
         return (
           HbColors.warning,
           HbColors.warning.withOpacity(0.1),
-          'En attente'
+          l10n.bookingStatusPending
         );
       case 'cancelled':
       case 'annule':
       case 'annulé':
-        return (HbColors.error, HbColors.error.withOpacity(0.1), 'Annulé');
+        return (
+          HbColors.error,
+          HbColors.error.withOpacity(0.1),
+          l10n.bookingStatusCancelled
+        );
       case 'used':
       case 'utilise':
       case 'utilisé':
-        return (HbColors.textSecondary, Colors.grey.shade100, 'Utilisé');
+        return (
+          HbColors.textSecondary,
+          Colors.grey.shade100,
+          l10n.bookingTicketStatusUsed
+        );
       default:
         return (HbColors.textSecondary, Colors.grey.shade100, status);
     }

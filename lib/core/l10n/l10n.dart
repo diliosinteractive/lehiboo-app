@@ -26,3 +26,7 @@ extension AppLocalizationsX on BuildContext {
     return NumberFormat.compact(locale: appLocaleName);
   }
 }
+
+AppLocalizations cachedAppLocalizations() {
+  return lookupAppLocalizations(Locale(AppLocaleCache.languageCode));
+}

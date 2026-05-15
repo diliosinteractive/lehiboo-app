@@ -425,17 +425,24 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   Future<void> _downloadAllTickets() async {
     if (_booking == null) return;
     HapticFeedback.lightImpact();
+    final l10n = context.l10n;
+    final androidDisplayLocation = l10n.bookingAndroidDownloadsLocation;
+    final documentsDisplayLocation = l10n.bookingDocumentsTicketsLocation;
 
-    _showInfoSnack(context.l10n.bookingPreparingPdf);
+    _showInfoSnack(l10n.bookingPreparingPdf);
 
     try {
       final pdf = await ref
           .read(bookingApiDataSourceProvider)
           .downloadBookingTicketsBundle(_booking!.id);
       _hideSnack();
-      final saved = await shareTicketPdf(pdf);
+      final saved = await shareTicketPdf(
+        pdf,
+        androidDisplayLocation: androidDisplayLocation,
+        documentsDisplayLocation: documentsDisplayLocation,
+      );
       if (!mounted) return;
-      _showInfoSnack(context.l10n.bookingTicketsSaved(saved.displayLocation));
+      _showInfoSnack(l10n.bookingTicketsSaved(saved.displayLocation));
     } on TicketsNotReadyException {
       if (!mounted) return;
       _showDownloadError(context.l10n.bookingTicketsNotReady);

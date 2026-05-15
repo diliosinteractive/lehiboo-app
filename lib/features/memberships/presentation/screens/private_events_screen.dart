@@ -76,6 +76,7 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final activeOrgs =
         (ref.watch(myMembershipsListProvider).valueOrNull?.data ??
                 const <MembershipDto>[])
@@ -93,9 +94,9 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Mes événements privés',
-          style: TextStyle(
+        title: Text(
+          l10n.privateEventsTitle,
+          style: const TextStyle(
             color: HbColors.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -111,7 +112,7 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
               controller: _searchController,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Rechercher un événement…',
+                hintText: l10n.privateEventsSearchHint,
                 hintStyle: GoogleFonts.figtree(
                   fontSize: 14,
                   color: Colors.grey[500],
@@ -146,7 +147,7 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
               ),
               error: (e, _) => Center(
                 child: Text(
-                  'Impossible de charger les événements.',
+                  l10n.privateEventsLoadError,
                   style: TextStyle(color: Colors.grey[700]),
                 ),
               ),
@@ -231,7 +232,7 @@ class _OrgFilterDropdown extends StatelessWidget {
                 value: selectedUuid,
                 isExpanded: true,
                 hint: Text(
-                  'Toutes les organisations',
+                  context.l10n.privateEventsAllOrganizations,
                   style: GoogleFonts.figtree(
                     fontSize: 13,
                     color: Colors.grey[700],
@@ -241,7 +242,7 @@ class _OrgFilterDropdown extends StatelessWidget {
                   DropdownMenuItem<String?>(
                     value: null,
                     child: Text(
-                      'Toutes les organisations',
+                      context.l10n.privateEventsAllOrganizations,
                       style: GoogleFonts.figtree(
                         fontSize: 13,
                         color: HbColors.textPrimary,
@@ -313,7 +314,7 @@ class _PrivateEventTile extends ConsumerWidget {
                             size: 13, color: HbColors.brandPrimary),
                         const SizedBox(width: 4),
                         Text(
-                          'Privé',
+                          context.l10n.privateEventsPrivateBadge,
                           style: GoogleFonts.figtree(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -408,7 +409,7 @@ class _EmptyState extends StatelessWidget {
                 Icon(Icons.lock_outline, size: 56, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
-                  "Aucun événement privé pour l'instant.",
+                  context.l10n.privateEventsEmptyTitle,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.montserrat(
                     fontSize: 16,
@@ -418,7 +419,7 @@ class _EmptyState extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Rejoignez des organisations pour découvrir leurs activités exclusives.",
+                  context.l10n.privateEventsEmptyBody,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.figtree(
                     fontSize: 14,
@@ -429,7 +430,7 @@ class _EmptyState extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: () => context.push('/search'),
                   icon: const Icon(Icons.explore_outlined, size: 18),
-                  label: const Text('Découvrir les organisations'),
+                  label: Text(context.l10n.membershipDiscoverOrganizations),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
@@ -454,8 +455,8 @@ class _EmptyState extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 isFiltered
-                    ? 'Aucun événement privé correspondant.'
-                    : "Aucun événement privé pour l'instant.",
+                    ? context.l10n.privateEventsEmptyFiltered
+                    : context.l10n.privateEventsEmptyTitle,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.figtree(
                   fontSize: 14,

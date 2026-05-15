@@ -152,7 +152,10 @@ class EventCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  activity.category!.name,
+                  context.homeActivityCategoryLabel(
+                    slug: activity.category!.slug,
+                    fallback: activity.category!.name,
+                  ),
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 10,

@@ -285,7 +285,10 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          widget.activity.category!.name,
+                          context.homeActivityCategoryLabel(
+                            slug: widget.activity.category!.slug,
+                            fallback: widget.activity.category!.name,
+                          ),
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 10,
@@ -662,7 +665,10 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          widget.activity.category!.name,
+                          context.homeActivityCategoryLabel(
+                            slug: widget.activity.category!.slug,
+                            fallback: widget.activity.category!.name,
+                          ),
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 10,

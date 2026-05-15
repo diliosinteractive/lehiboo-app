@@ -72,7 +72,7 @@ class MembershipCard extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        _chipFor(membership.status),
+                        _chipFor(context, membership.status),
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -96,7 +96,7 @@ class MembershipCard extends ConsumerWidget {
             runSpacing: 8,
             children: [
               _OutlinedAction(
-                label: 'Voir la fiche',
+                label: context.l10n.membershipViewOrganizer,
                 icon: Icons.open_in_new,
                 onTap: orgUuid.isEmpty
                     ? null
@@ -104,7 +104,7 @@ class MembershipCard extends ConsumerWidget {
               ),
               if (membership.status == MembershipStatus.active)
                 _OutlinedAction(
-                  label: 'Événements privés',
+                  label: context.l10n.membershipPrivateEventsAction,
                   icon: Icons.lock_outline,
                   onTap: orgUuid.isEmpty
                       ? null
@@ -125,10 +125,10 @@ class MembershipCard extends ConsumerWidget {
     );
   }
 
-  StatusChip _chipFor(MembershipStatus s) => switch (s) {
-        MembershipStatus.pending => StatusChip.pending(),
-        MembershipStatus.active => StatusChip.active(),
-        MembershipStatus.rejected => StatusChip.rejected(),
+  StatusChip _chipFor(BuildContext context, MembershipStatus s) => switch (s) {
+        MembershipStatus.pending => StatusChip.pending(context),
+        MembershipStatus.active => StatusChip.active(context),
+        MembershipStatus.rejected => StatusChip.rejected(context),
       };
 
   String _subText(BuildContext context, MembershipDto m) {
@@ -187,7 +187,6 @@ class _OrgMetaRow extends StatelessWidget {
     final hasCount = count != null;
     if (!hasAddress && !hasCount) return const SizedBox.shrink();
 
-    final compact = context.appCompactNumberFormat;
     return Padding(
       padding: const EdgeInsets.only(top: 2),
       child: Wrap(
@@ -203,8 +202,7 @@ class _OrgMetaRow extends StatelessWidget {
           if (hasCount)
             _MetaChip(
               icon: Icons.groups_outlined,
-              label: '${compact.format(count)} '
-                  '${count > 1 ? "membres" : "membre"}',
+              label: context.l10n.membershipMembersCount(count),
             ),
         ],
       ),
@@ -255,13 +253,17 @@ class _PrimaryAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final spec = switch (membership.status) {
       MembershipStatus.pending => (
-          'Annuler la demande',
+          context.l10n.membershipCancelRequestAction,
           HbColors.brandPrimary,
           false,
         ),
-      MembershipStatus.active => ('Quitter', HbColors.error, false),
+      MembershipStatus.active => (
+          context.l10n.membershipLeaveAction,
+          HbColors.error,
+          false,
+        ),
       MembershipStatus.rejected => (
-          'Refaire la demande',
+          context.l10n.membershipRetryRequestAction,
           HbColors.brandPrimary,
           true,
         ),

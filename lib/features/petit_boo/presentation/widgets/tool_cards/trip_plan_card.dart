@@ -48,11 +48,11 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
     return data;
   }
 
-  List<_TripStop> get _stops {
+  List<_TripStop> _localizedStops(AppLocalizations l10n) {
     final stopsData = _plan['stops'] as List<dynamic>? ?? [];
     return stopsData.map((stop) {
       if (stop is! Map<String, dynamic>) {
-        return const _TripStop(order: 0, eventTitle: 'Étape');
+        return _TripStop(order: 0, eventTitle: l10n.petitBooTripFallbackStop);
       }
 
       // Extract coordinates from nested or flat structure
@@ -71,7 +71,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
         eventUuid: stop['event_uuid'] as String?,
         eventTitle: stop['event_title'] as String? ??
             stop['title'] as String? ??
-            'Étape',
+            l10n.petitBooTripFallbackStop,
         venueName: stop['venue_name'] as String?,
         address: stop['address'] as String?,
         city: stop['city'] as String?,
@@ -88,7 +88,8 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
     }).toList();
   }
 
-  String get _title => _plan['title'] as String? ?? 'Ton itinéraire';
+  String _title(AppLocalizations l10n) =>
+      _plan['title'] as String? ?? l10n.petitBooToolPlanTripTitle;
 
   String? get _plannedDate => _plan['planned_date'] as String?;
 
@@ -117,8 +118,9 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final accentColor = parseHexColor(widget.schema.color);
-    final stops = _stops;
+    final stops = _localizedStops(l10n);
 
     // Don't show the card if there are no stops
     if (stops.isEmpty) {
@@ -139,7 +141,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with title, date, stats
-          _buildHeader(accentColor),
+          _buildHeader(accentColor, stops),
 
           const Divider(height: 1, color: PetitBooTheme.border),
 
@@ -163,7 +165,9 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
     );
   }
 
-  Widget _buildHeader(Color accentColor) {
+  Widget _buildHeader(Color accentColor, List<_TripStop> stops) {
+    final l10n = context.l10n;
+
     return Padding(
       padding: const EdgeInsets.all(PetitBooTheme.spacing16),
       child: Column(
@@ -191,7 +195,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _title,
+                      _title(l10n),
                       style: PetitBooTheme.headingSm.copyWith(
                         color: PetitBooTheme.textPrimary,
                       ),
@@ -266,7 +270,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                 ),
               _buildStatChip(
                 Icons.flag,
-                '${_stops.length} étape${_stops.length > 1 ? 's' : ''}',
+                l10n.petitBooTripStopsCount(stops.length),
                 accentColor,
               ),
             ],
@@ -402,7 +406,9 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _mapExpanded ? 'Réduire' : 'Agrandir la carte',
+                        _mapExpanded
+                            ? context.l10n.petitBooTripCollapseMap
+                            : context.l10n.petitBooTripExpandMap,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -464,7 +470,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Conseils',
+                context.l10n.petitBooTripTipsTitle,
                 style: PetitBooTheme.label.copyWith(
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFFF39C12),
@@ -511,7 +517,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
               child: OutlinedButton.icon(
                 onPressed: _onSavePlan,
                 icon: const Icon(Icons.bookmark_border, size: 18),
-                label: const Text('Sauvegarder'),
+                label: Text(context.l10n.petitBooTripSave),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: accentColor,
                   side: BorderSide(color: accentColor),
@@ -536,7 +542,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                     Icon(Icons.bookmark, size: 18, color: accentColor),
                     const SizedBox(width: 6),
                     Text(
-                      'Sauvegardé',
+                      context.l10n.petitBooTripSaved,
                       style: PetitBooTheme.label.copyWith(
                         color: accentColor,
                         fontWeight: FontWeight.w600,
@@ -560,7 +566,11 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
                   _mapExpanded ? Icons.map : Icons.map_outlined,
                   size: 18,
                 ),
-                label: Text(_mapExpanded ? 'Masquer carte' : 'Voir carte'),
+                label: Text(
+                  _mapExpanded
+                      ? context.l10n.petitBooTripHideMap
+                      : context.l10n.petitBooTripShowMap,
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentColor,
                   foregroundColor: Colors.white,
@@ -582,7 +592,7 @@ class _TripPlanCardState extends ConsumerState<TripPlanCard> {
     // Le LLM a le contexte du plan qu'il vient de générer (date + event_uuids)
     // Pas besoin de passer l'UUID - il n'existe qu'après sauvegarde
     ref.read(petitBooChatProvider.notifier).sendMessage(
-          'Sauvegarde ce plan de sortie',
+          context.l10n.petitBooTripSavePlanPrompt,
         );
   }
 

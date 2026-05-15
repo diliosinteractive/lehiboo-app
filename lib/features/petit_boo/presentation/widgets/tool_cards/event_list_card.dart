@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../../../domain/entities/activity.dart';
 import '../../../../../domain/entities/city.dart';
@@ -23,6 +24,7 @@ class EventListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final responseSchema = schema.responseSchema;
     final itemsKey = responseSchema?.itemsKey ?? 'events';
     final totalKey = responseSchema?.totalKey ?? 'total';
@@ -84,7 +86,7 @@ class EventListCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '$total événement${total != 1 ? 's' : ''}',
+                        l10n.petitBooToolEventCount(total),
                         style: const TextStyle(
                           fontSize: 13,
                           color: HbColors.textSecondary,
@@ -131,7 +133,7 @@ class EventListCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Voir les $total événements',
+                      l10n.petitBooToolViewEvents(total),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -208,7 +210,7 @@ class EventListCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              schema.emptyMessage ?? 'Aucun élément',
+              schema.emptyMessage ?? context.l10n.petitBooToolEmptyListFallback,
               style: const TextStyle(
                 fontSize: 14,
                 color: HbColors.textSecondary,
@@ -218,7 +220,7 @@ class EventListCard extends StatelessWidget {
           if (schema.name == 'getMyFavorites')
             TextButton(
               onPressed: () => context.go('/explore'),
-              child: const Text('Explorer'),
+              child: Text(context.l10n.navExplore),
             ),
         ],
       ),
@@ -237,7 +239,7 @@ class _EventItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activity = _toActivity();
+    final activity = _toActivity(context);
 
     return SizedBox(
       width: 200,
@@ -251,7 +253,7 @@ class _EventItemCard extends StatelessWidget {
     );
   }
 
-  Activity _toActivity() {
+  Activity _toActivity(BuildContext context) {
     final slug = _getStringValue(['slug']);
     final id = _getStringValue([
           'uuid',
@@ -260,7 +262,8 @@ class _EventItemCard extends StatelessWidget {
         ]) ??
         slug ??
         item.hashCode.toString();
-    final title = _getStringValue(['title']) ?? 'Sans titre';
+    final title =
+        _getStringValue(['title']) ?? context.l10n.petitBooToolUntitled;
     final imageUrl = _getStringValue([
       'cover_image',
       'image_url',
@@ -453,7 +456,10 @@ class _EventItemCard extends StatelessWidget {
     if (item['is_free'] == true) return true;
 
     final display = _getStringValue(['price_display'])?.toLowerCase();
-    if (display != null && display.contains('gratuit')) return true;
+    if (display != null &&
+        (display.contains('gratuit') || display.contains('free'))) {
+      return true;
+    }
 
     return priceMin == 0 && (priceMax == null || priceMax == 0);
   }

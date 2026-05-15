@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../models/auth_response_dto.dart';
 import '../models/business_register_dto.dart';
 import '../../../../core/utils/api_response_handler.dart';
@@ -30,7 +31,8 @@ class RegisterResult {
       pendingVerification: json['pending_verification'] ?? true,
       userId: json['user_id']?.toString() ?? '',
       email: json['email'] ?? '',
-      message: json['message'] ?? 'Un code de vérification a été envoyé',
+      message:
+          json['message'] ?? cachedAppLocalizations().authVerificationCodeSent,
     );
   }
 }
@@ -399,8 +401,8 @@ class AuthApiDataSource {
       userId: responseData['user_id']?.toString() ??
           responseData['user']?['id']?.toString(),
       email: responseData['email'] ?? email,
-      message:
-          responseData['message'] ?? 'Un code de vérification a été envoyé',
+      message: responseData['message'] ??
+          cachedAppLocalizations().authVerificationCodeSent,
     );
   }
 
@@ -452,7 +454,8 @@ class AuthApiDataSource {
         ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
     return OtpSendResult(
       success: true,
-      message: payload['message'] ?? 'Code envoyé',
+      message: payload['message'] ??
+          cachedAppLocalizations().authVerificationCodeSent,
       expiresAt: payload['expires_at'],
     );
   }
@@ -484,7 +487,8 @@ class AuthApiDataSource {
     return OtpVerifyResult(
       success: true,
       verified: payload['verified'] ?? true,
-      message: payload['message'] ?? 'Code vérifié',
+      message: payload['message'] ??
+          cachedAppLocalizations().authVerificationCodeVerified,
       verifiedEmailToken: payload['verified_email_token']?.toString(),
       tokenExpiresInMinutes: payload['token_expires_in_minutes'] is int
           ? payload['token_expires_in_minutes']
@@ -513,7 +517,7 @@ class AuthApiDataSource {
         ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
     return OtpSendResult(
       success: true,
-      message: payload['message'] ?? 'Nouveau code envoyé',
+      message: payload['message'] ?? cachedAppLocalizations().authOtpResent,
       expiresAt: payload['expires_at'],
     );
   }

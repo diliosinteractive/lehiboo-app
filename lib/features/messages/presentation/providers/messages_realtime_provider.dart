@@ -8,6 +8,7 @@ import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:lehiboo/config/dio_client.dart';
 import 'package:lehiboo/config/env_config.dart';
 import 'package:lehiboo/core/constants/app_constants.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/services/deep_link_service.dart';
 import 'dart:developer' as dev;
 import 'package:lehiboo/features/notifications/data/models/in_app_notification_dto.dart';
@@ -456,6 +457,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   void _showForegroundNotification(InAppNotification notification) {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger == null) return;
+    final l10n = messenger.context.l10n;
 
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
@@ -463,7 +465,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         duration: const Duration(seconds: 3),
         content: _NotificationSnackContent(notification: notification),
         action: SnackBarAction(
-          label: 'Ouvrir',
+          label: l10n.messagesNotificationOpenAction,
           onPressed: () {
             _ref.read(deepLinkServiceProvider).navigateFromNotification(
                   actionUrl: notification.actionUrl,

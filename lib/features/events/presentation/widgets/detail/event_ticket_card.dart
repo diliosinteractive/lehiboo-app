@@ -19,19 +19,6 @@ extension TicketTierExtension on TicketTier {
 
   // Icône unique pour tous
   IconData get icon => Icons.confirmation_number_outlined;
-
-  String get label {
-    switch (this) {
-      case TicketTier.vip:
-        return 'VIP';
-      case TicketTier.premium:
-        return 'Premium';
-      case TicketTier.standard:
-        return 'Standard';
-      case TicketTier.reduced:
-        return 'Réduit';
-    }
-  }
 }
 
 /// Card pour un type de billet avec animations Material Expressive

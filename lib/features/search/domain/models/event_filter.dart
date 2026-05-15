@@ -212,41 +212,6 @@ class EventFilter with _$EventFilter {
     return const [5, 10, 20, 50].contains(radius) ? radius : 10;
   }
 
-  /// Get date filter label
-  String? get dateFilterLabel {
-    switch (dateFilterType) {
-      case DateFilterType.today:
-        return "Aujourd'hui";
-      case DateFilterType.tomorrow:
-        return 'Demain';
-      case DateFilterType.thisWeek:
-        return 'Cette semaine';
-      case DateFilterType.thisWeekend:
-        return 'Ce week-end';
-      case DateFilterType.thisMonth:
-        return 'Ce mois-ci';
-      case DateFilterType.custom:
-        return 'Dates personnalisées';
-      default:
-        return null;
-    }
-  }
-
-  /// Get price filter label
-  String? get priceFilterLabel {
-    if (onlyFree) return 'Gratuit';
-    switch (priceFilterType) {
-      case PriceFilterType.free:
-        return 'Gratuit';
-      case PriceFilterType.paid:
-        return 'Payant';
-      case PriceFilterType.range:
-        return '${priceMin.toInt()}€ - ${priceMax.toInt()}€';
-      default:
-        return null;
-    }
-  }
-
   DateTime? get effectiveStartDate {
     if (startDate != null) return startDate;
 

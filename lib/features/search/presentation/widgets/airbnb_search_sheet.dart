@@ -1495,31 +1495,31 @@ class _CategoryMatch {
 const _fallbackPublicFilters = [
   EventReferencePublicFilterDto(
     key: 'family',
-    label: 'En famille',
+    label: '',
     param: 'public_filters',
     value: 'family',
   ),
   EventReferencePublicFilterDto(
     key: 'pmr',
-    label: 'Accessible PMR',
+    label: '',
     param: 'public_filters',
     value: 'pmr',
   ),
   EventReferencePublicFilterDto(
     key: 'group',
-    label: 'En groupe',
+    label: '',
     param: 'public_filters',
     value: 'group',
   ),
   EventReferencePublicFilterDto(
     key: 'school',
-    label: 'Groupe scolaire',
+    label: '',
     param: 'public_filters',
     value: 'school',
   ),
   EventReferencePublicFilterDto(
     key: 'professional',
-    label: 'Professionnel',
+    label: '',
     param: 'public_filters',
     value: 'professional',
   ),
@@ -1896,19 +1896,19 @@ class _LocationTypeSection extends ConsumerWidget {
             runSpacing: 8,
             children: [
               _locationTypeChip(
-                label: 'En intérieur',
+                label: context.l10n.searchLocationIndoor,
                 icon: Icons.home_work_outlined,
                 type: LocationTypeFilter.physical,
                 filterNotifier: filterNotifier,
               ),
               _locationTypeChip(
-                label: 'En extérieur',
+                label: context.l10n.searchLocationOutdoor,
                 icon: Icons.park_outlined,
                 type: LocationTypeFilter.offline,
                 filterNotifier: filterNotifier,
               ),
               _locationTypeChip(
-                label: 'Mixte (intérieur/extérieur)',
+                label: context.l10n.searchLocationMixed,
                 icon: Icons.sync_alt,
                 type: LocationTypeFilter.hybrid,
                 filterNotifier: filterNotifier,

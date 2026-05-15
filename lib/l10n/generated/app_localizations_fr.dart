@@ -201,7 +201,42 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonSave => 'Enregistrer';
 
   @override
+  String get commonDelete => 'Supprimer';
+
+  @override
+  String get commonOk => 'OK';
+
+  @override
   String get commonValidate => 'Valider';
+
+  @override
+  String get commonErrorTitle => 'Oups !';
+
+  @override
+  String get commonGenericError => 'Une erreur est survenue.';
+
+  @override
+  String get commonGenericRetryError =>
+      'Une erreur est survenue. Veuillez réessayer.';
+
+  @override
+  String get commonConnectionError =>
+      'Erreur de connexion. Vérifiez votre connexion internet.';
+
+  @override
+  String get commonSearchHint => 'Rechercher...';
+
+  @override
+  String get routeEventFallbackTitle => 'Événement';
+
+  @override
+  String get routeRecommendedTitle => 'Recommandés pour vous';
+
+  @override
+  String get routeNotFoundTitle => 'Oups ! Page non trouvée';
+
+  @override
+  String get routeNotFoundBody => 'La page que vous recherchez n\'existe pas.';
 
   @override
   String get settingsPushPermissionRequired =>
@@ -272,6 +307,44 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileQuestionsSubtitle => 'Vos questions sur les événements';
+
+  @override
+  String get userQuestionsTitle => 'Mes questions';
+
+  @override
+  String get userQuestionsLoadError => 'Impossible de charger vos questions.';
+
+  @override
+  String get userQuestionsEmptyTitle => 'Aucune question';
+
+  @override
+  String get userQuestionsEmptyBody =>
+      'Vous n\'avez encore posé aucune question sur un événement.';
+
+  @override
+  String get userQuestionsExploreEvents => 'Découvrir des événements';
+
+  @override
+  String get userQuestionsDeletedEvent => 'Événement supprimé';
+
+  @override
+  String get userQuestionsOrganizerFallback => 'Organisateur';
+
+  @override
+  String get userQuestionsRejectedNotice =>
+      'Cette question a été rejetée par la modération.';
+
+  @override
+  String get userQuestionsStatusPending => 'En attente';
+
+  @override
+  String get userQuestionsStatusApproved => 'Approuvée';
+
+  @override
+  String get userQuestionsStatusAnswered => 'Répondue';
+
+  @override
+  String get userQuestionsStatusRejected => 'Rejetée';
 
   @override
   String get profileReviewsTitle => 'Mes avis';
@@ -945,6 +1018,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get messagesStatusOpen => 'Ouvert';
 
   @override
+  String get messagesNotificationOpenAction => 'Ouvrir';
+
+  @override
   String get messagesDeletedPreview => 'Message supprimé';
 
   @override
@@ -1313,6 +1389,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get petitBooConversationFallbackTitle => 'Conversation';
+
+  @override
+  String get petitBooConversationsAuthRequired =>
+      'Connectez-vous pour voir vos conversations';
+
+  @override
+  String get petitBooConversationsLoadFailed =>
+      'Impossible de charger les conversations';
+
+  @override
+  String get petitBooEngagementWelcome => 'Bonjour ! Je peux vous aider ? 🌟';
+
+  @override
+  String get petitBooEngagementInspiration =>
+      'Vous cherchez l\'inspiration ? 💡';
+
+  @override
+  String get petitBooEngagementNoResults =>
+      'Oups, rien trouvé ? Je peux chercher pour vous ! 🕵️‍♂️';
+
+  @override
+  String get petitBooEngagementIdle =>
+      'Psst... Je connais des coins sympas ! 🗺️';
 
   @override
   String petitBooRelativeDaysAgo(int count) {
@@ -1885,6 +1984,152 @@ class AppLocalizationsFr extends AppLocalizations {
   String get petitBooToolStatusInactive => 'Inactive';
 
   @override
+  String get petitBooToolEventFallbackTitle => 'Événement';
+
+  @override
+  String petitBooToolEventCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count événements',
+      one: '1 événement',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String petitBooToolViewEvents(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'les $count événements',
+      one: '1 événement',
+    );
+    return 'Voir $_temp0';
+  }
+
+  @override
+  String petitBooEventDateTime(String date, String time) {
+    return '$date à $time';
+  }
+
+  @override
+  String get petitBooEventAvailabilityAction => 'Voir les disponibilités';
+
+  @override
+  String get petitBooEventPriceFrom => 'À partir de';
+
+  @override
+  String petitBooEventPriceTiers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tarifs',
+      one: '1 tarif',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String petitBooTripSavedPlansCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plans sauvegardés',
+      one: '1 plan sauvegardé',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String petitBooTripStopsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count étapes',
+      one: '1 étape',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String petitBooTripMoreStops(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count autres étapes',
+      one: '+1 autre étape',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get petitBooTripFallbackStop => 'Étape';
+
+  @override
+  String get petitBooTripFallbackListTitle => 'Plan sans titre';
+
+  @override
+  String get petitBooTripLoadErrorTitle => 'Impossible de charger tes sorties';
+
+  @override
+  String get petitBooTripLoadErrorRetry => 'Réessaie dans quelques instants';
+
+  @override
+  String get petitBooTripEmptyPrompt => 'Demande-moi de planifier une sortie !';
+
+  @override
+  String get petitBooTripViewAll => 'Voir toutes mes sorties';
+
+  @override
+  String get petitBooTripExpandMap => 'Agrandir la carte';
+
+  @override
+  String get petitBooTripCollapseMap => 'Réduire';
+
+  @override
+  String get petitBooTripTipsTitle => 'Conseils';
+
+  @override
+  String get petitBooTripSave => 'Sauvegarder';
+
+  @override
+  String get petitBooTripSaved => 'Sauvegardé';
+
+  @override
+  String get petitBooTripShowMap => 'Voir carte';
+
+  @override
+  String get petitBooTripHideMap => 'Masquer carte';
+
+  @override
+  String get petitBooTripSavePlanPrompt => 'Sauvegarde ce plan de sortie';
+
+  @override
+  String get petitBooTripNoCoordinates => 'Aucune coordonnée disponible';
+
+  @override
+  String get petitBooQuotaExceededError =>
+      'Vous avez atteint votre limite de messages';
+
+  @override
+  String get petitBooConnectionError => 'Erreur de connexion';
+
+  @override
+  String get petitBooAuthRequiredError =>
+      'Connectez-vous pour discuter avec Petit Boo';
+
+  @override
+  String get petitBooConversationLoadFailed =>
+      'Impossible de charger la conversation';
+
+  @override
+  String get petitBooApiErrorFallback => 'Erreur Petit Boo';
+
+  @override
+  String get petitBooGenericError => 'Une erreur est survenue';
+
+  @override
   String get petitBooBrainManageMemory => 'Gérer ma mémoire';
 
   @override
@@ -2109,6 +2354,623 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get membershipSearchOrganizationHint => 'Rechercher une organisation…';
+
+  @override
+  String membershipTabActive(int count) {
+    return 'Actives ($count)';
+  }
+
+  @override
+  String membershipTabPending(int count) {
+    return 'En attente ($count)';
+  }
+
+  @override
+  String membershipTabRejected(int count) {
+    return 'Refusées ($count)';
+  }
+
+  @override
+  String membershipTabInvitations(int count) {
+    return 'Invitations ($count)';
+  }
+
+  @override
+  String get membershipEmptyActive =>
+      'Aucune adhésion active.\nRejoignez vos organisations préférées pour ne rien manquer.';
+
+  @override
+  String get membershipEmptyPending =>
+      'Vous n\'avez pas de demande en attente.';
+
+  @override
+  String get membershipEmptyRejected => 'Aucune demande refusée.';
+
+  @override
+  String get membershipEmptyInvitations => 'Aucune invitation pour le moment.';
+
+  @override
+  String get membershipDiscoverOrganizations => 'Découvrir les organisations';
+
+  @override
+  String get membershipLoadError => 'Impossible de charger vos adhésions.';
+
+  @override
+  String get membershipStatusPending => 'En attente';
+
+  @override
+  String get membershipStatusActive => 'Actif';
+
+  @override
+  String get membershipStatusRejected => 'Refusée';
+
+  @override
+  String get membershipStatusInvitation => 'Invitation';
+
+  @override
+  String get membershipStatusExpired => 'Expirée';
+
+  @override
+  String get membershipViewOrganizer => 'Voir la fiche';
+
+  @override
+  String get membershipPrivateEventsAction => 'Événements privés';
+
+  @override
+  String membershipMembersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count membres',
+      one: '1 membre',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get membershipJoinAction => 'Rejoindre';
+
+  @override
+  String get membershipPendingAction => 'En attente';
+
+  @override
+  String get membershipRetryRequestAction => 'Refaire la demande';
+
+  @override
+  String get membershipCancelRequestAction => 'Annuler la demande';
+
+  @override
+  String get membershipLeaveAction => 'Quitter';
+
+  @override
+  String get membershipCancelRequestTitle => 'Annuler la demande ?';
+
+  @override
+  String membershipCancelRequestBody(String organizerName) {
+    return 'Votre demande de rejoindre $organizerName sera annulée. Vous pourrez en refaire une à tout moment.';
+  }
+
+  @override
+  String get membershipLeaveTitle => 'Quitter l\'organisation ?';
+
+  @override
+  String membershipLeaveBody(String organizerName) {
+    return 'Vous ne verrez plus les événements privés de $organizerName. Vous pourrez refaire une demande à tout moment.';
+  }
+
+  @override
+  String membershipJoinTitle(String organizerName) {
+    return 'Rejoindre l\'espace privé de $organizerName ?';
+  }
+
+  @override
+  String get membershipJoinBody =>
+      'En rejoignant, vous accédez aux événements exclusifs proposés aux membres. Votre demande sera examinée par l\'organisateur.';
+
+  @override
+  String get membersOnlyGateTitle => 'Événement réservé aux membres';
+
+  @override
+  String membersOnlyGateBody(String organizerName) {
+    return 'Cet événement est uniquement accessible aux membres de $organizerName. Rejoignez l\'organisation pour débloquer son agenda privé.';
+  }
+
+  @override
+  String membersOnlyGateJoin(String organizerName) {
+    return 'Rejoindre $organizerName';
+  }
+
+  @override
+  String get privateEventsTitle => 'Mes événements privés';
+
+  @override
+  String get privateEventsSearchHint => 'Rechercher un événement…';
+
+  @override
+  String get privateEventsLoadError => 'Impossible de charger les événements.';
+
+  @override
+  String get privateEventsPrivateBadge => 'Privé';
+
+  @override
+  String get privateEventsAllOrganizations => 'Toutes les organisations';
+
+  @override
+  String get privateEventsEmptyTitle =>
+      'Aucun événement privé pour l\'instant.';
+
+  @override
+  String get privateEventsEmptyBody =>
+      'Rejoignez des organisations pour découvrir leurs activités exclusives.';
+
+  @override
+  String get privateEventsEmptyFiltered =>
+      'Aucun événement privé correspondant.';
+
+  @override
+  String get membershipInvitationTitle => 'Invitation';
+
+  @override
+  String membershipInvitedBy(String name) {
+    return 'Invité par $name';
+  }
+
+  @override
+  String get membershipInvitationExpiredBlurb =>
+      'Cette invitation a expiré. Demandez à l\'organisation de vous renvoyer une invitation.';
+
+  @override
+  String get membershipInvitationAcceptedBlurb =>
+      'Cette invitation a déjà été acceptée. Retrouvez l\'organisation dans votre liste d\'adhésions.';
+
+  @override
+  String get membershipInvitationActiveBlurb =>
+      'Vous êtes invité(e) à rejoindre cet espace privé. Acceptez l\'invitation pour accéder aux événements exclusifs.';
+
+  @override
+  String membershipInvitationActiveWithExpiryBlurb(int hours) {
+    return 'Vous êtes invité(e) à rejoindre cet espace privé. Acceptez l\'invitation pour accéder aux événements exclusifs. Cette invitation expire dans $hours h.';
+  }
+
+  @override
+  String membershipInvitationWelcome(String organizationName) {
+    return 'Bienvenue dans $organizationName';
+  }
+
+  @override
+  String get membershipInvitationAcceptFailed =>
+      'Impossible d\'accepter cette invitation.';
+
+  @override
+  String get membershipInvitationDeclineTitle => 'Décliner l\'invitation ?';
+
+  @override
+  String membershipInvitationDeclineBody(String organizationName) {
+    return 'Refuser l\'invitation de $organizationName ?';
+  }
+
+  @override
+  String get membershipInvitationDeclineAction => 'Décliner';
+
+  @override
+  String get membershipInvitationAcceptAction => 'Accepter';
+
+  @override
+  String get membershipInvitationDeclined => 'Invitation déclinée';
+
+  @override
+  String get membershipInvitationSignInToAccept => 'Se connecter pour accepter';
+
+  @override
+  String get membershipInvitationAlreadyAccepted => 'Invitation déjà acceptée.';
+
+  @override
+  String get membershipInvitationExpired => 'Invitation expirée.';
+
+  @override
+  String membershipInvitationExpiresInDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Expire dans $count jours',
+      one: 'Expire dans 1 jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String membershipInvitationExpiresInHours(int count) {
+    return 'Expire dans $count h';
+  }
+
+  @override
+  String get membershipInvitationNotFoundTitle =>
+      'Cette invitation est introuvable.';
+
+  @override
+  String get membershipInvitationNotFoundBody =>
+      'Le lien a peut-être été désactivé. Demandez à l\'organisateur de vous renvoyer une invitation.';
+
+  @override
+  String get personalizedFeedTitle => 'Pour vous';
+
+  @override
+  String get organizerInvalidIdentifier => 'Identifiant organisateur invalide';
+
+  @override
+  String get organizerActivitiesTab => 'Activités';
+
+  @override
+  String get organizerReviewsTab => 'Avis';
+
+  @override
+  String get organizerProfileLoadError => 'Impossible de charger ce profil.';
+
+  @override
+  String get organizerContactAction => 'Contacter';
+
+  @override
+  String get organizerCoordinatesAction => 'Coordonnées';
+
+  @override
+  String get organizerNoCoordinates =>
+      'Cet organisateur n\'a pas renseigné de coordonnées.';
+
+  @override
+  String get organizerAboutTitle => 'À propos';
+
+  @override
+  String get organizerEstablishmentTypesTitle => 'Types d\'établissement';
+
+  @override
+  String get organizerSocialLinksTitle => 'Réseaux sociaux';
+
+  @override
+  String organizerEventsCount(String countLabel, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'événements',
+      one: 'événement',
+    );
+    return '$countLabel $_temp0';
+  }
+
+  @override
+  String organizerFollowersCount(String countLabel, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'abonnés',
+      one: 'abonné',
+    );
+    return '$countLabel $_temp0';
+  }
+
+  @override
+  String organizerMembersCount(String countLabel, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'membres',
+      one: 'membre',
+    );
+    return '$countLabel $_temp0';
+  }
+
+  @override
+  String organizerRatingWithReviews(
+      String rating, String countLabel, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'avis',
+      one: 'avis',
+    );
+    return '$rating ($countLabel $_temp0)';
+  }
+
+  @override
+  String get organizerFollowAction => 'Suivre';
+
+  @override
+  String get organizerUnfollowAction => 'Ne plus suivre';
+
+  @override
+  String get organizerFollowedSearchHint => 'Rechercher un organisateur';
+
+  @override
+  String get organizerFollowedEmptySearchTitle => 'Aucun organisateur trouvé';
+
+  @override
+  String get organizerFollowedEmptySearchBody => 'Essayez un autre mot-clé.';
+
+  @override
+  String get organizerFollowedEmptyTitle => 'Vous ne suivez aucun organisateur';
+
+  @override
+  String get organizerFollowedEmptyBody =>
+      'Suivez un organisateur depuis sa page pour le retrouver ici.';
+
+  @override
+  String get organizerFollowedLoadError => 'Impossible de charger la liste.';
+
+  @override
+  String get organizerActivitiesLoadError =>
+      'Impossible de charger les activités.';
+
+  @override
+  String get organizerActivitiesEmpty =>
+      'Aucune activité publiée pour le moment.';
+
+  @override
+  String get organizerActivitiesNoUpcoming => 'Pas d\'événement à venir.';
+
+  @override
+  String get organizerActivitiesNoPast => 'Pas d\'événement passé.';
+
+  @override
+  String organizerActivitiesCurrentTab(int count) {
+    return 'En cours ($count)';
+  }
+
+  @override
+  String organizerActivitiesPastTab(int count) {
+    return 'Passés ($count)';
+  }
+
+  @override
+  String get organizerReviewsLoadError => 'Impossible de charger les avis.';
+
+  @override
+  String organizerReviewsTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count avis',
+      one: '1 avis',
+    );
+    return 'Sur $_temp0';
+  }
+
+  @override
+  String organizerVerifiedPurchasesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'dont $count achats vérifiés',
+      one: 'dont 1 achat vérifié',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get organizerNoReviewsTitle => 'Aucun avis pour le moment';
+
+  @override
+  String get organizerNoReviewsBody =>
+      'Soyez parmi les premiers à laisser un avis sur l\'un de ses événements.';
+
+  @override
+  String get organizerReviewUserFallback => 'Utilisateur';
+
+  @override
+  String get organizerReviewFor => 'Avis pour';
+
+  @override
+  String get organizerVerifiedPurchase => 'Achat vérifié';
+
+  @override
+  String organizerHelpfulCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count utiles',
+      one: '1 utile',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String organizerReplyBy(String author) {
+    return 'Réponse de $author';
+  }
+
+  @override
+  String get organizerReplyFallback => 'Réponse de l\'organisateur';
+
+  @override
+  String get partnerTypeVenue => 'Salle/Lieu';
+
+  @override
+  String get partnerTypeOrganizer => 'Organisateur';
+
+  @override
+  String get partnerTypeIndividual => 'Particulier';
+
+  @override
+  String get partnerSubscriptionBasic => 'Basique';
+
+  @override
+  String get partnerSubscriptionEnterprise => 'Enterprise';
+
+  @override
+  String get checkinScannerTitle => 'Scanner les billets';
+
+  @override
+  String get checkinTorchTooltip => 'Lampe';
+
+  @override
+  String get checkinCameraTooltip => 'Caméra';
+
+  @override
+  String get checkinMoreTooltip => 'Plus';
+
+  @override
+  String get checkinSwitchOrganization => 'Changer d\'organisation';
+
+  @override
+  String get checkinManualEntryTitle => 'Saisie manuelle';
+
+  @override
+  String get checkinGateLabel => 'Étiquette de gate';
+
+  @override
+  String get checkinGateHint => 'ex: Nord, VIP, Entrée 2…';
+
+  @override
+  String checkinGateDisplay(String gate) {
+    return 'Gate : $gate';
+  }
+
+  @override
+  String get checkinEntryRecorded => 'Bienvenue ! Entrée enregistrée.';
+
+  @override
+  String checkinReEntryRecorded(int count) {
+    return 'Ré-entrée enregistrée (entrée n°$count)';
+  }
+
+  @override
+  String get checkinNetworkRescan =>
+      'Réseau instable — re-scannez pour confirmer.';
+
+  @override
+  String get checkinNetworkRetype =>
+      'Réseau instable — re-saisissez pour confirmer.';
+
+  @override
+  String get checkinCameraPermissionDeniedTitle => 'Accès caméra refusé';
+
+  @override
+  String get checkinCameraUnavailableTitle => 'Caméra indisponible';
+
+  @override
+  String get checkinCameraPermissionDeniedBody =>
+      'Autorisez la caméra dans les paramètres système, ou utilisez la saisie manuelle.';
+
+  @override
+  String get checkinCameraUnavailableBody =>
+      'Aucune caméra n\'a été détectée. Utilisez la saisie manuelle.';
+
+  @override
+  String get checkinChooseOrganizationFirst =>
+      'Choisissez une organisation depuis le scanner.';
+
+  @override
+  String get checkinManualWarning =>
+      'À utiliser uniquement avec une vérification d\'identité visuelle. La saisie manuelle ne contrôle pas le secret du QR.';
+
+  @override
+  String checkinOrganizationLabel(String name) {
+    return 'Organisation : $name';
+  }
+
+  @override
+  String get checkinManualCodeHelper => 'Code imprimé sur le billet';
+
+  @override
+  String get checkinVerifyCode => 'Vérifier le code';
+
+  @override
+  String get checkinValidTicketTitle => 'Billet valide';
+
+  @override
+  String get checkinReEntryDetectedTitle => 'Ré-entrée détectée';
+
+  @override
+  String get checkinConfirmEntry => 'Confirmer l\'entrée';
+
+  @override
+  String get checkinConfirmReEntry => 'Confirmer la ré-entrée';
+
+  @override
+  String checkinAlreadyEnteredWarning(int count) {
+    return 'Déjà entré $count× — vérifiez avant d\'admettre.';
+  }
+
+  @override
+  String get checkinChooseOrganizationTitle => 'Choisir une organisation';
+
+  @override
+  String get checkinChooseOrganizationBody =>
+      'Le scanner enverra les billets à l\'organisation sélectionnée.';
+
+  @override
+  String get checkinRoleOwner => 'Propriétaire';
+
+  @override
+  String get checkinRoleAdmin => 'Administrateur';
+
+  @override
+  String get checkinRoleStaff => 'Équipe';
+
+  @override
+  String get checkinRoleViewer => 'Membre';
+
+  @override
+  String get checkinNoVendorOrganizationTitle =>
+      'Aucune organisation vendeur trouvée';
+
+  @override
+  String get checkinNoVendorOrganizationBody =>
+      'Si vous attendiez d\'apparaître ici, contactez le support — votre profil n\'est peut-être pas encore lié à une organisation.';
+
+  @override
+  String get checkinRefresh => 'Actualiser';
+
+  @override
+  String get checkinBlockedTicketCancelledTitle => 'Billet annulé';
+
+  @override
+  String get checkinBlockedTicketRefundedTitle => 'Billet remboursé';
+
+  @override
+  String get checkinBlockedTicketTransferredTitle => 'Billet transféré';
+
+  @override
+  String get checkinBlockedSlotNotStartedTitle => 'Créneau non commencé';
+
+  @override
+  String get checkinBlockedWrongEventTitle => 'Mauvais événement';
+
+  @override
+  String get checkinBlockedUnauthorizedTitle => 'Non autorisé';
+
+  @override
+  String get checkinBlockedTicketNotFoundTitle => 'Billet introuvable';
+
+  @override
+  String get checkinBlockedUnknownTitle => 'Erreur';
+
+  @override
+  String get checkinBlockedDoNotAdmit => 'Ne pas laisser entrer.';
+
+  @override
+  String get checkinBlockedTicketTransferredBody =>
+      'Le billet a été transféré à un autre porteur — re-scannez son QR.';
+
+  @override
+  String get checkinBlockedSlotNotStartedBody =>
+      'L\'entrée n\'est pas encore ouverte pour ce créneau.';
+
+  @override
+  String get checkinBlockedWrongEventBody =>
+      'Ce billet ne correspond pas à l\'événement filtré.';
+
+  @override
+  String get checkinBlockedUnauthorizedBody =>
+      'Vous n\'êtes pas autorisé à scanner ce billet pour cette organisation.';
+
+  @override
+  String get checkinBlockedTicketNotFoundBody =>
+      'QR non reconnu — réessayez ou saisissez le code.';
+
+  @override
+  String get checkinBlockedUnknownBody => 'Erreur inattendue, réessayez.';
+
+  @override
   String get authEmailLabel => 'Email';
 
   @override
@@ -2216,6 +3078,37 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get authGuestIncorrectCredentials =>
       'Identifiants incorrects. Réessayez.';
+
+  @override
+  String get authAccountAlreadyVerified =>
+      'Votre compte est déjà vérifié. Veuillez vous connecter.';
+
+  @override
+  String get authEmailOrPasswordIncorrect => 'Email ou mot de passe incorrect';
+
+  @override
+  String get authAccountAlreadyExists => 'Un compte existe déjà avec cet email';
+
+  @override
+  String get authWeakPasswordDetailed =>
+      'Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre';
+
+  @override
+  String get authVerificationCodeInvalid => 'Code de vérification invalide';
+
+  @override
+  String get authVerificationCodeExpired =>
+      'Le code a expiré. Veuillez en demander un nouveau.';
+
+  @override
+  String get authTooManyAttempts =>
+      'Trop de tentatives. Réessayez dans 15 minutes.';
+
+  @override
+  String get authVerificationCodeSent => 'Un code de vérification a été envoyé';
+
+  @override
+  String get authVerificationCodeVerified => 'Code vérifié';
 
   @override
   String get authGuestTitle => 'Connectez-vous !';
@@ -2485,6 +3378,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authValidationMin5Chars => 'Min. 5 caractères';
 
   @override
+  String get authFirstNameMinLength =>
+      'Le prénom doit contenir au moins 2 caractères';
+
+  @override
+  String get authLastNameMinLength =>
+      'Le nom doit contenir au moins 2 caractères';
+
+  @override
   String get authPasswordMinLengthShort => 'Min. 8 caractères';
 
   @override
@@ -2495,6 +3396,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authPasswordNeedsSpecialShort => 'Un caractère spécial requis';
+
+  @override
+  String get authPasswordNeedsUppercaseNumberSpecial =>
+      'Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un symbole';
 
   @override
   String get authPasswordStrengthWeak => 'Faible';
@@ -2646,6 +3551,26 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authSiretHelp => '14 chiffres, sans espaces';
+
+  @override
+  String get authCompanyNameMinLength =>
+      'Le nom de l\'entreprise doit contenir au moins 2 caractères';
+
+  @override
+  String get authSiretMustHave14Digits =>
+      'Le numéro SIRET doit contenir 14 chiffres';
+
+  @override
+  String get authAddressMinLength =>
+      'L\'adresse doit contenir au moins 5 caractères';
+
+  @override
+  String get authCityMinLength =>
+      'La ville doit contenir au moins 2 caractères';
+
+  @override
+  String get authPostalCodeLength =>
+      'Le code postal doit contenir entre 3 et 10 caractères';
 
   @override
   String get authIndustryLabel => 'Secteur d\'activité';
@@ -2840,6 +3765,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'conditions spécifiques aux comptes professionnels';
 
   @override
+  String get authBusinessTermsRequired =>
+      'Veuillez accepter les conditions business';
+
+  @override
   String get authCreateBusinessAccountButton => 'Créer mon compte business';
 
   @override
@@ -2860,6 +3789,59 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get homeViewAll => 'Voir tout';
+
+  @override
+  String get homePartnerBadge => 'Partenaire';
+
+  @override
+  String get homePartnerSeeAllSelection => 'Voir toute la sélection';
+
+  @override
+  String get homePersonalizedTitle => 'Pour vous';
+
+  @override
+  String get homePersonalizedSubtitle => 'Basé sur vos préférences';
+
+  @override
+  String get homeNativeAdSponsored => 'Sponsorisé';
+
+  @override
+  String get homeRecommendedPopularTag => 'Populaire';
+
+  @override
+  String get homeRecommendedLastSpotsTag => 'Dernières places';
+
+  @override
+  String get homeSavedSearchAlertFallback => 'Alerte personnalisée';
+
+  @override
+  String get homeSavedSearchFallback => 'Recherche sauvegardée';
+
+  @override
+  String get homeMobileConfigDefaultHeroTitle =>
+      'Trouvez votre prochaine aventure locale';
+
+  @override
+  String get homeMobileConfigDefaultHeroSubtitle =>
+      'Découvrez les meilleurs événements près de chez vous';
+
+  @override
+  String get homeMobileConfigEventsSectionTitle =>
+      'Retrouvez tous vos événements';
+
+  @override
+  String get homeMobileConfigEventsSectionDescription =>
+      'Explorez notre sélection d\'événements locaux';
+
+  @override
+  String get homeMobileConfigThematiquesSectionTitle =>
+      'Explorez par thématique';
+
+  @override
+  String get homeMobileConfigCitiesSectionTitle => 'Événements par ville';
+
+  @override
+  String get homeMobileConfigExploreButton => 'Explorer les activités';
 
   @override
   String get homeNewActivitiesTitle => 'Nouveautés';
@@ -3667,7 +4649,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchNotificationsTitle => 'Notifications';
 
   @override
+  String get searchPushTitle => 'Push';
+
+  @override
   String get searchPushSubtitle => 'Notifications sur l\'app mobile';
+
+  @override
+  String get searchEmailTitle => 'Email';
 
   @override
   String get searchEmailSubtitle =>
@@ -3752,6 +4740,35 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventPriceFromPrefix => 'À partir de ';
+
+  @override
+  String get eventPriceDonation => 'Participation libre';
+
+  @override
+  String get eventPriceVariable => 'Prix variable';
+
+  @override
+  String eventPriceRange(String minPrice, String maxPrice) {
+    return 'De $minPrice à $maxPrice';
+  }
+
+  @override
+  String eventAgeMinimum(int minAge) {
+    return '$minAge ans et +';
+  }
+
+  @override
+  String eventAgeMaximum(int maxAge) {
+    return 'Jusqu\'à $maxAge ans';
+  }
+
+  @override
+  String eventAgeRange(int minAge, int maxAge) {
+    return '$minAge-$maxAge ans';
+  }
+
+  @override
+  String get eventLocationIndoorOutdoor => 'Intérieur/Extérieur';
 
   @override
   String get eventCharacteristicsTitle => 'Caractéristiques';
@@ -4024,6 +5041,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventDrinksAvailable => 'Boissons disponibles';
+
+  @override
+  String get eventWifiLabel => 'Wi-Fi';
 
   @override
   String get eventWifiAvailable => 'Wi-Fi disponible';
@@ -4317,6 +5337,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Votre question est trop longue (1000 max).';
 
   @override
+  String get eventQuestionInvalid => 'Question invalide.';
+
+  @override
   String get eventQuestionInfo =>
       'L\'organisateur recevra votre question et vous répondra bientôt.';
 
@@ -4378,6 +5401,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventSimilarEvents => 'Événements similaires';
+
+  @override
+  String eventPeopleWatching(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personnes regardent',
+      one: '1 personne regarde',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get bookingCheckoutTitle => 'Finaliser ma réservation';
@@ -4851,6 +5885,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bookingPreparingPdf => 'Préparation du PDF…';
 
   @override
+  String get bookingAndroidDownloadsLocation => 'Téléchargements/Lehiboo';
+
+  @override
+  String get bookingDocumentsTicketsLocation => 'Documents > Lehiboo > tickets';
+
+  @override
   String bookingTicketsSaved(String location) {
     return 'Billets enregistrés dans $location';
   }
@@ -5101,4 +6141,1088 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get bookingTicketsLoadError => 'Impossible de charger les billets';
+
+  @override
+  String get tripPlansListTitle => 'Mes sorties';
+
+  @override
+  String tripPlansDeletedSnack(String title) {
+    return 'Plan \"$title\" supprimé';
+  }
+
+  @override
+  String get tripPlansUntitledPlan => 'Plan sans titre';
+
+  @override
+  String get tripPlansEmptyTitle => 'Aucune sortie planifiée';
+
+  @override
+  String get tripPlansEmptyBody =>
+      'Demande à Petit Boo de te créer un itinéraire pour ta prochaine sortie !';
+
+  @override
+  String get tripPlansTalkToPetitBoo => 'Parler à Petit Boo';
+
+  @override
+  String get tripPlansErrorTitle => 'Une erreur est survenue';
+
+  @override
+  String get tripPlansLoadErrorBody => 'Impossible de charger vos sorties';
+
+  @override
+  String get tripPlanEditTitle => 'Modifier';
+
+  @override
+  String tripPlanEditErrorWithMessage(String message) {
+    return 'Erreur : $message';
+  }
+
+  @override
+  String get tripPlanEditNotFound => 'Plan non trouvé';
+
+  @override
+  String get tripPlanEditTitleLabel => 'Titre';
+
+  @override
+  String get tripPlanEditNameHint => 'Nom de la sortie';
+
+  @override
+  String get tripPlanEditDateLabel => 'Date';
+
+  @override
+  String get tripPlanEditSelectDate => 'Sélectionner une date';
+
+  @override
+  String get tripPlanEditStopsLabel => 'Étapes';
+
+  @override
+  String get tripPlanEditReorderHint => 'Glisser pour réorganiser';
+
+  @override
+  String get tripPlanEditUpdatedSnack => 'Plan mis à jour';
+
+  @override
+  String get tripPlanEditDiscardChangesTitle =>
+      'Abandonner les modifications ?';
+
+  @override
+  String get tripPlanEditDiscardChangesBody =>
+      'Vos modifications ne seront pas sauvegardées.';
+
+  @override
+  String get tripPlanEditDiscard => 'Abandonner';
+
+  @override
+  String tripPlansStopsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count étapes',
+      one: '1 étape',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tripPlansStopsPlanned(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count étapes prévues',
+      one: '1 étape prévue',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tripPlansStopFallback => 'Étape';
+
+  @override
+  String get tripPlansNoCoordinatesAvailable => 'Aucune coordonnée disponible';
+
+  @override
+  String get tripPlansDeleteDialogTitle => 'Supprimer ce plan ?';
+
+  @override
+  String tripPlansDeleteDialogBody(String title) {
+    return 'Le plan \"$title\" sera définitivement supprimé.';
+  }
+
+  @override
+  String tripPlansDurationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String tripPlansDurationHours(int hours) {
+    return '${hours}h';
+  }
+
+  @override
+  String tripPlansDurationHoursMinutes(int hours, int minutes) {
+    return '${hours}h$minutes';
+  }
+
+  @override
+  String get reviewsAllRatingsFilter => 'Tous';
+
+  @override
+  String get reviewsAllTitle => 'Tous les avis';
+
+  @override
+  String get reviewsCannotReviewAlreadyReviewed =>
+      'Vous avez déjà laissé un avis sur cet événement.';
+
+  @override
+  String get reviewsCannotReviewEventNotEnded =>
+      'Vous pourrez laisser un avis une fois l\'événement passé.';
+
+  @override
+  String get reviewsCannotReviewNotParticipated =>
+      'Seuls les participants à l\'événement peuvent laisser un avis.';
+
+  @override
+  String get reviewsCannotReviewOrganizer =>
+      'Vous ne pouvez pas noter vos propres événements.';
+
+  @override
+  String get reviewsCannotReviewUnknown =>
+      'Vous ne pouvez pas laisser d\'avis pour le moment.';
+
+  @override
+  String reviewsCommentMinLengthError(int minLength) {
+    return 'Votre avis doit faire au moins $minLength caractères';
+  }
+
+  @override
+  String get reviewsCommentRequiredError => 'Veuillez écrire votre avis';
+
+  @override
+  String get reviewsCommentRequiredLabel => 'Votre avis *';
+
+  @override
+  String get reviewsCreateSuccessPendingModeration =>
+      'Avis envoyé. Il sera publié après validation.';
+
+  @override
+  String get reviewsDeleteAction => 'Supprimer';
+
+  @override
+  String get reviewsDeleteConfirmBody =>
+      'Cette action est définitive. Vous pourrez en écrire un nouveau plus tard.';
+
+  @override
+  String get reviewsDeleteConfirmTitle => 'Supprimer cet avis ?';
+
+  @override
+  String get reviewsDeleteSuccess => 'Avis supprimé';
+
+  @override
+  String get reviewsEditAction => 'Modifier';
+
+  @override
+  String get reviewsEditModerationNotice =>
+      'Toute modification remettra votre avis en attente de modération.';
+
+  @override
+  String get reviewsEditMyReviewTitle => 'Modifier mon avis';
+
+  @override
+  String get reviewsEmptyBody =>
+      'Partagez votre expérience et aidez les autres à choisir !';
+
+  @override
+  String get reviewsEmptyTitle => 'Pas encore d\'avis';
+
+  @override
+  String get reviewsEventFallback => 'Événement';
+
+  @override
+  String get reviewsFeaturedFilter => 'Mis en avant';
+
+  @override
+  String get reviewsUserLoadError => 'Impossible de charger vos avis.';
+
+  @override
+  String get reviewsUserLoadMoreError => 'Impossible de charger la suite.';
+
+  @override
+  String get reviewsMyEmptyBody =>
+      'Vous n\'avez encore laissé aucun avis. Une fois un événement terminé, vous pourrez partager votre expérience !';
+
+  @override
+  String get reviewsMyEmptyTitle => 'Aucun avis';
+
+  @override
+  String get reviewsNoFilteredResults =>
+      'Aucun avis ne correspond aux filtres sélectionnés.';
+
+  @override
+  String get reviewsNoReviewsTitle => 'Aucun avis';
+
+  @override
+  String get reviewsOrganizerReplied => 'L\'organisateur a répondu';
+
+  @override
+  String get reviewsReportAction => 'Signaler';
+
+  @override
+  String get reviewsReportDetailsOptionalLabel => 'Précisions (optionnel)';
+
+  @override
+  String get reviewsReportReasonFake => 'Faux avis';
+
+  @override
+  String get reviewsReportReasonInappropriate => 'Contenu inapproprié';
+
+  @override
+  String get reviewsReportReasonOffensive => 'Propos offensants';
+
+  @override
+  String get reviewsReportReasonOther => 'Autre';
+
+  @override
+  String get reviewsReportReasonQuestion =>
+      'Pourquoi cet avis pose-t-il problème ?';
+
+  @override
+  String get reviewsReportReasonSpam => 'Spam';
+
+  @override
+  String get reviewsReportSubmitAction => 'Envoyer le signalement';
+
+  @override
+  String get reviewsReportSuccess =>
+      'Signalement envoyé. Merci de votre vigilance.';
+
+  @override
+  String get reviewsReportTitle => 'Signaler cet avis';
+
+  @override
+  String get reviewsRewriteAction => 'Réécrire';
+
+  @override
+  String get reviewsSectionTitle => 'Avis';
+
+  @override
+  String get reviewsSelectRatingRequired => 'Veuillez sélectionner une note';
+
+  @override
+  String get reviewsSortMostHelpful => 'Plus utiles';
+
+  @override
+  String get reviewsSortNewest => 'Plus récents';
+
+  @override
+  String get reviewsSortRating => 'Note';
+
+  @override
+  String get reviewsSortTooltip => 'Trier';
+
+  @override
+  String get reviewsStatusApproved => 'Publié';
+
+  @override
+  String get reviewsStatusPending => 'En attente';
+
+  @override
+  String get reviewsStatusRejected => 'Refusé';
+
+  @override
+  String get reviewsSubmitAction => 'Envoyer mon avis';
+
+  @override
+  String get reviewsTitleRequiredError => 'Veuillez ajouter un titre';
+
+  @override
+  String get reviewsTitleRequiredLabel => 'Titre *';
+
+  @override
+  String reviewsTotalCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count avis',
+      one: '1 avis',
+      zero: 'Aucun avis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reviewsUpdateAction => 'Mettre à jour';
+
+  @override
+  String get reviewsUpdateSuccessPendingModeration =>
+      'Avis mis à jour. Il sera de nouveau modéré.';
+
+  @override
+  String get reviewsVerifiedFilter => 'Vérifiés';
+
+  @override
+  String reviewsViewAllAction(int count) {
+    return 'Voir tous les avis ($count)';
+  }
+
+  @override
+  String get reviewsViewMyReviewAction => 'Voir mon avis →';
+
+  @override
+  String get reviewsWriteAction => 'Écrire';
+
+  @override
+  String get reviewsWriteFirstAction => 'Écrire le premier avis';
+
+  @override
+  String get reviewsWriteReviewAction => 'Écrire un avis';
+
+  @override
+  String get reviewsWriteReviewTitle => 'Laisser un avis';
+
+  @override
+  String get reviewsYourRatingLabel => 'Votre note';
+
+  @override
+  String get reviewsYourReviewLabel => 'Votre avis';
+
+  @override
+  String get gamificationActionsCatalogLoadError =>
+      'Impossible de charger le catalogue';
+
+  @override
+  String get gamificationActionsEmpty =>
+      'Aucune action disponible pour le moment';
+
+  @override
+  String get gamificationActivitiesBonusTitle => 'Activités & Bonus';
+
+  @override
+  String get gamificationAllFilter => 'Tous';
+
+  @override
+  String get gamificationBadgeLocked => 'À débloquer';
+
+  @override
+  String get gamificationBadgeUnlocked => 'Débloqué';
+
+  @override
+  String get gamificationBadgeUnlockedCongrats =>
+      'Bravo, tu as débloqué ce badge !';
+
+  @override
+  String get gamificationBadgesLoadError => 'Impossible de charger tes badges';
+
+  @override
+  String get gamificationBoostersUtilitiesTitle => 'Boosters & Utilitaires';
+
+  @override
+  String get gamificationCapReached => 'Atteint';
+
+  @override
+  String get gamificationChallengesTitle => 'Challenges';
+
+  @override
+  String get gamificationClaimDailyReward => 'Réclamer ma récompense';
+
+  @override
+  String get gamificationComeBackTomorrow => 'Reviens demain !';
+
+  @override
+  String get gamificationCompleted => 'Effectué';
+
+  @override
+  String get gamificationCurrentRankPrefix => 'Tu es';
+
+  @override
+  String get gamificationDailyClaimError => 'Erreur lors de la réclamation';
+
+  @override
+  String get gamificationDailyRewardAlreadyClaimed =>
+      'Tu as déjà réclamé ta récompense aujourd\'hui !';
+
+  @override
+  String get gamificationDailyRewardTitle => 'Récompense quotidienne';
+
+  @override
+  String gamificationDayNumber(int dayNumber) {
+    return 'J-$dayNumber';
+  }
+
+  @override
+  String get gamificationEarningsByPillarTitle => 'Répartition par pilier';
+
+  @override
+  String gamificationErrorWithMessage(String message) {
+    return 'Erreur : $message';
+  }
+
+  @override
+  String get gamificationGreatCta => 'Super !';
+
+  @override
+  String gamificationHibonsAmount(int count) {
+    return '$count HIBONs';
+  }
+
+  @override
+  String get gamificationHibonsAvailable => 'Hibons disponibles';
+
+  @override
+  String gamificationHibonsDelta(int delta) {
+    return '$delta Hibons';
+  }
+
+  @override
+  String gamificationHibonsEarned(int count) {
+    return '$count Hibons gagnés';
+  }
+
+  @override
+  String gamificationHibonsGainedToast(int delta) {
+    return '+$delta Hibons gagnés !';
+  }
+
+  @override
+  String get gamificationHibonsPacksComingSoonTitle =>
+      'Packs de Hibons (bientôt)';
+
+  @override
+  String gamificationHibonsProgress(int current, int total) {
+    return '$current / $total HIBONs';
+  }
+
+  @override
+  String gamificationHibonsRemainingForBadge(int count) {
+    return 'Encore $count HIBONs pour débloquer ce badge';
+  }
+
+  @override
+  String get gamificationHibonsUnit => 'Hibons';
+
+  @override
+  String gamificationHibonsUntilNextRank(int count, String rankLabel) {
+    return 'Plus que $count avant $rankLabel';
+  }
+
+  @override
+  String get gamificationHibouExpressTitle => 'Hibou Express (24 h)';
+
+  @override
+  String get gamificationHibouExpressDescription =>
+      'Messages illimités avec Petit Boo';
+
+  @override
+  String get gamificationHistoryTitle => 'Historique';
+
+  @override
+  String get gamificationHowToEarnTitle => 'Comment gagner des Hibons';
+
+  @override
+  String get gamificationInAppPurchasesComingSoon =>
+      'Les achats In-App arrivent bientôt !';
+
+  @override
+  String get gamificationInsufficientHibons => 'Hibons insuffisants !';
+
+  @override
+  String gamificationLifetimeHibonsAccumulated(int count) {
+    return '$count HIBONs cumulés';
+  }
+
+  @override
+  String get gamificationLockedCountLabel => 'À débloquer';
+
+  @override
+  String get gamificationLuckyWheelTitle => 'Roue de la Fortune';
+
+  @override
+  String get gamificationMaxRankReached => 'Rang maximal atteint';
+
+  @override
+  String get gamificationMultiplierDescription =>
+      'Gagnez plus de Hibons pendant 1h';
+
+  @override
+  String get gamificationMultiplierTitle => 'Multiplicateur x1.5 (1h)';
+
+  @override
+  String get gamificationMyBadgesTitle => 'Mes badges';
+
+  @override
+  String gamificationNewHibonsBalance(int balance) {
+    return 'Nouveau solde : $balance Hibons';
+  }
+
+  @override
+  String get gamificationNoTransactions => 'Aucune transaction';
+
+  @override
+  String gamificationPetitBooDailyBonus(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '+$count messages Petit Boo / jour',
+      one: '+1 message Petit Boo / jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gamificationPillarCommunity => 'Communauté';
+
+  @override
+  String get gamificationPillarDiscovery => 'Découverte';
+
+  @override
+  String get gamificationPillarEngagement => 'Engagement';
+
+  @override
+  String get gamificationPillarOnboarding => 'Onboarding';
+
+  @override
+  String get gamificationPillarParticipation => 'Participation';
+
+  @override
+  String get gamificationProgressionTitle => 'Progression';
+
+  @override
+  String gamificationProgressThisWeek(int completed, int total) {
+    return '$completed/$total cette semaine';
+  }
+
+  @override
+  String gamificationProgressToday(int completed, int total) {
+    return '$completed/$total aujourd\'hui';
+  }
+
+  @override
+  String gamificationPurchaseCompleted(String itemName) {
+    return 'Achat effectué : $itemName';
+  }
+
+  @override
+  String get gamificationRankUpCongratsTitle => 'Bravo !';
+
+  @override
+  String gamificationRankUpNowRank(String rankLabel) {
+    return 'Tu es maintenant $rankLabel !';
+  }
+
+  @override
+  String gamificationRemainingLifetime(int count) {
+    return '$count restant';
+  }
+
+  @override
+  String get gamificationShopTitle => 'Boutique Hibons';
+
+  @override
+  String get gamificationStartingRank => 'Rang de départ';
+
+  @override
+  String get gamificationStreakShieldTitle => 'Bouclier de série';
+
+  @override
+  String get gamificationStreakShieldDescription =>
+      'Protégez votre série pour 1 jour';
+
+  @override
+  String get gamificationTopCta => 'Top !';
+
+  @override
+  String get gamificationTotalCountLabel => 'Total';
+
+  @override
+  String get gamificationUnlockedCountLabel => 'Débloqués';
+
+  @override
+  String get gamificationWheelAlreadyUsedToday =>
+      'Tu as déjà utilisé ta chance aujourd\'hui.';
+
+  @override
+  String get gamificationWheelLoseTitle => 'Pas de chance...';
+
+  @override
+  String get gamificationWheelSpinCta => 'Lancer';
+
+  @override
+  String get gamificationWheelWinTitle => 'Félicitations !';
+
+  @override
+  String get alertsListTitle => 'Mes alertes et recherches';
+
+  @override
+  String get alertsFilterAll => 'Toutes';
+
+  @override
+  String get alertsFilterAlerts => 'Alertes';
+
+  @override
+  String get alertsFilterSearches => 'Recherches';
+
+  @override
+  String get alertsLoadError => 'Impossible de charger vos alertes';
+
+  @override
+  String get alertsEmptyAllTitle => 'Aucune alerte pour le moment';
+
+  @override
+  String get alertsEmptyAllBody =>
+      'Enregistrez vos recherches pour les retrouver ici et recevoir des notifications';
+
+  @override
+  String get alertsEmptyActiveTitle => 'Aucune alerte active';
+
+  @override
+  String get alertsEmptyActiveBody =>
+      'Activez les notifications sur vos recherches pour être alerté des nouveaux événements';
+
+  @override
+  String get alertsEmptySearchesTitle => 'Aucune recherche enregistrée';
+
+  @override
+  String get alertsEmptySearchesBody =>
+      'Vos recherches sans notification apparaîtront ici';
+
+  @override
+  String get alertsExploreActivities => 'Explorer les activités';
+
+  @override
+  String get alertsDeleteTitle => 'Supprimer l\'alerte';
+
+  @override
+  String get alertsDeleteBody =>
+      'Voulez-vous vraiment supprimer cette recherche enregistrée ?';
+
+  @override
+  String alertsDeleted(String name) {
+    return 'Alerte « $name » supprimée';
+  }
+
+  @override
+  String alertsCreatedOn(String date) {
+    return 'Créée le $date';
+  }
+
+  @override
+  String get alertsAllEvents => 'Tous les événements';
+
+  @override
+  String get alertsUnnamed => 'Alerte sans nom';
+
+  @override
+  String get favoritesLoadError => 'Erreur de chargement';
+
+  @override
+  String get favoritesEmptyTitle => 'Aucun favori';
+
+  @override
+  String get favoritesEmptyBody =>
+      'Ajoutez des événements à vos favoris en cliquant sur le cœur pour les retrouver facilement.';
+
+  @override
+  String get favoritesEmptyUncategorizedTitle => 'Aucun favori non classé';
+
+  @override
+  String get favoritesEmptyUncategorizedBody =>
+      'Tous vos favoris sont organisés dans des listes.';
+
+  @override
+  String get favoritesEmptyListTitle => 'Cette liste est vide';
+
+  @override
+  String get favoritesEmptyListBody =>
+      'Ajoutez des favoris à cette liste depuis le détail d\'un événement.';
+
+  @override
+  String get favoritesExploreEvents => 'Explorer les événements';
+
+  @override
+  String get favoriteListsTitle => 'Mes listes';
+
+  @override
+  String get favoriteListsLoadError => 'Erreur de chargement';
+
+  @override
+  String get favoriteListsAllFavorites => 'Tous les favoris';
+
+  @override
+  String get favoriteListsAllShort => 'Tous';
+
+  @override
+  String get favoriteListsUncategorized => 'Non classés';
+
+  @override
+  String get favoriteListsUncategorizedSingular => 'Non classé';
+
+  @override
+  String get favoriteListsSectionTitle => 'MES LISTES';
+
+  @override
+  String get favoriteListNewTitle => 'Nouvelle liste';
+
+  @override
+  String get favoriteListOrganizeSubtitle => 'Organisez vos favoris';
+
+  @override
+  String get favoriteListNameLabel => 'Nom de la liste';
+
+  @override
+  String get favoriteListNameHint => 'Ex. : Concerts à voir';
+
+  @override
+  String get favoriteListNameRequired => 'Veuillez entrer un nom';
+
+  @override
+  String get favoriteListNameMinLength =>
+      'Le nom doit contenir au moins 2 caractères';
+
+  @override
+  String get favoriteListNameMaxLength =>
+      'Le nom ne peut pas dépasser 50 caractères';
+
+  @override
+  String get favoriteListDescriptionLabel => 'Description (optionnelle)';
+
+  @override
+  String get favoriteListDescriptionHint =>
+      'Ex. : Mes événements musicaux préférés';
+
+  @override
+  String get favoriteListColorLabel => 'Couleur';
+
+  @override
+  String get favoriteListIconLabel => 'Icône';
+
+  @override
+  String get favoriteListCreateAction => 'Créer';
+
+  @override
+  String get favoriteListCreateError =>
+      'Erreur lors de la création de la liste';
+
+  @override
+  String get favoriteListEditTitle => 'Modifier la liste';
+
+  @override
+  String favoriteListFavoritesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count favoris',
+      one: '1 favori',
+      zero: '0 favori',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get favoriteListUpdateError => 'Erreur lors de la mise à jour';
+
+  @override
+  String get favoriteListDeleteTitle => 'Supprimer la liste ?';
+
+  @override
+  String favoriteListDeleteBody(String name) {
+    return 'La liste « $name » sera supprimée.';
+  }
+
+  @override
+  String get favoriteListDeleteMoveBody =>
+      'Les événements favoris ne seront pas supprimés, ils seront déplacés dans « Non classés ».';
+
+  @override
+  String favoriteListDeleted(String name) {
+    return 'Liste « $name » supprimée';
+  }
+
+  @override
+  String get favoriteListDeleteError => 'Erreur lors de la suppression';
+
+  @override
+  String get favoriteListDeleteThisAction => 'Supprimer cette liste';
+
+  @override
+  String get favoriteListPickerMoveTitle => 'Déplacer vers...';
+
+  @override
+  String get favoriteListPickerAddTitle => 'Ajouter aux favoris';
+
+  @override
+  String get favoriteListPickerUncategorizedSubtitle => 'Favoris sans liste';
+
+  @override
+  String get favoriteListCreateSheetTitle => 'Créer une liste';
+
+  @override
+  String get favoriteListCreateSheetSubtitle =>
+      'Nouvelle collection de favoris';
+
+  @override
+  String get favoriteListPickerRemoveTitle => 'Retirer des favoris';
+
+  @override
+  String get favoriteListPickerRemoveSubtitle =>
+      'Supprimer de tous les favoris';
+
+  @override
+  String get favoriteAddError => 'Impossible d\'ajouter aux favoris';
+
+  @override
+  String get favoriteRemoveError => 'Impossible de retirer des favoris';
+
+  @override
+  String get favoriteUpdateError => 'Impossible de modifier le favori';
+
+  @override
+  String get favoriteMovedToList => 'Déplacé vers la liste';
+
+  @override
+  String get favoriteMovedToUncategorized => 'Déplacé vers « Non classés »';
+
+  @override
+  String get favoriteAddedToList => 'Ajouté à la liste';
+
+  @override
+  String get favoriteGenericError => 'Une erreur est survenue.';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsMarkAllRead => 'Tout marquer comme lu';
+
+  @override
+  String get notificationsFilterAll => 'Toutes';
+
+  @override
+  String get notificationsFilterUnread => 'Non lues';
+
+  @override
+  String get notificationsGuestTitle => 'Connectez-vous';
+
+  @override
+  String get notificationsGuestBody =>
+      'Vos notifications apparaîtront ici après connexion.';
+
+  @override
+  String get notificationsReadSyncError => 'Lecture non synchronisée';
+
+  @override
+  String get notificationsMarkRead => 'Marquer comme lu';
+
+  @override
+  String get notificationsMarkReadError => 'Impossible de marquer comme lu';
+
+  @override
+  String get notificationsMarkedAllRead => 'Notifications marquées comme lues';
+
+  @override
+  String get notificationsActionError => 'Action impossible pour le moment';
+
+  @override
+  String get notificationsDeleted => 'Notification supprimée';
+
+  @override
+  String get notificationsDeleteError => 'Suppression impossible';
+
+  @override
+  String get notificationsDeleteTitle => 'Supprimer la notification';
+
+  @override
+  String get notificationsDeleteBody =>
+      'Voulez-vous vraiment supprimer cette notification ?';
+
+  @override
+  String get notificationsJustNow => 'À l\'instant';
+
+  @override
+  String notificationsMinutesAgoShort(int count) {
+    return '$count min';
+  }
+
+  @override
+  String notificationsHoursAgoShort(int count) {
+    return '$count h';
+  }
+
+  @override
+  String notificationsDaysAgoShort(int count) {
+    return '$count j';
+  }
+
+  @override
+  String get notificationsTypeMessage => 'Message';
+
+  @override
+  String get notificationsTypeBooking => 'Réservation';
+
+  @override
+  String get notificationsTypeTicket => 'Billet';
+
+  @override
+  String get notificationsTypeEvent => 'Événement';
+
+  @override
+  String get notificationsTypeReview => 'Avis';
+
+  @override
+  String get notificationsTypeQuestion => 'Question';
+
+  @override
+  String get notificationsTypeOrganization => 'Organisation';
+
+  @override
+  String get notificationsTypeInfo => 'Info';
+
+  @override
+  String get notificationsEmptyUnreadTitle => 'Aucune notification non lue';
+
+  @override
+  String get notificationsEmptyTitle => 'Aucune notification pour le moment';
+
+  @override
+  String get notificationsEmptyUnreadBody =>
+      'Les nouvelles notifications apparaîtront ici.';
+
+  @override
+  String get notificationsEmptyBody =>
+      'Vos messages, réservations et mises à jour importantes apparaîtront ici.';
+
+  @override
+  String get notificationsLoadError =>
+      'Impossible de charger vos notifications';
+
+  @override
+  String get remindersTitle => 'Mes rappels';
+
+  @override
+  String get remindersUpcoming => 'À venir';
+
+  @override
+  String get remindersPast => 'Passés';
+
+  @override
+  String get remindersDeleteTitle => 'Supprimer le rappel ?';
+
+  @override
+  String remindersDeleteBody(String eventTitle, String date) {
+    return 'Vous ne recevrez plus de notifications pour « $eventTitle » le $date.';
+  }
+
+  @override
+  String get remindersDeleted => 'Rappel supprimé';
+
+  @override
+  String remindersDateFromTo(String date, String start, String end) {
+    return '$date de $start à $end';
+  }
+
+  @override
+  String remindersDateAtTime(String date, String start) {
+    return '$date à $start';
+  }
+
+  @override
+  String get remindersEmptyTitle => 'Aucun rappel';
+
+  @override
+  String get remindersEmptyBody =>
+      'Activez des rappels sur les activités qui vous intéressent pour être notifié.';
+
+  @override
+  String get remindersLoadError => 'Impossible de charger vos rappels';
+
+  @override
+  String remindersDaysBeforeBadge(int count) {
+    return 'J-$count';
+  }
+
+  @override
+  String get onboardingExploreTitle => 'Sortez et expérimentez';
+
+  @override
+  String get onboardingExploreDescription =>
+      'Ateliers, balades, spectacles enfants : trouvez l\'activité du week-end sans y passer votre soirée.';
+
+  @override
+  String get onboardingMusicTitle => 'Vibrez au rythme de votre ville';
+
+  @override
+  String get onboardingMusicDescription =>
+      'Découvrez les concerts, festivals et soirées qui font bouger votre région. Ne ratez plus aucun événement musical.';
+
+  @override
+  String get onboardingLocalTitle => 'Restez connecté aux nouveautés du coin';
+
+  @override
+  String get onboardingLocalDescription =>
+      'Marchés, lieux à découvrir : les bonnes adresses à deux pas de chez vous.';
+
+  @override
+  String get onboardingAssociationTitle => 'Membre d\'une asso ?';
+
+  @override
+  String get onboardingAssociationDescription =>
+      'Accédez aux événements privés réservés à vos associations : sport, école, culture, loisirs. Tout au même endroit.';
+
+  @override
+  String get onboardingSkip => 'Passer';
+
+  @override
+  String get onboardingGetStarted => 'C\'est parti';
+
+  @override
+  String get thematiquesExploreByTypeTitle => 'Explorer par type d\'événement';
+
+  @override
+  String get thematiquesSeeAll => 'Voir tout';
+
+  @override
+  String thematiquesAllTypesCount(int count) {
+    return 'Tous les types ($count)';
+  }
+
+  @override
+  String get thematiquesSearchHint => 'Rechercher un type d\'événement...';
+
+  @override
+  String thematiquesEventCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count événements',
+      one: '1 événement',
+      zero: '0 événement',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get categoriesAllTitle => 'Toutes les catégories';
+
+  @override
+  String get categoriesSeeAll => 'Voir toutes les catégories';
+
+  @override
+  String categoriesAllCount(int count) {
+    return 'Toutes les catégories ($count)';
+  }
+
+  @override
+  String get categoriesSearchHint => 'Rechercher une catégorie...';
+
+  @override
+  String get categoriesEmptySearch => 'Aucune catégorie trouvée';
+
+  @override
+  String get blogLatestTitle => 'Derniers articles';
+
+  @override
+  String get blogEmpty => 'Aucun article disponible';
+
+  @override
+  String blogReadingTimeMinutes(int minutes) {
+    return '$minutes min';
+  }
 }

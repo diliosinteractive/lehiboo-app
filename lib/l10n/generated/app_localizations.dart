@@ -470,11 +470,77 @@ abstract class AppLocalizations {
   /// **'Enregistrer'**
   String get commonSave;
 
+  /// No description provided for @commonDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get commonDelete;
+
+  /// No description provided for @commonOk.
+  ///
+  /// In fr, this message translates to:
+  /// **'OK'**
+  String get commonOk;
+
   /// No description provided for @commonValidate.
   ///
   /// In fr, this message translates to:
   /// **'Valider'**
   String get commonValidate;
+
+  /// No description provided for @commonErrorTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oups !'**
+  String get commonErrorTitle;
+
+  /// No description provided for @commonGenericError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue.'**
+  String get commonGenericError;
+
+  /// No description provided for @commonGenericRetryError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue. Veuillez réessayer.'**
+  String get commonGenericRetryError;
+
+  /// No description provided for @commonConnectionError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur de connexion. Vérifiez votre connexion internet.'**
+  String get commonConnectionError;
+
+  /// No description provided for @commonSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher...'**
+  String get commonSearchHint;
+
+  /// No description provided for @routeEventFallbackTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement'**
+  String get routeEventFallbackTitle;
+
+  /// No description provided for @routeRecommendedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recommandés pour vous'**
+  String get routeRecommendedTitle;
+
+  /// No description provided for @routeNotFoundTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oups ! Page non trouvée'**
+  String get routeNotFoundTitle;
+
+  /// No description provided for @routeNotFoundBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'La page que vous recherchez n\'existe pas.'**
+  String get routeNotFoundBody;
 
   /// No description provided for @settingsPushPermissionRequired.
   ///
@@ -607,6 +673,78 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Vos questions sur les événements'**
   String get profileQuestionsSubtitle;
+
+  /// No description provided for @userQuestionsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes questions'**
+  String get userQuestionsTitle;
+
+  /// No description provided for @userQuestionsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos questions.'**
+  String get userQuestionsLoadError;
+
+  /// No description provided for @userQuestionsEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune question'**
+  String get userQuestionsEmptyTitle;
+
+  /// No description provided for @userQuestionsEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez encore posé aucune question sur un événement.'**
+  String get userQuestionsEmptyBody;
+
+  /// No description provided for @userQuestionsExploreEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrir des événements'**
+  String get userQuestionsExploreEvents;
+
+  /// No description provided for @userQuestionsDeletedEvent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement supprimé'**
+  String get userQuestionsDeletedEvent;
+
+  /// No description provided for @userQuestionsOrganizerFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisateur'**
+  String get userQuestionsOrganizerFallback;
+
+  /// No description provided for @userQuestionsRejectedNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette question a été rejetée par la modération.'**
+  String get userQuestionsRejectedNotice;
+
+  /// No description provided for @userQuestionsStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get userQuestionsStatusPending;
+
+  /// No description provided for @userQuestionsStatusApproved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Approuvée'**
+  String get userQuestionsStatusApproved;
+
+  /// No description provided for @userQuestionsStatusAnswered.
+  ///
+  /// In fr, this message translates to:
+  /// **'Répondue'**
+  String get userQuestionsStatusAnswered;
+
+  /// No description provided for @userQuestionsStatusRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejetée'**
+  String get userQuestionsStatusRejected;
 
   /// No description provided for @profileReviewsTitle.
   ///
@@ -1826,6 +1964,12 @@ abstract class AppLocalizations {
   /// **'Ouvert'**
   String get messagesStatusOpen;
 
+  /// No description provided for @messagesNotificationOpenAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir'**
+  String get messagesNotificationOpenAction;
+
   /// No description provided for @messagesDeletedPreview.
   ///
   /// In fr, this message translates to:
@@ -2473,6 +2617,42 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Conversation'**
   String get petitBooConversationFallbackTitle;
+
+  /// No description provided for @petitBooConversationsAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour voir vos conversations'**
+  String get petitBooConversationsAuthRequired;
+
+  /// No description provided for @petitBooConversationsLoadFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les conversations'**
+  String get petitBooConversationsLoadFailed;
+
+  /// No description provided for @petitBooEngagementWelcome.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour ! Je peux vous aider ? 🌟'**
+  String get petitBooEngagementWelcome;
+
+  /// No description provided for @petitBooEngagementInspiration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous cherchez l\'inspiration ? 💡'**
+  String get petitBooEngagementInspiration;
+
+  /// No description provided for @petitBooEngagementNoResults.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oups, rien trouvé ? Je peux chercher pour vous ! 🕵️‍♂️'**
+  String get petitBooEngagementNoResults;
+
+  /// No description provided for @petitBooEngagementIdle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Psst... Je connais des coins sympas ! 🗺️'**
+  String get petitBooEngagementIdle;
 
   /// No description provided for @petitBooRelativeDaysAgo.
   ///
@@ -3410,6 +3590,192 @@ abstract class AppLocalizations {
   /// **'Inactive'**
   String get petitBooToolStatusInactive;
 
+  /// No description provided for @petitBooToolEventFallbackTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement'**
+  String get petitBooToolEventFallbackTitle;
+
+  /// No description provided for @petitBooToolEventCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 événement} other{{count} événements}}'**
+  String petitBooToolEventCount(int count);
+
+  /// No description provided for @petitBooToolViewEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir {count, plural, =1{1 événement} other{les {count} événements}}'**
+  String petitBooToolViewEvents(int count);
+
+  /// No description provided for @petitBooEventDateTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'{date} à {time}'**
+  String petitBooEventDateTime(String date, String time);
+
+  /// No description provided for @petitBooEventAvailabilityAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir les disponibilités'**
+  String get petitBooEventAvailabilityAction;
+
+  /// No description provided for @petitBooEventPriceFrom.
+  ///
+  /// In fr, this message translates to:
+  /// **'À partir de'**
+  String get petitBooEventPriceFrom;
+
+  /// No description provided for @petitBooEventPriceTiers.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 tarif} other{{count} tarifs}}'**
+  String petitBooEventPriceTiers(int count);
+
+  /// No description provided for @petitBooTripSavedPlansCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 plan sauvegardé} other{{count} plans sauvegardés}}'**
+  String petitBooTripSavedPlansCount(int count);
+
+  /// No description provided for @petitBooTripStopsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 étape} other{{count} étapes}}'**
+  String petitBooTripStopsCount(int count);
+
+  /// No description provided for @petitBooTripMoreStops.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{+1 autre étape} other{+{count} autres étapes}}'**
+  String petitBooTripMoreStops(int count);
+
+  /// No description provided for @petitBooTripFallbackStop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Étape'**
+  String get petitBooTripFallbackStop;
+
+  /// No description provided for @petitBooTripFallbackListTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan sans titre'**
+  String get petitBooTripFallbackListTitle;
+
+  /// No description provided for @petitBooTripLoadErrorTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger tes sorties'**
+  String get petitBooTripLoadErrorTitle;
+
+  /// No description provided for @petitBooTripLoadErrorRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessaie dans quelques instants'**
+  String get petitBooTripLoadErrorRetry;
+
+  /// No description provided for @petitBooTripEmptyPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande-moi de planifier une sortie !'**
+  String get petitBooTripEmptyPrompt;
+
+  /// No description provided for @petitBooTripViewAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir toutes mes sorties'**
+  String get petitBooTripViewAll;
+
+  /// No description provided for @petitBooTripExpandMap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Agrandir la carte'**
+  String get petitBooTripExpandMap;
+
+  /// No description provided for @petitBooTripCollapseMap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réduire'**
+  String get petitBooTripCollapseMap;
+
+  /// No description provided for @petitBooTripTipsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conseils'**
+  String get petitBooTripTipsTitle;
+
+  /// No description provided for @petitBooTripSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sauvegarder'**
+  String get petitBooTripSave;
+
+  /// No description provided for @petitBooTripSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sauvegardé'**
+  String get petitBooTripSaved;
+
+  /// No description provided for @petitBooTripShowMap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir carte'**
+  String get petitBooTripShowMap;
+
+  /// No description provided for @petitBooTripHideMap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Masquer carte'**
+  String get petitBooTripHideMap;
+
+  /// No description provided for @petitBooTripSavePlanPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sauvegarde ce plan de sortie'**
+  String get petitBooTripSavePlanPrompt;
+
+  /// No description provided for @petitBooTripNoCoordinates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune coordonnée disponible'**
+  String get petitBooTripNoCoordinates;
+
+  /// No description provided for @petitBooQuotaExceededError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez atteint votre limite de messages'**
+  String get petitBooQuotaExceededError;
+
+  /// No description provided for @petitBooConnectionError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur de connexion'**
+  String get petitBooConnectionError;
+
+  /// No description provided for @petitBooAuthRequiredError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour discuter avec Petit Boo'**
+  String get petitBooAuthRequiredError;
+
+  /// No description provided for @petitBooConversationLoadFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger la conversation'**
+  String get petitBooConversationLoadFailed;
+
+  /// No description provided for @petitBooApiErrorFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur Petit Boo'**
+  String get petitBooApiErrorFallback;
+
+  /// No description provided for @petitBooGenericError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue'**
+  String get petitBooGenericError;
+
   /// No description provided for @petitBooBrainManageMemory.
   ///
   /// In fr, this message translates to:
@@ -3758,6 +4124,949 @@ abstract class AppLocalizations {
   /// **'Demande du {date} - non acceptée'**
   String membershipRequestRejectedOn(Object date);
 
+  /// No description provided for @membershipSearchOrganizationHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une organisation…'**
+  String get membershipSearchOrganizationHint;
+
+  /// No description provided for @membershipTabActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actives ({count})'**
+  String membershipTabActive(int count);
+
+  /// No description provided for @membershipTabPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente ({count})'**
+  String membershipTabPending(int count);
+
+  /// No description provided for @membershipTabRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusées ({count})'**
+  String membershipTabRejected(int count);
+
+  /// No description provided for @membershipTabInvitations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitations ({count})'**
+  String membershipTabInvitations(int count);
+
+  /// No description provided for @membershipEmptyActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune adhésion active.\nRejoignez vos organisations préférées pour ne rien manquer.'**
+  String get membershipEmptyActive;
+
+  /// No description provided for @membershipEmptyPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez pas de demande en attente.'**
+  String get membershipEmptyPending;
+
+  /// No description provided for @membershipEmptyRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune demande refusée.'**
+  String get membershipEmptyRejected;
+
+  /// No description provided for @membershipEmptyInvitations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune invitation pour le moment.'**
+  String get membershipEmptyInvitations;
+
+  /// No description provided for @membershipDiscoverOrganizations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrir les organisations'**
+  String get membershipDiscoverOrganizations;
+
+  /// No description provided for @membershipLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos adhésions.'**
+  String get membershipLoadError;
+
+  /// No description provided for @membershipStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get membershipStatusPending;
+
+  /// No description provided for @membershipStatusActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get membershipStatusActive;
+
+  /// No description provided for @membershipStatusRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusée'**
+  String get membershipStatusRejected;
+
+  /// No description provided for @membershipStatusInvitation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation'**
+  String get membershipStatusInvitation;
+
+  /// No description provided for @membershipStatusExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expirée'**
+  String get membershipStatusExpired;
+
+  /// No description provided for @membershipViewOrganizer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la fiche'**
+  String get membershipViewOrganizer;
+
+  /// No description provided for @membershipPrivateEventsAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événements privés'**
+  String get membershipPrivateEventsAction;
+
+  /// No description provided for @membershipMembersCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 membre} other{{count} membres}}'**
+  String membershipMembersCount(int count);
+
+  /// No description provided for @membershipJoinAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre'**
+  String get membershipJoinAction;
+
+  /// No description provided for @membershipPendingAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get membershipPendingAction;
+
+  /// No description provided for @membershipRetryRequestAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refaire la demande'**
+  String get membershipRetryRequestAction;
+
+  /// No description provided for @membershipCancelRequestAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler la demande'**
+  String get membershipCancelRequestAction;
+
+  /// No description provided for @membershipLeaveAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter'**
+  String get membershipLeaveAction;
+
+  /// No description provided for @membershipCancelRequestTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler la demande ?'**
+  String get membershipCancelRequestTitle;
+
+  /// No description provided for @membershipCancelRequestBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre demande de rejoindre {organizerName} sera annulée. Vous pourrez en refaire une à tout moment.'**
+  String membershipCancelRequestBody(String organizerName);
+
+  /// No description provided for @membershipLeaveTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter l\'organisation ?'**
+  String get membershipLeaveTitle;
+
+  /// No description provided for @membershipLeaveBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne verrez plus les événements privés de {organizerName}. Vous pourrez refaire une demande à tout moment.'**
+  String membershipLeaveBody(String organizerName);
+
+  /// No description provided for @membershipJoinTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre l\'espace privé de {organizerName} ?'**
+  String membershipJoinTitle(String organizerName);
+
+  /// No description provided for @membershipJoinBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'En rejoignant, vous accédez aux événements exclusifs proposés aux membres. Votre demande sera examinée par l\'organisateur.'**
+  String get membershipJoinBody;
+
+  /// No description provided for @membersOnlyGateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement réservé aux membres'**
+  String get membersOnlyGateTitle;
+
+  /// No description provided for @membersOnlyGateBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet événement est uniquement accessible aux membres de {organizerName}. Rejoignez l\'organisation pour débloquer son agenda privé.'**
+  String membersOnlyGateBody(String organizerName);
+
+  /// No description provided for @membersOnlyGateJoin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoindre {organizerName}'**
+  String membersOnlyGateJoin(String organizerName);
+
+  /// No description provided for @privateEventsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes événements privés'**
+  String get privateEventsTitle;
+
+  /// No description provided for @privateEventsSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un événement…'**
+  String get privateEventsSearchHint;
+
+  /// No description provided for @privateEventsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les événements.'**
+  String get privateEventsLoadError;
+
+  /// No description provided for @privateEventsPrivateBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Privé'**
+  String get privateEventsPrivateBadge;
+
+  /// No description provided for @privateEventsAllOrganizations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les organisations'**
+  String get privateEventsAllOrganizations;
+
+  /// No description provided for @privateEventsEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun événement privé pour l\'instant.'**
+  String get privateEventsEmptyTitle;
+
+  /// No description provided for @privateEventsEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rejoignez des organisations pour découvrir leurs activités exclusives.'**
+  String get privateEventsEmptyBody;
+
+  /// No description provided for @privateEventsEmptyFiltered.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun événement privé correspondant.'**
+  String get privateEventsEmptyFiltered;
+
+  /// No description provided for @membershipInvitationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation'**
+  String get membershipInvitationTitle;
+
+  /// No description provided for @membershipInvitedBy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invité par {name}'**
+  String membershipInvitedBy(String name);
+
+  /// No description provided for @membershipInvitationExpiredBlurb.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette invitation a expiré. Demandez à l\'organisation de vous renvoyer une invitation.'**
+  String get membershipInvitationExpiredBlurb;
+
+  /// No description provided for @membershipInvitationAcceptedBlurb.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette invitation a déjà été acceptée. Retrouvez l\'organisation dans votre liste d\'adhésions.'**
+  String get membershipInvitationAcceptedBlurb;
+
+  /// No description provided for @membershipInvitationActiveBlurb.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes invité(e) à rejoindre cet espace privé. Acceptez l\'invitation pour accéder aux événements exclusifs.'**
+  String get membershipInvitationActiveBlurb;
+
+  /// No description provided for @membershipInvitationActiveWithExpiryBlurb.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous êtes invité(e) à rejoindre cet espace privé. Acceptez l\'invitation pour accéder aux événements exclusifs. Cette invitation expire dans {hours} h.'**
+  String membershipInvitationActiveWithExpiryBlurb(int hours);
+
+  /// No description provided for @membershipInvitationWelcome.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue dans {organizationName}'**
+  String membershipInvitationWelcome(String organizationName);
+
+  /// No description provided for @membershipInvitationAcceptFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'accepter cette invitation.'**
+  String get membershipInvitationAcceptFailed;
+
+  /// No description provided for @membershipInvitationDeclineTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décliner l\'invitation ?'**
+  String get membershipInvitationDeclineTitle;
+
+  /// No description provided for @membershipInvitationDeclineBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refuser l\'invitation de {organizationName} ?'**
+  String membershipInvitationDeclineBody(String organizationName);
+
+  /// No description provided for @membershipInvitationDeclineAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décliner'**
+  String get membershipInvitationDeclineAction;
+
+  /// No description provided for @membershipInvitationAcceptAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accepter'**
+  String get membershipInvitationAcceptAction;
+
+  /// No description provided for @membershipInvitationDeclined.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation déclinée'**
+  String get membershipInvitationDeclined;
+
+  /// No description provided for @membershipInvitationSignInToAccept.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter pour accepter'**
+  String get membershipInvitationSignInToAccept;
+
+  /// No description provided for @membershipInvitationAlreadyAccepted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation déjà acceptée.'**
+  String get membershipInvitationAlreadyAccepted;
+
+  /// No description provided for @membershipInvitationExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation expirée.'**
+  String get membershipInvitationExpired;
+
+  /// No description provided for @membershipInvitationExpiresInDays.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{Expire dans 1 jour} other{Expire dans {count} jours}}'**
+  String membershipInvitationExpiresInDays(int count);
+
+  /// No description provided for @membershipInvitationExpiresInHours.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expire dans {count} h'**
+  String membershipInvitationExpiresInHours(int count);
+
+  /// No description provided for @membershipInvitationNotFoundTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette invitation est introuvable.'**
+  String get membershipInvitationNotFoundTitle;
+
+  /// No description provided for @membershipInvitationNotFoundBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le lien a peut-être été désactivé. Demandez à l\'organisateur de vous renvoyer une invitation.'**
+  String get membershipInvitationNotFoundBody;
+
+  /// No description provided for @personalizedFeedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour vous'**
+  String get personalizedFeedTitle;
+
+  /// No description provided for @organizerInvalidIdentifier.
+  ///
+  /// In fr, this message translates to:
+  /// **'Identifiant organisateur invalide'**
+  String get organizerInvalidIdentifier;
+
+  /// No description provided for @organizerActivitiesTab.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités'**
+  String get organizerActivitiesTab;
+
+  /// No description provided for @organizerReviewsTab.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis'**
+  String get organizerReviewsTab;
+
+  /// No description provided for @organizerProfileLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger ce profil.'**
+  String get organizerProfileLoadError;
+
+  /// No description provided for @organizerContactAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contacter'**
+  String get organizerContactAction;
+
+  /// No description provided for @organizerCoordinatesAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coordonnées'**
+  String get organizerCoordinatesAction;
+
+  /// No description provided for @organizerNoCoordinates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet organisateur n\'a pas renseigné de coordonnées.'**
+  String get organizerNoCoordinates;
+
+  /// No description provided for @organizerAboutTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'À propos'**
+  String get organizerAboutTitle;
+
+  /// No description provided for @organizerEstablishmentTypesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Types d\'établissement'**
+  String get organizerEstablishmentTypesTitle;
+
+  /// No description provided for @organizerSocialLinksTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réseaux sociaux'**
+  String get organizerSocialLinksTitle;
+
+  /// No description provided for @organizerEventsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{countLabel} {count, plural, =1{événement} other{événements}}'**
+  String organizerEventsCount(String countLabel, int count);
+
+  /// No description provided for @organizerFollowersCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{countLabel} {count, plural, =1{abonné} other{abonnés}}'**
+  String organizerFollowersCount(String countLabel, int count);
+
+  /// No description provided for @organizerMembersCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{countLabel} {count, plural, =1{membre} other{membres}}'**
+  String organizerMembersCount(String countLabel, int count);
+
+  /// No description provided for @organizerRatingWithReviews.
+  ///
+  /// In fr, this message translates to:
+  /// **'{rating} ({countLabel} {count, plural, =1{avis} other{avis}})'**
+  String organizerRatingWithReviews(
+      String rating, String countLabel, int count);
+
+  /// No description provided for @organizerFollowAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivre'**
+  String get organizerFollowAction;
+
+  /// No description provided for @organizerUnfollowAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ne plus suivre'**
+  String get organizerUnfollowAction;
+
+  /// No description provided for @organizerFollowedSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un organisateur'**
+  String get organizerFollowedSearchHint;
+
+  /// No description provided for @organizerFollowedEmptySearchTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun organisateur trouvé'**
+  String get organizerFollowedEmptySearchTitle;
+
+  /// No description provided for @organizerFollowedEmptySearchBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essayez un autre mot-clé.'**
+  String get organizerFollowedEmptySearchBody;
+
+  /// No description provided for @organizerFollowedEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne suivez aucun organisateur'**
+  String get organizerFollowedEmptyTitle;
+
+  /// No description provided for @organizerFollowedEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivez un organisateur depuis sa page pour le retrouver ici.'**
+  String get organizerFollowedEmptyBody;
+
+  /// No description provided for @organizerFollowedLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger la liste.'**
+  String get organizerFollowedLoadError;
+
+  /// No description provided for @organizerActivitiesLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les activités.'**
+  String get organizerActivitiesLoadError;
+
+  /// No description provided for @organizerActivitiesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune activité publiée pour le moment.'**
+  String get organizerActivitiesEmpty;
+
+  /// No description provided for @organizerActivitiesNoUpcoming.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas d\'événement à venir.'**
+  String get organizerActivitiesNoUpcoming;
+
+  /// No description provided for @organizerActivitiesNoPast.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas d\'événement passé.'**
+  String get organizerActivitiesNoPast;
+
+  /// No description provided for @organizerActivitiesCurrentTab.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours ({count})'**
+  String organizerActivitiesCurrentTab(int count);
+
+  /// No description provided for @organizerActivitiesPastTab.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passés ({count})'**
+  String organizerActivitiesPastTab(int count);
+
+  /// No description provided for @organizerReviewsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les avis.'**
+  String get organizerReviewsLoadError;
+
+  /// No description provided for @organizerReviewsTotal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sur {count, plural, =1{1 avis} other{{count} avis}}'**
+  String organizerReviewsTotal(int count);
+
+  /// No description provided for @organizerVerifiedPurchasesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{dont 1 achat vérifié} other{dont {count} achats vérifiés}}'**
+  String organizerVerifiedPurchasesCount(int count);
+
+  /// No description provided for @organizerNoReviewsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun avis pour le moment'**
+  String get organizerNoReviewsTitle;
+
+  /// No description provided for @organizerNoReviewsBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Soyez parmi les premiers à laisser un avis sur l\'un de ses événements.'**
+  String get organizerNoReviewsBody;
+
+  /// No description provided for @organizerReviewUserFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateur'**
+  String get organizerReviewUserFallback;
+
+  /// No description provided for @organizerReviewFor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis pour'**
+  String get organizerReviewFor;
+
+  /// No description provided for @organizerVerifiedPurchase.
+  ///
+  /// In fr, this message translates to:
+  /// **'Achat vérifié'**
+  String get organizerVerifiedPurchase;
+
+  /// No description provided for @organizerHelpfulCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 utile} other{{count} utiles}}'**
+  String organizerHelpfulCount(int count);
+
+  /// No description provided for @organizerReplyBy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse de {author}'**
+  String organizerReplyBy(String author);
+
+  /// No description provided for @organizerReplyFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse de l\'organisateur'**
+  String get organizerReplyFallback;
+
+  /// No description provided for @partnerTypeVenue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Salle/Lieu'**
+  String get partnerTypeVenue;
+
+  /// No description provided for @partnerTypeOrganizer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisateur'**
+  String get partnerTypeOrganizer;
+
+  /// No description provided for @partnerTypeIndividual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Particulier'**
+  String get partnerTypeIndividual;
+
+  /// No description provided for @partnerSubscriptionBasic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Basique'**
+  String get partnerSubscriptionBasic;
+
+  /// No description provided for @partnerSubscriptionEnterprise.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enterprise'**
+  String get partnerSubscriptionEnterprise;
+
+  /// No description provided for @checkinScannerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Scanner les billets'**
+  String get checkinScannerTitle;
+
+  /// No description provided for @checkinTorchTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lampe'**
+  String get checkinTorchTooltip;
+
+  /// No description provided for @checkinCameraTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Caméra'**
+  String get checkinCameraTooltip;
+
+  /// No description provided for @checkinMoreTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus'**
+  String get checkinMoreTooltip;
+
+  /// No description provided for @checkinSwitchOrganization.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer d\'organisation'**
+  String get checkinSwitchOrganization;
+
+  /// No description provided for @checkinManualEntryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisie manuelle'**
+  String get checkinManualEntryTitle;
+
+  /// No description provided for @checkinGateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Étiquette de gate'**
+  String get checkinGateLabel;
+
+  /// No description provided for @checkinGateHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'ex: Nord, VIP, Entrée 2…'**
+  String get checkinGateHint;
+
+  /// No description provided for @checkinGateDisplay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gate : {gate}'**
+  String checkinGateDisplay(String gate);
+
+  /// No description provided for @checkinEntryRecorded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue ! Entrée enregistrée.'**
+  String get checkinEntryRecorded;
+
+  /// No description provided for @checkinReEntryRecorded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ré-entrée enregistrée (entrée n°{count})'**
+  String checkinReEntryRecorded(int count);
+
+  /// No description provided for @checkinNetworkRescan.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réseau instable — re-scannez pour confirmer.'**
+  String get checkinNetworkRescan;
+
+  /// No description provided for @checkinNetworkRetype.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réseau instable — re-saisissez pour confirmer.'**
+  String get checkinNetworkRetype;
+
+  /// No description provided for @checkinCameraPermissionDeniedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accès caméra refusé'**
+  String get checkinCameraPermissionDeniedTitle;
+
+  /// No description provided for @checkinCameraUnavailableTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Caméra indisponible'**
+  String get checkinCameraUnavailableTitle;
+
+  /// No description provided for @checkinCameraPermissionDeniedBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisez la caméra dans les paramètres système, ou utilisez la saisie manuelle.'**
+  String get checkinCameraPermissionDeniedBody;
+
+  /// No description provided for @checkinCameraUnavailableBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune caméra n\'a été détectée. Utilisez la saisie manuelle.'**
+  String get checkinCameraUnavailableBody;
+
+  /// No description provided for @checkinChooseOrganizationFirst.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez une organisation depuis le scanner.'**
+  String get checkinChooseOrganizationFirst;
+
+  /// No description provided for @checkinManualWarning.
+  ///
+  /// In fr, this message translates to:
+  /// **'À utiliser uniquement avec une vérification d\'identité visuelle. La saisie manuelle ne contrôle pas le secret du QR.'**
+  String get checkinManualWarning;
+
+  /// No description provided for @checkinOrganizationLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisation : {name}'**
+  String checkinOrganizationLabel(String name);
+
+  /// No description provided for @checkinManualCodeHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code imprimé sur le billet'**
+  String get checkinManualCodeHelper;
+
+  /// No description provided for @checkinVerifyCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifier le code'**
+  String get checkinVerifyCode;
+
+  /// No description provided for @checkinValidTicketTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet valide'**
+  String get checkinValidTicketTitle;
+
+  /// No description provided for @checkinReEntryDetectedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ré-entrée détectée'**
+  String get checkinReEntryDetectedTitle;
+
+  /// No description provided for @checkinConfirmEntry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer l\'entrée'**
+  String get checkinConfirmEntry;
+
+  /// No description provided for @checkinConfirmReEntry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer la ré-entrée'**
+  String get checkinConfirmReEntry;
+
+  /// No description provided for @checkinAlreadyEnteredWarning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déjà entré {count}× — vérifiez avant d\'admettre.'**
+  String checkinAlreadyEnteredWarning(int count);
+
+  /// No description provided for @checkinChooseOrganizationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une organisation'**
+  String get checkinChooseOrganizationTitle;
+
+  /// No description provided for @checkinChooseOrganizationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le scanner enverra les billets à l\'organisation sélectionnée.'**
+  String get checkinChooseOrganizationBody;
+
+  /// No description provided for @checkinRoleOwner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Propriétaire'**
+  String get checkinRoleOwner;
+
+  /// No description provided for @checkinRoleAdmin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Administrateur'**
+  String get checkinRoleAdmin;
+
+  /// No description provided for @checkinRoleStaff.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe'**
+  String get checkinRoleStaff;
+
+  /// No description provided for @checkinRoleViewer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre'**
+  String get checkinRoleViewer;
+
+  /// No description provided for @checkinNoVendorOrganizationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune organisation vendeur trouvée'**
+  String get checkinNoVendorOrganizationTitle;
+
+  /// No description provided for @checkinNoVendorOrganizationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Si vous attendiez d\'apparaître ici, contactez le support — votre profil n\'est peut-être pas encore lié à une organisation.'**
+  String get checkinNoVendorOrganizationBody;
+
+  /// No description provided for @checkinRefresh.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actualiser'**
+  String get checkinRefresh;
+
+  /// No description provided for @checkinBlockedTicketCancelledTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet annulé'**
+  String get checkinBlockedTicketCancelledTitle;
+
+  /// No description provided for @checkinBlockedTicketRefundedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet remboursé'**
+  String get checkinBlockedTicketRefundedTitle;
+
+  /// No description provided for @checkinBlockedTicketTransferredTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet transféré'**
+  String get checkinBlockedTicketTransferredTitle;
+
+  /// No description provided for @checkinBlockedSlotNotStartedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créneau non commencé'**
+  String get checkinBlockedSlotNotStartedTitle;
+
+  /// No description provided for @checkinBlockedWrongEventTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mauvais événement'**
+  String get checkinBlockedWrongEventTitle;
+
+  /// No description provided for @checkinBlockedUnauthorizedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non autorisé'**
+  String get checkinBlockedUnauthorizedTitle;
+
+  /// No description provided for @checkinBlockedTicketNotFoundTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet introuvable'**
+  String get checkinBlockedTicketNotFoundTitle;
+
+  /// No description provided for @checkinBlockedUnknownTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur'**
+  String get checkinBlockedUnknownTitle;
+
+  /// No description provided for @checkinBlockedDoNotAdmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ne pas laisser entrer.'**
+  String get checkinBlockedDoNotAdmit;
+
+  /// No description provided for @checkinBlockedTicketTransferredBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le billet a été transféré à un autre porteur — re-scannez son QR.'**
+  String get checkinBlockedTicketTransferredBody;
+
+  /// No description provided for @checkinBlockedSlotNotStartedBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'entrée n\'est pas encore ouverte pour ce créneau.'**
+  String get checkinBlockedSlotNotStartedBody;
+
+  /// No description provided for @checkinBlockedWrongEventBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce billet ne correspond pas à l\'événement filtré.'**
+  String get checkinBlockedWrongEventBody;
+
+  /// No description provided for @checkinBlockedUnauthorizedBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'êtes pas autorisé à scanner ce billet pour cette organisation.'**
+  String get checkinBlockedUnauthorizedBody;
+
+  /// No description provided for @checkinBlockedTicketNotFoundBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'QR non reconnu — réessayez ou saisissez le code.'**
+  String get checkinBlockedTicketNotFoundBody;
+
+  /// No description provided for @checkinBlockedUnknownBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur inattendue, réessayez.'**
+  String get checkinBlockedUnknownBody;
+
   /// No description provided for @authEmailLabel.
   ///
   /// In fr, this message translates to:
@@ -3961,6 +5270,60 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Identifiants incorrects. Réessayez.'**
   String get authGuestIncorrectCredentials;
+
+  /// No description provided for @authAccountAlreadyVerified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre compte est déjà vérifié. Veuillez vous connecter.'**
+  String get authAccountAlreadyVerified;
+
+  /// No description provided for @authEmailOrPasswordIncorrect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email ou mot de passe incorrect'**
+  String get authEmailOrPasswordIncorrect;
+
+  /// No description provided for @authAccountAlreadyExists.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un compte existe déjà avec cet email'**
+  String get authAccountAlreadyExists;
+
+  /// No description provided for @authWeakPasswordDetailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre'**
+  String get authWeakPasswordDetailed;
+
+  /// No description provided for @authVerificationCodeInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code de vérification invalide'**
+  String get authVerificationCodeInvalid;
+
+  /// No description provided for @authVerificationCodeExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le code a expiré. Veuillez en demander un nouveau.'**
+  String get authVerificationCodeExpired;
+
+  /// No description provided for @authTooManyAttempts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop de tentatives. Réessayez dans 15 minutes.'**
+  String get authTooManyAttempts;
+
+  /// No description provided for @authVerificationCodeSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un code de vérification a été envoyé'**
+  String get authVerificationCodeSent;
+
+  /// No description provided for @authVerificationCodeVerified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code vérifié'**
+  String get authVerificationCodeVerified;
 
   /// No description provided for @authGuestTitle.
   ///
@@ -4430,6 +5793,18 @@ abstract class AppLocalizations {
   /// **'Min. 5 caractères'**
   String get authValidationMin5Chars;
 
+  /// No description provided for @authFirstNameMinLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le prénom doit contenir au moins 2 caractères'**
+  String get authFirstNameMinLength;
+
+  /// No description provided for @authLastNameMinLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom doit contenir au moins 2 caractères'**
+  String get authLastNameMinLength;
+
   /// No description provided for @authPasswordMinLengthShort.
   ///
   /// In fr, this message translates to:
@@ -4453,6 +5828,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Un caractère spécial requis'**
   String get authPasswordNeedsSpecialShort;
+
+  /// No description provided for @authPasswordNeedsUppercaseNumberSpecial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un symbole'**
+  String get authPasswordNeedsUppercaseNumberSpecial;
 
   /// No description provided for @authPasswordStrengthWeak.
   ///
@@ -4729,6 +6110,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'14 chiffres, sans espaces'**
   String get authSiretHelp;
+
+  /// No description provided for @authCompanyNameMinLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom de l\'entreprise doit contenir au moins 2 caractères'**
+  String get authCompanyNameMinLength;
+
+  /// No description provided for @authSiretMustHave14Digits.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le numéro SIRET doit contenir 14 chiffres'**
+  String get authSiretMustHave14Digits;
+
+  /// No description provided for @authAddressMinLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'adresse doit contenir au moins 5 caractères'**
+  String get authAddressMinLength;
+
+  /// No description provided for @authCityMinLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'La ville doit contenir au moins 2 caractères'**
+  String get authCityMinLength;
+
+  /// No description provided for @authPostalCodeLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le code postal doit contenir entre 3 et 10 caractères'**
+  String get authPostalCodeLength;
 
   /// No description provided for @authIndustryLabel.
   ///
@@ -5078,6 +6489,12 @@ abstract class AppLocalizations {
   /// **'conditions spécifiques aux comptes professionnels'**
   String get authBusinessTermsLabel;
 
+  /// No description provided for @authBusinessTermsRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez accepter les conditions business'**
+  String get authBusinessTermsRequired;
+
   /// No description provided for @authCreateBusinessAccountButton.
   ///
   /// In fr, this message translates to:
@@ -5119,6 +6536,102 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Voir tout'**
   String get homeViewAll;
+
+  /// No description provided for @homePartnerBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partenaire'**
+  String get homePartnerBadge;
+
+  /// No description provided for @homePartnerSeeAllSelection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir toute la sélection'**
+  String get homePartnerSeeAllSelection;
+
+  /// No description provided for @homePersonalizedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour vous'**
+  String get homePersonalizedTitle;
+
+  /// No description provided for @homePersonalizedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Basé sur vos préférences'**
+  String get homePersonalizedSubtitle;
+
+  /// No description provided for @homeNativeAdSponsored.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sponsorisé'**
+  String get homeNativeAdSponsored;
+
+  /// No description provided for @homeRecommendedPopularTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Populaire'**
+  String get homeRecommendedPopularTag;
+
+  /// No description provided for @homeRecommendedLastSpotsTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernières places'**
+  String get homeRecommendedLastSpotsTag;
+
+  /// No description provided for @homeSavedSearchAlertFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alerte personnalisée'**
+  String get homeSavedSearchAlertFallback;
+
+  /// No description provided for @homeSavedSearchFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche sauvegardée'**
+  String get homeSavedSearchFallback;
+
+  /// No description provided for @homeMobileConfigDefaultHeroTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trouvez votre prochaine aventure locale'**
+  String get homeMobileConfigDefaultHeroTitle;
+
+  /// No description provided for @homeMobileConfigDefaultHeroSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez les meilleurs événements près de chez vous'**
+  String get homeMobileConfigDefaultHeroSubtitle;
+
+  /// No description provided for @homeMobileConfigEventsSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retrouvez tous vos événements'**
+  String get homeMobileConfigEventsSectionTitle;
+
+  /// No description provided for @homeMobileConfigEventsSectionDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorez notre sélection d\'événements locaux'**
+  String get homeMobileConfigEventsSectionDescription;
+
+  /// No description provided for @homeMobileConfigThematiquesSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorez par thématique'**
+  String get homeMobileConfigThematiquesSectionTitle;
+
+  /// No description provided for @homeMobileConfigCitiesSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événements par ville'**
+  String get homeMobileConfigCitiesSectionTitle;
+
+  /// No description provided for @homeMobileConfigExploreButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorer les activités'**
+  String get homeMobileConfigExploreButton;
 
   /// No description provided for @homeNewActivitiesTitle.
   ///
@@ -6518,11 +8031,23 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get searchNotificationsTitle;
 
+  /// No description provided for @searchPushTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Push'**
+  String get searchPushTitle;
+
   /// No description provided for @searchPushSubtitle.
   ///
   /// In fr, this message translates to:
   /// **'Notifications sur l\'app mobile'**
   String get searchPushSubtitle;
+
+  /// No description provided for @searchEmailTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email'**
+  String get searchEmailTitle;
 
   /// No description provided for @searchEmailSubtitle.
   ///
@@ -6667,6 +8192,48 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'À partir de '**
   String get eventPriceFromPrefix;
+
+  /// No description provided for @eventPriceDonation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participation libre'**
+  String get eventPriceDonation;
+
+  /// No description provided for @eventPriceVariable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prix variable'**
+  String get eventPriceVariable;
+
+  /// No description provided for @eventPriceRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'De {minPrice} à {maxPrice}'**
+  String eventPriceRange(String minPrice, String maxPrice);
+
+  /// No description provided for @eventAgeMinimum.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minAge} ans et +'**
+  String eventAgeMinimum(int minAge);
+
+  /// No description provided for @eventAgeMaximum.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jusqu\'à {maxAge} ans'**
+  String eventAgeMaximum(int maxAge);
+
+  /// No description provided for @eventAgeRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minAge}-{maxAge} ans'**
+  String eventAgeRange(int minAge, int maxAge);
+
+  /// No description provided for @eventLocationIndoorOutdoor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intérieur/Extérieur'**
+  String get eventLocationIndoorOutdoor;
 
   /// No description provided for @eventCharacteristicsTitle.
   ///
@@ -7105,6 +8672,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Boissons disponibles'**
   String get eventDrinksAvailable;
+
+  /// No description provided for @eventWifiLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Wi-Fi'**
+  String get eventWifiLabel;
 
   /// No description provided for @eventWifiAvailable.
   ///
@@ -7628,6 +9201,12 @@ abstract class AppLocalizations {
   /// **'Votre question est trop longue (1000 max).'**
   String get eventQuestionTooLong;
 
+  /// No description provided for @eventQuestionInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Question invalide.'**
+  String get eventQuestionInvalid;
+
   /// No description provided for @eventQuestionInfo.
   ///
   /// In fr, this message translates to:
@@ -7717,6 +9296,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Événements similaires'**
   String get eventSimilarEvents;
+
+  /// No description provided for @eventPeopleWatching.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 personne regarde} other{{count} personnes regardent}}'**
+  String eventPeopleWatching(int count);
 
   /// No description provided for @bookingCheckoutTitle.
   ///
@@ -8516,6 +10101,18 @@ abstract class AppLocalizations {
   /// **'Préparation du PDF…'**
   String get bookingPreparingPdf;
 
+  /// No description provided for @bookingAndroidDownloadsLocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléchargements/Lehiboo'**
+  String get bookingAndroidDownloadsLocation;
+
+  /// No description provided for @bookingDocumentsTicketsLocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Documents > Lehiboo > tickets'**
+  String get bookingDocumentsTicketsLocation;
+
   /// No description provided for @bookingTicketsSaved.
   ///
   /// In fr, this message translates to:
@@ -8935,6 +10532,1818 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de charger les billets'**
   String get bookingTicketsLoadError;
+
+  /// No description provided for @tripPlansListTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes sorties'**
+  String get tripPlansListTitle;
+
+  /// No description provided for @tripPlansDeletedSnack.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan \"{title}\" supprimé'**
+  String tripPlansDeletedSnack(String title);
+
+  /// No description provided for @tripPlansUntitledPlan.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan sans titre'**
+  String get tripPlansUntitledPlan;
+
+  /// No description provided for @tripPlansEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune sortie planifiée'**
+  String get tripPlansEmptyTitle;
+
+  /// No description provided for @tripPlansEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande à Petit Boo de te créer un itinéraire pour ta prochaine sortie !'**
+  String get tripPlansEmptyBody;
+
+  /// No description provided for @tripPlansTalkToPetitBoo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parler à Petit Boo'**
+  String get tripPlansTalkToPetitBoo;
+
+  /// No description provided for @tripPlansErrorTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue'**
+  String get tripPlansErrorTitle;
+
+  /// No description provided for @tripPlansLoadErrorBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos sorties'**
+  String get tripPlansLoadErrorBody;
+
+  /// No description provided for @tripPlanEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get tripPlanEditTitle;
+
+  /// No description provided for @tripPlanEditErrorWithMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur : {message}'**
+  String tripPlanEditErrorWithMessage(String message);
+
+  /// No description provided for @tripPlanEditNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan non trouvé'**
+  String get tripPlanEditNotFound;
+
+  /// No description provided for @tripPlanEditTitleLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get tripPlanEditTitleLabel;
+
+  /// No description provided for @tripPlanEditNameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de la sortie'**
+  String get tripPlanEditNameHint;
+
+  /// No description provided for @tripPlanEditDateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get tripPlanEditDateLabel;
+
+  /// No description provided for @tripPlanEditSelectDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner une date'**
+  String get tripPlanEditSelectDate;
+
+  /// No description provided for @tripPlanEditStopsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Étapes'**
+  String get tripPlanEditStopsLabel;
+
+  /// No description provided for @tripPlanEditReorderHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Glisser pour réorganiser'**
+  String get tripPlanEditReorderHint;
+
+  /// No description provided for @tripPlanEditUpdatedSnack.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plan mis à jour'**
+  String get tripPlanEditUpdatedSnack;
+
+  /// No description provided for @tripPlanEditDiscardChangesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Abandonner les modifications ?'**
+  String get tripPlanEditDiscardChangesTitle;
+
+  /// No description provided for @tripPlanEditDiscardChangesBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos modifications ne seront pas sauvegardées.'**
+  String get tripPlanEditDiscardChangesBody;
+
+  /// No description provided for @tripPlanEditDiscard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Abandonner'**
+  String get tripPlanEditDiscard;
+
+  /// No description provided for @tripPlansStopsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 étape} other{{count} étapes}}'**
+  String tripPlansStopsCount(int count);
+
+  /// No description provided for @tripPlansStopsPlanned.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 étape prévue} other{{count} étapes prévues}}'**
+  String tripPlansStopsPlanned(int count);
+
+  /// No description provided for @tripPlansStopFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Étape'**
+  String get tripPlansStopFallback;
+
+  /// No description provided for @tripPlansNoCoordinatesAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune coordonnée disponible'**
+  String get tripPlansNoCoordinatesAvailable;
+
+  /// No description provided for @tripPlansDeleteDialogTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer ce plan ?'**
+  String get tripPlansDeleteDialogTitle;
+
+  /// No description provided for @tripPlansDeleteDialogBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le plan \"{title}\" sera définitivement supprimé.'**
+  String tripPlansDeleteDialogBody(String title);
+
+  /// No description provided for @tripPlansDurationMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min'**
+  String tripPlansDurationMinutes(int minutes);
+
+  /// No description provided for @tripPlansDurationHours.
+  ///
+  /// In fr, this message translates to:
+  /// **'{hours}h'**
+  String tripPlansDurationHours(int hours);
+
+  /// No description provided for @tripPlansDurationHoursMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{hours}h{minutes}'**
+  String tripPlansDurationHoursMinutes(int hours, int minutes);
+
+  /// No description provided for @reviewsAllRatingsFilter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get reviewsAllRatingsFilter;
+
+  /// No description provided for @reviewsAllTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les avis'**
+  String get reviewsAllTitle;
+
+  /// No description provided for @reviewsCannotReviewAlreadyReviewed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez déjà laissé un avis sur cet événement.'**
+  String get reviewsCannotReviewAlreadyReviewed;
+
+  /// No description provided for @reviewsCannotReviewEventNotEnded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous pourrez laisser un avis une fois l\'événement passé.'**
+  String get reviewsCannotReviewEventNotEnded;
+
+  /// No description provided for @reviewsCannotReviewNotParticipated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seuls les participants à l\'événement peuvent laisser un avis.'**
+  String get reviewsCannotReviewNotParticipated;
+
+  /// No description provided for @reviewsCannotReviewOrganizer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne pouvez pas noter vos propres événements.'**
+  String get reviewsCannotReviewOrganizer;
+
+  /// No description provided for @reviewsCannotReviewUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne pouvez pas laisser d\'avis pour le moment.'**
+  String get reviewsCannotReviewUnknown;
+
+  /// No description provided for @reviewsCommentMinLengthError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre avis doit faire au moins {minLength} caractères'**
+  String reviewsCommentMinLengthError(int minLength);
+
+  /// No description provided for @reviewsCommentRequiredError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez écrire votre avis'**
+  String get reviewsCommentRequiredError;
+
+  /// No description provided for @reviewsCommentRequiredLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre avis *'**
+  String get reviewsCommentRequiredLabel;
+
+  /// No description provided for @reviewsCreateSuccessPendingModeration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis envoyé. Il sera publié après validation.'**
+  String get reviewsCreateSuccessPendingModeration;
+
+  /// No description provided for @reviewsDeleteAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get reviewsDeleteAction;
+
+  /// No description provided for @reviewsDeleteConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action est définitive. Vous pourrez en écrire un nouveau plus tard.'**
+  String get reviewsDeleteConfirmBody;
+
+  /// No description provided for @reviewsDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer cet avis ?'**
+  String get reviewsDeleteConfirmTitle;
+
+  /// No description provided for @reviewsDeleteSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis supprimé'**
+  String get reviewsDeleteSuccess;
+
+  /// No description provided for @reviewsEditAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get reviewsEditAction;
+
+  /// No description provided for @reviewsEditModerationNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toute modification remettra votre avis en attente de modération.'**
+  String get reviewsEditModerationNotice;
+
+  /// No description provided for @reviewsEditMyReviewTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier mon avis'**
+  String get reviewsEditMyReviewTitle;
+
+  /// No description provided for @reviewsEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partagez votre expérience et aidez les autres à choisir !'**
+  String get reviewsEmptyBody;
+
+  /// No description provided for @reviewsEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore d\'avis'**
+  String get reviewsEmptyTitle;
+
+  /// No description provided for @reviewsEventFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement'**
+  String get reviewsEventFallback;
+
+  /// No description provided for @reviewsFeaturedFilter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mis en avant'**
+  String get reviewsFeaturedFilter;
+
+  /// No description provided for @reviewsUserLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos avis.'**
+  String get reviewsUserLoadError;
+
+  /// No description provided for @reviewsUserLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger la suite.'**
+  String get reviewsUserLoadMoreError;
+
+  /// No description provided for @reviewsMyEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez encore laissé aucun avis. Une fois un événement terminé, vous pourrez partager votre expérience !'**
+  String get reviewsMyEmptyBody;
+
+  /// No description provided for @reviewsMyEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun avis'**
+  String get reviewsMyEmptyTitle;
+
+  /// No description provided for @reviewsNoFilteredResults.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun avis ne correspond aux filtres sélectionnés.'**
+  String get reviewsNoFilteredResults;
+
+  /// No description provided for @reviewsNoReviewsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun avis'**
+  String get reviewsNoReviewsTitle;
+
+  /// No description provided for @reviewsOrganizerReplied.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'organisateur a répondu'**
+  String get reviewsOrganizerReplied;
+
+  /// No description provided for @reviewsReportAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signaler'**
+  String get reviewsReportAction;
+
+  /// No description provided for @reviewsReportDetailsOptionalLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précisions (optionnel)'**
+  String get reviewsReportDetailsOptionalLabel;
+
+  /// No description provided for @reviewsReportReasonFake.
+  ///
+  /// In fr, this message translates to:
+  /// **'Faux avis'**
+  String get reviewsReportReasonFake;
+
+  /// No description provided for @reviewsReportReasonInappropriate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contenu inapproprié'**
+  String get reviewsReportReasonInappropriate;
+
+  /// No description provided for @reviewsReportReasonOffensive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Propos offensants'**
+  String get reviewsReportReasonOffensive;
+
+  /// No description provided for @reviewsReportReasonOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get reviewsReportReasonOther;
+
+  /// No description provided for @reviewsReportReasonQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pourquoi cet avis pose-t-il problème ?'**
+  String get reviewsReportReasonQuestion;
+
+  /// No description provided for @reviewsReportReasonSpam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Spam'**
+  String get reviewsReportReasonSpam;
+
+  /// No description provided for @reviewsReportSubmitAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer le signalement'**
+  String get reviewsReportSubmitAction;
+
+  /// No description provided for @reviewsReportSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signalement envoyé. Merci de votre vigilance.'**
+  String get reviewsReportSuccess;
+
+  /// No description provided for @reviewsReportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Signaler cet avis'**
+  String get reviewsReportTitle;
+
+  /// No description provided for @reviewsRewriteAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réécrire'**
+  String get reviewsRewriteAction;
+
+  /// No description provided for @reviewsSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis'**
+  String get reviewsSectionTitle;
+
+  /// No description provided for @reviewsSelectRatingRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner une note'**
+  String get reviewsSelectRatingRequired;
+
+  /// No description provided for @reviewsSortMostHelpful.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus utiles'**
+  String get reviewsSortMostHelpful;
+
+  /// No description provided for @reviewsSortNewest.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus récents'**
+  String get reviewsSortNewest;
+
+  /// No description provided for @reviewsSortRating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Note'**
+  String get reviewsSortRating;
+
+  /// No description provided for @reviewsSortTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trier'**
+  String get reviewsSortTooltip;
+
+  /// No description provided for @reviewsStatusApproved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publié'**
+  String get reviewsStatusApproved;
+
+  /// No description provided for @reviewsStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get reviewsStatusPending;
+
+  /// No description provided for @reviewsStatusRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusé'**
+  String get reviewsStatusRejected;
+
+  /// No description provided for @reviewsSubmitAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer mon avis'**
+  String get reviewsSubmitAction;
+
+  /// No description provided for @reviewsTitleRequiredError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez ajouter un titre'**
+  String get reviewsTitleRequiredError;
+
+  /// No description provided for @reviewsTitleRequiredLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre *'**
+  String get reviewsTitleRequiredLabel;
+
+  /// No description provided for @reviewsTotalCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun avis} =1{1 avis} other{{count} avis}}'**
+  String reviewsTotalCount(int count);
+
+  /// No description provided for @reviewsUpdateAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour'**
+  String get reviewsUpdateAction;
+
+  /// No description provided for @reviewsUpdateSuccessPendingModeration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis mis à jour. Il sera de nouveau modéré.'**
+  String get reviewsUpdateSuccessPendingModeration;
+
+  /// No description provided for @reviewsVerifiedFilter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifiés'**
+  String get reviewsVerifiedFilter;
+
+  /// No description provided for @reviewsViewAllAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir tous les avis ({count})'**
+  String reviewsViewAllAction(int count);
+
+  /// No description provided for @reviewsViewMyReviewAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir mon avis →'**
+  String get reviewsViewMyReviewAction;
+
+  /// No description provided for @reviewsWriteAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrire'**
+  String get reviewsWriteAction;
+
+  /// No description provided for @reviewsWriteFirstAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrire le premier avis'**
+  String get reviewsWriteFirstAction;
+
+  /// No description provided for @reviewsWriteReviewAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrire un avis'**
+  String get reviewsWriteReviewAction;
+
+  /// No description provided for @reviewsWriteReviewTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Laisser un avis'**
+  String get reviewsWriteReviewTitle;
+
+  /// No description provided for @reviewsYourRatingLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre note'**
+  String get reviewsYourRatingLabel;
+
+  /// No description provided for @reviewsYourReviewLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre avis'**
+  String get reviewsYourReviewLabel;
+
+  /// No description provided for @gamificationActionsCatalogLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger le catalogue'**
+  String get gamificationActionsCatalogLoadError;
+
+  /// No description provided for @gamificationActionsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune action disponible pour le moment'**
+  String get gamificationActionsEmpty;
+
+  /// No description provided for @gamificationActivitiesBonusTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités & Bonus'**
+  String get gamificationActivitiesBonusTitle;
+
+  /// No description provided for @gamificationAllFilter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get gamificationAllFilter;
+
+  /// No description provided for @gamificationBadgeLocked.
+  ///
+  /// In fr, this message translates to:
+  /// **'À débloquer'**
+  String get gamificationBadgeLocked;
+
+  /// No description provided for @gamificationBadgeUnlocked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Débloqué'**
+  String get gamificationBadgeUnlocked;
+
+  /// No description provided for @gamificationBadgeUnlockedCongrats.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bravo, tu as débloqué ce badge !'**
+  String get gamificationBadgeUnlockedCongrats;
+
+  /// No description provided for @gamificationBadgesLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger tes badges'**
+  String get gamificationBadgesLoadError;
+
+  /// No description provided for @gamificationBoostersUtilitiesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boosters & Utilitaires'**
+  String get gamificationBoostersUtilitiesTitle;
+
+  /// No description provided for @gamificationCapReached.
+  ///
+  /// In fr, this message translates to:
+  /// **'Atteint'**
+  String get gamificationCapReached;
+
+  /// No description provided for @gamificationChallengesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Challenges'**
+  String get gamificationChallengesTitle;
+
+  /// No description provided for @gamificationClaimDailyReward.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réclamer ma récompense'**
+  String get gamificationClaimDailyReward;
+
+  /// No description provided for @gamificationComeBackTomorrow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reviens demain !'**
+  String get gamificationComeBackTomorrow;
+
+  /// No description provided for @gamificationCompleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effectué'**
+  String get gamificationCompleted;
+
+  /// No description provided for @gamificationCurrentRankPrefix.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu es'**
+  String get gamificationCurrentRankPrefix;
+
+  /// No description provided for @gamificationDailyClaimError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur lors de la réclamation'**
+  String get gamificationDailyClaimError;
+
+  /// No description provided for @gamificationDailyRewardAlreadyClaimed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as déjà réclamé ta récompense aujourd\'hui !'**
+  String get gamificationDailyRewardAlreadyClaimed;
+
+  /// No description provided for @gamificationDailyRewardTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récompense quotidienne'**
+  String get gamificationDailyRewardTitle;
+
+  /// No description provided for @gamificationDayNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'J-{dayNumber}'**
+  String gamificationDayNumber(int dayNumber);
+
+  /// No description provided for @gamificationEarningsByPillarTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Répartition par pilier'**
+  String get gamificationEarningsByPillarTitle;
+
+  /// No description provided for @gamificationErrorWithMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur : {message}'**
+  String gamificationErrorWithMessage(String message);
+
+  /// No description provided for @gamificationGreatCta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Super !'**
+  String get gamificationGreatCta;
+
+  /// No description provided for @gamificationHibonsAmount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} HIBONs'**
+  String gamificationHibonsAmount(int count);
+
+  /// No description provided for @gamificationHibonsAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hibons disponibles'**
+  String get gamificationHibonsAvailable;
+
+  /// No description provided for @gamificationHibonsDelta.
+  ///
+  /// In fr, this message translates to:
+  /// **'{delta} Hibons'**
+  String gamificationHibonsDelta(int delta);
+
+  /// No description provided for @gamificationHibonsEarned.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} Hibons gagnés'**
+  String gamificationHibonsEarned(int count);
+
+  /// No description provided for @gamificationHibonsGainedToast.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{delta} Hibons gagnés !'**
+  String gamificationHibonsGainedToast(int delta);
+
+  /// No description provided for @gamificationHibonsPacksComingSoonTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Packs de Hibons (bientôt)'**
+  String get gamificationHibonsPacksComingSoonTitle;
+
+  /// No description provided for @gamificationHibonsProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'{current} / {total} HIBONs'**
+  String gamificationHibonsProgress(int current, int total);
+
+  /// No description provided for @gamificationHibonsRemainingForBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Encore {count} HIBONs pour débloquer ce badge'**
+  String gamificationHibonsRemainingForBadge(int count);
+
+  /// No description provided for @gamificationHibonsUnit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hibons'**
+  String get gamificationHibonsUnit;
+
+  /// No description provided for @gamificationHibonsUntilNextRank.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus que {count} avant {rankLabel}'**
+  String gamificationHibonsUntilNextRank(int count, String rankLabel);
+
+  /// No description provided for @gamificationHibouExpressTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hibou Express (24 h)'**
+  String get gamificationHibouExpressTitle;
+
+  /// No description provided for @gamificationHibouExpressDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Messages illimités avec Petit Boo'**
+  String get gamificationHibouExpressDescription;
+
+  /// No description provided for @gamificationHistoryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Historique'**
+  String get gamificationHistoryTitle;
+
+  /// No description provided for @gamificationHowToEarnTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment gagner des Hibons'**
+  String get gamificationHowToEarnTitle;
+
+  /// No description provided for @gamificationInAppPurchasesComingSoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les achats In-App arrivent bientôt !'**
+  String get gamificationInAppPurchasesComingSoon;
+
+  /// No description provided for @gamificationInsufficientHibons.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hibons insuffisants !'**
+  String get gamificationInsufficientHibons;
+
+  /// No description provided for @gamificationLifetimeHibonsAccumulated.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} HIBONs cumulés'**
+  String gamificationLifetimeHibonsAccumulated(int count);
+
+  /// No description provided for @gamificationLockedCountLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'À débloquer'**
+  String get gamificationLockedCountLabel;
+
+  /// No description provided for @gamificationLuckyWheelTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Roue de la Fortune'**
+  String get gamificationLuckyWheelTitle;
+
+  /// No description provided for @gamificationMaxRankReached.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rang maximal atteint'**
+  String get gamificationMaxRankReached;
+
+  /// No description provided for @gamificationMultiplierDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gagnez plus de Hibons pendant 1h'**
+  String get gamificationMultiplierDescription;
+
+  /// No description provided for @gamificationMultiplierTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Multiplicateur x1.5 (1h)'**
+  String get gamificationMultiplierTitle;
+
+  /// No description provided for @gamificationMyBadgesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes badges'**
+  String get gamificationMyBadgesTitle;
+
+  /// No description provided for @gamificationNewHibonsBalance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau solde : {balance} Hibons'**
+  String gamificationNewHibonsBalance(int balance);
+
+  /// No description provided for @gamificationNoTransactions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune transaction'**
+  String get gamificationNoTransactions;
+
+  /// No description provided for @gamificationPetitBooDailyBonus.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{+1 message Petit Boo / jour} other{+{count} messages Petit Boo / jour}}'**
+  String gamificationPetitBooDailyBonus(int count);
+
+  /// No description provided for @gamificationPillarCommunity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Communauté'**
+  String get gamificationPillarCommunity;
+
+  /// No description provided for @gamificationPillarDiscovery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découverte'**
+  String get gamificationPillarDiscovery;
+
+  /// No description provided for @gamificationPillarEngagement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Engagement'**
+  String get gamificationPillarEngagement;
+
+  /// No description provided for @gamificationPillarOnboarding.
+  ///
+  /// In fr, this message translates to:
+  /// **'Onboarding'**
+  String get gamificationPillarOnboarding;
+
+  /// No description provided for @gamificationPillarParticipation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participation'**
+  String get gamificationPillarParticipation;
+
+  /// No description provided for @gamificationProgressionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Progression'**
+  String get gamificationProgressionTitle;
+
+  /// No description provided for @gamificationProgressThisWeek.
+  ///
+  /// In fr, this message translates to:
+  /// **'{completed}/{total} cette semaine'**
+  String gamificationProgressThisWeek(int completed, int total);
+
+  /// No description provided for @gamificationProgressToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'{completed}/{total} aujourd\'hui'**
+  String gamificationProgressToday(int completed, int total);
+
+  /// No description provided for @gamificationPurchaseCompleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Achat effectué : {itemName}'**
+  String gamificationPurchaseCompleted(String itemName);
+
+  /// No description provided for @gamificationRankUpCongratsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bravo !'**
+  String get gamificationRankUpCongratsTitle;
+
+  /// No description provided for @gamificationRankUpNowRank.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu es maintenant {rankLabel} !'**
+  String gamificationRankUpNowRank(String rankLabel);
+
+  /// No description provided for @gamificationRemainingLifetime.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} restant'**
+  String gamificationRemainingLifetime(int count);
+
+  /// No description provided for @gamificationShopTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boutique Hibons'**
+  String get gamificationShopTitle;
+
+  /// No description provided for @gamificationStartingRank.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rang de départ'**
+  String get gamificationStartingRank;
+
+  /// No description provided for @gamificationStreakShieldTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bouclier de série'**
+  String get gamificationStreakShieldTitle;
+
+  /// No description provided for @gamificationStreakShieldDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Protégez votre série pour 1 jour'**
+  String get gamificationStreakShieldDescription;
+
+  /// No description provided for @gamificationTopCta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Top !'**
+  String get gamificationTopCta;
+
+  /// No description provided for @gamificationTotalCountLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Total'**
+  String get gamificationTotalCountLabel;
+
+  /// No description provided for @gamificationUnlockedCountLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Débloqués'**
+  String get gamificationUnlockedCountLabel;
+
+  /// No description provided for @gamificationWheelAlreadyUsedToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as déjà utilisé ta chance aujourd\'hui.'**
+  String get gamificationWheelAlreadyUsedToday;
+
+  /// No description provided for @gamificationWheelLoseTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de chance...'**
+  String get gamificationWheelLoseTitle;
+
+  /// No description provided for @gamificationWheelSpinCta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lancer'**
+  String get gamificationWheelSpinCta;
+
+  /// No description provided for @gamificationWheelWinTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Félicitations !'**
+  String get gamificationWheelWinTitle;
+
+  /// No description provided for @alertsListTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes alertes et recherches'**
+  String get alertsListTitle;
+
+  /// No description provided for @alertsFilterAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes'**
+  String get alertsFilterAll;
+
+  /// No description provided for @alertsFilterAlerts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alertes'**
+  String get alertsFilterAlerts;
+
+  /// No description provided for @alertsFilterSearches.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherches'**
+  String get alertsFilterSearches;
+
+  /// No description provided for @alertsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos alertes'**
+  String get alertsLoadError;
+
+  /// No description provided for @alertsEmptyAllTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune alerte pour le moment'**
+  String get alertsEmptyAllTitle;
+
+  /// No description provided for @alertsEmptyAllBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrez vos recherches pour les retrouver ici et recevoir des notifications'**
+  String get alertsEmptyAllBody;
+
+  /// No description provided for @alertsEmptyActiveTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune alerte active'**
+  String get alertsEmptyActiveTitle;
+
+  /// No description provided for @alertsEmptyActiveBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activez les notifications sur vos recherches pour être alerté des nouveaux événements'**
+  String get alertsEmptyActiveBody;
+
+  /// No description provided for @alertsEmptySearchesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune recherche enregistrée'**
+  String get alertsEmptySearchesTitle;
+
+  /// No description provided for @alertsEmptySearchesBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos recherches sans notification apparaîtront ici'**
+  String get alertsEmptySearchesBody;
+
+  /// No description provided for @alertsExploreActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorer les activités'**
+  String get alertsExploreActivities;
+
+  /// No description provided for @alertsDeleteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'alerte'**
+  String get alertsDeleteTitle;
+
+  /// No description provided for @alertsDeleteBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer cette recherche enregistrée ?'**
+  String get alertsDeleteBody;
+
+  /// No description provided for @alertsDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alerte « {name} » supprimée'**
+  String alertsDeleted(String name);
+
+  /// No description provided for @alertsCreatedOn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créée le {date}'**
+  String alertsCreatedOn(String date);
+
+  /// No description provided for @alertsAllEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les événements'**
+  String get alertsAllEvents;
+
+  /// No description provided for @alertsUnnamed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Alerte sans nom'**
+  String get alertsUnnamed;
+
+  /// No description provided for @favoritesLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur de chargement'**
+  String get favoritesLoadError;
+
+  /// No description provided for @favoritesEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun favori'**
+  String get favoritesEmptyTitle;
+
+  /// No description provided for @favoritesEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez des événements à vos favoris en cliquant sur le cœur pour les retrouver facilement.'**
+  String get favoritesEmptyBody;
+
+  /// No description provided for @favoritesEmptyUncategorizedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun favori non classé'**
+  String get favoritesEmptyUncategorizedTitle;
+
+  /// No description provided for @favoritesEmptyUncategorizedBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous vos favoris sont organisés dans des listes.'**
+  String get favoritesEmptyUncategorizedBody;
+
+  /// No description provided for @favoritesEmptyListTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette liste est vide'**
+  String get favoritesEmptyListTitle;
+
+  /// No description provided for @favoritesEmptyListBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez des favoris à cette liste depuis le détail d\'un événement.'**
+  String get favoritesEmptyListBody;
+
+  /// No description provided for @favoritesExploreEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorer les événements'**
+  String get favoritesExploreEvents;
+
+  /// No description provided for @favoriteListsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes listes'**
+  String get favoriteListsTitle;
+
+  /// No description provided for @favoriteListsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur de chargement'**
+  String get favoriteListsLoadError;
+
+  /// No description provided for @favoriteListsAllFavorites.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les favoris'**
+  String get favoriteListsAllFavorites;
+
+  /// No description provided for @favoriteListsAllShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get favoriteListsAllShort;
+
+  /// No description provided for @favoriteListsUncategorized.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non classés'**
+  String get favoriteListsUncategorized;
+
+  /// No description provided for @favoriteListsUncategorizedSingular.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non classé'**
+  String get favoriteListsUncategorizedSingular;
+
+  /// No description provided for @favoriteListsSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'MES LISTES'**
+  String get favoriteListsSectionTitle;
+
+  /// No description provided for @favoriteListNewTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle liste'**
+  String get favoriteListNewTitle;
+
+  /// No description provided for @favoriteListOrganizeSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisez vos favoris'**
+  String get favoriteListOrganizeSubtitle;
+
+  /// No description provided for @favoriteListNameLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de la liste'**
+  String get favoriteListNameLabel;
+
+  /// No description provided for @favoriteListNameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ex. : Concerts à voir'**
+  String get favoriteListNameHint;
+
+  /// No description provided for @favoriteListNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez entrer un nom'**
+  String get favoriteListNameRequired;
+
+  /// No description provided for @favoriteListNameMinLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom doit contenir au moins 2 caractères'**
+  String get favoriteListNameMinLength;
+
+  /// No description provided for @favoriteListNameMaxLength.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom ne peut pas dépasser 50 caractères'**
+  String get favoriteListNameMaxLength;
+
+  /// No description provided for @favoriteListDescriptionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Description (optionnelle)'**
+  String get favoriteListDescriptionLabel;
+
+  /// No description provided for @favoriteListDescriptionHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ex. : Mes événements musicaux préférés'**
+  String get favoriteListDescriptionHint;
+
+  /// No description provided for @favoriteListColorLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleur'**
+  String get favoriteListColorLabel;
+
+  /// No description provided for @favoriteListIconLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Icône'**
+  String get favoriteListIconLabel;
+
+  /// No description provided for @favoriteListCreateAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer'**
+  String get favoriteListCreateAction;
+
+  /// No description provided for @favoriteListCreateError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur lors de la création de la liste'**
+  String get favoriteListCreateError;
+
+  /// No description provided for @favoriteListEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier la liste'**
+  String get favoriteListEditTitle;
+
+  /// No description provided for @favoriteListFavoritesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{0 favori} =1{1 favori} other{{count} favoris}}'**
+  String favoriteListFavoritesCount(int count);
+
+  /// No description provided for @favoriteListUpdateError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur lors de la mise à jour'**
+  String get favoriteListUpdateError;
+
+  /// No description provided for @favoriteListDeleteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la liste ?'**
+  String get favoriteListDeleteTitle;
+
+  /// No description provided for @favoriteListDeleteBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'La liste « {name} » sera supprimée.'**
+  String favoriteListDeleteBody(String name);
+
+  /// No description provided for @favoriteListDeleteMoveBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les événements favoris ne seront pas supprimés, ils seront déplacés dans « Non classés ».'**
+  String get favoriteListDeleteMoveBody;
+
+  /// No description provided for @favoriteListDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste « {name} » supprimée'**
+  String favoriteListDeleted(String name);
+
+  /// No description provided for @favoriteListDeleteError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur lors de la suppression'**
+  String get favoriteListDeleteError;
+
+  /// No description provided for @favoriteListDeleteThisAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer cette liste'**
+  String get favoriteListDeleteThisAction;
+
+  /// No description provided for @favoriteListPickerMoveTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déplacer vers...'**
+  String get favoriteListPickerMoveTitle;
+
+  /// No description provided for @favoriteListPickerAddTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter aux favoris'**
+  String get favoriteListPickerAddTitle;
+
+  /// No description provided for @favoriteListPickerUncategorizedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Favoris sans liste'**
+  String get favoriteListPickerUncategorizedSubtitle;
+
+  /// No description provided for @favoriteListCreateSheetTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer une liste'**
+  String get favoriteListCreateSheetTitle;
+
+  /// No description provided for @favoriteListCreateSheetSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle collection de favoris'**
+  String get favoriteListCreateSheetSubtitle;
+
+  /// No description provided for @favoriteListPickerRemoveTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer des favoris'**
+  String get favoriteListPickerRemoveTitle;
+
+  /// No description provided for @favoriteListPickerRemoveSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer de tous les favoris'**
+  String get favoriteListPickerRemoveSubtitle;
+
+  /// No description provided for @favoriteAddError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ajouter aux favoris'**
+  String get favoriteAddError;
+
+  /// No description provided for @favoriteRemoveError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de retirer des favoris'**
+  String get favoriteRemoveError;
+
+  /// No description provided for @favoriteUpdateError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de modifier le favori'**
+  String get favoriteUpdateError;
+
+  /// No description provided for @favoriteMovedToList.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déplacé vers la liste'**
+  String get favoriteMovedToList;
+
+  /// No description provided for @favoriteMovedToUncategorized.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déplacé vers « Non classés »'**
+  String get favoriteMovedToUncategorized;
+
+  /// No description provided for @favoriteAddedToList.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouté à la liste'**
+  String get favoriteAddedToList;
+
+  /// No description provided for @favoriteGenericError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une erreur est survenue.'**
+  String get favoriteGenericError;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsMarkAllRead.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout marquer comme lu'**
+  String get notificationsMarkAllRead;
+
+  /// No description provided for @notificationsFilterAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes'**
+  String get notificationsFilterAll;
+
+  /// No description provided for @notificationsFilterUnread.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non lues'**
+  String get notificationsFilterUnread;
+
+  /// No description provided for @notificationsGuestTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous'**
+  String get notificationsGuestTitle;
+
+  /// No description provided for @notificationsGuestBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos notifications apparaîtront ici après connexion.'**
+  String get notificationsGuestBody;
+
+  /// No description provided for @notificationsReadSyncError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture non synchronisée'**
+  String get notificationsReadSyncError;
+
+  /// No description provided for @notificationsMarkRead.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme lu'**
+  String get notificationsMarkRead;
+
+  /// No description provided for @notificationsMarkReadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de marquer comme lu'**
+  String get notificationsMarkReadError;
+
+  /// No description provided for @notificationsMarkedAllRead.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications marquées comme lues'**
+  String get notificationsMarkedAllRead;
+
+  /// No description provided for @notificationsActionError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Action impossible pour le moment'**
+  String get notificationsActionError;
+
+  /// No description provided for @notificationsDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notification supprimée'**
+  String get notificationsDeleted;
+
+  /// No description provided for @notificationsDeleteError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suppression impossible'**
+  String get notificationsDeleteError;
+
+  /// No description provided for @notificationsDeleteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la notification'**
+  String get notificationsDeleteTitle;
+
+  /// No description provided for @notificationsDeleteBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer cette notification ?'**
+  String get notificationsDeleteBody;
+
+  /// No description provided for @notificationsJustNow.
+  ///
+  /// In fr, this message translates to:
+  /// **'À l\'instant'**
+  String get notificationsJustNow;
+
+  /// No description provided for @notificationsMinutesAgoShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} min'**
+  String notificationsMinutesAgoShort(int count);
+
+  /// No description provided for @notificationsHoursAgoShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} h'**
+  String notificationsHoursAgoShort(int count);
+
+  /// No description provided for @notificationsDaysAgoShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} j'**
+  String notificationsDaysAgoShort(int count);
+
+  /// No description provided for @notificationsTypeMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message'**
+  String get notificationsTypeMessage;
+
+  /// No description provided for @notificationsTypeBooking.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservation'**
+  String get notificationsTypeBooking;
+
+  /// No description provided for @notificationsTypeTicket.
+  ///
+  /// In fr, this message translates to:
+  /// **'Billet'**
+  String get notificationsTypeTicket;
+
+  /// No description provided for @notificationsTypeEvent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement'**
+  String get notificationsTypeEvent;
+
+  /// No description provided for @notificationsTypeReview.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avis'**
+  String get notificationsTypeReview;
+
+  /// No description provided for @notificationsTypeQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Question'**
+  String get notificationsTypeQuestion;
+
+  /// No description provided for @notificationsTypeOrganization.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisation'**
+  String get notificationsTypeOrganization;
+
+  /// No description provided for @notificationsTypeInfo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Info'**
+  String get notificationsTypeInfo;
+
+  /// No description provided for @notificationsEmptyUnreadTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune notification non lue'**
+  String get notificationsEmptyUnreadTitle;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune notification pour le moment'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsEmptyUnreadBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les nouvelles notifications apparaîtront ici.'**
+  String get notificationsEmptyUnreadBody;
+
+  /// No description provided for @notificationsEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos messages, réservations et mises à jour importantes apparaîtront ici.'**
+  String get notificationsEmptyBody;
+
+  /// No description provided for @notificationsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos notifications'**
+  String get notificationsLoadError;
+
+  /// No description provided for @remindersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes rappels'**
+  String get remindersTitle;
+
+  /// No description provided for @remindersUpcoming.
+  ///
+  /// In fr, this message translates to:
+  /// **'À venir'**
+  String get remindersUpcoming;
+
+  /// No description provided for @remindersPast.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passés'**
+  String get remindersPast;
+
+  /// No description provided for @remindersDeleteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le rappel ?'**
+  String get remindersDeleteTitle;
+
+  /// No description provided for @remindersDeleteBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne recevrez plus de notifications pour « {eventTitle} » le {date}.'**
+  String remindersDeleteBody(String eventTitle, String date);
+
+  /// No description provided for @remindersDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappel supprimé'**
+  String get remindersDeleted;
+
+  /// No description provided for @remindersDateFromTo.
+  ///
+  /// In fr, this message translates to:
+  /// **'{date} de {start} à {end}'**
+  String remindersDateFromTo(String date, String start, String end);
+
+  /// No description provided for @remindersDateAtTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'{date} à {start}'**
+  String remindersDateAtTime(String date, String start);
+
+  /// No description provided for @remindersEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun rappel'**
+  String get remindersEmptyTitle;
+
+  /// No description provided for @remindersEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activez des rappels sur les activités qui vous intéressent pour être notifié.'**
+  String get remindersEmptyBody;
+
+  /// No description provided for @remindersLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos rappels'**
+  String get remindersLoadError;
+
+  /// No description provided for @remindersDaysBeforeBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'J-{count}'**
+  String remindersDaysBeforeBadge(int count);
+
+  /// No description provided for @onboardingExploreTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sortez et expérimentez'**
+  String get onboardingExploreTitle;
+
+  /// No description provided for @onboardingExploreDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ateliers, balades, spectacles enfants : trouvez l\'activité du week-end sans y passer votre soirée.'**
+  String get onboardingExploreDescription;
+
+  /// No description provided for @onboardingMusicTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vibrez au rythme de votre ville'**
+  String get onboardingMusicTitle;
+
+  /// No description provided for @onboardingMusicDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez les concerts, festivals et soirées qui font bouger votre région. Ne ratez plus aucun événement musical.'**
+  String get onboardingMusicDescription;
+
+  /// No description provided for @onboardingLocalTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Restez connecté aux nouveautés du coin'**
+  String get onboardingLocalTitle;
+
+  /// No description provided for @onboardingLocalDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marchés, lieux à découvrir : les bonnes adresses à deux pas de chez vous.'**
+  String get onboardingLocalDescription;
+
+  /// No description provided for @onboardingAssociationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre d\'une asso ?'**
+  String get onboardingAssociationTitle;
+
+  /// No description provided for @onboardingAssociationDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accédez aux événements privés réservés à vos associations : sport, école, culture, loisirs. Tout au même endroit.'**
+  String get onboardingAssociationDescription;
+
+  /// No description provided for @onboardingSkip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passer'**
+  String get onboardingSkip;
+
+  /// No description provided for @onboardingGetStarted.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est parti'**
+  String get onboardingGetStarted;
+
+  /// No description provided for @thematiquesExploreByTypeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorer par type d\'événement'**
+  String get thematiquesExploreByTypeTitle;
+
+  /// No description provided for @thematiquesSeeAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir tout'**
+  String get thematiquesSeeAll;
+
+  /// No description provided for @thematiquesAllTypesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les types ({count})'**
+  String thematiquesAllTypesCount(int count);
+
+  /// No description provided for @thematiquesSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un type d\'événement...'**
+  String get thematiquesSearchHint;
+
+  /// No description provided for @thematiquesEventCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{0 événement} =1{1 événement} other{{count} événements}}'**
+  String thematiquesEventCount(int count);
+
+  /// No description provided for @categoriesAllTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les catégories'**
+  String get categoriesAllTitle;
+
+  /// No description provided for @categoriesSeeAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir toutes les catégories'**
+  String get categoriesSeeAll;
+
+  /// No description provided for @categoriesAllCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les catégories ({count})'**
+  String categoriesAllCount(int count);
+
+  /// No description provided for @categoriesSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une catégorie...'**
+  String get categoriesSearchHint;
+
+  /// No description provided for @categoriesEmptySearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune catégorie trouvée'**
+  String get categoriesEmptySearch;
+
+  /// No description provided for @blogLatestTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Derniers articles'**
+  String get blogLatestTitle;
+
+  /// No description provided for @blogEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun article disponible'**
+  String get blogEmpty;
+
+  /// No description provided for @blogReadingTimeMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min'**
+  String blogReadingTimeMinutes(int minutes);
 }
 
 class _AppLocalizationsDelegate

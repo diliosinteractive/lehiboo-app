@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/config/env_config.dart';
@@ -22,17 +23,17 @@ class BlogSection extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: HomeSectionTitle(
-                  title: 'Derniers articles',
-                  color: Color(0xFF1A1A1A),
+                  title: context.l10n.blogLatestTitle,
+                  color: const Color(0xFF1A1A1A),
                 ),
               ),
               TextButton(
                 onPressed: _openBlogIndex,
-                child: const Text(
-                  'Voir tout',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.thematiquesSeeAll,
+                  style: const TextStyle(
                     color: Color(0xFFFF601F),
                     fontWeight: FontWeight.w600,
                   ),
@@ -45,11 +46,11 @@ class BlogSection extends ConsumerWidget {
         postsAsync.when(
           data: (posts) {
             if (posts.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  'Aucun article disponible',
-                  style: TextStyle(color: Colors.grey),
+                  context.l10n.blogEmpty,
+                  style: const TextStyle(color: Colors.grey),
                 ),
               );
             }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:lehiboo/core/l10n/l10n.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/trip_plan.dart';
 
 /// Card displaying a trip plan in the profile list
@@ -105,7 +105,7 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.plan.title,
+                      _planTitle(context),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -156,8 +156,10 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
               if (widget.plan.timeRange != null &&
                   widget.plan.timeRange!.isNotEmpty)
                 _buildStatChip(Icons.access_time, widget.plan.timeRange!),
-              _buildStatChip(Icons.flag,
-                  '${widget.plan.stopsCount} étape${widget.plan.stopsCount > 1 ? 's' : ''}'),
+              _buildStatChip(
+                Icons.flag,
+                context.l10n.tripPlansStopsCount(widget.plan.stopsCount),
+              ),
             ],
           ),
         ],
@@ -255,7 +257,9 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                 const Icon(Icons.info_outline, size: 16, color: _textTertiary),
                 const SizedBox(width: 8),
                 Text(
-                  '${widget.plan.stopsCount} étape${widget.plan.stopsCount > 1 ? 's' : ''} prévue${widget.plan.stopsCount > 1 ? 's' : ''}',
+                  context.l10n.tripPlansStopsPlanned(
+                    widget.plan.stopsCount,
+                  ),
                   style: const TextStyle(
                     fontSize: 13,
                     color: _textTertiary,
@@ -385,7 +389,7 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          stop.eventTitle,
+                          _stopTitle(context, stop),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -434,7 +438,10 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                                       size: 12, color: _accentColor),
                                   const SizedBox(width: 4),
                                   Text(
-                                    _formatDuration(stop.durationMinutes!),
+                                    _formatDuration(
+                                      context,
+                                      stop.durationMinutes!,
+                                    ),
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
@@ -535,7 +542,9 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
         widget.plan.stops.where((s) => s.hasCoordinates).toList();
     if (validStops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucune coordonnée disponible')),
+        SnackBar(
+          content: Text(context.l10n.tripPlansNoCoordinatesAvailable),
+        ),
       );
       return;
     }
@@ -551,7 +560,9 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
         widget.plan.stops.where((s) => s.hasCoordinates).toList();
     if (validStops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucune coordonnée disponible')),
+        SnackBar(
+          content: Text(context.l10n.tripPlansNoCoordinatesAvailable),
+        ),
       );
       return;
     }
@@ -567,15 +578,16 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer ce plan ?'),
+        title: Text(context.l10n.tripPlansDeleteDialogTitle),
         content: Text(
-            'Le plan "${widget.plan.title}" sera définitivement supprimé.'),
+          context.l10n.tripPlansDeleteDialogBody(_planTitle(context)),
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              'Annuler',
+              context.l10n.commonCancel,
               style: TextStyle(color: Colors.grey[600]),
             ),
           ),
@@ -591,7 +603,7 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Supprimer'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),
@@ -607,11 +619,21 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
     return formatted[0].toUpperCase() + formatted.substring(1);
   }
 
-  String _formatDuration(int minutes) {
-    if (minutes < 60) return '${minutes}min';
+  String _planTitle(BuildContext context) {
+    final title = widget.plan.title.trim();
+    return title.isEmpty ? context.l10n.tripPlansUntitledPlan : title;
+  }
+
+  String _stopTitle(BuildContext context, TripStop stop) {
+    final title = stop.eventTitle.trim();
+    return title.isEmpty ? context.l10n.tripPlansStopFallback : title;
+  }
+
+  String _formatDuration(BuildContext context, int minutes) {
+    if (minutes < 60) return context.l10n.tripPlansDurationMinutes(minutes);
     final hours = minutes ~/ 60;
     final mins = minutes % 60;
-    if (mins == 0) return '${hours}h';
-    return '${hours}h${mins.toString().padLeft(2, '0')}';
+    if (mins == 0) return context.l10n.tripPlansDurationHours(hours);
+    return context.l10n.tripPlansDurationHoursMinutes(hours, mins);
   }
 }

@@ -902,11 +902,13 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   }
 
   // Price filter
-  if (filter.priceFilterLabel != null) {
+  final priceChip = _priceChipValue(filter);
+  if (priceChip != null) {
     chips.add(ActiveFilterChip(
       id: 'price',
-      label: filter.priceFilterLabel!,
+      label: priceChip,
       type: FilterChipType.price,
+      value: priceChip,
     ));
   }
 
@@ -1026,7 +1028,7 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   if (filter.locationType != null) {
     chips.add(ActiveFilterChip(
       id: 'location_type',
-      label: _locationTypeLabel(filter.locationType!),
+      label: filter.locationType!.name,
       type: FilterChipType.locationType,
       value: filter.locationType!.name,
     ));
@@ -1036,14 +1038,14 @@ final activeFilterChipsProvider = Provider<List<ActiveFilterChip>>((ref) {
   if (filter.familyFriendly && !selectedPublicFilters.contains('family')) {
     chips.add(const ActiveFilterChip(
       id: 'family',
-      label: 'En famille',
+      label: 'family',
       type: FilterChipType.audience,
     ));
   }
   if (filter.accessiblePMR && !selectedPublicFilters.contains('pmr')) {
     chips.add(const ActiveFilterChip(
       id: 'pmr',
-      label: 'Accessible PMR',
+      label: 'pmr',
       type: FilterChipType.audience,
     ));
   }
@@ -1118,11 +1120,11 @@ Map<String, String> _publicFilterLabelMap(
 
 Map<String, String> _fallbackPublicFilterLabelMap() {
   return const {
-    'family': 'En famille',
-    'pmr': 'Accessible PMR',
-    'group': 'En groupe',
-    'school': 'Groupe scolaire',
-    'professional': 'Professionnel',
+    'family': 'family',
+    'pmr': 'pmr',
+    'group': 'group',
+    'school': 'school',
+    'professional': 'professional',
   };
 }
 
@@ -1140,17 +1142,16 @@ String _slugToDisplayName(String slug) {
       .join(' ');
 }
 
-String _locationTypeLabel(LocationTypeFilter type) {
-  switch (type) {
-    case LocationTypeFilter.physical:
-      return 'En intérieur';
-    case LocationTypeFilter.offline:
-      return 'En extérieur';
-    case LocationTypeFilter.online:
-      return 'En ligne';
-    case LocationTypeFilter.hybrid:
-      return 'Mixte (intérieur/extérieur)';
-  }
+String? _priceChipValue(EventFilter filter) {
+  if (filter.onlyFree) return 'free';
+
+  return switch (filter.priceFilterType) {
+    PriceFilterType.free => 'free',
+    PriceFilterType.paid => 'paid',
+    PriceFilterType.range =>
+      'range:${filter.priceMin.toInt()}:${filter.priceMax.toInt()}',
+    null => null,
+  };
 }
 
 /// Provider for available filter options

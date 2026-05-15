@@ -997,7 +997,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   ),
                 ),
                 Text(
-                  sorted[i].formattedPrice,
+                  sorted[i].price == 0
+                      ? context.l10n.commonFree
+                      : sorted[i].formattedPrice,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

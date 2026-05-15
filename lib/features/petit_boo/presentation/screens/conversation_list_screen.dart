@@ -123,7 +123,11 @@ class ConversationListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, WidgetRef ref, String error) {
+  Widget _buildErrorState(
+    BuildContext context,
+    WidgetRef ref,
+    ConversationListError error,
+  ) {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(PetitBooTheme.spacing32),
@@ -150,7 +154,7 @@ class ConversationListScreen extends ConsumerWidget {
             ),
             SizedBox(height: PetitBooTheme.spacing8),
             Text(
-              error,
+              _errorMessage(context, error),
               textAlign: TextAlign.center,
               style: PetitBooTheme.bodyMd.copyWith(
                 color: PetitBooTheme.textSecondary,
@@ -179,6 +183,15 @@ class ConversationListScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _errorMessage(BuildContext context, ConversationListError error) {
+    switch (error) {
+      case ConversationListError.authRequired:
+        return context.l10n.petitBooConversationsAuthRequired;
+      case ConversationListError.loadFailed:
+        return context.l10n.petitBooConversationsLoadFailed;
+    }
   }
 
   Widget _buildEmptyState(BuildContext context) {

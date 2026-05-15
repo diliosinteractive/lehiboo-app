@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../domain/entities/activity.dart';
 import '../../../events/data/mappers/event_to_activity_mapper.dart';
@@ -237,10 +238,10 @@ class PersonalizedFeedSection extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: HomeSectionTitle(
-                  title: 'Pour vous',
+                  title: context.l10n.personalizedFeedTitle,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: HbColors.textPrimary,

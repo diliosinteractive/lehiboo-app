@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
 import '../../data/models/membership_dto.dart';
@@ -24,6 +25,7 @@ class MembersOnlyGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final orgName = organization.name;
     final orgUuid = organization.uuid;
 
@@ -57,7 +59,7 @@ class MembersOnlyGate extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Événement réservé aux membres',
+                l10n.membersOnlyGateTitle,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.montserrat(
                   fontSize: 20,
@@ -67,9 +69,7 @@ class MembersOnlyGate extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Cet événement est uniquement accessible aux membres de '
-                "$orgName. Rejoignez l'organisation pour débloquer son "
-                'agenda privé.',
+                l10n.membersOnlyGateBody(orgName),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.figtree(
                   fontSize: 14,
@@ -125,7 +125,7 @@ class MembersOnlyGate extends ConsumerWidget {
                     if (orgUuid != null && orgUuid.isNotEmpty)
                       TextButton(
                         onPressed: () => context.push('/organizers/$orgUuid'),
-                        child: const Text('Voir la fiche'),
+                        child: Text(l10n.membershipViewOrganizer),
                       ),
                   ],
                 ),
@@ -138,7 +138,7 @@ class MembersOnlyGate extends ConsumerWidget {
                       ? null
                       : () => confirmAndJoin(context, ref, orgUuid, orgName),
                   icon: const Icon(Icons.group_add_outlined, size: 18),
-                  label: Text('Rejoindre $orgName'),
+                  label: Text(l10n.membersOnlyGateJoin(orgName)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,

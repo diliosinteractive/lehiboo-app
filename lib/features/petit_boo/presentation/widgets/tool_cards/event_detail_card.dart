@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -19,10 +20,11 @@ class EventDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final itemSchema = schema.responseSchema?.itemSchema;
 
-    final title =
-        _getValue(itemSchema?.titleField, 'title') as String? ?? 'Événement';
+    final title = _getValue(itemSchema?.titleField, 'title') as String? ??
+        l10n.petitBooToolEventFallbackTitle;
     final imageUrl = _getValue(itemSchema?.imageField, 'image_url') as String?;
     final description = data['description'] as String?;
     final isFavorite = data['is_favorite'] == true;
@@ -33,7 +35,6 @@ class EventDetailCard extends StatelessWidget {
     // Venue info
     final venue = data['venue'] as Map<String, dynamic>?;
     final venueName = venue?['name'] as String?;
-    final venueAddress = venue?['address'] as String?;
     final venueCity = venue?['city'] as String?;
 
     // Next slot
@@ -189,9 +190,12 @@ class EventDetailCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            [slotDate, startTime]
-                                .where((e) => e != null)
-                                .join(' à '),
+                            startTime != null
+                                ? l10n.petitBooEventDateTime(
+                                    slotDate,
+                                    startTime,
+                                  )
+                                : slotDate,
                             style: TextStyle(
                               fontSize: 13,
                               color: HbColors.textSecondary,
@@ -269,9 +273,11 @@ class EventDetailCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            'Voir les disponibilités',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                          child: Text(
+                            l10n.petitBooEventAvailabilityAction,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -317,6 +323,7 @@ class _PriceInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final prices = ticketTypes
         .map((t) => t['price'] as num?)
         .where((p) => p != null)
@@ -329,15 +336,16 @@ class _PriceInfo extends StatelessWidget {
 
     return Row(
       children: [
-        Text(
-          hasMultiple ? 'À partir de ' : '',
-          style: TextStyle(
-            fontSize: 13,
-            color: HbColors.textSecondary,
+        if (hasMultiple)
+          Text(
+            '${l10n.petitBooEventPriceFrom} ',
+            style: TextStyle(
+              fontSize: 13,
+              color: HbColors.textSecondary,
+            ),
           ),
-        ),
         Text(
-          minPrice == 0 ? 'Gratuit' : '${minPrice.toStringAsFixed(0)}€',
+          minPrice == 0 ? l10n.commonFree : '${minPrice.toStringAsFixed(0)}€',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -346,7 +354,7 @@ class _PriceInfo extends StatelessWidget {
         ),
         if (hasMultiple && minPrice > 0)
           Text(
-            ' • ${ticketTypes.length} tarifs',
+            ' • ${l10n.petitBooEventPriceTiers(ticketTypes.length)}',
             style: TextStyle(
               fontSize: 13,
               color: HbColors.textSecondary,

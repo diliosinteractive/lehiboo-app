@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/providers/shared_preferences_provider.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/petit_boo_context_storage.dart';
 import '../../data/datasources/petit_boo_sse_datasource.dart';
@@ -402,7 +405,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
             messages: _withoutActiveOptimisticMessage(),
             currentStreamingText: '',
             currentToolResults: [],
-            error: event.error ?? 'Vous avez atteint votre limite de messages',
+            error: event.error ?? _l10n.petitBooQuotaExceededError,
             isStreaming: false,
             isLimitReached: true,
           );
@@ -411,7 +414,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
           break;
         }
         state = state.copyWith(
-          error: _safePetitBooErrorMessage(event.error),
+          error: event.error ?? _l10n.petitBooGenericError,
           isStreaming: false,
         );
         break;
@@ -431,15 +434,15 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       debugPrint('🤖 PetitBoo: Stream error - $error');
     }
 
-    String errorMessage = 'Erreur de connexion';
+    String errorMessage = _l10n.petitBooConnectionError;
 
     if (error is PetitBooSseException) {
       errorMessage = _safePetitBooErrorMessage(error.message);
 
       if (error.code == 'auth_required') {
-        errorMessage = 'Connectez-vous pour discuter avec Petit Boo';
+        errorMessage = _l10n.petitBooAuthRequiredError;
       } else if (error.code == 'quota_exceeded') {
-        errorMessage = 'Vous avez atteint votre limite de messages';
+        errorMessage = _l10n.petitBooQuotaExceededError;
         _saveActiveMessageAsPending();
       }
     }
@@ -541,7 +544,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: 'Impossible de charger la conversation',
+        error: _l10n.petitBooConversationLoadFailed,
       );
     }
   }

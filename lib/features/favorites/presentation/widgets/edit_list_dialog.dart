@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
@@ -41,7 +42,8 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.list.name);
-    _descriptionController = TextEditingController(text: widget.list.description ?? '');
+    _descriptionController =
+        TextEditingController(text: widget.list.description ?? '');
     _selectedColor = widget.list.color;
     _selectedIcon = widget.list.icon;
   }
@@ -55,7 +57,8 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
 
   bool get _hasChanges {
     return _nameController.text.trim() != widget.list.name ||
-        (_descriptionController.text.trim()) != (widget.list.description ?? '') ||
+        (_descriptionController.text.trim()) !=
+            (widget.list.description ?? '') ||
         _selectedColor.value != widget.list.color.value ||
         _selectedIcon.codePoint != widget.list.icon.codePoint;
   }
@@ -72,15 +75,16 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
     final colorKey = FavoriteListColors.toColorKey(_selectedColor);
     final iconKey = FavoriteListIcons.toIconKey(_selectedIcon);
 
-    final updatedList = await ref.read(favoriteListsProvider.notifier).updateList(
-      widget.list.id,
-      name: _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      color: colorKey,
-      icon: iconKey,
-    );
+    final updatedList =
+        await ref.read(favoriteListsProvider.notifier).updateList(
+              widget.list.id,
+              name: _nameController.text.trim(),
+              description: _descriptionController.text.trim().isEmpty
+                  ? null
+                  : _descriptionController.text.trim(),
+              color: colorKey,
+              icon: iconKey,
+            );
 
     if (mounted) {
       setState(() => _isLoading = false);
@@ -89,7 +93,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
         HapticFeedback.mediumImpact();
         Navigator.of(context).pop(updatedList);
       } else {
-        PetitBooToast.error(context, 'Erreur lors de la mise à jour');
+        PetitBooToast.error(context, context.l10n.favoriteListUpdateError);
       }
     }
   }
@@ -99,18 +103,18 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Supprimer la liste ?'),
+        title: Text(context.l10n.favoriteListDeleteTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'La liste "${widget.list.name}" sera supprimée.',
+              context.l10n.favoriteListDeleteBody(widget.list.name),
               style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 8),
             Text(
-              'Les événements favoris ne seront pas supprimés, ils seront déplacés dans "Non classés".',
+              context.l10n.favoriteListDeleteMoveBody,
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.grey[600],
@@ -121,7 +125,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
+            child: Text(context.l10n.commonCancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -129,7 +133,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Supprimer'),
+            child: Text(context.l10n.messagesDeleteAction),
           ),
         ],
       ),
@@ -139,7 +143,9 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
 
     setState(() => _isDeleting = true);
 
-    final success = await ref.read(favoriteListsProvider.notifier).deleteList(widget.list.id);
+    final success = await ref
+        .read(favoriteListsProvider.notifier)
+        .deleteList(widget.list.id);
 
     if (mounted) {
       setState(() => _isDeleting = false);
@@ -151,14 +157,14 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Liste "${widget.list.name}" supprimée'),
+            content: Text(context.l10n.favoriteListDeleted(widget.list.name)),
             behavior: SnackBarBehavior.floating,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de la suppression'),
+          SnackBar(
+            content: Text(context.l10n.favoriteListDeleteError),
             backgroundColor: Colors.red,
           ),
         );
@@ -199,15 +205,17 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Modifier la liste',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.favoriteListEditTitle,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            '${widget.list.favoritesCount} favori${widget.list.favoritesCount > 1 ? 's' : ''}',
+                            context.l10n.favoriteListFavoritesCount(
+                              widget.list.favoritesCount,
+                            ),
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -229,7 +237,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Nom de la liste',
+                    labelText: context.l10n.favoriteListNameLabel,
                     filled: true,
                     fillColor: Colors.grey[50],
                     border: OutlineInputBorder(
@@ -243,13 +251,13 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Veuillez entrer un nom';
+                      return context.l10n.favoriteListNameRequired;
                     }
                     if (value.trim().length < 2) {
-                      return 'Le nom doit contenir au moins 2 caractères';
+                      return context.l10n.favoriteListNameMinLength;
                     }
                     if (value.trim().length > 50) {
-                      return 'Le nom ne peut pas dépasser 50 caractères';
+                      return context.l10n.favoriteListNameMaxLength;
                     }
                     return null;
                   },
@@ -262,7 +270,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                 TextFormField(
                   controller: _descriptionController,
                   decoration: InputDecoration(
-                    labelText: 'Description (optionnelle)',
+                    labelText: context.l10n.favoriteListDescriptionLabel,
                     filled: true,
                     fillColor: Colors.grey[50],
                     border: OutlineInputBorder(
@@ -281,9 +289,9 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                 const SizedBox(height: 24),
 
                 // Couleur
-                const Text(
-                  'Couleur',
-                  style: TextStyle(
+                Text(
+                  context.l10n.favoriteListColorLabel,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -300,9 +308,9 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                 const SizedBox(height: 24),
 
                 // Icône
-                const Text(
-                  'Icône',
-                  style: TextStyle(
+                Text(
+                  context.l10n.favoriteListIconLabel,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -332,7 +340,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                             )
                           : const Icon(Icons.delete_outline, color: Colors.red),
                       label: Text(
-                        'Supprimer cette liste',
+                        context.l10n.favoriteListDeleteThisAction,
                         style: TextStyle(
                           color: _isDeleting ? Colors.grey : Colors.red,
                         ),
@@ -356,13 +364,14 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Annuler'),
+                        child: Text(context.l10n.commonCancel),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _isLoading || _isDeleting ? null : _updateList,
+                        onPressed:
+                            _isLoading || _isDeleting ? null : _updateList,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _selectedColor,
                           foregroundColor: Colors.white,
@@ -380,9 +389,10 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
-                                'Enregistrer',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                            : Text(
+                                context.l10n.commonSave,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                       ),
                     ),

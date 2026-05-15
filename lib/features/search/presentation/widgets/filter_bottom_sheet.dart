@@ -2204,31 +2204,31 @@ class _AudienceFilterSection extends StatelessWidget {
 const _fallbackPublicFilters = [
   EventReferencePublicFilterDto(
     key: 'family',
-    label: 'En famille',
+    label: '',
     param: 'public_filters',
     value: 'family',
   ),
   EventReferencePublicFilterDto(
     key: 'pmr',
-    label: 'Accessible PMR',
+    label: '',
     param: 'public_filters',
     value: 'pmr',
   ),
   EventReferencePublicFilterDto(
     key: 'group',
-    label: 'En groupe',
+    label: '',
     param: 'public_filters',
     value: 'group',
   ),
   EventReferencePublicFilterDto(
     key: 'school',
-    label: 'Groupe scolaire',
+    label: '',
     param: 'public_filters',
     value: 'school',
   ),
   EventReferencePublicFilterDto(
     key: 'professional',
-    label: 'Professionnel',
+    label: '',
     param: 'public_filters',
     value: 'professional',
   ),
@@ -2394,7 +2394,7 @@ class _LocationTypeFilterSection extends StatelessWidget {
           runSpacing: 10,
           children: [
             _SelectableChip(
-              label: 'En intérieur',
+              label: context.l10n.searchLocationIndoor,
               icon: Icons.home_work_outlined,
               isSelected: selectedType == LocationTypeFilter.physical,
               onTap: () => onChanged(
@@ -2404,7 +2404,7 @@ class _LocationTypeFilterSection extends StatelessWidget {
               ),
             ),
             _SelectableChip(
-              label: 'En extérieur',
+              label: context.l10n.searchLocationOutdoor,
               icon: Icons.park_outlined,
               isSelected: selectedType == LocationTypeFilter.offline,
               onTap: () => onChanged(
@@ -2414,7 +2414,7 @@ class _LocationTypeFilterSection extends StatelessWidget {
               ),
             ),
             _SelectableChip(
-              label: 'Mixte (intérieur/extérieur)',
+              label: context.l10n.searchLocationMixed,
               icon: Icons.sync_alt,
               isSelected: selectedType == LocationTypeFilter.hybrid,
               onTap: () => onChanged(

@@ -376,7 +376,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                     // Push toggle
                     _NotificationToggle(
                       icon: Icons.notifications_outlined,
-                      title: 'Push',
+                      title: context.l10n.searchPushTitle,
                       subtitle: context.l10n.searchPushSubtitle,
                       value: _enablePush,
                       onChanged: (v) => setState(() => _enablePush = v),
@@ -387,7 +387,7 @@ class _SaveSearchSheetState extends State<SaveSearchSheet> {
                     // Email toggle
                     _NotificationToggle(
                       icon: Icons.mail_outline,
-                      title: 'Email',
+                      title: context.l10n.searchEmailTitle,
                       subtitle: context.l10n.searchEmailSubtitle,
                       value: _enableEmail,
                       onChanged: (v) => setState(() => _enableEmail = v),

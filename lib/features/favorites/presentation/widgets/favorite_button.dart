@@ -142,7 +142,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
         _showRewardToastIfAny(result);
       } else if (result == null && mounted) {
         HapticFeedback.heavyImpact();
-        PetitBooToast.error(context, 'Impossible de retirer des favoris');
+        PetitBooToast.error(context, context.l10n.favoriteRemoveError);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -214,8 +214,8 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
           PetitBooToast.success(
             context,
             result.listId != null
-                ? 'Déplacé vers la liste'
-                : 'Déplacé vers "Non classés"',
+                ? context.l10n.favoriteMovedToList
+                : context.l10n.favoriteMovedToUncategorized,
           );
         }
       } else {
@@ -235,7 +235,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
           _controller.forward(from: 0);
 
           if (result.listId != null) {
-            PetitBooToast.success(context, 'Ajouté à la liste');
+            PetitBooToast.success(context, context.l10n.favoriteAddedToList);
           } else {
             PetitBooToast.favoriteAdded(context);
           }
@@ -244,7 +244,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
       if (!success && mounted) {
         HapticFeedback.heavyImpact();
-        PetitBooToast.error(context, 'Une erreur est survenue');
+        PetitBooToast.error(context, context.l10n.favoriteGenericError);
       } else if (success && rewardSource != null) {
         _showRewardToastIfAny(rewardSource);
       }

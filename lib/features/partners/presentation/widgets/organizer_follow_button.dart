@@ -28,7 +28,9 @@ class OrganizerFollowButton extends ConsumerWidget {
     final isFollowing = state?.isFollowed ?? false;
     final isLoading = state?.isInFlight ?? false;
 
-    final label = isFollowing ? 'Ne plus suivre' : 'Suivre';
+    final label = isFollowing
+        ? context.l10n.organizerUnfollowAction
+        : context.l10n.organizerFollowAction;
     final icon = isFollowing ? Icons.person_remove_outlined : Icons.add;
 
     final filled = !isFollowing;

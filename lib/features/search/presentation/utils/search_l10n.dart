@@ -38,10 +38,10 @@ extension SearchL10n on BuildContext {
 
   String searchLocationTypeLabel(LocationTypeFilter type) {
     return switch (type) {
-      LocationTypeFilter.physical => 'En intérieur',
-      LocationTypeFilter.offline => 'En extérieur',
+      LocationTypeFilter.physical => l10n.searchLocationIndoor,
+      LocationTypeFilter.offline => l10n.searchLocationOutdoor,
       LocationTypeFilter.online => l10n.searchLocationTypeOnline,
-      LocationTypeFilter.hybrid => 'Mixte (intérieur/extérieur)',
+      LocationTypeFilter.hybrid => l10n.searchLocationMixed,
     };
   }
 

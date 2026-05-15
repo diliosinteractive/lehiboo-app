@@ -252,31 +252,31 @@ List<EventReferenceCategoryDto> _flattenReferenceCategories(
 const _fallbackPublicFilters = [
   EventReferencePublicFilterDto(
     key: 'family',
-    label: 'En famille',
+    label: '',
     param: 'public_filters',
     value: 'family',
   ),
   EventReferencePublicFilterDto(
     key: 'pmr',
-    label: 'Accessible PMR',
+    label: '',
     param: 'public_filters',
     value: 'pmr',
   ),
   EventReferencePublicFilterDto(
     key: 'group',
-    label: 'En groupe',
+    label: '',
     param: 'public_filters',
     value: 'group',
   ),
   EventReferencePublicFilterDto(
     key: 'school',
-    label: 'Groupe scolaire',
+    label: '',
     param: 'public_filters',
     value: 'school',
   ),
   EventReferencePublicFilterDto(
     key: 'professional',
-    label: 'Professionnel',
+    label: '',
     param: 'public_filters',
     value: 'professional',
   ),

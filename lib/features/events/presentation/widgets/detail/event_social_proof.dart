@@ -102,7 +102,7 @@ class _EventSocialProofState extends State<EventSocialProof>
             const SizedBox(width: 8),
           ],
           Text(
-            '$_displayCount personnes regardent',
+            context.l10n.eventPeopleWatching(_displayCount),
             style: const TextStyle(
               color: HbColors.brandPrimary,
               fontSize: 12,

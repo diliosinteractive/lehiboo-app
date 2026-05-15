@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/city.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../events/domain/entities/popular_city.dart';
 import '../../../events/domain/entities/event.dart';
 import '../../../events/domain/entities/event_submodels.dart';
@@ -637,8 +638,9 @@ class SavedSearch {
     if (cityName != null) parts.add(cityName!);
     if (thematiqueName != null) parts.add(thematiqueName!);
 
-    if (parts.isEmpty && hasAlert) return 'Alerte personnalisée';
-    if (parts.isEmpty) return 'Recherche sauvegardée';
+    final l10n = cachedAppLocalizations();
+    if (parts.isEmpty && hasAlert) return l10n.homeSavedSearchAlertFallback;
+    if (parts.isEmpty) return l10n.homeSavedSearchFallback;
 
     return parts.join(' • ');
   }

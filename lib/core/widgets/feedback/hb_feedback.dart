@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+
+import '../../l10n/l10n.dart';
 import '../../themes/hb_theme.dart';
 import '../buttons/hb_button.dart';
 
@@ -64,25 +66,26 @@ class HbEmptyState extends StatelessWidget {
 }
 
 class HbErrorView extends StatelessWidget {
-  final String title;
-  final String message;
+  final String? title;
+  final String? message;
   final VoidCallback? onRetry;
   final IconData icon;
 
   const HbErrorView({
     super.key,
-    this.title = 'Oups !',
-    this.message = 'Une erreur est survenue.',
+    this.title,
+    this.message,
     this.onRetry,
     this.icon = Icons.error_outline_rounded,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return HbEmptyState(
-      title: title,
-      message: message,
-      actionLabel: onRetry != null ? 'Réessayer' : null,
+      title: title ?? l10n.commonErrorTitle,
+      message: message ?? l10n.commonGenericError,
+      actionLabel: onRetry != null ? l10n.commonRetry : null,
       onAction: onRetry,
       icon: icon,
     );

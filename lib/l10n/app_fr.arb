@@ -72,7 +72,18 @@
   "commonAdd": "Ajouter",
   "commonRetry": "Réessayer",
   "commonSave": "Enregistrer",
+  "commonDelete": "Supprimer",
+  "commonOk": "OK",
   "commonValidate": "Valider",
+  "commonErrorTitle": "Oups !",
+  "commonGenericError": "Une erreur est survenue.",
+  "commonGenericRetryError": "Une erreur est survenue. Veuillez réessayer.",
+  "commonConnectionError": "Erreur de connexion. Vérifiez votre connexion internet.",
+  "commonSearchHint": "Rechercher...",
+  "routeEventFallbackTitle": "Événement",
+  "routeRecommendedTitle": "Recommandés pour vous",
+  "routeNotFoundTitle": "Oups ! Page non trouvée",
+  "routeNotFoundBody": "La page que vous recherchez n'existe pas.",
   "settingsPushPermissionRequired": "Autorisation notifications requise",
   "settingsUpdateFailed": "Mise à jour impossible",
   "profileTitle": "Profil",
@@ -95,6 +106,18 @@
   "profileRemindersSubtitle": "Rappels d'activités à venir",
   "profileQuestionsTitle": "Mes questions",
   "profileQuestionsSubtitle": "Vos questions sur les événements",
+  "userQuestionsTitle": "Mes questions",
+  "userQuestionsLoadError": "Impossible de charger vos questions.",
+  "userQuestionsEmptyTitle": "Aucune question",
+  "userQuestionsEmptyBody": "Vous n'avez encore posé aucune question sur un événement.",
+  "userQuestionsExploreEvents": "Découvrir des événements",
+  "userQuestionsDeletedEvent": "Événement supprimé",
+  "userQuestionsOrganizerFallback": "Organisateur",
+  "userQuestionsRejectedNotice": "Cette question a été rejetée par la modération.",
+  "userQuestionsStatusPending": "En attente",
+  "userQuestionsStatusApproved": "Approuvée",
+  "userQuestionsStatusAnswered": "Répondue",
+  "userQuestionsStatusRejected": "Rejetée",
   "profileReviewsTitle": "Mes avis",
   "profileReviewsSubtitle": "Vos avis et réponses des organisateurs",
   "profileAccountTitle": "Mon compte",
@@ -381,6 +404,7 @@
   "messagesStatusClosed": "Fermé",
   "messagesStatusPending": "En attente",
   "messagesStatusOpen": "Ouvert",
+  "messagesNotificationOpenAction": "Ouvrir",
   "messagesDeletedPreview": "Message supprimé",
   "messagesRelativeJustNow": "À l'instant",
   "messagesRelativeDaysShort": "{count}j",
@@ -583,6 +607,12 @@
   "petitBooDeleteConversationBody": "Cette action est irréversible.",
   "petitBooConversationDeleted": "Conversation supprimée",
   "petitBooConversationFallbackTitle": "Conversation",
+  "petitBooConversationsAuthRequired": "Connectez-vous pour voir vos conversations",
+  "petitBooConversationsLoadFailed": "Impossible de charger les conversations",
+  "petitBooEngagementWelcome": "Bonjour ! Je peux vous aider ? 🌟",
+  "petitBooEngagementInspiration": "Vous cherchez l'inspiration ? 💡",
+  "petitBooEngagementNoResults": "Oups, rien trouvé ? Je peux chercher pour vous ! 🕵️‍♂️",
+  "petitBooEngagementIdle": "Psst... Je connais des coins sympas ! 🗺️",
   "petitBooRelativeDaysAgo": "{count, plural, =1{Il y a 1 jour} other{Il y a {count} jours}}",
   "@petitBooRelativeDaysAgo": {
     "placeholders": {
@@ -878,6 +908,89 @@
   "petitBooToolUntitled": "Sans titre",
   "petitBooToolStatusActive": "Active",
   "petitBooToolStatusInactive": "Inactive",
+  "petitBooToolEventFallbackTitle": "Événement",
+  "petitBooToolEventCount": "{count, plural, =1{1 événement} other{{count} événements}}",
+  "@petitBooToolEventCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooToolViewEvents": "Voir {count, plural, =1{1 événement} other{les {count} événements}}",
+  "@petitBooToolViewEvents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooEventDateTime": "{date} à {time}",
+  "@petitBooEventDateTime": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooEventAvailabilityAction": "Voir les disponibilités",
+  "petitBooEventPriceFrom": "À partir de",
+  "petitBooEventPriceTiers": "{count, plural, =1{1 tarif} other{{count} tarifs}}",
+  "@petitBooEventPriceTiers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooTripSavedPlansCount": "{count, plural, =1{1 plan sauvegardé} other{{count} plans sauvegardés}}",
+  "@petitBooTripSavedPlansCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooTripStopsCount": "{count, plural, =1{1 étape} other{{count} étapes}}",
+  "@petitBooTripStopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooTripMoreStops": "{count, plural, =1{+1 autre étape} other{+{count} autres étapes}}",
+  "@petitBooTripMoreStops": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooTripFallbackStop": "Étape",
+  "petitBooTripFallbackListTitle": "Plan sans titre",
+  "petitBooTripLoadErrorTitle": "Impossible de charger tes sorties",
+  "petitBooTripLoadErrorRetry": "Réessaie dans quelques instants",
+  "petitBooTripEmptyPrompt": "Demande-moi de planifier une sortie !",
+  "petitBooTripViewAll": "Voir toutes mes sorties",
+  "petitBooTripExpandMap": "Agrandir la carte",
+  "petitBooTripCollapseMap": "Réduire",
+  "petitBooTripTipsTitle": "Conseils",
+  "petitBooTripSave": "Sauvegarder",
+  "petitBooTripSaved": "Sauvegardé",
+  "petitBooTripShowMap": "Voir carte",
+  "petitBooTripHideMap": "Masquer carte",
+  "petitBooTripSavePlanPrompt": "Sauvegarde ce plan de sortie",
+  "petitBooTripNoCoordinates": "Aucune coordonnée disponible",
+  "petitBooQuotaExceededError": "Vous avez atteint votre limite de messages",
+  "petitBooConnectionError": "Erreur de connexion",
+  "petitBooAuthRequiredError": "Connectez-vous pour discuter avec Petit Boo",
+  "petitBooConversationLoadFailed": "Impossible de charger la conversation",
+  "petitBooApiErrorFallback": "Erreur Petit Boo",
+  "petitBooGenericError": "Une erreur est survenue",
   "petitBooBrainManageMemory": "Gérer ma mémoire",
   "petitBooBrainRecommendationHint": "Parle-moi de toi pour que je puisse te faire de meilleures recommandations.",
   "petitBooToolHibonsBalance": "Solde Hibons",
@@ -1033,6 +1146,388 @@
   "membershipRequestSentOn": "Demande envoyée le {date}",
   "membershipRequestRejected": "Demande non acceptée",
   "membershipRequestRejectedOn": "Demande du {date} - non acceptée",
+  "membershipSearchOrganizationHint": "Rechercher une organisation…",
+  "membershipTabActive": "Actives ({count})",
+  "@membershipTabActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipTabPending": "En attente ({count})",
+  "@membershipTabPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipTabRejected": "Refusées ({count})",
+  "@membershipTabRejected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipTabInvitations": "Invitations ({count})",
+  "@membershipTabInvitations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipEmptyActive": "Aucune adhésion active.\nRejoignez vos organisations préférées pour ne rien manquer.",
+  "membershipEmptyPending": "Vous n'avez pas de demande en attente.",
+  "membershipEmptyRejected": "Aucune demande refusée.",
+  "membershipEmptyInvitations": "Aucune invitation pour le moment.",
+  "membershipDiscoverOrganizations": "Découvrir les organisations",
+  "membershipLoadError": "Impossible de charger vos adhésions.",
+  "membershipStatusPending": "En attente",
+  "membershipStatusActive": "Actif",
+  "membershipStatusRejected": "Refusée",
+  "membershipStatusInvitation": "Invitation",
+  "membershipStatusExpired": "Expirée",
+  "membershipViewOrganizer": "Voir la fiche",
+  "membershipPrivateEventsAction": "Événements privés",
+  "membershipMembersCount": "{count, plural, =1{1 membre} other{{count} membres}}",
+  "@membershipMembersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipJoinAction": "Rejoindre",
+  "membershipPendingAction": "En attente",
+  "membershipRetryRequestAction": "Refaire la demande",
+  "membershipCancelRequestAction": "Annuler la demande",
+  "membershipLeaveAction": "Quitter",
+  "membershipCancelRequestTitle": "Annuler la demande ?",
+  "membershipCancelRequestBody": "Votre demande de rejoindre {organizerName} sera annulée. Vous pourrez en refaire une à tout moment.",
+  "@membershipCancelRequestBody": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipLeaveTitle": "Quitter l'organisation ?",
+  "membershipLeaveBody": "Vous ne verrez plus les événements privés de {organizerName}. Vous pourrez refaire une demande à tout moment.",
+  "@membershipLeaveBody": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipJoinTitle": "Rejoindre l'espace privé de {organizerName} ?",
+  "@membershipJoinTitle": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipJoinBody": "En rejoignant, vous accédez aux événements exclusifs proposés aux membres. Votre demande sera examinée par l'organisateur.",
+  "membersOnlyGateTitle": "Événement réservé aux membres",
+  "membersOnlyGateBody": "Cet événement est uniquement accessible aux membres de {organizerName}. Rejoignez l'organisation pour débloquer son agenda privé.",
+  "@membersOnlyGateBody": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "membersOnlyGateJoin": "Rejoindre {organizerName}",
+  "@membersOnlyGateJoin": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "privateEventsTitle": "Mes événements privés",
+  "privateEventsSearchHint": "Rechercher un événement…",
+  "privateEventsLoadError": "Impossible de charger les événements.",
+  "privateEventsPrivateBadge": "Privé",
+  "privateEventsAllOrganizations": "Toutes les organisations",
+  "privateEventsEmptyTitle": "Aucun événement privé pour l'instant.",
+  "privateEventsEmptyBody": "Rejoignez des organisations pour découvrir leurs activités exclusives.",
+  "privateEventsEmptyFiltered": "Aucun événement privé correspondant.",
+  "membershipInvitationTitle": "Invitation",
+  "membershipInvitedBy": "Invité par {name}",
+  "@membershipInvitedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipInvitationExpiredBlurb": "Cette invitation a expiré. Demandez à l'organisation de vous renvoyer une invitation.",
+  "membershipInvitationAcceptedBlurb": "Cette invitation a déjà été acceptée. Retrouvez l'organisation dans votre liste d'adhésions.",
+  "membershipInvitationActiveBlurb": "Vous êtes invité(e) à rejoindre cet espace privé. Acceptez l'invitation pour accéder aux événements exclusifs.",
+  "membershipInvitationActiveWithExpiryBlurb": "Vous êtes invité(e) à rejoindre cet espace privé. Acceptez l'invitation pour accéder aux événements exclusifs. Cette invitation expire dans {hours} h.",
+  "@membershipInvitationActiveWithExpiryBlurb": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipInvitationWelcome": "Bienvenue dans {organizationName}",
+  "@membershipInvitationWelcome": {
+    "placeholders": {
+      "organizationName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipInvitationAcceptFailed": "Impossible d'accepter cette invitation.",
+  "membershipInvitationDeclineTitle": "Décliner l'invitation ?",
+  "membershipInvitationDeclineBody": "Refuser l'invitation de {organizationName} ?",
+  "@membershipInvitationDeclineBody": {
+    "placeholders": {
+      "organizationName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipInvitationDeclineAction": "Décliner",
+  "membershipInvitationAcceptAction": "Accepter",
+  "membershipInvitationDeclined": "Invitation déclinée",
+  "membershipInvitationSignInToAccept": "Se connecter pour accepter",
+  "membershipInvitationAlreadyAccepted": "Invitation déjà acceptée.",
+  "membershipInvitationExpired": "Invitation expirée.",
+  "membershipInvitationExpiresInDays": "{count, plural, =1{Expire dans 1 jour} other{Expire dans {count} jours}}",
+  "@membershipInvitationExpiresInDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipInvitationExpiresInHours": "Expire dans {count} h",
+  "@membershipInvitationExpiresInHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipInvitationNotFoundTitle": "Cette invitation est introuvable.",
+  "membershipInvitationNotFoundBody": "Le lien a peut-être été désactivé. Demandez à l'organisateur de vous renvoyer une invitation.",
+  "personalizedFeedTitle": "Pour vous",
+  "organizerInvalidIdentifier": "Identifiant organisateur invalide",
+  "organizerActivitiesTab": "Activités",
+  "organizerReviewsTab": "Avis",
+  "organizerProfileLoadError": "Impossible de charger ce profil.",
+  "organizerContactAction": "Contacter",
+  "organizerCoordinatesAction": "Coordonnées",
+  "organizerNoCoordinates": "Cet organisateur n'a pas renseigné de coordonnées.",
+  "organizerAboutTitle": "À propos",
+  "organizerEstablishmentTypesTitle": "Types d'établissement",
+  "organizerSocialLinksTitle": "Réseaux sociaux",
+  "organizerEventsCount": "{countLabel} {count, plural, =1{événement} other{événements}}",
+  "@organizerEventsCount": {
+    "placeholders": {
+      "countLabel": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerFollowersCount": "{countLabel} {count, plural, =1{abonné} other{abonnés}}",
+  "@organizerFollowersCount": {
+    "placeholders": {
+      "countLabel": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerMembersCount": "{countLabel} {count, plural, =1{membre} other{membres}}",
+  "@organizerMembersCount": {
+    "placeholders": {
+      "countLabel": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerRatingWithReviews": "{rating} ({countLabel} {count, plural, =1{avis} other{avis}})",
+  "@organizerRatingWithReviews": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "countLabel": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerFollowAction": "Suivre",
+  "organizerUnfollowAction": "Ne plus suivre",
+  "organizerFollowedSearchHint": "Rechercher un organisateur",
+  "organizerFollowedEmptySearchTitle": "Aucun organisateur trouvé",
+  "organizerFollowedEmptySearchBody": "Essayez un autre mot-clé.",
+  "organizerFollowedEmptyTitle": "Vous ne suivez aucun organisateur",
+  "organizerFollowedEmptyBody": "Suivez un organisateur depuis sa page pour le retrouver ici.",
+  "organizerFollowedLoadError": "Impossible de charger la liste.",
+  "organizerActivitiesLoadError": "Impossible de charger les activités.",
+  "organizerActivitiesEmpty": "Aucune activité publiée pour le moment.",
+  "organizerActivitiesNoUpcoming": "Pas d'événement à venir.",
+  "organizerActivitiesNoPast": "Pas d'événement passé.",
+  "organizerActivitiesCurrentTab": "En cours ({count})",
+  "@organizerActivitiesCurrentTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerActivitiesPastTab": "Passés ({count})",
+  "@organizerActivitiesPastTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerReviewsLoadError": "Impossible de charger les avis.",
+  "organizerReviewsTotal": "Sur {count, plural, =1{1 avis} other{{count} avis}}",
+  "@organizerReviewsTotal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerVerifiedPurchasesCount": "{count, plural, =1{dont 1 achat vérifié} other{dont {count} achats vérifiés}}",
+  "@organizerVerifiedPurchasesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerNoReviewsTitle": "Aucun avis pour le moment",
+  "organizerNoReviewsBody": "Soyez parmi les premiers à laisser un avis sur l'un de ses événements.",
+  "organizerReviewUserFallback": "Utilisateur",
+  "organizerReviewFor": "Avis pour",
+  "organizerVerifiedPurchase": "Achat vérifié",
+  "organizerHelpfulCount": "{count, plural, =1{1 utile} other{{count} utiles}}",
+  "@organizerHelpfulCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerReplyBy": "Réponse de {author}",
+  "@organizerReplyBy": {
+    "placeholders": {
+      "author": {
+        "type": "String"
+      }
+    }
+  },
+  "organizerReplyFallback": "Réponse de l'organisateur",
+  "partnerTypeVenue": "Salle/Lieu",
+  "partnerTypeOrganizer": "Organisateur",
+  "partnerTypeIndividual": "Particulier",
+  "partnerSubscriptionBasic": "Basique",
+  "partnerSubscriptionEnterprise": "Enterprise",
+  "checkinScannerTitle": "Scanner les billets",
+  "checkinTorchTooltip": "Lampe",
+  "checkinCameraTooltip": "Caméra",
+  "checkinMoreTooltip": "Plus",
+  "checkinSwitchOrganization": "Changer d'organisation",
+  "checkinManualEntryTitle": "Saisie manuelle",
+  "checkinGateLabel": "Étiquette de gate",
+  "checkinGateHint": "ex: Nord, VIP, Entrée 2…",
+  "checkinGateDisplay": "Gate : {gate}",
+  "@checkinGateDisplay": {
+    "placeholders": {
+      "gate": {
+        "type": "String"
+      }
+    }
+  },
+  "checkinEntryRecorded": "Bienvenue ! Entrée enregistrée.",
+  "checkinReEntryRecorded": "Ré-entrée enregistrée (entrée n°{count})",
+  "@checkinReEntryRecorded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkinNetworkRescan": "Réseau instable — re-scannez pour confirmer.",
+  "checkinNetworkRetype": "Réseau instable — re-saisissez pour confirmer.",
+  "checkinCameraPermissionDeniedTitle": "Accès caméra refusé",
+  "checkinCameraUnavailableTitle": "Caméra indisponible",
+  "checkinCameraPermissionDeniedBody": "Autorisez la caméra dans les paramètres système, ou utilisez la saisie manuelle.",
+  "checkinCameraUnavailableBody": "Aucune caméra n'a été détectée. Utilisez la saisie manuelle.",
+  "checkinChooseOrganizationFirst": "Choisissez une organisation depuis le scanner.",
+  "checkinManualWarning": "À utiliser uniquement avec une vérification d'identité visuelle. La saisie manuelle ne contrôle pas le secret du QR.",
+  "checkinOrganizationLabel": "Organisation : {name}",
+  "@checkinOrganizationLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "checkinManualCodeHelper": "Code imprimé sur le billet",
+  "checkinVerifyCode": "Vérifier le code",
+  "checkinValidTicketTitle": "Billet valide",
+  "checkinReEntryDetectedTitle": "Ré-entrée détectée",
+  "checkinConfirmEntry": "Confirmer l'entrée",
+  "checkinConfirmReEntry": "Confirmer la ré-entrée",
+  "checkinAlreadyEnteredWarning": "Déjà entré {count}× — vérifiez avant d'admettre.",
+  "@checkinAlreadyEnteredWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkinChooseOrganizationTitle": "Choisir une organisation",
+  "checkinChooseOrganizationBody": "Le scanner enverra les billets à l'organisation sélectionnée.",
+  "checkinRoleOwner": "Propriétaire",
+  "checkinRoleAdmin": "Administrateur",
+  "checkinRoleStaff": "Équipe",
+  "checkinRoleViewer": "Membre",
+  "checkinNoVendorOrganizationTitle": "Aucune organisation vendeur trouvée",
+  "checkinNoVendorOrganizationBody": "Si vous attendiez d'apparaître ici, contactez le support — votre profil n'est peut-être pas encore lié à une organisation.",
+  "checkinRefresh": "Actualiser",
+  "checkinBlockedTicketCancelledTitle": "Billet annulé",
+  "checkinBlockedTicketRefundedTitle": "Billet remboursé",
+  "checkinBlockedTicketTransferredTitle": "Billet transféré",
+  "checkinBlockedSlotNotStartedTitle": "Créneau non commencé",
+  "checkinBlockedWrongEventTitle": "Mauvais événement",
+  "checkinBlockedUnauthorizedTitle": "Non autorisé",
+  "checkinBlockedTicketNotFoundTitle": "Billet introuvable",
+  "checkinBlockedUnknownTitle": "Erreur",
+  "checkinBlockedDoNotAdmit": "Ne pas laisser entrer.",
+  "checkinBlockedTicketTransferredBody": "Le billet a été transféré à un autre porteur — re-scannez son QR.",
+  "checkinBlockedSlotNotStartedBody": "L'entrée n'est pas encore ouverte pour ce créneau.",
+  "checkinBlockedWrongEventBody": "Ce billet ne correspond pas à l'événement filtré.",
+  "checkinBlockedUnauthorizedBody": "Vous n'êtes pas autorisé à scanner ce billet pour cette organisation.",
+  "checkinBlockedTicketNotFoundBody": "QR non reconnu — réessayez ou saisissez le code.",
+  "checkinBlockedUnknownBody": "Erreur inattendue, réessayez.",
   "authEmailLabel": "Email",
   "authEmailHint": "votre@email.com",
   "authPasswordLabel": "Mot de passe",
@@ -1074,6 +1569,15 @@
   },
   "authOtpResend": "Renvoyer",
   "authGuestIncorrectCredentials": "Identifiants incorrects. Réessayez.",
+  "authAccountAlreadyVerified": "Votre compte est déjà vérifié. Veuillez vous connecter.",
+  "authEmailOrPasswordIncorrect": "Email ou mot de passe incorrect",
+  "authAccountAlreadyExists": "Un compte existe déjà avec cet email",
+  "authWeakPasswordDetailed": "Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre",
+  "authVerificationCodeInvalid": "Code de vérification invalide",
+  "authVerificationCodeExpired": "Le code a expiré. Veuillez en demander un nouveau.",
+  "authTooManyAttempts": "Trop de tentatives. Réessayez dans 15 minutes.",
+  "authVerificationCodeSent": "Un code de vérification a été envoyé",
+  "authVerificationCodeVerified": "Code vérifié",
   "authGuestTitle": "Connectez-vous !",
   "authGuestSubtitle": "Connectez-vous pour {featureName}.",
   "@authGuestSubtitle": {
@@ -1159,10 +1663,13 @@
   "authProfessionalEmailHint": "votre@entreprise.com",
   "authValidationMin2Chars": "Min. 2 caractères",
   "authValidationMin5Chars": "Min. 5 caractères",
+  "authFirstNameMinLength": "Le prénom doit contenir au moins 2 caractères",
+  "authLastNameMinLength": "Le nom doit contenir au moins 2 caractères",
   "authPasswordMinLengthShort": "Min. 8 caractères",
   "authPasswordNeedsUppercaseShort": "Une majuscule requise",
   "authPasswordNeedsNumberShort": "Un chiffre requis",
   "authPasswordNeedsSpecialShort": "Un caractère spécial requis",
+  "authPasswordNeedsUppercaseNumberSpecial": "Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un symbole",
   "authPasswordStrengthWeak": "Faible",
   "authPasswordStrengthFair": "Moyen",
   "authPasswordStrengthGood": "Bon",
@@ -1237,6 +1744,11 @@
   "authOptionalSuffix": "(optionnel)",
   "authSiretInvalid": "SIRET invalide",
   "authSiretHelp": "14 chiffres, sans espaces",
+  "authCompanyNameMinLength": "Le nom de l'entreprise doit contenir au moins 2 caractères",
+  "authSiretMustHave14Digits": "Le numéro SIRET doit contenir 14 chiffres",
+  "authAddressMinLength": "L'adresse doit contenir au moins 5 caractères",
+  "authCityMinLength": "La ville doit contenir au moins 2 caractères",
+  "authPostalCodeLength": "Le code postal doit contenir entre 3 et 10 caractères",
   "authIndustryLabel": "Secteur d'activité",
   "authSelectHint": "Sélectionner",
   "authEmployeeCountLabel": "Effectif",
@@ -1337,6 +1849,7 @@
     }
   },
   "authBusinessTermsLabel": "conditions spécifiques aux comptes professionnels",
+  "authBusinessTermsRequired": "Veuillez accepter les conditions business",
   "authCreateBusinessAccountButton": "Créer mon compte business",
   "authBusinessTermsHelper": "En créant un compte, vous confirmez que les informations fournies sont exactes et que vous êtes autorisé à représenter cette organisation.",
   "homeTooltipNotifications": "Notifications",
@@ -1344,6 +1857,22 @@
   "homeTooltipAccount": "Mon compte",
   "homeViewMore": "Voir plus",
   "homeViewAll": "Voir tout",
+  "homePartnerBadge": "Partenaire",
+  "homePartnerSeeAllSelection": "Voir toute la sélection",
+  "homePersonalizedTitle": "Pour vous",
+  "homePersonalizedSubtitle": "Basé sur vos préférences",
+  "homeNativeAdSponsored": "Sponsorisé",
+  "homeRecommendedPopularTag": "Populaire",
+  "homeRecommendedLastSpotsTag": "Dernières places",
+  "homeSavedSearchAlertFallback": "Alerte personnalisée",
+  "homeSavedSearchFallback": "Recherche sauvegardée",
+  "homeMobileConfigDefaultHeroTitle": "Trouvez votre prochaine aventure locale",
+  "homeMobileConfigDefaultHeroSubtitle": "Découvrez les meilleurs événements près de chez vous",
+  "homeMobileConfigEventsSectionTitle": "Retrouvez tous vos événements",
+  "homeMobileConfigEventsSectionDescription": "Explorez notre sélection d'événements locaux",
+  "homeMobileConfigThematiquesSectionTitle": "Explorez par thématique",
+  "homeMobileConfigCitiesSectionTitle": "Événements par ville",
+  "homeMobileConfigExploreButton": "Explorer les activités",
   "homeNewActivitiesTitle": "Nouveautés",
   "homeNoNewActivities": "Aucune nouveauté trouvée.",
   "homeNearbyAvailableTitle": "Activités disponibles à proximité",
@@ -1914,7 +2443,9 @@
   "searchNameLabel": "Nom de la recherche",
   "searchNameHint": "Ex : Concerts à Paris ce week-end",
   "searchNotificationsTitle": "Notifications",
+  "searchPushTitle": "Push",
   "searchPushSubtitle": "Notifications sur l'app mobile",
+  "searchEmailTitle": "Email",
   "searchEmailSubtitle": "Recevez un email pour chaque nouvel événement",
   "searchSaveButton": "Sauvegarder",
   "eventExploreTitle": "Explorer les événements",
@@ -1963,6 +2494,47 @@
   "eventNoEntryFee": "Aucun frais d'entrée",
   "eventIndicativePrices": "Prix indicatifs communiqués par l'organisateur",
   "eventPriceFromPrefix": "À partir de ",
+  "eventPriceDonation": "Participation libre",
+  "eventPriceVariable": "Prix variable",
+  "eventPriceRange": "De {minPrice} à {maxPrice}",
+  "@eventPriceRange": {
+    "placeholders": {
+      "minPrice": {
+        "type": "String"
+      },
+      "maxPrice": {
+        "type": "String"
+      }
+    }
+  },
+  "eventAgeMinimum": "{minAge} ans et +",
+  "@eventAgeMinimum": {
+    "placeholders": {
+      "minAge": {
+        "type": "int"
+      }
+    }
+  },
+  "eventAgeMaximum": "Jusqu'à {maxAge} ans",
+  "@eventAgeMaximum": {
+    "placeholders": {
+      "maxAge": {
+        "type": "int"
+      }
+    }
+  },
+  "eventAgeRange": "{minAge}-{maxAge} ans",
+  "@eventAgeRange": {
+    "placeholders": {
+      "minAge": {
+        "type": "int"
+      },
+      "maxAge": {
+        "type": "int"
+      }
+    }
+  },
+  "eventLocationIndoorOutdoor": "Intérieur/Extérieur",
   "eventCharacteristicsTitle": "Caractéristiques",
   "eventInvalidBookingLink": "Lien de réservation invalide",
   "eventChooseDateFirst": "Veuillez d'abord choisir une date",
@@ -2118,6 +2690,7 @@
   "eventFoodOnSite": "Restauration sur place",
   "eventDrinks": "Boissons",
   "eventDrinksAvailable": "Boissons disponibles",
+  "eventWifiLabel": "Wi-Fi",
   "eventWifiAvailable": "Wi-Fi disponible",
   "eventServiceDefaultDescription": "Ce service est disponible sur place.",
   "eventServiceEquipment": "Matériel fourni",
@@ -2263,6 +2836,7 @@
   "eventQuestionRequired": "Veuillez saisir votre question.",
   "eventQuestionMinLength": "Votre question doit contenir au moins 10 caractères.",
   "eventQuestionTooLong": "Votre question est trop longue (1000 max).",
+  "eventQuestionInvalid": "Question invalide.",
   "eventQuestionInfo": "L'organisateur recevra votre question et vous répondra bientôt.",
   "eventSendQuestion": "Envoyer ma question",
   "eventCheckConnectionRetry": "Vérifiez votre connexion puis réessayez.",
@@ -2292,6 +2866,14 @@
   "eventLehibooExperiences": "LEHIBOO EXPÉRIENCES",
   "eventSourceInfo": "Source infos : ",
   "eventSimilarEvents": "Événements similaires",
+  "eventPeopleWatching": "{count, plural, =1{1 personne regarde} other{{count} personnes regardent}}",
+  "@eventPeopleWatching": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "bookingCheckoutTitle": "Finaliser ma réservation",
   "bookingSummaryTitle": "Récapitulatif",
   "bookingTicketFallback": "Billet",
@@ -2512,6 +3094,8 @@
   "bookingCancelValidationTooLong": "La raison saisie est trop longue (1000 caractères max).",
   "bookingCancelGenericError": "Impossible d'annuler la réservation. Réessayez.",
   "bookingPreparingPdf": "Préparation du PDF…",
+  "bookingAndroidDownloadsLocation": "Téléchargements/Lehiboo",
+  "bookingDocumentsTicketsLocation": "Documents > Lehiboo > tickets",
   "bookingTicketsSaved": "Billets enregistrés dans {location}",
   "@bookingTicketsSaved": {
     "placeholders": {
@@ -2674,5 +3258,642 @@
   "bookingTicketsGenerating": "Génération de vos billets...",
   "bookingTicketsAvailableInBookings": "Vos billets seront disponibles\ndans votre espace \"Mes réservations\"",
   "bookingConfirmationEmailSent": "Un email de confirmation avec vos billets vous a été envoyé.",
-  "bookingTicketsLoadError": "Impossible de charger les billets"
+  "bookingTicketsLoadError": "Impossible de charger les billets",
+  "tripPlansListTitle": "Mes sorties",
+  "tripPlansDeletedSnack": "Plan \"{title}\" supprimé",
+  "@tripPlansDeletedSnack": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "tripPlansUntitledPlan": "Plan sans titre",
+  "tripPlansEmptyTitle": "Aucune sortie planifiée",
+  "tripPlansEmptyBody": "Demande à Petit Boo de te créer un itinéraire pour ta prochaine sortie !",
+  "tripPlansTalkToPetitBoo": "Parler à Petit Boo",
+  "tripPlansErrorTitle": "Une erreur est survenue",
+  "tripPlansLoadErrorBody": "Impossible de charger vos sorties",
+  "tripPlanEditTitle": "Modifier",
+  "tripPlanEditErrorWithMessage": "Erreur : {message}",
+  "@tripPlanEditErrorWithMessage": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "tripPlanEditNotFound": "Plan non trouvé",
+  "tripPlanEditTitleLabel": "Titre",
+  "tripPlanEditNameHint": "Nom de la sortie",
+  "tripPlanEditDateLabel": "Date",
+  "tripPlanEditSelectDate": "Sélectionner une date",
+  "tripPlanEditStopsLabel": "Étapes",
+  "tripPlanEditReorderHint": "Glisser pour réorganiser",
+  "tripPlanEditUpdatedSnack": "Plan mis à jour",
+  "tripPlanEditDiscardChangesTitle": "Abandonner les modifications ?",
+  "tripPlanEditDiscardChangesBody": "Vos modifications ne seront pas sauvegardées.",
+  "tripPlanEditDiscard": "Abandonner",
+  "tripPlansStopsCount": "{count, plural, =1{1 étape} other{{count} étapes}}",
+  "@tripPlansStopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripPlansStopsPlanned": "{count, plural, =1{1 étape prévue} other{{count} étapes prévues}}",
+  "@tripPlansStopsPlanned": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripPlansStopFallback": "Étape",
+  "tripPlansNoCoordinatesAvailable": "Aucune coordonnée disponible",
+  "tripPlansDeleteDialogTitle": "Supprimer ce plan ?",
+  "tripPlansDeleteDialogBody": "Le plan \"{title}\" sera définitivement supprimé.",
+  "@tripPlansDeleteDialogBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "tripPlansDurationMinutes": "{minutes} min",
+  "@tripPlansDurationMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "tripPlansDurationHours": "{hours}h",
+  "@tripPlansDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "tripPlansDurationHoursMinutes": "{hours}h{minutes}",
+  "@tripPlansDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewsAllRatingsFilter": "Tous",
+  "reviewsAllTitle": "Tous les avis",
+  "reviewsCannotReviewAlreadyReviewed": "Vous avez déjà laissé un avis sur cet événement.",
+  "reviewsCannotReviewEventNotEnded": "Vous pourrez laisser un avis une fois l'événement passé.",
+  "reviewsCannotReviewNotParticipated": "Seuls les participants à l'événement peuvent laisser un avis.",
+  "reviewsCannotReviewOrganizer": "Vous ne pouvez pas noter vos propres événements.",
+  "reviewsCannotReviewUnknown": "Vous ne pouvez pas laisser d'avis pour le moment.",
+  "reviewsCommentMinLengthError": "Votre avis doit faire au moins {minLength} caractères",
+  "@reviewsCommentMinLengthError": {
+    "placeholders": {
+      "minLength": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewsCommentRequiredError": "Veuillez écrire votre avis",
+  "reviewsCommentRequiredLabel": "Votre avis *",
+  "reviewsCreateSuccessPendingModeration": "Avis envoyé. Il sera publié après validation.",
+  "reviewsDeleteAction": "Supprimer",
+  "reviewsDeleteConfirmBody": "Cette action est définitive. Vous pourrez en écrire un nouveau plus tard.",
+  "reviewsDeleteConfirmTitle": "Supprimer cet avis ?",
+  "reviewsDeleteSuccess": "Avis supprimé",
+  "reviewsEditAction": "Modifier",
+  "reviewsEditModerationNotice": "Toute modification remettra votre avis en attente de modération.",
+  "reviewsEditMyReviewTitle": "Modifier mon avis",
+  "reviewsEmptyBody": "Partagez votre expérience et aidez les autres à choisir !",
+  "reviewsEmptyTitle": "Pas encore d'avis",
+  "reviewsEventFallback": "Événement",
+  "reviewsFeaturedFilter": "Mis en avant",
+  "reviewsUserLoadError": "Impossible de charger vos avis.",
+  "reviewsUserLoadMoreError": "Impossible de charger la suite.",
+  "reviewsMyEmptyBody": "Vous n'avez encore laissé aucun avis. Une fois un événement terminé, vous pourrez partager votre expérience !",
+  "reviewsMyEmptyTitle": "Aucun avis",
+  "reviewsNoFilteredResults": "Aucun avis ne correspond aux filtres sélectionnés.",
+  "reviewsNoReviewsTitle": "Aucun avis",
+  "reviewsOrganizerReplied": "L'organisateur a répondu",
+  "reviewsReportAction": "Signaler",
+  "reviewsReportDetailsOptionalLabel": "Précisions (optionnel)",
+  "reviewsReportReasonFake": "Faux avis",
+  "reviewsReportReasonInappropriate": "Contenu inapproprié",
+  "reviewsReportReasonOffensive": "Propos offensants",
+  "reviewsReportReasonOther": "Autre",
+  "reviewsReportReasonQuestion": "Pourquoi cet avis pose-t-il problème ?",
+  "reviewsReportReasonSpam": "Spam",
+  "reviewsReportSubmitAction": "Envoyer le signalement",
+  "reviewsReportSuccess": "Signalement envoyé. Merci de votre vigilance.",
+  "reviewsReportTitle": "Signaler cet avis",
+  "reviewsRewriteAction": "Réécrire",
+  "reviewsSectionTitle": "Avis",
+  "reviewsSelectRatingRequired": "Veuillez sélectionner une note",
+  "reviewsSortMostHelpful": "Plus utiles",
+  "reviewsSortNewest": "Plus récents",
+  "reviewsSortRating": "Note",
+  "reviewsSortTooltip": "Trier",
+  "reviewsStatusApproved": "Publié",
+  "reviewsStatusPending": "En attente",
+  "reviewsStatusRejected": "Refusé",
+  "reviewsSubmitAction": "Envoyer mon avis",
+  "reviewsTitleRequiredError": "Veuillez ajouter un titre",
+  "reviewsTitleRequiredLabel": "Titre *",
+  "reviewsTotalCount": "{count, plural, =0{Aucun avis} =1{1 avis} other{{count} avis}}",
+  "@reviewsTotalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewsUpdateAction": "Mettre à jour",
+  "reviewsUpdateSuccessPendingModeration": "Avis mis à jour. Il sera de nouveau modéré.",
+  "reviewsVerifiedFilter": "Vérifiés",
+  "reviewsViewAllAction": "Voir tous les avis ({count})",
+  "@reviewsViewAllAction": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewsViewMyReviewAction": "Voir mon avis →",
+  "reviewsWriteAction": "Écrire",
+  "reviewsWriteFirstAction": "Écrire le premier avis",
+  "reviewsWriteReviewAction": "Écrire un avis",
+  "reviewsWriteReviewTitle": "Laisser un avis",
+  "reviewsYourRatingLabel": "Votre note",
+  "reviewsYourReviewLabel": "Votre avis",
+  "gamificationActionsCatalogLoadError": "Impossible de charger le catalogue",
+  "gamificationActionsEmpty": "Aucune action disponible pour le moment",
+  "gamificationActivitiesBonusTitle": "Activités & Bonus",
+  "gamificationAllFilter": "Tous",
+  "gamificationBadgeLocked": "À débloquer",
+  "gamificationBadgeUnlocked": "Débloqué",
+  "gamificationBadgeUnlockedCongrats": "Bravo, tu as débloqué ce badge !",
+  "gamificationBadgesLoadError": "Impossible de charger tes badges",
+  "gamificationBoostersUtilitiesTitle": "Boosters & Utilitaires",
+  "gamificationCapReached": "Atteint",
+  "gamificationChallengesTitle": "Challenges",
+  "gamificationClaimDailyReward": "Réclamer ma récompense",
+  "gamificationComeBackTomorrow": "Reviens demain !",
+  "gamificationCompleted": "Effectué",
+  "gamificationCurrentRankPrefix": "Tu es",
+  "gamificationDailyClaimError": "Erreur lors de la réclamation",
+  "gamificationDailyRewardAlreadyClaimed": "Tu as déjà réclamé ta récompense aujourd'hui !",
+  "gamificationDailyRewardTitle": "Récompense quotidienne",
+  "gamificationDayNumber": "J-{dayNumber}",
+  "@gamificationDayNumber": {
+    "placeholders": {
+      "dayNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationEarningsByPillarTitle": "Répartition par pilier",
+  "gamificationErrorWithMessage": "Erreur : {message}",
+  "@gamificationErrorWithMessage": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "gamificationGreatCta": "Super !",
+  "gamificationHibonsAmount": "{count} HIBONs",
+  "@gamificationHibonsAmount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationHibonsAvailable": "Hibons disponibles",
+  "gamificationHibonsDelta": "{delta} Hibons",
+  "@gamificationHibonsDelta": {
+    "placeholders": {
+      "delta": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationHibonsEarned": "{count} Hibons gagnés",
+  "@gamificationHibonsEarned": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationHibonsGainedToast": "+{delta} Hibons gagnés !",
+  "@gamificationHibonsGainedToast": {
+    "placeholders": {
+      "delta": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationHibonsPacksComingSoonTitle": "Packs de Hibons (bientôt)",
+  "gamificationHibonsProgress": "{current} / {total} HIBONs",
+  "@gamificationHibonsProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationHibonsRemainingForBadge": "Encore {count} HIBONs pour débloquer ce badge",
+  "@gamificationHibonsRemainingForBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationHibonsUnit": "Hibons",
+  "gamificationHibonsUntilNextRank": "Plus que {count} avant {rankLabel}",
+  "@gamificationHibonsUntilNextRank": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "rankLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "gamificationHibouExpressTitle": "Hibou Express (24 h)",
+  "gamificationHibouExpressDescription": "Messages illimités avec Petit Boo",
+  "gamificationHistoryTitle": "Historique",
+  "gamificationHowToEarnTitle": "Comment gagner des Hibons",
+  "gamificationInAppPurchasesComingSoon": "Les achats In-App arrivent bientôt !",
+  "gamificationInsufficientHibons": "Hibons insuffisants !",
+  "gamificationLifetimeHibonsAccumulated": "{count} HIBONs cumulés",
+  "@gamificationLifetimeHibonsAccumulated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationLockedCountLabel": "À débloquer",
+  "gamificationLuckyWheelTitle": "Roue de la Fortune",
+  "gamificationMaxRankReached": "Rang maximal atteint",
+  "gamificationMultiplierDescription": "Gagnez plus de Hibons pendant 1h",
+  "gamificationMultiplierTitle": "Multiplicateur x1.5 (1h)",
+  "gamificationMyBadgesTitle": "Mes badges",
+  "gamificationNewHibonsBalance": "Nouveau solde : {balance} Hibons",
+  "@gamificationNewHibonsBalance": {
+    "placeholders": {
+      "balance": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationNoTransactions": "Aucune transaction",
+  "gamificationPetitBooDailyBonus": "{count, plural, =1{+1 message Petit Boo / jour} other{+{count} messages Petit Boo / jour}}",
+  "@gamificationPetitBooDailyBonus": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationPillarCommunity": "Communauté",
+  "gamificationPillarDiscovery": "Découverte",
+  "gamificationPillarEngagement": "Engagement",
+  "gamificationPillarOnboarding": "Onboarding",
+  "gamificationPillarParticipation": "Participation",
+  "gamificationProgressionTitle": "Progression",
+  "gamificationProgressThisWeek": "{completed}/{total} cette semaine",
+  "@gamificationProgressThisWeek": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationProgressToday": "{completed}/{total} aujourd'hui",
+  "@gamificationProgressToday": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationPurchaseCompleted": "Achat effectué : {itemName}",
+  "@gamificationPurchaseCompleted": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "gamificationRankUpCongratsTitle": "Bravo !",
+  "gamificationRankUpNowRank": "Tu es maintenant {rankLabel} !",
+  "@gamificationRankUpNowRank": {
+    "placeholders": {
+      "rankLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "gamificationRemainingLifetime": "{count} restant",
+  "@gamificationRemainingLifetime": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gamificationShopTitle": "Boutique Hibons",
+  "gamificationStartingRank": "Rang de départ",
+  "gamificationStreakShieldTitle": "Bouclier de série",
+  "gamificationStreakShieldDescription": "Protégez votre série pour 1 jour",
+  "gamificationTopCta": "Top !",
+  "gamificationTotalCountLabel": "Total",
+  "gamificationUnlockedCountLabel": "Débloqués",
+  "gamificationWheelAlreadyUsedToday": "Tu as déjà utilisé ta chance aujourd'hui.",
+  "gamificationWheelLoseTitle": "Pas de chance...",
+  "gamificationWheelSpinCta": "Lancer",
+  "gamificationWheelWinTitle": "Félicitations !",
+  "alertsListTitle": "Mes alertes et recherches",
+  "alertsFilterAll": "Toutes",
+  "alertsFilterAlerts": "Alertes",
+  "alertsFilterSearches": "Recherches",
+  "alertsLoadError": "Impossible de charger vos alertes",
+  "alertsEmptyAllTitle": "Aucune alerte pour le moment",
+  "alertsEmptyAllBody": "Enregistrez vos recherches pour les retrouver ici et recevoir des notifications",
+  "alertsEmptyActiveTitle": "Aucune alerte active",
+  "alertsEmptyActiveBody": "Activez les notifications sur vos recherches pour être alerté des nouveaux événements",
+  "alertsEmptySearchesTitle": "Aucune recherche enregistrée",
+  "alertsEmptySearchesBody": "Vos recherches sans notification apparaîtront ici",
+  "alertsExploreActivities": "Explorer les activités",
+  "alertsDeleteTitle": "Supprimer l'alerte",
+  "alertsDeleteBody": "Voulez-vous vraiment supprimer cette recherche enregistrée ?",
+  "alertsDeleted": "Alerte « {name} » supprimée",
+  "@alertsDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "alertsCreatedOn": "Créée le {date}",
+  "@alertsCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "alertsAllEvents": "Tous les événements",
+  "alertsUnnamed": "Alerte sans nom",
+  "favoritesLoadError": "Erreur de chargement",
+  "favoritesEmptyTitle": "Aucun favori",
+  "favoritesEmptyBody": "Ajoutez des événements à vos favoris en cliquant sur le cœur pour les retrouver facilement.",
+  "favoritesEmptyUncategorizedTitle": "Aucun favori non classé",
+  "favoritesEmptyUncategorizedBody": "Tous vos favoris sont organisés dans des listes.",
+  "favoritesEmptyListTitle": "Cette liste est vide",
+  "favoritesEmptyListBody": "Ajoutez des favoris à cette liste depuis le détail d'un événement.",
+  "favoritesExploreEvents": "Explorer les événements",
+  "favoriteListsTitle": "Mes listes",
+  "favoriteListsLoadError": "Erreur de chargement",
+  "favoriteListsAllFavorites": "Tous les favoris",
+  "favoriteListsAllShort": "Tous",
+  "favoriteListsUncategorized": "Non classés",
+  "favoriteListsUncategorizedSingular": "Non classé",
+  "favoriteListsSectionTitle": "MES LISTES",
+  "favoriteListNewTitle": "Nouvelle liste",
+  "favoriteListOrganizeSubtitle": "Organisez vos favoris",
+  "favoriteListNameLabel": "Nom de la liste",
+  "favoriteListNameHint": "Ex. : Concerts à voir",
+  "favoriteListNameRequired": "Veuillez entrer un nom",
+  "favoriteListNameMinLength": "Le nom doit contenir au moins 2 caractères",
+  "favoriteListNameMaxLength": "Le nom ne peut pas dépasser 50 caractères",
+  "favoriteListDescriptionLabel": "Description (optionnelle)",
+  "favoriteListDescriptionHint": "Ex. : Mes événements musicaux préférés",
+  "favoriteListColorLabel": "Couleur",
+  "favoriteListIconLabel": "Icône",
+  "favoriteListCreateAction": "Créer",
+  "favoriteListCreateError": "Erreur lors de la création de la liste",
+  "favoriteListEditTitle": "Modifier la liste",
+  "favoriteListFavoritesCount": "{count, plural, =0{0 favori} =1{1 favori} other{{count} favoris}}",
+  "@favoriteListFavoritesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "favoriteListUpdateError": "Erreur lors de la mise à jour",
+  "favoriteListDeleteTitle": "Supprimer la liste ?",
+  "favoriteListDeleteBody": "La liste « {name} » sera supprimée.",
+  "@favoriteListDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteListDeleteMoveBody": "Les événements favoris ne seront pas supprimés, ils seront déplacés dans « Non classés ».",
+  "favoriteListDeleted": "Liste « {name} » supprimée",
+  "@favoriteListDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteListDeleteError": "Erreur lors de la suppression",
+  "favoriteListDeleteThisAction": "Supprimer cette liste",
+  "favoriteListPickerMoveTitle": "Déplacer vers...",
+  "favoriteListPickerAddTitle": "Ajouter aux favoris",
+  "favoriteListPickerUncategorizedSubtitle": "Favoris sans liste",
+  "favoriteListCreateSheetTitle": "Créer une liste",
+  "favoriteListCreateSheetSubtitle": "Nouvelle collection de favoris",
+  "favoriteListPickerRemoveTitle": "Retirer des favoris",
+  "favoriteListPickerRemoveSubtitle": "Supprimer de tous les favoris",
+  "favoriteAddError": "Impossible d'ajouter aux favoris",
+  "favoriteRemoveError": "Impossible de retirer des favoris",
+  "favoriteUpdateError": "Impossible de modifier le favori",
+  "favoriteMovedToList": "Déplacé vers la liste",
+  "favoriteMovedToUncategorized": "Déplacé vers « Non classés »",
+  "favoriteAddedToList": "Ajouté à la liste",
+  "favoriteGenericError": "Une erreur est survenue.",
+  "notificationsTitle": "Notifications",
+  "notificationsMarkAllRead": "Tout marquer comme lu",
+  "notificationsFilterAll": "Toutes",
+  "notificationsFilterUnread": "Non lues",
+  "notificationsGuestTitle": "Connectez-vous",
+  "notificationsGuestBody": "Vos notifications apparaîtront ici après connexion.",
+  "notificationsReadSyncError": "Lecture non synchronisée",
+  "notificationsMarkRead": "Marquer comme lu",
+  "notificationsMarkReadError": "Impossible de marquer comme lu",
+  "notificationsMarkedAllRead": "Notifications marquées comme lues",
+  "notificationsActionError": "Action impossible pour le moment",
+  "notificationsDeleted": "Notification supprimée",
+  "notificationsDeleteError": "Suppression impossible",
+  "notificationsDeleteTitle": "Supprimer la notification",
+  "notificationsDeleteBody": "Voulez-vous vraiment supprimer cette notification ?",
+  "notificationsJustNow": "À l'instant",
+  "notificationsMinutesAgoShort": "{count} min",
+  "@notificationsMinutesAgoShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsHoursAgoShort": "{count} h",
+  "@notificationsHoursAgoShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsDaysAgoShort": "{count} j",
+  "@notificationsDaysAgoShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsTypeMessage": "Message",
+  "notificationsTypeBooking": "Réservation",
+  "notificationsTypeTicket": "Billet",
+  "notificationsTypeEvent": "Événement",
+  "notificationsTypeReview": "Avis",
+  "notificationsTypeQuestion": "Question",
+  "notificationsTypeOrganization": "Organisation",
+  "notificationsTypeInfo": "Info",
+  "notificationsEmptyUnreadTitle": "Aucune notification non lue",
+  "notificationsEmptyTitle": "Aucune notification pour le moment",
+  "notificationsEmptyUnreadBody": "Les nouvelles notifications apparaîtront ici.",
+  "notificationsEmptyBody": "Vos messages, réservations et mises à jour importantes apparaîtront ici.",
+  "notificationsLoadError": "Impossible de charger vos notifications",
+  "remindersTitle": "Mes rappels",
+  "remindersUpcoming": "À venir",
+  "remindersPast": "Passés",
+  "remindersDeleteTitle": "Supprimer le rappel ?",
+  "remindersDeleteBody": "Vous ne recevrez plus de notifications pour « {eventTitle} » le {date}.",
+  "@remindersDeleteBody": {
+    "placeholders": {
+      "eventTitle": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "remindersDeleted": "Rappel supprimé",
+  "remindersDateFromTo": "{date} de {start} à {end}",
+  "@remindersDateFromTo": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "remindersDateAtTime": "{date} à {start}",
+  "@remindersDateAtTime": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "remindersEmptyTitle": "Aucun rappel",
+  "remindersEmptyBody": "Activez des rappels sur les activités qui vous intéressent pour être notifié.",
+  "remindersLoadError": "Impossible de charger vos rappels",
+  "remindersDaysBeforeBadge": "J-{count}",
+  "@remindersDaysBeforeBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingExploreTitle": "Sortez et expérimentez",
+  "onboardingExploreDescription": "Ateliers, balades, spectacles enfants : trouvez l'activité du week-end sans y passer votre soirée.",
+  "onboardingMusicTitle": "Vibrez au rythme de votre ville",
+  "onboardingMusicDescription": "Découvrez les concerts, festivals et soirées qui font bouger votre région. Ne ratez plus aucun événement musical.",
+  "onboardingLocalTitle": "Restez connecté aux nouveautés du coin",
+  "onboardingLocalDescription": "Marchés, lieux à découvrir : les bonnes adresses à deux pas de chez vous.",
+  "onboardingAssociationTitle": "Membre d'une asso ?",
+  "onboardingAssociationDescription": "Accédez aux événements privés réservés à vos associations : sport, école, culture, loisirs. Tout au même endroit.",
+  "onboardingSkip": "Passer",
+  "onboardingGetStarted": "C'est parti",
+  "thematiquesExploreByTypeTitle": "Explorer par type d'événement",
+  "thematiquesSeeAll": "Voir tout",
+  "thematiquesAllTypesCount": "Tous les types ({count})",
+  "@thematiquesAllTypesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "thematiquesSearchHint": "Rechercher un type d'événement...",
+  "thematiquesEventCount": "{count, plural, =0{0 événement} =1{1 événement} other{{count} événements}}",
+  "@thematiquesEventCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "categoriesAllTitle": "Toutes les catégories",
+  "categoriesSeeAll": "Voir toutes les catégories",
+  "categoriesAllCount": "Toutes les catégories ({count})",
+  "@categoriesAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "categoriesSearchHint": "Rechercher une catégorie...",
+  "categoriesEmptySearch": "Aucune catégorie trouvée",
+  "blogLatestTitle": "Derniers articles",
+  "blogEmpty": "Aucun article disponible",
+  "blogReadingTimeMinutes": "{minutes} min",
+  "@blogReadingTimeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }

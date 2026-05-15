@@ -65,7 +65,7 @@ class _ConversationDetailScreenState
               content: Text(next.sendError!),
               backgroundColor: Colors.red,
               action: SnackBarAction(
-                label: 'OK',
+                label: context.l10n.commonOk,
                 textColor: Colors.white,
                 onPressed: detailNotifier.clearSendError,
               ),
@@ -324,7 +324,7 @@ class _ConversationDetailScreenState
                     TextButton(
                       onPressed: () => ScaffoldMessenger.of(context)
                           .hideCurrentMaterialBanner(),
-                      child: const Text('OK'),
+                      child: Text(context.l10n.commonOk),
                     ),
                   ],
                 ),

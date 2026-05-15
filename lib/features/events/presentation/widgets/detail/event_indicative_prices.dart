@@ -48,7 +48,7 @@ class EventIndicativePrices extends StatelessWidget {
             child: Column(
               children: [
                 for (var i = 0; i < sorted.length; i++) ...[
-                  _buildRow(sorted[i]),
+                  _buildRow(context, sorted[i]),
                   if (i < sorted.length - 1)
                     Divider(
                       height: 1,
@@ -65,7 +65,7 @@ class EventIndicativePrices extends StatelessWidget {
     );
   }
 
-  Widget _buildRow(IndicativePrice item) {
+  Widget _buildRow(BuildContext context, IndicativePrice item) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -86,7 +86,7 @@ class EventIndicativePrices extends StatelessWidget {
             ),
           ),
           Text(
-            item.formattedPrice,
+            item.price == 0 ? context.l10n.commonFree : item.formattedPrice,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

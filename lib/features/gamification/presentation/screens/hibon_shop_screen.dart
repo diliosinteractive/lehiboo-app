@@ -1,19 +1,19 @@
-
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../providers/gamification_provider.dart';
 import '../../data/models/hibon_transaction.dart';
 import '../widgets/hibon_counter_widget.dart';
 
-const _pillarFilters = <Map<String, String>>[
-  {'key': 'onboarding', 'label': 'Onboarding'},
-  {'key': 'engagement', 'label': 'Engagement'},
-  {'key': 'discovery', 'label': 'Découverte'},
-  {'key': 'participation', 'label': 'Participation'},
-  {'key': 'community', 'label': 'Communauté'},
+const _pillarFilters = <String>[
+  'onboarding',
+  'engagement',
+  'discovery',
+  'participation',
+  'community',
 ];
 
 class HibonShopScreen extends ConsumerStatefulWidget {
@@ -28,12 +28,13 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final transactionsAsync = ref.watch(hibonTransactionsProvider(_pillarFilter));
+    final transactionsAsync =
+        ref.watch(hibonTransactionsProvider(_pillarFilter));
     final walletAsync = ref.watch(gamificationNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Boutique Hibons'),
+        title: Text(context.l10n.gamificationShopTitle),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -61,15 +62,22 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
               ),
               child: Column(
                 children: [
-                   walletAsync.when(
+                  walletAsync.when(
                     data: (wallet) => Text(
                       '${wallet.balance}',
-                      style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
                     ),
-                    loading: () => const CircularProgressIndicator(color: Colors.white),
-                    error: (e, s) => const Text('---', style: TextStyle(color: Colors.white)),
+                    loading: () =>
+                        const CircularProgressIndicator(color: Colors.white),
+                    error: (e, s) => const Text('---',
+                        style: TextStyle(color: Colors.white)),
                   ),
-                  const Text('Hibons disponibles', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                  Text(context.l10n.gamificationHibonsAvailable,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 16)),
                 ],
               ),
             ),
@@ -80,43 +88,71 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Boosters & Utilitaires', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(context.l10n.gamificationBoostersUtilitiesTitle,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   _buildShopItem(
-                    context, 
+                    context,
                     ref,
-                    title: 'Streak Shield',
-                    description: 'Protégez votre série pour 1 jour',
+                    title: context.l10n.gamificationStreakShieldTitle,
+                    description:
+                        context.l10n.gamificationStreakShieldDescription,
                     price: 150,
                     icon: Icons.shield,
                     color: Colors.blue,
-                    onTap: () => _buyItem(context, ref, 'Streak Shield', 150),
+                    onTap: () => _buyItem(
+                      context,
+                      ref,
+                      apiItemName: 'Streak Shield',
+                      displayItemName:
+                          context.l10n.gamificationStreakShieldTitle,
+                      price: 150,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                   _buildShopItem(
-                    context, 
+                  _buildShopItem(
+                    context,
                     ref,
-                    title: 'Hibou Express (24h)',
-                    description: 'Messages illimités avec Petit Boo',
+                    title: context.l10n.gamificationHibouExpressTitle,
+                    description:
+                        context.l10n.gamificationHibouExpressDescription,
                     price: 300,
                     icon: Icons.chat_bubble,
                     color: Colors.purple,
-                    onTap: () => _buyItem(context, ref, 'Hibou Express', 300),
+                    onTap: () => _buyItem(
+                      context,
+                      ref,
+                      apiItemName: 'Hibou Express',
+                      displayItemName:
+                          context.l10n.gamificationHibouExpressTitle,
+                      price: 300,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                   _buildShopItem(
-                    context, 
+                  _buildShopItem(
+                    context,
                     ref,
-                    title: 'Multiplicateur x1.5 (1h)',
-                    description: 'Gagnez plus de Hibons pendant 1h',
+                    title: context.l10n.gamificationMultiplierTitle,
+                    description: context.l10n.gamificationMultiplierDescription,
                     price: 100,
                     icon: Icons.bolt,
                     color: Colors.amber,
-                    onTap: () => _buyItem(context, ref, 'Multiplicateur Hibons', 100),
+                    onTap: () => _buyItem(
+                      context,
+                      ref,
+                      apiItemName: 'Multiplicateur Hibons',
+                      displayItemName: context.l10n.gamificationMultiplierTitle,
+                      price: 100,
+                    ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  const Text('Packs de Hibons (Bientôt)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  Text(context.l10n.gamificationHibonsPacksComingSoonTitle,
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey)),
                   const SizedBox(height: 12),
                   // Placeholder for IAP
                   Container(
@@ -127,28 +163,33 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
-                    child: const Center(child: Text('Les achats In-App arrivent bientôt !')),
+                    child: Center(
+                        child: Text(
+                            context.l10n.gamificationInAppPurchasesComingSoon)),
                   ),
 
                   const SizedBox(height: 24),
-                  const Text('Historique', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(context.l10n.gamificationHistoryTitle,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
                         FilterChip(
-                          label: const Text('Tous'),
+                          label: Text(context.l10n.gamificationAllFilter),
                           selected: _pillarFilter == null,
-                          onSelected: (_) => setState(() => _pillarFilter = null),
+                          onSelected: (_) =>
+                              setState(() => _pillarFilter = null),
                         ),
                         const SizedBox(width: 8),
                         for (final p in _pillarFilters) ...[
                           FilterChip(
-                            label: Text(p['label']!),
-                            selected: _pillarFilter == p['key'],
+                            label: Text(_pillarFilterLabel(context, p)),
+                            selected: _pillarFilter == p,
                             onSelected: (selected) => setState(
-                              () => _pillarFilter = selected ? p['key'] : null,
+                              () => _pillarFilter = selected ? p : null,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -161,9 +202,11 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
                     data: (result) {
                       final txs = result.items;
                       if (txs.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
-                          child: Center(child: Text('Aucune transaction')),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                              child: Text(
+                                  context.l10n.gamificationNoTransactions)),
                         );
                       }
                       return ListView.builder(
@@ -216,8 +259,10 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
                         },
                       );
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, s) => Text('Erreur: $e'),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, s) =>
+                        Text(context.l10n.gamificationErrorWithMessage('$e')),
                   ),
                 ],
               ),
@@ -228,14 +273,21 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
     );
   }
 
-  Widget _buildShopItem(BuildContext context, WidgetRef ref, {required String title, required String description, required int price, required IconData icon, required Color color, required VoidCallback onTap}) {
+  Widget _buildShopItem(BuildContext context, WidgetRef ref,
+      {required String title,
+      required String description,
+      required int price,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+          decoration: BoxDecoration(
+              color: color.withOpacity(0.1), shape: BoxShape.circle),
           child: Icon(icon, color: color),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -245,7 +297,8 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFF601F),
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           ),
           child: Text('$price H'),
         ),
@@ -262,33 +315,60 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
     return Color(value);
   }
 
-  void _buyItem(BuildContext context, WidgetRef ref, String itemName, int price) async {
+  String _pillarFilterLabel(BuildContext context, String pillar) {
+    switch (pillar) {
+      case 'onboarding':
+        return context.l10n.gamificationPillarOnboarding;
+      case 'engagement':
+        return context.l10n.gamificationPillarEngagement;
+      case 'discovery':
+        return context.l10n.gamificationPillarDiscovery;
+      case 'participation':
+        return context.l10n.gamificationPillarParticipation;
+      case 'community':
+        return context.l10n.gamificationPillarCommunity;
+      default:
+        return pillar;
+    }
+  }
+
+  void _buyItem(
+    BuildContext context,
+    WidgetRef ref, {
+    required String apiItemName,
+    required String displayItemName,
+    required int price,
+  }) async {
     // Check balance first (Optimistic check)
     final wallet = ref.read(gamificationNotifierProvider).value;
     if (wallet != null && wallet.balance < price) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hibons insuffisants !')));
-       return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.gamificationInsufficientHibons)));
+      return;
     }
 
     try {
       final repo = ref.read(gamificationRepositoryProvider);
-      
+
       // Special logic for shield
-      if (itemName == 'Streak Shield') {
-         await repo.buyStreakShield();
+      if (apiItemName == 'Streak Shield') {
+        await repo.buyStreakShield();
       } else {
-         await repo.buyShopItem(itemName, price);
+        await repo.buyShopItem(apiItemName, price);
       }
-      
+
       ref.invalidate(gamificationNotifierProvider);
       ref.invalidate(hibonTransactionsProvider); // Refresh all family combos
-      
+
       if (context.mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Achat effectué : $itemName')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                context.l10n.gamificationPurchaseCompleted(displayItemName))));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(context.l10n.gamificationErrorWithMessage('$e'))));
       }
     }
   }

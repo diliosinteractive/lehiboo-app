@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
 import '../../data/models/invitation_dto.dart';
@@ -24,8 +25,6 @@ class InvitationCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final org = invitation.organization;
     final orgName = org?.name ?? '—';
-    final orgUuid = org?.uuid;
-
     final token = invitation.token ?? '';
     final action = ref.watch(invitationActionControllerProvider(token));
     final isInFlight = action.valueOrNull?.isInFlight ?? false;
@@ -69,7 +68,7 @@ class InvitationCard extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        StatusChip.invitation(),
+                        StatusChip.invitation(context),
                       ],
                     ),
                     if (org?.city != null && org!.city!.isNotEmpty)
@@ -87,7 +86,8 @@ class InvitationCard extends ConsumerWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          'Invité par ${invitation.invitedBy!.name}',
+                          context.l10n
+                              .membershipInvitedBy(invitation.invitedBy!.name),
                           style: GoogleFonts.figtree(
                             fontSize: 12,
                             color: Colors.grey[700],
@@ -95,7 +95,7 @@ class InvitationCard extends ConsumerWidget {
                         ),
                       ),
                     Text(
-                      _expiresLabel(invitation.expiresAt),
+                      _expiresLabel(context, invitation.expiresAt),
                       style: GoogleFonts.figtree(
                         fontSize: 12,
                         color: Colors.grey[700],
@@ -111,7 +111,7 @@ class InvitationCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: _OutlinedAction(
-                  label: 'Décliner',
+                  label: context.l10n.membershipInvitationDeclineAction,
                   color: Colors.grey[600]!,
                   isInFlight: isInFlight,
                   onTap: token.isEmpty
@@ -122,12 +122,12 @@ class InvitationCard extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _FilledAction(
-                  label: 'Accepter',
+                  label: context.l10n.membershipInvitationAcceptAction,
                   color: HbColors.brandPrimary,
                   isInFlight: isInFlight,
                   onTap: token.isEmpty
                       ? null
-                      : () => _onAccept(context, ref, token, orgName, orgUuid),
+                      : () => _onAccept(context, ref, token, orgName),
                 ),
               ),
             ],
@@ -137,19 +137,19 @@ class InvitationCard extends ConsumerWidget {
     );
   }
 
-  String _expiresLabel(String? iso) {
+  String _expiresLabel(BuildContext context, String? iso) {
     if (iso == null || iso.isEmpty) return '';
     final exp = DateTime.tryParse(iso);
     if (exp == null) return '';
     final now = DateTime.now();
-    if (exp.isBefore(now)) return 'Expirée';
+    if (exp.isBefore(now)) return context.l10n.membershipInvitationExpired;
     final diff = exp.difference(now);
     if (diff.inHours >= 24) {
       final days = diff.inDays;
-      return 'Expire dans $days ${days > 1 ? "jours" : "jour"}';
+      return context.l10n.membershipInvitationExpiresInDays(days);
     }
     final hours = diff.inHours.clamp(1, 100);
-    return 'Expire dans $hours h';
+    return context.l10n.membershipInvitationExpiresInHours(hours);
   }
 
   Future<void> _onAccept(
@@ -157,7 +157,6 @@ class InvitationCard extends ConsumerWidget {
     WidgetRef ref,
     String token,
     String orgName,
-    String? orgUuid,
   ) async {
     final ok = await ref
         .read(invitationActionControllerProvider(token).notifier)
@@ -165,13 +164,15 @@ class InvitationCard extends ConsumerWidget {
     if (!context.mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Bienvenue dans $orgName')),
+        SnackBar(
+          content: Text(context.l10n.membershipInvitationWelcome(orgName)),
+        ),
       );
       onAccepted?.call();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Impossible d'accepter cette invitation."),
+        SnackBar(
+          content: Text(context.l10n.membershipInvitationAcceptFailed),
         ),
       );
     }
@@ -186,17 +187,19 @@ class InvitationCard extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Décliner l'invitation ?"),
-        content: Text("Refuser l'invitation de $orgName ?"),
+        title: Text(context.l10n.membershipInvitationDeclineTitle),
+        content: Text(
+          context.l10n.membershipInvitationDeclineBody(orgName),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Retour'),
+            child: Text(context.l10n.commonBack),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: HbColors.error),
-            child: const Text('Décliner'),
+            child: Text(context.l10n.membershipInvitationDeclineAction),
           ),
         ],
       ),

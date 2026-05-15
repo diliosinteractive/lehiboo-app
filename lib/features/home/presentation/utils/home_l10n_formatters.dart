@@ -14,6 +14,29 @@ extension HomeL10nFormatters on BuildContext {
   String homePriceFromShort(num amount) =>
       l10n.homePriceFromShort(homeEuroAmount(amount));
 
+  String homeActivityCategoryLabel({
+    required String slug,
+    required String fallback,
+  }) {
+    return switch (slug.toLowerCase()) {
+      'spectacle' || 'show' => l10n.eventCategoryShow,
+      'atelier' || 'workshop' => l10n.eventCategoryWorkshop,
+      'sport' => l10n.eventCategorySport,
+      'culture' => l10n.eventCategoryCulture,
+      'marche' || 'market' => l10n.eventCategoryMarket,
+      'loisirs' || 'leisure' => l10n.eventCategoryLeisure,
+      'plein-air' || 'outdoor' => l10n.eventCategoryOutdoor,
+      'interieur' || 'indoor' => l10n.eventCategoryIndoor,
+      'festival' => l10n.eventCategoryFestival,
+      'exposition' || 'exhibition' => l10n.eventCategoryExhibition,
+      'concert' => l10n.eventCategoryConcert,
+      'theatre' || 'theater' => l10n.eventCategoryTheater,
+      'cinema' => l10n.eventCategoryCinema,
+      'autre' || 'other' => l10n.eventCategoryOther,
+      _ => fallback,
+    };
+  }
+
   String homeTime(DateTime date) {
     return appDateFormat('HH:mm', enPattern: 'h:mm a').format(date);
   }

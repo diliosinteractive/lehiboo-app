@@ -62,7 +62,18 @@
   "commonAdd": "Add",
   "commonRetry": "Retry",
   "commonSave": "Save",
+  "commonDelete": "Delete",
+  "commonOk": "OK",
   "commonValidate": "Validate",
+  "commonErrorTitle": "Oops!",
+  "commonGenericError": "Something went wrong.",
+  "commonGenericRetryError": "Something went wrong. Please try again.",
+  "commonConnectionError": "Connection error. Check your internet connection.",
+  "commonSearchHint": "Search...",
+  "routeEventFallbackTitle": "Event",
+  "routeRecommendedTitle": "Recommended for you",
+  "routeNotFoundTitle": "Oops! Page not found",
+  "routeNotFoundBody": "The page you are looking for does not exist.",
   "settingsPushPermissionRequired": "Notification permission required",
   "settingsUpdateFailed": "Update failed",
   "profileTitle": "Profile",
@@ -85,6 +96,18 @@
   "profileRemindersSubtitle": "Reminders for upcoming activities",
   "profileQuestionsTitle": "My questions",
   "profileQuestionsSubtitle": "Your questions about events",
+  "userQuestionsTitle": "My questions",
+  "userQuestionsLoadError": "Unable to load your questions.",
+  "userQuestionsEmptyTitle": "No questions",
+  "userQuestionsEmptyBody": "You have not asked any questions about an event yet.",
+  "userQuestionsExploreEvents": "Discover events",
+  "userQuestionsDeletedEvent": "Deleted event",
+  "userQuestionsOrganizerFallback": "Organizer",
+  "userQuestionsRejectedNotice": "This question was rejected by moderation.",
+  "userQuestionsStatusPending": "Pending",
+  "userQuestionsStatusApproved": "Approved",
+  "userQuestionsStatusAnswered": "Answered",
+  "userQuestionsStatusRejected": "Rejected",
   "profileReviewsTitle": "My reviews",
   "profileReviewsSubtitle": "Your reviews and organizer replies",
   "profileAccountTitle": "My account",
@@ -371,6 +394,7 @@
   "messagesStatusClosed": "Closed",
   "messagesStatusPending": "Pending",
   "messagesStatusOpen": "Open",
+  "messagesNotificationOpenAction": "Open",
   "messagesDeletedPreview": "Deleted message",
   "messagesRelativeJustNow": "Just now",
   "messagesRelativeDaysShort": "{count}d",
@@ -559,6 +583,12 @@
   "petitBooDeleteConversationBody": "This action cannot be undone.",
   "petitBooConversationDeleted": "Conversation deleted",
   "petitBooConversationFallbackTitle": "Conversation",
+  "petitBooConversationsAuthRequired": "Log in to see your conversations",
+  "petitBooConversationsLoadFailed": "Could not load conversations",
+  "petitBooEngagementWelcome": "Hi! Can I help? 🌟",
+  "petitBooEngagementInspiration": "Looking for inspiration? 💡",
+  "petitBooEngagementNoResults": "No results? I can search for you! 🕵️‍♂️",
+  "petitBooEngagementIdle": "Psst... I know some great spots! 🗺️",
   "petitBooRelativeDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
   "@petitBooRelativeDaysAgo": {
     "placeholders": {
@@ -854,6 +884,89 @@
   "petitBooToolUntitled": "Untitled",
   "petitBooToolStatusActive": "Active",
   "petitBooToolStatusInactive": "Inactive",
+  "petitBooToolEventFallbackTitle": "Event",
+  "petitBooToolEventCount": "{count, plural, =1{1 event} other{{count} events}}",
+  "@petitBooToolEventCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooToolViewEvents": "View {count, plural, =1{1 event} other{the {count} events}}",
+  "@petitBooToolViewEvents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooEventDateTime": "{date} at {time}",
+  "@petitBooEventDateTime": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "petitBooEventAvailabilityAction": "View availability",
+  "petitBooEventPriceFrom": "From",
+  "petitBooEventPriceTiers": "{count, plural, =1{1 rate} other{{count} rates}}",
+  "@petitBooEventPriceTiers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooTripSavedPlansCount": "{count, plural, =1{1 saved plan} other{{count} saved plans}}",
+  "@petitBooTripSavedPlansCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooTripStopsCount": "{count, plural, =1{1 stop} other{{count} stops}}",
+  "@petitBooTripStopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooTripMoreStops": "{count, plural, =1{+1 more stop} other{+{count} more stops}}",
+  "@petitBooTripMoreStops": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "petitBooTripFallbackStop": "Stop",
+  "petitBooTripFallbackListTitle": "Untitled plan",
+  "petitBooTripLoadErrorTitle": "Could not load your outings",
+  "petitBooTripLoadErrorRetry": "Try again in a few moments",
+  "petitBooTripEmptyPrompt": "Ask me to plan an outing!",
+  "petitBooTripViewAll": "View all my outings",
+  "petitBooTripExpandMap": "Expand map",
+  "petitBooTripCollapseMap": "Collapse",
+  "petitBooTripTipsTitle": "Tips",
+  "petitBooTripSave": "Save",
+  "petitBooTripSaved": "Saved",
+  "petitBooTripShowMap": "Show map",
+  "petitBooTripHideMap": "Hide map",
+  "petitBooTripSavePlanPrompt": "Save this outing plan",
+  "petitBooTripNoCoordinates": "No coordinates available",
+  "petitBooQuotaExceededError": "You have reached your message limit",
+  "petitBooConnectionError": "Connection error",
+  "petitBooAuthRequiredError": "Sign in to chat with Petit Boo",
+  "petitBooConversationLoadFailed": "Could not load the conversation",
+  "petitBooApiErrorFallback": "Petit Boo error",
+  "petitBooGenericError": "An error occurred",
   "petitBooBrainManageMemory": "Manage my memory",
   "petitBooBrainRecommendationHint": "Tell me about yourself so I can give you better recommendations.",
   "petitBooToolHibonsBalance": "Hibons balance",
@@ -988,6 +1101,388 @@
   "membershipRequestSentOn": "Request sent on {date}",
   "membershipRequestRejected": "Request not accepted",
   "membershipRequestRejectedOn": "Request from {date} - not accepted",
+  "membershipSearchOrganizationHint": "Search for an organization...",
+  "membershipTabActive": "Active ({count})",
+  "@membershipTabActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipTabPending": "Pending ({count})",
+  "@membershipTabPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipTabRejected": "Rejected ({count})",
+  "@membershipTabRejected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipTabInvitations": "Invitations ({count})",
+  "@membershipTabInvitations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipEmptyActive": "No active memberships yet.\nJoin your favorite organizations so you do not miss anything.",
+  "membershipEmptyPending": "You do not have any pending requests.",
+  "membershipEmptyRejected": "No rejected requests.",
+  "membershipEmptyInvitations": "No invitations for now.",
+  "membershipDiscoverOrganizations": "Discover organizations",
+  "membershipLoadError": "Could not load your memberships.",
+  "membershipStatusPending": "Pending",
+  "membershipStatusActive": "Active",
+  "membershipStatusRejected": "Rejected",
+  "membershipStatusInvitation": "Invitation",
+  "membershipStatusExpired": "Expired",
+  "membershipViewOrganizer": "View profile",
+  "membershipPrivateEventsAction": "Private events",
+  "membershipMembersCount": "{count, plural, =1{1 member} other{{count} members}}",
+  "@membershipMembersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipJoinAction": "Join",
+  "membershipPendingAction": "Pending",
+  "membershipRetryRequestAction": "Request again",
+  "membershipCancelRequestAction": "Cancel request",
+  "membershipLeaveAction": "Leave",
+  "membershipCancelRequestTitle": "Cancel request?",
+  "membershipCancelRequestBody": "Your request to join {organizerName} will be cancelled. You can send another request at any time.",
+  "@membershipCancelRequestBody": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipLeaveTitle": "Leave this organization?",
+  "membershipLeaveBody": "You will no longer see private events from {organizerName}. You can send another request at any time.",
+  "@membershipLeaveBody": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipJoinTitle": "Join {organizerName}'s private space?",
+  "@membershipJoinTitle": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipJoinBody": "By joining, you get access to exclusive events for members. Your request will be reviewed by the organizer.",
+  "membersOnlyGateTitle": "Members-only event",
+  "membersOnlyGateBody": "This event is only available to members of {organizerName}. Join the organization to unlock its private calendar.",
+  "@membersOnlyGateBody": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "membersOnlyGateJoin": "Join {organizerName}",
+  "@membersOnlyGateJoin": {
+    "placeholders": {
+      "organizerName": {
+        "type": "String"
+      }
+    }
+  },
+  "privateEventsTitle": "My private events",
+  "privateEventsSearchHint": "Search for an event...",
+  "privateEventsLoadError": "Could not load events.",
+  "privateEventsPrivateBadge": "Private",
+  "privateEventsAllOrganizations": "All organizations",
+  "privateEventsEmptyTitle": "No private events yet.",
+  "privateEventsEmptyBody": "Join organizations to discover their exclusive activities.",
+  "privateEventsEmptyFiltered": "No matching private event.",
+  "membershipInvitationTitle": "Invitation",
+  "membershipInvitedBy": "Invited by {name}",
+  "@membershipInvitedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipInvitationExpiredBlurb": "This invitation has expired. Ask the organization to send you a new invitation.",
+  "membershipInvitationAcceptedBlurb": "This invitation has already been accepted. You can find the organization in your memberships list.",
+  "membershipInvitationActiveBlurb": "You are invited to join this private space. Accept the invitation to access exclusive events.",
+  "membershipInvitationActiveWithExpiryBlurb": "You are invited to join this private space. Accept the invitation to access exclusive events. This invitation expires in {hours, plural, =1{1 hour} other{{hours} hours}}.",
+  "@membershipInvitationActiveWithExpiryBlurb": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipInvitationWelcome": "Welcome to {organizationName}",
+  "@membershipInvitationWelcome": {
+    "placeholders": {
+      "organizationName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipInvitationAcceptFailed": "Could not accept this invitation.",
+  "membershipInvitationDeclineTitle": "Decline invitation?",
+  "membershipInvitationDeclineBody": "Decline the invitation from {organizationName}?",
+  "@membershipInvitationDeclineBody": {
+    "placeholders": {
+      "organizationName": {
+        "type": "String"
+      }
+    }
+  },
+  "membershipInvitationDeclineAction": "Decline",
+  "membershipInvitationAcceptAction": "Accept",
+  "membershipInvitationDeclined": "Invitation declined",
+  "membershipInvitationSignInToAccept": "Sign in to accept",
+  "membershipInvitationAlreadyAccepted": "Invitation already accepted.",
+  "membershipInvitationExpired": "Invitation expired.",
+  "membershipInvitationExpiresInDays": "{count, plural, =1{Expires in 1 day} other{Expires in {count} days}}",
+  "@membershipInvitationExpiresInDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipInvitationExpiresInHours": "{count, plural, =1{Expires in 1 hour} other{Expires in {count} hours}}",
+  "@membershipInvitationExpiresInHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipInvitationNotFoundTitle": "This invitation cannot be found.",
+  "membershipInvitationNotFoundBody": "The link may have been disabled. Ask the organizer to send you a new invitation.",
+  "personalizedFeedTitle": "For you",
+  "organizerInvalidIdentifier": "Invalid organizer identifier",
+  "organizerActivitiesTab": "Activities",
+  "organizerReviewsTab": "Reviews",
+  "organizerProfileLoadError": "Could not load this profile.",
+  "organizerContactAction": "Contact",
+  "organizerCoordinatesAction": "Contact details",
+  "organizerNoCoordinates": "This organizer has not provided contact details.",
+  "organizerAboutTitle": "About",
+  "organizerEstablishmentTypesTitle": "Establishment types",
+  "organizerSocialLinksTitle": "Social links",
+  "organizerEventsCount": "{countLabel} {count, plural, =1{event} other{events}}",
+  "@organizerEventsCount": {
+    "placeholders": {
+      "countLabel": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerFollowersCount": "{countLabel} {count, plural, =1{follower} other{followers}}",
+  "@organizerFollowersCount": {
+    "placeholders": {
+      "countLabel": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerMembersCount": "{countLabel} {count, plural, =1{member} other{members}}",
+  "@organizerMembersCount": {
+    "placeholders": {
+      "countLabel": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerRatingWithReviews": "{rating} ({countLabel} {count, plural, =1{review} other{reviews}})",
+  "@organizerRatingWithReviews": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "countLabel": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerFollowAction": "Follow",
+  "organizerUnfollowAction": "Unfollow",
+  "organizerFollowedSearchHint": "Search for an organizer",
+  "organizerFollowedEmptySearchTitle": "No organizer found",
+  "organizerFollowedEmptySearchBody": "Try another keyword.",
+  "organizerFollowedEmptyTitle": "You are not following any organizers",
+  "organizerFollowedEmptyBody": "Follow an organizer from their page to find them here.",
+  "organizerFollowedLoadError": "Could not load the list.",
+  "organizerActivitiesLoadError": "Could not load activities.",
+  "organizerActivitiesEmpty": "No activities published yet.",
+  "organizerActivitiesNoUpcoming": "No upcoming event.",
+  "organizerActivitiesNoPast": "No past event.",
+  "organizerActivitiesCurrentTab": "Current ({count})",
+  "@organizerActivitiesCurrentTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerActivitiesPastTab": "Past ({count})",
+  "@organizerActivitiesPastTab": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerReviewsLoadError": "Could not load reviews.",
+  "organizerReviewsTotal": "Based on {count, plural, =1{1 review} other{{count} reviews}}",
+  "@organizerReviewsTotal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerVerifiedPurchasesCount": "{count, plural, =1{including 1 verified purchase} other{including {count} verified purchases}}",
+  "@organizerVerifiedPurchasesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerNoReviewsTitle": "No reviews yet",
+  "organizerNoReviewsBody": "Be among the first to leave a review on one of their events.",
+  "organizerReviewUserFallback": "User",
+  "organizerReviewFor": "Review for",
+  "organizerVerifiedPurchase": "Verified purchase",
+  "organizerHelpfulCount": "{count, plural, =1{1 helpful} other{{count} helpful}}",
+  "@organizerHelpfulCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "organizerReplyBy": "Reply from {author}",
+  "@organizerReplyBy": {
+    "placeholders": {
+      "author": {
+        "type": "String"
+      }
+    }
+  },
+  "organizerReplyFallback": "Organizer reply",
+  "partnerTypeVenue": "Venue",
+  "partnerTypeOrganizer": "Organizer",
+  "partnerTypeIndividual": "Individual",
+  "partnerSubscriptionBasic": "Basic",
+  "partnerSubscriptionEnterprise": "Enterprise",
+  "checkinScannerTitle": "Scan tickets",
+  "checkinTorchTooltip": "Flashlight",
+  "checkinCameraTooltip": "Camera",
+  "checkinMoreTooltip": "More",
+  "checkinSwitchOrganization": "Switch organization",
+  "checkinManualEntryTitle": "Manual entry",
+  "checkinGateLabel": "Gate label",
+  "checkinGateHint": "e.g. North, VIP, Entrance 2...",
+  "checkinGateDisplay": "Gate: {gate}",
+  "@checkinGateDisplay": {
+    "placeholders": {
+      "gate": {
+        "type": "String"
+      }
+    }
+  },
+  "checkinEntryRecorded": "Welcome! Entry recorded.",
+  "checkinReEntryRecorded": "Re-entry recorded (entry #{count})",
+  "@checkinReEntryRecorded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkinNetworkRescan": "Unstable network - scan again to confirm.",
+  "checkinNetworkRetype": "Unstable network - re-enter the code to confirm.",
+  "checkinCameraPermissionDeniedTitle": "Camera access denied",
+  "checkinCameraUnavailableTitle": "Camera unavailable",
+  "checkinCameraPermissionDeniedBody": "Allow camera access in system settings, or use manual entry.",
+  "checkinCameraUnavailableBody": "No camera was detected. Use manual entry.",
+  "checkinChooseOrganizationFirst": "Choose an organization from the scanner.",
+  "checkinManualWarning": "Use only with a visual identity check. Manual entry does not verify the QR secret.",
+  "checkinOrganizationLabel": "Organization: {name}",
+  "@checkinOrganizationLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "checkinManualCodeHelper": "Code printed on the ticket",
+  "checkinVerifyCode": "Verify code",
+  "checkinValidTicketTitle": "Valid ticket",
+  "checkinReEntryDetectedTitle": "Re-entry detected",
+  "checkinConfirmEntry": "Confirm entry",
+  "checkinConfirmReEntry": "Confirm re-entry",
+  "checkinAlreadyEnteredWarning": "Already checked in {count}x - verify before admitting.",
+  "@checkinAlreadyEnteredWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkinChooseOrganizationTitle": "Choose an organization",
+  "checkinChooseOrganizationBody": "The scanner will send tickets to the selected organization.",
+  "checkinRoleOwner": "Owner",
+  "checkinRoleAdmin": "Admin",
+  "checkinRoleStaff": "Team",
+  "checkinRoleViewer": "Member",
+  "checkinNoVendorOrganizationTitle": "No vendor organization found",
+  "checkinNoVendorOrganizationBody": "If you expected to appear here, contact support - your profile may not be linked to an organization yet.",
+  "checkinRefresh": "Refresh",
+  "checkinBlockedTicketCancelledTitle": "Ticket cancelled",
+  "checkinBlockedTicketRefundedTitle": "Ticket refunded",
+  "checkinBlockedTicketTransferredTitle": "Ticket transferred",
+  "checkinBlockedSlotNotStartedTitle": "Slot not started",
+  "checkinBlockedWrongEventTitle": "Wrong event",
+  "checkinBlockedUnauthorizedTitle": "Unauthorized",
+  "checkinBlockedTicketNotFoundTitle": "Ticket not found",
+  "checkinBlockedUnknownTitle": "Error",
+  "checkinBlockedDoNotAdmit": "Do not admit.",
+  "checkinBlockedTicketTransferredBody": "The ticket has been transferred to another holder - scan their QR again.",
+  "checkinBlockedSlotNotStartedBody": "Entry is not open for this slot yet.",
+  "checkinBlockedWrongEventBody": "This ticket does not match the filtered event.",
+  "checkinBlockedUnauthorizedBody": "You are not authorized to scan this ticket for this organization.",
+  "checkinBlockedTicketNotFoundBody": "QR not recognized - try again or enter the code.",
+  "checkinBlockedUnknownBody": "Unexpected error, try again.",
   "authEmailLabel": "Email",
   "authEmailHint": "your@email.com",
   "authPasswordLabel": "Password",
@@ -1022,6 +1517,15 @@
   "authOtpResendIn": "Resend in {seconds}s",
   "authOtpResend": "Resend",
   "authGuestIncorrectCredentials": "Incorrect credentials. Try again.",
+  "authAccountAlreadyVerified": "Your account is already verified. Please sign in.",
+  "authEmailOrPasswordIncorrect": "Incorrect email or password",
+  "authAccountAlreadyExists": "An account already exists with this email",
+  "authWeakPasswordDetailed": "Password must contain at least 8 characters, an uppercase letter, and a number",
+  "authVerificationCodeInvalid": "Invalid verification code",
+  "authVerificationCodeExpired": "The code has expired. Please request a new one.",
+  "authTooManyAttempts": "Too many attempts. Try again in 15 minutes.",
+  "authVerificationCodeSent": "A verification code has been sent",
+  "authVerificationCodeVerified": "Code verified",
   "authGuestTitle": "Sign in",
   "authGuestSubtitle": "Sign in to {featureName}.",
   "authGuestEncouragement": "It only takes 2 minutes and it is free!",
@@ -1100,10 +1604,13 @@
   "authProfessionalEmailHint": "you@company.com",
   "authValidationMin2Chars": "Min. 2 characters",
   "authValidationMin5Chars": "Min. 5 characters",
+  "authFirstNameMinLength": "First name must be at least 2 characters",
+  "authLastNameMinLength": "Last name must be at least 2 characters",
   "authPasswordMinLengthShort": "Min. 8 characters",
   "authPasswordNeedsUppercaseShort": "Uppercase required",
   "authPasswordNeedsNumberShort": "Number required",
   "authPasswordNeedsSpecialShort": "Special character required",
+  "authPasswordNeedsUppercaseNumberSpecial": "Password must contain at least 8 characters, an uppercase letter, a number, and a symbol",
   "authPasswordStrengthWeak": "Weak",
   "authPasswordStrengthFair": "Fair",
   "authPasswordStrengthGood": "Good",
@@ -1150,6 +1657,11 @@
   "authOptionalSuffix": "(optional)",
   "authSiretInvalid": "Invalid SIRET",
   "authSiretHelp": "14 digits, no spaces",
+  "authCompanyNameMinLength": "Company name must be at least 2 characters",
+  "authSiretMustHave14Digits": "SIRET number must contain 14 digits",
+  "authAddressMinLength": "Address must be at least 5 characters",
+  "authCityMinLength": "City must be at least 2 characters",
+  "authPostalCodeLength": "Postal code must be between 3 and 10 characters",
   "authIndustryLabel": "Industry",
   "authSelectHint": "Select",
   "authEmployeeCountLabel": "Team size",
@@ -1208,6 +1720,7 @@
   "authTermsBudgetLine": "Budget: {budget} EUR/month",
   "authTermsInvitationsLine": "Invitations: {count} team members",
   "authBusinessTermsLabel": "terms specific to business accounts",
+  "authBusinessTermsRequired": "Please accept the business terms",
   "authCreateBusinessAccountButton": "Create my business account",
   "authBusinessTermsHelper": "By creating an account, you confirm that the information provided is accurate and that you are authorized to represent this organization.",
   "homeTooltipNotifications": "Notifications",
@@ -1215,6 +1728,22 @@
   "homeTooltipAccount": "My account",
   "homeViewMore": "See more",
   "homeViewAll": "View all",
+  "homePartnerBadge": "Partner",
+  "homePartnerSeeAllSelection": "See the full selection",
+  "homePersonalizedTitle": "For you",
+  "homePersonalizedSubtitle": "Based on your preferences",
+  "homeNativeAdSponsored": "Sponsored",
+  "homeRecommendedPopularTag": "Popular",
+  "homeRecommendedLastSpotsTag": "Last spots",
+  "homeSavedSearchAlertFallback": "Custom alert",
+  "homeSavedSearchFallback": "Saved search",
+  "homeMobileConfigDefaultHeroTitle": "Find your next local adventure",
+  "homeMobileConfigDefaultHeroSubtitle": "Discover the best events near you",
+  "homeMobileConfigEventsSectionTitle": "Find all your events",
+  "homeMobileConfigEventsSectionDescription": "Explore our selection of local events",
+  "homeMobileConfigThematiquesSectionTitle": "Explore by theme",
+  "homeMobileConfigCitiesSectionTitle": "Events by city",
+  "homeMobileConfigExploreButton": "Explore activities",
   "homeNewActivitiesTitle": "New",
   "homeNoNewActivities": "No new activities found.",
   "homeNearbyAvailableTitle": "Available activities nearby",
@@ -1448,7 +1977,9 @@
   "searchNameLabel": "Search name",
   "searchNameHint": "Example: Concerts in Paris this weekend",
   "searchNotificationsTitle": "Notifications",
+  "searchPushTitle": "Push",
   "searchPushSubtitle": "Notifications in the mobile app",
+  "searchEmailTitle": "Email",
   "searchEmailSubtitle": "Receive an email for each new event",
   "searchSaveButton": "Save",
   "eventExploreTitle": "Explore events",
@@ -1473,6 +2004,13 @@
   "eventNoEntryFee": "No entry fee",
   "eventIndicativePrices": "Indicative prices provided by the organizer",
   "eventPriceFromPrefix": "From ",
+  "eventPriceDonation": "Pay what you want",
+  "eventPriceVariable": "Variable price",
+  "eventPriceRange": "From {minPrice} to {maxPrice}",
+  "eventAgeMinimum": "{minAge}+ years",
+  "eventAgeMaximum": "Up to {maxAge} years",
+  "eventAgeRange": "{minAge}-{maxAge} years",
+  "eventLocationIndoorOutdoor": "Indoor/Outdoor",
   "eventCharacteristicsTitle": "Characteristics",
   "eventInvalidBookingLink": "Invalid booking link",
   "eventChooseDateFirst": "Please choose a date first",
@@ -1621,6 +2159,7 @@
   "eventFoodOnSite": "Food on site",
   "eventDrinks": "Drinks",
   "eventDrinksAvailable": "Drinks available",
+  "eventWifiLabel": "Wi-Fi",
   "eventWifiAvailable": "Wi-Fi available",
   "eventServiceDefaultDescription": "This service is available on site.",
   "eventServiceEquipment": "Equipment provided",
@@ -1766,6 +2305,7 @@
   "eventQuestionRequired": "Please enter your question.",
   "eventQuestionMinLength": "Your question must contain at least 10 characters.",
   "eventQuestionTooLong": "Your question is too long (1000 max).",
+  "eventQuestionInvalid": "Invalid question.",
   "eventQuestionInfo": "The organizer will receive your question and reply soon.",
   "eventSendQuestion": "Send my question",
   "eventCheckConnectionRetry": "Check your connection, then try again.",
@@ -1795,6 +2335,14 @@
   "eventLehibooExperiences": "LEHIBOO EXPERIENCES",
   "eventSourceInfo": "Info source: ",
   "eventSimilarEvents": "Similar events",
+  "eventPeopleWatching": "{count, plural, =1{1 person watching} other{{count} people watching}}",
+  "@eventPeopleWatching": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "bookingCheckoutTitle": "Finalize my booking",
   "bookingSummaryTitle": "Summary",
   "bookingTicketFallback": "Ticket",
@@ -2015,6 +2563,8 @@
   "bookingCancelValidationTooLong": "The reason is too long (1000 characters max).",
   "bookingCancelGenericError": "Could not cancel the booking. Please try again.",
   "bookingPreparingPdf": "Preparing PDF…",
+  "bookingAndroidDownloadsLocation": "Downloads/Lehiboo",
+  "bookingDocumentsTicketsLocation": "Documents > Lehiboo > tickets",
   "bookingTicketsSaved": "Tickets saved to {location}",
   "@bookingTicketsSaved": {
     "placeholders": {
@@ -2177,5 +2727,335 @@
   "bookingTicketsGenerating": "Generating your tickets...",
   "bookingTicketsAvailableInBookings": "Your tickets will be available\nin My bookings",
   "bookingConfirmationEmailSent": "A confirmation email with your tickets has been sent.",
-  "bookingTicketsLoadError": "Could not load tickets"
+  "bookingTicketsLoadError": "Could not load tickets",
+  "tripPlansListTitle": "My outings",
+  "tripPlansDeletedSnack": "Plan \"{title}\" deleted",
+  "tripPlansUntitledPlan": "Untitled plan",
+  "tripPlansEmptyTitle": "No outings planned",
+  "tripPlansEmptyBody": "Ask Petit Boo to create an itinerary for your next outing!",
+  "tripPlansTalkToPetitBoo": "Talk to Petit Boo",
+  "tripPlansErrorTitle": "Something went wrong",
+  "tripPlansLoadErrorBody": "Unable to load your outings",
+  "tripPlanEditTitle": "Edit",
+  "tripPlanEditErrorWithMessage": "Error: {message}",
+  "tripPlanEditNotFound": "Plan not found",
+  "tripPlanEditTitleLabel": "Title",
+  "tripPlanEditNameHint": "Outing name",
+  "tripPlanEditDateLabel": "Date",
+  "tripPlanEditSelectDate": "Select a date",
+  "tripPlanEditStopsLabel": "Stops",
+  "tripPlanEditReorderHint": "Drag to reorder",
+  "tripPlanEditUpdatedSnack": "Plan updated",
+  "tripPlanEditDiscardChangesTitle": "Discard changes?",
+  "tripPlanEditDiscardChangesBody": "Your changes will not be saved.",
+  "tripPlanEditDiscard": "Discard",
+  "tripPlansStopsCount": "{count, plural, =1{1 stop} other{{count} stops}}",
+  "tripPlansStopsPlanned": "{count, plural, =1{1 stop planned} other{{count} stops planned}}",
+  "tripPlansStopFallback": "Stop",
+  "tripPlansNoCoordinatesAvailable": "No coordinates available",
+  "tripPlansDeleteDialogTitle": "Delete this plan?",
+  "tripPlansDeleteDialogBody": "Plan \"{title}\" will be permanently deleted.",
+  "tripPlansDurationMinutes": "{minutes} min",
+  "tripPlansDurationHours": "{hours}h",
+  "tripPlansDurationHoursMinutes": "{hours}h{minutes}",
+  "reviewsAllRatingsFilter": "All",
+  "reviewsAllTitle": "All reviews",
+  "reviewsCannotReviewAlreadyReviewed": "You have already reviewed this event.",
+  "reviewsCannotReviewEventNotEnded": "You can leave a review once the event is over.",
+  "reviewsCannotReviewNotParticipated": "Only event participants can leave a review.",
+  "reviewsCannotReviewOrganizer": "You cannot review your own events.",
+  "reviewsCannotReviewUnknown": "You cannot leave a review right now.",
+  "reviewsCommentMinLengthError": "Your review must be at least {minLength} characters",
+  "reviewsCommentRequiredError": "Please write your review",
+  "reviewsCommentRequiredLabel": "Your review *",
+  "reviewsCreateSuccessPendingModeration": "Review sent. It will be published after approval.",
+  "reviewsDeleteAction": "Delete",
+  "reviewsDeleteConfirmBody": "This action is permanent. You can write a new one later.",
+  "reviewsDeleteConfirmTitle": "Delete this review?",
+  "reviewsDeleteSuccess": "Review deleted",
+  "reviewsEditAction": "Edit",
+  "reviewsEditModerationNotice": "Any change will put your review back in moderation.",
+  "reviewsEditMyReviewTitle": "Edit my review",
+  "reviewsEmptyBody": "Share your experience and help others choose!",
+  "reviewsEmptyTitle": "No reviews yet",
+  "reviewsEventFallback": "Event",
+  "reviewsFeaturedFilter": "Featured",
+  "reviewsUserLoadError": "Unable to load your reviews.",
+  "reviewsUserLoadMoreError": "Unable to load more reviews.",
+  "reviewsMyEmptyBody": "You haven't left any reviews yet. Once an event is over, you can share your experience!",
+  "reviewsMyEmptyTitle": "No reviews",
+  "reviewsNoFilteredResults": "No reviews match the selected filters.",
+  "reviewsNoReviewsTitle": "No reviews",
+  "reviewsOrganizerReplied": "The organizer replied",
+  "reviewsReportAction": "Report",
+  "reviewsReportDetailsOptionalLabel": "Details (optional)",
+  "reviewsReportReasonFake": "Fake review",
+  "reviewsReportReasonInappropriate": "Inappropriate content",
+  "reviewsReportReasonOffensive": "Offensive language",
+  "reviewsReportReasonOther": "Other",
+  "reviewsReportReasonQuestion": "Why is this review a problem?",
+  "reviewsReportReasonSpam": "Spam",
+  "reviewsReportSubmitAction": "Submit report",
+  "reviewsReportSuccess": "Report sent. Thank you for your vigilance.",
+  "reviewsReportTitle": "Report this review",
+  "reviewsRewriteAction": "Rewrite",
+  "reviewsSectionTitle": "Reviews",
+  "reviewsSelectRatingRequired": "Please select a rating",
+  "reviewsSortMostHelpful": "Most helpful",
+  "reviewsSortNewest": "Newest",
+  "reviewsSortRating": "Rating",
+  "reviewsSortTooltip": "Sort",
+  "reviewsStatusApproved": "Published",
+  "reviewsStatusPending": "Pending",
+  "reviewsStatusRejected": "Rejected",
+  "reviewsSubmitAction": "Submit my review",
+  "reviewsTitleRequiredError": "Please add a title",
+  "reviewsTitleRequiredLabel": "Title *",
+  "reviewsTotalCount": "{count, plural, =0{No reviews} =1{1 review} other{{count} reviews}}",
+  "reviewsUpdateAction": "Update",
+  "reviewsUpdateSuccessPendingModeration": "Review updated. It will be moderated again.",
+  "reviewsVerifiedFilter": "Verified",
+  "reviewsViewAllAction": "See all reviews ({count})",
+  "reviewsViewMyReviewAction": "View my review →",
+  "reviewsWriteAction": "Write",
+  "reviewsWriteFirstAction": "Write the first review",
+  "reviewsWriteReviewAction": "Write a review",
+  "reviewsWriteReviewTitle": "Leave a review",
+  "reviewsYourRatingLabel": "Your rating",
+  "reviewsYourReviewLabel": "Your review",
+  "gamificationActionsCatalogLoadError": "Unable to load the catalog",
+  "gamificationActionsEmpty": "No actions available right now",
+  "gamificationActivitiesBonusTitle": "Activities & Bonuses",
+  "gamificationAllFilter": "All",
+  "gamificationBadgeLocked": "Locked",
+  "gamificationBadgeUnlocked": "Unlocked",
+  "gamificationBadgeUnlockedCongrats": "Nice, you unlocked this badge!",
+  "gamificationBadgesLoadError": "Unable to load your badges",
+  "gamificationBoostersUtilitiesTitle": "Boosters & Utilities",
+  "gamificationCapReached": "Reached",
+  "gamificationChallengesTitle": "Challenges",
+  "gamificationClaimDailyReward": "Claim my reward",
+  "gamificationComeBackTomorrow": "Come back tomorrow!",
+  "gamificationCompleted": "Completed",
+  "gamificationCurrentRankPrefix": "You are",
+  "gamificationDailyClaimError": "Error claiming reward",
+  "gamificationDailyRewardAlreadyClaimed": "You already claimed your reward today!",
+  "gamificationDailyRewardTitle": "Daily Reward",
+  "gamificationDayNumber": "D-{dayNumber}",
+  "gamificationEarningsByPillarTitle": "Breakdown by pillar",
+  "gamificationErrorWithMessage": "Error: {message}",
+  "gamificationGreatCta": "Great!",
+  "gamificationHibonsAmount": "{count} HIBONs",
+  "gamificationHibonsAvailable": "Hibons available",
+  "gamificationHibonsDelta": "{delta} Hibons",
+  "gamificationHibonsEarned": "{count} Hibons earned",
+  "gamificationHibonsGainedToast": "+{delta} Hibons earned!",
+  "gamificationHibonsPacksComingSoonTitle": "Hibon Packs (Coming Soon)",
+  "gamificationHibonsProgress": "{current} / {total} HIBONs",
+  "gamificationHibonsRemainingForBadge": "{count} HIBONs left to unlock this badge",
+  "gamificationHibonsUnit": "Hibons",
+  "gamificationHibonsUntilNextRank": "{count} left before {rankLabel}",
+  "gamificationHibouExpressTitle": "Hibou Express (24h)",
+  "gamificationHibouExpressDescription": "Unlimited messages with Petit Boo",
+  "gamificationHistoryTitle": "History",
+  "gamificationHowToEarnTitle": "How to earn Hibons",
+  "gamificationInAppPurchasesComingSoon": "In-app purchases are coming soon!",
+  "gamificationInsufficientHibons": "Not enough Hibons!",
+  "gamificationLifetimeHibonsAccumulated": "{count} HIBONs accumulated",
+  "gamificationLockedCountLabel": "To unlock",
+  "gamificationLuckyWheelTitle": "Wheel of Fortune",
+  "gamificationMaxRankReached": "Max rank reached",
+  "gamificationMultiplierDescription": "Earn more Hibons for 1h",
+  "gamificationMultiplierTitle": "Multiplier x1.5 (1h)",
+  "gamificationMyBadgesTitle": "My Badges",
+  "gamificationNewHibonsBalance": "New balance: {balance} Hibons",
+  "gamificationNoTransactions": "No transactions",
+  "gamificationPetitBooDailyBonus": "{count, plural, =1{+1 Petit Boo message / day} other{+{count} Petit Boo messages / day}}",
+  "gamificationPillarCommunity": "Community",
+  "gamificationPillarDiscovery": "Discovery",
+  "gamificationPillarEngagement": "Engagement",
+  "gamificationPillarOnboarding": "Onboarding",
+  "gamificationPillarParticipation": "Participation",
+  "gamificationProgressionTitle": "Progress",
+  "gamificationProgressThisWeek": "{completed}/{total} this week",
+  "gamificationProgressToday": "{completed}/{total} today",
+  "gamificationPurchaseCompleted": "Purchase completed: {itemName}",
+  "gamificationRankUpCongratsTitle": "Congrats!",
+  "gamificationRankUpNowRank": "You are now {rankLabel}!",
+  "gamificationRemainingLifetime": "{count} remaining",
+  "gamificationShopTitle": "Hibons Shop",
+  "gamificationStartingRank": "Starting rank",
+  "gamificationStreakShieldTitle": "Streak Shield",
+  "gamificationStreakShieldDescription": "Protect your streak for 1 day",
+  "gamificationTopCta": "Nice!",
+  "gamificationTotalCountLabel": "Total",
+  "gamificationUnlockedCountLabel": "Unlocked",
+  "gamificationWheelAlreadyUsedToday": "You already used your chance today.",
+  "gamificationWheelLoseTitle": "No luck...",
+  "gamificationWheelSpinCta": "Spin",
+  "gamificationWheelWinTitle": "Congratulations!",
+  "alertsListTitle": "My alerts & searches",
+  "alertsFilterAll": "All",
+  "alertsFilterAlerts": "Alerts",
+  "alertsFilterSearches": "Searches",
+  "alertsLoadError": "Could not load your alerts",
+  "alertsEmptyAllTitle": "No alerts yet",
+  "alertsEmptyAllBody": "Save searches to find them here and receive notifications",
+  "alertsEmptyActiveTitle": "No active alerts",
+  "alertsEmptyActiveBody": "Enable notifications on your searches to hear about new events",
+  "alertsEmptySearchesTitle": "No saved searches",
+  "alertsEmptySearchesBody": "Searches without notifications will appear here",
+  "alertsExploreActivities": "Explore activities",
+  "alertsDeleteTitle": "Delete alert",
+  "alertsDeleteBody": "Do you really want to delete this saved search?",
+  "alertsDeleted": "Alert “{name}” deleted",
+  "alertsCreatedOn": "Created on {date}",
+  "alertsAllEvents": "All events",
+  "alertsUnnamed": "Unnamed alert",
+  "favoritesLoadError": "Loading error",
+  "favoritesEmptyTitle": "No favorites",
+  "favoritesEmptyBody": "Add events to your favorites by tapping the heart so you can find them easily.",
+  "favoritesEmptyUncategorizedTitle": "No uncategorized favorites",
+  "favoritesEmptyUncategorizedBody": "All your favorites are organized in lists.",
+  "favoritesEmptyListTitle": "This list is empty",
+  "favoritesEmptyListBody": "Add favorites to this list from an event detail page.",
+  "favoritesExploreEvents": "Explore events",
+  "favoriteListsTitle": "My lists",
+  "favoriteListsLoadError": "Loading error",
+  "favoriteListsAllFavorites": "All favorites",
+  "favoriteListsAllShort": "All",
+  "favoriteListsUncategorized": "Uncategorized",
+  "favoriteListsUncategorizedSingular": "Uncategorized",
+  "favoriteListsSectionTitle": "MY LISTS",
+  "favoriteListNewTitle": "New list",
+  "favoriteListOrganizeSubtitle": "Organize your favorites",
+  "favoriteListNameLabel": "List name",
+  "favoriteListNameHint": "E.g. Concerts to see",
+  "favoriteListNameRequired": "Please enter a name",
+  "favoriteListNameMinLength": "Name must contain at least 2 characters",
+  "favoriteListNameMaxLength": "Name cannot exceed 50 characters",
+  "favoriteListDescriptionLabel": "Description (optional)",
+  "favoriteListDescriptionHint": "E.g. My favorite music events",
+  "favoriteListColorLabel": "Color",
+  "favoriteListIconLabel": "Icon",
+  "favoriteListCreateAction": "Create",
+  "favoriteListCreateError": "Error creating the list",
+  "favoriteListEditTitle": "Edit list",
+  "favoriteListFavoritesCount": "{count, plural, =0{0 favorites} =1{1 favorite} other{{count} favorites}}",
+  "favoriteListUpdateError": "Error updating",
+  "favoriteListDeleteTitle": "Delete list?",
+  "favoriteListDeleteBody": "The list “{name}” will be deleted.",
+  "favoriteListDeleteMoveBody": "Favorite events will not be deleted; they will be moved to “Uncategorized”.",
+  "favoriteListDeleted": "List “{name}” deleted",
+  "favoriteListDeleteError": "Error deleting",
+  "favoriteListDeleteThisAction": "Delete this list",
+  "favoriteListPickerMoveTitle": "Move to...",
+  "favoriteListPickerAddTitle": "Add to favorites",
+  "favoriteListPickerUncategorizedSubtitle": "Favorites without a list",
+  "favoriteListCreateSheetTitle": "Create a list",
+  "favoriteListCreateSheetSubtitle": "New favorites collection",
+  "favoriteListPickerRemoveTitle": "Remove from favorites",
+  "favoriteListPickerRemoveSubtitle": "Remove from all favorites",
+  "favoriteAddError": "Could not add to favorites",
+  "favoriteRemoveError": "Could not remove from favorites",
+  "favoriteUpdateError": "Could not update favorite",
+  "favoriteMovedToList": "Moved to list",
+  "favoriteMovedToUncategorized": "Moved to “Uncategorized”",
+  "favoriteAddedToList": "Added to list",
+  "favoriteGenericError": "Something went wrong.",
+  "notificationsTitle": "Notifications",
+  "notificationsMarkAllRead": "Mark all as read",
+  "notificationsFilterAll": "All",
+  "notificationsFilterUnread": "Unread",
+  "notificationsGuestTitle": "Log in",
+  "notificationsGuestBody": "Your notifications will appear here after login.",
+  "notificationsReadSyncError": "Read status not synced",
+  "notificationsMarkRead": "Mark as read",
+  "notificationsMarkReadError": "Could not mark as read",
+  "notificationsMarkedAllRead": "Notifications marked as read",
+  "notificationsActionError": "Action unavailable right now",
+  "notificationsDeleted": "Notification deleted",
+  "notificationsDeleteError": "Could not delete",
+  "notificationsDeleteTitle": "Delete notification",
+  "notificationsDeleteBody": "Do you really want to delete this notification?",
+  "notificationsJustNow": "Just now",
+  "notificationsMinutesAgoShort": "{count} min",
+  "@notificationsMinutesAgoShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsHoursAgoShort": "{count} h",
+  "@notificationsHoursAgoShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsDaysAgoShort": "{count} d",
+  "@notificationsDaysAgoShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsTypeMessage": "Message",
+  "notificationsTypeBooking": "Booking",
+  "notificationsTypeTicket": "Ticket",
+  "notificationsTypeEvent": "Event",
+  "notificationsTypeReview": "Review",
+  "notificationsTypeQuestion": "Question",
+  "notificationsTypeOrganization": "Organization",
+  "notificationsTypeInfo": "Info",
+  "notificationsEmptyUnreadTitle": "No unread notifications",
+  "notificationsEmptyTitle": "No notifications yet",
+  "notificationsEmptyUnreadBody": "New notifications will appear here.",
+  "notificationsEmptyBody": "Your messages, bookings, and important updates will appear here.",
+  "notificationsLoadError": "Could not load your notifications",
+  "remindersTitle": "My reminders",
+  "remindersUpcoming": "Upcoming",
+  "remindersPast": "Past",
+  "remindersDeleteTitle": "Delete reminder?",
+  "remindersDeleteBody": "You will no longer receive notifications for “{eventTitle}” on {date}.",
+  "remindersDeleted": "Reminder deleted",
+  "remindersDateFromTo": "{date} from {start} to {end}",
+  "remindersDateAtTime": "{date} at {start}",
+  "remindersDaysBeforeBadge": "D-{count}",
+  "@remindersDaysBeforeBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "remindersEmptyTitle": "No reminders",
+  "remindersEmptyBody": "Enable reminders on activities you’re interested in to be notified.",
+  "remindersLoadError": "Could not load your reminders",
+  "onboardingExploreTitle": "Get out and experience more",
+  "onboardingExploreDescription": "Workshops, walks, children’s shows: find the weekend activity without spending your evening searching.",
+  "onboardingMusicTitle": "Feel your city’s rhythm",
+  "onboardingMusicDescription": "Discover concerts, festivals, and parties that move your region. Never miss another music event.",
+  "onboardingLocalTitle": "Stay connected to what’s new nearby",
+  "onboardingLocalDescription": "Markets and places to discover: good addresses close to you.",
+  "onboardingAssociationTitle": "Part of an association?",
+  "onboardingAssociationDescription": "Access private events reserved for your associations: sports, school, culture, leisure. All in one place.",
+  "onboardingSkip": "Skip",
+  "onboardingGetStarted": "Let’s go",
+  "thematiquesExploreByTypeTitle": "Explore by event type",
+  "thematiquesSeeAll": "See all",
+  "thematiquesAllTypesCount": "All types ({count})",
+  "thematiquesSearchHint": "Search an event type...",
+  "thematiquesEventCount": "{count, plural, =0{0 events} =1{1 event} other{{count} events}}",
+  "categoriesAllTitle": "All categories",
+  "categoriesSeeAll": "See all categories",
+  "categoriesAllCount": "All categories ({count})",
+  "categoriesSearchHint": "Search a category...",
+  "categoriesEmptySearch": "No category found",
+  "blogLatestTitle": "Latest articles",
+  "blogEmpty": "No articles available",
+  "blogReadingTimeMinutes": "{minutes} min"
 }

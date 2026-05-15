@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../providers/trip_plans_provider.dart';
 import '../widgets/trip_plan_list_card.dart';
 
@@ -15,7 +16,7 @@ class TripPlansListScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
-        title: const Text('Mes sorties'),
+        title: Text(context.l10n.tripPlansListTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: const Color(0xFF2D3748),
@@ -41,6 +42,9 @@ class TripPlansListScreen extends ConsumerWidget {
               itemCount: plans.length,
               itemBuilder: (context, index) {
                 final plan = plans[index];
+                final planTitle = plan.title.trim().isEmpty
+                    ? context.l10n.tripPlansUntitledPlan
+                    : plan.title;
                 return TripPlanListCard(
                   plan: plan,
                   onEdit: () {
@@ -49,11 +53,15 @@ class TripPlansListScreen extends ConsumerWidget {
                   },
                   onDelete: () async {
                     HapticFeedback.mediumImpact();
-                    await ref.read(tripPlansProvider.notifier).deleteTripPlan(plan.uuid);
+                    await ref
+                        .read(tripPlansProvider.notifier)
+                        .deleteTripPlan(plan.uuid);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Plan "${plan.title}" supprimé'),
+                          content: Text(
+                            context.l10n.tripPlansDeletedSnack(planTitle),
+                          ),
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -99,9 +107,9 @@ class TripPlansListScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Aucune sortie planifiée',
-              style: TextStyle(
+            Text(
+              context.l10n.tripPlansEmptyTitle,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2D3748),
@@ -109,7 +117,7 @@ class TripPlansListScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Demande à Petit Boo de te créer un\nitinéraire pour ta prochaine sortie !',
+              context.l10n.tripPlansEmptyBody,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -121,7 +129,7 @@ class TripPlansListScreen extends ConsumerWidget {
             ElevatedButton.icon(
               onPressed: () => context.push('/petit-boo'),
               icon: const Icon(Icons.smart_toy_outlined, size: 20),
-              label: const Text('Parler à Petit Boo'),
+              label: Text(context.l10n.tripPlansTalkToPetitBoo),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF27AE60),
                 foregroundColor: Colors.white,
@@ -162,9 +170,9 @@ class TripPlansListScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Une erreur est survenue',
-              style: TextStyle(
+            Text(
+              context.l10n.tripPlansErrorTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2D3748),
@@ -172,7 +180,7 @@ class TripPlansListScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Impossible de charger vos sorties',
+              context.l10n.tripPlansLoadErrorBody,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -185,7 +193,7 @@ class TripPlansListScreen extends ConsumerWidget {
                 ref.read(tripPlansProvider.notifier).refresh();
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Réessayer'),
+              label: Text(context.l10n.commonRetry),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF27AE60),
                 side: const BorderSide(color: Color(0xFF27AE60)),

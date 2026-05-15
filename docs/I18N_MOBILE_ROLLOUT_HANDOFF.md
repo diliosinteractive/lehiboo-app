@@ -39,8 +39,14 @@ The localization infrastructure is in place and the first rollout slices are com
 18. Petit Boo chat shell and conversation history copy.
 19. Petit Boo brain, quota/limit dialog, and toast copy.
 20. Petit Boo tool schemas and shared tool-card copy.
+21. Petit Boo event/booking/trip-specific tool cards and provider/API fallback errors.
+22. Memberships, private events, invitations, and members-only gate copy.
+23. Partner profile and followed-organizer copy.
+24. Check-in scanner, manual entry, confirmation/blocked sheets, and vendor organization picker copy.
+25. Remaining active UI surfaces: trip plans, reviews, gamification, alerts, favorites/favorite lists, notifications, reminders, onboarding, categories/thematiques, blog chrome, legal links, and shared error fallback copy.
+26. Full hard-coded-string audit pass across all feature directories, shared/core widgets, routing shell, and context-free provider/domain fallbacks that can surface in UI.
 
-The app is not fully translated yet. Many screens still contain hard-coded French UI copy, but the app now has the wiring needed to migrate them screen by screen.
+Most active mobile UI chrome found in the latest audit is now localized. Remaining work should focus on backend/content localization contracts, mock/demo source data, generated-model default cleanup, and release QA.
 
 ## Files And Systems Added
 
@@ -337,10 +343,202 @@ Covered:
 
 Not covered in this slice:
 
-- Event, booking, trip-plan, trip-plans-list, and favorite/event detail tool cards still have visible hard-coded French fallbacks and should be the next Petit Boo batch.
-- Data-source/provider error fallbacks in `petit_boo_chat_provider.dart`, `petit_boo_api_datasource.dart`, and `petit_boo_context_storage.dart` still need a separate non-widget/context-aware pass.
+- Event, booking, trip-plan, and trip-plans-list tool cards are covered in the next Petit Boo slice below.
+- Legacy/context helper labels in `petit_boo_context_storage.dart` still need an audit if a future UI displays them directly.
 - Backend-owned event/list/profile values and LLM-generated chat content remain displayed as returned by their source.
 - Existing `prefer_const_constructors` and `withOpacity` info-level analyzer notes in the touched tool-card widgets were left as style debt.
+
+### Petit Boo Event/Booking/Trip Tool Cards And Fallback Errors
+
+Migrated:
+
+- `lib/features/petit_boo/presentation/widgets/tool_cards/event_list_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/event_detail_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/booking_list_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/trip_plan_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/trip_plans_list_card.dart`
+- `lib/features/petit_boo/presentation/providers/petit_boo_chat_provider.dart`
+- `lib/features/petit_boo/data/datasources/petit_boo_api_datasource.dart`
+
+Covered:
+
+- Event list/detail card item counts, view-all action, empty fallback, event title fallback, date/time joiner, availability CTA, free/from/rate labels, and untitled fallback are localized.
+- Booking list card item counts, view-all action, empty fallback, render-error message, ticket count, untitled fallback, and visible booking status labels are localized.
+- Trip plan and saved trip-plan list cards now localize saved-plan counts, stop counts, stop/title fallbacks, more-stops text, empty/error states, map expand/collapse actions, save/saved labels, no-coordinate snackbars, tips title, and the save-plan prompt sent back through Petit Boo.
+- `petit_boo_chat_provider.dart` now uses the cached app locale for context-free SSE/auth/quota/connection/load fallback errors.
+- `petit_boo_api_datasource.dart` now uses the cached app locale for context-free API error fallback text.
+
+Not covered in this slice:
+
+- Backend-owned event titles, descriptions, categories, booking payload values, saved-plan titles, trip recommendations, and LLM-generated chat content remain displayed as returned by their source.
+- Status parsing still accepts French backend tokens such as `confirmé`, `annulé`, and `utilisé`; those tokens are not rendered directly.
+- Legacy/context helper labels in `petit_boo_context_storage.dart` remain for a later audit if they become visible UI again.
+- Existing `prefer_const_constructors` and `withOpacity` info-level analyzer notes in the touched widgets were left as style debt.
+
+### Memberships, Private Events, And Invitations
+
+Migrated:
+
+- `lib/features/memberships/presentation/screens/memberships_screen.dart`
+- `lib/features/memberships/presentation/screens/private_events_screen.dart`
+- `lib/features/memberships/presentation/screens/invitation_landing_screen.dart`
+- `lib/features/memberships/presentation/widgets/organizer_join_button.dart`
+- `lib/features/memberships/presentation/widgets/members_only_gate.dart`
+- `lib/features/memberships/presentation/widgets/membership_card.dart`
+- `lib/features/memberships/presentation/widgets/invitation_card.dart`
+- `lib/features/memberships/presentation/widgets/_status_chip.dart`
+- `lib/features/memberships/presentation/widgets/personalized_feed_section.dart`
+
+Covered:
+
+- Membership list title, organization search hint, tab count labels, active/pending/rejected/invitation empty states, discover CTA, retry/load error, and status chips are localized.
+- Membership card actions, member count label, private-events link, view-organizer link, and primary join/cancel/leave/retry actions are localized.
+- Join, cancel-request, and leave-organization confirmation dialogs are localized.
+- Private events title, search hint, organization filter label, private badge, load error, empty states, and discover CTA are localized.
+- Invitation landing/card copy is localized, including invited-by, expiry labels, active/expired/accepted blurbs, accept/decline actions and dialogs, sign-in/create-account CTA, snackbars, dismissed notices, and not-found state.
+- Members-only gate title/body, organizer-profile link, and join CTA are localized.
+- Home personalized "For you" section title is localized.
+
+Not covered in this slice:
+
+- Backend-owned organization names, addresses, cities, event titles, and invited-by user names remain displayed as returned by their source.
+- Domain comments/spec references still contain French labels; rendered UI string scans for the touched membership presentation files are clean.
+
+### Partner Profile And Followed Organizers
+
+Migrated:
+
+- `lib/features/partners/presentation/screens/organizer_profile_screen.dart`
+- `lib/features/partners/presentation/screens/followed_organizers_screen.dart`
+- `lib/features/partners/presentation/widgets/organizer_identity_card.dart`
+- `lib/features/partners/presentation/widgets/organizer_action_bar.dart`
+- `lib/features/partners/presentation/widgets/organizer_coordinates_panel.dart`
+- `lib/features/partners/presentation/widgets/organizer_about_section.dart`
+- `lib/features/partners/presentation/widgets/organizer_activities_tab.dart`
+- `lib/features/partners/presentation/widgets/organizer_reviews_tab.dart`
+- `lib/features/partners/presentation/widgets/organizer_review_row.dart`
+- `lib/features/partners/presentation/widgets/followed_organizer_tile.dart`
+- `lib/features/partners/presentation/widgets/organizer_follow_button.dart`
+
+Covered:
+
+- Organizer profile invalid-id state, load error, back action, tabs, contact/coordinates actions, no-coordinates fallback, about/establishment/social section headings, and follow/unfollow labels are localized.
+- Organizer identity and followed-organizer tiles now localize event/follower/member/review count labels with plural-aware strings while preserving compact number formatting.
+- Organizer activities tab load/empty states and current/past segmented labels are localized.
+- Organizer reviews tab load/empty states, total review count, verified purchase count, review row fallback user, review-for label, verified/helpful chips, and organizer reply labels are localized.
+- Followed organizers screen title, search hint, empty/search-empty states, load error, retry action, and tile unfollow action are localized.
+
+Not covered in this slice:
+
+- Backend-owned organizer names, display names, descriptions, establishment type names, city/address/contact values, event titles, review titles/comments, reviewer names, dates returned as formatted strings, and organizer replies remain displayed as returned by their source.
+- Comments/spec references still contain French labels; rendered UI string scans for touched partner presentation files are clean.
+
+### Check-In Scanner And Vendor Organization Picker
+
+Migrated:
+
+- `lib/features/checkin/presentation/screens/checkin_scan_screen.dart`
+- `lib/features/checkin/presentation/screens/checkin_manual_entry_screen.dart`
+- `lib/features/checkin/presentation/screens/checkin_confirm_sheet.dart`
+- `lib/features/checkin/presentation/screens/checkin_blocked_sheet.dart`
+- `lib/features/checkin/presentation/screens/organization_picker_sheet.dart`
+- `lib/features/checkin/domain/entities/checkin_blocker.dart`
+- `lib/features/checkin/domain/repositories/checkin_repository.dart`
+
+Covered:
+
+- Scanner app bar title, camera/torch/more tooltips, switch-organization/manual/gate menu labels, gate dialog copy, gate display label, success snackbars, network warning snackbar, and camera error overlay copy are localized.
+- Manual entry title, organization-missing warning, security warning, selected-organization label, helper text, verify action, success snackbars, and network warning snackbar are localized.
+- Confirmation sheet valid/re-entry titles, re-entry warning, cancel action, and confirm actions are localized.
+- Blocked-ticket sheet titles/body copy now localize through the presentation layer; the domain blocker enum no longer embeds French UI copy.
+- Vendor organization picker title/body, role labels, empty state, and refresh action are localized.
+
+Not covered in this slice:
+
+- Backend-owned ticket attendee names, event titles, ticket type names, organization names/addresses/logos, and server-provided extra error messages remain displayed as returned by their source.
+- `TicketSummaryCard` already used locale-aware date formatting from an earlier slice and did not need user-visible label migration in this batch.
+
+### Remaining Active UI Surfaces Batch
+
+Migrated:
+
+- `lib/features/trip_plans/presentation/screens/trip_plans_list_screen.dart`
+- `lib/features/trip_plans/presentation/screens/trip_plan_edit_screen.dart`
+- `lib/features/trip_plans/presentation/widgets/trip_plan_list_card.dart`
+- `lib/features/reviews/presentation/screens/event_reviews_full_screen.dart`
+- `lib/features/reviews/presentation/screens/my_reviews_screen.dart`
+- `lib/features/reviews/presentation/widgets/can_review_message.dart`
+- `lib/features/reviews/presentation/widgets/delete_review_dialog.dart`
+- `lib/features/reviews/presentation/widgets/event_reviews_section.dart`
+- `lib/features/reviews/presentation/widgets/my_review_block.dart`
+- `lib/features/reviews/presentation/widgets/report_review_sheet.dart`
+- `lib/features/reviews/presentation/widgets/review_card.dart`
+- `lib/features/reviews/presentation/widgets/status_badge.dart`
+- `lib/features/reviews/presentation/widgets/user_review_card.dart`
+- `lib/features/reviews/presentation/widgets/write_review_sheet.dart`
+- `lib/features/gamification/presentation/screens/achievements_screen.dart`
+- `lib/features/gamification/presentation/screens/gamification_dashboard_screen.dart`
+- `lib/features/gamification/presentation/screens/hibon_shop_screen.dart`
+- `lib/features/gamification/presentation/screens/how_to_earn_hibons_screen.dart`
+- `lib/features/gamification/presentation/screens/lucky_wheel_screen.dart`
+- `lib/features/gamification/presentation/widgets/daily_reward_widget.dart`
+- `lib/features/gamification/presentation/widgets/earnings_by_pillar_donut.dart`
+- `lib/features/gamification/presentation/widgets/hibon_counter_widget.dart`
+- `lib/features/gamification/presentation/widgets/hibons_animation_coordinator.dart`
+- `lib/features/gamification/presentation/widgets/rank_up_overlay.dart`
+- `lib/features/alerts/presentation/screens/alerts_list_screen.dart`
+- `lib/features/favorites/presentation/screens/favorites_screen.dart`
+- `lib/features/favorites/presentation/widgets/create_list_dialog.dart`
+- `lib/features/favorites/presentation/widgets/edit_list_dialog.dart`
+- `lib/features/favorites/presentation/widgets/favorite_lists_sidebar.dart`
+- `lib/features/favorites/presentation/widgets/favorite_list_picker_sheet.dart`
+- `lib/features/favorites/presentation/widgets/favorite_button.dart`
+- `lib/features/notifications/presentation/screens/notifications_inbox_screen.dart`
+- `lib/features/reminders/presentation/screens/reminders_list_screen.dart`
+- `lib/features/onboarding/presentation/screens/onboarding_screen.dart`
+- `lib/features/thematiques/presentation/widgets/thematiques_section.dart`
+- `lib/features/thematiques/presentation/widgets/categories_chips_section.dart`
+- `lib/features/blog/presentation/widgets/blog_section.dart`
+- `lib/features/blog/presentation/widgets/blog_post_card.dart`
+- `lib/shared/legal/legal_links.dart`
+- `lib/core/widgets/feedback/hb_feedback.dart`
+
+Covered:
+
+- Trip plan list/edit/card copy is localized, including list title, empty/error states, delete dialog/snackbar, stop counts, save/discard actions, and localized trip duration text.
+- Reviews list/detail widgets are localized, including filters/sort labels, empty states, report/write/edit/delete sheets, validation messages, moderation notices, review status labels, and review-count pluralization.
+- Gamification dashboard, achievements, shop, how-to-earn, lucky wheel, daily reward, earnings donut, Hibons counter, Hibons animation toast, and rank-up overlay copy is localized.
+- Alerts, favorites, favorite-list dialogs/sidebar/picker/button, notifications inbox, reminders list/delete dialog, onboarding carousel, thematiques/categories sections, blog section/card chrome, legal link labels, and shared `HbErrorView` fallback copy are localized.
+
+Not covered in this slice:
+
+- Backend/source-owned values remain displayed as returned by their source, including notification payloads, blog post fields, category names, favorite list names, event/reminder titles and venues, gamification badge names/rank labels/action catalog labels/wheel results/transactions, user names, organizer names, and review body text.
+- No-context utility/provider strings are still a residual audit area when they are not tied to a widget context. The later full pass localized `ApiResponseHandler` fallback messages, auth/business provider fallback messages, event question validation, user review/favorite errors, alert unnamed fallback, and several domain helper labels.
+- `lib/features/petit_boo/data/datasources/petit_boo_context_storage.dart` legacy label helpers now use cached app localizations, although current scans still found no UI callers outside that file.
+- Comments, backend-error matching strings, IDs, slugs, and data keys were left alone when they were not visible UI copy.
+
+### Full Hard-Coded-String Audit Batch
+
+Migrated after the remaining-surfaces batch:
+
+- Route shell fallback/not-found/recommended labels in `lib/routes/app_router.dart`.
+- `lib/features/user_questions` screen/card/status copy.
+- Shared `SearchBarWidget`, notifications relative-time badges, reminders relative-day badge.
+- Messages support/conversation OK actions and notification open action.
+- Petit Boo conversation/provider engagement fallbacks and context-storage memory label helpers.
+- Trip-plan DTO fallback labels and domain/provider-fed trip plan UI strings.
+- Search/filter chips and filter-provider labels after removing the old context-free `dateFilterLabel` and `priceFilterLabel` getters.
+- Auth/auth-business datasource and provider fallback messages.
+- API-response network/generic fallback messages.
+- Event question validation, user-review provider errors, favorite provider errors, alert unnamed fallback, route/event category helper fallbacks, checkout date fallback, and dormant Home widget chrome.
+- Review/partner/event domain display helpers that were not currently used by active widgets but could otherwise leak French if reused.
+
+Final scan residuals are intentionally left because they are not app chrome:
+
+- Comments/docstrings and date-format patterns such as `"d MMMM yyyy 'à' HH:mm"`.
+- Brand/product labels and placeholders such as `Le Hiboo`, `Petit Boo`, `Maps`, `Waze`, `EUR`, card-number examples, ticket-code examples, numeric badges, IDs, and star/rating strings.
+- Backend/API/source-owned content such as event titles, organizer names, blog/notification payloads, badge/rank/action names, mock/demo data, and diagnostic messages.
+- Generated/default model fallback strings in `mobile_app_config` should be revisited with codegen/build-runner cleanup if that generated default path becomes user-visible.
 
 ### API And Backend-Facing Locale
 
@@ -950,6 +1148,117 @@ Result:
 - Locale tests passed.
 - Whitespace check passed.
 
+Latest focused Petit Boo event/booking/trip card and fallback-error check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/petit_boo/presentation/widgets/tool_cards/event_list_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/event_detail_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/booking_list_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/trip_plan_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/trip_plans_list_card.dart lib/features/petit_boo/presentation/providers/petit_boo_chat_provider.dart lib/features/petit_boo/data/datasources/petit_boo_api_datasource.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/petit_boo/presentation/widgets/tool_cards/event_list_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/event_detail_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/booking_list_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/trip_plan_card.dart lib/features/petit_boo/presentation/widgets/tool_cards/trip_plans_list_card.dart lib/features/petit_boo/presentation/providers/petit_boo_chat_provider.dart lib/features/petit_boo/data/datasources/petit_boo_api_datasource.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No warning/error issues found in the focused Petit Boo event/booking/trip card and fallback-error slice.
+- Analyzer output still includes existing `prefer_const_declarations`, `prefer_const_constructors`, and `withOpacity` info-level notes in the touched Petit Boo files.
+- Locale tests passed.
+- Whitespace check passed.
+
+Latest focused memberships/private-events/invitations check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/memberships/presentation/screens/memberships_screen.dart lib/features/memberships/presentation/screens/private_events_screen.dart lib/features/memberships/presentation/screens/invitation_landing_screen.dart lib/features/memberships/presentation/widgets/organizer_join_button.dart lib/features/memberships/presentation/widgets/members_only_gate.dart lib/features/memberships/presentation/widgets/membership_card.dart lib/features/memberships/presentation/widgets/invitation_card.dart lib/features/memberships/presentation/widgets/_status_chip.dart lib/features/memberships/presentation/widgets/personalized_feed_section.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/memberships/presentation/screens/memberships_screen.dart lib/features/memberships/presentation/screens/private_events_screen.dart lib/features/memberships/presentation/screens/invitation_landing_screen.dart lib/features/memberships/presentation/widgets/organizer_join_button.dart lib/features/memberships/presentation/widgets/members_only_gate.dart lib/features/memberships/presentation/widgets/membership_card.dart lib/features/memberships/presentation/widgets/invitation_card.dart lib/features/memberships/presentation/widgets/_status_chip.dart lib/features/memberships/presentation/widgets/personalized_feed_section.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused memberships/private-events/invitations slice.
+- Locale tests passed.
+- Whitespace check passed.
+
+Latest focused partner profile/followed-organizer check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/partners/presentation/screens/organizer_profile_screen.dart lib/features/partners/presentation/screens/followed_organizers_screen.dart lib/features/partners/presentation/widgets/organizer_identity_card.dart lib/features/partners/presentation/widgets/organizer_action_bar.dart lib/features/partners/presentation/widgets/organizer_coordinates_panel.dart lib/features/partners/presentation/widgets/organizer_about_section.dart lib/features/partners/presentation/widgets/organizer_activities_tab.dart lib/features/partners/presentation/widgets/organizer_reviews_tab.dart lib/features/partners/presentation/widgets/organizer_review_row.dart lib/features/partners/presentation/widgets/followed_organizer_tile.dart lib/features/partners/presentation/widgets/organizer_follow_button.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/partners/presentation/screens/organizer_profile_screen.dart lib/features/partners/presentation/screens/followed_organizers_screen.dart lib/features/partners/presentation/widgets/organizer_identity_card.dart lib/features/partners/presentation/widgets/organizer_action_bar.dart lib/features/partners/presentation/widgets/organizer_coordinates_panel.dart lib/features/partners/presentation/widgets/organizer_about_section.dart lib/features/partners/presentation/widgets/organizer_activities_tab.dart lib/features/partners/presentation/widgets/organizer_reviews_tab.dart lib/features/partners/presentation/widgets/organizer_review_row.dart lib/features/partners/presentation/widgets/followed_organizer_tile.dart lib/features/partners/presentation/widgets/organizer_follow_button.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused partner profile/followed-organizer slice.
+- Locale tests passed.
+- Whitespace check passed.
+
+Latest focused check-in scanner/manual/picker check:
+
+```sh
+flutter gen-l10n
+dart format lib/features/checkin/presentation/screens/checkin_scan_screen.dart lib/features/checkin/presentation/screens/checkin_manual_entry_screen.dart lib/features/checkin/presentation/screens/checkin_confirm_sheet.dart lib/features/checkin/presentation/screens/checkin_blocked_sheet.dart lib/features/checkin/presentation/screens/organization_picker_sheet.dart lib/features/checkin/domain/entities/checkin_blocker.dart lib/features/checkin/domain/repositories/checkin_repository.dart lib/l10n/generated/app_localizations.dart lib/l10n/generated/app_localizations_en.dart lib/l10n/generated/app_localizations_fr.dart
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings lib/features/checkin/presentation/screens/checkin_scan_screen.dart lib/features/checkin/presentation/screens/checkin_manual_entry_screen.dart lib/features/checkin/presentation/screens/checkin_confirm_sheet.dart lib/features/checkin/presentation/screens/checkin_blocked_sheet.dart lib/features/checkin/presentation/screens/organization_picker_sheet.dart lib/features/checkin/presentation/widgets/ticket_summary_card.dart lib/features/checkin/domain/entities/checkin_blocker.dart lib/features/checkin/domain/repositories/checkin_repository.dart lib/l10n/generated lib/core/l10n
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+```
+
+Result:
+
+- Analyzer returned exit code 0.
+- No issues found in the focused check-in scanner/manual/picker slice.
+- Locale tests passed.
+- Whitespace check passed.
+
+Latest multi-agent remaining active UI surfaces check:
+
+```sh
+flutter gen-l10n
+dart format <77 changed Dart files>
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings $(git diff --name-only -- '*.dart')
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+rg -n --pcre2 "(['\"])(?:(?!\\1).)*[À-ÿ](?:(?!\\1).)*\\1" lib/features/alerts/presentation lib/features/favorites/presentation lib/features/gamification/presentation lib/features/notifications/presentation lib/features/onboarding/presentation lib/features/reminders/presentation lib/features/reviews/presentation lib/features/thematiques/presentation lib/features/blog/presentation lib/features/trip_plans/presentation lib/core/widgets/feedback lib/shared/legal
+```
+
+Result:
+
+- `flutter gen-l10n` passed.
+- `dart format` completed successfully after the worker edits and the small integration fixes.
+- Focused analyzer returned exit code 0 over all changed Dart files. No analyzer warnings or errors remain in that focused pass; output still includes info-only existing style/deprecation notes such as `prefer_const`, `deprecated_member_use`, `prefer_const_declarations`, and `curly_braces_in_flow_control_structures`.
+- Locale tests passed.
+- Whitespace check passed.
+- Targeted accented-string scan for the newly migrated surfaces only matched comments plus one backend-error matching condition in `gamification_dashboard_screen.dart` (`déjà réclamé`), not visible UI copy.
+
+Latest full hard-coded-string audit check:
+
+```sh
+flutter gen-l10n
+dart format $(git diff --name-only -- '*.dart')
+flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings $(git diff --name-only -- '*.dart')
+flutter test --no-pub test/core/l10n/app_locale_test.dart
+git diff --check
+rg -n --pcre2 "\b(?:Text|SelectableText)\s*\(\s*(['\"])(?:(?!\\1).){2,}\\1" lib -g '*.dart' -g '!lib/l10n/generated/**' -g '!**/*.freezed.dart' -g '!**/*.g.dart'
+rg -n --pcre2 "\b(?:labelText|hintText|errorText|helperText|counterText|prefixText|suffixText|semanticLabel|tooltip|message|label|title|content)\s*:\s*(['\"])(?:(?!\\1).){2,}\\1" lib -g '*.dart' -g '!lib/l10n/generated/**' -g '!**/*.freezed.dart' -g '!**/*.g.dart'
+rg -n --pcre2 "(['\"])(?:(?!\\1).)*[À-ÿ](?:(?!\\1).)*\\1" lib -g '*.dart' -g '!lib/l10n/generated/**' -g '!**/*.freezed.dart' -g '!**/*.g.dart'
+```
+
+Result:
+
+- `flutter gen-l10n` passed.
+- `dart format` completed across the changed Dart set.
+- Focused analyzer returned exit code 0 over all changed Dart files. No analyzer errors remain. Output still includes pre-existing warning/info cleanup, especially nullable/dead-code warnings in `event_practical_info.dart`, `invalid_annotation_target` warnings in `mobile_app_config.dart`, and style/deprecation notes such as `prefer_const`, `withOpacity`, and `curly_braces_in_flow_control_structures`.
+- Locale tests passed.
+- Whitespace check passed.
+- Final literal scans show no remaining app-chrome copy. Remaining hits are comments/docstrings, mock/source-owned data, backend/code matching strings, date-format patterns, brand labels, numeric/ID/star labels, and input examples/placeholders.
+
 Targeted analyzer checks:
 
 - Booking files no longer have analyzer errors after null-safety cleanup.
@@ -1126,11 +1435,100 @@ Petit Boo tool schema/shared-card files are now part of the i18n work:
 - `lib/features/petit_boo/presentation/widgets/tool_cards/action_confirmation_card.dart`
 - `lib/features/petit_boo/presentation/widgets/tool_cards/favorite_lists_card.dart`
 
+Petit Boo event/booking/trip card and fallback-error files are now part of the i18n work:
+
+- `lib/features/petit_boo/presentation/widgets/tool_cards/event_list_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/event_detail_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/booking_list_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/trip_plan_card.dart`
+- `lib/features/petit_boo/presentation/widgets/tool_cards/trip_plans_list_card.dart`
+- `lib/features/petit_boo/presentation/providers/petit_boo_chat_provider.dart`
+- `lib/features/petit_boo/data/datasources/petit_boo_api_datasource.dart`
+
+Membership files are now part of the i18n work:
+
+- `lib/features/memberships/presentation/screens/memberships_screen.dart`
+- `lib/features/memberships/presentation/screens/private_events_screen.dart`
+- `lib/features/memberships/presentation/screens/invitation_landing_screen.dart`
+- `lib/features/memberships/presentation/widgets/organizer_join_button.dart`
+- `lib/features/memberships/presentation/widgets/members_only_gate.dart`
+- `lib/features/memberships/presentation/widgets/membership_card.dart`
+- `lib/features/memberships/presentation/widgets/invitation_card.dart`
+- `lib/features/memberships/presentation/widgets/_status_chip.dart`
+- `lib/features/memberships/presentation/widgets/personalized_feed_section.dart`
+
+Partner profile/followed-organizer files are now part of the i18n work:
+
+- `lib/features/partners/presentation/screens/organizer_profile_screen.dart`
+- `lib/features/partners/presentation/screens/followed_organizers_screen.dart`
+- `lib/features/partners/presentation/widgets/organizer_identity_card.dart`
+- `lib/features/partners/presentation/widgets/organizer_action_bar.dart`
+- `lib/features/partners/presentation/widgets/organizer_coordinates_panel.dart`
+- `lib/features/partners/presentation/widgets/organizer_about_section.dart`
+- `lib/features/partners/presentation/widgets/organizer_activities_tab.dart`
+- `lib/features/partners/presentation/widgets/organizer_reviews_tab.dart`
+- `lib/features/partners/presentation/widgets/organizer_review_row.dart`
+- `lib/features/partners/presentation/widgets/followed_organizer_tile.dart`
+- `lib/features/partners/presentation/widgets/organizer_follow_button.dart`
+
+Check-in scanner/manual/picker files are now part of the i18n work:
+
+- `lib/features/checkin/presentation/screens/checkin_scan_screen.dart`
+- `lib/features/checkin/presentation/screens/checkin_manual_entry_screen.dart`
+- `lib/features/checkin/presentation/screens/checkin_confirm_sheet.dart`
+- `lib/features/checkin/presentation/screens/checkin_blocked_sheet.dart`
+- `lib/features/checkin/presentation/screens/organization_picker_sheet.dart`
+- `lib/features/checkin/domain/entities/checkin_blocker.dart`
+- `lib/features/checkin/domain/repositories/checkin_repository.dart`
+
+Remaining active UI surface files are now part of the i18n work:
+
+- `lib/features/trip_plans/presentation/screens/trip_plans_list_screen.dart`
+- `lib/features/trip_plans/presentation/screens/trip_plan_edit_screen.dart`
+- `lib/features/trip_plans/presentation/widgets/trip_plan_list_card.dart`
+- `lib/features/reviews/presentation/screens/event_reviews_full_screen.dart`
+- `lib/features/reviews/presentation/screens/my_reviews_screen.dart`
+- `lib/features/reviews/presentation/widgets/can_review_message.dart`
+- `lib/features/reviews/presentation/widgets/delete_review_dialog.dart`
+- `lib/features/reviews/presentation/widgets/event_reviews_section.dart`
+- `lib/features/reviews/presentation/widgets/my_review_block.dart`
+- `lib/features/reviews/presentation/widgets/report_review_sheet.dart`
+- `lib/features/reviews/presentation/widgets/review_card.dart`
+- `lib/features/reviews/presentation/widgets/status_badge.dart`
+- `lib/features/reviews/presentation/widgets/user_review_card.dart`
+- `lib/features/reviews/presentation/widgets/write_review_sheet.dart`
+- `lib/features/gamification/presentation/screens/achievements_screen.dart`
+- `lib/features/gamification/presentation/screens/gamification_dashboard_screen.dart`
+- `lib/features/gamification/presentation/screens/hibon_shop_screen.dart`
+- `lib/features/gamification/presentation/screens/how_to_earn_hibons_screen.dart`
+- `lib/features/gamification/presentation/screens/lucky_wheel_screen.dart`
+- `lib/features/gamification/presentation/widgets/daily_reward_widget.dart`
+- `lib/features/gamification/presentation/widgets/earnings_by_pillar_donut.dart`
+- `lib/features/gamification/presentation/widgets/hibon_counter_widget.dart`
+- `lib/features/gamification/presentation/widgets/hibons_animation_coordinator.dart`
+- `lib/features/gamification/presentation/widgets/rank_up_overlay.dart`
+- `lib/features/alerts/presentation/screens/alerts_list_screen.dart`
+- `lib/features/favorites/presentation/screens/favorites_screen.dart`
+- `lib/features/favorites/presentation/widgets/create_list_dialog.dart`
+- `lib/features/favorites/presentation/widgets/edit_list_dialog.dart`
+- `lib/features/favorites/presentation/widgets/favorite_lists_sidebar.dart`
+- `lib/features/favorites/presentation/widgets/favorite_list_picker_sheet.dart`
+- `lib/features/favorites/presentation/widgets/favorite_button.dart`
+- `lib/features/notifications/presentation/screens/notifications_inbox_screen.dart`
+- `lib/features/reminders/presentation/screens/reminders_list_screen.dart`
+- `lib/features/onboarding/presentation/screens/onboarding_screen.dart`
+- `lib/features/thematiques/presentation/widgets/thematiques_section.dart`
+- `lib/features/thematiques/presentation/widgets/categories_chips_section.dart`
+- `lib/features/blog/presentation/widgets/blog_section.dart`
+- `lib/features/blog/presentation/widgets/blog_post_card.dart`
+- `lib/shared/legal/legal_links.dart`
+- `lib/core/widgets/feedback/hb_feedback.dart`
+
 Before committing or refining, review diffs by file instead of using bulk restore/reset commands.
 
 ## Where Work Stopped
 
-Stopped after completing the Petit Boo tool schema/shared-card slice.
+Stopped after completing the full multi-agent hard-coded-string audit pass.
 
 Current stable stopping point:
 
@@ -1157,20 +1555,30 @@ Current stable stopping point:
 - Petit Boo chat shell/history copy is localized, including app bar statuses/tooltips, service banner, personalized greetings/subtitles, quick prompts, suggestions, history empty state, delete confirmation, relative dates, and message-count badge.
 - Petit Boo brain/quota/limit/toast copy is localized, including memory labels/actions/dialogs, quota explanation and reset text, limit dialog wallet/actions/toasts, favorite toasts, and Hibons reward toasts.
 - Petit Boo default tool schemas and shared tool-card copy are localized, including schema titles/descriptions/empty states, generic/unknown list cards, brain memory card, profile card, action confirmation card, and favorite-lists card.
+- Petit Boo event/booking/trip-specific cards are localized, including event/detail counts and pricing labels, booking counts/status labels/error fallbacks, trip stop/map/save/empty/error/no-coordinate copy, and context-free Petit Boo chat/API fallback errors.
+- Memberships/private-events/invitations copy is localized, including membership list tabs/search/empty states, membership cards/statuses/actions, join/cancel/leave dialogs, private-events filter/empty states, invitation accept/decline flows, members-only gate copy, and the personalized feed title.
+- Partner profile/followed-organizer copy is localized, including profile load/invalid states, tabs, action buttons, contact-detail fallback, section headings, stats/count labels, follow/unfollow labels, activities tab states, reviews summary/empty states, review chips/replies, and followed-organizer search/empty/load states.
+- Check-in scanner/manual/picker copy is localized, including scanner chrome, gate dialog/display, success/network/camera states, manual entry warnings/actions, confirmation and blocked-ticket sheets, vendor organization picker roles/empty state, and localized blocker reason copy in the presentation layer.
+- Trip plan list/edit/card copy is localized, including list title, empty/error states, delete dialog/snackbar, stop counts, save/discard actions, and localized trip duration text.
+- Reviews copy is localized, including event review lists, my reviews, review cards, write/edit/report/delete sheets, status badges, validation errors, empty states, filters/sort labels, moderation notices, and count pluralization.
+- Gamification copy is localized, including dashboard, achievements, Hibons shop, how-to-earn, lucky wheel, daily reward, earnings donut, Hibons counter, Hibons animation toast, and rank-up overlay.
+- Smaller active surfaces are localized, including alerts, favorites and favorite-list management, notifications inbox, reminders, onboarding, thematiques/categories, blog section/card chrome, legal links, and the shared `HbErrorView` default error fallback.
+- Full pass leftovers are localized where they can surface as UI: route shell fallbacks, user questions, shared search widget, notifications/reminders relative-time badges, messages action labels, Petit Boo conversation/context fallbacks, trip-plan DTO fallbacks, search/filter/provider labels, auth/API provider fallback messages, event-question/review/favorite/alert fallbacks, dormant Home widget chrome, and review/partner/event domain display helpers.
 - Direct hard-coded `featureName: '...'` / `featureName: "..."` scan under `lib/` is clean.
 - Locale unit tests pass.
 
-Next work should continue with the remaining Petit Boo event/booking/trip-specific tool cards and data-source/provider fallbacks, then memberships/partners/check-in/admin surfaces, not more locale plumbing.
+Next work should be release QA and backend/content localization contracts unless new screens are discovered. The latest audit did not find a `lib/features/admin` directory; the prior admin work was under Messages admin/report screens. Remaining scan hits are documented false positives: comments, mock/source data, generated-model defaults, backend matching strings, date-format patterns, brands, IDs, placeholders, and numeric/rating labels.
 
 ## Remaining Task Queue
 
-### 1. Migrate User-Facing Copy Feature By Feature
+### 1. Residual Hard-Coded-Copy Audit
 
 Recommended order:
 
-1. Remaining Petit Boo event/booking/trip-specific tool cards and data-source/provider fallback labels.
-2. Memberships/partners/check-in/admin surfaces.
-3. Any remaining niche/disabled screens found by hard-coded copy scans.
+1. Re-run the full literal scans before release and classify new hits as UI chrome, backend/source content, generated defaults, comments, or placeholders.
+2. If generated/model defaults such as `mobile_app_config` need to be user-visible in partial API payloads, clean them up with the proper codegen/build-runner path.
+3. Audit notification push provider statuses only if a future UI starts rendering those raw provider messages directly.
+4. Add any newly discovered visible strings to ARB files screen by screen.
 
 For each screen:
 
@@ -1188,7 +1596,7 @@ Useful focused tests:
 - Bottom nav labels switch between French and English.
 - Date helper formats a known date differently in `fr` vs `en`.
 
-### 3. Audit Backend Content Boundaries
+### 3. Backend Content And API i18n Contracts
 
 Some displayed text comes from API resources, not app strings.
 
@@ -1236,6 +1644,12 @@ Scan for forced French locale usage:
 
 ```sh
 rg -n "DateFormat\([^\n]*(fr_FR|fr)|NumberFormat\.[^\n]*locale:\s*'fr|locale:\s*'fr'|localeId:\s*['\"]fr_FR|Accept-Language': 'fr'" lib/features lib/core lib/shared lib/main.dart
+```
+
+Scan a focused surface for accented literal strings:
+
+```sh
+rg -n --pcre2 "(['\"])(?:(?!\\1).)*[À-ÿ](?:(?!\\1).)*\\1" <paths>
 ```
 
 Run targeted analysis for recently touched i18n files instead of full-project analysis when triaging this branch:

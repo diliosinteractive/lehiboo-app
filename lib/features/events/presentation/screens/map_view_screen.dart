@@ -920,9 +920,7 @@ class _MapActiveFilters extends ConsumerWidget {
   ) {
     switch (chip.id) {
       case 'price':
-        if (chip.label == 'Gratuit') return context.l10n.commonFree;
-        if (chip.label == 'Payant') return context.l10n.searchPricePaid;
-        return chip.label;
+        return _priceLabel(context, chip);
       case 'city':
         final radius = int.tryParse(chip.value ?? '');
         return radius == null
@@ -959,11 +957,26 @@ class _MapActiveFilters extends ConsumerWidget {
 
   String? _locationTypeLabel(BuildContext context, String? value) {
     return switch (value) {
-      'physical' => 'En intérieur',
-      'offline' => 'En extérieur',
+      'physical' => context.l10n.searchLocationIndoor,
+      'offline' => context.l10n.searchLocationOutdoor,
       'online' => context.l10n.searchLocationTypeOnline,
-      'hybrid' => 'Mixte (intérieur/extérieur)',
+      'hybrid' => context.l10n.searchLocationMixed,
       _ => null,
     };
+  }
+
+  String _priceLabel(BuildContext context, ActiveFilterChip chip) {
+    final value = chip.value ?? chip.label;
+    if (value == 'free') return context.l10n.commonFree;
+    if (value == 'paid') return context.l10n.searchPricePaid;
+    if (value.startsWith('range:')) {
+      final parts = value.split(':');
+      final min = parts.length > 1 ? int.tryParse(parts[1]) : null;
+      final max = parts.length > 2 ? int.tryParse(parts[2]) : null;
+      if (min != null && max != null) {
+        return context.l10n.searchPriceRange(min, max);
+      }
+    }
+    return chip.label;
   }
 }

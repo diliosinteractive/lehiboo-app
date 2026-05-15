@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
@@ -37,7 +38,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Mes favoris'),
+        title: Text(context.l10n.profileFavoritesTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -98,7 +99,7 @@ class _FavoritesContent extends ConsumerWidget {
     return favoritesAsync.when(
       data: (favorites) {
         if (favorites.isEmpty) {
-          return _buildEmptyState(selectedListId);
+          return _buildEmptyState(context, selectedListId);
         }
 
         final activities = EventToActivityMapper.toActivities(favorites);
@@ -138,7 +139,7 @@ class _FavoritesContent extends ConsumerWidget {
             Icon(Icons.error_outline, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 16),
             Text(
-              'Erreur de chargement',
+              context.l10n.favoritesLoadError,
               style: TextStyle(color: Colors.grey[500]),
             ),
             const SizedBox(height: 16),
@@ -150,7 +151,10 @@ class _FavoritesContent extends ConsumerWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF601F),
               ),
-              child: const Text('Réessayer', style: TextStyle(color: Colors.white)),
+              child: Text(
+                context.l10n.commonRetry,
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -158,24 +162,23 @@ class _FavoritesContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(String? selectedListId) {
+  Widget _buildEmptyState(BuildContext context, String? selectedListId) {
+    final l10n = context.l10n;
     final String title;
     final String subtitle;
     final bool showExploreCta;
 
     if (selectedListId == null) {
-      title = 'Aucun favori';
-      subtitle =
-          'Ajoutez des événements à vos favoris en cliquant sur le cœur pour les retrouver facilement.';
+      title = l10n.favoritesEmptyTitle;
+      subtitle = l10n.favoritesEmptyBody;
       showExploreCta = true;
     } else if (selectedListId == 'uncategorized') {
-      title = 'Aucun favori non classé';
-      subtitle = 'Tous vos favoris sont organisés dans des listes.';
+      title = l10n.favoritesEmptyUncategorizedTitle;
+      subtitle = l10n.favoritesEmptyUncategorizedBody;
       showExploreCta = false;
     } else {
-      title = 'Cette liste est vide';
-      subtitle =
-          'Ajoutez des favoris à cette liste depuis le détail d\'un événement.';
+      title = l10n.favoritesEmptyListTitle;
+      subtitle = l10n.favoritesEmptyListBody;
       showExploreCta = false;
     }
 
@@ -234,9 +237,9 @@ class _FavoritesContent extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  child: const Text(
-                    'Explorer les événements',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  child: Text(
+                    l10n.favoritesExploreEvents,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
