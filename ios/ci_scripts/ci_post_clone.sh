@@ -68,6 +68,70 @@ echo "Preparing Flutter iOS build..."
 APP_ENV="${FLUTTER_ENV:-production}"
 echo "Building for environment: $APP_ENV"
 
+# Generate .env.$APP_ENV from Xcode Cloud workflow environment variables.
+# These are configured in App Store Connect → Xcode Cloud → Workflow → Environment.
+# Mark sensitive values (API_KEY, GOOGLE_MAPS_API_KEY, HT_*, PUSHER_APP_KEY...) as secrets (🔒).
+# The .env files are gitignored, so they MUST be reconstructed here for flutter_dotenv to find them.
+ENV_FILE=".env.$APP_ENV"
+echo "Generating $ENV_FILE from Xcode Cloud environment variables..."
+
+# Disable verbose tracing to keep secret values out of build logs
+set +x
+
+cat > ".env.development" <<EOF
+ENVIRONMENT=development
+EOF
+
+cat > ".env.production" <<EOF
+ENVIRONMENT=production
+EOF
+
+cat > ".env" <<EOF
+ENVIRONMENT=production
+EOF
+
+
+cat > "$ENV_FILE" <<EOF
+ENVIRONMENT=$APP_ENV
+API_BASE_URL=${API_BASE_URL}
+AI_BASE_URL=${AI_BASE_URL}
+PETIT_BOO_BASE_URL=${PETIT_BOO_BASE_URL}
+API_KEY=${API_KEY}
+WEBSITE_URL=${WEBSITE_URL}
+FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID}
+FIREBASE_APP_ID=${FIREBASE_APP_ID}
+ONESIGNAL_APP_ID=${ONESIGNAL_APP_ID}
+GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+ANALYTICS_ENABLED=${ANALYTICS_ENABLED}
+CRASHLYTICS_ENABLED=${CRASHLYTICS_ENABLED}
+HT_USERNAME=${HT_USERNAME}
+HT_PASSWORD=${HT_PASSWORD}
+SECURITY_HEADER_NAME=${SECURITY_HEADER_NAME}
+PUSHER_APP_KEY=${PUSHER_APP_KEY}
+PUSHER_APP_CLUSTER=${PUSHER_APP_CLUSTER}
+PUSHER_HOST=${PUSHER_HOST}
+PUSHER_PORT=${PUSHER_PORT}
+PUSHER_USE_TLS=${PUSHER_USE_TLS}
+PUSHER_AUTH_ENDPOINT=${PUSHER_AUTH_ENDPOINT}
+EOF
+
+# Validate that critical secrets were actually provided by the workflow
+missing=""
+for var in API_KEY GOOGLE_MAPS_API_KEY ONESIGNAL_APP_ID PUSHER_APP_KEY; do
+    eval value=\$$var
+    [ -z "$value" ] && missing="$missing $var"
+done
+if [ -n "$missing" ]; then
+    echo "⚠️  Missing Xcode Cloud workflow secrets:$missing"
+    echo "    Add them in App Store Connect → Xcode Cloud → Workflow → Environment (toggle 🔒 for secrets)"
+fi
+
+echo "Generated $ENV_FILE ($(wc -l < "$ENV_FILE") lines)"
+
+# Re-enable verbose tracing for the rest of the build
+set -x
+
 flutter build ios --config-only --no-codesign --release --dart-define=ENV=$APP_ENV
 
 # Note: Xcode Cloud will proceed to build the 'Runner' scheme after this script finishes.
