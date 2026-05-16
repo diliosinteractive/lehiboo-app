@@ -96,6 +96,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsSectionApplication => 'Application';
 
   @override
+  String get settingsSectionAccount => 'Compte';
+
+  @override
   String get settingsSectionLegal => 'Informations légales';
 
   @override
@@ -141,6 +144,24 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsResetOnboardingSubtitle =>
       'Redémarrer le tutoriel d\'accueil';
+
+  @override
+  String get settingsAccountDeletionTitle => 'Supprimer mon compte';
+
+  @override
+  String get settingsAccountDeletionSubtitle =>
+      'Demander la suppression définitive via le formulaire web';
+
+  @override
+  String get settingsAccountDeletionDialogTitle => 'Supprimer votre compte ?';
+
+  @override
+  String get settingsAccountDeletionDialogContent =>
+      'Vous allez être redirigé vers un formulaire web sécurisé pour confirmer cette demande.';
+
+  @override
+  String get settingsAccountDeletionOpenFailed =>
+      'Impossible d\'ouvrir le formulaire de suppression du compte.';
 
   @override
   String get settingsVersionTitle => 'Version';

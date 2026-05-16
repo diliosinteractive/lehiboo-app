@@ -272,6 +272,12 @@ abstract class AppLocalizations {
   /// **'Application'**
   String get settingsSectionApplication;
 
+  /// No description provided for @settingsSectionAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte'**
+  String get settingsSectionAccount;
+
   /// No description provided for @settingsSectionLegal.
   ///
   /// In fr, this message translates to:
@@ -355,6 +361,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Redémarrer le tutoriel d\'accueil'**
   String get settingsResetOnboardingSubtitle;
+
+  /// No description provided for @settingsAccountDeletionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get settingsAccountDeletionTitle;
+
+  /// No description provided for @settingsAccountDeletionSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demander la suppression définitive via le formulaire web'**
+  String get settingsAccountDeletionSubtitle;
+
+  /// No description provided for @settingsAccountDeletionDialogTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer votre compte ?'**
+  String get settingsAccountDeletionDialogTitle;
+
+  /// No description provided for @settingsAccountDeletionDialogContent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous allez être redirigé vers un formulaire web sécurisé pour confirmer cette demande.'**
+  String get settingsAccountDeletionDialogContent;
+
+  /// No description provided for @settingsAccountDeletionOpenFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir le formulaire de suppression du compte.'**
+  String get settingsAccountDeletionOpenFailed;
 
   /// No description provided for @settingsVersionTitle.
   ///

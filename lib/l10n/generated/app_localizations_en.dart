@@ -96,6 +96,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionApplication => 'Application';
 
   @override
+  String get settingsSectionAccount => 'Account';
+
+  @override
   String get settingsSectionLegal => 'Legal information';
 
   @override
@@ -139,6 +142,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsResetOnboardingSubtitle => 'Restart the welcome tutorial';
+
+  @override
+  String get settingsAccountDeletionTitle => 'Delete my account';
+
+  @override
+  String get settingsAccountDeletionSubtitle =>
+      'Request permanent deletion from the web form';
+
+  @override
+  String get settingsAccountDeletionDialogTitle => 'Delete your account?';
+
+  @override
+  String get settingsAccountDeletionDialogContent =>
+      'You will be redirected to a secure web form to confirm this request.';
+
+  @override
+  String get settingsAccountDeletionOpenFailed =>
+      'Could not open the account deletion form.';
 
   @override
   String get settingsVersionTitle => 'Version';
