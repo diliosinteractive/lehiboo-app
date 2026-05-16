@@ -124,6 +124,10 @@ cat > ".env.production" <<EOF
 ENVIRONMENT=production
 EOF
 
+cat > ".env.staging" <<EOF
+ENVIRONMENT=staging
+EOF
+
 cat > ".env" <<EOF
 ENVIRONMENT=production
 EOF
