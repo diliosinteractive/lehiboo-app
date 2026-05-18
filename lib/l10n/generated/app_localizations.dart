@@ -9903,6 +9903,12 @@ abstract class AppLocalizations {
   /// **'Date (plus lointaine)'**
   String get bookingSortDateDesc;
 
+  /// No description provided for @bookingSortCreatedDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réservation (plus récente)'**
+  String get bookingSortCreatedDesc;
+
   /// No description provided for @bookingSortStatusAsc.
   ///
   /// In fr, this message translates to:

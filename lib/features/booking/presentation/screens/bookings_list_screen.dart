@@ -141,6 +141,8 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         return Icons.arrow_upward;
       case BookingSortOption.dateDesc:
         return Icons.arrow_downward;
+      case BookingSortOption.createdDesc:
+        return Icons.history;
       case BookingSortOption.statusAsc:
         return Icons.sort_by_alpha;
     }

@@ -17,6 +17,7 @@ enum BookingFilterType {
 enum BookingSortOption {
   dateAsc,
   dateDesc,
+  createdDesc,
   statusAsc,
 }
 
@@ -42,7 +43,7 @@ class BookingsListState {
   const BookingsListState({
     this.allBookings = const [],
     this.currentFilter = BookingFilterType.all,
-    this.sortOption = BookingSortOption.dateAsc,
+    this.sortOption = BookingSortOption.createdDesc,
     this.isLoading = false,
     this.error,
     this.isRefreshing = false,
@@ -96,6 +97,13 @@ class BookingsListState {
           if (dateA == null) return 1;
           if (dateB == null) return -1;
           return dateB.compareTo(dateA);
+        case BookingSortOption.createdDesc:
+          final createdA = a.createdAt;
+          final createdB = b.createdAt;
+          if (createdA == null && createdB == null) return 0;
+          if (createdA == null) return 1;
+          if (createdB == null) return -1;
+          return createdB.compareTo(createdA);
         case BookingSortOption.statusAsc:
           return (a.status ?? '').compareTo(b.status ?? '');
       }

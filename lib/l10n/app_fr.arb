@@ -3026,6 +3026,7 @@
   "bookingSortByTitle": "Trier par",
   "bookingSortDateAsc": "Date (plus proche)",
   "bookingSortDateDesc": "Date (plus lointaine)",
+  "bookingSortCreatedDesc": "Réservation (plus récente)",
   "bookingSortStatusAsc": "Statut",
   "bookingFilterAll": "Tous",
   "bookingFilterUpcoming": "À venir",

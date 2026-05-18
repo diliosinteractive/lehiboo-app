@@ -2495,6 +2495,7 @@
   "bookingSortByTitle": "Sort by",
   "bookingSortDateAsc": "Date (nearest)",
   "bookingSortDateDesc": "Date (farthest)",
+  "bookingSortCreatedDesc": "Booked (most recent)",
   "bookingSortStatusAsc": "Status",
   "bookingFilterAll": "All",
   "bookingFilterUpcoming": "Upcoming",

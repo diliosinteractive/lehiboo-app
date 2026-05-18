@@ -5762,6 +5762,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bookingSortDateDesc => 'Date (plus lointaine)';
 
   @override
+  String get bookingSortCreatedDesc => 'Réservation (plus récente)';
+
+  @override
   String get bookingSortStatusAsc => 'Statut';
 
   @override
