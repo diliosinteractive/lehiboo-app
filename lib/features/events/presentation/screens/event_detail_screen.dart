@@ -178,7 +178,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     // Sold-out check only applies to vendor events with real inventory.
     // Platform events report spots_remaining: 0 because they don't
     // manage bookable inventory — the bar should still show for them.
-    if (!event.organizerIsPlatform &&
+    if (event.hasDirectBooking &&
+        !event.organizerIsPlatform &&
         event.availableSeats != null &&
         event.availableSeats! <= 0) {
       return true;
