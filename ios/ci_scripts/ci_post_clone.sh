@@ -23,6 +23,13 @@ echo "Installing Flutter SDK..."
 git clone https://github.com/flutter/flutter.git --depth 1 -b stable $HOME/flutter
 export PATH="$PATH:$HOME/flutter/bin"
 
+# Disable Swift Package Manager integration.
+# Project uses CocoaPods exclusively (see Podfile + Podfile.lock). Xcode Cloud has
+# automatic SPM dependency resolution disabled, and no Package.resolved is committed,
+# so leaving SPM enabled causes xcodebuild to fail when Flutter injects SPM-backed
+# transitive deps (e.g. DKImagePickerController from file_picker).
+flutter config --no-enable-swift-package-manager
+
 # Run flutter doctor to download Dart SDK and tools
 echo "Running flutter doctor..."
 flutter doctor -v
