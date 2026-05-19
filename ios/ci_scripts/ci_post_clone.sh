@@ -19,8 +19,16 @@ if [ -d "$HOME/flutter" ]; then
     rm -rf "$HOME/flutter"
 fi
 
-echo "Installing Flutter SDK..."
-git clone https://github.com/flutter/flutter.git --depth 1 -b stable $HOME/flutter
+# Pin to a specific Flutter release so CI matches local development.
+# Cloning `-b stable` would pull whatever stable is *today*, which has caused
+# CI regressions when newer Flutter releases ship breaking changes (e.g. IconData
+# becoming a final class breaking font_awesome_flutter / phosphor_flutter) or
+# enable experimental features (e.g. Swift Package Manager) before our plugins
+# are ready. Bump intentionally alongside `flutter upgrade` locally + pubspec bumps.
+FLUTTER_VERSION="3.38.7"
+
+echo "Installing Flutter SDK $FLUTTER_VERSION..."
+git clone https://github.com/flutter/flutter.git --depth 1 -b "$FLUTTER_VERSION" $HOME/flutter
 export PATH="$PATH:$HOME/flutter/bin"
 
 # Disable Swift Package Manager integration.
