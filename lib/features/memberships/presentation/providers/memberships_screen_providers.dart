@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/invitation_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
@@ -57,6 +59,9 @@ class InvitationActionController
       // Membership signal changed — drop the personalized feed (spec §7).
       ref.invalidate(personalizedFeedProvider);
       state = const AsyncData(InvitationAction());
+      ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.membershipInviteAccepted,
+      );
       return true;
     } catch (e, st) {
       state = AsyncData(InvitationAction(error: _humanReadable(e)));

@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
+import '../analytics/analytics_event.dart';
+import '../analytics/analytics_provider.dart';
+import '../analytics/analytics_service.dart';
 import 'deep_link_service.dart';
 
 // Cold-start state captured by the click listener registered in main.dart
@@ -42,6 +45,7 @@ final pushNotificationServiceProvider =
     Provider<PushNotificationService>((ref) {
   return PushNotificationService(
     deepLinkService: ref.watch(deepLinkServiceProvider),
+    analytics: ref.watch(analyticsServiceProvider),
   );
 });
 
@@ -52,6 +56,7 @@ final pushNotificationServiceProvider =
 /// `data.type → mobile-route` table.
 class PushNotificationService {
   final DeepLinkService _deepLinkService;
+  final AnalyticsService _analytics;
 
   String? _subscriptionId;
   bool _initialized = false;
@@ -64,8 +69,11 @@ class PushNotificationService {
   /// Fired when the local subscription is dropped (logout).
   Future<void> Function(String subscriptionId)? onSubscriptionRemoved;
 
-  PushNotificationService({required DeepLinkService deepLinkService})
-      : _deepLinkService = deepLinkService;
+  PushNotificationService({
+    required DeepLinkService deepLinkService,
+    required AnalyticsService analytics,
+  })  : _deepLinkService = deepLinkService,
+        _analytics = analytics;
 
   /// Current OneSignal push subscription id (UUID). Analogous to the legacy
   /// FCM token — opaque, used by the backend as the device handle.
@@ -150,6 +158,14 @@ class PushNotificationService {
       _permissionDenied = !granted;
       debugPrint(
           'OneSignal: user prompt → ${granted ? "GRANTED" : "DENIED"}');
+      _analytics.logEvent(
+        AnalyticsEvent.notificationPermissionResult,
+        params: {AnalyticsParam.granted: granted},
+      );
+      _analytics.setUserProperty(
+        AnalyticsUserProperty.pushEnabled,
+        granted.toString(),
+      );
       if (granted) {
         await ensureSubscriptionId();
         final id = _subscriptionId;
@@ -228,11 +244,19 @@ class PushNotificationService {
     final raw = event.notification.additionalData;
     if (raw == null) {
       debugPrint('OneSignal click: empty additionalData');
+      _analytics.logEvent(
+        AnalyticsEvent.notificationOpened,
+        params: {AnalyticsParam.type: 'unknown'},
+      );
       _deepLinkService.navigate('/notifications');
       return;
     }
     final data = Map<String, dynamic>.from(raw);
     debugPrint('OneSignal click: type=${data['type']}');
+    _analytics.logEvent(
+      AnalyticsEvent.notificationOpened,
+      params: {AnalyticsParam.type: data['type']?.toString() ?? 'unknown'},
+    );
     _deepLinkService.navigateFromType(data);
   }
 
@@ -243,6 +267,13 @@ class PushNotificationService {
     _pendingClickData = null;
     if (pending == null) return;
     debugPrint('OneSignal: replaying cold-start click (type=${pending['type']})');
+    _analytics.logEvent(
+      AnalyticsEvent.notificationOpened,
+      params: {
+        AnalyticsParam.type: pending['type']?.toString() ?? 'unknown',
+        AnalyticsParam.source: AnalyticsSource.coldStart,
+      },
+    );
     _deepLinkService.navigateFromType(pending);
   }
 
