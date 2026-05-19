@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/providers/shared_preferences_provider.dart';
@@ -307,8 +309,22 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     final quota = state.quota;
     if (state.isLimitReached || (quota?.isExhausted ?? false)) {
       savePendingMessage(trimmedMessage);
+      _ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.petitbooQuotaReached,
+        params: {AnalyticsParam.quotaType: AnalyticsQuotaType.daily},
+      );
       return;
     }
+
+    _ref.read(analyticsServiceProvider).logEvent(
+      AnalyticsEvent.petitbooMessageSent,
+      params: {
+        AnalyticsParam.length: trimmedMessage.length,
+        AnalyticsParam.isVoice: false,
+        if (state.sessionUuid != null)
+          AnalyticsParam.sessionUuid: state.sessionUuid!,
+      },
+    );
 
     if (kDebugMode) {
       debugPrint('🤖 PetitBoo: sendMessage - sessionUuid=${state.sessionUuid}');
@@ -394,6 +410,11 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
           );
           state = state.copyWith(
             currentToolResults: [...state.currentToolResults, toolResult],
+          );
+
+          _ref.read(analyticsServiceProvider).logEvent(
+            AnalyticsEvent.petitbooToolUsed,
+            params: {AnalyticsParam.toolName: event.tool},
           );
 
           // Sync brain memory to local storage when brain tools are called

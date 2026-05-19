@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lehiboo/config/env_config.dart';
+import 'package:lehiboo/core/analytics/analytics_event.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
@@ -116,6 +118,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   String? _selectedSlotId;
   bool _isDescriptionExpanded = false;
   double _scrollOffset = 0;
+
+  /// Garde-fou pour ne pas re-logger `event_viewed` à chaque rebuild quand
+  /// l'AsyncValue passe à `data` à plusieurs reprises (refetch, invalidation).
+  bool _loggedView = false;
 
   /// Cache des slots disponibles pour l'événement (pour obtenir le label de date)
   List<CalendarDateSlot> _availableSlots = [];
@@ -252,6 +258,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final loadedEvent = stateAsync.valueOrNull is EventDetailLoaded
         ? (stateAsync.value as EventDetailLoaded).event
         : null;
+
+    // event_viewed — fire-once dès que l'event est chargé. `_loggedView`
+    // empêche le re-fire sur invalidation/refetch.
+    if (!_loggedView && loadedEvent != null) {
+      _loggedView = true;
+      final event = loadedEvent;
+      debugPrint("event name test");
+      ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.eventViewed,
+        params: {
+          AnalyticsParam.eventUuid: event.id,
+          AnalyticsParam.category: event.category.name,
+          AnalyticsParam.citySlug: event.city,
+          AnalyticsParam.isFree: event.priceType == PriceType.free,
+        },
+      );
+    }
 
     return Scaffold(
       // Flat design : fond gris clair pour créer hiérarchie avec cards blanches

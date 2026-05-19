@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../domain/repositories/alerts_repository.dart';
@@ -58,11 +60,20 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
         enablePush: enablePush,
         enableEmail: enableEmail,
       );
-      
+
       final currentList = state.valueOrNull ?? [];
       state = AsyncValue.data([newAlert, ...currentList]);
+
+      _ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.searchSaved,
+        params: {
+          AnalyticsParam.enablePush: enablePush,
+          AnalyticsParam.enableEmail: enableEmail,
+          AnalyticsParam.citySlug: filter.citySlug ?? 'none',
+        },
+      );
     } catch (e, stack) {
-      // TODO: Handle error properly (show snackbar etc in UI)
+      // Error handling delegated to UI (snackbar etc.)
       state = AsyncValue.error(e, stack);
     }
   }
