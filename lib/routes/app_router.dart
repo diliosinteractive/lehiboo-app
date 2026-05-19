@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/analytics/analytics_provider.dart';
 import '../core/constants/app_constants.dart';
 import '../core/l10n/l10n.dart';
 import '../core/providers/shared_preferences_provider.dart';
@@ -125,6 +126,7 @@ final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   final prefs = ref.read(sharedPreferencesProvider);
+  final analytics = ref.read(analyticsServiceProvider);
   final refresh = _AuthRouterRefresh(ref);
   ref.onDispose(refresh.dispose);
 
@@ -132,6 +134,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: '/bootstrap',
     refreshListenable: refresh,
+    observers: [analytics.createObserver()],
     redirect: (context, state) {
       final authState = ref.read(authProvider);
       final onboardingCompleted =
@@ -230,6 +233,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Main shell route with bottom navigation
       ShellRoute(
+        observers: [analytics.createObserver()],
         builder: (context, state, child) {
           return MainScaffold(child: child);
         },
@@ -506,8 +510,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       // Alias route for /events/:id
+      // `name:` distinct de `event-detail` car GoRouter refuse les doublons.
+      // Si besoin d'agréger ces deux routes dans GA4, le faire côté rapport
+      // ou via un `nameExtractor` custom dans FirebaseAnalyticsObserver.
       GoRoute(
         path: '/events/:id',
+        name: 'event-detail-alias',
         builder: (context, state) {
           final eventId = state.pathParameters['id']!;
           return EventDetailScreen(eventId: eventId);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/analytics/analytics_consent.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../config/env_config.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -184,6 +185,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: Text(l10n.settingsResetOnboardingTitle),
             subtitle: Text(l10n.settingsResetOnboardingSubtitle),
             onTap: () => _showResetConfirmation(context),
+          ),
+          const Divider(),
+          // Section Confidentialité — opt-in/out RGPD pour la collecte
+          // analytics. Strings hardcodées en fr (cf. ConsentGateModal),
+          // à migrer vers l10n dans un second temps.
+          _buildSectionHeader('Confidentialité'),
+          Consumer(
+            builder: (context, ref, _) {
+              final consent = ref.watch(analyticsConsentProvider);
+              return SwitchListTile(
+                secondary: const Icon(
+                  Icons.analytics_outlined,
+                  color: Color(0xFFFF601F),
+                ),
+                title: const Text('Statistiques d\'usage anonymes'),
+                subtitle: const Text(
+                  'Nous aide à améliorer l\'app. Aucune donnée personnelle.',
+                ),
+                value: consent.isGranted,
+                onChanged: (value) async {
+                  final notifier =
+                      ref.read(analyticsConsentProvider.notifier);
+                  if (value) {
+                    await notifier.grant();
+                  } else {
+                    await notifier.deny();
+                  }
+                },
+              );
+            },
           ),
           const Divider(),
           _buildSectionHeader(l10n.settingsSectionAccount),
