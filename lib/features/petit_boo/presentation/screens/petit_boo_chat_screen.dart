@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -35,11 +37,37 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
   @override
   void initState() {
     super.initState();
+    // Source d'ouverture du chat — déduit des query params reçus.
+    final String source;
+    if (widget.initialVoiceMessage != null &&
+        widget.initialVoiceMessage!.isNotEmpty) {
+      source = AnalyticsSource.voicefab;
+    } else if (widget.sessionUuid != null) {
+      source = AnalyticsSource.history;
+    } else {
+      source = AnalyticsSource.coldStart;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.petitbooChatOpened,
+        params: {
+          AnalyticsParam.source: source,
+          if (widget.sessionUuid != null)
+            AnalyticsParam.sessionUuid: widget.sessionUuid!,
+        },
+      );
+    });
+
     if (widget.sessionUuid != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(petitBooChatProvider.notifier)
             .loadSession(widget.sessionUuid!);
+        ref.read(analyticsServiceProvider).logEvent(
+          AnalyticsEvent.petitbooSessionResumed,
+          params: {AnalyticsParam.sessionUuid: widget.sessionUuid!},
+        );
       });
     }
 
