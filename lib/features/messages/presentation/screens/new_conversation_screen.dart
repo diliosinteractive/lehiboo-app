@@ -89,7 +89,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     if (widget.fromOrganizationUuid != null) {
       ctx = FromOrganizerConversationContext(
         organizationUuid: widget.fromOrganizationUuid!,
-        organizationName: widget.fromOrganizationName ?? 'Organisateur',
+        organizationName: widget.fromOrganizationName ??
+            context.l10n.messagesFallbackOrganizer,
       );
     } else {
       ctx = DashboardConversationContext();
@@ -102,7 +103,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
     if (widget.fromBookingUuid != null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Nouveau message'),
+          title: Text(context.l10n.messagesNewMessage),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.pop(),
@@ -120,7 +121,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                           color: Colors.red, size: 48),
                       const SizedBox(height: 12),
                       Text(
-                        _errorMessage ?? 'Une erreur est survenue.',
+                        _errorMessage ?? context.l10n.messagesGenericError,
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.red),
                       ),
@@ -129,8 +130,8 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                         onPressed: _createFromBooking,
                         style: ElevatedButton.styleFrom(
                             backgroundColor: _primaryColor),
-                        child: const Text('Réessayer',
-                            style: TextStyle(color: Colors.white)),
+                        child: Text(context.l10n.commonRetry,
+                            style: const TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),

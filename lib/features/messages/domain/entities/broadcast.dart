@@ -108,35 +108,6 @@ class SlotOption extends Equatable {
     this.endTime,
   });
 
-  String get label {
-    if (slotDate == null && startTime == null) return 'Créneau $id';
-    final parts = <String>[];
-    if (slotDate != null) {
-      try {
-        final date = DateTime.parse(slotDate!);
-        const months = [
-          'jan.',
-          'fév.',
-          'mar.',
-          'avr.',
-          'mai',
-          'juin',
-          'juil.',
-          'août',
-          'sep.',
-          'oct.',
-          'nov.',
-          'déc.',
-        ];
-        parts.add('${date.day} ${months[date.month - 1]} ${date.year}');
-      } catch (_) {
-        parts.add(slotDate!);
-      }
-    }
-    if (startTime != null) parts.add(startTime!.replaceAll(':', 'h'));
-    return parts.join(' · ');
-  }
-
   @override
   List<Object?> get props => [id, uuid, slotDate, startTime, endTime];
 }
@@ -155,6 +126,5 @@ class BroadcastsListResult extends Equatable {
   });
 
   @override
-  List<Object?> get props =>
-      [broadcasts, hasMore, currentPage, totalCount];
+  List<Object?> get props => [broadcasts, hasMore, currentPage, totalCount];
 }

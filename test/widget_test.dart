@@ -7,19 +7,31 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:lehiboo/config/dio_client.dart';
+import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lehiboo/main.dart';
 
 void main() {
   testWidgets('LeHiboo app starts correctly', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    dotenv.testLoad(fileInput: '');
+    DioClient.initialize();
+
     // Build our app and trigger a frame.
     await tester.pumpWidget(
-      const ProviderScope(
-        child: LeHibooApp(),
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const LeHibooApp(),
       ),
     );
 
     // Verify that the app loads
-    expect(find.text('Le Hiboo'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/models/event_filter.dart';
+import '../utils/search_l10n.dart';
 import '../../../home/presentation/providers/home_providers.dart';
 
 // =============================================================================
@@ -544,12 +545,15 @@ class LocationSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasLocation = filter.latitude != null;
-    final citiesAsync = ref.watch(homeCitiesProvider);
+    final popularCities = ref.watch(popularCitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle(title: 'Localisation', icon: Icons.location_on),
+        SectionTitle(
+          title: context.l10n.searchSectionLocation,
+          icon: Icons.location_on,
+        ),
         const SizedBox(height: 20),
 
         // Géolocalisation
@@ -602,7 +606,7 @@ class LocationSection extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'À proximité',
+                        context.l10n.homeSearchNearby,
                         style: GoogleFonts.montserrat(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -611,8 +615,8 @@ class LocationSection extends ConsumerWidget {
                       ),
                       Text(
                         hasLocation
-                            ? 'Dans un rayon de ${filter.radiusKm.toInt()} km'
-                            : 'Utiliser ma position actuelle',
+                            ? context.searchWithinRadiusLabel(filter.radiusKm)
+                            : context.l10n.searchUseCurrentLocation,
                         style: GoogleFonts.montserrat(
                           fontSize: 13,
                           color: Colors.grey.shade600,
@@ -638,7 +642,7 @@ class LocationSection extends ConsumerWidget {
           Row(
             children: [
               Text(
-                'Rayon : ',
+                context.l10n.searchRadiusLabel,
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   color: Colors.grey.shade700,
@@ -676,7 +680,7 @@ class LocationSection extends ConsumerWidget {
 
         // Villes populaires
         Text(
-          'VILLES POPULAIRES',
+          context.l10n.searchPopularCities,
           style: GoogleFonts.montserrat(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -686,12 +690,24 @@ class LocationSection extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
 
-        citiesAsync.when(
-          data: (cities) {
+        popularCities.when(
+          data: (result) {
+            final displayedCities = result.cities.take(6).toList();
+
+            if (displayedCities.isEmpty) {
+              return Text(
+                context.l10n.searchNoCityFound,
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                ),
+              );
+            }
+
             return Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: cities.take(6).map((city) {
+              children: displayedCities.map((city) {
                 final isSelected = filter.citySlug == city.slug;
                 return SelectableChip(
                   label: city.name,
@@ -717,31 +733,12 @@ class LocationSection extends ConsumerWidget {
               ),
             ),
           ),
-          error: (_, __) => Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              ('Paris', 'paris'),
-              ('Lyon', 'lyon'),
-              ('Marseille', 'marseille'),
-              ('Bordeaux', 'bordeaux'),
-              ('Toulouse', 'toulouse'),
-              ('Nantes', 'nantes'),
-            ].map((city) {
-              final isSelected = filter.citySlug == city.$2;
-              return SelectableChip(
-                label: city.$1,
-                icon: Icons.location_city,
-                isSelected: isSelected,
-                onTap: () {
-                  if (isSelected) {
-                    onClearCity();
-                  } else {
-                    onCitySelected(city.$2, city.$1);
-                  }
-                },
-              );
-            }).toList(),
+          error: (_, __) => Text(
+            context.l10n.searchCitiesUnavailable,
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
           ),
         ),
       ],
@@ -820,7 +817,7 @@ class FilterHeader extends StatelessWidget {
             GestureDetector(
               onTap: onClear,
               child: Text(
-                'Effacer',
+                context.l10n.searchClear,
                 style: GoogleFonts.montserrat(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -980,7 +977,7 @@ class FilterFooterWithClear extends StatelessWidget {
             GestureDetector(
               onTap: hasFilters ? onClear : null,
               child: Text(
-                'Tout effacer',
+                context.l10n.searchClearFilters,
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

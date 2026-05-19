@@ -1,16 +1,38 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 class QuickFilters extends StatelessWidget {
   const QuickFilters({super.key});
 
   @override
   Widget build(BuildContext context) {
     final filters = [
-      {'icon': Icons.today, 'label': "Aujourd'hui", 'color': Colors.blue},
-      {'icon': Icons.weekend, 'label': 'Ce week-end', 'color': Colors.purple},
-      {'icon': Icons.attach_money, 'label': 'Gratuit', 'color': Colors.green},
-      {'icon': Icons.family_restroom, 'label': 'Famille', 'color': Colors.orange},
-      {'icon': Icons.location_on, 'label': '< 2 km', 'color': Colors.red},
+      {
+        'icon': Icons.today,
+        'label': context.l10n.homeQuickToday,
+        'color': Colors.blue,
+      },
+      {
+        'icon': Icons.weekend,
+        'label': context.l10n.homeQuickWeekend,
+        'color': Colors.purple,
+      },
+      {
+        'icon': Icons.attach_money,
+        'label': context.l10n.commonFree,
+        'color': Colors.green,
+      },
+      {
+        'icon': Icons.family_restroom,
+        'label': context.l10n.homeQuickFamily,
+        'color': Colors.orange,
+      },
+      {
+        'icon': Icons.location_on,
+        'label': context.l10n.homeQuickDistanceUnder2km,
+        'color': Colors.red,
+      },
     ];
 
     return Container(

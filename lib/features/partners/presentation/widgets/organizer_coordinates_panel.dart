@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../data/models/organizer_profile_dto.dart';
 
@@ -40,7 +41,7 @@ class OrganizerCoordinatesPanel extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
         child: Text(
-          "Cet organisateur n'a pas renseigné de coordonnées.",
+          context.l10n.organizerNoCoordinates,
           style: TextStyle(color: Colors.grey[600], fontSize: 13),
         ),
       );

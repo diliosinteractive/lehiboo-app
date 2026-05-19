@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/review_enums.dart';
 
 /// Petit badge coloré pour le statut d'un avis (pending/approved/rejected).
@@ -30,7 +31,7 @@ class ReviewStatusBadge extends StatelessWidget {
           Icon(status.icon, size: compact ? 11 : 13, color: status.color),
           SizedBox(width: compact ? 3 : 4),
           Text(
-            status.displayLabel,
+            _statusLabel(context),
             style: TextStyle(
               fontSize: compact ? 10 : 12,
               fontWeight: FontWeight.w600,
@@ -40,5 +41,16 @@ class ReviewStatusBadge extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _statusLabel(BuildContext context) {
+    switch (status) {
+      case ReviewStatus.pending:
+        return context.l10n.reviewsStatusPending;
+      case ReviewStatus.approved:
+        return context.l10n.reviewsStatusApproved;
+      case ReviewStatus.rejected:
+        return context.l10n.reviewsStatusRejected;
+    }
   }
 }

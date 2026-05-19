@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../providers/business_register_provider.dart';
 
 /// Step 2: OTP Verification Form
@@ -16,11 +17,13 @@ class OtpVerificationForm extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<OtpVerificationForm> createState() => _OtpVerificationFormState();
+  ConsumerState<OtpVerificationForm> createState() =>
+      _OtpVerificationFormState();
 }
 
 class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
-  final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _controllers =
+      List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   String get _otpCode => _controllers.map((c) => c.text).join();
@@ -41,7 +44,8 @@ class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
       return;
     }
 
-    final success = await ref.read(businessRegisterProvider.notifier).verifyOtp(_otpCode);
+    final success =
+        await ref.read(businessRegisterProvider.notifier).verifyOtp(_otpCode);
     if (success) {
       widget.onSubmit();
     }
@@ -91,11 +95,14 @@ class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final state = ref.watch(businessRegisterProvider);
 
     // Listen for errors
-    ref.listen<BusinessRegisterState>(businessRegisterProvider, (previous, next) {
-      if (next.errorMessage != null && previous?.errorMessage != next.errorMessage) {
+    ref.listen<BusinessRegisterState>(businessRegisterProvider,
+        (previous, next) {
+      if (next.errorMessage != null &&
+          previous?.errorMessage != next.errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
@@ -105,7 +112,8 @@ class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
         ref.read(businessRegisterProvider.notifier).clearError();
         _clearOtpFields();
       }
-      if (next.successMessage != null && previous?.successMessage != next.successMessage) {
+      if (next.successMessage != null &&
+          previous?.successMessage != next.successMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.successMessage!),
@@ -141,9 +149,9 @@ class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
           const SizedBox(height: 32),
 
           // Title
-          const Text(
-            'Vérification email',
-            style: TextStyle(
+          Text(
+            l10n.authOtpTitle,
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: Color(0xFF2D3748),
@@ -152,7 +160,7 @@ class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Entrez le code à 6 chiffres envoyé à',
+            l10n.authOtpSubtitle,
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -247,9 +255,9 @@ class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Text(
-                      'Vérifier',
-                      style: TextStyle(
+                  : Text(
+                      l10n.authOtpVerify,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -263,12 +271,13 @@ class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Vous n\'avez pas reçu le code ? ',
+                l10n.authOtpNotReceived,
                 style: TextStyle(color: Colors.grey[600]),
               ),
+              const SizedBox(width: 4),
               if (state.otpCooldownSeconds > 0)
                 Text(
-                  'Renvoyer dans ${state.otpCooldownSeconds}s',
+                  l10n.authOtpResendIn(state.otpCooldownSeconds),
                   style: TextStyle(
                     color: Colors.grey[400],
                     fontWeight: FontWeight.w500,
@@ -291,9 +300,9 @@ class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
                             color: Color(0xFFFF601F),
                           ),
                         )
-                      : const Text(
-                          'Renvoyer',
-                          style: TextStyle(
+                      : Text(
+                          l10n.authOtpResend,
+                          style: const TextStyle(
                             color: Color(0xFFFF601F),
                             fontWeight: FontWeight.w600,
                           ),
@@ -308,7 +317,7 @@ class _OtpVerificationFormState extends ConsumerState<OtpVerificationForm> {
             child: TextButton.icon(
               onPressed: widget.onBack,
               icon: const Icon(Icons.arrow_back, size: 18),
-              label: const Text('Modifier l\'email'),
+              label: Text(l10n.authEditEmail),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.grey[600],
               ),

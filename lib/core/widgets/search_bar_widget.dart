@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
+
 class SearchBarWidget extends StatelessWidget {
-  final String hintText;
+  final String? hintText;
   final VoidCallback? onTap;
   final ValueChanged<String>? onChanged;
   final TextEditingController? controller;
@@ -12,7 +14,7 @@ class SearchBarWidget extends StatelessWidget {
 
   const SearchBarWidget({
     super.key,
-    this.hintText = 'Rechercher...',
+    this.hintText,
     this.onTap,
     this.onChanged,
     this.controller,
@@ -24,17 +26,17 @@ class SearchBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveHintText = hintText ?? context.l10n.commonSearchHint;
+
     return Container(
       height: 50,
       decoration: BoxDecoration(
         color: backgroundColor ?? Colors.white,
         borderRadius: BorderRadius.circular(25),
-        border: borderColor != null
-            ? Border.all(color: borderColor!)
-            : null,
+        border: borderColor != null ? Border.all(color: borderColor!) : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -46,7 +48,7 @@ class SearchBarWidget extends StatelessWidget {
         onTap: onTap,
         onChanged: onChanged,
         decoration: InputDecoration(
-          hintText: hintText,
+          hintText: effectiveHintText,
           hintStyle: TextStyle(
             color: Colors.grey[600],
             fontSize: 16,
@@ -61,7 +63,7 @@ class SearchBarWidget extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF601F).withOpacity(0.1),
+                    color: const Color(0xFFFF601F).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

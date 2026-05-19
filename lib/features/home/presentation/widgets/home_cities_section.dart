@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import 'package:lehiboo/features/events/presentation/providers/cities_provider.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 import '../../../../domain/entities/city.dart';
@@ -25,10 +26,10 @@ class HomeCitiesSection extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   Row(
+                  Row(
                     children: [
-                       Text(
-                        'Parcourir par ville',
+                      Text(
+                        context.l10n.homeBrowseByCity,
                         style: GoogleFonts.montserrat(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -45,7 +46,8 @@ class HomeCitiesSection extends ConsumerWidget {
                             color: const Color(0xFFFF601F).withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.map_outlined, size: 16, color: Color(0xFFFF601F)),
+                          child: const Icon(Icons.map_outlined,
+                              size: 16, color: Color(0xFFFF601F)),
                         ),
                       ),
                     ],

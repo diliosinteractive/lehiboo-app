@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 
 /// Card d'info pratique pour la grille 2x2
@@ -41,7 +42,8 @@ class PracticalInfoCard extends StatelessWidget {
           color: available ? Colors.white : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: available ? color.withValues(alpha: 0.2) : Colors.grey.shade300,
+            color:
+                available ? color.withValues(alpha: 0.2) : Colors.grey.shade300,
           ),
           boxShadow: [
             BoxShadow(
@@ -61,7 +63,8 @@ class PracticalInfoCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: (available ? color : Colors.grey).withValues(alpha: 0.1),
+                    color: (available ? color : Colors.grey)
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -75,7 +78,8 @@ class PracticalInfoCard extends StatelessWidget {
                 // Supprimé : checkmark automatique qui était incongru sur "Lieu"
                 if (badge != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -129,7 +133,7 @@ class PracticalInfoCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    'Détails',
+                    context.l10n.eventDetailsLabel,
                     style: TextStyle(
                       fontSize: 11,
                       color: color,

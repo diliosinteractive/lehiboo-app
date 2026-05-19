@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart'
@@ -43,10 +44,10 @@ class ParticipantFormsSection extends StatelessWidget {
     required this.onAttendeeChanged,
   });
 
-  String _ticketName(String ticketTypeId) {
+  String _ticketName(BuildContext context, String ticketTypeId) {
     final match = eventTickets.where((t) => t.id == ticketTypeId);
     if (match.isNotEmpty) return match.first.name;
-    return 'Billet';
+    return context.l10n.bookingTicketFallback;
   }
 
   @override
@@ -64,9 +65,9 @@ class ParticipantFormsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Participants',
-            style: TextStyle(
+          Text(
+            context.l10n.bookingParticipantsTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -74,7 +75,7 @@ class ParticipantFormsSection extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Un formulaire par billet — renseignez chaque participant',
+            context.l10n.bookingParticipantSectionSubtitle,
             style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
           ),
           const SizedBox(height: 10),
@@ -98,7 +99,7 @@ class ParticipantFormsSection extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Le prenom, la date de naissance, la ville et la relation aident l IA et l experience Le Hiboo a proposer les offres et evenements les plus pertinents.',
+                    context.l10n.bookingParticipantInfoNote,
                     style: TextStyle(
                       fontSize: 12,
                       height: 1.35,
@@ -121,7 +122,7 @@ class ParticipantFormsSection extends StatelessWidget {
                     : const ParticipantInfo();
 
                 return ParticipantFormCard(
-                  ticketTypeName: _ticketName(entry.key),
+                  ticketTypeName: _ticketName(context, entry.key),
                   participantIndex: i + 1,
                   totalForType: entry.value,
                   buyerInfo: buyerInfo,

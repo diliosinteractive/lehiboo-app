@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../providers/event_questions_providers.dart';
 
@@ -62,12 +63,11 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
 
     setState(() => _submitting = true);
 
-    final result = await ref
-        .read(eventQuestionsActionsProvider.notifier)
-        .createQuestion(
-          eventSlug: widget.eventSlug,
-          text: _controller.text,
-        );
+    final result =
+        await ref.read(eventQuestionsActionsProvider.notifier).createQuestion(
+              eventSlug: widget.eventSlug,
+              text: _controller.text,
+            );
 
     if (!mounted) return;
 
@@ -133,9 +133,9 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Poser une question',
-                              style: TextStyle(
+                            Text(
+                              context.l10n.eventAskQuestion,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
                                 color: HbColors.textPrimary,
@@ -157,7 +157,7 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
                       IconButton(
                         onPressed: _submitting
                             ? null
-                            : () => Navigator.of(context).pop(false),
+                            : () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.close),
                         color: HbColors.grey500,
                       ),
@@ -179,8 +179,7 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
                       }
                     },
                     decoration: InputDecoration(
-                      hintText:
-                          'Ex: À quelle heure ouvrent les portes ?',
+                      hintText: context.l10n.eventAskQuestionHint,
                       hintStyle: const TextStyle(color: HbColors.grey400),
                       filled: true,
                       fillColor: HbColors.surfaceInput,
@@ -216,13 +215,13 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
                       if (_serverError != null) return _serverError;
                       final trimmed = (value ?? '').trim();
                       if (trimmed.isEmpty) {
-                        return 'Veuillez saisir votre question.';
+                        return context.l10n.eventQuestionRequired;
                       }
                       if (trimmed.length < 10) {
-                        return 'Votre question doit contenir au moins 10 caractères.';
+                        return context.l10n.eventQuestionMinLength;
                       }
                       if (trimmed.length > 1000) {
-                        return 'Votre question est trop longue (1000 max).';
+                        return context.l10n.eventQuestionTooLong;
                       }
                       return null;
                     },
@@ -236,18 +235,18 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
                       color: HbColors.backgroundLight,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.info_outline,
                           size: 16,
                           color: HbColors.textSecondary,
                         ),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'L\'organisateur recevra votre question et vous répondra bientôt.',
-                            style: TextStyle(
+                            context.l10n.eventQuestionInfo,
+                            style: const TextStyle(
                               fontSize: 12,
                               color: HbColors.textSecondary,
                             ),
@@ -281,9 +280,9 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
                                 color: HbColors.white,
                               ),
                             )
-                          : const Text(
-                              'Envoyer ma question',
-                              style: TextStyle(
+                          : Text(
+                              context.l10n.eventSendQuestion,
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),

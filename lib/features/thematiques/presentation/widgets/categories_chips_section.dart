@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 
 import 'package:html_unescape/html_unescape.dart';
@@ -51,18 +52,18 @@ class CategoriesChipsSection extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: HomeSectionTitle(
-                      title: 'Toutes les catégories',
-                      color: Color(0xFF2D3748),
+                      title: context.l10n.categoriesAllTitle,
+                      color: const Color(0xFF2D3748),
                     ),
                   ),
                   TextButton(
                     onPressed: () => _showAllCategoriesBottomSheet(
                         context, sortedCategories, thematiqueImages),
-                    child: const Text(
-                      'Voir tout',
-                      style: TextStyle(
+                    child: Text(
+                      context.l10n.thematiquesSeeAll,
+                      style: const TextStyle(
                         color: Color(0xFFFF601F),
                         fontWeight: FontWeight.w600,
                       ),
@@ -120,7 +121,7 @@ class CategoriesChipsSection extends ConsumerWidget {
                     ),
                     backgroundColor: Colors.white,
                   ),
-                  child: const Text('Voir toutes les catégories'),
+                  child: Text(context.l10n.categoriesSeeAll),
                 ),
               ),
             ),
@@ -255,7 +256,7 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Toutes les catégories (${widget.categories.length})',
+                      context.l10n.categoriesAllCount(widget.categories.length),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -274,7 +275,7 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
                   controller: _searchController,
                   onChanged: _filterCategories,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher une catégorie...',
+                    hintText: context.l10n.categoriesSearchHint,
                     prefixIcon:
                         const Icon(Icons.search, color: Color(0xFF9CA3AF)),
                     filled: true,
@@ -310,7 +311,7 @@ class _AllCategoriesSheetState extends State<_AllCategoriesSheet> {
                             size: 48, color: Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
-                          'Aucune catégorie trouvée',
+                          context.l10n.categoriesEmptySearch,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 16,
@@ -451,7 +452,7 @@ class CategoryCard extends StatelessWidget {
                   if (eventCount != null && eventCount! > 0) ...[
                     const SizedBox(height: 2),
                     Text(
-                      '$eventCount événement${eventCount! > 1 ? 's' : ''}',
+                      context.l10n.thematiquesEventCount(eventCount!),
                       style: TextStyle(
                         color: Colors.grey[500],
                         fontSize: 12,

@@ -7,6 +7,7 @@ import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/guest_guard.dart';
 import '../../domain/entities/event_question.dart';
 import '../providers/event_questions_providers.dart';
+import '../utils/event_l10n.dart';
 import '../widgets/detail/ask_question_sheet.dart';
 import '../widgets/detail/question_card.dart';
 
@@ -66,9 +67,9 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
         .refreshAll(widget.eventSlug);
 
     final message = switch (outcome) {
-      AskQuestionOutcome.created => 'Votre question a été envoyée !',
+      AskQuestionOutcome.created => context.l10n.eventQuestionSent,
       AskQuestionOutcome.alreadyExists =>
-        'Vous avez déjà posé une question sur cet événement.',
+        context.l10n.eventQuestionAlreadyAsked,
     };
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -117,9 +118,9 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Questions',
-              style: TextStyle(
+            Text(
+              context.l10n.eventQuestionsTitle,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: HbColors.textPrimary,
@@ -181,7 +182,7 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
               backgroundColor: HbColors.brandPrimary,
               foregroundColor: HbColors.white,
               icon: const Icon(Icons.add_comment_outlined),
-              label: const Text('Poser une question'),
+              label: Text(context.l10n.eventAskQuestion),
             )
           : null,
     );
@@ -280,12 +281,12 @@ class _QuestionsList extends ConsumerWidget {
             ),
           )
         else if (items.length >= 10)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Center(
               child: Text(
-                'Vous avez vu toutes les questions',
-                style: TextStyle(
+                context.l10n.eventQuestionsEnd,
+                style: const TextStyle(
                   fontSize: 12,
                   color: HbColors.grey500,
                 ),
@@ -319,8 +320,8 @@ class _QuestionsList extends ConsumerWidget {
             );
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Impossible de voter pour le moment.'),
+        SnackBar(
+          content: Text(context.l10n.eventVoteUnavailable),
           backgroundColor: HbColors.error,
         ),
       );
@@ -334,9 +335,8 @@ class _TotalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = total > 1 ? 'questions' : 'question';
     return Text(
-      '$total $label',
+      context.l10n.eventQuestionsCount(total),
       style: const TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w500,
@@ -352,7 +352,7 @@ class _MyQuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = _statusLabel(myQuestion.status);
+    final (label, color) = _statusLabel(context, myQuestion.status);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -369,9 +369,9 @@ class _MyQuestionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(
-                'Votre question',
-                style: TextStyle(
+              Text(
+                context.l10n.eventYourQuestion,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: HbColors.brandPrimary,
@@ -430,18 +430,18 @@ class _MyQuestionCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(color: HbColors.grey200),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.check_circle_outline,
                             size: 14,
                             color: HbColors.textPrimary,
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
-                            'Réponse officielle',
-                            style: TextStyle(
+                            context.l10n.eventOfficialAnswer,
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: HbColors.textPrimary,
@@ -468,16 +468,19 @@ class _MyQuestionCard extends StatelessWidget {
     );
   }
 
-  static (String, Color) _statusLabel(QuestionStatus status) {
+  static (String, Color) _statusLabel(
+    BuildContext context,
+    QuestionStatus status,
+  ) {
     switch (status) {
       case QuestionStatus.pending:
-        return ('En attente de modération', HbColors.warning);
+        return (context.eventQuestionStatusLabel(status), HbColors.warning);
       case QuestionStatus.approved:
-        return ('Approuvée', HbColors.success);
+        return (context.eventQuestionStatusLabel(status), HbColors.success);
       case QuestionStatus.answered:
-        return ('Répondue', HbColors.success);
+        return (context.eventQuestionStatusLabel(status), HbColors.success);
       case QuestionStatus.rejected:
-        return ('Refusée', HbColors.error);
+        return (context.eventQuestionStatusLabel(status), HbColors.error);
     }
   }
 }
@@ -507,9 +510,9 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Aucune question pour le moment',
-            style: TextStyle(
+          Text(
+            context.l10n.eventNoQuestionsTitle,
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
               color: HbColors.textPrimary,
@@ -517,10 +520,10 @@ class _EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Soyez le premier à poser une question sur cet événement.',
+          Text(
+            context.l10n.eventNoQuestionsBody,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               color: HbColors.grey500,
               height: 1.4,
@@ -530,7 +533,7 @@ class _EmptyState extends StatelessWidget {
           FilledButton.icon(
             onPressed: onAsk,
             icon: const Icon(Icons.add_comment_outlined, size: 18),
-            label: const Text('Poser une question'),
+            label: Text(context.l10n.eventAskQuestion),
             style: FilledButton.styleFrom(
               backgroundColor: HbColors.brandPrimary,
               foregroundColor: HbColors.white,
@@ -636,9 +639,9 @@ class _ErrorList extends StatelessWidget {
                   color: HbColors.error,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Impossible de charger les questions',
-                  style: TextStyle(
+                Text(
+                  context.l10n.eventQuestionsLoadError,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: HbColors.textPrimary,
@@ -646,9 +649,9 @@ class _ErrorList extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Vérifiez votre connexion puis réessayez.',
-                  style: TextStyle(
+                Text(
+                  context.l10n.eventCheckConnectionRetry,
+                  style: const TextStyle(
                     fontSize: 13,
                     color: HbColors.grey500,
                   ),
@@ -668,7 +671,7 @@ class _ErrorList extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Réessayer'),
+                  child: Text(context.l10n.searchRetry),
                 ),
               ],
             ),

@@ -1,3 +1,4 @@
+import '../../../../core/l10n/l10n.dart';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/taxonomy.dart';
 import '../../../../domain/entities/city.dart';
@@ -14,9 +15,10 @@ class EventToActivityMapper {
       category = Category(
         id: event.category.index.toString(),
         slug: event.rawCategorySlug ?? _categoryToSlug(event.category),
-        name: event.categoryLabel,
+        name: _categoryLabel(event.category),
       );
-    } else if (event.rawCategorySlug != null && event.rawCategorySlug!.isNotEmpty) {
+    } else if (event.rawCategorySlug != null &&
+        event.rawCategorySlug!.isNotEmpty) {
       final name = event.allCategoryNames.isNotEmpty
           ? event.allCategoryNames.first
           : _slugToDisplayName(event.rawCategorySlug!);
@@ -89,7 +91,8 @@ class EventToActivityMapper {
       slug: event.slug,
       description: event.description,
       excerpt: event.shortDescription,
-      imageUrl: event.coverImage ?? (event.images.isNotEmpty ? event.images.first : null),
+      imageUrl: event.coverImage ??
+          (event.images.isNotEmpty ? event.images.first : null),
       category: category,
       tags: tags,
       isFree: event.isFree,
@@ -155,6 +158,26 @@ class EventToActivityMapper {
       case EventCategory.other:
         return 'autre';
     }
+  }
+
+  static String _categoryLabel(EventCategory category) {
+    final l10n = cachedAppLocalizations();
+    return switch (category) {
+      EventCategory.workshop => l10n.eventCategoryWorkshop,
+      EventCategory.show => l10n.eventCategoryShow,
+      EventCategory.festival => l10n.eventCategoryFestival,
+      EventCategory.concert => l10n.eventCategoryConcert,
+      EventCategory.exhibition => l10n.eventCategoryExhibition,
+      EventCategory.sport => l10n.eventCategorySport,
+      EventCategory.culture => l10n.eventCategoryCulture,
+      EventCategory.market => l10n.eventCategoryMarket,
+      EventCategory.leisure => l10n.eventCategoryLeisure,
+      EventCategory.outdoor => l10n.eventCategoryOutdoor,
+      EventCategory.indoor => l10n.eventCategoryIndoor,
+      EventCategory.theater => l10n.eventCategoryTheater,
+      EventCategory.cinema => l10n.eventCategoryCinema,
+      EventCategory.other => l10n.eventCategoryOther,
+    };
   }
 
   /// Convert a slug like "bien-etre" to a display name "Bien etre"

@@ -94,11 +94,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return Scaffold(
       body: widget.child,
       // Nouveau VoiceFab avec appui prolongé pour parler
-      floatingActionButton: const VoiceFab(),
+      floatingActionButton: isKeyboardVisible ? null : const VoiceFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
@@ -57,11 +58,23 @@ class VendorToPartnerConversationContext extends NewConversationContext {}
 /// Vendor opens a support ticket with LeHiboo (fixed recipient, subject optional)
 class VendorSupportConversationContext extends NewConversationContext {}
 
+enum _SupportSubject {
+  bookingIssue,
+  eventQuestion,
+  paymentIssue,
+  refundRequest,
+  accountIssue,
+  contentReport,
+  other,
+}
+
 // ── Helpers for parsing raw admin search JSON into domain entities ──────────
 
 ConversationParticipant _participantFromJson(Map<String, dynamic> json) {
-  final firstName = json['first_name'] as String? ?? json['firstName'] as String? ?? '';
-  final lastName = json['last_name'] as String? ?? json['lastName'] as String? ?? '';
+  final firstName =
+      json['first_name'] as String? ?? json['firstName'] as String? ?? '';
+  final lastName =
+      json['last_name'] as String? ?? json['lastName'] as String? ?? '';
   return ConversationParticipant(
     id: int.tryParse(json['id'].toString()) ?? 0,
     name: json['name'] as String? ?? '$firstName $lastName'.trim(),
@@ -125,15 +138,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   static const _primaryColor = Color(0xFFFF601F);
   static const _subjectMax = 100;
   static const _messageMax = 2000;
-  static const _supportSubjects = [
-    'Problème de réservation',
-    'Question sur un événement',
-    'Problème de paiement',
-    'Demande de remboursement',
-    'Problème de compte',
-    "Signalement d'un contenu",
-    'Autre',
-  ];
 
   // Existing fields
   ConversationOrganization? _selectedOrg;
@@ -141,7 +145,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   String? _eventTitle;
   final _subjectCtrl = TextEditingController();
   final _messageCtrl = TextEditingController();
-  String? _selectedSupportSubject;
+  _SupportSubject? _selectedSupportSubject;
   bool _orgError = false;
   bool _isLoading = false;
   String? _submitError;
@@ -195,24 +199,38 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     if (widget.conversationContext is VendorToPartnerConversationContext) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
-          final partners =
-              await ref.read(messagesRepositoryImplProvider).getAcceptedPartners();
+          final partners = await ref
+              .read(messagesRepositoryImplProvider)
+              .getAcceptedPartners();
           if (mounted) setState(() => _allPartners = partners);
         } catch (_) {}
       });
     }
     if (widget.conversationContext is DashboardConversationContext) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _loadContactableOrgs());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _loadContactableOrgs());
     }
   }
 
   Future<void> _loadContactableOrgs() async {
     setState(() => _orgsLoading = true);
     try {
-      final orgs = await ref.read(messagesRepositoryImplProvider).getContactableOrganizations();
-      if (mounted) setState(() { _contactableOrgs = orgs; _orgsLoading = false; });
+      final orgs = await ref
+          .read(messagesRepositoryImplProvider)
+          .getContactableOrganizations();
+      if (mounted) {
+        setState(() {
+          _contactableOrgs = orgs;
+          _orgsLoading = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() { _contactableOrgs = []; _orgsLoading = false; });
+      if (mounted) {
+        setState(() {
+          _contactableOrgs = [];
+          _orgsLoading = false;
+        });
+      }
     }
   }
 
@@ -225,17 +243,50 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
-  String get _subtitle {
+  String _subtitle(BuildContext context) {
     if (_isSupport || _isVendorSupport) {
-      return 'Décrivez votre problème et notre équipe vous répondra rapidement.';
+      return context.l10n.messagesNewConversationSubtitleSupport;
     }
     if (_isAdminToUser ||
         _isAdminToOrg ||
         _isVendorToParticipant ||
         _isVendorToPartner) {
-      return 'Sélectionnez un destinataire et composez votre message.';
+      return context.l10n.messagesNewConversationSubtitleRecipient;
     }
-    return 'Composez votre message ci-dessous.';
+    return context.l10n.messagesNewConversationSubtitleDefault;
+  }
+
+  List<({String label, _SupportSubject subject})> _supportSubjectOptions(
+    BuildContext context,
+  ) {
+    final l10n = context.l10n;
+    return [
+      (
+        subject: _SupportSubject.bookingIssue,
+        label: l10n.messagesSupportSubjectBookingIssue,
+      ),
+      (
+        subject: _SupportSubject.eventQuestion,
+        label: l10n.messagesSupportSubjectEventQuestion,
+      ),
+      (
+        subject: _SupportSubject.paymentIssue,
+        label: l10n.messagesSupportSubjectPaymentIssue,
+      ),
+      (
+        subject: _SupportSubject.refundRequest,
+        label: l10n.messagesSupportSubjectRefundRequest,
+      ),
+      (
+        subject: _SupportSubject.accountIssue,
+        label: l10n.messagesSupportSubjectAccountIssue,
+      ),
+      (
+        subject: _SupportSubject.contentReport,
+        label: l10n.messagesSupportSubjectContentReport,
+      ),
+      (subject: _SupportSubject.other, label: l10n.messagesReasonOther),
+    ];
   }
 
   bool _validate() {
@@ -252,7 +303,10 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       _orgError = orgMissing;
       _recipientError = recipientMissing;
     });
-    return !orgMissing && !recipientMissing && !subjectMissing && !messageMissing;
+    return !orgMissing &&
+        !recipientMissing &&
+        !subjectMissing &&
+        !messageMissing;
   }
 
   // ── Org picker (DashboardContext only) ─────────────────────────────────────
@@ -418,7 +472,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         route = '/messages/vendor-org/${conv.uuid}';
       } else if (_isVendorSupport) {
         final conv = await repo.createVendorSupportThread(
-          subject: subject.isEmpty ? 'Support' : subject,
+          subject: subject.isEmpty ? context.l10n.messagesTabSupport : subject,
           message: message,
         );
         uuid = conv.uuid;
@@ -444,9 +498,13 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         case FromOrganizerConversationContext():
           ref.read(conversationsProvider.notifier).refresh();
         case AdminToUserConversationContext():
-          ref.read(adminConversationsProvider('user_support').notifier).refresh();
+          ref
+              .read(adminConversationsProvider('user_support').notifier)
+              .refresh();
         case AdminToOrgConversationContext():
-          ref.read(adminConversationsProvider('vendor_admin').notifier).refresh();
+          ref
+              .read(adminConversationsProvider('vendor_admin').notifier)
+              .refresh();
         case VendorToParticipantConversationContext():
           ref.read(vendorConversationsProvider.notifier).refresh();
         case VendorToPartnerConversationContext():
@@ -503,11 +561,11 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Nouveau message',
-                        style: TextStyle(
+                    Text(context.l10n.messagesNewMessage,
+                        style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 2),
-                    Text(_subtitle,
+                    Text(_subtitle(context),
                         style: TextStyle(
                             fontSize: 13, color: Colors.grey.shade600)),
                   ],
@@ -550,13 +608,11 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                           decoration: BoxDecoration(
                             color: Colors.red.shade50,
                             borderRadius: BorderRadius.circular(8),
-                            border:
-                                Border.all(color: Colors.red.shade200),
+                            border: Border.all(color: Colors.red.shade200),
                           ),
                           child: Text(_submitError!,
                               style: TextStyle(
-                                  color: Colors.red.shade700,
-                                  fontSize: 13)),
+                                  color: Colors.red.shade700, fontSize: 13)),
                         ),
                       ],
                     ],
@@ -571,7 +627,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.07),
+                  color: Colors.black.withValues(alpha: 0.07),
                   blurRadius: 12,
                   offset: const Offset(0, -3),
                 ),
@@ -590,9 +646,8 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     final ctx = widget.conversationContext;
     if (ctx is SupportConversationContext) {
       return _buildFixedRecipientCard(
-        icon: const Icon(Icons.support_agent,
-            color: Colors.white, size: 20),
-        label: 'Support Le Hiboo',
+        icon: const Icon(Icons.support_agent, color: Colors.white, size: 20),
+        label: context.l10n.messagesTabSupportLeHiboo,
         color: _primaryColor,
       );
     }
@@ -607,12 +662,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     // Admin contexts
     if (_isAdminToUser) {
       return _buildSearchableRecipient(
-        label: 'Destinataire',
+        label: context.l10n.messagesRecipientLabel,
         selectedAvatarUrl: _selectedAdminUser?.avatarUrl,
         selectedName: _selectedAdminUser?.name,
         selectedSubtitle: _selectedAdminUser?.email,
         hasError: _recipientError,
-        placeholder: 'Rechercher un utilisateur…',
+        placeholder: context.l10n.messagesSearchUserPlaceholder,
         placeholderIcon: Icons.person_search_outlined,
         onTap: _openAdminUserSearch,
         onClear: () => setState(() {
@@ -623,11 +678,11 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     }
     if (_isAdminToOrg) {
       return _buildSearchableRecipient(
-        label: 'Organisation',
+        label: context.l10n.messagesOrganizationLabel,
         selectedAvatarUrl: _selectedAdminOrg?.logoUrl,
         selectedName: _selectedAdminOrg?.companyName,
         hasError: _recipientError,
-        placeholder: 'Rechercher une organisation…',
+        placeholder: context.l10n.messagesSearchOrganizationPlaceholder,
         placeholderIcon: Icons.business_outlined,
         onTap: _openAdminOrgSearch,
         onClear: () => setState(() {
@@ -640,12 +695,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     // Vendor contexts
     if (_isVendorToParticipant) {
       return _buildSearchableRecipient(
-        label: 'Participant',
+        label: context.l10n.messagesParticipantLabel,
         selectedAvatarUrl: _selectedVendorParticipant?.avatarUrl,
         selectedName: _selectedVendorParticipant?.name,
         selectedSubtitle: _selectedVendorParticipant?.email,
         hasError: _recipientError,
-        placeholder: 'Rechercher un participant…',
+        placeholder: context.l10n.messagesSearchParticipantPlaceholder,
         placeholderIcon: Icons.person_search_outlined,
         onTap: _openVendorParticipantSearch,
         onClear: () => setState(() {
@@ -656,12 +711,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     }
     if (_isVendorToPartner) {
       return _buildSearchableRecipient(
-        label: 'Partenaire',
+        label: context.l10n.messagesPartnerLabel,
         selectedAvatarUrl:
             _selectedPartner?.logoUrl ?? _selectedPartner?.avatarUrl,
         selectedName: _selectedPartner?.companyName,
         hasError: _recipientError,
-        placeholder: 'Rechercher un partenaire…',
+        placeholder: context.l10n.messagesSearchPartnerPlaceholder,
         placeholderIcon: Icons.handshake_outlined,
         onTap: _openVendorPartnerSearch,
         onClear: () => setState(() {
@@ -673,18 +728,20 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     if (_isVendorSupport) {
       return _buildFixedRecipientCard(
         icon: const Icon(Icons.support_agent, color: Colors.white, size: 20),
-        label: 'Support Le Hiboo',
+        label: context.l10n.messagesTabSupportLeHiboo,
         color: _primaryColor,
       );
     }
 
     // DashboardContext — tappable picker row (greyed out when no orgs available)
-    final orgsEmpty = !_orgsLoading && _contactableOrgs != null && _contactableOrgs!.isEmpty;
-    final pickerEnabled = !_orgsLoading && (_contactableOrgs?.isNotEmpty ?? false);
+    final orgsEmpty =
+        !_orgsLoading && _contactableOrgs != null && _contactableOrgs!.isEmpty;
+    final pickerEnabled =
+        !_orgsLoading && (_contactableOrgs?.isNotEmpty ?? false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('Destinataire', required: true),
+        _sectionLabel(context.l10n.messagesRecipientLabel, required: true),
         const SizedBox(height: 6),
         InkWell(
           onTap: pickerEnabled ? _openOrgPicker : null,
@@ -703,7 +760,8 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
               children: [
                 if (_selectedOrg != null)
                   () {
-                    final url = _selectedOrg!.logoUrl ?? _selectedOrg!.avatarUrl;
+                    final url =
+                        _selectedOrg!.logoUrl ?? _selectedOrg!.avatarUrl;
                     return CircleAvatar(
                       radius: 14,
                       backgroundColor: _primaryColor.withValues(alpha: 0.15),
@@ -730,15 +788,17 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                   }()
                 else
                   Icon(Icons.business_outlined,
-                      color: orgsEmpty ? Colors.grey.shade400 : Colors.grey.shade500,
+                      color: orgsEmpty
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade500,
                       size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     _selectedOrg?.companyName ??
                         (orgsEmpty
-                            ? 'Aucun organisateur disponible'
-                            : 'Sélectionner un organisateur…'),
+                            ? context.l10n.messagesNoOrganizerAvailable
+                            : context.l10n.messagesSelectOrganizerPlaceholder),
                     style: TextStyle(
                       color: _selectedOrg != null
                           ? Colors.black87
@@ -769,7 +829,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(
-              'Parcourez les événements pour trouver un organisateur à contacter.',
+              context.l10n.messagesOrganizerPickerHelp,
               style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
           ),
@@ -777,7 +837,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           Padding(
             padding: const EdgeInsets.only(top: 4, left: 4),
             child: Text(
-              'Veuillez sélectionner un organisateur.',
+              context.l10n.messagesSelectOrganizerRequired,
               style: TextStyle(fontSize: 11, color: Colors.red.shade600),
             ),
           ),
@@ -807,23 +867,33 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
             decoration: BoxDecoration(
               color: _primaryColor.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(10),
-              border:
-                  Border.all(color: _primaryColor.withValues(alpha: 0.4)),
+              border: Border.all(color: _primaryColor.withValues(alpha: 0.4)),
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: _primaryColor.withValues(alpha: 0.15),
-                  child: selectedAvatarUrl != null &&
-                          selectedAvatarUrl.isNotEmpty
-                      ? ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: selectedAvatarUrl,
-                            width: 32,
-                            height: 32,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Text(
+                  child:
+                      selectedAvatarUrl != null && selectedAvatarUrl.isNotEmpty
+                          ? ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: selectedAvatarUrl,
+                                width: 32,
+                                height: 32,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => Text(
+                                  selectedName.isNotEmpty
+                                      ? selectedName[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                      color: _primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13),
+                                ),
+                              ),
+                            )
+                          : Text(
                               selectedName.isNotEmpty
                                   ? selectedName[0].toUpperCase()
                                   : '?',
@@ -832,17 +902,6 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13),
                             ),
-                          ),
-                        )
-                      : Text(
-                          selectedName.isNotEmpty
-                              ? selectedName[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                              color: _primaryColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13),
-                        ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -851,13 +910,11 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                     children: [
                       Text(selectedName,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14)),
+                              fontWeight: FontWeight.w600, fontSize: 14)),
                       if (selectedSubtitle != null)
                         Text(selectedSubtitle,
                             style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600)),
+                                fontSize: 12, color: Colors.grey.shade600)),
                     ],
                   ),
                 ),
@@ -875,8 +932,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
             onTap: onTap,
             borderRadius: BorderRadius.circular(10),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
                 border: Border.all(
                     color: hasError ? Colors.red : Colors.grey.shade300,
@@ -885,15 +941,13 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.search,
-                      size: 20, color: Colors.grey.shade500),
+                  Icon(Icons.search, size: 20, color: Colors.grey.shade500),
                   const SizedBox(width: 10),
                   Expanded(
                       child: Text(placeholder,
                           style: TextStyle(
                               color: Colors.grey.shade500, fontSize: 14))),
-                  Icon(placeholderIcon,
-                      size: 18, color: _primaryColor),
+                  Icon(placeholderIcon, size: 18, color: _primaryColor),
                 ],
               ),
             ),
@@ -901,9 +955,8 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         if (hasError && selectedName == null)
           Padding(
             padding: const EdgeInsets.only(top: 4, left: 4),
-            child: Text('Ce champ est requis.',
-                style: TextStyle(
-                    fontSize: 11, color: Colors.red.shade600)),
+            child: Text(context.l10n.messagesFieldRequired,
+                style: TextStyle(fontSize: 11, color: Colors.red.shade600)),
           ),
       ],
     );
@@ -918,11 +971,10 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('Destinataire'),
+        _sectionLabel(context.l10n.messagesRecipientLabel),
         const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(10),
@@ -940,11 +992,10 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                           width: 32,
                           height: 32,
                           fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => icon ??
+                          errorWidget: (_, __, ___) =>
+                              icon ??
                               Text(
-                                label.isNotEmpty
-                                    ? label[0].toUpperCase()
-                                    : '?',
+                                label.isNotEmpty ? label[0].toUpperCase() : '?',
                                 style: TextStyle(
                                     color: color,
                                     fontSize: 13,
@@ -954,9 +1005,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                       )
                     : (icon ??
                         Text(
-                          label.isNotEmpty
-                              ? label[0].toUpperCase()
-                              : '?',
+                          label.isNotEmpty ? label[0].toUpperCase() : '?',
                           style: TextStyle(
                               color: color,
                               fontSize: 13,
@@ -981,23 +1030,21 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   Widget _buildEventChip() {
     return Row(
       children: [
-        Text('Événement',
+        Text(context.l10n.messagesEventLabel,
             style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: Colors.grey.shade700)),
         const SizedBox(width: 6),
-        Text('(optionnel)',
-            style: TextStyle(
-                fontSize: 12, color: Colors.grey.shade500)),
+        Text(context.l10n.messagesOptionalLabel,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
         const SizedBox(width: 10),
         Container(
           padding: const EdgeInsets.fromLTRB(10, 4, 6, 4),
           decoration: BoxDecoration(
             color: _primaryColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: _primaryColor.withValues(alpha: 0.3)),
+            border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1018,8 +1065,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                   _eventId = null;
                   _eventTitle = null;
                 }),
-                child: const Icon(Icons.close,
-                    size: 14, color: _primaryColor),
+                child: const Icon(Icons.close, size: 14, color: _primaryColor),
               ),
             ],
           ),
@@ -1029,10 +1075,11 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Widget _buildSupportSubjectChips() {
+    final options = _supportSubjectOptions(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Quel est le sujet de votre demande ?',
+        Text(context.l10n.messagesSupportSubjectPrompt,
             style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -1041,31 +1088,26 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         Wrap(
           spacing: 8,
           runSpacing: 6,
-          children: _supportSubjects.map((opt) {
-            final selected = _selectedSupportSubject == opt;
+          children: options.map((opt) {
+            final selected = _selectedSupportSubject == opt.subject;
             return ChoiceChip(
-              label: Text(opt,
+              label: Text(opt.label,
                   style: TextStyle(
                       fontSize: 12,
-                      color: selected
-                          ? _primaryColor
-                          : Colors.black87)),
+                      color: selected ? _primaryColor : Colors.black87)),
               selected: selected,
               onSelected: (_) => setState(() {
-                _selectedSupportSubject = opt;
-                if (opt != 'Autre') {
-                  _subjectCtrl.text = opt;
+                _selectedSupportSubject = opt.subject;
+                if (opt.subject != _SupportSubject.other) {
+                  _subjectCtrl.text = opt.label;
                 } else {
                   _subjectCtrl.clear();
                 }
               }),
-              selectedColor:
-                  _primaryColor.withValues(alpha: 0.12),
+              selectedColor: _primaryColor.withValues(alpha: 0.12),
               checkmarkColor: _primaryColor,
               side: BorderSide(
-                  color: selected
-                      ? _primaryColor
-                      : Colors.grey.shade300),
+                  color: selected ? _primaryColor : Colors.grey.shade300),
               backgroundColor: Colors.white,
             );
           }).toList(),
@@ -1076,54 +1118,49 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Widget _buildSubjectField() {
-    final hasError = _submitted &&
-        !_isVendorSupport &&
-        _subjectCtrl.text.trim().isEmpty;
+    final hasError =
+        _submitted && !_isVendorSupport && _subjectCtrl.text.trim().isEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('Objet', required: !_isVendorSupport),
+        _sectionLabel(
+          context.l10n.messagesSubjectLabel,
+          required: !_isVendorSupport,
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _subjectCtrl,
           maxLength: _subjectMax,
-          buildCounter: (_, {required currentLength,
-                required isFocused,
-                maxLength}) =>
+          buildCounter: (_,
+                  {required currentLength, required isFocused, maxLength}) =>
               null,
           textInputAction: TextInputAction.next,
           decoration: InputDecoration(
-            hintText: "L'objet de votre message",
+            hintText: context.l10n.messagesSubjectHint,
             border: const OutlineInputBorder(),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(
-                  color: hasError
-                      ? Colors.red
-                      : Colors.grey.shade300),
+                  color: hasError ? Colors.red : Colors.grey.shade300),
             ),
             focusedBorder: OutlineInputBorder(
               borderSide: BorderSide(
-                  color: hasError ? Colors.red : _primaryColor,
-                  width: 1.5),
+                  color: hasError ? Colors.red : _primaryColor, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             if (hasError)
-              Text('Le sujet est obligatoire.',
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.red.shade600))
+              Text(context.l10n.messagesSubjectRequired,
+                  style: TextStyle(fontSize: 11, color: Colors.red.shade600))
             else
               const SizedBox.shrink(),
             Text(
               '${_subjectCtrl.text.length}/$_subjectMax',
-              style: TextStyle(
-                  fontSize: 11, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -1132,54 +1169,46 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Widget _buildMessageField() {
-    final hasError =
-        _submitted && _messageCtrl.text.trim().isEmpty;
+    final hasError = _submitted && _messageCtrl.text.trim().isEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('Message', required: true),
+        _sectionLabel(context.l10n.messagesMessageLabel, required: true),
         const SizedBox(height: 6),
         TextField(
           controller: _messageCtrl,
           maxLines: 5,
           maxLength: _messageMax,
-          buildCounter: (_, {required currentLength,
-                required isFocused,
-                maxLength}) =>
+          buildCounter: (_,
+                  {required currentLength, required isFocused, maxLength}) =>
               null,
           decoration: InputDecoration(
-            hintText: 'Écrivez votre message…',
+            hintText: context.l10n.messagesMessageHint,
             alignLabelWithHint: true,
             border: const OutlineInputBorder(),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(
-                  color: hasError
-                      ? Colors.red
-                      : Colors.grey.shade300),
+                  color: hasError ? Colors.red : Colors.grey.shade300),
             ),
             focusedBorder: OutlineInputBorder(
               borderSide: BorderSide(
-                  color: hasError ? Colors.red : _primaryColor,
-                  width: 1.5),
+                  color: hasError ? Colors.red : _primaryColor, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             if (hasError)
-              Text('Le message est obligatoire.',
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.red.shade600))
+              Text(context.l10n.messagesMessageRequired,
+                  style: TextStyle(fontSize: 11, color: Colors.red.shade600))
             else
               const SizedBox.shrink(),
             Text(
               '${_messageCtrl.text.length}/$_messageMax',
-              style: TextStyle(
-                  fontSize: 11, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -1198,7 +1227,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Annuler'),
+            child: Text(context.l10n.commonCancel),
           ),
         ),
         const SizedBox(width: 12),
@@ -1210,23 +1239,17 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white),
+                        strokeWidth: 2, color: Colors.white),
                   )
-                : const Icon(Icons.send_rounded,
-                    size: 16, color: Colors.white),
+                : const Icon(Icons.send_rounded, size: 16, color: Colors.white),
             label: Text(
-              (_isSupport || _isVendorSupport)
-                  ? 'Envoyer'
-                  : 'Envoyer',
+              context.l10n.messagesSend,
               style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600),
+                  color: Colors.white, fontWeight: FontWeight.w600),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
-              padding:
-                  const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
@@ -1288,10 +1311,12 @@ class _OrgPickerSheetState extends State<_OrgPickerSheet> {
       expand: false,
       builder: (_, scrollCtrl) => Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text('Choisir un organisateur',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              context.l10n.messagesChooseOrganizerTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -1299,7 +1324,7 @@ class _OrgPickerSheetState extends State<_OrgPickerSheet> {
               autofocus: true,
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
-                hintText: 'Rechercher par nom…',
+                hintText: context.l10n.messagesSearchByNameHint,
                 prefixIcon: const Icon(Icons.search, size: 20),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -1319,13 +1344,16 @@ class _OrgPickerSheetState extends State<_OrgPickerSheet> {
           const Divider(height: 1),
           Expanded(
             child: widget.orgs.isEmpty
-                ? const Center(
-                    child: Text('Aucun organisateur disponible.',
-                        style: TextStyle(color: Colors.grey)))
+                ? Center(
+                    child: Text(
+                      context.l10n.messagesNoOrganizerAvailable,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  )
                 : filtered.isEmpty
                     ? Center(
                         child: Text(
-                          'Aucun résultat pour "$_query".',
+                          context.l10n.messagesNoSearchResults(_query),
                           style: const TextStyle(color: Colors.grey),
                         ),
                       )
@@ -1334,8 +1362,7 @@ class _OrgPickerSheetState extends State<_OrgPickerSheet> {
                         itemCount: filtered.length,
                         itemBuilder: (_, i) {
                           final org = filtered[i];
-                          final logoUrl =
-                              org.logoUrl ?? org.avatarUrl;
+                          final logoUrl = org.logoUrl ?? org.avatarUrl;
                           return ListTile(
                             leading: CircleAvatar(
                               backgroundColor:
@@ -1360,8 +1387,8 @@ class _OrgPickerSheetState extends State<_OrgPickerSheet> {
                                       org.companyName.isNotEmpty
                                           ? org.companyName[0].toUpperCase()
                                           : '?',
-                                      style: const TextStyle(
-                                          color: _primaryColor),
+                                      style:
+                                          const TextStyle(color: _primaryColor),
                                     ),
                             ),
                             title: Text(org.companyName),
@@ -1410,7 +1437,10 @@ class _AdminUserSearchSheetState extends State<_AdminUserSearchSheet> {
   }
 
   Future<void> _search(String q) async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final raw = await widget.datasource.searchAdminUsers(search: q);
       if (mounted) {
@@ -1453,10 +1483,12 @@ class _AdminUserSearchSheetState extends State<_AdminUserSearchSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('Rechercher un utilisateur',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              context.l10n.messagesSearchUserTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -1464,7 +1496,7 @@ class _AdminUserSearchSheetState extends State<_AdminUserSearchSheet> {
               autofocus: true,
               onChanged: _onQueryChanged,
               decoration: InputDecoration(
-                hintText: 'Nom, prénom ou e-mail…',
+                hintText: context.l10n.messagesUserSearchHint,
                 prefixIcon: const Icon(Icons.search, size: 20),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -1489,16 +1521,18 @@ class _AdminUserSearchSheetState extends State<_AdminUserSearchSheet> {
                     ? Padding(
                         padding: const EdgeInsets.all(16),
                         child: Text(
-                          'Erreur : $_error',
-                          style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                          context.l10n.messagesLoadError(_error!),
+                          style: TextStyle(
+                              color: Colors.red.shade700, fontSize: 12),
                         ),
                       )
                     : _results.isEmpty
                         ? Center(
                             child: Text(
                               _query.isEmpty
-                                  ? 'Aucun utilisateur disponible.'
-                                  : 'Aucun résultat pour "$_query".',
+                                  ? context.l10n.messagesNoUsersAvailable
+                                  : context.l10n
+                                      .messagesNoSearchResults(_query),
                               style: const TextStyle(color: Colors.grey),
                             ),
                           )
@@ -1580,10 +1614,12 @@ class _AdminOrgSearchSheetState extends State<_AdminOrgSearchSheet> {
   }
 
   Future<void> _search(String q) async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final raw =
-          await widget.datasource.searchAdminOrganizations(search: q);
+      final raw = await widget.datasource.searchAdminOrganizations(search: q);
       if (mounted) {
         setState(() {
           _results = raw.map(_orgFromJson).toList();
@@ -1624,10 +1660,12 @@ class _AdminOrgSearchSheetState extends State<_AdminOrgSearchSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('Rechercher une organisation',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              context.l10n.messagesSearchOrganizationTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -1635,7 +1673,7 @@ class _AdminOrgSearchSheetState extends State<_AdminOrgSearchSheet> {
               autofocus: true,
               onChanged: _onQueryChanged,
               decoration: InputDecoration(
-                hintText: 'Nom de l\'organisation…',
+                hintText: context.l10n.messagesOrganizationSearchHint,
                 prefixIcon: const Icon(Icons.search, size: 20),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -1660,16 +1698,19 @@ class _AdminOrgSearchSheetState extends State<_AdminOrgSearchSheet> {
                     ? Padding(
                         padding: const EdgeInsets.all(16),
                         child: Text(
-                          'Erreur : $_error',
-                          style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                          context.l10n.messagesLoadError(_error!),
+                          style: TextStyle(
+                              color: Colors.red.shade700, fontSize: 12),
                         ),
                       )
                     : _results.isEmpty
                         ? Center(
                             child: Text(
                               _query.isEmpty
-                                  ? 'Aucune organisation disponible.'
-                                  : 'Aucun résultat pour "$_query".',
+                                  ? context
+                                      .l10n.messagesNoOrganizationsAvailable
+                                  : context.l10n
+                                      .messagesNoSearchResults(_query),
                               style: const TextStyle(color: Colors.grey),
                             ),
                           )
@@ -1678,11 +1719,12 @@ class _AdminOrgSearchSheetState extends State<_AdminOrgSearchSheet> {
                             itemCount: _results.length,
                             itemBuilder: (_, i) {
                               final org = _results[i];
-                              final orgImageUrl = org.logoUrl?.isNotEmpty == true
-                                  ? org.logoUrl
-                                  : org.avatarUrl?.isNotEmpty == true
-                                      ? org.avatarUrl
-                                      : null;
+                              final orgImageUrl =
+                                  org.logoUrl?.isNotEmpty == true
+                                      ? org.logoUrl
+                                      : org.avatarUrl?.isNotEmpty == true
+                                          ? org.avatarUrl
+                                          : null;
                               return ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor:
@@ -1757,7 +1799,10 @@ class _VendorParticipantSearchSheetState
   }
 
   Future<void> _search(String q) async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final participants =
           await widget.repo.getInteractedParticipants(search: q);
@@ -1801,15 +1846,17 @@ class _VendorParticipantSearchSheetState
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Text('Rechercher un participant',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              context.l10n.messagesSearchParticipantTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Text(
-              'Seuls les participants ayant interagi avec votre organisation.',
+              context.l10n.messagesVendorParticipantSearchHelper,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ),
@@ -1819,7 +1866,7 @@ class _VendorParticipantSearchSheetState
               autofocus: true,
               onChanged: _onQueryChanged,
               decoration: InputDecoration(
-                hintText: 'Nom ou e-mail…',
+                hintText: context.l10n.messagesNameOrEmailHint,
                 prefixIcon: const Icon(Icons.search, size: 20),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -1844,16 +1891,18 @@ class _VendorParticipantSearchSheetState
                     ? Padding(
                         padding: const EdgeInsets.all(16),
                         child: Text(
-                          'Erreur : $_error',
-                          style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                          context.l10n.messagesLoadError(_error!),
+                          style: TextStyle(
+                              color: Colors.red.shade700, fontSize: 12),
                         ),
                       )
                     : _results.isEmpty
                         ? Center(
                             child: Text(
                               _query.isEmpty
-                                  ? 'Aucun participant disponible.'
-                                  : 'Aucun résultat pour "$_query".',
+                                  ? context.l10n.messagesNoParticipantsAvailable
+                                  : context.l10n
+                                      .messagesNoSearchResults(_query),
                               style: const TextStyle(color: Colors.grey),
                             ),
                           )
@@ -1915,8 +1964,7 @@ class _VendorPartnerSearchSheet extends StatefulWidget {
       _VendorPartnerSearchSheetState();
 }
 
-class _VendorPartnerSearchSheetState
-    extends State<_VendorPartnerSearchSheet> {
+class _VendorPartnerSearchSheetState extends State<_VendorPartnerSearchSheet> {
   static const _primaryColor = Color(0xFFFF601F);
   String _query = '';
 
@@ -1926,12 +1974,8 @@ class _VendorPartnerSearchSheetState
         ? widget.partners
         : widget.partners
             .where((p) =>
-                p.companyName
-                    .toLowerCase()
-                    .contains(_query.toLowerCase()) ||
-                p.organizationName
-                    .toLowerCase()
-                    .contains(_query.toLowerCase()))
+                p.companyName.toLowerCase().contains(_query.toLowerCase()) ||
+                p.organizationName.toLowerCase().contains(_query.toLowerCase()))
             .toList();
 
     return DraggableScrollableSheet(
@@ -1950,10 +1994,12 @@ class _VendorPartnerSearchSheetState
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('Rechercher un partenaire',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              context.l10n.messagesSearchPartnerTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -1961,7 +2007,7 @@ class _VendorPartnerSearchSheetState
               autofocus: true,
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
-                hintText: 'Nom de l\'organisation partenaire…',
+                hintText: context.l10n.messagesPartnerSearchHint,
                 prefixIcon: const Icon(Icons.search, size: 20),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -1981,13 +2027,16 @@ class _VendorPartnerSearchSheetState
           const Divider(height: 1),
           Expanded(
             child: widget.partners.isEmpty
-                ? const Center(
-                    child: Text('Aucun partenaire disponible.',
-                        style: TextStyle(color: Colors.grey)))
+                ? Center(
+                    child: Text(
+                      context.l10n.messagesNoPartnersAvailable,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  )
                 : filtered.isEmpty
                     ? Center(
                         child: Text(
-                          'Aucun résultat pour "$_query".',
+                          context.l10n.messagesNoSearchResults(_query),
                           style: const TextStyle(color: Colors.grey),
                         ),
                       )
@@ -1996,8 +2045,7 @@ class _VendorPartnerSearchSheetState
                         itemCount: filtered.length,
                         itemBuilder: (_, i) {
                           final partner = filtered[i];
-                          final logoUrl =
-                              partner.logoUrl ?? partner.avatarUrl;
+                          final logoUrl = partner.logoUrl ?? partner.avatarUrl;
                           return ListTile(
                             leading: CircleAvatar(
                               backgroundColor:
@@ -2023,8 +2071,8 @@ class _VendorPartnerSearchSheetState
                                       partner.companyName.isNotEmpty
                                           ? partner.companyName[0].toUpperCase()
                                           : '?',
-                                      style: const TextStyle(
-                                          color: _primaryColor),
+                                      style:
+                                          const TextStyle(color: _primaryColor),
                                     ),
                             ),
                             title: Text(partner.companyName),

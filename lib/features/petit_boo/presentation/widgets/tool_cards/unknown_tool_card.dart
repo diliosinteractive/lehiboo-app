@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 
 /// Fallback card for unknown tool types
@@ -66,7 +67,7 @@ class UnknownToolCard extends StatelessWidget {
                   )
                 else if (itemCount != null)
                   Text(
-                    '$itemCount élément${itemCount != 1 ? 's' : ''}',
+                    context.l10n.petitBooToolItemCount(itemCount),
                     style: TextStyle(
                       fontSize: 13,
                       color: HbColors.textSecondary,

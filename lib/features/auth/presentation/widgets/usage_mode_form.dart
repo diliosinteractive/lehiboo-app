@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../providers/business_register_provider.dart';
+import '../utils/auth_registration_l10n.dart';
 
 /// Step 4: Usage Mode Form
 class UsageModeForm extends ConsumerStatefulWidget {
@@ -43,17 +45,18 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
 
   void _saveToState() {
     ref.read(businessRegisterProvider.notifier).updateUsageMode(
-      usageMode: _usageMode,
-      teamEmails: _teamEmailsController.text,
-      defaultBudget: _defaultBudgetController.text,
-    );
+          usageMode: _usageMode,
+          teamEmails: _teamEmailsController.text,
+          defaultBudget: _defaultBudgetController.text,
+        );
   }
 
   void _handleSubmit() {
     if (!_formKey.currentState!.validate()) return;
 
     _saveToState();
-    final success = ref.read(businessRegisterProvider.notifier).submitUsageMode();
+    final success =
+        ref.read(businessRegisterProvider.notifier).submitUsageMode();
     if (success) {
       widget.onSubmit();
     }
@@ -61,6 +64,7 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final state = ref.watch(businessRegisterProvider);
 
     return Form(
@@ -71,9 +75,9 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Title
-            const Text(
-              'Mode d\'utilisation',
-              style: TextStyle(
+            Text(
+              l10n.authUsageModeTitle,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2D3748),
@@ -81,7 +85,7 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Comment comptez-vous utiliser LeHiboo ?',
+              l10n.authUsageModeSubtitle,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -145,7 +149,7 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                mode.label,
+                                context.usageModeLabel(mode),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -156,7 +160,7 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                mode.description,
+                                context.usageModeDescription(mode),
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey[600],
@@ -210,9 +214,9 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
                     keyboardType: TextInputType.emailAddress,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      labelText: 'Emails des collaborateurs (optionnel)',
-                      hintText: 'email1@exemple.com, email2@exemple.com',
-                      helperText: 'Séparez les emails par des virgules',
+                      labelText: l10n.authTeamEmailsLabelOptional,
+                      hintText: l10n.authTeamEmailsHint,
+                      helperText: l10n.authTeamEmailsHelper,
                       prefixIcon: const Padding(
                         padding: EdgeInsets.only(bottom: 40),
                         child: Icon(Icons.email_outlined),
@@ -241,7 +245,7 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
                         for (final email in emails) {
                           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                               .hasMatch(email)) {
-                            return 'Email invalide: $email';
+                            return l10n.authInvalidEmailWithValue(email);
                           }
                         }
                       }
@@ -260,9 +264,10 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
             // Default budget (optional)
             TextFormField(
               controller: _defaultBudgetController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: 'Budget mensuel par défaut (optionnel)',
+                labelText: l10n.authDefaultMonthlyBudgetLabelOptional,
                 hintText: '500',
                 prefixIcon: const Icon(Icons.euro_outlined),
                 suffixText: 'EUR',
@@ -284,7 +289,7 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
               validator: (value) {
                 if (value != null && value.isNotEmpty) {
                   if (double.tryParse(value) == null) {
-                    return 'Veuillez entrer un montant valide';
+                    return l10n.authAmountInvalid;
                   }
                 }
                 return null;
@@ -305,9 +310,9 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Continuer',
-                  style: TextStyle(
+                child: Text(
+                  l10n.commonContinue,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -321,7 +326,7 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
               child: TextButton.icon(
                 onPressed: widget.onBack,
                 icon: const Icon(Icons.arrow_back, size: 18),
-                label: const Text('Retour'),
+                label: Text(l10n.commonBack),
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.grey[600],
                 ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lehiboo/core/themes/hb_theme.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/widgets/buttons/hb_button.dart';
 import 'package:lehiboo/core/widgets/feedback/hb_feedback.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
@@ -30,7 +30,9 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text('Réserver : ${activity.title}')),
+      appBar: AppBar(
+        title: Text(context.l10n.bookingLegacyReserveTitle(activity.title)),
+      ),
       body: Column(
         children: [
           BookingStepperHeader(step: state.step),
@@ -42,12 +44,15 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
                 children: [
                   BookingSummaryCard(state: state),
                   const SizedBox(height: 24),
-                  Text('Choisir un créneau', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    context.l10n.bookingLegacyChooseSlot,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 12),
                   if (slots.isEmpty)
-                    const HbEmptyState(
-                      title: 'Aucun créneau',
-                      message: 'Aucun créneau disponible pour le moment.'
+                    HbEmptyState(
+                      title: context.l10n.bookingLegacyNoSlotTitle,
+                      message: context.l10n.bookingLegacyNoSlotBody,
                     )
                   else
                     ...slots.map((slot) {
@@ -60,9 +65,15 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : Colors.white,
+                              color: isSelected
+                                  ? Theme.of(context)
+                                      .primaryColor
+                                      .withValues(alpha: 0.1)
+                                  : Colors.white,
                               border: Border.all(
-                                color: isSelected ? Theme.of(context).primaryColor : Colors.grey[300]!,
+                                color: isSelected
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.grey[300]!,
                                 width: isSelected ? 2 : 1,
                               ),
                               borderRadius: BorderRadius.circular(12),
@@ -70,50 +81,71 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.access_time, 
-                                  color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
+                                  Icons.access_time,
+                                  color: isSelected
+                                      ? Theme.of(context).primaryColor
+                                      : Colors.grey,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    '${slot.startDateTime}', // Format this properly
+                                    context
+                                        .appDateFormat(
+                                          'EEEE d MMMM yyyy HH:mm',
+                                          enPattern: 'EEEE, MMMM d, yyyy HH:mm',
+                                        )
+                                        .format(slot.startDateTime),
                                     style: TextStyle(
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected ? Theme.of(context).primaryColor : Colors.black87,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? Theme.of(context).primaryColor
+                                          : Colors.black87,
                                     ),
                                   ),
                                 ),
                                 if (isSelected)
-                                  Icon(Icons.check_circle, color: Theme.of(context).primaryColor),
+                                  Icon(Icons.check_circle,
+                                      color: Theme.of(context).primaryColor),
                               ],
                             ),
                           ),
                         ),
                       );
                     }),
-                  
                   const SizedBox(height: 24),
-                  Text('Nombre de participants', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    context.l10n.bookingLegacyParticipantsCountTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       IconButton.filledTonal(
-                        onPressed: state.quantity > 1 ? () => controller.updateQuantity(state.quantity - 1) : null,
+                        onPressed: state.quantity > 1
+                            ? () =>
+                                controller.updateQuantity(state.quantity - 1)
+                            : null,
                         icon: const Icon(Icons.remove),
                       ),
                       const SizedBox(width: 16),
-                      Text('${state.quantity}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      Text('${state.quantity}',
+                          style: const TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 16),
                       IconButton.filledTonal(
-                        onPressed: () => controller.updateQuantity(state.quantity + 1),
+                        onPressed: () =>
+                            controller.updateQuantity(state.quantity + 1),
                         icon: const Icon(Icons.add),
                       ),
                     ],
                   ),
-
                   if (state.errorMessage != null) ...[
                     const SizedBox(height: 24),
-                    HbErrorView(message: state.errorMessage!, onRetry: () {}), // Retry empty for now
+                    HbErrorView(
+                        message: state.errorMessage!,
+                        onRetry: () {}), // Retry empty for now
                   ]
                 ],
               ),
@@ -122,14 +154,16 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: HbButton.primary(
-              label: 'Continuer',
+              label: context.l10n.bookingLegacyContinue,
               onTap: () {
                 controller.goToParticipantsStep().then((_) {
-                  // Navigation triggered by state listener ideally, 
+                  // Navigation triggered by state listener ideally,
                   // but here verify state and push
+                  if (!context.mounted) return;
                   final updatedState = ref.read(provider);
                   if (updatedState.errorMessage == null) {
-                      context.push('/booking/${activity.id}/participants', extra: activity);
+                    context.push('/booking/${activity.id}/participants',
+                        extra: activity);
                   }
                 });
               },

@@ -1,10 +1,14 @@
+import 'dart:ui';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../models/conversation_dto.dart';
 import '../models/quota_dto.dart';
 import '../models/tool_schema_dto.dart';
@@ -59,6 +63,10 @@ class PetitBooApiException implements Exception {
   String toString() => 'PetitBooApiException: $message (status: $statusCode)';
 }
 
+String _petitBooApiFallback() =>
+    lookupAppLocalizations(Locale(AppLocaleCache.languageCode))
+        .petitBooApiErrorFallback;
+
 /// DataSource for REST API calls to Petit Boo
 class PetitBooApiDataSource {
   final Dio _dio;
@@ -82,7 +90,8 @@ class PetitBooApiDataSource {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('🤖 PetitBoo API: GET /api/v1/sessions?page=$page&per_page=$perPage');
+        debugPrint(
+            '🤖 PetitBoo API: GET /api/v1/sessions?page=$page&per_page=$perPage');
       }
 
       final response = await _dio.get(
@@ -100,7 +109,7 @@ class PetitBooApiDataSource {
       return ConversationsResponseDto.fromJson(response.data);
     } on DioException catch (e) {
       throw PetitBooApiException(
-        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        ApiResponseHandler.extractError(e, fallback: _petitBooApiFallback()),
         statusCode: e.response?.statusCode,
       );
     }
@@ -114,7 +123,7 @@ class PetitBooApiDataSource {
       return ConversationDto.fromJson(payload);
     } on DioException catch (e) {
       throw PetitBooApiException(
-        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        ApiResponseHandler.extractError(e, fallback: _petitBooApiFallback()),
         statusCode: e.response?.statusCode,
       );
     }
@@ -133,7 +142,7 @@ class PetitBooApiDataSource {
       return ConversationDto.fromJson(payload);
     } on DioException catch (e) {
       throw PetitBooApiException(
-        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        ApiResponseHandler.extractError(e, fallback: _petitBooApiFallback()),
         statusCode: e.response?.statusCode,
       );
     }
@@ -145,7 +154,7 @@ class PetitBooApiDataSource {
       await _dio.delete('/api/v1/sessions/$uuid');
     } on DioException catch (e) {
       throw PetitBooApiException(
-        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        ApiResponseHandler.extractError(e, fallback: _petitBooApiFallback()),
         statusCode: e.response?.statusCode,
       );
     }
@@ -159,7 +168,7 @@ class PetitBooApiDataSource {
       return QuotaDto.fromJson(payload);
     } on DioException catch (e) {
       throw PetitBooApiException(
-        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        ApiResponseHandler.extractError(e, fallback: _petitBooApiFallback()),
         statusCode: e.response?.statusCode,
       );
     }
@@ -186,7 +195,7 @@ class PetitBooApiDataSource {
       return ToolsResponseDto.fromJson(data).tools;
     } on DioException catch (e) {
       throw PetitBooApiException(
-        ApiResponseHandler.extractError(e, fallback: 'Erreur Petit Boo'),
+        ApiResponseHandler.extractError(e, fallback: _petitBooApiFallback()),
         statusCode: e.response?.statusCode,
       );
     }

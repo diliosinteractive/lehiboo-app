@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/petit_boo_theme.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -100,7 +101,9 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
     super.didChangeDependencies();
     // Show toast after first build if enabled AND not already shown
     // Uses static cache to survive widget recycling during scroll
-    if (!_shownToastIds.contains(_toastId) && widget.schema.showToast && _isSuccess) {
+    if (!_shownToastIds.contains(_toastId) &&
+        widget.schema.showToast &&
+        _isSuccess) {
       _shownToastIds.add(_toastId);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _showToast();
@@ -109,7 +112,7 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
   }
 
   void _showToast() {
-    final config = _getActionConfig();
+    final config = _getActionConfig(context);
     PetitBooToast.show(
       context,
       message: config.toastMessage,
@@ -118,7 +121,8 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
     );
   }
 
-  _ActionConfig _getActionConfig() {
+  _ActionConfig _getActionConfig(BuildContext context) {
+    final l10n = context.l10n;
     final actionType = widget.schema.actionType;
     final message = widget.data['message'] as String?;
     final eventTitle = widget.data['event_title'] as String?;
@@ -126,162 +130,196 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
     final eventSlug = widget.data['event_slug'] as String?;
 
     // Brain-specific data
-    final memoryKey = widget.data['key'] as String? ?? widget.data['memory_key'] as String?;
+    final memoryKey =
+        widget.data['key'] as String? ?? widget.data['memory_key'] as String?;
     final memoryValue = widget.data['value'];
     final valueSummary = widget.data['value_summary'] as String?;
-    final section = widget.data['section'] as String? ?? widget.data['category'] as String?;
+    final section =
+        widget.data['section'] as String? ?? widget.data['category'] as String?;
 
     return switch (actionType) {
       'favorite_add' => _ActionConfig(
           icon: Icons.favorite,
           color: PetitBooTheme.error,
-          title: 'Ajouté aux favoris',
-          subtitle: eventTitle ?? 'Ajouté avec succès',
-          toastMessage: message ?? 'Ajouté aux favoris',
+          title: l10n.petitBooFavoriteAdded,
+          subtitle: eventTitle ?? l10n.petitBooActionAddedSuccessfully,
+          toastMessage: message ?? l10n.petitBooFavoriteAdded,
           route: eventSlug != null ? '/events/$eventSlug' : '/favorites',
-          routeLabel: eventSlug != null ? 'Voir' : 'Mes favoris',
+          routeLabel: eventSlug != null
+              ? l10n.petitBooActionView
+              : l10n.petitBooActionMyFavorites,
           routeIcon: eventSlug != null ? Icons.visibility : Icons.favorite,
         ),
       'favorite_remove' => _ActionConfig(
           icon: Icons.favorite_border,
           color: PetitBooTheme.grey500,
-          title: 'Retiré des favoris',
-          subtitle: eventTitle ?? 'Retiré avec succès',
-          toastMessage: message ?? 'Retiré des favoris',
+          title: l10n.petitBooFavoriteRemoved,
+          subtitle: eventTitle ?? l10n.petitBooActionRemovedSuccessfully,
+          toastMessage: message ?? l10n.petitBooFavoriteRemoved,
           route: '/favorites',
-          routeLabel: 'Mes favoris',
+          routeLabel: l10n.petitBooActionMyFavorites,
           routeIcon: Icons.favorite,
         ),
       'brain_update' => _ActionConfig(
           icon: Icons.psychology,
           color: const Color(0xFF9B59B6),
-          title: _getBrainTitle(section),
-          subtitle: _getBrainSubtitle(memoryKey, valueSummary, memoryValue, message),
-          toastMessage: message ?? 'C\'est noté !',
+          title: _getBrainTitle(context, section),
+          subtitle: _getBrainSubtitle(
+              context, memoryKey, valueSummary, memoryValue, message),
+          toastMessage: message ?? l10n.petitBooActionBrainNoted,
           route: '/petit-boo/brain',
-          routeLabel: 'Voir',
+          routeLabel: l10n.petitBooActionView,
           routeIcon: Icons.visibility,
         ),
       'list_create' => _ActionConfig(
           icon: Icons.folder_special,
           color: const Color(0xFF3498DB),
-          title: 'Liste créée',
-          subtitle: listName ?? 'Nouvelle liste créée',
-          toastMessage: message ?? (listName != null ? 'Liste "$listName" créée' : 'Liste créée'),
+          title: l10n.petitBooActionListCreatedTitle,
+          subtitle: listName ?? l10n.petitBooActionNewListCreated,
+          toastMessage: message ??
+              (listName != null
+                  ? l10n.petitBooActionListCreatedWithName(listName)
+                  : l10n.petitBooActionListCreatedTitle),
           route: '/favorites',
-          routeLabel: 'Voir la liste',
+          routeLabel: l10n.petitBooActionViewList,
           routeIcon: Icons.folder_open,
         ),
       'move_to_list' => _ActionConfig(
           icon: Icons.drive_file_move,
           color: const Color(0xFF3498DB),
-          title: 'Déplacé',
+          title: l10n.petitBooActionMovedTitle,
           subtitle: eventTitle != null && listName != null
-              ? '"$eventTitle" déplacé vers "$listName"'
-              : message ?? 'Déplacé avec succès',
-          toastMessage: message ?? 'Déplacé vers la liste',
+              ? l10n.petitBooActionMovedToList(eventTitle, listName)
+              : message ?? l10n.petitBooActionMovedSuccessfully,
+          toastMessage: message ?? l10n.petitBooActionMovedToListFallback,
           route: '/favorites',
-          routeLabel: 'Mes listes',
+          routeLabel: l10n.petitBooActionMyLists,
           routeIcon: Icons.folder,
         ),
       'list_rename' => _ActionConfig(
           icon: Icons.edit,
           color: const Color(0xFF3498DB),
-          title: 'Liste renommée',
-          subtitle: _getListRenameSubtitle(listName, message),
-          toastMessage: message ?? (listName != null ? 'Liste renommée en "$listName"' : 'Liste renommée'),
+          title: l10n.petitBooActionListRenamedTitle,
+          subtitle: _getListRenameSubtitle(context, listName, message),
+          toastMessage: message ??
+              (listName != null
+                  ? l10n.petitBooActionListRenamedWithName(listName)
+                  : l10n.petitBooActionListRenamedTitle),
           route: '/favorites',
-          routeLabel: 'Voir',
+          routeLabel: l10n.petitBooActionView,
           routeIcon: Icons.visibility,
         ),
       'list_delete' => _ActionConfig(
           icon: Icons.delete_outline,
           color: const Color(0xFFE74C3C),
-          title: 'Liste supprimée',
-          subtitle: listName != null ? '"$listName" supprimée' : message ?? 'Liste supprimée',
-          toastMessage: message ?? 'Liste supprimée',
+          title: l10n.petitBooActionListDeletedTitle,
+          subtitle: listName != null
+              ? l10n.petitBooActionListDeletedWithName(listName)
+              : message ?? l10n.petitBooActionListDeletedTitle,
+          toastMessage: message ?? l10n.petitBooActionListDeletedTitle,
           route: '/favorites',
-          routeLabel: 'Mes listes',
+          routeLabel: l10n.petitBooActionMyLists,
           routeIcon: Icons.folder,
         ),
       _ => _ActionConfig(
           icon: Icons.check_circle,
           color: PetitBooTheme.success,
-          title: 'Action effectuée',
-          subtitle: message ?? 'Effectué avec succès',
-          toastMessage: message ?? 'Action effectuée',
+          title: l10n.petitBooActionDoneTitle,
+          subtitle: message ?? l10n.petitBooActionDoneSuccessfully,
+          toastMessage: message ?? l10n.petitBooActionDoneTitle,
         ),
     };
   }
 
-  String _getBrainTitle(String? section) {
+  String _getBrainTitle(BuildContext context, String? section) {
+    final l10n = context.l10n;
+
     return switch (section) {
-      'profile' => 'Profil mis à jour',
-      'family' => 'Famille mise à jour',
-      'preferences' => 'Préférence notée',
-      'constraints' => 'Contrainte notée',
-      _ => 'Mémoire mise à jour',
+      'profile' => l10n.petitBooActionBrainProfileUpdated,
+      'family' => l10n.petitBooActionBrainFamilyUpdated,
+      'preferences' => l10n.petitBooActionBrainPreferenceSaved,
+      'constraints' => l10n.petitBooActionBrainConstraintSaved,
+      _ => l10n.petitBooActionBrainMemoryUpdated,
     };
   }
 
-  String _getBrainSubtitle(String? key, String? valueSummary, dynamic rawValue, String? message) {
+  String _getBrainSubtitle(
+    BuildContext context,
+    String? key,
+    String? valueSummary,
+    dynamic rawValue,
+    String? message,
+  ) {
+    final l10n = context.l10n;
+
     // Priorité 1: value_summary du backend (lisible)
     if (valueSummary != null && valueSummary.isNotEmpty) {
-      final readableKey = key != null ? _humanizeKey(key) : null;
+      final readableKey = key != null ? _humanizeKey(context, key) : null;
       if (readableKey != null) {
         return '$readableKey : $valueSummary';
       }
-      return 'Noté : $valueSummary';
+      return l10n.petitBooActionBrainNotedValue(valueSummary);
     }
 
     // Priorité 2: Clé + valeur brute (si string)
     if (key != null && rawValue != null) {
-      final readableKey = _humanizeKey(key);
+      final readableKey = _humanizeKey(context, key);
       final valueStr = rawValue is String ? rawValue : rawValue.toString();
       // Tronquer si trop long
-      final displayValue = valueStr.length > 50
-          ? '${valueStr.substring(0, 47)}...'
-          : valueStr;
+      final displayValue =
+          valueStr.length > 50 ? '${valueStr.substring(0, 47)}...' : valueStr;
       return '$readableKey : $displayValue';
     }
 
     // Priorité 3: Juste la valeur
     if (rawValue != null) {
       final valueStr = rawValue is String ? rawValue : rawValue.toString();
-      return 'Noté : ${valueStr.length > 50 ? '${valueStr.substring(0, 47)}...' : valueStr}';
+      return l10n.petitBooActionBrainNotedValue(
+        valueStr.length > 50 ? '${valueStr.substring(0, 47)}...' : valueStr,
+      );
     }
 
     // Fallback au message ou texte par défaut
-    return message ?? 'Je me souviendrai de ça';
+    return message ?? l10n.petitBooActionBrainRememberFallback;
   }
 
-  String _humanizeKey(String key) {
+  String _humanizeKey(BuildContext context, String key) {
+    final l10n = context.l10n;
+
     // Convertit les clés techniques en texte lisible
     return switch (key.toLowerCase()) {
-      'name' || 'first_name' || 'prenom' => 'Prénom',
-      'city' || 'ville' || 'location' => 'Ville',
-      'age' => 'Âge',
-      'children' || 'enfants' => 'Enfants',
-      'interests' || 'interets' => 'Centres d\'intérêt',
-      'budget' => 'Budget',
-      'accessibility' || 'handicap' => 'Accessibilité',
-      'dietary' || 'alimentation' => 'Alimentation',
+      'name' || 'first_name' || 'prenom' => l10n.petitBooMemoryLabelFirstName,
+      'city' || 'ville' || 'location' => l10n.petitBooMemoryLabelCity,
+      'age' => l10n.petitBooMemoryLabelAge,
+      'children' || 'enfants' => l10n.petitBooMemoryLabelChildrenAges,
+      'interests' || 'interets' => l10n.petitBooMemoryLabelInterests,
+      'budget' => l10n.petitBooMemoryLabelBudgetPreference,
+      'accessibility' ||
+      'handicap' =>
+        l10n.petitBooMemoryLabelMobilityConstraints,
+      'dietary' || 'alimentation' => l10n.petitBooMemoryLabelDietaryPreferences,
       _ => key.replaceAll('_', ' ').replaceAll('-', ' '),
     };
   }
 
-  String _getListRenameSubtitle(String? newName, String? message) {
+  String _getListRenameSubtitle(
+    BuildContext context,
+    String? newName,
+    String? message,
+  ) {
+    final l10n = context.l10n;
+
     // Check for old_name and new_name in data
     final oldName = widget.data['old_name'] as String?;
     final newNameFromData = widget.data['new_name'] as String? ?? newName;
 
     if (oldName != null && newNameFromData != null) {
-      return '"$oldName" → "$newNameFromData"';
+      return l10n.petitBooActionListRenamedFromTo(oldName, newNameFromData);
     }
     if (newNameFromData != null) {
-      return 'Nouveau nom : "$newNameFromData"';
+      return l10n.petitBooActionListNewName(newNameFromData);
     }
-    return message ?? 'Liste renommée avec succès';
+    return message ?? l10n.petitBooActionListRenamedSuccessfully;
   }
 
   @override
@@ -291,7 +329,7 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
       return _buildErrorCard(context);
     }
 
-    final config = _getActionConfig();
+    final config = _getActionConfig(context);
     final accentColor = widget.schema.color != null
         ? parseHexColor(widget.schema.color)
         : config.color;
@@ -345,7 +383,8 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
                               decoration: BoxDecoration(
                                 color: PetitBooTheme.success,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
                               ),
                               child: const Icon(
                                 Icons.check,
@@ -402,8 +441,8 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
   /// Affiche une card d'erreur quand l'action a échoué
   Widget _buildErrorCard(BuildContext context) {
     final errorMessage = widget.data['error'] as String? ??
-                         widget.data['message'] as String? ??
-                         'Une erreur est survenue';
+        widget.data['message'] as String? ??
+        context.l10n.petitBooActionGenericError;
 
     return Container(
       decoration: BoxDecoration(
@@ -438,7 +477,7 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Échec',
+                    context.l10n.petitBooActionErrorTitle,
                     style: PetitBooTheme.headingSm.copyWith(
                       color: PetitBooTheme.error,
                     ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../data/models/checkin_request_dto.dart';
 import '../../data/models/ticket_summary_dto.dart';
@@ -46,7 +47,7 @@ class _CheckinManualEntryScreenState
     final code = _controller.text.trim();
     if (code.isEmpty) return;
     if (ref.read(activeOrganizationProvider) == null) {
-      _toast('Choisissez une organisation depuis le scanner.');
+      _toast(context.l10n.checkinChooseOrganizationFirst);
       return;
     }
     setState(() => _submitting = true);
@@ -100,17 +101,18 @@ class _CheckinManualEntryScreenState
           .read(checkinRepositoryProvider)
           .commit(ticket.uuid, request);
       if (!mounted) return;
+      final l10n = context.l10n;
       _toast(
         response.isReEntry
-            ? 'Ré-entrée enregistrée (entrée n°${response.checkInCount}).'
-            : 'Bienvenue ! Entrée enregistrée.',
+            ? l10n.checkinReEntryRecorded(response.checkInCount)
+            : l10n.checkinEntryRecorded,
         success: true,
       );
       _controller.clear();
     } on CheckinFailure catch (e) {
       if (!mounted) return;
       if (e.isNetworkError) {
-        _toast('Réseau instable — re-saisissez pour confirmer.');
+        _toast(context.l10n.checkinNetworkRetype);
       } else {
         await showCheckinBlockedSheet(
           context,
@@ -139,10 +141,11 @@ class _CheckinManualEntryScreenState
   @override
   Widget build(BuildContext context) {
     final activeOrg = ref.watch(activeOrganizationProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saisie manuelle'),
+        title: Text(l10n.checkinManualEntryTitle),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => context.pop(),
@@ -163,17 +166,19 @@ class _CheckinManualEntryScreenState
                     color: HbColors.warning.withValues(alpha: 0.4),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: HbColors.warning, size: 22),
-                    SizedBox(width: 10),
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: HbColors.warning,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        "À utiliser uniquement avec une vérification d'identité visuelle. "
-                        "La saisie manuelle ne contrôle pas le secret du QR.",
-                        style: TextStyle(
+                        l10n.checkinManualWarning,
+                        style: const TextStyle(
                           fontSize: 13,
                           color: HbColors.textPrimary,
                         ),
@@ -185,7 +190,7 @@ class _CheckinManualEntryScreenState
               const SizedBox(height: 20),
               if (activeOrg != null)
                 Text(
-                  'Organisation : ${activeOrg.name}',
+                  l10n.checkinOrganizationLabel(activeOrg.name),
                   style: const TextStyle(
                     fontSize: 13,
                     color: HbColors.textSecondary,
@@ -208,10 +213,10 @@ class _CheckinManualEntryScreenState
                   letterSpacing: 2,
                 ),
                 textAlign: TextAlign.center,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'XXXXXXXXXXXXXXXX',
-                  helperText: 'Code imprimé sur le billet',
-                  border: OutlineInputBorder(),
+                  helperText: l10n.checkinManualCodeHelper,
+                  border: const OutlineInputBorder(),
                 ),
                 onSubmitted: (_) => _submit(),
               ),
@@ -230,7 +235,7 @@ class _CheckinManualEntryScreenState
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Vérifier le code'),
+                    : Text(l10n.checkinVerifyCode),
               ),
             ],
           ),

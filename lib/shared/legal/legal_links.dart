@@ -10,18 +10,15 @@ import '../../core/l10n/l10n.dart';
 /// Slugs are a stable contract with the backend; see
 /// `docs/LEGAL_PAGES_MOBILE_SPEC.md` §1.
 enum LegalDocument {
-  terms(
-      'cgu', "Conditions Générales d'Utilisation", Icons.description_outlined),
-  sales('cgv', 'Conditions Générales de Vente', Icons.shopping_bag_outlined),
-  privacy(
-      'privacy', 'Politique de confidentialité', Icons.privacy_tip_outlined),
-  cookies('cookies', 'Politique cookies', Icons.cookie_outlined),
-  legalNotices('mentions-legales', 'Mentions légales', Icons.gavel_outlined);
+  terms('cgu', Icons.description_outlined),
+  sales('cgv', Icons.shopping_bag_outlined),
+  privacy('privacy', Icons.privacy_tip_outlined),
+  cookies('cookies', Icons.cookie_outlined),
+  legalNotices('mentions-legales', Icons.gavel_outlined);
 
-  const LegalDocument(this.slug, this.label, this.icon);
+  const LegalDocument(this.slug, this.icon);
 
   final String slug;
-  final String label;
   final IconData icon;
 }
 

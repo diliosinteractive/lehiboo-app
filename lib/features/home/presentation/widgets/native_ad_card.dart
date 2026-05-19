@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Configuration d'une pub native
@@ -11,7 +12,7 @@ class NativeAdConfig {
   final String? subtitle;
   final String sponsorName;
   final String? sponsorLogo;
-  final String ctaText;
+  final String? ctaText;
   final String targetUrl;
   final String? trackingPixelUrl;
 
@@ -22,7 +23,7 @@ class NativeAdConfig {
     this.subtitle,
     required this.sponsorName,
     this.sponsorLogo,
-    this.ctaText = 'En savoir plus',
+    this.ctaText,
     required this.targetUrl,
     this.trackingPixelUrl,
   });
@@ -30,11 +31,11 @@ class NativeAdConfig {
   /// Mock ad for testing
   static NativeAdConfig mock() => const NativeAdConfig(
         id: 'mock_ad_1',
-        imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
+        imageUrl:
+            'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
         title: 'Festival d\'été 2026',
         subtitle: 'Les meilleurs concerts de la saison',
         sponsorName: 'FNAC Spectacles',
-        ctaText: 'Réserver',
         targetUrl: 'https://www.fnacspectacles.com',
       );
 }
@@ -119,7 +120,8 @@ class _NativeAdCardState extends ConsumerState<NativeAdCard> {
               children: [
                 // Main image
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
                     child: CachedNetworkImage(
@@ -147,7 +149,8 @@ class _NativeAdCardState extends ConsumerState<NativeAdCard> {
                   top: 12,
                   right: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.6),
                       borderRadius: BorderRadius.circular(20),
@@ -162,7 +165,7 @@ class _NativeAdCardState extends ConsumerState<NativeAdCard> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Sponsorisé',
+                          context.l10n.homeNativeAdSponsored,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.95),
                             fontSize: 10,
@@ -266,7 +269,7 @@ class _NativeAdCardState extends ConsumerState<NativeAdCard> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            widget.config.ctaText,
+                            widget.config.ctaText ?? context.l10n.homeBook,
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,

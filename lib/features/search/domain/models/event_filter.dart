@@ -3,6 +3,27 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'event_filter.freezed.dart';
 part 'event_filter.g.dart';
 
+const publicAudienceFilterKeys = <String>{
+  'family',
+  'pmr',
+  'group',
+  'school',
+  'professional',
+};
+
+bool isPublicAudienceFilterKey(String value) =>
+    publicAudienceFilterKeys.contains(value);
+
+List<String> selectedPublicAudienceFilters(Iterable<String> values) {
+  return values.where(isPublicAudienceFilterKey).toList(growable: false);
+}
+
+List<String> selectedTargetAudienceSlugs(Iterable<String> values) {
+  return values
+      .where((value) => !isPublicAudienceFilterKey(value))
+      .toList(growable: false);
+}
+
 /// Represents a single filter option (city, thematique, etc.)
 @freezed
 class FilterOption with _$FilterOption {
@@ -156,6 +177,7 @@ class EventFilter with _$EventFilter {
 
   /// Count active filters
   int get activeFilterCount {
+    final publicFilters = selectedPublicAudienceFilters(targetAudienceSlugs);
     int count = 0;
     if (searchQuery.isNotEmpty) count++;
     if (dateFilterType != null) count++;
@@ -172,8 +194,8 @@ class EventFilter with _$EventFilter {
     if (emotionSlugs.isNotEmpty) count += emotionSlugs.length;
     if (availableOnly) count++;
     if (locationType != null) count++;
-    if (familyFriendly) count++;
-    if (accessiblePMR) count++;
+    if (familyFriendly && !publicFilters.contains('family')) count++;
+    if (accessiblePMR && !publicFilters.contains('pmr')) count++;
     if (onlineOnly || inPersonOnly) count++;
     if (hasExplicitSort) count++;
     return count;
@@ -188,41 +210,6 @@ class EventFilter with _$EventFilter {
   int get effectiveCityRadiusKm {
     final radius = cityRadiusKm.round();
     return const [5, 10, 20, 50].contains(radius) ? radius : 10;
-  }
-
-  /// Get date filter label
-  String? get dateFilterLabel {
-    switch (dateFilterType) {
-      case DateFilterType.today:
-        return "Aujourd'hui";
-      case DateFilterType.tomorrow:
-        return 'Demain';
-      case DateFilterType.thisWeek:
-        return 'Cette semaine';
-      case DateFilterType.thisWeekend:
-        return 'Ce week-end';
-      case DateFilterType.thisMonth:
-        return 'Ce mois-ci';
-      case DateFilterType.custom:
-        return 'Dates personnalisées';
-      default:
-        return null;
-    }
-  }
-
-  /// Get price filter label
-  String? get priceFilterLabel {
-    if (onlyFree) return 'Gratuit';
-    switch (priceFilterType) {
-      case PriceFilterType.free:
-        return 'Gratuit';
-      case PriceFilterType.paid:
-        return 'Payant';
-      case PriceFilterType.range:
-        return '${priceMin.toInt()}€ - ${priceMax.toInt()}€';
-      default:
-        return null;
-    }
   }
 
   DateTime? get effectiveStartDate {
@@ -340,8 +327,13 @@ class EventFilter with _$EventFilter {
       params['event_tag'] = tagsSlugs.join(',');
     }
 
-    if (targetAudienceSlugs.isNotEmpty) {
-      params['target_audiences'] = targetAudienceSlugs.join(',');
+    final publicFilters = selectedPublicAudienceFilters(targetAudienceSlugs);
+    final targetAudiences = selectedTargetAudienceSlugs(targetAudienceSlugs);
+    if (publicFilters.isNotEmpty) {
+      params['public_filters'] = publicFilters.join(',');
+    }
+    if (targetAudiences.isNotEmpty) {
+      params['target_audiences'] = targetAudiences.join(',');
     }
     if (eventTagSlug != null) {
       params['event_tag'] = eventTagSlug;
@@ -356,14 +348,19 @@ class EventFilter with _$EventFilter {
       params['available_only'] = 1;
     }
     if (locationType != null) {
-      params['location_type'] = locationTypeToApiValue(locationType!);
+      final venueType = venueTypeToApiValue(locationType!);
+      if (venueType != null) {
+        params['venue_type'] = venueType;
+      } else {
+        params['location_type'] = locationTypeToApiValue(locationType!);
+      }
     }
 
     // Audience
-    if (familyFriendly) {
+    if (familyFriendly && !publicFilters.contains('family')) {
       params['family_friendly'] = 1;
     }
-    if (accessiblePMR) {
+    if (accessiblePMR && !publicFilters.contains('pmr')) {
       params['accessible_pmr'] = 1;
     }
 
@@ -423,12 +420,16 @@ EventFilter eventFilterFromQueryParams(Map<String, String> query) {
     radiusKm: radiusKm,
     thematiquesSlugs: _csv(query['themes'] ?? query['thematique']),
     categoriesSlugs: _csv(query['category'] ?? query['categorySlug']),
-    targetAudienceSlugs: _csv(query['target_audiences']),
+    targetAudienceSlugs: [
+      ..._csv(query['target_audiences']),
+      ..._csv(query['public_filters']),
+    ],
     eventTagSlug: _emptyToNull(query['event_tag']),
     specialEventSlugs: _csv(query['special_events']),
     emotionSlugs: _csv(query['emotions']),
     availableOnly: _parseBool(query['available_only']),
-    locationType: _locationTypeFromApiValue(query['location_type']),
+    locationType: _venueTypeFromApiValue(query['venue_type']) ??
+        _locationTypeFromApiValue(query['location_type']),
     familyFriendly: _parseBool(query['family_friendly']),
     accessiblePMR: _parseBool(query['accessible_pmr']),
     onlineOnly: _parseBool(query['online']),
@@ -474,6 +475,19 @@ String locationTypeToApiValue(LocationTypeFilter option) {
   }
 }
 
+String? venueTypeToApiValue(LocationTypeFilter option) {
+  switch (option) {
+    case LocationTypeFilter.physical:
+      return 'indoor';
+    case LocationTypeFilter.offline:
+      return 'outdoor';
+    case LocationTypeFilter.hybrid:
+      return 'both';
+    case LocationTypeFilter.online:
+      return null;
+  }
+}
+
 SortOption? _sortOptionFromApiValue(String? value) {
   switch (value) {
     case 'relevance':
@@ -493,6 +507,18 @@ SortOption? _sortOptionFromApiValue(String? value) {
       return SortOption.popularity;
     case 'distance':
       return SortOption.distance;
+  }
+  return null;
+}
+
+LocationTypeFilter? _venueTypeFromApiValue(String? value) {
+  switch (value) {
+    case 'indoor':
+      return LocationTypeFilter.physical;
+    case 'outdoor':
+      return LocationTypeFilter.offline;
+    case 'both':
+      return LocationTypeFilter.hybrid;
   }
   return null;
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../data/services/company_search_service.dart';
 
 /// Widget for searching and selecting a company with autocomplete
@@ -111,6 +112,8 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -126,9 +129,9 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Title
-              const Text(
-                'Recherche rapide',
-                style: TextStyle(
+              Text(
+                l10n.authCompanySearchTitle,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFFFF601F), // Orange
@@ -141,7 +144,8 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
                 controller: _searchController,
                 focusNode: _focusNode,
                 decoration: InputDecoration(
-                  hintText: 'Rechercher ${widget.organizationPossessive} par nom...',
+                  hintText:
+                      l10n.authCompanySearchHint(widget.organizationPossessive),
                   hintStyle: TextStyle(color: Colors.grey[500]),
                   prefixIcon: _isLoading
                       ? Container(
@@ -170,7 +174,8 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFFF601F), width: 2),
+                    borderSide:
+                        const BorderSide(color: Color(0xFFFF601F), width: 2),
                   ),
                 ),
               ),
@@ -178,7 +183,7 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
 
               // Helper text
               Text(
-                'Recherchez ${widget.organizationPossessive} pour remplir automatiquement le formulaire',
+                l10n.authCompanySearchHelper(widget.organizationPossessive),
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],
@@ -294,7 +299,9 @@ class _CompanyResultItem extends StatelessWidget {
 
                   // SIRET
                   Text(
-                    'SIRET: ${CompanySearchService.formatSiret(company.siret)}',
+                    context.l10n.authSiretLine(
+                      CompanySearchService.formatSiret(company.siret),
+                    ),
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey[500],

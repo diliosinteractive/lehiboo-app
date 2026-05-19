@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/entities/can_review_result.dart';
 import '../../domain/entities/review.dart';
@@ -95,8 +96,8 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
   Future<void> _submit() async {
     if (_rating < 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner une note'),
+        SnackBar(
+          content: Text(context.l10n.reviewsSelectRatingRequired),
           backgroundColor: Colors.red,
         ),
       );
@@ -137,8 +138,8 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.isEditMode
-                ? 'Avis mis à jour. Il sera de nouveau modéré.'
-                : 'Avis envoyé. Il sera publié après validation.'),
+                ? context.l10n.reviewsUpdateSuccessPendingModeration
+                : context.l10n.reviewsCreateSuccessPendingModeration),
             backgroundColor: Colors.green,
           ),
         );
@@ -204,8 +205,8 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
                           children: [
                             Text(
                               widget.isEditMode
-                                  ? 'Modifier mon avis'
-                                  : 'Laisser un avis',
+                                  ? context.l10n.reviewsEditMyReviewTitle
+                                  : context.l10n.reviewsWriteReviewTitle,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -237,9 +238,9 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
                     CanReviewMessage(denied: denied),
                     const SizedBox(height: 16),
                   ],
-                  const Text(
-                    'Votre note',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.reviewsYourRatingLabel,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -253,7 +254,7 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
                   TextFormField(
                     controller: _titleController,
                     decoration: InputDecoration(
-                      labelText: 'Titre *',
+                      labelText: context.l10n.reviewsTitleRequiredLabel,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -267,7 +268,7 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
                     validator: (value) {
                       final text = value?.trim() ?? '';
                       if (text.isEmpty) {
-                        return 'Veuillez ajouter un titre';
+                        return context.l10n.reviewsTitleRequiredError;
                       }
                       return null;
                     },
@@ -278,7 +279,7 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
                     maxLines: 5,
                     maxLength: 2000,
                     decoration: InputDecoration(
-                      labelText: 'Votre avis *',
+                      labelText: context.l10n.reviewsCommentRequiredLabel,
                       alignLabelWithHint: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -292,10 +293,10 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
                     validator: (value) {
                       final text = value?.trim() ?? '';
                       if (text.isEmpty) {
-                        return 'Veuillez écrire votre avis';
+                        return context.l10n.reviewsCommentRequiredError;
                       }
                       if (text.length < 10) {
-                        return 'Votre avis doit faire au moins 10 caractères';
+                        return context.l10n.reviewsCommentMinLengthError(10);
                       }
                       return null;
                     },
@@ -323,9 +324,8 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: (_isSubmitting || isFormDisabled)
-                          ? null
-                          : _submit,
+                      onPressed:
+                          (_isSubmitting || isFormDisabled) ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: HbColors.brandPrimary,
                         foregroundColor: Colors.white,
@@ -345,8 +345,8 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
                             )
                           : Text(
                               widget.isEditMode
-                                  ? 'Mettre à jour'
-                                  : 'Envoyer mon avis',
+                                  ? context.l10n.reviewsUpdateAction
+                                  : context.l10n.reviewsSubmitAction,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -373,14 +373,14 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Icon(Icons.info_outline, size: 18, color: Colors.orange),
-            SizedBox(width: 8),
+            const Icon(Icons.info_outline, size: 18, color: Colors.orange),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Toute modification remettra votre avis en attente de modération.',
-                style: TextStyle(fontSize: 13, color: Colors.orange),
+                context.l10n.reviewsEditModerationNotice,
+                style: const TextStyle(fontSize: 13, color: Colors.orange),
               ),
             ),
           ],

@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../data/models/daily_reward.dart';
 
 class DailyRewardWidget extends StatelessWidget {
@@ -21,9 +21,9 @@ class DailyRewardWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Récompense Quotidienne',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          context.l10n.gamificationDailyRewardTitle,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -33,43 +33,49 @@ class DailyRewardWidget extends StatelessWidget {
             itemCount: state.days.length,
             itemBuilder: (context, index) {
               final day = state.days[index];
-              return _buildDayCard(day, state.currentDay);
+              return _buildDayCard(context, day, state.currentDay);
             },
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(top: 16.0),
           child: SizedBox(
-             width: double.infinity,
-             child: ElevatedButton(
-               onPressed: canClaim && !isLoading ? onClaim : null,
-               style: ElevatedButton.styleFrom(
-                 backgroundColor: canClaim ? const Color(0xFFFF601F) : Colors.grey.shade400,
-                 foregroundColor: Colors.white,
-                 padding: const EdgeInsets.symmetric(vertical: 12),
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-               ),
-               child: isLoading
-                   ? const SizedBox(
-                       height: 20,
-                       width: 20,
-                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                     )
-                   : Text(
-                       canClaim ? 'Réclamer ma récompense' : 'Reviens demain !',
-                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                     ),
-             ),
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: canClaim && !isLoading ? onClaim : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    canClaim ? const Color(0xFFFF601F) : Colors.grey.shade400,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
+                    )
+                  : Text(
+                      canClaim
+                          ? context.l10n.gamificationClaimDailyReward
+                          : context.l10n.gamificationComeBackTomorrow,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDayCard(DailyRewardDay day, int currentDay) {
+  Widget _buildDayCard(
+      BuildContext context, DailyRewardDay day, int currentDay) {
     final isPast = day.dayNumber < currentDay;
     final isToday = day.dayNumber == currentDay;
-    final isFuture = day.dayNumber > currentDay;
     final isJackpot = day.isJackpot;
 
     Color bgColor;
@@ -87,20 +93,24 @@ class DailyRewardWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: isToday ? Border.all(color: Colors.orange.shade800, width: 2) : Border.all(color: Colors.transparent),
-        boxShadow: isToday ? [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          )
-        ] : null,
+        border: isToday
+            ? Border.all(color: Colors.orange.shade800, width: 2)
+            : Border.all(color: Colors.transparent),
+        boxShadow: isToday
+            ? [
+                BoxShadow(
+                  color: Colors.orange.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                )
+              ]
+            : null,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'J-${day.dayNumber}',
+            context.l10n.gamificationDayNumber(day.dayNumber),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -110,7 +120,9 @@ class DailyRewardWidget extends StatelessWidget {
           const SizedBox(height: 8),
           Icon(
             isJackpot ? Icons.card_giftcard : Icons.monetization_on,
-            color: isToday ? Colors.white : (isJackpot ? Colors.purple : Colors.amber),
+            color: isToday
+                ? Colors.white
+                : (isJackpot ? Colors.purple : Colors.amber),
             size: 24,
           ),
           const SizedBox(height: 4),

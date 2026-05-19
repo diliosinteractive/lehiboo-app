@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 /// Step configuration with icon and label
 class StepConfig {
   final IconData icon;
@@ -7,15 +9,6 @@ class StepConfig {
 
   const StepConfig({required this.icon, required this.label});
 }
-
-/// Default steps for business registration
-const List<StepConfig> businessRegisterSteps = [
-  StepConfig(icon: Icons.person_outline, label: 'Infos'),
-  StepConfig(icon: Icons.mail_outline, label: 'Vérif.'),
-  StepConfig(icon: Icons.business_outlined, label: 'Entreprise'),
-  StepConfig(icon: Icons.people_outline, label: 'Usage'),
-  StepConfig(icon: Icons.description_outlined, label: 'Termes'),
-];
 
 /// A step indicator widget that displays progress through multi-step registration
 /// Matches the desktop design with icons and pill-shaped active step
@@ -39,18 +32,38 @@ class StepIndicator extends StatelessWidget {
     this.completedColor = const Color(0xFFFF601F),
   });
 
-  List<StepConfig> get _steps => steps ?? businessRegisterSteps;
+  List<StepConfig> _steps(BuildContext context) {
+    if (steps != null) return steps!;
+    final l10n = context.l10n;
+    return [
+      StepConfig(icon: Icons.person_outline, label: l10n.authBusinessStepInfo),
+      StepConfig(
+        icon: Icons.mail_outline,
+        label: l10n.authBusinessStepVerification,
+      ),
+      StepConfig(
+        icon: Icons.business_outlined,
+        label: l10n.authBusinessStepCompany,
+      ),
+      StepConfig(icon: Icons.people_outline, label: l10n.authBusinessStepUsage),
+      StepConfig(
+        icon: Icons.description_outlined,
+        label: l10n.authBusinessStepTerms,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final stepConfigs = _steps(context);
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(totalSteps * 2 - 1, (index) {
             if (index.isEven) {
               final stepIndex = index ~/ 2;
-              return _buildStep(stepIndex);
+              return _buildStep(stepIndex, stepConfigs);
             } else {
               final lineIndex = index ~/ 2;
               return _buildLine(lineIndex);
@@ -61,10 +74,11 @@ class StepIndicator extends StatelessWidget {
     );
   }
 
-  Widget _buildStep(int stepIndex) {
+  Widget _buildStep(int stepIndex, List<StepConfig> stepConfigs) {
     final isActive = stepIndex == currentStep;
     final isCompleted = stepIndex < currentStep;
-    final config = stepIndex < _steps.length ? _steps[stepIndex] : null;
+    final config =
+        stepIndex < stepConfigs.length ? stepConfigs[stepIndex] : null;
     final label = stepLabels != null && stepIndex < stepLabels!.length
         ? stepLabels![stepIndex]
         : config?.label ?? '';
@@ -105,7 +119,8 @@ class StepIndicator extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isCompleted ? activeColor.withValues(alpha: 0.15) : inactiveColor,
+          color:
+              isCompleted ? activeColor.withValues(alpha: 0.15) : inactiveColor,
         ),
         child: Center(
           child: Icon(
@@ -125,7 +140,8 @@ class StepIndicator extends StatelessWidget {
       width: 24,
       height: 2,
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: isCompleted ? activeColor.withValues(alpha: 0.5) : Colors.grey[300],
+      color:
+          isCompleted ? activeColor.withValues(alpha: 0.5) : Colors.grey[300],
     );
   }
 }

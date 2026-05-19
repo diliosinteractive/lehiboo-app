@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/widgets/feedback/hb_feedback.dart';
 import '../providers/user_questions_provider.dart';
@@ -45,12 +46,13 @@ class _UserQuestionsScreenState extends ConsumerState<UserQuestionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final asyncPage = ref.watch(userQuestionsListControllerProvider);
 
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Mes Questions'),
+        title: Text(l10n.userQuestionsTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -58,8 +60,8 @@ class _UserQuestionsScreenState extends ConsumerState<UserQuestionsScreen> {
       body: asyncPage.when(
         loading: () => const _LoadingList(),
         error: (_, __) => HbErrorView(
-          title: 'Oups !',
-          message: 'Impossible de charger vos questions.',
+          title: l10n.commonErrorTitle,
+          message: l10n.userQuestionsLoadError,
           onRetry: _onRefresh,
         ),
         data: (page) {
@@ -74,10 +76,9 @@ class _UserQuestionsScreenState extends ConsumerState<UserQuestionsScreen> {
                     height: MediaQuery.of(context).size.height * 0.7,
                     child: HbEmptyState(
                       icon: Icons.question_answer_outlined,
-                      title: 'Aucune question',
-                      message:
-                          'Vous n\'avez encore posé aucune question sur un événement.',
-                      actionLabel: 'Découvrir des événements',
+                      title: l10n.userQuestionsEmptyTitle,
+                      message: l10n.userQuestionsEmptyBody,
+                      actionLabel: l10n.userQuestionsExploreEvents,
                       onAction: () => context.go('/'),
                     ),
                   ),

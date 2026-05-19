@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/paginated_reviews.dart';
 import '../../domain/entities/user_review.dart';
@@ -85,7 +86,7 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
       debugPrint('UserReviewsNotifier.refresh error: $e');
       state = state.copyWith(
         isLoading: false,
-        error: 'Impossible de charger vos avis.',
+        error: cachedAppLocalizations().reviewsUserLoadError,
       );
     }
   }
@@ -108,7 +109,7 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
       debugPrint('UserReviewsNotifier.loadMore error: $e');
       state = state.copyWith(
         isLoadingMore: false,
-        error: 'Impossible de charger la suite.',
+        error: cachedAppLocalizations().reviewsUserLoadMoreError,
       );
     }
   }
@@ -123,9 +124,8 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
   /// Optimistic update (utilisé après édition d'un avis).
   void updateLocal(UserReview updated) {
     state = state.copyWith(
-      items: state.items
-          .map((r) => r.uuid == updated.uuid ? updated : r)
-          .toList(),
+      items:
+          state.items.map((r) => r.uuid == updated.uuid ? updated : r).toList(),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:html_unescape/html_unescape.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 import '../../../home/presentation/providers/home_providers.dart';
 
@@ -34,19 +35,19 @@ class ThematiquesSection extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: HomeSectionTitle(
-                      title: "Explorer par type d'événement",
+                      title: context.l10n.thematiquesExploreByTypeTitle,
                       fontSize: 19,
-                      color: Color(0xFF2D3748),
+                      color: const Color(0xFF2D3748),
                     ),
                   ),
                   TextButton(
                     onPressed: () => _showAllCategoriesBottomSheet(
                         context, sortedCategories),
-                    child: const Text(
-                      'Voir tout',
-                      style: TextStyle(
+                    child: Text(
+                      context.l10n.thematiquesSeeAll,
+                      style: const TextStyle(
                         color: Color(0xFFFF601F),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -165,7 +166,9 @@ class _AllCategoriesBottomSheetState extends State<_AllCategoriesBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Tous les types (${widget.categories.length})',
+                  context.l10n.thematiquesAllTypesCount(
+                    widget.categories.length,
+                  ),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -183,7 +186,7 @@ class _AllCategoriesBottomSheetState extends State<_AllCategoriesBottomSheet> {
             child: TextField(
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
-                hintText: "Rechercher un type d'événement...",
+                hintText: context.l10n.thematiquesSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey[100],
@@ -310,7 +313,7 @@ class CategoryTypeCard extends StatelessWidget {
                   ),
                   if (category.eventCount > 0)
                     Text(
-                      '${category.eventCount} événement${category.eventCount > 1 ? 's' : ''}',
+                      context.l10n.thematiquesEventCount(category.eventCount),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 12,

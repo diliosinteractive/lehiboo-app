@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
 import 'package:lehiboo/features/events/presentation/widgets/detail/practical_info_card.dart';
 import 'package:lehiboo/features/events/presentation/widgets/detail/practical_info_sheet.dart';
 
@@ -28,11 +30,11 @@ class EventAccessibilitySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Accessibilité',
-            style: TextStyle(
+            context.l10n.eventAccessibilityTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -50,19 +52,19 @@ class EventAccessibilitySection extends StatelessWidget {
               if (_hasPmr && !_hasAccessibilityFeatures)
                 CompactInfoChip(
                   icon: Icons.accessible,
-                  label: 'Accessible PMR',
+                  label: context.l10n.eventAccessibilityPmr,
                   color: Colors.blue,
                   onTap: () => _showDetail(
                     context,
                     icon: Icons.accessible,
-                    title: 'Accessibilité PMR',
+                    title: context.l10n.eventAccessibilityPmrTitle,
                     note: locationDetails?.pmr?.note,
                   ),
                 ),
               // Individual accessibility features from the API
               if (_hasAccessibilityFeatures)
                 ...locationDetails!.accessibilityFeatures.map((key) {
-                  final info = _accessibilityInfo(key);
+                  final info = _accessibilityInfo(context, key);
                   return CompactInfoChip(
                     icon: info.icon,
                     label: info.label,
@@ -92,35 +94,64 @@ class EventAccessibilitySection extends StatelessWidget {
       context,
       icon: icon,
       title: title,
-      description: note ?? 'Ce service est disponible sur place.',
+      description: note ?? context.l10n.eventServiceDefaultDescription,
       color: HbColors.brandPrimary,
     );
   }
 
-  static _AccessibilityDisplay _accessibilityInfo(String key) {
+  static _AccessibilityDisplay _accessibilityInfo(
+    BuildContext context,
+    String key,
+  ) {
     switch (key) {
       case 'pmr':
-        return _AccessibilityDisplay('Accessible PMR', Icons.accessible, Colors.blue);
-      case 'lsf':
-        return _AccessibilityDisplay('Langue des signes', Icons.sign_language, Colors.indigo);
-      case 'ascenseur':
-        return _AccessibilityDisplay('Ascenseur', Icons.elevator_outlined, Colors.blueGrey);
-      case 'stationnement_handicap':
-        return _AccessibilityDisplay('Parking handicapé', Icons.local_parking, Colors.blue);
-      case 'places_handicap':
-        return _AccessibilityDisplay('Places handicapé', Icons.event_seat_outlined, Colors.blue);
-      case 'chien_guide':
-        return _AccessibilityDisplay('Chien guide', Icons.pets_outlined, Colors.brown);
-      case 'boucle_magnetique':
-        return _AccessibilityDisplay('Boucle magnétique', Icons.hearing_outlined, Colors.teal);
-      case 'audiodescription':
-        return _AccessibilityDisplay('Audiodescription', Icons.headphones_outlined, Colors.deepPurple);
-      case 'braille':
-        return _AccessibilityDisplay('Braille', Icons.touch_app_outlined, Colors.orange);
-      default:
-        final label = key.replaceAll('_', ' ');
         return _AccessibilityDisplay(
-          label[0].toUpperCase() + label.substring(1),
+            context.eventAccessibilityFeatureLabel(key),
+            Icons.accessible,
+            Colors.blue);
+      case 'lsf':
+        return _AccessibilityDisplay(
+            context.eventAccessibilityFeatureLabel(key),
+            Icons.sign_language,
+            Colors.indigo);
+      case 'ascenseur':
+        return _AccessibilityDisplay(
+            context.eventAccessibilityFeatureLabel(key),
+            Icons.elevator_outlined,
+            Colors.blueGrey);
+      case 'stationnement_handicap':
+        return _AccessibilityDisplay(
+            context.eventAccessibilityFeatureLabel(key),
+            Icons.local_parking,
+            Colors.blue);
+      case 'places_handicap':
+        return _AccessibilityDisplay(
+            context.eventAccessibilityFeatureLabel(key),
+            Icons.event_seat_outlined,
+            Colors.blue);
+      case 'chien_guide':
+        return _AccessibilityDisplay(
+            context.eventAccessibilityFeatureLabel(key),
+            Icons.pets_outlined,
+            Colors.brown);
+      case 'boucle_magnetique':
+        return _AccessibilityDisplay(
+            context.eventAccessibilityFeatureLabel(key),
+            Icons.hearing_outlined,
+            Colors.teal);
+      case 'audiodescription':
+        return _AccessibilityDisplay(
+            context.eventAccessibilityFeatureLabel(key),
+            Icons.headphones_outlined,
+            Colors.deepPurple);
+      case 'braille':
+        return _AccessibilityDisplay(
+            context.eventAccessibilityFeatureLabel(key),
+            Icons.touch_app_outlined,
+            Colors.orange);
+      default:
+        return _AccessibilityDisplay(
+          context.eventAccessibilityFeatureLabel(key),
           Icons.accessible_forward,
           Colors.blue,
         );

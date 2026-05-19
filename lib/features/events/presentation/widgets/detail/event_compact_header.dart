@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
 
 /// Header compact avec titre, type, adresse, tags et rating
 ///
@@ -45,17 +47,17 @@ class EventCompactHeader extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              _buildEventTypeChip(),
+              _buildEventTypeChip(context),
             ],
           ),
           const SizedBox(height: 10),
 
           // Adresse
-          _buildLocation(),
+          _buildLocation(context),
           const SizedBox(height: 12),
 
           // Tags
-          _buildTags(),
+          _buildTags(context),
           const SizedBox(height: 12),
 
           // Rating
@@ -65,7 +67,7 @@ class EventCompactHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildEventTypeChip() {
+  Widget _buildEventTypeChip(BuildContext context) {
     final isBilletterie = event.hasDirectBooking;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -79,13 +81,17 @@ class EventCompactHeader extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isBilletterie ? Icons.confirmation_number_outlined : Icons.explore_outlined,
+            isBilletterie
+                ? Icons.confirmation_number_outlined
+                : Icons.explore_outlined,
             size: 14,
             color: isBilletterie ? HbColors.brandPrimary : Colors.teal,
           ),
           const SizedBox(width: 4),
           Text(
-            isBilletterie ? 'Billetterie' : 'Découverte',
+            isBilletterie
+                ? context.l10n.eventTicketing
+                : context.l10n.eventDiscovery,
             style: TextStyle(
               color: isBilletterie ? HbColors.brandPrimary : Colors.teal,
               fontSize: 12,
@@ -97,7 +103,7 @@ class EventCompactHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildTags() {
+  Widget _buildTags(BuildContext context) {
     final tags = <_TagData>[];
 
     // 1. Primary category — prefer event_tag from API, fallback to enum
@@ -109,7 +115,7 @@ class EventCompactHeader extends StatelessWidget {
       ));
     } else if (event.category != EventCategory.other) {
       tags.add(_TagData(
-        label: _getCategoryLabel(event.category),
+        label: context.eventCategoryLabel(event.category),
         icon: _getCategoryIcon(event.category),
         color: HbColors.brandPrimary,
       ));
@@ -136,7 +142,7 @@ class EventCompactHeader extends StatelessWidget {
     } else if (event.targetAudiences.isNotEmpty) {
       for (final audience in event.targetAudiences) {
         tags.add(_TagData(
-          label: _getAudienceLabel(audience),
+          label: context.eventAudienceLabel(audience),
           icon: Icons.people_outline,
           color: Colors.blue,
         ));
@@ -182,7 +188,7 @@ class EventCompactHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildLocation() {
+  Widget _buildLocation(BuildContext context) {
     return Row(
       children: [
         Icon(
@@ -193,7 +199,7 @@ class EventCompactHeader extends StatelessWidget {
         const SizedBox(width: 4),
         Expanded(
           child: Text(
-            _getLocationText(),
+            _getLocationText(context),
             style: TextStyle(
               color: Colors.grey.shade600,
               fontSize: 14,
@@ -237,11 +243,11 @@ class EventCompactHeader extends StatelessWidget {
     );
   }
 
-  String _getLocationText() {
+  String _getLocationText(BuildContext context) {
     final parts = <String>[];
     if (event.venue.isNotEmpty) parts.add(event.venue);
     if (event.city.isNotEmpty) parts.add(event.city);
-    if (parts.isEmpty) return 'Lieu non précisé';
+    if (parts.isEmpty) return context.l10n.eventPlaceNotSpecified;
     return parts.join(', ');
   }
 
@@ -254,39 +260,6 @@ class EventCompactHeader extends StatelessWidget {
       return '${hours}h';
     } else {
       return '${minutes}min';
-    }
-  }
-
-  String _getCategoryLabel(EventCategory category) {
-    switch (category) {
-      case EventCategory.workshop:
-        return 'Atelier';
-      case EventCategory.show:
-        return 'Spectacle';
-      case EventCategory.festival:
-        return 'Festival';
-      case EventCategory.concert:
-        return 'Concert';
-      case EventCategory.exhibition:
-        return 'Exposition';
-      case EventCategory.sport:
-        return 'Sport';
-      case EventCategory.culture:
-        return 'Culture';
-      case EventCategory.market:
-        return 'Marché';
-      case EventCategory.leisure:
-        return 'Loisirs';
-      case EventCategory.outdoor:
-        return 'Plein air';
-      case EventCategory.indoor:
-        return 'Intérieur';
-      case EventCategory.theater:
-        return 'Théâtre';
-      case EventCategory.cinema:
-        return 'Cinéma';
-      case EventCategory.other:
-        return 'Événement';
     }
   }
 
@@ -320,23 +293,6 @@ class EventCompactHeader extends StatelessWidget {
         return Icons.movie_outlined;
       case EventCategory.other:
         return Icons.event_outlined;
-    }
-  }
-
-  String _getAudienceLabel(EventAudience audience) {
-    switch (audience) {
-      case EventAudience.all:
-        return 'Tout public';
-      case EventAudience.family:
-        return 'Famille';
-      case EventAudience.children:
-        return 'Enfants';
-      case EventAudience.teenagers:
-        return 'Ados';
-      case EventAudience.adults:
-        return 'Adultes';
-      case EventAudience.seniors:
-        return 'Seniors';
     }
   }
 }

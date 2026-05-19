@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../../config/dio_client.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../domain/entities/user.dart';
 import '../../data/mappers/auth_mapper.dart';
 import '../../data/models/auth_response_dto.dart';
@@ -27,7 +28,15 @@ import '../../../petit_boo/presentation/providers/petit_boo_chat_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../profile/presentation/providers/saved_participants_provider.dart';
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, pendingVerification, pendingLoginOtp, error }
+enum AuthStatus {
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  pendingVerification,
+  pendingLoginOtp,
+  error
+}
 
 class AuthState {
   final AuthStatus status;
@@ -79,7 +88,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (isAuth) {
       final user = await _authRepository.getCurrentUser();
       state = state.copyWith(
-        status: user != null ? AuthStatus.authenticated : AuthStatus.unauthenticated,
+        status: user != null
+            ? AuthStatus.authenticated
+            : AuthStatus.unauthenticated,
         user: user,
       );
     } else {
@@ -88,11 +99,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   /// Login - may require OTP verification (2FA) or direct auth (Laravel v2)
-  Future<LoginOtpResult?> login({required String email, required String password}) async {
+  Future<LoginOtpResult?> login(
+      {required String email, required String password}) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
-      final result = await _authRepository.login(email: email, password: password);
+      final result =
+          await _authRepository.login(email: email, password: password);
 
       if (result.requiresOtp) {
         // OTP required - store pending info
@@ -144,14 +157,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
         firstName: firstName,
         lastName: lastName,
       );
-      
+
       // Store pending verification info in state
       state = state.copyWith(
         status: AuthStatus.pendingVerification,
         pendingUserId: result.userId,
         pendingEmail: result.email,
       );
-      
+
       return result;
     } catch (e) {
       state = state.copyWith(
@@ -189,17 +202,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       final errorMessage = e.toString();
       debugPrint('🚨 Verify OTP Error: $errorMessage');
-      
+
       // Handle case where user is already verified (e.g. double submission or retry)
       if (errorMessage.contains('user_already_verified')) {
-         debugPrint('🚨 Treating already verified as success');
-         state = state.copyWith(
-            status: AuthStatus.unauthenticated, // Will redirect to login (since we don't have token)
-            pendingUserId: null,
-            pendingEmail: null,
-            errorMessage: 'Votre compte est déjà vérifié. Veuillez vous connecter.',
-         );
-         return true; // Treat as handled/success to allow navigation
+        debugPrint('🚨 Treating already verified as success');
+        state = state.copyWith(
+          status: AuthStatus
+              .unauthenticated, // Will redirect to login (since we don't have token)
+          pendingUserId: null,
+          pendingEmail: null,
+          errorMessage: cachedAppLocalizations().authAccountAlreadyVerified,
+        );
+        return true; // Treat as handled/success to allow navigation
       }
 
       state = state.copyWith(
@@ -408,9 +422,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // AuthMapper may default role to subscriber if the profile endpoint
       // doesn't return it — preserve the current role in that case.
       next = mapped.copyWith(
-        role: mapped.role != UserRole.subscriber
-            ? mapped.role
-            : currentUser.role,
+        role:
+            mapped.role != UserRole.subscriber ? mapped.role : currentUser.role,
       );
     } else if (updatedUser is HbUser) {
       next = updatedUser;
@@ -427,6 +440,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   String _parseError(dynamic e) {
+    final l10n = cachedAppLocalizations();
+
     if (e is DioException) {
       if (e.type == DioExceptionType.badResponse) {
         final data = e.response?.data;
@@ -435,62 +450,64 @@ class AuthNotifier extends StateNotifier<AuthState> {
           if (data['error'] != null && data['error']['details'] != null) {
             final details = data['error']['details'];
             if (details is Map<String, dynamic>) {
-               // Return the first validation error message found
-               final firstError = details.values.first;
-               if (firstError is List && firstError.isNotEmpty) {
-                 return firstError.first.toString();
-               }
-               return firstError.toString();
+              // Return the first validation error message found
+              final firstError = details.values.first;
+              if (firstError is List && firstError.isNotEmpty) {
+                return firstError.first.toString();
+              }
+              return firstError.toString();
             }
           }
           // Fallback to general message if available
-           if (data['message'] != null) {
+          if (data['message'] != null) {
             return data['message'].toString();
           }
-           if (data['data'] != null && data['data']['message'] != null) {
+          if (data['data'] != null && data['data']['message'] != null) {
             return data['data']['message'].toString();
           }
         }
-      } else if (e.type == DioExceptionType.connectionTimeout || 
-                 e.type == DioExceptionType.receiveTimeout || 
-                 e.type == DioExceptionType.sendTimeout ||
-                 e.type == DioExceptionType.connectionError) {
-        return 'Erreur de connexion. Vérifiez votre connexion internet.';
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        return l10n.commonConnectionError;
       }
     }
 
     final message = e.toString();
     if (message.contains('invalid_credentials')) {
-      return 'Email ou mot de passe incorrect';
+      return l10n.authEmailOrPasswordIncorrect;
     } else if (message.contains('user_exists')) {
-      return 'Un compte existe déjà avec cet email';
+      return l10n.authAccountAlreadyExists;
     } else if (message.contains('weak_password')) {
-      return 'Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre';
+      return l10n.authWeakPasswordDetailed;
     } else if (message.contains('invalid_email')) {
-      return 'Adresse email invalide';
-    } else if (message.contains('network') || message.contains('SocketException')) {
-      return 'Erreur de connexion. Vérifiez votre connexion internet.';
+      return l10n.authEmailAddressInvalid;
+    } else if (message.contains('network') ||
+        message.contains('SocketException')) {
+      return l10n.commonConnectionError;
     }
-    
+
     // Provide a slightly more helpful fallback if it's an Exception with a message
     if (e is Exception) {
       final msg = e.toString().replaceAll('Exception: ', '');
       if (msg.isNotEmpty && !msg.startsWith('http')) return msg;
     }
-    
-    return 'Une erreur est survenue. Veuillez réessayer.';
+
+    return l10n.commonGenericRetryError;
   }
 
   String _parseOtpError(dynamic e) {
+    final l10n = cachedAppLocalizations();
     final message = e.toString();
     if (message.contains('invalid_otp')) {
-      return 'Code de vérification invalide';
+      return l10n.authVerificationCodeInvalid;
     } else if (message.contains('otp_expired')) {
-      return 'Le code a expiré. Veuillez en demander un nouveau.';
+      return l10n.authVerificationCodeExpired;
     } else if (message.contains('too_many_attempts')) {
-      return 'Trop de tentatives. Réessayez dans 15 minutes.';
+      return l10n.authTooManyAttempts;
     }
-    return 'Code de vérification invalide';
+    return l10n.authVerificationCodeInvalid;
   }
 }
 

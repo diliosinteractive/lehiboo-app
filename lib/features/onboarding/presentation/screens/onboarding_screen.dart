@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/models/onboarding_content.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -15,32 +16,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingContent> _contents = [
-    const OnboardingContent(
-      title: 'Sortez et experimentez',
-      description:
-          'Ateliers, balades, spectacles enfants: trouvez l\'activite du week-end sans y passer votre soiree.',
-      imagePath: 'assets/images/onboarding_screen_1.png',
-    ),
-    const OnboardingContent(
-      title: 'Vibrez au rythme de votre ville',
-      description:
-          'Découvrez les concerts, festivals et soirées qui font bouger votre région. Ne ratez plus aucun événement musical.',
-      imagePath: 'assets/images/onboarding_n_1.png',
-    ),
-    const OnboardingContent(
-      title: 'Restez connecté aux nouveautés du coin',
-      description:
-          'Marchés, lieux à découvrir : les bonnes adresses à deux pas de chez vous.',
-      imagePath: 'assets/images/onboarding_n_2.png',
-    ),
-    const OnboardingContent(
-      title: 'Membre d\'une asso ?',
-      description:
-          'Accédez aux événements privés réservés à vos associations : sport, école, culture, loisirs. Tout au même endroit.',
-      imagePath: 'assets/images/onboarding_association.png',
-    ),
-  ];
+  List<OnboardingContent> _contents(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      OnboardingContent(
+        title: l10n.onboardingExploreTitle,
+        description: l10n.onboardingExploreDescription,
+        imagePath: 'assets/images/onboarding_screen_1.png',
+      ),
+      OnboardingContent(
+        title: l10n.onboardingMusicTitle,
+        description: l10n.onboardingMusicDescription,
+        imagePath: 'assets/images/onboarding_n_1.png',
+      ),
+      OnboardingContent(
+        title: l10n.onboardingLocalTitle,
+        description: l10n.onboardingLocalDescription,
+        imagePath: 'assets/images/onboarding_n_2.png',
+      ),
+      OnboardingContent(
+        title: l10n.onboardingAssociationTitle,
+        description: l10n.onboardingAssociationDescription,
+        imagePath: 'assets/images/onboarding_association.png',
+      ),
+    ];
+  }
 
   @override
   void dispose() {
@@ -64,20 +64,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final contents = _contents(context);
+    final l10n = context.l10n;
+
     return Scaffold(
       body: Stack(
         children: [
           // Background Image with PageView
           PageView.builder(
             controller: _pageController,
-            itemCount: _contents.length,
+            itemCount: contents.length,
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
               });
             },
             itemBuilder: (context, index) {
-              return _buildPage(_contents[index]);
+              return _buildPage(contents[index]);
             },
           ),
 
@@ -129,9 +132,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text(
-                'Passer',
-                style: TextStyle(
+              child: Text(
+                l10n.onboardingSkip,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -150,7 +153,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // Indicators
                 Row(
                   children: List.generate(
-                    _contents.length,
+                    contents.length,
                     (index) => _buildDot(index),
                   ),
                 ),
@@ -158,7 +161,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // Next / Finish Button
                 ElevatedButton(
                   onPressed: () {
-                    if (_currentPage == _contents.length - 1) {
+                    if (_currentPage == contents.length - 1) {
                       _completeOnboarding();
                     } else {
                       _pageController.nextPage(
@@ -178,9 +181,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     elevation: 0,
                   ),
                   child: Text(
-                    _currentPage == _contents.length - 1
-                        ? 'C\'est parti'
-                        : 'Suivant',
+                    _currentPage == contents.length - 1
+                        ? l10n.onboardingGetStarted
+                        : l10n.commonNext,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

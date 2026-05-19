@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/city.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../events/domain/entities/popular_city.dart';
 import '../../../events/domain/entities/event.dart';
 import '../../../events/domain/entities/event_submodels.dart';
@@ -474,9 +475,9 @@ class PopularCitiesNotifier
   }
 }
 
-/// Placeholder image fallback for the legacy [homeCitiesProvider], which still
-/// powers the search/filter sheets. The home "Villes populaires" section uses
-/// [popularCitiesProvider] and the server-provided image instead.
+/// Placeholder image fallback for the legacy [homeCitiesProvider]. The curated
+/// "Villes populaires" surfaces use [popularCitiesProvider] and the
+/// server-provided image instead.
 String _getCityImageUrl(String cityName) {
   // Map of known cities to image URLs
   final cityImages = {
@@ -637,8 +638,9 @@ class SavedSearch {
     if (cityName != null) parts.add(cityName!);
     if (thematiqueName != null) parts.add(thematiqueName!);
 
-    if (parts.isEmpty && hasAlert) return 'Alerte personnalisée';
-    if (parts.isEmpty) return 'Recherche sauvegardée';
+    final l10n = cachedAppLocalizations();
+    if (parts.isEmpty && hasAlert) return l10n.homeSavedSearchAlertFallback;
+    if (parts.isEmpty) return l10n.homeSavedSearchFallback;
 
     return parts.join(' • ');
   }

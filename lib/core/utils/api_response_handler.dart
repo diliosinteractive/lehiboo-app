@@ -21,10 +21,12 @@
 ///  – `meta` extracted from root or `data.pagination` when present.
 ///
 /// **Errors**
-///  – [extractError] turns any exception into a user-facing French string.
+///  – [extractError] turns any exception into a localized user-facing string.
 library;
 
 import 'package:dio/dio.dart';
+
+import '../l10n/l10n.dart';
 
 class ApiResponseHandler {
   ApiResponseHandler._();
@@ -165,41 +167,43 @@ class ApiResponseHandler {
   ///  4. `{ "message": "…" }`                                    — top-level message
   ///  5. `{ "data": { "message": "…" } }`                        — nested message
   ///
-  /// Network / timeout errors return a generic French connectivity message.
+  /// Network / timeout errors return a localized connectivity message.
   /// [ApiFormatException] and unrecognised errors return [fallback].
   static String extractError(
     dynamic error, {
-    String fallback = 'Une erreur est survenue. Veuillez réessayer.',
+    String? fallback,
   }) {
+    final l10n = cachedAppLocalizations();
+    final fallbackMessage = fallback ?? l10n.commonGenericRetryError;
+
     if (error is DioException) {
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
         case DioExceptionType.connectionError:
-          return 'Erreur de connexion. Vérifiez votre connexion internet.';
+          return l10n.commonConnectionError;
         case DioExceptionType.badResponse:
           final data = error.response?.data;
           if (data is Map<String, dynamic>) {
-            return _extractMessageFromBody(data) ?? fallback;
+            return _extractMessageFromBody(data) ?? fallbackMessage;
           }
-          return fallback;
+          return fallbackMessage;
         default:
-          return fallback;
+          return fallbackMessage;
       }
     }
 
-    if (error is ApiFormatException) return fallback;
+    if (error is ApiFormatException) return fallbackMessage;
 
     // Dart `Error` subclasses (CircularDependencyError, RangeError, etc.) are
     // programming bugs, not user-facing problems. Their toString often looks
     // like "Instance of '<ClassName>'" — never surface that to the UI.
-    if (error is Error) return fallback;
+    if (error is Error) return fallbackMessage;
 
     // Generic Exception — strip prefix if present
     final str = error.toString();
-    final cleaned =
-        str.startsWith('Exception: ') ? str.substring(11) : str;
+    final cleaned = str.startsWith('Exception: ') ? str.substring(11) : str;
     // "Instance of '<Class>'" is the default toString for classes without
     // an override — it's never a helpful message for a user.
     if (cleaned.isNotEmpty &&
@@ -209,7 +213,7 @@ class ApiResponseHandler {
       return cleaned;
     }
 
-    return fallback;
+    return fallbackMessage;
   }
 
   /// Returns true when the exception is a transport/connectivity failure.

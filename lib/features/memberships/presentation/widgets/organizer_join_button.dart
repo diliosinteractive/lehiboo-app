@@ -31,7 +31,7 @@ class OrganizerJoinButton extends ConsumerWidget {
     final action = ref.watch(membershipActionControllerProvider(organizerUuid));
     final isInFlight = action.valueOrNull?.isInFlight ?? false;
 
-    final spec = _specFor(membership);
+    final spec = _specFor(context, membership);
 
     return InkWell(
       onTap:
@@ -109,25 +109,26 @@ class OrganizerJoinButton extends ConsumerWidget {
     }
   }
 
-  _ButtonSpec _specFor(MembershipDto? m) {
+  _ButtonSpec _specFor(BuildContext context, MembershipDto? m) {
+    final l10n = context.l10n;
     return switch (m?.status) {
-      null => const _ButtonSpec(
-          label: 'Rejoindre',
+      null => _ButtonSpec(
+          label: l10n.membershipJoinAction,
           icon: Icons.group_add_outlined,
           filled: true,
         ),
-      MembershipStatus.pending => const _ButtonSpec(
-          label: 'En attente',
+      MembershipStatus.pending => _ButtonSpec(
+          label: l10n.membershipPendingAction,
           icon: Icons.schedule_outlined,
           filled: false,
         ),
-      MembershipStatus.active => const _ButtonSpec(
-          label: 'Membre',
+      MembershipStatus.active => _ButtonSpec(
+          label: l10n.membershipMember,
           icon: Icons.check_circle_outline,
           filled: false,
         ),
-      MembershipStatus.rejected => const _ButtonSpec(
-          label: 'Refaire la demande',
+      MembershipStatus.rejected => _ButtonSpec(
+          label: l10n.membershipRetryRequestAction,
           icon: Icons.refresh,
           filled: true,
         ),
@@ -146,20 +147,19 @@ Future<void> confirmAndCancelMembership(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Annuler la demande ?'),
+      title: Text(context.l10n.membershipCancelRequestTitle),
       content: Text(
-        "Votre demande de rejoindre $organizerName sera annulée. "
-        "Vous pourrez en refaire une à tout moment.",
+        context.l10n.membershipCancelRequestBody(organizerName),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Retour'),
+          child: Text(context.l10n.commonBack),
         ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(true),
           style: TextButton.styleFrom(foregroundColor: HbColors.brandPrimary),
-          child: const Text('Annuler la demande'),
+          child: Text(context.l10n.membershipCancelRequestAction),
         ),
       ],
     ),
@@ -181,20 +181,19 @@ Future<void> confirmAndLeaveMembership(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text("Quitter l'organisation ?"),
+      title: Text(context.l10n.membershipLeaveTitle),
       content: Text(
-        "Vous ne verrez plus les événements privés de $organizerName. "
-        "Vous pourrez refaire une demande à tout moment.",
+        context.l10n.membershipLeaveBody(organizerName),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Retour'),
+          child: Text(context.l10n.commonBack),
         ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(true),
           style: TextButton.styleFrom(foregroundColor: HbColors.error),
-          child: const Text('Quitter'),
+          child: Text(context.l10n.membershipLeaveAction),
         ),
       ],
     ),
@@ -217,15 +216,12 @@ Future<void> confirmAndJoin(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text("Rejoindre l'espace privé de $organizerName ?"),
-      content: const Text(
-        "En rejoignant, vous accédez aux événements exclusifs proposés "
-        "aux membres. Votre demande sera examinée par l'organisateur.",
-      ),
+      title: Text(context.l10n.membershipJoinTitle(organizerName)),
+      content: Text(context.l10n.membershipJoinBody),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Retour'),
+          child: Text(context.l10n.commonBack),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(ctx).pop(true),
@@ -233,7 +229,7 @@ Future<void> confirmAndJoin(
             backgroundColor: HbColors.brandPrimary,
             foregroundColor: Colors.white,
           ),
-          child: const Text('Rejoindre'),
+          child: Text(context.l10n.membershipJoinAction),
         ),
       ],
     ),

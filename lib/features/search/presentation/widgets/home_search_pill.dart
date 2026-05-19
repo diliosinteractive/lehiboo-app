@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/filter_provider.dart';
+import '../utils/search_l10n.dart';
 import 'airbnb_search_sheet.dart';
 
 /// Compact search pill for the home page hero section
@@ -15,9 +17,9 @@ class HomeSearchPill extends ConsumerWidget {
     final filter = ref.watch(eventFilterProvider);
 
     // Build the display text based on current filters
-    final whereText = _getWhereText(filter);
-    final whenText = _getWhenText(filter);
-    final whatText = _getWhatText(filter);
+    final whereText = _getWhereText(context, filter);
+    final whenText = _getWhenText(context, filter);
+    final whatText = _getWhatText(context, filter);
 
     return GestureDetector(
       onTap: () => AirbnbSearchSheet.show(context),
@@ -29,12 +31,12 @@ class HomeSearchPill extends ConsumerWidget {
           borderRadius: BorderRadius.circular(40),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha:0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha:0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -67,7 +69,9 @@ class HomeSearchPill extends ConsumerWidget {
                 children: [
                   // Main text
                   Text(
-                    _hasAnyFilter(filter) ? _getMainText(filter) : 'Rechercher',
+                    _hasAnyFilter(filter)
+                        ? _getMainText(context, filter)
+                        : context.l10n.homeSearchTitle,
                     style: GoogleFonts.montserrat(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -99,10 +103,10 @@ class HomeSearchPill extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: HbColors.brandPrimary.withValues(alpha:0.1),
+                  color: HbColors.brandPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: HbColors.brandPrimary.withValues(alpha:0.3),
+                    color: HbColors.brandPrimary.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -140,35 +144,38 @@ class HomeSearchPill extends ConsumerWidget {
         filter.thematiquesSlugs.isNotEmpty;
   }
 
-  String _getMainText(filter) {
+  String _getMainText(BuildContext context, filter) {
     if (filter.cityName != null) return filter.cityName!;
-    if (filter.latitude != null) return 'À proximité';
+    if (filter.latitude != null) return context.l10n.homeSearchNearby;
     if (filter.searchQuery.isNotEmpty) return filter.searchQuery;
-    return 'Rechercher';
+    return context.l10n.homeSearchTitle;
   }
 
-  String _getWhereText(filter) {
+  String _getWhereText(BuildContext context, filter) {
     if (filter.cityName != null) return filter.cityName!;
     if (filter.latitude != null) return '📍 ${filter.radiusKm.toInt()} km';
-    return 'Où ?';
+    return context.l10n.homeSearchWhere;
   }
 
-  String _getWhenText(filter) {
-    if (filter.dateFilterLabel != null) return filter.dateFilterLabel!;
-    return 'Quand ?';
+  String _getWhenText(BuildContext context, filter) {
+    final dateLabel = context.searchDateFilterLabelOrNull(filter);
+    if (dateLabel != null) return dateLabel;
+    return context.l10n.homeSearchWhen;
   }
 
-  String _getWhatText(filter) {
+  String _getWhatText(BuildContext context, filter) {
     final parts = <String>[];
 
     if (filter.categoriesSlugs.isNotEmpty) {
-      parts.add('${filter.categoriesSlugs.length} cat.');
+      parts.add(context.l10n.homeSearchCategoryCount(
+        filter.categoriesSlugs.length,
+      ));
     }
-    if (filter.familyFriendly) parts.add('Famille');
-    if (filter.onlyFree) parts.add('Gratuit');
+    if (filter.familyFriendly) parts.add(context.l10n.homeSearchFamily);
+    if (filter.onlyFree) parts.add(context.l10n.commonFree);
 
     if (parts.isNotEmpty) return parts.join(', ');
-    return 'Quoi ?';
+    return context.l10n.homeSearchWhat;
   }
 }
 
@@ -188,7 +195,7 @@ class HomeSearchPillCompact extends ConsumerWidget {
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha:0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -204,7 +211,7 @@ class HomeSearchPillCompact extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              'Où ? · Quand ? · Quoi ?',
+              '${context.l10n.homeSearchWhere} · ${context.l10n.homeSearchWhen} · ${context.l10n.homeSearchWhat}',
               style: GoogleFonts.montserrat(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

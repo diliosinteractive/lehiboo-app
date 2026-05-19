@@ -78,8 +78,10 @@ class FollowedOrganizerTile extends StatelessWidget {
                     [
                       if (organizer.city != null && organizer.city!.isNotEmpty)
                         organizer.city,
-                      '${compact.format(organizer.eventsCount)} '
-                          '${organizer.eventsCount > 1 ? "événements" : "événement"}',
+                      context.l10n.organizerEventsCount(
+                        compact.format(organizer.eventsCount),
+                        organizer.eventsCount,
+                      ),
                     ].whereType<String>().join(' • '),
                     style: GoogleFonts.figtree(
                       fontSize: 12,
@@ -123,7 +125,7 @@ class _UnfollowButton extends StatelessWidget {
                 size: 14, color: HbColors.brandPrimary),
             const SizedBox(width: 4),
             Text(
-              'Ne plus suivre',
+              context.l10n.organizerUnfollowAction,
               style: GoogleFonts.figtree(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
+import 'package:lehiboo/features/home/presentation/utils/home_l10n_formatters.dart';
 
 class EventCard extends ConsumerWidget {
   final Activity activity;
@@ -47,19 +49,6 @@ class EventCard extends ConsumerWidget {
     this.forcePrivateBadge = false,
   });
 
-  String _formatSlotDateTime(DateTime dt) {
-    const days = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
-    const months = [
-      'jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin',
-      'juil.', 'août', 'sep.', 'oct.', 'nov.', 'déc.',
-    ];
-    final dayName = days[dt.weekday - 1];
-    final monthName = months[dt.month - 1];
-    final time = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    final year = (dt.year % 100).toString().padLeft(2, '0');
-    return '$dayName ${dt.day} $monthName $year à $time';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
@@ -82,7 +71,7 @@ class EventCard extends ConsumerWidget {
                   ),
                   // Contenu complet, Expanded pour éviter overflow
                   Expanded(
-                    child: _buildContentSection(compact: false),
+                    child: _buildContentSection(context, compact: false),
                   ),
                 ],
               )
@@ -91,7 +80,7 @@ class EventCard extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildImageStack(context),
-                  _buildContentSection(compact: false),
+                  _buildContentSection(context, compact: false),
                 ],
               ),
       ),
@@ -99,7 +88,8 @@ class EventCard extends ConsumerWidget {
   }
 
   Widget _buildImageStack(BuildContext context) {
-    final double? height = imageHeight ?? (fillContainer ? null : (isCompact ? 240 : 260));
+    final double? height =
+        imageHeight ?? (fillContainer ? null : (isCompact ? 240 : 260));
 
     return Stack(
       // Quand fillContainer, expand pour remplir l'Expanded parent
@@ -126,7 +116,8 @@ class EventCard extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      errorWidget: (context, url, error) => _buildFallbackImage(),
+                      errorWidget: (context, url, error) =>
+                          _buildFallbackImage(),
                     )
                   : _buildFallbackImage(),
             ),
@@ -151,8 +142,8 @@ class EventCard extends ConsumerWidget {
             bottom: 12,
             left: 12,
             child: GestureDetector(
-              onTap: () => context.push(
-                  '/search?categorySlug=${activity.category!.slug}'),
+              onTap: () => context
+                  .push('/search?categorySlug=${activity.category!.slug}'),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -161,7 +152,10 @@ class EventCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  activity.category!.name,
+                  context.homeActivityCategoryLabel(
+                    slug: activity.category!.slug,
+                    fallback: activity.category!.name,
+                  ),
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 10,
@@ -186,7 +180,7 @@ class EventCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildContentSection({required bool compact}) {
+  Widget _buildContentSection(BuildContext context, {required bool compact}) {
     return Padding(
       padding: EdgeInsets.only(
         top: compact ? 8 : 12,
@@ -219,7 +213,7 @@ class EventCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
-                  'Par ${activity.partner!.name}',
+                  context.l10n.homeEventByOrganizer(activity.partner!.name),
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 13,
@@ -231,12 +225,16 @@ class EventCard extends ConsumerWidget {
               ),
 
             // Rating (only if real data exists)
-            if (activity.rating != null && activity.rating! > 0 && activity.reviewsCount != null && activity.reviewsCount! > 0)
+            if (activity.rating != null &&
+                activity.rating! > 0 &&
+                activity.reviewsCount != null &&
+                activity.reviewsCount! > 0)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Row(
                   children: [
-                    const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF601F)),
+                    const Icon(Icons.star_rounded,
+                        size: 14, color: Color(0xFFFF601F)),
                     const SizedBox(width: 4),
                     Text(
                       activity.rating!.toStringAsFixed(1),
@@ -281,7 +279,10 @@ class EventCard extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      _formatDateBadge(activity.nextSlot!.startDateTime),
+                      _formatDateBadge(
+                        context,
+                        activity.nextSlot!.startDateTime,
+                      ),
                       style: TextStyle(
                         color: Colors.grey[700],
                         fontSize: 12,
@@ -301,7 +302,8 @@ class EventCard extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               activity.city?.name ?? 'France',
-              style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
+              style:
+                  TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -317,7 +319,10 @@ class EventCard extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      _formatDateBadge(activity.nextSlot!.startDateTime),
+                      _formatDateBadge(
+                        context,
+                        activity.nextSlot!.startDateTime,
+                      ),
                       style: TextStyle(
                         color: Colors.grey[700],
                         fontSize: 12,
@@ -352,7 +357,7 @@ class EventCard extends ConsumerWidget {
                   // than mislabel it as "Gratuit".
                   if (activity.isFree != true) return const SizedBox.shrink();
                   return Text(
-                    'Gratuit',
+                    context.l10n.commonFree,
                     style: TextStyle(
                       color: Colors.green[700],
                       fontWeight: FontWeight.w600,
@@ -362,7 +367,7 @@ class EventCard extends ConsumerWidget {
                   );
                 }
                 return Text(
-                  'À partir de ${price.toStringAsFixed(0)}€',
+                  context.homePriceFrom(price),
                   style: TextStyle(
                     color: const Color(0xFFFF601F),
                     fontWeight: FontWeight.w600,
@@ -379,7 +384,7 @@ class EventCard extends ConsumerWidget {
                   (activity.priceMax == null || activity.priceMax == 0);
               if (!isTrulyFree) return const SizedBox.shrink();
               return Text(
-                'Gratuit',
+                context.l10n.commonFree,
                 style: TextStyle(
                   color: Colors.green[700],
                   fontWeight: FontWeight.w600,
@@ -454,18 +459,13 @@ class EventCard extends ConsumerWidget {
     );
   }
 
-  String _formatDateBadge(DateTime dt) {
-    final time =
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    if (isToday) {
-      return 'Aujourd\'hui à $time';
-    }
-    if (isTomorrow) {
-      return 'Demain à $time';
-    }
-    return _formatSlotDateTime(dt);
+  String _formatDateBadge(BuildContext context, DateTime dt) {
+    return context.homeFriendlyDateAtTime(
+      dt,
+      forceToday: isToday,
+      forceTomorrow: isTomorrow,
+    );
   }
-
 }
 
 /// "Privé 🔒" badge for members-only events. Same size language as the
@@ -483,12 +483,12 @@ class _PrivateBadge extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.lock_outline, size: 10, color: Colors.white),
-          SizedBox(width: 4),
+        children: [
+          const Icon(Icons.lock_outline, size: 10, color: Colors.white),
+          const SizedBox(width: 4),
           Text(
-            'Privé',
-            style: TextStyle(
+            context.l10n.homePrivateBadge,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w700,

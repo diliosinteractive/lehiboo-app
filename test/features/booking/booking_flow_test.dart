@@ -1,11 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
-import 'package:lehiboo/domain/entities/city.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
-import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
-
+import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 
 // Generate Mocks manually for simplicity in this example to avoid build_runner deps in test file overrides
 // In real project use @GenerateMocks([BookingRepository])
@@ -15,17 +13,19 @@ class MockBookingRepository implements BookingRepository {
   Future<Booking> createBooking({
     required String activityId,
     required String slotId,
-    required int quantity,
+    required List<TicketSelection> ticketSelections,
     required BuyerInfo buyer,
-    required List<ParticipantInfo> participants,
+    bool acceptTerms = false,
+    bool acceptNewsletter = false,
+    String? promoCode,
   }) async {
     return Booking(
-       id: 'booking_123', 
-       userId: 'user_1', 
-       slotId: slotId, 
-       activityId: activityId, 
-       status: 'pending',
-       totalPrice: 100,
+      id: 'booking_123',
+      userId: 'user_1',
+      slotId: slotId,
+      activityId: activityId,
+      status: 'pending',
+      totalPrice: 100,
     );
   }
 
@@ -33,21 +33,33 @@ class MockBookingRepository implements BookingRepository {
   Future<List<Ticket>> getTicketsByBooking(String bookingId) async {
     return [];
   }
-  
+
   @override
-  Future<Booking> confirmBooking({required String bookingId, String? paymentIntentId}) async {
+  Future<Booking> confirmBooking({
+    required String bookingId,
+    String? paymentIntentId,
+  }) async {
     return Booking(
-       id: bookingId,
-       userId: 'user_1',
-       slotId: 'slot_1',
-       activityId: 'act_1',
-       status: 'confirmed',
-       totalPrice: 100,
+      id: bookingId,
+      userId: 'user_1',
+      slotId: 'slot_1',
+      activityId: 'act_1',
+      status: 'confirmed',
+      totalPrice: 100,
     );
   }
-  
+
   @override
-  Future<void> cancelBooking(String bookingId) async {}
+  Future<Booking> cancelBooking(String bookingId, {String? reason}) async {
+    return Booking(
+      id: bookingId,
+      userId: 'user_1',
+      slotId: 'slot_1',
+      activityId: 'act_1',
+      status: 'cancelled',
+      totalPrice: 100,
+    );
+  }
 
   @override
   Future<List<Booking>> getMyBookings() async => [];
@@ -59,19 +71,19 @@ class MockBookingRepository implements BookingRepository {
 void main() {
   late BookingFlowController controller;
   late MockBookingRepository mockRepository;
-  
+
   final mockSlot = Slot(
-     id: 'slot_1', 
-     activityId: 'act_1', 
-     startDateTime: DateTime.now(), 
-     endDateTime: DateTime.now().add(const Duration(hours: 1)),
-     priceMin: 10,
+    id: 'slot_1',
+    activityId: 'act_1',
+    startDateTime: DateTime.now(),
+    endDateTime: DateTime.now().add(const Duration(hours: 1)),
+    priceMin: 10,
   );
-  
+
   final mockActivity = Activity(
-    id: 'act_1', 
-    title: 'Test Activity', 
-    slug: 'test', 
+    id: 'act_1',
+    title: 'Test Activity',
+    slug: 'test',
     description: 'desc',
     isFree: false,
     priceMin: 10,
@@ -96,7 +108,7 @@ void main() {
     controller.selectSlot(mockSlot);
     expect(controller.state.selectedSlot, mockSlot);
     expect(controller.state.totalPrice, 10.0);
-    
+
     controller.updateQuantity(2);
     expect(controller.state.quantity, 2);
     expect(controller.state.totalPrice, 20.0);

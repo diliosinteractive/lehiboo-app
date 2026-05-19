@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -220,18 +221,18 @@ class _EventHeroGalleryState extends State<EventHeroGallery> {
             color: Colors.white.withValues(alpha: 0.3),
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.play_circle_filled,
               color: Colors.white,
               size: 24,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
-              'Voir la vidéo',
-              style: TextStyle(
+              context.l10n.eventViewVideo,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -249,19 +250,19 @@ class _EventHeroGalleryState extends State<EventHeroGallery> {
     return Container(
       height: MediaQuery.of(context).size.height * widget.height,
       color: Colors.grey.shade200,
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.image_outlined,
               color: Colors.grey,
               size: 64,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
-              'Aucune image disponible',
-              style: TextStyle(
+              context.l10n.eventNoImageAvailable,
+              style: const TextStyle(
                 color: Colors.grey,
                 fontSize: 16,
               ),

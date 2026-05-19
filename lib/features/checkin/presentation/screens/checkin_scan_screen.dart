@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../memberships/data/models/membership_dto.dart';
 import '../../../memberships/presentation/providers/membership_state_providers.dart';
@@ -237,18 +238,21 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
 
   void _showSuccessSnack(bool isReEntry, int count) {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
-        backgroundColor:
-            isReEntry ? HbColors.warning : HbColors.success,
+        backgroundColor: isReEntry ? HbColors.warning : HbColors.success,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
         content: Text(
           isReEntry
-              ? 'Ré-entrée enregistrée (entrée n°$count)'
-              : 'Bienvenue ! Entrée enregistrée.',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ? l10n.checkinReEntryRecorded(count)
+              : l10n.checkinEntryRecorded,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -256,15 +260,19 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
 
   void _showNetworkUnstableBanner() {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
-      const SnackBar(
+      SnackBar(
         backgroundColor: HbColors.error,
-        duration: Duration(seconds: 4),
+        duration: const Duration(seconds: 4),
         behavior: SnackBarBehavior.floating,
         content: Text(
-          'Réseau instable — re-scannez pour confirmer.',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          l10n.checkinNetworkRescan,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -287,6 +295,7 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
   Widget build(BuildContext context) {
     final activeOrg = ref.watch(activeOrganizationProvider);
     final session = ref.watch(scanSessionProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -295,20 +304,20 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
         backgroundColor: Colors.black54,
         elevation: 0,
         foregroundColor: Colors.white,
-        title: const Text('Scanner les billets'),
+        title: Text(l10n.checkinScannerTitle),
         actions: [
           IconButton(
-            tooltip: 'Lampe',
+            tooltip: l10n.checkinTorchTooltip,
             icon: const Icon(Icons.flash_on),
             onPressed: () => _scanner.toggleTorch(),
           ),
           IconButton(
-            tooltip: 'Caméra',
+            tooltip: l10n.checkinCameraTooltip,
             icon: const Icon(Icons.cameraswitch_outlined),
             onPressed: () => _scanner.switchCamera(),
           ),
           PopupMenuButton<String>(
-            tooltip: 'Plus',
+            tooltip: l10n.checkinMoreTooltip,
             onSelected: (value) async {
               switch (value) {
                 case 'switch_org':
@@ -322,18 +331,18 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
                   await _editGate();
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'switch_org',
-                child: Text("Changer d'organisation"),
+                child: Text(l10n.checkinSwitchOrganization),
               ),
               PopupMenuItem(
                 value: 'manual',
-                child: Text('Saisie manuelle'),
+                child: Text(l10n.checkinManualEntryTitle),
               ),
               PopupMenuItem(
                 value: 'gate',
-                child: Text('Étiquette de gate'),
+                child: Text(l10n.checkinGateLabel),
               ),
             ],
           ),
@@ -371,33 +380,32 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
     final controller = TextEditingController(
       text: ref.read(scanSessionProvider).gate,
     );
+    final l10n = context.l10n;
     final res = await showDialog<String?>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Étiquette de gate'),
+        title: Text(l10n.checkinGateLabel),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'ex: Nord, VIP, Entrée 2…',
+          decoration: InputDecoration(
+            hintText: l10n.checkinGateHint,
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(null),
-            child: const Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Enregistrer'),
+            child: Text(l10n.commonSave),
           ),
         ],
       ),
     );
     if (res != null) {
-      ref
-          .read(scanSessionProvider.notifier)
-          .setGate(res.isEmpty ? null : res);
+      ref.read(scanSessionProvider.notifier).setGate(res.isEmpty ? null : res);
     }
   }
 }
@@ -477,7 +485,7 @@ class _BottomBar extends StatelessWidget {
                 ),
                 if (gate != null && gate!.isNotEmpty)
                   Text(
-                    'Gate : $gate',
+                    context.l10n.checkinGateDisplay(gate!),
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
@@ -503,6 +511,7 @@ class _CameraErrorOverlay extends StatelessWidget {
     }
     final isPermissionDenied =
         error.errorCode == MobileScannerErrorCode.permissionDenied;
+    final l10n = context.l10n;
     return Container(
       color: Colors.black,
       alignment: Alignment.center,
@@ -515,8 +524,8 @@ class _CameraErrorOverlay extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             isPermissionDenied
-                ? "Accès caméra refusé"
-                : "Caméra indisponible",
+                ? l10n.checkinCameraPermissionDeniedTitle
+                : l10n.checkinCameraUnavailableTitle,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -526,15 +535,15 @@ class _CameraErrorOverlay extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             isPermissionDenied
-                ? "Autorisez la caméra dans les paramètres système, ou utilisez la saisie manuelle."
-                : "Aucune caméra n'a été détectée. Utilisez la saisie manuelle.",
+                ? l10n.checkinCameraPermissionDeniedBody
+                : l10n.checkinCameraUnavailableBody,
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white70),
           ),
           const SizedBox(height: 20),
           FilledButton(
             onPressed: () => context.push('/vendor/scan/manual'),
-            child: const Text('Saisie manuelle'),
+            child: Text(l10n.checkinManualEntryTitle),
           ),
         ],
       ),

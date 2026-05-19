@@ -54,7 +54,7 @@ class EventInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -69,7 +69,7 @@ class EventInfoCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: HbColors.brandPrimary.withOpacity(0.1),
+                  color: HbColors.brandPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -79,9 +79,9 @@ class EventInfoCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'ÉVÉNEMENT',
-                style: TextStyle(
+              Text(
+                context.l10n.bookingSectionEvent,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: HbColors.textSecondary,
@@ -137,14 +137,14 @@ class EventInfoCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.open_in_new, size: 16),
-                    SizedBox(width: 8),
+                    const Icon(Icons.open_in_new, size: 16),
+                    const SizedBox(width: 8),
                     Text(
-                      'Voir l\'événement',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      context.l10n.bookingViewEvent,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),

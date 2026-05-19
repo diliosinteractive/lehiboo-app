@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/config/env_config.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
@@ -22,7 +23,7 @@ class ShareButton extends ConsumerWidget {
     this.iconColor,
   });
 
-  String _buildShareText(WidgetRef ref) {
+  String _buildShareText(BuildContext context, WidgetRef ref) {
     final url = shareUrl ?? EnvConfig.eventShareUrl(event.slug);
     final user = ref.read(authProvider).user;
     final senderName = (user?.firstName?.trim().isNotEmpty ?? false)
@@ -32,15 +33,15 @@ class ShareButton extends ConsumerWidget {
             : null;
 
     if (senderName != null) {
-      return "$senderName vous partage l'évènement ${event.title} : $url";
+      return context.l10n.eventShareWithSender(senderName, event.title, url);
     }
-    return "Découvre l'évènement ${event.title} : $url";
+    return context.l10n.eventShareDefault(event.title, url);
   }
 
-  Future<void> _handleShare(WidgetRef ref) async {
+  Future<void> _handleShare(BuildContext context, WidgetRef ref) async {
     HapticFeedback.lightImpact();
 
-    final text = _buildShareText(ref);
+    final text = _buildShareText(context, ref);
     await SharePlus.instance.share(
       ShareParams(text: text, subject: event.title),
     );
@@ -53,7 +54,7 @@ class ShareButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => _handleShare(ref),
+      onTap: () => _handleShare(context, ref),
       child: Container(
         width: 40,
         height: 40,

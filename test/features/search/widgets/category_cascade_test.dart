@@ -66,4 +66,85 @@ void main() {
       expect(result, ['culture']);
     });
   });
+
+  group('selectedParentCategorySlugs', () {
+    test('returns parents selected directly or through selected children', () {
+      final result = selectedParentCategorySlugs(
+        selectedSlugs: const ['sport', 'museum', 'unknown'],
+        childSlugsByParent: const {
+          'sport': ['tennis', 'football'],
+          'culture': ['museum', 'theatre'],
+          'food': ['market'],
+        },
+      );
+
+      expect(result, {'sport', 'culture'});
+    });
+
+    test('returns an empty set when no category slug is selected', () {
+      final result = selectedParentCategorySlugs(
+        selectedSlugs: const [],
+        childSlugsByParent: const {
+          'sport': ['tennis', 'football'],
+        },
+      );
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('prioritizedCategoryGroupSlugs', () {
+    test('uses backend order up to the limit when nothing is selected', () {
+      final result = prioritizedCategoryGroupSlugs(
+        orderedParentSlugs: const ['sport', 'culture', 'food', 'music'],
+        selectedParentSlugs: const {},
+        limit: 3,
+      );
+
+      expect(result, ['sport', 'culture', 'food']);
+    });
+
+    test('pins selected groups before filling remaining slots', () {
+      final result = prioritizedCategoryGroupSlugs(
+        orderedParentSlugs: const ['sport', 'culture', 'food', 'music'],
+        selectedParentSlugs: const {'music'},
+        limit: 3,
+      );
+
+      expect(result, ['music', 'sport', 'culture']);
+    });
+
+    test('keeps every selected group visible when selections exceed the limit',
+        () {
+      final result = prioritizedCategoryGroupSlugs(
+        orderedParentSlugs: const ['sport', 'culture', 'food', 'music'],
+        selectedParentSlugs: const {'culture', 'food', 'music'},
+        limit: 2,
+      );
+
+      expect(result, ['culture', 'food', 'music']);
+    });
+
+    test('ignores selected slugs that are not parent categories', () {
+      final result = prioritizedCategoryGroupSlugs(
+        orderedParentSlugs: const ['sport', 'culture', 'food'],
+        selectedParentSlugs: const {'unknown', 'food'},
+        limit: 2,
+      );
+
+      expect(result, ['food', 'sport']);
+    });
+  });
+
+  group('prioritizedFilterOptionSlugs', () {
+    test('pins selected options before filling remaining slots', () {
+      final result = prioritizedFilterOptionSlugs(
+        orderedSlugs: const ['nature', 'culture', 'sport', 'creative'],
+        selectedSlugs: const {'creative'},
+        limit: 3,
+      );
+
+      expect(result, ['creative', 'nature', 'culture']);
+    });
+  });
 }

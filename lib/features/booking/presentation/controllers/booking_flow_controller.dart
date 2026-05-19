@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
-import 'package:lehiboo/domain/entities/booking.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
 
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
@@ -53,7 +53,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
 
   void _calculateTotal() {
     if (state.selectedSlot == null) return;
-    
+
     // Simple logic: priority to slot price, then activity price
     double? unitPrice = state.selectedSlot!.priceMin ?? state.activity.priceMin;
     if (unitPrice != null) {
@@ -71,42 +71,49 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
 
   Future<void> goToParticipantsStep() async {
     if (state.selectedSlot == null) {
-      state = state.copyWith(errorMessage: 'Veuillez sélectionner un créneau.');
+      state = state.copyWith(
+        errorMessage: bookingCachedL10n().bookingLegacySelectSlotRequired,
+      );
       return;
     }
-    state = state.copyWith(step: const BookingStep.participants(), errorMessage: null);
+    state = state.copyWith(
+        step: const BookingStep.participants(), errorMessage: null);
   }
 
   Future<void> goToPaymentStep() async {
     if (!_validateBuyerInfo()) return;
-    
+
     // Ensure participants list size matches quantity (or fill with empty/default)
     final currentParticipants = state.participants ?? [];
     if (currentParticipants.length != state.quantity) {
-       // Logic to auto-fill or validate could go here. 
-       // For now, assume if quantity > 1 and list is empty, we might need logic.
+      // Logic to auto-fill or validate could go here.
+      // For now, assume if quantity > 1 and list is empty, we might need logic.
     }
 
     if (state.isFree) {
-        // Skip payment step for free events
-        await submitFreeBooking();
+      // Skip payment step for free events
+      await submitFreeBooking();
     } else {
-        state = state.copyWith(step: const BookingStep.payment(), errorMessage: null);
+      state =
+          state.copyWith(step: const BookingStep.payment(), errorMessage: null);
     }
   }
 
   bool _validateBuyerInfo() {
     final buyer = state.buyerInfo;
-    if (buyer == null || 
-        (buyer.email?.isEmpty ?? true) || 
-        (buyer.firstName?.isEmpty ?? true) || 
+    if (buyer == null ||
+        (buyer.email?.isEmpty ?? true) ||
+        (buyer.firstName?.isEmpty ?? true) ||
         (buyer.lastName?.isEmpty ?? true)) {
-      state = state.copyWith(errorMessage: 'Veuillez remplir toutes les informations obligatoires.');
+      state = state.copyWith(
+        errorMessage: bookingCachedL10n().bookingLegacyRequiredInfo,
+      );
       return false;
     }
     // Basic email regex
     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(buyer.email!)) {
-      state = state.copyWith(errorMessage: 'Email invalide.');
+      state =
+          state.copyWith(errorMessage: bookingCachedL10n().bookingEmailInvalid);
       return false;
     }
     return true;
@@ -132,12 +139,13 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
                 ticketTypeId: state.selectedSlot!.id,
                 ticketName: '',
                 quantity: state.quantity,
-                attendees: state.participants ?? [
-                  ParticipantInfo(
-                    firstName: state.buyerInfo!.firstName,
-                    lastName: state.buyerInfo!.lastName,
-                  ),
-                ],
+                attendees: state.participants ??
+                    [
+                      ParticipantInfo(
+                        firstName: state.buyerInfo!.firstName,
+                        lastName: state.buyerInfo!.lastName,
+                      ),
+                    ],
               ),
             ];
 
@@ -156,7 +164,8 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
       );
 
       // 3. Get Tickets
-      final tickets = await bookingRepository.getTicketsByBooking(confirmedBooking.id);
+      final tickets =
+          await bookingRepository.getTicketsByBooking(confirmedBooking.id);
 
       state = state.copyWith(
         isSubmitting: false,

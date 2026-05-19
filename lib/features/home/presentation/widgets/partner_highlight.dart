@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 
@@ -73,7 +74,7 @@ class PartnerHighlight extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with partner info
-          _buildHeader(),
+          _buildHeader(context),
 
           // Partner events carousel
           activitiesAsync.when(
@@ -133,7 +134,7 @@ class PartnerHighlight extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Voir toute la sélection',
+                      context.l10n.homePartnerSeeAllSelection,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: config.brandColor,
@@ -152,7 +153,7 @@ class PartnerHighlight extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -234,7 +235,7 @@ class PartnerHighlight extends ConsumerWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Partenaire',
+                  context.l10n.homePartnerBadge,
                   style: TextStyle(
                     color: config.brandColor,
                     fontSize: 11,
@@ -367,8 +368,10 @@ class _PartnerEventCard extends StatelessWidget {
                     if (activity.priceMin != null && activity.priceMin != -1)
                       Text(
                         activity.priceMin == 0
-                            ? 'Gratuit'
-                            : 'Dès ${activity.priceMin!.toStringAsFixed(0)}€',
+                            ? context.l10n.commonFree
+                            : context.l10n.homePriceFromShort(
+                                '${activity.priceMin!.toStringAsFixed(0)}€',
+                              ),
                         style: TextStyle(
                           color: activity.priceMin == 0
                               ? Colors.green[700]

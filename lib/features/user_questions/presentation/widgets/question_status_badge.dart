@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../events/domain/entities/event_question.dart';
 
 extension QuestionStatusUi on QuestionStatus {
-  String get label {
+  String label(BuildContext context) {
+    final l10n = context.l10n;
+
     switch (this) {
       case QuestionStatus.pending:
-        return 'En attente';
+        return l10n.userQuestionsStatusPending;
       case QuestionStatus.approved:
-        return 'Approuvée';
+        return l10n.userQuestionsStatusApproved;
       case QuestionStatus.answered:
-        return 'Répondue';
+        return l10n.userQuestionsStatusAnswered;
       case QuestionStatus.rejected:
-        return 'Rejetée';
+        return l10n.userQuestionsStatusRejected;
     }
   }
 
@@ -75,7 +78,7 @@ class QuestionStatusBadge extends StatelessWidget {
           ),
           SizedBox(width: compact ? 4 : 6),
           Text(
-            status.label,
+            status.label(context),
             style: TextStyle(
               fontSize: compact ? 11 : 12,
               fontWeight: FontWeight.w600,

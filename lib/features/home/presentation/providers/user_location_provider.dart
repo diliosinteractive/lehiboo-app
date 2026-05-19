@@ -3,6 +3,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 class UserLocation {
   final double lat;
   final double lng;
@@ -19,6 +21,7 @@ class UserLocationNotifier extends StateNotifier<AsyncValue<UserLocation?>> {
   Future<void> _initLocation() async {
     state = const AsyncValue.loading();
     try {
+      final l10n = cachedAppLocalizations();
       bool serviceEnabled;
       LocationPermission permission;
 
@@ -26,9 +29,9 @@ class UserLocationNotifier extends StateNotifier<AsyncValue<UserLocation?>> {
       serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         // Location services are not enabled don't continue
-        // accessing the position and request users of the 
+        // accessing the position and request users of the
         // App to enable the location services.
-        state = const AsyncValue.error('Location services are disabled.', StackTrace.empty);
+        state = AsyncValue.error(l10n.searchLocationDisabled, StackTrace.empty);
         return;
       }
 
@@ -38,39 +41,38 @@ class UserLocationNotifier extends StateNotifier<AsyncValue<UserLocation?>> {
         if (permission == LocationPermission.denied) {
           // Permissions are denied, next time you could try
           // requesting permissions again (this is also where
-          // Android's shouldShowRequestPermissionRationale 
+          // Android's shouldShowRequestPermissionRationale
           // returned true. According to Android guidelines
           // your App should show an explanatory UI now.
-          state = const AsyncValue.error('Location permissions are denied', StackTrace.empty);
+          state =
+              AsyncValue.error(l10n.searchPermissionDenied, StackTrace.empty);
           return;
         }
       }
-      
+
       if (permission == LocationPermission.deniedForever) {
-        // Permissions are denied forever, handle appropriately. 
-        state = const AsyncValue.error(
-          'Location permissions are permanently denied, we cannot request permissions.',
-          StackTrace.empty
-        );
+        // Permissions are denied forever, handle appropriately.
+        state = AsyncValue.error(
+            l10n.searchLocationSettingsRequired, StackTrace.empty);
         return;
-      } 
+      }
 
       // When we reach here, permissions are granted and we can
       // continue accessing the position of the device.
       final position = await Geolocator.getCurrentPosition();
-      
+
       String? cityName;
       try {
         List<Placemark> placemarks = await placemarkFromCoordinates(
           position.latitude,
           position.longitude,
         );
-        
+
         if (placemarks.isNotEmpty) {
-          cityName = placemarks.first.locality; 
+          cityName = placemarks.first.locality;
           // Some fallbacks if locality is empty (e.g. strict administrative areas)
           if (cityName == null || cityName.isEmpty) {
-             cityName = placemarks.first.subAdministrativeArea;
+            cityName = placemarks.first.subAdministrativeArea;
           }
         }
       } catch (e) {
@@ -82,17 +84,18 @@ class UserLocationNotifier extends StateNotifier<AsyncValue<UserLocation?>> {
         lng: position.longitude,
         cityName: cityName,
       ));
-
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
   }
-  
+
   Future<void> refresh() async {
     await _initLocation();
   }
 }
 
-final userLocationProvider = StateNotifierProvider<UserLocationNotifier, AsyncValue<UserLocation?>>((ref) {
+final userLocationProvider =
+    StateNotifierProvider<UserLocationNotifier, AsyncValue<UserLocation?>>(
+        (ref) {
   return UserLocationNotifier();
 });

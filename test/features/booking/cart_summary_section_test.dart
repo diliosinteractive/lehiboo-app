@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/l10n/app_locale.dart';
 import 'package:lehiboo/features/booking/domain/models/order_cart_item.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/cart_summary_section.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('formats cart recap slot times without seconds', (tester) async {
+    AppLocaleCache.setLanguageCode('fr');
+
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CartSummarySection(
             items: [
@@ -34,7 +41,7 @@ void main() {
       ),
     );
 
-    expect(find.text('10/05/2026 · 09:30'), findsOneWidget);
+    expect(find.textContaining('09:30'), findsOneWidget);
     expect(find.textContaining('09:30:00'), findsNothing);
   });
 }

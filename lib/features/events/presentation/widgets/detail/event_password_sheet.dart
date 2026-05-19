@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../../memberships/domain/exceptions/members_only_exception.dart';
 import '../../../../petit_boo/presentation/widgets/animated_toast.dart';
@@ -118,7 +119,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
 
     final pw = _controller.text;
     if (pw.isEmpty) {
-      setState(() => _error = 'Le mot de passe est requis.');
+      setState(() => _error = context.l10n.eventPasswordRequired);
       return;
     }
 
@@ -138,7 +139,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _error = 'Mot de passe incorrect.';
+        _error = context.l10n.eventPasswordIncorrect;
       });
     } on EventPasswordRateLimitedException catch (e) {
       if (!mounted) return;
@@ -159,17 +160,17 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _error = 'Format invalide.';
+        _error = context.l10n.eventPasswordInvalidFormat;
       });
     } on EventNotFoundException {
       if (!mounted) return;
       Navigator.of(context).pop(null);
-      PetitBooToast.error(context, 'Événement introuvable.');
+      PetitBooToast.error(context, context.l10n.eventPrivateNotFound);
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _error = 'Erreur réseau. Réessaie.';
+        _error = context.l10n.eventPasswordNetworkError;
       });
     }
   }
@@ -216,8 +217,10 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
     final showWarning = _attempts >= 3 && _retryCountdown == 0;
     final countdownActive = _retryCountdown > 0;
     final buttonLabel = countdownActive
-        ? 'Réessaye dans ${_retryCountdown}s'
-        : (_submitting ? 'Vérification...' : 'Déverrouiller');
+        ? context.l10n.eventPasswordRetryIn(_retryCountdown)
+        : (_submitting
+            ? context.l10n.eventPasswordChecking
+            : context.l10n.eventUnlock);
     final buttonEnabled = !_submitting && !countdownActive;
 
     return Column(
@@ -247,7 +250,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Cet événement est privé',
+                      context.l10n.eventPrivateTitle,
                       style: GoogleFonts.montserrat(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -256,7 +259,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Entre le mot de passe communiqué par l\'organisateur.',
+                      context.l10n.eventPrivateInstructions,
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         color: Colors.grey.shade600,
@@ -297,7 +300,8 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.event_outlined, size: 14, color: Colors.grey.shade600),
+                  Icon(Icons.event_outlined,
+                      size: 14, color: Colors.grey.shade600),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
@@ -333,7 +337,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Encore 3 essais avant un délai de 1 minute.',
+                      context.l10n.eventPasswordAttemptsWarning,
                       style: GoogleFonts.montserrat(
                         fontSize: 12,
                         color: Colors.orange.shade800,
@@ -351,7 +355,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Mot de passe',
+                context.l10n.eventPasswordLabel,
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -380,7 +384,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                   },
                   style: GoogleFonts.montserrat(fontSize: 15),
                   decoration: InputDecoration(
-                    hintText: 'Saisis le mot de passe',
+                    hintText: context.l10n.eventPasswordHint,
                     hintStyle: GoogleFonts.montserrat(
                       fontSize: 14,
                       color: Colors.grey.shade400,
@@ -446,9 +450,8 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _submitting
-                      ? null
-                      : () => Navigator.of(context).pop(),
+                  onPressed:
+                      _submitting ? null : () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: BorderSide(color: Colors.grey.shade300),
@@ -457,7 +460,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                     ),
                   ),
                   child: Text(
-                    'Annuler',
+                    context.l10n.commonCancel,
                     style: GoogleFonts.montserrat(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -539,7 +542,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  'Réservé aux membres',
+                  context.l10n.eventMembersOnlyTitle,
                   style: GoogleFonts.montserrat(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -577,7 +580,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                 height: 1.5,
               ),
               children: [
-                const TextSpan(text: 'L\'événement '),
+                TextSpan(text: context.l10n.eventMembersOnlyPrefix),
                 if (title != null && title.isNotEmpty) ...[
                   TextSpan(
                     text: title,
@@ -585,14 +588,14 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                   ),
                   const TextSpan(text: ' '),
                 ],
-                const TextSpan(text: 'est réservé aux membres de '),
+                TextSpan(text: context.l10n.eventMembersOnlyReservedFor),
                 TextSpan(
-                  text: orgName.isNotEmpty ? orgName : 'cette organisation',
+                  text: orgName.isNotEmpty
+                      ? orgName
+                      : context.l10n.eventOrganizationFallback,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                const TextSpan(
-                  text: '. Rejoins la communauté pour y accéder.',
-                ),
+                TextSpan(text: context.l10n.eventMembersOnlySuffix),
               ],
             ),
           ),
@@ -613,7 +616,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                     ),
                   ),
                   child: Text(
-                    'Fermer',
+                    context.l10n.commonClose,
                     style: GoogleFonts.montserrat(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -642,7 +645,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                     ),
                   ),
                   child: Text(
-                    'Voir l\'organisateur',
+                    context.l10n.eventViewOrganizer,
                     style: GoogleFonts.montserrat(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,

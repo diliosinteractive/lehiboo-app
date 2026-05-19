@@ -57,7 +57,7 @@ class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Diffusion'),
+        title: Text(context.l10n.messagesBroadcastTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -74,14 +74,14 @@ class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
             children: [
               const Icon(Icons.error_outline, color: Colors.red, size: 40),
               const SizedBox(height: 8),
-              Text('Erreur : $e',
+              Text(context.l10n.messagesLoadError(e.toString()),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref
                     .invalidate(_broadcastDetailProvider(widget.broadcastUuid)),
-                child: const Text('Réessayer'),
+                child: Text(context.l10n.commonRetry),
               ),
             ],
           ),
@@ -139,7 +139,7 @@ class _BroadcastDetail extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'L\'envoi est en cours de traitement par le serveur.',
+                    context.l10n.messagesBroadcastProcessing,
                     style:
                         TextStyle(color: Colors.orange.shade800, fontSize: 13),
                   ),
@@ -201,7 +201,9 @@ class _BroadcastDetail extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        broadcast.isSent ? 'Envoyée' : 'En cours',
+                        broadcast.isSent
+                            ? context.l10n.messagesBroadcastStatusSent
+                            : context.l10n.messagesBroadcastStatusInProgress,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -234,7 +236,7 @@ class _BroadcastDetail extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   icon: Icons.people_outline,
-                  label: 'Destinataires',
+                  label: context.l10n.messagesRecipientsLabel,
                   value: '${broadcast.recipientsCount}',
                   color: Colors.blue.shade700,
                 ),
@@ -243,7 +245,7 @@ class _BroadcastDetail extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   icon: Icons.visibility_outlined,
-                  label: 'Lus',
+                  label: context.l10n.messagesBroadcastReadLabel,
                   value: '${broadcast.readCount}',
                   color: Colors.green.shade700,
                 ),
@@ -252,7 +254,7 @@ class _BroadcastDetail extends StatelessWidget {
               Expanded(
                 child: _StatCard(
                   icon: Icons.chat_bubble_outline,
-                  label: 'Conversations',
+                  label: context.l10n.messagesBroadcastConversationsLabel,
                   value: '${broadcast.conversationsCreated}',
                   color: Colors.purple.shade700,
                 ),
@@ -263,9 +265,9 @@ class _BroadcastDetail extends StatelessWidget {
 
           // Events targeted
           if (broadcast.events.isNotEmpty) ...[
-            const Text(
-              'Événements ciblés',
-              style: TextStyle(
+            Text(
+              context.l10n.messagesBroadcastTargetedEventsLabel,
+              style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87),
@@ -289,9 +291,9 @@ class _BroadcastDetail extends StatelessWidget {
           ],
 
           // Message body
-          const Text(
-            'Message',
-            style: TextStyle(
+          Text(
+            context.l10n.messagesMessageLabel,
+            style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87),

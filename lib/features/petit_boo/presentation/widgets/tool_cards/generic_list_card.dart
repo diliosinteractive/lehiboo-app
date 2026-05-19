@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -27,7 +28,7 @@ class GenericListCard extends StatelessWidget {
     final total = data[totalKey] as int? ?? items.length;
 
     if (items.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(context);
     }
 
     final accentColor = parseHexColor(schema.color);
@@ -78,7 +79,7 @@ class GenericListCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '$total élément${total != 1 ? 's' : ''}',
+                        context.l10n.petitBooToolItemCount(total),
                         style: TextStyle(
                           fontSize: 13,
                           color: HbColors.textSecondary,
@@ -111,7 +112,7 @@ class GenericListCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Voir les $total éléments',
+                      context.l10n.petitBooToolViewItems(total),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -156,7 +157,7 @@ class GenericListCard extends StatelessWidget {
     }
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -173,7 +174,7 @@ class GenericListCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              schema.emptyMessage ?? 'Aucun élément',
+              schema.emptyMessage ?? context.l10n.petitBooToolEmptyListFallback,
               style: const TextStyle(
                 fontSize: 14,
                 color: HbColors.textSecondary,
@@ -197,12 +198,10 @@ class _GenericItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        _getValue(schema?.titleField, 'title') as String? ??
+    final title = _getValue(schema?.titleField, 'title') as String? ??
         _getValue(schema?.titleField, 'name') as String? ??
-        'Sans titre';
-    final subtitle =
-        _getValue(schema?.subtitleField, 'body') as String? ??
+        context.l10n.petitBooToolUntitled;
+    final subtitle = _getValue(schema?.subtitleField, 'body') as String? ??
         _getValue(schema?.subtitleField, 'description') as String?;
     final date = _getValue(schema?.dateField, 'created_at') as String?;
     final isActive = item['is_active'] == true;
@@ -284,7 +283,9 @@ class _GenericItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  isActive ? 'Active' : 'Inactive',
+                  isActive
+                      ? context.l10n.petitBooToolStatusActive
+                      : context.l10n.petitBooToolStatusInactive,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,

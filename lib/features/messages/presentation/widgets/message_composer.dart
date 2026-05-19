@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 class MessageComposer extends ConsumerStatefulWidget {
   final String conversationUuid;
   final bool disabled;
@@ -32,7 +34,9 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
   }
 
   bool get _canSend {
-    return _textController.text.trim().isNotEmpty && !_isSending && !widget.disabled;
+    return _textController.text.trim().isNotEmpty &&
+        !_isSending &&
+        !widget.disabled;
   }
 
   Future<void> _send() async {
@@ -56,13 +60,15 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
         padding: EdgeInsets.fromLTRB(
             16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
         color: Colors.grey.shade100,
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.lock_outline, size: 16, color: Colors.grey),
-            SizedBox(width: 8),
-            Text('Cette conversation est fermée',
-                style: TextStyle(color: Colors.grey, fontSize: 13)),
+            const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.messagesComposerClosed,
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            ),
           ],
         ),
       );
@@ -91,9 +97,10 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
                   maxLines: 5,
                   minLines: 1,
                   maxLength: 2000,
-                  buildCounter: (_, {required currentLength,
-                        required isFocused,
-                        maxLength}) =>
+                  buildCounter: (_,
+                          {required currentLength,
+                          required isFocused,
+                          maxLength}) =>
                       currentLength >= 1800
                           ? Text(
                               '$currentLength / 2000',
@@ -107,9 +114,9 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
                           : null,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
-                    hintText: 'Votre message…',
-                    hintStyle: TextStyle(
-                        color: Colors.grey.shade400, fontSize: 14),
+                    hintText: context.l10n.messagesComposerHint,
+                    hintStyle:
+                        TextStyle(color: Colors.grey.shade400, fontSize: 14),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -130,9 +137,7 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: _canSend
-                        ? _primaryColor
-                        : Colors.grey.shade300,
+                    color: _canSend ? _primaryColor : Colors.grey.shade300,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -141,8 +146,7 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white),
+                                strokeWidth: 2, color: Colors.white),
                           )
                         : const Icon(Icons.send_rounded,
                             color: Colors.white, size: 20),

@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../routes/app_router.dart';
 import '../../application/hibons_service.dart';
 import '../../data/models/hibons_update.dart';
@@ -60,13 +61,15 @@ class _HibonsAnimationCoordinatorState
   }
 
   void _enqueueToast(HibonsUpdate update) {
-    debugPrint('🪙 HibonsAnimationCoordinator: enqueue toast delta=${update.delta}');
+    debugPrint(
+        '🪙 HibonsAnimationCoordinator: enqueue toast delta=${update.delta}');
     _toastQueue.add(update);
     _drainToastQueue();
   }
 
   Future<void> _drainToastQueue() async {
-    debugPrint('🪙 drain start: showing=$_showingToast queue=${_toastQueue.length} mounted=$mounted');
+    debugPrint(
+        '🪙 drain start: showing=$_showingToast queue=${_toastQueue.length} mounted=$mounted');
     if (_showingToast) {
       debugPrint('🪙 drain: already showing, skip');
       return;
@@ -92,7 +95,8 @@ class _HibonsAnimationCoordinatorState
   void _showToast(HibonsUpdate update) {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger == null) {
-      debugPrint('🪙 HibonsAnimationCoordinator: no messenger, skipping snackbar');
+      debugPrint(
+          '🪙 HibonsAnimationCoordinator: no messenger, skipping snackbar');
       return;
     }
     debugPrint(
@@ -103,8 +107,8 @@ class _HibonsAnimationCoordinatorState
     // reward_message (i18n backend) → animation_label (générique "+N Hibons")
     // → fallback dur si tout est null.
     final fallback = update.delta > 0
-        ? '+${update.delta} Hibons 🪙 gagnés !'
-        : '${update.delta} Hibons';
+        ? context.l10n.gamificationHibonsGainedToast(update.delta)
+        : context.l10n.gamificationHibonsDelta(update.delta);
     final title = update.rewardMessage ?? update.animationLabel ?? fallback;
 
     if (update.delta > 0) {

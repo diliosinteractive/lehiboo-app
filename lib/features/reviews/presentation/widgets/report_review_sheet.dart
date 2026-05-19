@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/entities/review_enums.dart';
 import '../providers/reviews_actions_provider.dart';
@@ -59,8 +60,8 @@ class _ReportReviewSheetState extends ConsumerState<ReportReviewSheet> {
       case ReviewActionSuccess():
         Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Signalement envoyé. Merci de votre vigilance.'),
+          SnackBar(
+            content: Text(context.l10n.reviewsReportSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -104,10 +105,10 @@ class _ReportReviewSheetState extends ConsumerState<ReportReviewSheet> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Signaler cet avis',
-                        style: TextStyle(
+                        context.l10n.reviewsReportTitle,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: HbColors.textPrimary,
@@ -121,9 +122,9 @@ class _ReportReviewSheetState extends ConsumerState<ReportReviewSheet> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Pourquoi cet avis pose-t-il problème ?',
-                  style: TextStyle(
+                Text(
+                  context.l10n.reviewsReportReasonQuestion,
+                  style: const TextStyle(
                     fontSize: 14,
                     color: HbColors.textPrimary,
                   ),
@@ -137,7 +138,7 @@ class _ReportReviewSheetState extends ConsumerState<ReportReviewSheet> {
                   child: Column(
                     children: ReportReason.values.map((reason) {
                       return RadioListTile<ReportReason>(
-                        title: Text(reason.displayLabel),
+                        title: Text(_reportReasonLabel(context, reason)),
                         value: reason,
                         activeColor: HbColors.brandPrimary,
                         contentPadding: EdgeInsets.zero,
@@ -151,7 +152,7 @@ class _ReportReviewSheetState extends ConsumerState<ReportReviewSheet> {
                   maxLines: 3,
                   maxLength: 500,
                   decoration: InputDecoration(
-                    labelText: 'Précisions (optionnel)',
+                    labelText: context.l10n.reviewsReportDetailsOptionalLabel,
                     alignLabelWithHint: true,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -199,9 +200,11 @@ class _ReportReviewSheetState extends ConsumerState<ReportReviewSheet> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Envoyer le signalement',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                        : Text(
+                            context.l10n.reviewsReportSubmitAction,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                   ),
                 ),
@@ -211,5 +214,20 @@ class _ReportReviewSheetState extends ConsumerState<ReportReviewSheet> {
         ),
       ),
     );
+  }
+
+  String _reportReasonLabel(BuildContext context, ReportReason reason) {
+    switch (reason) {
+      case ReportReason.spam:
+        return context.l10n.reviewsReportReasonSpam;
+      case ReportReason.inappropriate:
+        return context.l10n.reviewsReportReasonInappropriate;
+      case ReportReason.fake:
+        return context.l10n.reviewsReportReasonFake;
+      case ReportReason.offensive:
+        return context.l10n.reviewsReportReasonOffensive;
+      case ReportReason.other:
+        return context.l10n.reviewsReportReasonOther;
+    }
   }
 }

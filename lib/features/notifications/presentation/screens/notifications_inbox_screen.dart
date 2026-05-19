@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/services/deep_link_service.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -52,20 +53,21 @@ class _NotificationsInboxScreenState
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final state = ref.watch(inAppNotificationsProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: HbColors.orangePastel,
       appBar: AppBar(
-        title: const Text(
-          'Notifications',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          l10n.notificationsTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         backgroundColor: Colors.white,
         foregroundColor: HbColors.textSlate,
         elevation: 0,
         actions: [
           IconButton(
-            tooltip: 'Tout marquer comme lu',
+            tooltip: l10n.notificationsMarkAllRead,
             onPressed: state.unreadCount > 0 ? _markAllAsRead : null,
             icon: Badge(
               isLabelVisible: state.unreadCount > 0,
@@ -83,15 +85,15 @@ class _NotificationsInboxScreenState
 
   Widget _buildAuthenticatedBody(InAppNotificationsState state) {
     final tabs = [
-      const FilterTab(
+      FilterTab(
         id: 'all',
-        label: 'Toutes',
+        label: context.l10n.notificationsFilterAll,
         icon: Icons.notifications_none_rounded,
         color: HbColors.brandPrimary,
       ),
       FilterTab(
         id: 'unread',
-        label: 'Non lues',
+        label: context.l10n.notificationsFilterUnread,
         icon: Icons.mark_email_unread_outlined,
         count: state.unreadCount,
         color: HbColors.accentBlue,
@@ -206,9 +208,9 @@ class _NotificationsInboxScreenState
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Connectez-vous',
-              style: TextStyle(
+            Text(
+              context.l10n.notificationsGuestTitle,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textSlate,
@@ -216,7 +218,7 @@ class _NotificationsInboxScreenState
             ),
             const SizedBox(height: 8),
             Text(
-              'Vos notifications apparaîtront ici après connexion.',
+              context.l10n.notificationsGuestBody,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600]),
             ),
@@ -233,7 +235,7 @@ class _NotificationsInboxScreenState
                   vertical: 12,
                 ),
               ),
-              child: const Text('Se connecter'),
+              child: Text(context.l10n.authLoginSubmit),
             ),
           ],
         ),
@@ -255,7 +257,7 @@ class _NotificationsInboxScreenState
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lecture non synchronisée')),
+          SnackBar(content: Text(context.l10n.notificationsReadSyncError)),
         );
       }
     }
@@ -276,7 +278,7 @@ class _NotificationsInboxScreenState
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossible de marquer comme lu')),
+        SnackBar(content: Text(context.l10n.notificationsMarkReadError)),
       );
     }
   }
@@ -286,12 +288,12 @@ class _NotificationsInboxScreenState
       await ref.read(inAppNotificationsProvider.notifier).markAllAsRead();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notifications marquées comme lues')),
+        SnackBar(content: Text(context.l10n.notificationsMarkedAllRead)),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Action impossible pour le moment')),
+        SnackBar(content: Text(context.l10n.notificationsActionError)),
       );
     }
   }
@@ -303,12 +305,12 @@ class _NotificationsInboxScreenState
           .deleteNotification(notification.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notification supprimée')),
+        SnackBar(content: Text(context.l10n.notificationsDeleted)),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Suppression impossible')),
+        SnackBar(content: Text(context.l10n.notificationsDeleteError)),
       );
     }
   }
@@ -421,7 +423,7 @@ class _NotificationTile extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _formatTime(notification.createdAt),
+                            _formatTime(context, notification.createdAt),
                             style: TextStyle(
                               color: Colors.grey[500],
                               fontSize: 11,
@@ -467,13 +469,14 @@ class _NotificationTile extends StatelessWidget {
                             },
                             itemBuilder: (context) => [
                               if (onMarkRead != null)
-                                const PopupMenuItem(
+                                PopupMenuItem(
                                   value: _NotificationAction.markRead,
-                                  child: Text('Marquer comme lu'),
+                                  child:
+                                      Text(context.l10n.notificationsMarkRead),
                                 ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: _NotificationAction.delete,
-                                child: Text('Supprimer'),
+                                child: Text(context.l10n.messagesDeleteAction),
                               ),
                             ],
                           ),
@@ -495,18 +498,17 @@ class _NotificationTile extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Supprimer la notification'),
-          content:
-              const Text('Voulez-vous vraiment supprimer cette notification ?'),
+          title: Text(context.l10n.notificationsDeleteTitle),
+          content: Text(context.l10n.notificationsDeleteBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Annuler'),
+              child: Text(context.l10n.commonCancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: TextButton.styleFrom(foregroundColor: HbColors.error),
-              child: const Text('Supprimer'),
+              child: Text(context.l10n.messagesDeleteAction),
             ),
           ],
         );
@@ -514,17 +516,23 @@ class _NotificationTile extends StatelessWidget {
     );
   }
 
-  static String _formatTime(DateTime? createdAt) {
+  static String _formatTime(BuildContext context, DateTime? createdAt) {
     if (createdAt == null) return '';
     final local = createdAt.toLocal();
     final now = DateTime.now();
     final diff = now.difference(local);
 
-    if (diff.inMinutes < 1) return "À l'instant";
-    if (diff.inHours < 1) return '${diff.inMinutes} min';
-    if (diff.inDays < 1) return '${diff.inHours} h';
-    if (diff.inDays == 1) return 'Hier';
-    if (diff.inDays < 7) return '${diff.inDays} j';
+    if (diff.inMinutes < 1) return context.l10n.notificationsJustNow;
+    if (diff.inHours < 1) {
+      return context.l10n.notificationsMinutesAgoShort(diff.inMinutes);
+    }
+    if (diff.inDays < 1) {
+      return context.l10n.notificationsHoursAgoShort(diff.inHours);
+    }
+    if (diff.inDays == 1) return context.l10n.commonYesterday;
+    if (diff.inDays < 7) {
+      return context.l10n.notificationsDaysAgoShort(diff.inDays);
+    }
     return DateFormat('dd/MM/yy').format(local);
   }
 }
@@ -549,7 +557,7 @@ class _TypePill extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        _labelForType(type),
+        _labelForType(context, type),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
@@ -561,21 +569,24 @@ class _TypePill extends StatelessWidget {
     );
   }
 
-  String _labelForType(String type) {
-    if (type == 'new_message') return 'Message';
-    if (type.startsWith('booking_')) return 'Réservation';
-    if (type.startsWith('ticket_') || type == 'tickets_ready') return 'Billet';
+  String _labelForType(BuildContext context, String type) {
+    final l10n = context.l10n;
+    if (type == 'new_message') return l10n.notificationsTypeMessage;
+    if (type.startsWith('booking_')) return l10n.notificationsTypeBooking;
+    if (type.startsWith('ticket_') || type == 'tickets_ready') {
+      return l10n.notificationsTypeTicket;
+    }
     if (type.startsWith('event_') ||
         type.startsWith('new_event_') ||
         type.startsWith('new_slots_')) {
-      return 'Événement';
+      return l10n.notificationsTypeEvent;
     }
-    if (type.startsWith('review_')) return 'Avis';
-    if (type.startsWith('question_')) return 'Question';
+    if (type.startsWith('review_')) return l10n.notificationsTypeReview;
+    if (type.startsWith('question_')) return l10n.notificationsTypeQuestion;
     if (type.startsWith('organization_') || type.startsWith('vendor_')) {
-      return 'Organisation';
+      return l10n.notificationsTypeOrganization;
     }
-    return 'Info';
+    return l10n.notificationsTypeInfo;
   }
 }
 
@@ -682,8 +693,8 @@ class _EmptyNotificationsState extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               unreadOnly
-                  ? 'Aucune notification non lue'
-                  : 'Aucune notification pour le moment',
+                  ? context.l10n.notificationsEmptyUnreadTitle
+                  : context.l10n.notificationsEmptyTitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: HbColors.textSlate,
@@ -694,8 +705,8 @@ class _EmptyNotificationsState extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               unreadOnly
-                  ? 'Les nouvelles notifications apparaîtront ici.'
-                  : 'Vos messages, réservations et mises à jour importantes apparaîtront ici.',
+                  ? context.l10n.notificationsEmptyUnreadBody
+                  : context.l10n.notificationsEmptyBody,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600], height: 1.4),
             ),
@@ -725,10 +736,10 @@ class _ErrorState extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text(
-              'Impossible de charger vos notifications',
+            Text(
+              context.l10n.notificationsLoadError,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: HbColors.textSlate,
                 fontWeight: FontWeight.bold,
               ),
@@ -742,7 +753,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 20),
             TextButton(
               onPressed: onRetry,
-              child: const Text('Réessayer'),
+              child: Text(context.l10n.commonRetry),
             ),
           ],
         ),

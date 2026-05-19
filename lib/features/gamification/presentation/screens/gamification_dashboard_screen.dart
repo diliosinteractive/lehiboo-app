@@ -1,7 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../data/models/daily_reward.dart';
 import '../../data/models/hibons_wallet.dart';
 import '../providers/gamification_provider.dart';
@@ -65,7 +65,7 @@ class GamificationDashboardScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  
+
                   // Content
                   SafeArea(
                     child: Column(
@@ -73,8 +73,9 @@ class GamificationDashboardScreen extends ConsumerWidget {
                       children: [
                         const SizedBox(height: 20),
                         walletAsync.when(
-                          data: (wallet) => _buildRankHeader(wallet),
-                          loading: () => const CircularProgressIndicator(color: Colors.white),
+                          data: (wallet) => _buildRankHeader(context, wallet),
+                          loading: () => const CircularProgressIndicator(
+                              color: Colors.white),
                           error: (_, __) => const SizedBox(),
                         ),
                       ],
@@ -85,7 +86,7 @@ class GamificationDashboardScreen extends ConsumerWidget {
             ),
             actions: [
               IconButton(
-                tooltip: 'Comment gagner des Hibons',
+                tooltip: context.l10n.gamificationHowToEarnTitle,
                 icon: const Icon(
                   Icons.help_outline_rounded,
                   color: Colors.white,
@@ -111,17 +112,21 @@ class GamificationDashboardScreen extends ConsumerWidget {
                 children: [
                   // Daily Reward Section
 
-                  _buildDailyRewardSection(context, ref, walletAsync, dailyRewardAsync),
-                  
+                  _buildDailyRewardSection(
+                      context, ref, walletAsync, dailyRewardAsync),
+
                   const SizedBox(height: 32),
-                  
+
                   // Feature Grid
-                  const Text(
-                    "Activités & Bonus",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+                  Text(
+                    context.l10n.gamificationActivitiesBonusTitle,
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3748)),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
@@ -132,39 +137,51 @@ class GamificationDashboardScreen extends ConsumerWidget {
                     children: [
                       _buildPremiumCard(
                         context,
-                        title: 'Roue de la Fortune',
+                        title: context.l10n.gamificationLuckyWheelTitle,
                         icon: Icons.casino_rounded,
                         color: Colors.purple,
-                        gradientColors: [Colors.purple.shade400, Colors.purple.shade700],
+                        gradientColors: [
+                          Colors.purple.shade400,
+                          Colors.purple.shade700
+                        ],
                         onTap: () => context.push('/lucky-wheel'),
                       ),
-                       _buildPremiumCard(
+                      _buildPremiumCard(
                         context,
-                        title: 'Mes Badges',
+                        title: context.l10n.gamificationMyBadgesTitle,
                         icon: Icons.military_tech_rounded,
                         color: Colors.blue,
-                        gradientColors: [Colors.blue.shade400, Colors.blue.shade700],
+                        gradientColors: [
+                          Colors.blue.shade400,
+                          Colors.blue.shade700
+                        ],
                         onTap: () => context.push('/achievements'),
                       ),
-                       _buildPremiumCard(
+                      _buildPremiumCard(
                         context,
-                        title: 'Challenges',
+                        title: context.l10n.gamificationChallengesTitle,
                         icon: Icons.flag_rounded,
                         color: Colors.green,
-                        gradientColors: [Colors.green.shade400, Colors.green.shade700],
+                        gradientColors: [
+                          Colors.green.shade400,
+                          Colors.green.shade700
+                        ],
                         onTap: () {}, // TODO
                       ),
-                       _buildPremiumCard(
+                      _buildPremiumCard(
                         context,
-                        title: 'Boutique',
+                        title: context.l10n.gamificationShopTitle,
                         icon: Icons.shopping_bag_rounded,
                         color: Colors.orange,
-                        gradientColors: [Colors.orange.shade400, Colors.orange.shade700],
+                        gradientColors: [
+                          Colors.orange.shade400,
+                          Colors.orange.shade700
+                        ],
                         onTap: () => context.push('/hibons-shop'),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 32),
                 ],
               ),
@@ -175,7 +192,7 @@ class GamificationDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRankHeader(HibonsWallet wallet) {
+  Widget _buildRankHeader(BuildContext context, HibonsWallet wallet) {
     final hasNextRank = wallet.nextRank != null;
     final progressFraction = (wallet.progressToNextRank.clamp(0, 100)) / 100.0;
 
@@ -187,13 +204,17 @@ class GamificationDashboardScreen extends ConsumerWidget {
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5)),
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5)),
             ],
           ),
           child: const CircleAvatar(
             radius: 36,
             backgroundColor: Color(0xFFFFF3E0),
-            child: Icon(Icons.emoji_events_rounded, size: 40, color: Color(0xFFFF601F)),
+            child: Icon(Icons.emoji_events_rounded,
+                size: 40, color: Color(0xFFFF601F)),
           ),
         ),
         const SizedBox(height: 12),
@@ -203,7 +224,9 @@ class GamificationDashboardScreen extends ConsumerWidget {
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            shadows: [Shadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)],
+            shadows: [
+              Shadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)
+            ],
           ),
         ),
         const SizedBox(height: 20),
@@ -221,14 +244,19 @@ class GamificationDashboardScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(4),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 4)
+                ],
               ),
             ),
           ),
           const SizedBox(height: 8),
           if (wallet.hibonsToNextRank != null)
             Text(
-              'Plus que ${wallet.hibonsToNextRank} avant ${wallet.nextRankLabel}',
+              context.l10n.gamificationHibonsUntilNextRank(
+                wallet.hibonsToNextRank!,
+                wallet.nextRankLabel!,
+              ),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -237,18 +265,18 @@ class GamificationDashboardScreen extends ConsumerWidget {
             ),
           const SizedBox(height: 2),
           Text(
-            '${wallet.lifetimeEarned} Hibons gagnés',
+            context.l10n.gamificationHibonsEarned(wallet.lifetimeEarned),
             style: const TextStyle(color: Colors.white70, fontSize: 10),
           ),
         ] else ...[
           Text(
-            '${wallet.lifetimeEarned} Hibons gagnés',
+            context.l10n.gamificationHibonsEarned(wallet.lifetimeEarned),
             style: const TextStyle(color: Colors.white70, fontSize: 11),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Rang maximal atteint',
-            style: TextStyle(
+          Text(
+            context.l10n.gamificationMaxRankReached,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -259,13 +287,12 @@ class GamificationDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPremiumCard(BuildContext context, {
-    required String title, 
-    required IconData icon, 
-    required Color color, 
-    required List<Color> gradientColors,
-    required VoidCallback onTap
-  }) {
+  Widget _buildPremiumCard(BuildContext context,
+      {required String title,
+      required IconData icon,
+      required Color color,
+      required List<Color> gradientColors,
+      required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -299,38 +326,39 @@ class GamificationDashboardScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   Container(
-                     padding: const EdgeInsets.all(10),
-                     decoration: BoxDecoration(
-                       color: Colors.white.withOpacity(0.2),
-                       shape: BoxShape.circle,
-                     ),
-                     child: Icon(icon, color: Colors.white, size: 28),
-                   ),
-                   Row(
-                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                     children: [
-                       Expanded(
-                         child: Text(
-                           title,
-                           style: const TextStyle(
-                             color: Colors.white,
-                             fontWeight: FontWeight.bold,
-                             fontSize: 16,
-                           ),
-                           maxLines: 2,
-                         ),
-                       ),
-                       const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
-                     ],
-                   )
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 28),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 2,
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded,
+                          color: Colors.white70, size: 14),
+                    ],
+                  )
                 ],
               ),
             ),
@@ -372,17 +400,19 @@ class GamificationDashboardScreen extends ConsumerWidget {
                   ),
                   backgroundColor: Colors.green,
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               );
             }
           } catch (e) {
             if (context.mounted) {
               // Extraire le message d'erreur de l'API si disponible
-              String errorMessage = 'Erreur lors de la réclamation';
+              String errorMessage = context.l10n.gamificationDailyClaimError;
               final errorStr = e.toString();
               if (errorStr.contains('déjà réclamé')) {
-                errorMessage = 'Tu as déjà réclamé ta récompense aujourd\'hui !';
+                errorMessage =
+                    context.l10n.gamificationDailyRewardAlreadyClaimed;
               }
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -395,7 +425,8 @@ class GamificationDashboardScreen extends ConsumerWidget {
                   ),
                   backgroundColor: Colors.orange,
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               );
             }
@@ -403,7 +434,7 @@ class GamificationDashboardScreen extends ConsumerWidget {
         },
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Text('Erreur: $e'),
+      error: (e, s) => Text(context.l10n.gamificationErrorWithMessage('$e')),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
 import 'create_list_dialog.dart';
@@ -91,14 +92,18 @@ class FavoriteListPickerSheet extends ConsumerWidget {
 
               // Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   children: [
                     const Icon(Icons.favorite, color: Color(0xFFFF601F)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        title ?? (isAlreadyFavorite ? 'Déplacer vers...' : 'Ajouter aux favoris'),
+                        title ??
+                            (isAlreadyFavorite
+                                ? context.l10n.favoriteListPickerMoveTitle
+                                : context.l10n.favoriteListPickerAddTitle),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -118,7 +123,8 @@ class FavoriteListPickerSheet extends ConsumerWidget {
               // Contenu
               Expanded(
                 child: listsAsync.when(
-                  data: (lists) => _buildListContent(context, ref, lists, scrollController),
+                  data: (lists) =>
+                      _buildListContent(context, ref, lists, scrollController),
                   loading: () => const Center(
                     child: CircularProgressIndicator(color: Color(0xFFFF601F)),
                   ),
@@ -126,16 +132,17 @@ class FavoriteListPickerSheet extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+                        Icon(Icons.error_outline,
+                            size: 48, color: Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
-                          'Erreur de chargement',
+                          context.l10n.favoriteListsLoadError,
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: () => ref.refresh(favoriteListsProvider),
-                          child: const Text('Réessayer'),
+                          child: Text(context.l10n.commonRetry),
                         ),
                       ],
                     ),
@@ -162,16 +169,18 @@ class FavoriteListPickerSheet extends ConsumerWidget {
         // Option "Non classé" / Tous les favoris
         _ListOptionTile(
           icon: Icons.favorite,
-          iconColor: const Color(0xFF10B981), // emerald 500 — actif, pas désactivé
-          title: 'Non classé',
-          subtitle: 'Favoris sans liste',
+          iconColor:
+              const Color(0xFF10B981), // emerald 500 — actif, pas désactivé
+          title: context.l10n.favoriteListsUncategorizedSingular,
+          subtitle: context.l10n.favoriteListPickerUncategorizedSubtitle,
           // On highlight uniquement quand le favori est déjà dans "Non classé"
           // (cas du déplacement). Sur un ajout neuf, pas d'auto-sélection : ça
           // évitait de simuler un état désactivé / déjà coché.
           isSelected: isAlreadyFavorite && currentListId == null,
           onTap: () {
             HapticFeedback.selectionClick();
-            Navigator.of(context).pop(const FavoriteListPickerResult(listId: null));
+            Navigator.of(context)
+                .pop(const FavoriteListPickerResult(listId: null));
           },
         ),
 
@@ -179,16 +188,19 @@ class FavoriteListPickerSheet extends ConsumerWidget {
 
         // Listes existantes
         ...lists.map((list) => _ListOptionTile(
-          icon: list.icon,
-          iconColor: list.color,
-          title: list.name,
-          subtitle: '${list.favoritesCount} favori${list.favoritesCount > 1 ? 's' : ''}',
-          isSelected: currentListId == list.id,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            Navigator.of(context).pop(FavoriteListPickerResult(listId: list.id));
-          },
-        )),
+              icon: list.icon,
+              iconColor: list.color,
+              title: list.name,
+              subtitle: context.l10n.favoriteListFavoritesCount(
+                list.favoritesCount,
+              ),
+              isSelected: currentListId == list.id,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                Navigator.of(context)
+                    .pop(FavoriteListPickerResult(listId: list.id));
+              },
+            )),
 
         const Divider(height: 1, indent: 16, endIndent: 16),
 
@@ -196,13 +208,14 @@ class FavoriteListPickerSheet extends ConsumerWidget {
         _ListOptionTile(
           icon: Icons.add_circle_outline,
           iconColor: const Color(0xFFFF601F),
-          title: 'Créer une liste',
-          subtitle: 'Nouvelle collection de favoris',
+          title: context.l10n.favoriteListCreateSheetTitle,
+          subtitle: context.l10n.favoriteListCreateSheetSubtitle,
           showChevron: true,
           onTap: () async {
             final newList = await CreateListDialog.show(context);
             if (newList != null && context.mounted) {
-              Navigator.of(context).pop(FavoriteListPickerResult(listId: newList.id));
+              Navigator.of(context)
+                  .pop(FavoriteListPickerResult(listId: newList.id));
             }
           },
         ),
@@ -213,11 +226,12 @@ class FavoriteListPickerSheet extends ConsumerWidget {
           _ListOptionTile(
             icon: Icons.heart_broken_outlined,
             iconColor: Colors.red,
-            title: 'Retirer des favoris',
-            subtitle: 'Supprimer de tous les favoris',
+            title: context.l10n.favoriteListPickerRemoveTitle,
+            subtitle: context.l10n.favoriteListPickerRemoveSubtitle,
             onTap: () {
               HapticFeedback.mediumImpact();
-              Navigator.of(context).pop(const FavoriteListPickerResult.remove());
+              Navigator.of(context)
+                  .pop(const FavoriteListPickerResult.remove());
             },
           ),
         ],
@@ -275,7 +289,8 @@ class _ListOptionTile extends StatelessWidget {
                       title,
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w500,
                         color: isSelected ? iconColor : Colors.black87,
                       ),
                     ),

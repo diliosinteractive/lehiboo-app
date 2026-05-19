@@ -54,7 +54,7 @@ class _OrganizerActivitiesTabState
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'Impossible de charger les activités.',
+            context.l10n.organizerActivitiesLoadError,
             style: TextStyle(color: Colors.grey[700]),
           ),
         ),
@@ -86,7 +86,7 @@ class _OrganizerActivitiesTabState
             _bucket == EventTimingBucket.currentUpcoming ? current : past;
 
         if (events.isEmpty) {
-          return _empty('Aucune activité publiée pour le moment.');
+          return _empty(context.l10n.organizerActivitiesEmpty);
         }
 
         return NotificationListener<ScrollNotification>(
@@ -103,8 +103,8 @@ class _OrganizerActivitiesTabState
               const SizedBox(height: 16),
               if (visible.isEmpty)
                 _empty(_bucket == EventTimingBucket.currentUpcoming
-                    ? 'Pas d\'événement à venir.'
-                    : 'Pas d\'événement passé.')
+                    ? context.l10n.organizerActivitiesNoUpcoming
+                    : context.l10n.organizerActivitiesNoPast)
               else
                 ...visible.map((e) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
@@ -165,14 +165,14 @@ class _SegmentedToggle extends StatelessWidget {
         children: [
           Expanded(
             child: _segment(
-              label: 'En cours ($currentCount)',
+              label: context.l10n.organizerActivitiesCurrentTab(currentCount),
               selected: bucket == EventTimingBucket.currentUpcoming,
               onTap: () => onChanged(EventTimingBucket.currentUpcoming),
             ),
           ),
           Expanded(
             child: _segment(
-              label: 'Passés ($pastCount)',
+              label: context.l10n.organizerActivitiesPastTab(pastCount),
               selected: bucket == EventTimingBucket.past,
               onTap: () => onChanged(EventTimingBucket.past),
             ),

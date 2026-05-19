@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
@@ -99,16 +100,11 @@ class _AdminNewConversationScreenState
     super.dispose();
   }
 
-  String get _title => switch (widget.mode) {
-        AdminConversationMode.toUser => 'Contacter un utilisateur',
-        AdminConversationMode.toOrganizer => 'Contacter un organisateur',
+  String _title(BuildContext context) => switch (widget.mode) {
+        AdminConversationMode.toUser => context.l10n.messagesContactUser,
+        AdminConversationMode.toOrganizer =>
+          context.l10n.messagesContactOrganizer,
       };
-
-  void _showSnack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
-  }
 
   // ── Search modals ─────────────────────────────────────────────────────────────
 
@@ -142,12 +138,12 @@ class _AdminNewConversationScreenState
     setState(() => _error = null);
 
     if (widget.mode == AdminConversationMode.toUser && _selectedUser == null) {
-      setState(() => _error = 'Veuillez sélectionner un utilisateur.');
+      setState(() => _error = context.l10n.messagesSelectUserRequired);
       return;
     }
     if (widget.mode == AdminConversationMode.toOrganizer &&
         _selectedOrg == null) {
-      setState(() => _error = 'Veuillez sélectionner une organisation.');
+      setState(() => _error = context.l10n.messagesSelectOrganizationRequired);
       return;
     }
 
@@ -182,7 +178,8 @@ class _AdminNewConversationScreenState
       if (mounted) {
         setState(() {
           _submitting = false;
-          _error = 'Erreur : ${ApiResponseHandler.extractError(e)}';
+          _error = context.l10n
+              .messagesLoadError(ApiResponseHandler.extractError(e));
         });
       }
     }
@@ -193,7 +190,7 @@ class _AdminNewConversationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_title)),
+      appBar: AppBar(title: Text(_title(context))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -210,9 +207,12 @@ class _AdminNewConversationScreenState
             TextField(
               controller: _subjectController,
               maxLength: 100,
-              decoration: const InputDecoration(
-                labelText: 'Sujet (optionnel)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: _optionalLabel(
+                  context,
+                  context.l10n.messagesSubjectLabel,
+                ),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -221,9 +221,12 @@ class _AdminNewConversationScreenState
               maxLines: 5,
               maxLength: 2000,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Message (optionnel)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: _optionalLabel(
+                  context,
+                  context.l10n.messagesMessageLabel,
+                ),
+                border: const OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
             ),
@@ -246,7 +249,7 @@ class _AdminNewConversationScreenState
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Créer la conversation'),
+                  : Text(context.l10n.messagesCreateConversation),
             ),
           ],
         ),
@@ -260,7 +263,7 @@ class _AdminNewConversationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Destinataire *',
+        Text(_requiredLabel(context, context.l10n.messagesRecipientLabel),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
         if (_selectedUser != null)
@@ -272,7 +275,7 @@ class _AdminNewConversationScreenState
           )
         else
           _SearchTapField(
-            hint: 'Rechercher un utilisateur…',
+            hint: context.l10n.messagesSearchUserPlaceholder,
             icon: Icons.person_search_outlined,
             onTap: _openUserSearch,
           ),
@@ -284,7 +287,7 @@ class _AdminNewConversationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Organisation *',
+        Text(_requiredLabel(context, context.l10n.messagesOrganizationLabel),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
         if (_selectedOrg != null)
@@ -295,15 +298,19 @@ class _AdminNewConversationScreenState
           )
         else
           _SearchTapField(
-            hint: 'Rechercher une organisation…',
+            hint: context.l10n.messagesSearchOrganizationPlaceholder,
             icon: Icons.business_outlined,
             onTap: _openOrgSearch,
           ),
       ],
     );
   }
-
 }
+
+String _requiredLabel(BuildContext context, String label) => '$label *';
+
+String _optionalLabel(BuildContext context, String label) =>
+    '$label ${context.l10n.messagesOptionalLabel}';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared selector UI components
@@ -339,8 +346,7 @@ class _SearchTapField extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(hint,
-                  style: TextStyle(
-                      color: Colors.grey.shade500, fontSize: 15)),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 15)),
             ),
             Icon(icon, size: 18, color: _primaryColor),
           ],
@@ -397,12 +403,11 @@ class _SelectedCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
                 if (subtitle != null)
                   Text(subtitle!,
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600)),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               ],
             ),
           ),
@@ -509,14 +514,16 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
       builder: (_, scrollCtrl) => Column(
         children: [
           _dragHandle(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text('Rechercher un utilisateur',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              context.l10n.messagesSearchUserTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: _searchField(onChanged: _onChanged),
+            child: _searchField(context, onChanged: _onChanged),
           ),
           Expanded(
             child: _loading
@@ -525,8 +532,8 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
                     ? _emptyState(
                         icon: Icons.person_search,
                         label: !_searched
-                            ? 'Chargement…'
-                            : 'Aucun résultat',
+                            ? context.l10n.commonLoading
+                            : context.l10n.messagesNoResults,
                       )
                     : ListView.builder(
                         controller: scrollCtrl,
@@ -557,12 +564,10 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
                                     fontWeight: FontWeight.w500)),
                             subtitle: Text(user.email,
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600)),
+                                    fontSize: 12, color: Colors.grey.shade600)),
                             trailing: Text('#${user.id}',
                                 style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade400)),
+                                    fontSize: 11, color: Colors.grey.shade400)),
                             onTap: () => Navigator.pop(ctx, user),
                           );
                         },
@@ -612,8 +617,7 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
   Future<void> _loadInitial() async {
     setState(() => _loading = true);
     try {
-      final raw =
-          await widget.datasource.searchAdminOrganizations(search: '');
+      final raw = await widget.datasource.searchAdminOrganizations(search: '');
       if (!mounted) return;
       setState(() {
         _results = raw.map(_AdminOrg.fromJson).toList();
@@ -668,14 +672,16 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
       builder: (_, scrollCtrl) => Column(
         children: [
           _dragHandle(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text('Rechercher une organisation',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              context.l10n.messagesSearchOrganizationTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: _searchField(onChanged: _onChanged),
+            child: _searchField(context, onChanged: _onChanged),
           ),
           Expanded(
             child: _loading
@@ -683,7 +689,9 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
                 : _results.isEmpty
                     ? _emptyState(
                         icon: Icons.business_outlined,
-                        label: !_searched ? 'Chargement…' : 'Aucun résultat',
+                        label: !_searched
+                            ? context.l10n.commonLoading
+                            : context.l10n.messagesNoResults,
                       )
                     : ListView.builder(
                         controller: scrollCtrl,
@@ -714,8 +722,7 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
                                     fontWeight: FontWeight.w500)),
                             trailing: Text('#${org.id}',
                                 style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade400)),
+                                    fontSize: 11, color: Colors.grey.shade400)),
                             onTap: () => Navigator.pop(ctx, org),
                           );
                         },
@@ -745,12 +752,15 @@ Widget _dragHandle() => Center(
       ),
     );
 
-Widget _searchField({required void Function(String) onChanged}) {
+Widget _searchField(
+  BuildContext context, {
+  required void Function(String) onChanged,
+}) {
   return TextField(
     autofocus: true,
     onChanged: onChanged,
     decoration: InputDecoration(
-      hintText: 'Rechercher…',
+      hintText: context.l10n.messagesSearchHint,
       prefixIcon: const Icon(Icons.search, size: 20),
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(vertical: 10),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../features/petit_boo/presentation/widgets/animated_toast.dart';
 import '../../domain/entities/reminder.dart';
@@ -23,7 +25,7 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Mes Rappels'),
+        title: Text(context.l10n.remindersTitle),
         backgroundColor: Colors.white,
         foregroundColor: HbColors.textPrimary,
         elevation: 0,
@@ -57,16 +59,15 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
               children: [
                 if (upcoming.isNotEmpty) ...[
                   _buildSectionHeader(
-                      'A venir', upcoming.length),
+                      context.l10n.remindersUpcoming, upcoming.length),
                   ...upcoming.map((r) => _buildReminderCard(r)),
                 ],
                 if (past.isNotEmpty) ...[
                   if (upcoming.isNotEmpty) const SizedBox(height: 24),
-                  _buildSectionHeader('Passes', past.length),
+                  _buildSectionHeader(context.l10n.remindersPast, past.length),
                   ...past.map((r) => _buildReminderCard(r, isPast: true)),
                 ],
-                SizedBox(
-                    height: MediaQuery.of(context).padding.bottom + 16),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
               ],
             );
           },
@@ -145,23 +146,20 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
                           width: 60,
                           height: 60,
                           color: Colors.grey.shade200,
-                          child:
-                              const Icon(Icons.image, color: Colors.grey),
+                          child: const Icon(Icons.image, color: Colors.grey),
                         ),
                         errorWidget: (_, __, ___) => Container(
                           width: 60,
                           height: 60,
                           color: Colors.grey.shade200,
-                          child:
-                              const Icon(Icons.image, color: Colors.grey),
+                          child: const Icon(Icons.image, color: Colors.grey),
                         ),
                       )
                     : Container(
                         width: 60,
                         height: 60,
                         color: Colors.grey.shade200,
-                        child:
-                            const Icon(Icons.event, color: Colors.grey),
+                        child: const Icon(Icons.event, color: Colors.grey),
                       ),
               ),
               const SizedBox(width: 12),
@@ -176,9 +174,7 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: isPast
-                            ? Colors.grey
-                            : HbColors.textPrimary,
+                        color: isPast ? Colors.grey : HbColors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -188,18 +184,15 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
                       children: [
                         Icon(Icons.calendar_today,
                             size: 13,
-                            color: isPast
-                                ? Colors.grey
-                                : Colors.grey.shade600),
+                            color: isPast ? Colors.grey : Colors.grey.shade600),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            _formatSlotDate(reminder),
+                            _formatSlotDate(context, reminder),
                             style: TextStyle(
                               fontSize: 12,
-                              color: isPast
-                                  ? Colors.grey
-                                  : Colors.grey.shade600,
+                              color:
+                                  isPast ? Colors.grey : Colors.grey.shade600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -214,9 +207,8 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
                         children: [
                           Icon(Icons.location_on,
                               size: 13,
-                              color: isPast
-                                  ? Colors.grey
-                                  : Colors.grey.shade600),
+                              color:
+                                  isPast ? Colors.grey : Colors.grey.shade600),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -225,9 +217,8 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
                                   .join(', '),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: isPast
-                                    ? Colors.grey
-                                    : Colors.grey.shade600,
+                                color:
+                                    isPast ? Colors.grey : Colors.grey.shade600,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -246,19 +237,17 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
               Column(
                 children: [
                   if (reminder.notified7Days)
-                    _buildBadge('J-7', true),
+                    _buildBadge(context.l10n.remindersDaysBeforeBadge(7), true),
                   if (reminder.notified1Day) ...[
-                    if (reminder.notified7Days)
-                      const SizedBox(height: 4),
-                    _buildBadge('J-1', true),
+                    if (reminder.notified7Days) const SizedBox(height: 4),
+                    _buildBadge(context.l10n.remindersDaysBeforeBadge(1), true),
                   ],
                   if (!reminder.notified7Days && !reminder.notified1Day)
                     Icon(
                       Icons.notifications_active,
                       size: 20,
-                      color: isPast
-                          ? Colors.grey.shade400
-                          : HbColors.brandPrimary,
+                      color:
+                          isPast ? Colors.grey.shade400 : HbColors.brandPrimary,
                     ),
                 ],
               ),
@@ -304,19 +293,22 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Supprimer le rappel ?'),
+        title: Text(context.l10n.remindersDeleteTitle),
         content: Text(
-          'Vous ne recevrez plus de notifications pour "${reminder.eventTitle}" le ${_formatSlotDate(reminder)}.',
+          context.l10n.remindersDeleteBody(
+            reminder.eventTitle,
+            _formatSlotDate(context, reminder),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuler'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Supprimer'),
+            child: Text(context.l10n.messagesDeleteAction),
           ),
         ],
       ),
@@ -330,7 +322,7 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
       if (mounted) {
         PetitBooToast.show(
           context,
-          message: 'Rappel supprime',
+          message: context.l10n.remindersDeleted,
           icon: Icons.delete_outline,
         );
       }
@@ -339,24 +331,21 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
     return false;
   }
 
-  String _formatSlotDate(Reminder reminder) {
-    const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-    const months = [
-      'Jan', 'Fev', 'Mars', 'Avr', 'Mai', 'Juin',
-      'Juil', 'Aout', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-
+  String _formatSlotDate(BuildContext context, Reminder reminder) {
     final d = reminder.slotDate;
-    final dayName = days[d.weekday - 1];
-    final monthName = months[d.month - 1];
-    var result = '$dayName ${d.day} $monthName ${d.year}';
+    var result =
+        DateFormat('EEE d MMM yyyy', context.l10n.localeName).format(d);
 
     if (reminder.startTime != null) {
       final start = _stripSeconds(reminder.startTime!);
       if (reminder.endTime != null) {
-        result += ' de $start a ${_stripSeconds(reminder.endTime!)}';
+        result = context.l10n.remindersDateFromTo(
+          result,
+          start,
+          _stripSeconds(reminder.endTime!),
+        );
       } else {
-        result += ' a $start';
+        result = context.l10n.remindersDateAtTime(result, start);
       }
     }
     return result;
@@ -389,9 +378,9 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Aucun rappel',
-              style: TextStyle(
+            Text(
+              context.l10n.remindersEmptyTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textPrimary,
@@ -399,7 +388,7 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Activez des rappels sur les activites\nqui vous interessent pour etre notifie.',
+              context.l10n.remindersEmptyBody,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -420,21 +409,18 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline,
-                size: 48, color: Colors.grey.shade400),
+            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
-              'Impossible de charger vos rappels',
-              style: TextStyle(
-                  fontSize: 16, color: Colors.grey.shade700),
+              context.l10n.remindersLoadError,
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: () => ref
-                  .read(remindersListProvider.notifier)
-                  .loadReminders(),
+              onPressed: () =>
+                  ref.read(remindersListProvider.notifier).loadReminders(),
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Reessayer'),
+              label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,

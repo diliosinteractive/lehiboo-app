@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 
@@ -21,9 +22,9 @@ class EventIndicativePrices extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Services additionnels (indicatif)',
-            style: TextStyle(
+          Text(
+            context.l10n.eventServicesAdditionalTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -31,7 +32,7 @@ class EventIndicativePrices extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Prix indicatifs communiqués par l\'organisateur',
+            context.l10n.eventIndicativePrices,
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey.shade500,
@@ -47,7 +48,7 @@ class EventIndicativePrices extends StatelessWidget {
             child: Column(
               children: [
                 for (var i = 0; i < sorted.length; i++) ...[
-                  _buildRow(sorted[i]),
+                  _buildRow(context, sorted[i]),
                   if (i < sorted.length - 1)
                     Divider(
                       height: 1,
@@ -64,7 +65,7 @@ class EventIndicativePrices extends StatelessWidget {
     );
   }
 
-  Widget _buildRow(IndicativePrice item) {
+  Widget _buildRow(BuildContext context, IndicativePrice item) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -85,7 +86,7 @@ class EventIndicativePrices extends StatelessWidget {
             ),
           ),
           Text(
-            item.formattedPrice,
+            item.price == 0 ? context.l10n.commonFree : item.formattedPrice,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

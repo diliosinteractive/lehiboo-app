@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../data/models/wheel_models.dart';
 import '../providers/gamification_provider.dart';
 
@@ -118,7 +119,7 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text(context.l10n.gamificationErrorWithMessage('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -147,7 +148,9 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  result.prize > 0 ? Icons.celebration : Icons.sentiment_dissatisfied,
+                  result.prize > 0
+                      ? Icons.celebration
+                      : Icons.sentiment_dissatisfied,
                   size: 48,
                   color: result.prize > 0 ? Colors.amber : Colors.grey,
                 ),
@@ -156,7 +159,9 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
 
               // Titre
               Text(
-                result.prize > 0 ? 'Félicitations !' : 'Pas de chance...',
+                result.prize > 0
+                    ? context.l10n.gamificationWheelWinTitle
+                    : context.l10n.gamificationWheelLoseTitle,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -177,7 +182,8 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
               if (result.prize > 0) ...[
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(20),
@@ -186,10 +192,13 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.account_balance_wallet, color: Colors.green.shade700),
+                      Icon(Icons.account_balance_wallet,
+                          color: Colors.green.shade700),
                       const SizedBox(width: 8),
                       Text(
-                        'Nouveau solde : ${result.newBalance} Hibons',
+                        context.l10n.gamificationNewHibonsBalance(
+                          result.newBalance,
+                        ),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.green.shade700,
@@ -214,9 +223,10 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Super !',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: Text(
+                    context.l10n.gamificationGreatCta,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -242,7 +252,7 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F0), // Fond crème léger
       appBar: AppBar(
-        title: const Text('Roue de la Fortune'),
+        title: Text(context.l10n.gamificationLuckyWheelTitle),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black87,
@@ -265,7 +275,9 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
                     SizedBox(
                       width: 200,
                       child: ElevatedButton(
-                        onPressed: (_isSpinning || spinState.isLoading || !canSpinWheel)
+                        onPressed: (_isSpinning ||
+                                spinState.isLoading ||
+                                !canSpinWheel)
                             ? null
                             : () => _spin(config, ref),
                         style: ElevatedButton.styleFrom(
@@ -289,7 +301,9 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
                                 ),
                               )
                             : Text(
-                                canSpinWheel ? 'Lancer' : 'Reviens demain !',
+                                canSpinWheel
+                                    ? context.l10n.gamificationWheelSpinCta
+                                    : context.l10n.gamificationComeBackTomorrow,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -302,7 +316,7 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
                       Padding(
                         padding: const EdgeInsets.only(top: 12.0),
                         child: Text(
-                          'Tu as déjà utilisé ta chance aujourd\'hui.',
+                          context.l10n.gamificationWheelAlreadyUsedToday,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 14,
@@ -322,11 +336,11 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
-              Text('Erreur: $e'),
+              Text(context.l10n.gamificationErrorWithMessage('$e')),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref.invalidate(wheelConfigProvider),
-                child: const Text('Réessayer'),
+                child: Text(context.l10n.commonRetry),
               ),
             ],
           ),

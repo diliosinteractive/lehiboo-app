@@ -1,5 +1,6 @@
 import '../../domain/entities/alert.dart';
 import '../../../search/domain/models/event_filter.dart';
+import '../../../../core/l10n/l10n.dart';
 
 class AlertDto {
   final String id;
@@ -7,7 +8,7 @@ class AlertDto {
   final String createdAt;
   final bool enablePushAlert;
   final bool enableEmailAlert;
-  
+
   // Search Criteria Fields
   final String? searchQuery;
   final String? citySlug;
@@ -64,30 +65,37 @@ class AlertDto {
 
     return AlertDto(
       id: json['id']?.toString() ?? json['uuid']?.toString() ?? '',
-      name: json['name'] as String? ?? 'Alerte sans nom',
-      createdAt: json['created_at'] as String? ?? DateTime.now().toIso8601String(),
+      name: json['name'] as String? ?? cachedAppLocalizations().alertsUnnamed,
+      createdAt:
+          json['created_at'] as String? ?? DateTime.now().toIso8601String(),
       enablePushAlert: json['enable_push_alert'] as bool? ?? false,
       enableEmailAlert: json['enable_email_alert'] as bool? ?? false,
-      
+
       // Fields from inside search_criteria
       searchQuery: criteria['search_query'] as String?,
       citySlug: criteria['city_slug'] as String?,
       latitude: (criteria['latitude'] as num?)?.toDouble(),
       longitude: (criteria['longitude'] as num?)?.toDouble(),
       radiusKm: (criteria['radius_km'] as num?)?.toDouble(),
-      
+
       dateType: criteria['date_type'] as String?,
       startDate: criteria['start_date'] as String?,
       endDate: criteria['end_date'] as String?,
-      
+
       priceType: criteria['price_type'] as String?,
       priceMin: (criteria['price_min'] as num?)?.toDouble(),
       priceMax: (criteria['price_max'] as num?)?.toDouble(),
-      
-      categories: (criteria['categories'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
-      tags: (criteria['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
-      thematiques: (criteria['thematiques'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
-      
+
+      categories: (criteria['categories'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      tags: (criteria['tags'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      thematiques: (criteria['thematiques'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+
       isFamilyFriendly: criteria['is_family_friendly'] as bool?,
       isAccessiblePmr: criteria['is_accessible_pmr'] as bool?,
       isOnline: criteria['is_online'] as bool?,
@@ -125,12 +133,24 @@ class AlertDto {
     DateFilterType? mappedDateType;
     if (dateType != null) {
       switch (dateType) {
-        case 'today': mappedDateType = DateFilterType.today; break;
-        case 'tomorrow': mappedDateType = DateFilterType.tomorrow; break;
-        case 'this_week': mappedDateType = DateFilterType.thisWeek; break;
-        case 'this_weekend': mappedDateType = DateFilterType.thisWeekend; break;
-        case 'this_month': mappedDateType = DateFilterType.thisMonth; break;
-        case 'custom': mappedDateType = DateFilterType.custom; break;
+        case 'today':
+          mappedDateType = DateFilterType.today;
+          break;
+        case 'tomorrow':
+          mappedDateType = DateFilterType.tomorrow;
+          break;
+        case 'this_week':
+          mappedDateType = DateFilterType.thisWeek;
+          break;
+        case 'this_weekend':
+          mappedDateType = DateFilterType.thisWeekend;
+          break;
+        case 'this_month':
+          mappedDateType = DateFilterType.thisMonth;
+          break;
+        case 'custom':
+          mappedDateType = DateFilterType.custom;
+          break;
       }
     }
 
@@ -138,9 +158,15 @@ class AlertDto {
     PriceFilterType? mappedPriceType;
     if (priceType != null) {
       switch (priceType) {
-        case 'free': mappedPriceType = PriceFilterType.free; break;
-        case 'paid': mappedPriceType = PriceFilterType.paid; break;
-        case 'range': mappedPriceType = PriceFilterType.range; break;
+        case 'free':
+          mappedPriceType = PriceFilterType.free;
+          break;
+        case 'paid':
+          mappedPriceType = PriceFilterType.paid;
+          break;
+        case 'range':
+          mappedPriceType = PriceFilterType.range;
+          break;
       }
     }
 
@@ -151,20 +177,16 @@ class AlertDto {
       latitude: latitude,
       longitude: longitude,
       radiusKm: radiusKm ?? 50,
-      
       dateFilterType: mappedDateType,
       startDate: startDate != null ? DateTime.tryParse(startDate!) : null,
       endDate: endDate != null ? DateTime.tryParse(endDate!) : null,
-      
       priceFilterType: mappedPriceType,
       priceMin: priceMin ?? 0,
       priceMax: priceMax ?? 500,
       onlyFree: priceType == 'free',
-      
       categoriesSlugs: categories ?? [],
       thematiquesSlugs: thematiques ?? [],
       tagsSlugs: tags ?? [],
-      
       familyFriendly: isFamilyFriendly ?? false,
       accessiblePMR: isAccessiblePmr ?? false,
       onlineOnly: isOnline ?? false,

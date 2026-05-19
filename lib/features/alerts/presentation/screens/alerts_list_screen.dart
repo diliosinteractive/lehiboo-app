@@ -3,24 +3,25 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/alerts_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../../../features/search/presentation/providers/filter_provider.dart';
+import '../../../../features/search/presentation/utils/search_l10n.dart';
 import '../../../../features/booking/presentation/widgets/filter_tabs_row.dart';
 import '../../../../features/petit_boo/presentation/widgets/animated_toast.dart';
 
 /// Types de filtres pour les alertes
 enum AlertFilterType {
-  all('all', 'Toutes', Icons.list_alt),
-  alerts('alerts', 'Alertes', Icons.notifications_active),
-  searches('searches', 'Recherches', Icons.history);
+  all('all', Icons.list_alt),
+  alerts('alerts', Icons.notifications_active),
+  searches('searches', Icons.history);
 
   final String id;
-  final String label;
   final IconData icon;
 
-  const AlertFilterType(this.id, this.label, this.icon);
+  const AlertFilterType(this.id, this.icon);
 }
 
 class AlertsListScreen extends ConsumerStatefulWidget {
@@ -38,7 +39,7 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
     super.initState();
     // Refresh alerts when entering the screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.refresh(alertsProvider);
+      ref.invalidate(alertsProvider);
     });
   }
 
@@ -67,13 +68,15 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
   @override
   Widget build(BuildContext context) {
     final alertsAsync = ref.watch(alertsProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F5), // Orange pastel comme les autres pages
+      backgroundColor:
+          const Color(0xFFFFF8F5), // Orange pastel comme les autres pages
       appBar: AppBar(
-        title: const Text(
-          'Mes Alertes & Recherches',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          l10n.alertsListTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -85,7 +88,7 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
           final filterTabs = AlertFilterType.values.map((filter) {
             return FilterTab(
               id: filter.id,
-              label: filter.label,
+              label: _filterLabel(context, filter),
               icon: filter.icon,
               count: alerts.isNotEmpty ? _countForFilter(alerts, filter) : null,
               color: filter == AlertFilterType.alerts
@@ -154,10 +157,10 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.grey),
               const SizedBox(height: 16),
-              const Text('Impossible de charger vos alertes'),
+              Text(l10n.alertsLoadError),
               TextButton(
                 onPressed: () => ref.refresh(alertsProvider),
-                child: const Text('Réessayer'),
+                child: Text(l10n.commonRetry),
               ),
             ],
           ),
@@ -167,26 +170,25 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final l10n = context.l10n;
     String title;
     String message;
     IconData icon;
 
     switch (_currentFilter) {
       case AlertFilterType.all:
-        title = 'Aucune alerte pour le moment';
-        message =
-            'Enregistrez vos recherches pour les retrouver ici et recevoir des notifications';
+        title = l10n.alertsEmptyAllTitle;
+        message = l10n.alertsEmptyAllBody;
         icon = Icons.notifications_none_outlined;
         break;
       case AlertFilterType.alerts:
-        title = 'Aucune alerte active';
-        message =
-            'Activez les notifications sur vos recherches pour être alerté des nouveaux événements';
+        title = l10n.alertsEmptyActiveTitle;
+        message = l10n.alertsEmptyActiveBody;
         icon = Icons.notifications_off_outlined;
         break;
       case AlertFilterType.searches:
-        title = 'Aucune recherche enregistrée';
-        message = 'Vos recherches sans notification apparaîtront ici';
+        title = l10n.alertsEmptySearchesTitle;
+        message = l10n.alertsEmptySearchesBody;
         icon = Icons.search_off_outlined;
         break;
     }
@@ -241,12 +243,21 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
                   borderRadius: BorderRadius.circular(24),
                 ),
               ),
-              child: const Text('Explorer les activités'),
+              child: Text(l10n.alertsExploreActivities),
             ),
           ],
         ],
       ),
     );
+  }
+
+  String _filterLabel(BuildContext context, AlertFilterType filter) {
+    final l10n = context.l10n;
+    return switch (filter) {
+      AlertFilterType.all => l10n.alertsFilterAll,
+      AlertFilterType.alerts => l10n.alertsFilterAlerts,
+      AlertFilterType.searches => l10n.alertsFilterSearches,
+    };
   }
 }
 
@@ -274,18 +285,17 @@ class _AlertItemCard extends ConsumerWidget {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: const Text("Supprimer l'alerte"),
-              content: const Text(
-                  "Voulez-vous vraiment supprimer cette recherche enregistrée ?"),
+              title: Text(context.l10n.alertsDeleteTitle),
+              content: Text(context.l10n.alertsDeleteBody),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text("Annuler"),
+                  child: Text(context.l10n.commonCancel),
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(true),
                   style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text("Supprimer"),
+                  child: Text(context.l10n.messagesDeleteAction),
                 ),
               ],
             );
@@ -294,7 +304,7 @@ class _AlertItemCard extends ConsumerWidget {
       },
       onDismissed: (direction) {
         ref.read(alertsProvider.notifier).deleteAlert(alert.id);
-        PetitBooToast.success(context, 'Alerte "${alert.name}" supprimée');
+        PetitBooToast.success(context, context.l10n.alertsDeleted(alert.name));
       },
       child: GestureDetector(
         onTap: () {
@@ -354,7 +364,7 @@ class _AlertItemCard extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _buildSubtitle(alert),
+                        _buildSubtitle(context, alert),
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey[600],
@@ -364,7 +374,9 @@ class _AlertItemCard extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Créée le ${DateFormat('dd/MM/yyyy').format(alert.createdAt)}',
+                        context.l10n.alertsCreatedOn(
+                          DateFormat('dd/MM/yyyy').format(alert.createdAt),
+                        ),
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[400],
@@ -384,7 +396,7 @@ class _AlertItemCard extends ConsumerWidget {
     );
   }
 
-  String _buildSubtitle(Alert alert) {
+  String _buildSubtitle(BuildContext context, Alert alert) {
     final parts = <String>[];
     if (alert.filter.citySlug != null) {
       parts.add(alert.filter.cityName ?? alert.filter.citySlug!);
@@ -392,14 +404,16 @@ class _AlertItemCard extends ConsumerWidget {
     if (alert.filter.thematiquesSlugs.isNotEmpty) {
       parts.add(alert.filter.thematiquesSlugs.first); // Just first one
     }
-    if (alert.filter.dateFilterLabel != null) {
-      parts.add(alert.filter.dateFilterLabel!);
+    final dateLabel = context.searchDateFilterLabelOrNull(alert.filter);
+    if (dateLabel != null) {
+      parts.add(dateLabel);
     }
-    if (alert.filter.priceFilterLabel != null) {
-      parts.add(alert.filter.priceFilterLabel!);
+    final priceLabel = context.searchPriceFilterLabel(alert.filter);
+    if (priceLabel != null) {
+      parts.add(priceLabel);
     }
 
-    if (parts.isEmpty) return 'Tous les événements';
+    if (parts.isEmpty) return context.l10n.alertsAllEvents;
     return parts.join(' • ');
   }
 }

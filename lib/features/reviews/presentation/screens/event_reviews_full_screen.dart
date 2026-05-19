@@ -92,7 +92,7 @@ class _EventReviewsFullScreenState
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = 'Impossible de charger les avis.';
+        _error = context.l10n.organizerReviewsLoadError;
       });
     }
   }
@@ -228,7 +228,7 @@ class _EventReviewsFullScreenState
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Tous les avis'),
+        title: Text(context.l10n.reviewsAllTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: HbColors.textPrimary,
@@ -245,9 +245,9 @@ class _EventReviewsFullScreenState
               },
               backgroundColor: HbColors.brandPrimary,
               icon: const Icon(Icons.edit_outlined, color: Colors.white),
-              label: const Text(
-                'Écrire un avis',
-                style: TextStyle(color: Colors.white),
+              label: Text(
+                context.l10n.reviewsWriteReviewAction,
+                style: const TextStyle(color: Colors.white),
               ),
             ),
       body: RefreshIndicator(
@@ -326,7 +326,7 @@ class _EventReviewsFullScreenState
               children: [
                 _RatingChip(
                   selected: _query.rating == null,
-                  label: 'Tous',
+                  label: context.l10n.reviewsAllRatingsFilter,
                   onTap: () => _changeQuery((q) => q.copyWith(rating: null)),
                 ),
                 const SizedBox(width: 6),
@@ -349,7 +349,7 @@ class _EventReviewsFullScreenState
             children: [
               FilterChip(
                 selected: _query.verifiedOnly,
-                label: const Text('Vérifiés'),
+                label: Text(context.l10n.reviewsVerifiedFilter),
                 onSelected: (v) =>
                     _changeQuery((q) => q.copyWith(verifiedOnly: v)),
                 selectedColor: HbColors.brandPrimary.withValues(alpha: 0.15),
@@ -358,7 +358,7 @@ class _EventReviewsFullScreenState
               const SizedBox(width: 6),
               FilterChip(
                 selected: _query.featuredOnly,
-                label: const Text('Mis en avant'),
+                label: Text(context.l10n.reviewsFeaturedFilter),
                 onSelected: (v) =>
                     _changeQuery((q) => q.copyWith(featuredOnly: v)),
                 selectedColor: HbColors.brandPrimary.withValues(alpha: 0.15),
@@ -366,7 +366,7 @@ class _EventReviewsFullScreenState
               ),
               const Spacer(),
               PopupMenuButton<ReviewSortBy>(
-                tooltip: 'Trier',
+                tooltip: context.l10n.reviewsSortTooltip,
                 icon: const Icon(Icons.sort, color: HbColors.textPrimary),
                 onSelected: (v) => _changeQuery((q) => q.copyWith(sortBy: v)),
                 itemBuilder: (_) => ReviewSortBy.values
@@ -378,7 +378,7 @@ class _EventReviewsFullScreenState
                                 const Icon(Icons.check,
                                     size: 16, color: HbColors.brandPrimary),
                               if (_query.sortBy == v) const SizedBox(width: 6),
-                              Text(v.displayLabel),
+                              Text(_sortLabel(context, v)),
                             ],
                           ),
                         ))
@@ -407,12 +407,12 @@ class _EventReviewsFullScreenState
       );
     }
     if (_items.isEmpty) {
-      return const SliverFillRemaining(
+      return SliverFillRemaining(
         hasScrollBody: false,
         child: HbEmptyState(
           icon: Icons.rate_review_outlined,
-          title: 'Aucun avis',
-          message: 'Aucun avis ne correspond aux filtres sélectionnés.',
+          title: context.l10n.reviewsNoReviewsTitle,
+          message: context.l10n.reviewsNoFilteredResults,
         ),
       );
     }
@@ -444,6 +444,17 @@ class _EventReviewsFullScreenState
         ),
       ),
     );
+  }
+
+  String _sortLabel(BuildContext context, ReviewSortBy sortBy) {
+    switch (sortBy) {
+      case ReviewSortBy.helpful:
+        return context.l10n.reviewsSortMostHelpful;
+      case ReviewSortBy.rating:
+        return context.l10n.reviewsSortRating;
+      case ReviewSortBy.createdAt:
+        return context.l10n.reviewsSortNewest;
+    }
   }
 }
 

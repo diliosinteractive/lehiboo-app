@@ -14,6 +14,7 @@ import '../models/locked_event_shell_dto.dart';
 import '../../../../domain/entities/city.dart';
 import '../models/city_with_coordinates_dto.dart';
 import '../models/popular_city_dto.dart';
+import '../models/search_suggestions_dto.dart';
 
 final eventsApiDataSourceProvider = Provider<EventsApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -44,12 +45,14 @@ class EventsApiDataSource {
     bool? accessiblePmr,
     bool? onlineOnly,
     bool? inPersonOnly,
+    String? publicFilters,
     String? targetAudiences,
     String? eventTag,
     String? specialEvents,
     String? emotions,
     bool? availableOnly,
     String? locationType,
+    String? venueType,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -93,6 +96,9 @@ class EventsApiDataSource {
     if (accessiblePmr == true) queryParams['accessible_pmr'] = 1;
     if (onlineOnly == true) queryParams['online'] = 1;
     if (inPersonOnly == true) queryParams['in_person'] = 1;
+    if (publicFilters != null && publicFilters.isNotEmpty) {
+      queryParams['public_filters'] = publicFilters;
+    }
     if (targetAudiences != null && targetAudiences.isNotEmpty) {
       queryParams['target_audiences'] = targetAudiences;
     }
@@ -108,6 +114,9 @@ class EventsApiDataSource {
     if (availableOnly == true) queryParams['available_only'] = 1;
     if (locationType != null && locationType.isNotEmpty) {
       queryParams['location_type'] = locationType;
+    }
+    if (venueType != null && venueType.isNotEmpty) {
+      queryParams['venue_type'] = venueType;
     }
     if (indoor == true) queryParams['indoor'] = true;
     if (outdoor == true) queryParams['outdoor'] = true;
@@ -529,5 +538,23 @@ class EventsApiDataSource {
 
     final payload = ApiResponseHandler.extractObject(response.data);
     return EventReferenceDataDto.fromJson(payload);
+  }
+
+  Future<SearchSuggestionsDto> getSearchSuggestions({
+    required String query,
+    required List<String> types,
+    int limit = 5,
+  }) async {
+    final response = await _dio.get(
+      '/search/suggestions',
+      queryParameters: {
+        'q': query,
+        'types': types.join(','),
+        'limit': limit,
+      },
+    );
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return SearchSuggestionsDto.fromJson(payload);
   }
 }

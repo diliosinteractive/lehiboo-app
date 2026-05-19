@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../home/presentation/providers/user_location_provider.dart';
@@ -36,7 +37,9 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
     super.initState();
     if (widget.sessionUuid != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(petitBooChatProvider.notifier).loadSession(widget.sessionUuid!);
+        ref
+            .read(petitBooChatProvider.notifier)
+            .loadSession(widget.sessionUuid!);
       });
     }
 
@@ -173,7 +176,9 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
             children: [
               Text('Petit Boo', style: PetitBooTheme.headingSm),
               Text(
-                state.isStreaming ? 'Répond...' : 'Assistant IA',
+                state.isStreaming
+                    ? context.l10n.petitBooStatusResponding
+                    : context.l10n.petitBooStatusAssistantAi,
                 style: PetitBooTheme.caption.copyWith(
                   color: state.isStreaming
                       ? PetitBooTheme.primary
@@ -196,7 +201,7 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
           icon: Icon(Icons.history_rounded, size: PetitBooTheme.iconLg),
           color: PetitBooTheme.grey500,
           onPressed: () => context.push('/petit-boo/history'),
-          tooltip: 'Historique',
+          tooltip: context.l10n.petitBooHistoryTitle,
         ),
         // New conversation
         IconButton(
@@ -205,7 +210,7 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
           onPressed: () {
             ref.read(petitBooChatProvider.notifier).createNewSession();
           },
-          tooltip: 'Nouvelle conversation',
+          tooltip: context.l10n.petitBooNewConversation,
         ),
         SizedBox(width: PetitBooTheme.spacing8),
       ],
@@ -263,7 +268,8 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
       decoration: BoxDecoration(
         color: PetitBooTheme.warningLight,
         border: Border(
-          bottom: BorderSide(color: PetitBooTheme.warning.withValues(alpha: 0.2)),
+          bottom:
+              BorderSide(color: PetitBooTheme.warning.withValues(alpha: 0.2)),
         ),
       ),
       child: Row(
@@ -276,8 +282,9 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
           SizedBox(width: PetitBooTheme.spacing8),
           Expanded(
             child: Text(
-              'Petit Boo est temporairement indisponible',
-              style: PetitBooTheme.bodySm.copyWith(color: PetitBooTheme.grey700),
+              context.l10n.petitBooServiceUnavailable,
+              style:
+                  PetitBooTheme.bodySm.copyWith(color: PetitBooTheme.grey700),
             ),
           ),
           TextButton(
@@ -288,9 +295,10 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
             },
             style: TextButton.styleFrom(
               foregroundColor: PetitBooTheme.warning,
-              padding: EdgeInsets.symmetric(horizontal: PetitBooTheme.spacing12),
+              padding:
+                  EdgeInsets.symmetric(horizontal: PetitBooTheme.spacing12),
             ),
-            child: Text('Retry'),
+            child: Text(context.l10n.commonRetry),
           ),
         ],
       ),
@@ -340,12 +348,13 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
     final user = ref.watch(currentUserProvider);
     final locationAsync = ref.watch(userLocationProvider);
 
-    final firstName = user?.firstName ?? user?.displayName?.split(' ').first;
+    final displayName = user?.displayName;
+    final firstName = user?.firstName ?? displayName?.split(' ').first;
     final cityName = locationAsync.valueOrNull?.cityName;
 
     // Build personalized greeting
-    final greeting = _buildPersonalizedGreeting(firstName);
-    final subtitle = _buildPersonalizedSubtitle(cityName);
+    final greeting = _buildPersonalizedGreeting(context, firstName);
+    final subtitle = _buildPersonalizedSubtitle(context, cityName);
 
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: PetitBooTheme.spacing20),
@@ -465,27 +474,31 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
               children: [
                 _buildQuickActionPill(
                   Icons.calendar_today_rounded,
-                  'Ce soir',
+                  context.l10n.petitBooQuickTonight,
                   cityName != null
-                      ? 'Que faire ce soir à $cityName ?'
-                      : 'Que faire ce soir ?',
+                      ? context.l10n.petitBooQuickTonightPromptWithCity(
+                          cityName,
+                        )
+                      : context.l10n.petitBooQuickTonightPrompt,
                 ),
                 _buildQuickActionPill(
                   Icons.weekend_rounded,
-                  'Week-end',
+                  context.l10n.petitBooQuickWeekend,
                   cityName != null
-                      ? 'Événements ce week-end à $cityName'
-                      : 'Événements ce week-end',
+                      ? context.l10n.petitBooQuickWeekendPromptWithCity(
+                          cityName,
+                        )
+                      : context.l10n.petitBooQuickWeekendPrompt,
                 ),
                 _buildQuickActionPill(
                   Icons.confirmation_number_rounded,
-                  'Mes billets',
-                  'Affiche mes réservations',
+                  context.l10n.petitBooQuickTickets,
+                  context.l10n.petitBooQuickTicketsPrompt,
                 ),
                 _buildQuickActionPill(
                   Icons.favorite_rounded,
-                  'Favoris',
-                  'Mes favoris',
+                  context.l10n.petitBooQuickFavorites,
+                  context.l10n.petitBooQuickFavoritesPrompt,
                 ),
               ],
             ),
@@ -499,7 +512,7 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
             child: Padding(
               padding: EdgeInsets.only(left: PetitBooTheme.spacing4),
               child: Text(
-                'Essayez de me demander...',
+                context.l10n.petitBooTryAsking,
                 style: PetitBooTheme.headingSm.copyWith(
                   color: PetitBooTheme.textPrimary,
                 ),
@@ -510,7 +523,7 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
           SizedBox(height: PetitBooTheme.spacing16),
 
           // Suggestion chips - Personalized with city
-          ..._buildSuggestionItems(cityName),
+          ..._buildSuggestionItems(context, cityName),
 
           SizedBox(height: PetitBooTheme.spacing16),
         ],
@@ -518,29 +531,29 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
     );
   }
 
-  String _buildPersonalizedGreeting(String? firstName) {
+  String _buildPersonalizedGreeting(BuildContext context, String? firstName) {
     final hour = DateTime.now().hour;
     String timeGreeting;
 
     if (hour < 12) {
-      timeGreeting = 'Bonjour';
+      timeGreeting = context.l10n.petitBooGreetingMorning;
     } else if (hour < 18) {
-      timeGreeting = 'Bon après-midi';
+      timeGreeting = context.l10n.petitBooGreetingAfternoon;
     } else {
-      timeGreeting = 'Bonsoir';
+      timeGreeting = context.l10n.petitBooGreetingEvening;
     }
 
     if (firstName != null && firstName.isNotEmpty) {
-      return '$timeGreeting $firstName !';
+      return context.l10n.petitBooGreetingWithName(timeGreeting, firstName);
     }
-    return '$timeGreeting !';
+    return context.l10n.petitBooGreetingNoName(timeGreeting);
   }
 
-  String _buildPersonalizedSubtitle(String? cityName) {
+  String _buildPersonalizedSubtitle(BuildContext context, String? cityName) {
     if (cityName != null) {
-      return 'Que puis-je faire pour vous à $cityName ?';
+      return context.l10n.petitBooSubtitleWithCity(cityName);
     }
-    return 'Comment puis-je vous aider aujourd\'hui ?';
+    return context.l10n.petitBooSubtitleDefault;
   }
 
   Widget _buildQuickActionPill(IconData icon, String label, String message) {
@@ -559,77 +572,77 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
               vertical: PetitBooTheme.spacing10,
             ),
             decoration: BoxDecoration(
-            color: PetitBooTheme.surface,
-            borderRadius: BorderRadius.circular(100),
-            border: Border.all(
-              color: PetitBooTheme.grey200,
-              width: 1,
+              color: PetitBooTheme.surface,
+              borderRadius: BorderRadius.circular(100),
+              border: Border.all(
+                color: PetitBooTheme.grey200,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: PetitBooTheme.primaryLight,
-                  shape: BoxShape.circle,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: PetitBooTheme.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: PetitBooTheme.primary,
+                    size: 14,
+                  ),
                 ),
-                child: Icon(
-                  icon,
-                  color: PetitBooTheme.primary,
-                  size: 14,
+                SizedBox(width: PetitBooTheme.spacing8),
+                Text(
+                  label,
+                  style: PetitBooTheme.bodySm.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: PetitBooTheme.textPrimary,
+                  ),
                 ),
-              ),
-              SizedBox(width: PetitBooTheme.spacing8),
-              Text(
-                label,
-                style: PetitBooTheme.bodySm.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: PetitBooTheme.textPrimary,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
 
-  List<Widget> _buildSuggestionItems(String? cityName) {
+  List<Widget> _buildSuggestionItems(BuildContext context, String? cityName) {
     final suggestions = [
       {
         'icon': Icons.local_activity_rounded,
         'text': cityName != null
-            ? 'Quels événements ce soir à $cityName ?'
-            : 'Quels événements ce soir ?',
+            ? context.l10n.petitBooSuggestionTonightWithCity(cityName)
+            : context.l10n.petitBooSuggestionTonight,
       },
       {
         'icon': Icons.family_restroom_rounded,
         'text': cityName != null
-            ? 'Activités pour enfants à $cityName'
-            : 'Activités pour enfants ce week-end',
+            ? context.l10n.petitBooSuggestionKidsWithCity(cityName)
+            : context.l10n.petitBooSuggestionKids,
       },
       {
         'icon': Icons.restaurant_rounded,
         'text': cityName != null
-            ? 'Sorties gastronomiques à $cityName'
-            : 'Sorties gastronomiques ce week-end',
+            ? context.l10n.petitBooSuggestionFoodWithCity(cityName)
+            : context.l10n.petitBooSuggestionFood,
       },
       {
         'icon': Icons.music_note_rounded,
         'text': cityName != null
-            ? 'Concerts et spectacles à $cityName'
-            : 'Concerts et spectacles à venir',
+            ? context.l10n.petitBooSuggestionConcertsWithCity(cityName)
+            : context.l10n.petitBooSuggestionConcerts,
       },
     ];
 

@@ -93,7 +93,7 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
             Expanded(
               child: _PrimaryButton(
                 icon: Icons.mail_outline,
-                label: 'Contacter',
+                label: context.l10n.organizerContactAction,
                 onTap: () => _handle(PendingOrganizerAction.contact),
               ),
             ),
@@ -104,7 +104,7 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
               icon: widget.coordinatesOpen
                   ? Icons.expand_less
                   : Icons.expand_more,
-              label: 'Coordonnées',
+              label: context.l10n.organizerCoordinatesAction,
               onTap: () => _handle(PendingOrganizerAction.coordinates),
             ),
           ),

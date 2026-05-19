@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/entities/can_review_result.dart';
 import '../../domain/entities/review_enums.dart';
@@ -38,7 +39,7 @@ class CanReviewMessage extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  reason.displayMessage,
+                  _reasonMessage(context, reason),
                   style: const TextStyle(
                     fontSize: 13,
                     color: HbColors.textPrimary,
@@ -61,12 +62,27 @@ class CanReviewMessage extends StatelessWidget {
                   minimumSize: const Size(0, 32),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('Voir mon avis →'),
+                child: Text(context.l10n.reviewsViewMyReviewAction),
               ),
             ),
           ],
         ],
       ),
     );
+  }
+
+  String _reasonMessage(BuildContext context, CanReviewReason reason) {
+    switch (reason) {
+      case CanReviewReason.alreadyReviewed:
+        return context.l10n.reviewsCannotReviewAlreadyReviewed;
+      case CanReviewReason.organizerCannotReview:
+        return context.l10n.reviewsCannotReviewOrganizer;
+      case CanReviewReason.eventNotEnded:
+        return context.l10n.reviewsCannotReviewEventNotEnded;
+      case CanReviewReason.notParticipated:
+        return context.l10n.reviewsCannotReviewNotParticipated;
+      case CanReviewReason.unknown:
+        return context.l10n.reviewsCannotReviewUnknown;
+    }
   }
 }

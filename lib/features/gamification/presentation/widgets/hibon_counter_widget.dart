@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../presentation/providers/gamification_provider.dart';
 
@@ -26,12 +26,17 @@ class HibonCounterWidget extends ConsumerWidget {
     final fallbackBalance = balanceAsync.value?.balance;
 
     return profileAsync.when(
-      data: (wallet) => _buildBadge(balance: wallet.balance, compact: compact),
+      data: (wallet) => _buildBadge(
+        context,
+        balance: wallet.balance,
+        compact: compact,
+      ),
       loading: () {
         // Pendant le chargement de /wallet, afficher la balance légère
         // de /balance si disponible (cold start, Plan 05).
         if (fallbackBalance != null) {
           return _buildBadge(
+            context,
             balance: fallbackBalance,
             compact: compact,
           );
@@ -65,7 +70,8 @@ class HibonCounterWidget extends ConsumerWidget {
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.stars_rounded, color: Colors.grey.shade400, size: 16),
+                child: Icon(Icons.stars_rounded,
+                    color: Colors.grey.shade400, size: 16),
               ),
               SizedBox(width: compact ? 6 : 8),
               Text(
@@ -83,7 +89,11 @@ class HibonCounterWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildBadge({required int balance, required bool compact}) {
+  Widget _buildBadge(
+    BuildContext context, {
+    required int balance,
+    required bool compact,
+  }) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 12 : 16,
@@ -103,7 +113,8 @@ class HibonCounterWidget extends ConsumerWidget {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -139,7 +150,7 @@ class HibonCounterWidget extends ConsumerWidget {
           if (!compact) ...[
             const SizedBox(width: 4),
             Text(
-              'Hibons',
+              context.l10n.gamificationHibonsUnit,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.white.withValues(alpha: 0.9),
