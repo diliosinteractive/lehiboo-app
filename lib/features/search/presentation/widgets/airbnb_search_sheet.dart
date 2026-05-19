@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import 'package:geolocator/geolocator.dart';
@@ -112,6 +114,30 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
       vsync: this,
     );
     _animationController.forward();
+  }
+
+  /// Wrapper de [widget.onSearch] qui loggue le submit avant la navigation
+  /// vers `/search`. Lit l'état du filtre courant pour enrichir l'event.
+  void _handleSearch() {
+    final filter = ref.read(eventFilterProvider);
+    final analytics = ref.read(analyticsServiceProvider);
+    analytics.logEvent(
+      AnalyticsEvent.searchSubmitted,
+      params: {
+        AnalyticsParam.query: filter.searchQuery,
+        AnalyticsParam.citySlug: filter.citySlug ?? 'none',
+        AnalyticsParam.categories: filter.categoriesSlugs.join(','),
+        AnalyticsParam.hasDateFilter: filter.dateFilterType != null,
+      },
+    );
+    // Standard GA4 `search` pour alimenter les rapports built-in.
+    if (filter.searchQuery.isNotEmpty) {
+      analytics.logEvent(
+        AnalyticsEvent.search,
+        params: {AnalyticsParam.searchTerm: filter.searchQuery},
+      );
+    }
+    widget.onSearch?.call();
   }
 
   @override
@@ -373,7 +399,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
               activeFilterCount: _activeFilterCount,
               hasFilters: filter.hasActiveFilters,
               bottomPadding: bottomPadding,
-              onPressed: widget.onSearch ?? () {},
+              onPressed: _handleSearch,
               onClear: () {
                 filterNotifier.resetAll();
                 _searchController.clear();
@@ -446,7 +472,7 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
         filterNotifier.setSearchQuery(value);
         setState(() {});
       },
-      onSubmitted: (_) => widget.onSearch?.call(),
+      onSubmitted: (_) => _handleSearch(),
       decoration: InputDecoration(
         hintText: context.l10n.searchHintEventOrOrganization,
         prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),

@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/analytics/analytics_event.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/analytics_service.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
@@ -35,14 +38,37 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
             isSubmitting: false,
             currency: activity.currency ?? 'EUR',
           ),
-        );
+        ) {
+    // begin_checkout — signal d'entrée dans le funnel de réservation. Loggué
+    // dès la construction du controller (= ouverture du BookingScreen) pour
+    // mesurer les bounces immédiats (begin_checkout sans purchase).
+    _analytics?.logEvent(
+      AnalyticsEvent.beginCheckout,
+      params: {
+        AnalyticsParam.eventUuid: activity.id,
+        AnalyticsParam.value: activity.priceMin ?? 0,
+        AnalyticsParam.currency: activity.currency ?? 'EUR',
+        AnalyticsParam.isFree: activity.isFree ?? false,
+      },
+    );
+  }
 
   final BookingRepository bookingRepository;
   final Ref? _ref;
 
+  AnalyticsService? get _analytics =>
+      _ref == null ? null : _ref.read(analyticsServiceProvider);
+
   void selectSlot(Slot slot) {
     state = state.copyWith(selectedSlot: slot, errorMessage: null);
     _calculateTotal();
+    _analytics?.logEvent(
+      AnalyticsEvent.bookingSlotSelected,
+      params: {
+        AnalyticsParam.eventUuid: state.activity.id,
+        AnalyticsParam.slotId: slot.id,
+      },
+    );
   }
 
   void updateQuantity(int quantity) {
@@ -90,6 +116,11 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
       // For now, assume if quantity > 1 and list is empty, we might need logic.
     }
 
+    _analytics?.logEvent(
+      AnalyticsEvent.bookingCustomerFormCompleted,
+      params: {AnalyticsParam.eventUuid: state.activity.id},
+    );
+
     if (state.isFree) {
       // Skip payment step for free events
       await submitFreeBooking();
@@ -124,11 +155,20 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
   }
 
   Future<void> submitPaidBooking({required String paymentIntentId}) async {
+    _analytics?.logEvent(
+      AnalyticsEvent.addPaymentInfo,
+      params: {
+        AnalyticsParam.eventUuid: state.activity.id,
+        AnalyticsParam.value: state.totalPrice ?? 0,
+        AnalyticsParam.currency: state.currency,
+      },
+    );
     await _submitBooking(paymentIntentId: paymentIntentId);
   }
 
   Future<void> _submitBooking({String? paymentIntentId}) async {
     state = state.copyWith(isSubmitting: true, errorMessage: null);
+    String failureStep = AnalyticsBookingStep.create;
     try {
       // 1. Create Booking
       // Build ticket selections from legacy single-quantity state
@@ -158,6 +198,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
 
       // 2. Confirm Booking (if needed immediately or strictly for paid flow after stripe)
       // For free booking, backend might auto-confirm. For paid, we send Intent ID.
+      failureStep = AnalyticsBookingStep.confirm;
       final confirmedBooking = await bookingRepository.confirmBooking(
         bookingId: booking.id,
         paymentIntentId: paymentIntentId,
@@ -173,10 +214,42 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
         tickets: tickets,
         step: const BookingStep.confirmation(),
       );
+
+      // purchase (standard GA4) — funnel completion. Avec `transaction_id`,
+      // `value`, `currency` GA4 alimente les rapports Monetization.
+      _analytics?.logEvent(
+        AnalyticsEvent.purchase,
+        params: {
+          AnalyticsParam.transactionId: confirmedBooking.id,
+          AnalyticsParam.value: state.totalPrice ?? 0,
+          AnalyticsParam.currency: state.currency,
+          AnalyticsParam.eventUuid: state.activity.id,
+          AnalyticsParam.isFree: state.isFree,
+        },
+      );
+
+      if (tickets.isNotEmpty) {
+        _analytics?.logEvent(
+          AnalyticsEvent.ticketsDisplayed,
+          params: {
+            AnalyticsParam.bookingUuid: confirmedBooking.id,
+            AnalyticsParam.quantity: tickets.length,
+          },
+        );
+      }
+
       // Booking signal changed — drop the personalized feed (spec §7).
       _ref?.invalidate(personalizedFeedProvider);
     } catch (e) {
       state = state.copyWith(isSubmitting: false, errorMessage: e.toString());
+      _analytics?.logEvent(
+        AnalyticsEvent.bookingFailed,
+        params: {
+          AnalyticsParam.eventUuid: state.activity.id,
+          AnalyticsParam.step: failureStep,
+          AnalyticsParam.reason: e.runtimeType.toString(),
+        },
+      );
     }
   }
 }

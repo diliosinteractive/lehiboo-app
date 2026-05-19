@@ -8,6 +8,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart'; // For attribution links
 import 'package:go_router/go_router.dart';
 
+import 'package:lehiboo/core/analytics/analytics_event.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
@@ -60,6 +62,17 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
       'initialZoom=${widget.initialZoom}',
     );
     _checkLocationPermission();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.mapOpened,
+        params: {
+          AnalyticsParam.source: widget.initialLat != null
+              ? AnalyticsSource.deepLink
+              : AnalyticsSource.home,
+        },
+      );
+    });
   }
 
   @override
@@ -239,6 +252,13 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
         alignment: Alignment.topCenter,
         child: GestureDetector(
           onTap: () {
+            ref.read(analyticsServiceProvider).logEvent(
+              AnalyticsEvent.mapPinTapped,
+              params: {
+                AnalyticsParam.eventUuid: event.id,
+                AnalyticsParam.quantity: count,
+              },
+            );
             if (count == 1) {
               _pageController.animateToPage(
                 displayEntry.key,

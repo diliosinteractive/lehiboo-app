@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/membership_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
@@ -75,12 +77,21 @@ class MembershipActionController
     if (current == null || current.isInFlight) return;
     state = const AsyncData(MembershipAction(isInFlight: true));
 
+    ref.read(analyticsServiceProvider).logEvent(
+      AnalyticsEvent.membershipJoinStarted,
+      params: {AnalyticsParam.organizationId: arg},
+    );
+
     try {
       await ref.read(membershipsRepositoryProvider).requestMembership(arg);
       ref.invalidate(myMembershipsListProvider);
       // Membership signal changed — drop the personalized feed (spec §7).
       ref.invalidate(personalizedFeedProvider);
       state = const AsyncData(MembershipAction());
+      ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.membershipJoinCompleted,
+        params: {AnalyticsParam.organizationId: arg},
+      );
     } catch (e, st) {
       state = AsyncData(MembershipAction(error: _humanReadable(e)));
       if (kDebugMode) {

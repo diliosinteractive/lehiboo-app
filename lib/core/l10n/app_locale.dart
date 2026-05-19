@@ -3,6 +3,9 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../analytics/analytics_event.dart';
+import '../analytics/analytics_provider.dart';
+import '../analytics/analytics_service.dart';
 import '../constants/app_constants.dart';
 import '../providers/shared_preferences_provider.dart';
 
@@ -12,7 +15,8 @@ const supportedAppLocales = [Locale('fr'), Locale('en')];
 final appLocaleControllerProvider =
     StateNotifierProvider<AppLocaleController, Locale>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return AppLocaleController(prefs);
+  final analytics = ref.read(analyticsServiceProvider);
+  return AppLocaleController(prefs, analytics);
 });
 
 final appLanguageCodeProvider = Provider<String>((ref) {
@@ -38,7 +42,7 @@ class AppLocaleCache {
 }
 
 class AppLocaleController extends StateNotifier<Locale> {
-  AppLocaleController(this._prefs)
+  AppLocaleController(this._prefs, this._analytics)
       : super(resolveAppLocale(
           savedLanguageCode: _prefs.getString(AppConstants.keyLanguage),
           platformLocale: PlatformDispatcher.instance.locale,
@@ -47,6 +51,7 @@ class AppLocaleController extends StateNotifier<Locale> {
   }
 
   final SharedPreferences _prefs;
+  final AnalyticsService _analytics;
 
   Future<void> setLanguageCode(String languageCode) async {
     final normalized =
@@ -56,6 +61,7 @@ class AppLocaleController extends StateNotifier<Locale> {
     state = nextLocale;
     AppLocaleCache.setLanguageCode(normalized);
     await _prefs.setString(AppConstants.keyLanguage, normalized);
+    _analytics.setUserProperty(AnalyticsUserProperty.appLocale, normalized);
   }
 }
 
