@@ -353,14 +353,32 @@ abstract class AppLocalizations {
   /// No description provided for @settingsResetOnboardingTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Revoir l\'introduction'**
+  /// **'Réinitialiser l\'onboarding'**
   String get settingsResetOnboardingTitle;
 
   /// No description provided for @settingsResetOnboardingSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Redémarrer le tutoriel d\'accueil'**
+  /// **'Revoir l\'introduction de l\'application au prochain lancement'**
   String get settingsResetOnboardingSubtitle;
+
+  /// No description provided for @settingsSectionPrivacy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confidentialité'**
+  String get settingsSectionPrivacy;
+
+  /// No description provided for @settingsAnalyticsConsentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statistiques d\'usage anonymes'**
+  String get settingsAnalyticsConsentTitle;
+
+  /// No description provided for @settingsAnalyticsConsentSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous aide à améliorer l\'app. Aucune donnée personnelle.'**
+  String get settingsAnalyticsConsentSubtitle;
 
   /// No description provided for @settingsAccountDeletionTitle.
   ///
@@ -398,18 +416,6 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get settingsVersionTitle;
 
-  /// No description provided for @settingsResetDialogTitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Redémarrer l\'onboarding ?'**
-  String get settingsResetDialogTitle;
-
-  /// No description provided for @settingsResetDialogContent.
-  ///
-  /// In fr, this message translates to:
-  /// **'Voulez-vous vraiment revoir les écrans de bienvenue ? Cela vous déconnectera temporairement de l\'accueil.'**
-  String get settingsResetDialogContent;
-
   /// No description provided for @commonCancel.
   ///
   /// In fr, this message translates to:
@@ -439,12 +445,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Suivant'**
   String get commonNext;
-
-  /// No description provided for @commonRestart.
-  ///
-  /// In fr, this message translates to:
-  /// **'Redémarrer'**
-  String get commonRestart;
 
   /// No description provided for @commonLoading.
   ///

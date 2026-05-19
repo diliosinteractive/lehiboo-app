@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/analytics/analytics_consent.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../config/env_config.dart';
@@ -24,14 +23,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _busyNewsletter = false;
   bool _busyPush = false;
-
-  Future<void> _resetOnboarding(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(AppConstants.keyOnboardingCompleted);
-    if (context.mounted) {
-      context.go('/onboarding');
-    }
-  }
 
   Future<void> _togglePref({
     required bool current,
@@ -180,17 +171,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             onTap: () => _showLanguagePicker(context),
           ),
-          ListTile(
-            leading: const Icon(Icons.restart_alt, color: Color(0xFFFF601F)),
-            title: Text(l10n.settingsResetOnboardingTitle),
-            subtitle: Text(l10n.settingsResetOnboardingSubtitle),
-            onTap: () => _showResetConfirmation(context),
-          ),
+          //
           const Divider(),
-          // Section Confidentialité — opt-in/out RGPD pour la collecte
-          // analytics. Strings hardcodées en fr (cf. ConsentGateModal),
-          // à migrer vers l10n dans un second temps.
-          _buildSectionHeader('Confidentialité'),
+          // Section Confidentialité — opt-in/out RGPD pour la collecte analytics.
+          _buildSectionHeader(l10n.settingsSectionPrivacy),
           Consumer(
             builder: (context, ref, _) {
               final consent = ref.watch(analyticsConsentProvider);
@@ -199,10 +183,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Icons.analytics_outlined,
                   color: Color(0xFFFF601F),
                 ),
-                title: const Text('Statistiques d\'usage anonymes'),
-                subtitle: const Text(
-                  'Nous aide à améliorer l\'app. Aucune donnée personnelle.',
-                ),
+                title: Text(l10n.settingsAnalyticsConsentTitle),
+                subtitle: Text(l10n.settingsAnalyticsConsentSubtitle),
                 value: consent.isGranted,
                 onChanged: (value) async {
                   final notifier =
@@ -330,33 +312,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           color: Colors.grey[600],
           letterSpacing: 1.2,
         ),
-      ),
-    );
-  }
-
-  void _showResetConfirmation(BuildContext context) {
-    final l10n = context.l10n;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.settingsResetDialogTitle),
-        content: Text(l10n.settingsResetDialogContent),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: Text(l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () {
-              context.pop();
-              _resetOnboarding(context);
-            },
-            style:
-                TextButton.styleFrom(foregroundColor: const Color(0xFFFF601F)),
-            child: Text(l10n.commonRestart),
-          ),
-        ],
       ),
     );
   }
