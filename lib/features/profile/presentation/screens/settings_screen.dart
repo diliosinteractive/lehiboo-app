@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../config/env_config.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/l10n/l10n.dart';
@@ -184,6 +186,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => _showResetConfirmation(context),
           ),
           const Divider(),
+          _buildSectionHeader(l10n.settingsSectionAccount),
+          ListTile(
+            leading: Icon(
+              Icons.delete_forever_outlined,
+              color: Colors.red.shade700,
+            ),
+            title: Text(
+              l10n.settingsAccountDeletionTitle,
+              style: TextStyle(color: Colors.red.shade700),
+            ),
+            subtitle: Text(l10n.settingsAccountDeletionSubtitle),
+            trailing: const Icon(
+              Icons.chevron_right,
+              color: Colors.grey,
+            ),
+            onTap: () => _showAccountDeletionConfirmation(context),
+          ),
+          const Divider(),
           _buildSectionHeader(l10n.settingsSectionLegal),
           for (final doc
               in LegalDocument.values.where((d) => d != LegalDocument.cookies))
@@ -304,6 +324,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             style:
                 TextButton.styleFrom(foregroundColor: const Color(0xFFFF601F)),
             child: Text(l10n.commonRestart),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Uri _accountDeletionUri(BuildContext context) {
+    final baseUrl = EnvConfig.websiteUrl.endsWith('/')
+        ? EnvConfig.websiteUrl.substring(0, EnvConfig.websiteUrl.length - 1)
+        : EnvConfig.websiteUrl;
+    final locale = normalizeLanguageCode(context.appLanguageCode) ??
+        fallbackAppLocale.languageCode;
+
+    return Uri.parse('$baseUrl/$locale/account-deletion');
+  }
+
+  Future<void> _openAccountDeletionPage(BuildContext context) async {
+    final l10n = context.l10n;
+    final uri = _accountDeletionUri(context);
+
+    final ok = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    if (ok) return;
+    if (!context.mounted) return;
+
+    final fallbackOk =
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (fallbackOk) return;
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.settingsAccountDeletionOpenFailed)),
+    );
+  }
+
+  void _showAccountDeletionConfirmation(BuildContext context) {
+    final l10n = context.l10n;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.settingsAccountDeletionDialogTitle),
+        content: Text(l10n.settingsAccountDeletionDialogContent),
+        actions: [
+          TextButton(
+            onPressed: () => dialogContext.pop(),
+            child: Text(l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () {
+              dialogContext.pop();
+              _openAccountDeletionPage(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+            child: Text(l10n.commonContinue),
           ),
         ],
       ),

@@ -1158,12 +1158,12 @@ String? _priceChipValue(EventFilter filter) {
 final filterOptionsProvider = Provider<FilterOptionsData>((ref) {
   final thematiques = ref.watch(thematiquesProvider);
   final categories = ref.watch(categoriesProvider);
-  final cities = ref.watch(homeCitiesProvider);
+  final popularCities = ref.watch(popularCitiesProvider);
 
   return FilterOptionsData(
     thematiques: thematiques.valueOrNull ?? [],
     categories: categories.valueOrNull ?? [],
-    cities: cities.valueOrNull ?? [],
+    cities: popularCities.valueOrNull?.cities ?? [],
   );
 });
 

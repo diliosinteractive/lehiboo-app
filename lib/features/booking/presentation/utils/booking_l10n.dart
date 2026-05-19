@@ -22,6 +22,7 @@ extension BookingL10n on BuildContext {
     return switch (option) {
       BookingSortOption.dateAsc => l10n.bookingSortDateAsc,
       BookingSortOption.dateDesc => l10n.bookingSortDateDesc,
+      BookingSortOption.createdDesc => l10n.bookingSortCreatedDesc,
       BookingSortOption.statusAsc => l10n.bookingSortStatusAsc,
     };
   }

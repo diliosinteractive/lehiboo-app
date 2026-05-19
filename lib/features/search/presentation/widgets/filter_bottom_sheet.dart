@@ -316,6 +316,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               selectedSlugs: _tempFilter.thematiquesSlugs,
                               options: referenceData.themes,
                               showCounts: false,
+                              collapsedOptionLimit: 8,
                               onChanged: (slugs) {
                                 setState(() {
                                   _tempFilter = _tempFilter.copyWith(
@@ -351,6 +352,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               icon: Icons.local_activity,
                               selectedSlug: _tempFilter.eventTagSlug,
                               options: referenceData.eventTags,
+                              collapsedOptionLimit: 8,
                               onChanged: (slug) {
                                 setState(() {
                                   _tempFilter =
@@ -456,6 +458,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               selectedSlugs: _tempFilter.emotionSlugs,
                               options: referenceData.emotions,
                               showCounts: false,
+                              collapsedOptionLimit: 8,
                               onChanged: (slugs) {
                                 setState(() {
                                   _tempFilter = _tempFilter.copyWith(
@@ -895,7 +898,6 @@ class _LocationFilterSectionState
     final filter = widget.filter;
     final hasLocation = filter.latitude != null;
     final hasCity = filter.citySlug != null;
-    final citiesAsync = ref.watch(homeCitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1117,99 +1119,73 @@ class _LocationFilterSectionState
         ),
         const SizedBox(height: 12),
 
-        citiesAsync.when(
-          data: (cities) {
-            if (_cityQuery.isNotEmpty && !_shouldShowAutocomplete(_cityQuery)) {
-              return _AutocompleteMessage(
-                context.searchMinCharactersLabel(
-                  searchAutocompleteMinQueryLength,
-                ),
-              );
-            }
-
-            if (_shouldShowAutocomplete(_cityQuery)) {
-              return _buildCityAutocompleteResults(filter);
-            }
-
-            final normalizedQuery = _cityQuery.toLowerCase();
-            final displayedCities = normalizedQuery.isEmpty
-                ? cities.take(6).toList()
-                : cities
-                    .where(
-                      (city) =>
-                          city.name.toLowerCase().contains(normalizedQuery) ||
-                          city.slug.toLowerCase().contains(normalizedQuery),
-                    )
-                    .take(10)
-                    .toList();
-
-            if (displayedCities.isEmpty) {
-              return Text(
-                context.l10n.searchNoCityFound,
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
-              );
-            }
-
-            return Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: displayedCities.map((city) {
-                final isSelected = filter.citySlug == city.slug;
-                return _SelectableChip(
-                  label: city.name,
-                  icon: Icons.location_city,
-                  isSelected: isSelected,
-                  onTap: () {
-                    if (isSelected) {
-                      widget.onClearCity();
-                    } else {
-                      widget.onCitySelected(city.slug, city.name);
-                    }
-                  },
-                );
-              }).toList(),
-            );
-          },
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: HbColors.brandPrimary,
-              ),
+        if (_cityQuery.isNotEmpty && !_shouldShowAutocomplete(_cityQuery))
+          _AutocompleteMessage(
+            context.searchMinCharactersLabel(
+              searchAutocompleteMinQueryLength,
             ),
-          ),
-          error: (_, __) => Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              ('Paris', 'paris'),
-              ('Lyon', 'lyon'),
-              ('Marseille', 'marseille'),
-              ('Bordeaux', 'bordeaux'),
-              ('Toulouse', 'toulouse'),
-              ('Nantes', 'nantes'),
-            ].map((city) {
-              final isSelected = filter.citySlug == city.$2;
-              return _SelectableChip(
-                label: city.$1,
-                icon: Icons.location_city,
-                isSelected: isSelected,
-                onTap: () {
-                  if (isSelected) {
-                    widget.onClearCity();
-                  } else {
-                    widget.onCitySelected(city.$2, city.$1);
-                  }
-                },
-              );
-            }).toList(),
+          )
+        else if (_shouldShowAutocomplete(_cityQuery))
+          _buildCityAutocompleteResults(filter)
+        else
+          _buildPopularCityChips(filter),
+      ],
+    );
+  }
+
+  Widget _buildPopularCityChips(EventFilter filter) {
+    final popularCities = ref.watch(popularCitiesProvider);
+
+    return popularCities.when(
+      data: (result) {
+        final displayedCities = result.cities.take(6).toList();
+
+        if (displayedCities.isEmpty) {
+          return Text(
+            context.l10n.searchNoCityFound,
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+          );
+        }
+
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: displayedCities.map((city) {
+            final isSelected = filter.citySlug == city.slug;
+            return _SelectableChip(
+              label: city.name,
+              icon: Icons.location_city,
+              isSelected: isSelected,
+              onTap: () {
+                if (isSelected) {
+                  widget.onClearCity();
+                } else {
+                  widget.onCitySelected(city.slug, city.name);
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: HbColors.brandPrimary,
           ),
         ),
-      ],
+      ),
+      error: (_, __) => Text(
+        context.l10n.searchCitiesUnavailable,
+        style: GoogleFonts.montserrat(
+          fontSize: 13,
+          color: Colors.grey.shade600,
+        ),
+      ),
     );
   }
 
@@ -1836,7 +1812,11 @@ class _CategoriesFilterSection extends ConsumerStatefulWidget {
 
 class _CategoriesFilterSectionState
     extends ConsumerState<_CategoriesFilterSection> {
+  static const int _collapsedCategoryGroupLimit = 8;
+
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _expandedCategorySlugs = <String>{};
+  bool _showAllCategoryGroups = false;
   String _query = '';
 
   @override
@@ -1849,8 +1829,12 @@ class _CategoriesFilterSectionState
   Widget build(BuildContext context) {
     if (widget.categories.isEmpty) return const SizedBox();
 
-    final displayedCategories =
-        _query.isEmpty ? _filteredCategories() : <EventReferenceCategoryDto>[];
+    final displayedCategories = _query.isEmpty
+        ? _visibleCategoryGroups()
+        : <EventReferenceCategoryDto>[];
+    final hiddenCategoryGroupCount = _query.isEmpty
+        ? widget.categories.length - displayedCategories.length
+        : 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1866,6 +1850,15 @@ class _CategoriesFilterSectionState
           decoration: InputDecoration(
             hintText: context.l10n.searchHintCategory,
             prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
+            suffixIcon: _query.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                    icon: Icon(Icons.close, color: Colors.grey.shade500),
+                  ),
             filled: true,
             fillColor: Colors.grey.shade50,
             border: OutlineInputBorder(
@@ -1902,6 +1895,12 @@ class _CategoriesFilterSectionState
                 color: Colors.grey.shade600,
               ),
             ),
+          if (hiddenCategoryGroupCount > 0 ||
+              (_showAllCategoryGroups &&
+                  widget.categories.length > _collapsedCategoryGroupLimit)) ...[
+            const SizedBox(height: 4),
+            _buildCategoryGroupVisibilityButton(hiddenCategoryGroupCount),
+          ],
         ],
       ],
     );
@@ -1943,42 +1942,60 @@ class _CategoriesFilterSectionState
     );
   }
 
-  List<EventReferenceCategoryDto> _filteredCategories() {
-    if (_query.isEmpty) return widget.categories;
-    final normalized = _query.toLowerCase();
+  List<EventReferenceCategoryDto> _visibleCategoryGroups() {
+    if (_showAllCategoryGroups) return widget.categories;
 
-    return widget.categories.where((category) {
-      final matchesParent = category.name.toLowerCase().contains(normalized) ||
-          category.slug.toLowerCase().contains(normalized);
-      final matchesChild = category.children.any(
-        (child) =>
-            child.name.toLowerCase().contains(normalized) ||
-            child.slug.toLowerCase().contains(normalized),
-      );
-      return matchesParent || matchesChild;
-    }).toList();
+    final categoriesBySlug = {
+      for (final category in widget.categories) category.slug: category,
+    };
+    final visibleSlugs = prioritizedCategoryGroupSlugs(
+      orderedParentSlugs:
+          widget.categories.map((category) => category.slug).toList(),
+      selectedParentSlugs: selectedParentCategorySlugs(
+        selectedSlugs: widget.selectedSlugs,
+        childSlugsByParent: {
+          for (final category in widget.categories)
+            category.slug:
+                category.children.map((child) => child.slug).toList(),
+        },
+      ),
+      limit: _collapsedCategoryGroupLimit,
+    );
+
+    return [
+      for (final slug in visibleSlugs)
+        if (categoriesBySlug[slug] != null) categoriesBySlug[slug]!,
+    ];
   }
 
   Widget _buildCategoryGroup(EventReferenceCategoryDto category) {
-    final visibleChildren = _query.isEmpty
-        ? category.children
-        : category.children.where((child) {
-            final normalized = _query.toLowerCase();
-            return child.name.toLowerCase().contains(normalized) ||
-                child.slug.toLowerCase().contains(normalized);
-          }).toList();
     final isSelected = widget.selectedSlugs.contains(category.slug);
+    final isExpanded = _expandedCategorySlugs.contains(category.slug);
+    final selectedChildren = category.children
+        .where((child) => widget.selectedSlugs.contains(child.slug))
+        .toList();
+    final visibleChildren = isExpanded
+        ? category.children
+        : isSelected
+            ? <EventReferenceCategoryDto>[]
+            : selectedChildren;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SelectableChip(
+          _CategoryParentTile(
             label: category.name,
             icon: _iconForReference(category.icon, category.slug),
+            eventCount: category.eventCount,
+            childCount: category.children.length,
             isSelected: isSelected,
+            isExpanded: isExpanded,
             onTap: () => _toggleParent(category),
+            onExpandTap: category.children.isEmpty
+                ? null
+                : () => _toggleExpandedCategory(category.slug),
           ),
           if (visibleChildren.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -2003,6 +2020,46 @@ class _CategoriesFilterSectionState
         ],
       ),
     );
+  }
+
+  Widget _buildCategoryGroupVisibilityButton(int hiddenCount) {
+    final isExpanded = _showAllCategoryGroups;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () {
+          setState(() {
+            _showAllCategoryGroups = !_showAllCategoryGroups;
+          });
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: HbColors.brandPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          textStyle: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        icon: Icon(
+          isExpanded ? Icons.expand_less : Icons.expand_more,
+          size: 20,
+        ),
+        label: Text(
+          isExpanded
+              ? context.l10n.searchShowLess
+              : context.l10n.searchShowMoreWithCount(hiddenCount),
+        ),
+      ),
+    );
+  }
+
+  void _toggleExpandedCategory(String slug) {
+    setState(() {
+      if (!_expandedCategorySlugs.add(slug)) {
+        _expandedCategorySlugs.remove(slug);
+      }
+    });
   }
 
   void _toggleChild(String slug) {
@@ -2046,12 +2103,109 @@ class _CategoriesFilterSectionState
   }
 }
 
-class _ReferenceMultiSelectSection extends StatelessWidget {
+class _CategoryParentTile extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final int? eventCount;
+  final int childCount;
+  final bool isSelected;
+  final bool isExpanded;
+  final VoidCallback onTap;
+  final VoidCallback? onExpandTap;
+
+  const _CategoryParentTile({
+    required this.label,
+    required this.icon,
+    required this.eventCount,
+    required this.childCount,
+    required this.isSelected,
+    required this.isExpanded,
+    required this.onTap,
+    required this.onExpandTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor =
+        isSelected ? HbColors.brandPrimary : HbColors.textDark;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.only(left: 12, right: 4, top: 8, bottom: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? HbColors.brandPrimary.withValues(alpha: 0.08)
+                : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? HbColors.brandPrimary : Colors.grey.shade200,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: foregroundColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _labelWithCount(label, eventCount),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: foregroundColor,
+                  ),
+                ),
+              ),
+              if (isSelected) ...[
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.check_circle,
+                  size: 18,
+                  color: HbColors.brandPrimary,
+                ),
+              ],
+              if (onExpandTap != null)
+                IconButton(
+                  onPressed: onExpandTap,
+                  tooltip: isExpanded
+                      ? context.l10n.searchShowLess
+                      : context.l10n.searchShowMoreWithCount(childCount),
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 40,
+                    height: 40,
+                  ),
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReferenceMultiSelectSection extends StatefulWidget {
   final String title;
   final IconData icon;
   final List<String> selectedSlugs;
   final List<EventReferenceOptionDto> options;
   final bool showCounts;
+  final int? collapsedOptionLimit;
   final ValueChanged<List<String>> onChanged;
 
   const _ReferenceMultiSelectSection({
@@ -2060,52 +2214,124 @@ class _ReferenceMultiSelectSection extends StatelessWidget {
     required this.selectedSlugs,
     required this.options,
     this.showCounts = true,
+    this.collapsedOptionLimit,
     required this.onChanged,
   });
 
   @override
+  State<_ReferenceMultiSelectSection> createState() =>
+      _ReferenceMultiSelectSectionState();
+}
+
+class _ReferenceMultiSelectSectionState
+    extends State<_ReferenceMultiSelectSection> {
+  bool _showAllOptions = false;
+
+  @override
   Widget build(BuildContext context) {
-    if (options.isEmpty) return const SizedBox();
+    if (widget.options.isEmpty) return const SizedBox();
+
+    final visibleOptions = _visibleOptions();
+    final hiddenOptionCount = widget.options.length - visibleOptions.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: title, icon: icon),
+        _SectionTitle(title: widget.title, icon: widget.icon),
         const SizedBox(height: 16),
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: options.map((option) {
-            final isSelected = selectedSlugs.contains(option.slug);
+          children: visibleOptions.map((option) {
+            final isSelected = widget.selectedSlugs.contains(option.slug);
 
             return _SelectableChip(
-              label: showCounts
+              label: widget.showCounts
                   ? _labelWithCount(option.name, option.eventCount)
                   : option.name,
               icon: _iconForReference(option.icon, option.slug),
               isSelected: isSelected,
               onTap: () {
-                final newList = List<String>.from(selectedSlugs);
+                final newList = List<String>.from(widget.selectedSlugs);
                 if (isSelected) {
                   newList.remove(option.slug);
                 } else {
                   newList.add(option.slug);
                 }
-                onChanged(newList);
+                widget.onChanged(newList);
               },
             );
           }).toList(),
         ),
+        if (hiddenOptionCount > 0 ||
+            (_showAllOptions &&
+                widget.collapsedOptionLimit != null &&
+                widget.options.length > widget.collapsedOptionLimit!)) ...[
+          const SizedBox(height: 8),
+          _buildOptionsVisibilityButton(hiddenOptionCount),
+        ],
       ],
+    );
+  }
+
+  List<EventReferenceOptionDto> _visibleOptions() {
+    final limit = widget.collapsedOptionLimit;
+    if (limit == null || _showAllOptions) return widget.options;
+
+    final optionsBySlug = {
+      for (final option in widget.options) option.slug: option,
+    };
+    final visibleSlugs = prioritizedFilterOptionSlugs(
+      orderedSlugs: widget.options.map((option) => option.slug).toList(),
+      selectedSlugs: widget.selectedSlugs.toSet(),
+      limit: limit,
+    );
+
+    return [
+      for (final slug in visibleSlugs)
+        if (optionsBySlug[slug] != null) optionsBySlug[slug]!,
+    ];
+  }
+
+  Widget _buildOptionsVisibilityButton(int hiddenCount) {
+    final isExpanded = _showAllOptions;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () {
+          setState(() {
+            _showAllOptions = !_showAllOptions;
+          });
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: HbColors.brandPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          textStyle: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        icon: Icon(
+          isExpanded ? Icons.expand_less : Icons.expand_more,
+          size: 20,
+        ),
+        label: Text(
+          isExpanded
+              ? context.l10n.searchShowLess
+              : context.l10n.searchShowMoreWithCount(hiddenCount),
+        ),
+      ),
     );
   }
 }
 
-class _ReferenceSingleSelectSection extends StatelessWidget {
+class _ReferenceSingleSelectSection extends StatefulWidget {
   final String title;
   final IconData icon;
   final String? selectedSlug;
   final List<EventReferenceOptionDto> options;
+  final int? collapsedOptionLimit;
   final ValueChanged<String?> onChanged;
 
   const _ReferenceSingleSelectSection({
@@ -2113,33 +2339,105 @@ class _ReferenceSingleSelectSection extends StatelessWidget {
     required this.icon,
     required this.selectedSlug,
     required this.options,
+    this.collapsedOptionLimit,
     required this.onChanged,
   });
 
   @override
+  State<_ReferenceSingleSelectSection> createState() =>
+      _ReferenceSingleSelectSectionState();
+}
+
+class _ReferenceSingleSelectSectionState
+    extends State<_ReferenceSingleSelectSection> {
+  bool _showAllOptions = false;
+
+  @override
   Widget build(BuildContext context) {
-    if (options.isEmpty) return const SizedBox();
+    if (widget.options.isEmpty) return const SizedBox();
+
+    final visibleOptions = _visibleOptions();
+    final hiddenOptionCount = widget.options.length - visibleOptions.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: title, icon: icon),
+        _SectionTitle(title: widget.title, icon: widget.icon),
         const SizedBox(height: 16),
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: options.map((option) {
-            final isSelected = selectedSlug == option.slug;
+          children: visibleOptions.map((option) {
+            final isSelected = widget.selectedSlug == option.slug;
 
             return _SelectableChip(
               label: _labelWithCount(option.name, option.eventCount),
               icon: _iconForReference(option.icon, option.slug),
               isSelected: isSelected,
-              onTap: () => onChanged(isSelected ? null : option.slug),
+              onTap: () => widget.onChanged(isSelected ? null : option.slug),
             );
           }).toList(),
         ),
+        if (hiddenOptionCount > 0 ||
+            (_showAllOptions &&
+                widget.collapsedOptionLimit != null &&
+                widget.options.length > widget.collapsedOptionLimit!)) ...[
+          const SizedBox(height: 8),
+          _buildOptionsVisibilityButton(hiddenOptionCount),
+        ],
       ],
+    );
+  }
+
+  List<EventReferenceOptionDto> _visibleOptions() {
+    final limit = widget.collapsedOptionLimit;
+    if (limit == null || _showAllOptions) return widget.options;
+
+    final optionsBySlug = {
+      for (final option in widget.options) option.slug: option,
+    };
+    final visibleSlugs = prioritizedFilterOptionSlugs(
+      orderedSlugs: widget.options.map((option) => option.slug).toList(),
+      selectedSlugs:
+          widget.selectedSlug == null ? <String>{} : {widget.selectedSlug!},
+      limit: limit,
+    );
+
+    return [
+      for (final slug in visibleSlugs)
+        if (optionsBySlug[slug] != null) optionsBySlug[slug]!,
+    ];
+  }
+
+  Widget _buildOptionsVisibilityButton(int hiddenCount) {
+    final isExpanded = _showAllOptions;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () {
+          setState(() {
+            _showAllOptions = !_showAllOptions;
+          });
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: HbColors.brandPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          textStyle: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        icon: Icon(
+          isExpanded ? Icons.expand_less : Icons.expand_more,
+          size: 20,
+        ),
+        label: Text(
+          isExpanded
+              ? context.l10n.searchShowLess
+              : context.l10n.searchShowMoreWithCount(hiddenCount),
+        ),
+      ),
     );
   }
 }

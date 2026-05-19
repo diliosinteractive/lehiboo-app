@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Lehiboo</string>
+	<string>LeHiboo Experiences</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>lehiboo</string>
+	<string>LeHiboo Experiences</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -26,22 +26,28 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCalendarsUsageDescription</key>
-	<string>L'application a besoin d'accéder à votre calendrier pour ajouter vos réservations à votre agenda.</string>
+	<string>LeHiboo Experiences utilise votre calendrier pour préparer l'ajout de vos réservations à votre agenda.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>LeHiboo Experiences utilise l'accès au calendrier pour ouvrir l'écran d'ajout d'événement avec les détails de votre réservation.</string>
 	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
-	<string>L'application a besoin d'ajouter vos réservations à votre calendrier.</string>
+	<string>LeHiboo Experiences ajoute uniquement vos réservations à votre calendrier lorsque vous le demandez.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>L'application a besoin d'accéder à la caméra pour scanner les billets à l'entrée des événements, prendre des photos de profil ou partager des images dans le chat.</string>
+	<string>LeHiboo Experiences utilise la caméra pour scanner les billets à l'entrée des événements.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>LeHiboo Experiences peut utiliser vos contacts uniquement pour l'autocomplétion de lieu proposée par l'écran calendrier iOS lorsque vous ajoutez une réservation.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>L'application utilise votre localisation pour vous suggérer des activités à proximité lors de vos discussions avec Petit Boo.</string>
+	<string>LeHiboo Experiences utilise votre localisation pour vous suggérer des activités proches, lancer une recherche autour de vous et améliorer les réponses de Petit Boo.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>L'application utilise votre localisation pour vous suggérer des activités à proximité lors de vos discussions avec Petit Boo.</string>
+	<string>LeHiboo Experiences utilise votre localisation pour vous suggérer des activités proches, lancer une recherche autour de vous et améliorer les réponses de Petit Boo.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>L'application utilise le microphone pour enregistrer votre voix lors des discussions avec Petit Boo.</string>
+	<string>LeHiboo Experiences utilise le microphone uniquement lorsque vous lancez une interaction vocale avec Petit Boo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>L'application a besoin d'accéder à votre galerie pour vous permettre de choisir une photo de profil ou de partager des images.</string>
+	<string>LeHiboo Experiences utilise votre galerie uniquement lorsque vous choisissez une photo de profil.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>L'application utilise la reconnaissance vocale pour vous permettre de discuter avec Petit Boo.</string>
+	<string>LeHiboo Experiences utilise la reconnaissance vocale pour convertir vos demandes vocales à Petit Boo en texte.</string>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

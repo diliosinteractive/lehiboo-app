@@ -631,7 +631,7 @@
 				DEVELOPMENT_TEAM = GLRHTS783U;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Le Hiboo Experience";
+				INFOPLIST_KEY_CFBundleDisplayName = "LeHiboo Experiences";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -947,7 +947,7 @@
 				DEVELOPMENT_TEAM = GLRHTS783U;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Le Hiboo Experience";
+				INFOPLIST_KEY_CFBundleDisplayName = "LeHiboo Experiences";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -978,7 +978,7 @@
 				DEVELOPMENT_TEAM = GLRHTS783U;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Le Hiboo Experience";
+				INFOPLIST_KEY_CFBundleDisplayName = "LeHiboo Experiences";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

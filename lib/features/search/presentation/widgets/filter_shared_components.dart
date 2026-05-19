@@ -545,7 +545,7 @@ class LocationSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasLocation = filter.latitude != null;
-    final citiesAsync = ref.watch(homeCitiesProvider);
+    final popularCities = ref.watch(popularCitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -690,12 +690,24 @@ class LocationSection extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
 
-        citiesAsync.when(
-          data: (cities) {
+        popularCities.when(
+          data: (result) {
+            final displayedCities = result.cities.take(6).toList();
+
+            if (displayedCities.isEmpty) {
+              return Text(
+                context.l10n.searchNoCityFound,
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                ),
+              );
+            }
+
             return Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: cities.take(6).map((city) {
+              children: displayedCities.map((city) {
                 final isSelected = filter.citySlug == city.slug;
                 return SelectableChip(
                   label: city.name,
@@ -721,31 +733,12 @@ class LocationSection extends ConsumerWidget {
               ),
             ),
           ),
-          error: (_, __) => Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              ('Paris', 'paris'),
-              ('Lyon', 'lyon'),
-              ('Marseille', 'marseille'),
-              ('Bordeaux', 'bordeaux'),
-              ('Toulouse', 'toulouse'),
-              ('Nantes', 'nantes'),
-            ].map((city) {
-              final isSelected = filter.citySlug == city.$2;
-              return SelectableChip(
-                label: city.$1,
-                icon: Icons.location_city,
-                isSelected: isSelected,
-                onTap: () {
-                  if (isSelected) {
-                    onClearCity();
-                  } else {
-                    onCitySelected(city.$2, city.$1);
-                  }
-                },
-              );
-            }).toList(),
+          error: (_, __) => Text(
+            context.l10n.searchCitiesUnavailable,
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
           ),
         ),
       ],

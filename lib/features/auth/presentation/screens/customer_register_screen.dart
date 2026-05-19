@@ -95,7 +95,7 @@ class _CustomerRegisterScreenState
   Future<void> _sendOtp() async {
     final email = _emailController.text.trim();
     if (email.isEmpty ||
-        !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+        !RegExp(r'^[\w+\-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
       _showError(context.l10n.authEmailAddressInvalid);
       return;
     }

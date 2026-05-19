@@ -8,6 +8,7 @@ import '../providers/filter_provider.dart';
 import '../utils/search_l10n.dart';
 import '../../domain/models/event_filter.dart';
 import '../../../events/data/models/event_reference_data_dto.dart';
+import '../../../home/presentation/providers/home_providers.dart';
 
 /// Airbnb-style search bar widget
 class AirbnbSearchBar extends ConsumerStatefulWidget {
@@ -849,6 +850,7 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
   Widget build(BuildContext context) {
     final filter = ref.watch(eventFilterProvider);
     final hasLocation = filter.latitude != null && filter.longitude != null;
+    final popularCities = ref.watch(popularCitiesProvider);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -990,17 +992,49 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
             ),
           ),
           const SizedBox(height: 12),
-          const Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _CityChip(name: 'Paris', slug: 'paris'),
-              _CityChip(name: 'Lyon', slug: 'lyon'),
-              _CityChip(name: 'Marseille', slug: 'marseille'),
-              _CityChip(name: 'Bordeaux', slug: 'bordeaux'),
-              _CityChip(name: 'Toulouse', slug: 'toulouse'),
-              _CityChip(name: 'Nantes', slug: 'nantes'),
-            ],
+          popularCities.when(
+            data: (result) {
+              final displayedCities = result.cities.take(6).toList();
+
+              if (displayedCities.isEmpty) {
+                return Text(
+                  context.l10n.searchNoCityFound,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 13,
+                  ),
+                );
+              }
+
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: displayedCities
+                    .map(
+                      (city) => _CityChip(
+                        name: city.name,
+                        slug: city.slug,
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.all(12),
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: HbColors.brandPrimary,
+                ),
+              ),
+            ),
+            error: (_, __) => Text(
+              context.l10n.searchCitiesUnavailable,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13,
+              ),
+            ),
           ),
         ],
       ),

@@ -116,7 +116,7 @@ class _EventLocationMapState extends State<EventLocationMap> {
                         TileLayer(
                           urlTemplate:
                               'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.lehiboo.app',
+                          userAgentPackageName: 'com.dilios.lehibooexperience',
                         ),
                         MarkerLayer(
                           markers: [
@@ -281,7 +281,7 @@ class _EventLocationMapState extends State<EventLocationMap> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (venue != null && venue.isNotEmpty)
+        if (venue.isNotEmpty)
           Text(
             venue,
             style: const TextStyle(
@@ -340,14 +340,15 @@ class _EventLocationMapState extends State<EventLocationMap> {
     final parts = <String>[];
 
     // Adresse (rue, numéro)
-    if (widget.event.address != null && widget.event.address!.isNotEmpty) {
-      parts.add(widget.event.address!);
+    final address = widget.event.address;
+    if (address.isNotEmpty) {
+      parts.add(address);
     }
 
     // Ville uniquement (le code postal est volontairement omis ici).
-    if (widget.event.city != null && widget.event.city!.isNotEmpty) {
-      final city = widget.event.city!;
-      final addressLower = (widget.event.address ?? '').toLowerCase();
+    final city = widget.event.city;
+    if (city.isNotEmpty) {
+      final addressLower = address.toLowerCase();
       if (!addressLower.contains(city.toLowerCase())) {
         parts.add(city);
       }

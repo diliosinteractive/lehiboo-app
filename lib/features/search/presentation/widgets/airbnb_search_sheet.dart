@@ -13,6 +13,7 @@ import '../../domain/models/event_filter.dart';
 import '../../../events/data/models/event_reference_data_dto.dart';
 import '../../../events/data/models/search_suggestions_dto.dart';
 import '../../../home/presentation/providers/home_providers.dart';
+import 'category_cascade.dart';
 import 'filter_shared_components.dart';
 
 /// Airbnb-style full screen search page with accordion panels
@@ -720,7 +721,6 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
     final filter = widget.filter;
     final hasLocation = filter.latitude != null;
     final hasCity = filter.citySlug != null;
-    final citiesAsync = ref.watch(homeCitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -893,74 +893,130 @@ class _WhereContentState extends ConsumerState<_WhereContent> {
         ),
         const SizedBox(height: 12),
 
-        citiesAsync.when(
-          data: (cities) {
-            final query = _cityQuery.toLowerCase();
-            final displayedCities = query.isEmpty
-                ? cities.take(6).toList()
-                : cities
-                    .where(
-                      (city) =>
-                          city.name.toLowerCase().contains(query) ||
-                          city.slug.toLowerCase().contains(query) ||
-                          (city.region ?? '').toLowerCase().contains(query),
-                    )
-                    .take(10)
-                    .toList();
-
-            if (displayedCities.isEmpty) {
-              return Text(
-                context.l10n.searchNoCityFound,
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
-              );
-            }
-
-            return Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: displayedCities.map((city) {
-                final isSelected = filter.citySlug == city.slug;
-                return SelectableChip(
-                  label: city.name,
-                  icon: Icons.location_city,
-                  isSelected: isSelected,
-                  onTap: () {
-                    if (isSelected) {
-                      filterNotifier.clearCity();
-                    } else {
-                      filterNotifier.setCity(
-                        city.slug,
-                        city.name,
-                        radiusKm: filter.effectiveCityRadiusKm.toDouble(),
-                      );
-                      filterNotifier.clearLocation();
-                    }
-                  },
-                );
-              }).toList(),
-            );
-          },
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: HbColors.brandPrimary,
-              ),
+        if (_cityQuery.isNotEmpty && !_shouldShowAutocomplete(_cityQuery))
+          _AutocompleteMessage(
+            context.searchMinCharactersLabel(
+              searchAutocompleteMinQueryLength,
             ),
-          ),
-          error: (_, __) => Text(
-            context.l10n.searchCitiesUnavailable,
+          )
+        else if (_shouldShowAutocomplete(_cityQuery))
+          _buildCityAutocompleteResults(filter, filterNotifier)
+        else
+          _buildPopularCityChips(filter, filterNotifier),
+      ],
+    );
+  }
+
+  Widget _buildPopularCityChips(
+    EventFilter filter,
+    EventFilterNotifier filterNotifier,
+  ) {
+    final popularCities = ref.watch(popularCitiesProvider);
+
+    return popularCities.when(
+      data: (result) {
+        final displayedCities = result.cities.take(6).toList();
+
+        if (displayedCities.isEmpty) {
+          return Text(
+            context.l10n.searchNoCityFound,
             style: GoogleFonts.montserrat(
               fontSize: 13,
               color: Colors.grey.shade600,
             ),
+          );
+        }
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: displayedCities.map((city) {
+            final isSelected = filter.citySlug == city.slug;
+            return SelectableChip(
+              label: city.name,
+              icon: Icons.location_city,
+              isSelected: isSelected,
+              onTap: () {
+                if (isSelected) {
+                  filterNotifier.clearCity();
+                } else {
+                  filterNotifier.setCity(
+                    city.slug,
+                    city.name,
+                    radiusKm: filter.effectiveCityRadiusKm.toDouble(),
+                  );
+                  filterNotifier.clearLocation();
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: HbColors.brandPrimary,
           ),
         ),
-      ],
+      ),
+      error: (_, __) => Text(
+        context.l10n.searchCitiesUnavailable,
+        style: GoogleFonts.montserrat(
+          fontSize: 13,
+          color: Colors.grey.shade600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCityAutocompleteResults(
+    EventFilter filter,
+    EventFilterNotifier filterNotifier,
+  ) {
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: _cityQuery,
+          types: 'cities',
+          limit: 10,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        if (data.cities.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoCityFound);
+        }
+
+        return _SuggestionList(
+          children: data.cities.map((city) {
+            final isSelected = filter.citySlug == city.slug;
+            return _SuggestionTile(
+              icon: Icons.location_city,
+              label: _labelWithCount(city.label, city.eventsCount),
+              isSelected: isSelected,
+              onTap: () {
+                if (isSelected) {
+                  filterNotifier.clearCity();
+                } else {
+                  filterNotifier.setCity(
+                    city.slug,
+                    city.label,
+                    radiusKm: filter.effectiveCityRadiusKm.toDouble(),
+                  );
+                  filterNotifier.clearLocation();
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) =>
+          _AutocompleteMessage(context.l10n.searchCitiesUnavailable),
     );
   }
 }
@@ -1151,8 +1207,12 @@ class _WhatContent extends ConsumerStatefulWidget {
 }
 
 class _WhatContentState extends ConsumerState<_WhatContent> {
+  static const int _collapsedCategoryGroupLimit = 8;
+
   final TextEditingController _categorySearchController =
       TextEditingController();
+  final Set<String> _expandedCategorySlugs = <String>{};
+  bool _showAllCategoryGroups = false;
   String _query = '';
 
   @override
@@ -1168,7 +1228,10 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
 
     return referenceData.when(
       data: (data) {
-        final categories = _filteredCategories(data.categories);
+        final categories = _categoryEntries(data.categories);
+        final visibleCategories = _visibleCategoryEntries(categories);
+        final hiddenCategoryGroupCount =
+            _query.isEmpty ? categories.length - visibleCategories.length : 0;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1208,15 +1271,21 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
               )
             else if (_shouldShowAutocomplete(_query))
               _buildCategoryAutocompleteResults()
-            else if (categories.isEmpty)
+            else if (visibleCategories.isEmpty)
               _FilterMessage(context.l10n.searchNoCategoryFound)
-            else
-              ...categories.map(
-                (entry) => _buildCategoryGroup(
-                  entry,
-                  filterNotifier,
-                ),
+            else ...[
+              ...visibleCategories.map(
+                (entry) => _buildCategoryGroup(entry, filterNotifier),
               ),
+              if (hiddenCategoryGroupCount > 0 ||
+                  (_showAllCategoryGroups &&
+                      categories.length > _collapsedCategoryGroupLimit)) ...[
+                const SizedBox(height: 4),
+                _buildCategoryGroupVisibilityButton(
+                  hiddenCategoryGroupCount,
+                ),
+              ],
+            ],
           ],
         );
       },
@@ -1259,8 +1328,7 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
 
         return _SuggestionList(
           children: data.categories.map((category) {
-            final isSelected =
-                widget.filter.categoriesSlugs.contains(category.slug);
+            final isSelected = _isSuggestedCategorySelected(category.slug);
             return _SuggestionTile(
               icon: _iconForReference(null, category.slug),
               label: category.label,
@@ -1277,40 +1345,53 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
     );
   }
 
-  List<_CategoryEntry> _filteredCategories(
+  List<_CategoryEntry> _categoryEntries(
     List<EventReferenceCategoryDto> categories,
   ) {
-    final normalized = _query.toLowerCase();
-
     return categories
-        .where(_categoryHasVisibleEvents)
         .map((category) {
-          final visibleChildren =
-              category.children.where(_categoryHasVisibleEvents).toList();
-
-          if (normalized.isEmpty) {
-            return _CategoryEntry(category, visibleChildren);
-          }
-
-          final parentMatches =
-              category.name.toLowerCase().contains(normalized) ||
-                  category.slug.toLowerCase().contains(normalized);
-          final matchingChildren = visibleChildren
+          final children = category.children
               .where(
                 (child) =>
-                    child.name.toLowerCase().contains(normalized) ||
-                    child.slug.toLowerCase().contains(normalized),
+                    _categoryHasVisibleEvents(child) ||
+                    widget.filter.categoriesSlugs.contains(child.slug),
               )
               .toList();
 
-          if (parentMatches) return _CategoryEntry(category, visibleChildren);
-          if (matchingChildren.isNotEmpty) {
-            return _CategoryEntry(category, matchingChildren);
+          if (_categoryHasVisibleEvents(category) ||
+              widget.filter.categoriesSlugs.contains(category.slug) ||
+              children.isNotEmpty) {
+            return _CategoryEntry(category, children);
           }
           return null;
         })
         .whereType<_CategoryEntry>()
         .toList();
+  }
+
+  List<_CategoryEntry> _visibleCategoryEntries(List<_CategoryEntry> entries) {
+    if (_query.isNotEmpty || _showAllCategoryGroups) return entries;
+
+    final entriesBySlug = {
+      for (final entry in entries) entry.category.slug: entry,
+    };
+    final visibleSlugs = prioritizedCategoryGroupSlugs(
+      orderedParentSlugs: entries.map((entry) => entry.category.slug).toList(),
+      selectedParentSlugs: selectedParentCategorySlugs(
+        selectedSlugs: widget.filter.categoriesSlugs,
+        childSlugsByParent: {
+          for (final entry in entries)
+            entry.category.slug:
+                entry.children.map((child) => child.slug).toList(),
+        },
+      ),
+      limit: _collapsedCategoryGroupLimit,
+    );
+
+    return [
+      for (final slug in visibleSlugs)
+        if (entriesBySlug[slug] != null) entriesBySlug[slug]!,
+    ];
   }
 
   bool _categoryHasVisibleEvents(EventReferenceCategoryDto category) {
@@ -1329,27 +1410,42 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
     final fullySelected = _isParentFullySelected(category, entry.children);
     final partiallySelected =
         _isParentPartiallySelected(category, entry.children);
+    final isExpanded = _expandedCategorySlugs.contains(category.slug);
+    final selectedChildren = entry.children
+        .where((child) => selectedSlugs.contains(child.slug))
+        .toList();
+    final visibleChildren = isExpanded
+        ? entry.children
+        : fullySelected
+            ? <EventReferenceCategoryDto>[]
+            : selectedChildren;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SelectableChip(
+          _SearchCategoryParentTile(
             label: category.name,
             icon: _iconForReference(category.icon, category.slug),
+            eventCount: category.eventCount,
+            childCount: entry.children.length,
             isSelected: fullySelected || partiallySelected,
+            isExpanded: isExpanded,
             onTap: () =>
                 _toggleParent(category, entry.children, filterNotifier),
+            onExpandTap: entry.children.isEmpty
+                ? null
+                : () => _toggleExpandedCategory(category.slug),
           ),
-          if (entry.children.isNotEmpty) ...[
+          if (visibleChildren.isNotEmpty) ...[
             const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.only(left: 12),
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: entry.children.map((child) {
+                children: visibleChildren.map((child) {
                   final isSelected = selectedSlugs.contains(category.slug) ||
                       selectedSlugs.contains(child.slug);
                   return SelectableChip(
@@ -1370,6 +1466,46 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
         ],
       ),
     );
+  }
+
+  Widget _buildCategoryGroupVisibilityButton(int hiddenCount) {
+    final isExpanded = _showAllCategoryGroups;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () {
+          setState(() {
+            _showAllCategoryGroups = !_showAllCategoryGroups;
+          });
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: HbColors.brandPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          textStyle: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        icon: Icon(
+          isExpanded ? Icons.expand_less : Icons.expand_more,
+          size: 20,
+        ),
+        label: Text(
+          isExpanded
+              ? context.l10n.searchShowLess
+              : context.l10n.searchShowMoreWithCount(hiddenCount),
+        ),
+      ),
+    );
+  }
+
+  void _toggleExpandedCategory(String slug) {
+    setState(() {
+      if (!_expandedCategorySlugs.add(slug)) {
+        _expandedCategorySlugs.remove(slug);
+      }
+    });
   }
 
   bool _isParentFullySelected(
@@ -1463,6 +1599,17 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
     }
   }
 
+  bool _isSuggestedCategorySelected(String slug) {
+    final match = _findCategoryMatch(slug);
+    if (match == null) return widget.filter.categoriesSlugs.contains(slug);
+    if (match.category.slug == match.child.slug) {
+      return _isParentFullySelected(match.category, match.category.children) ||
+          _isParentPartiallySelected(match.category, match.category.children);
+    }
+    return widget.filter.categoriesSlugs.contains(match.category.slug) ||
+        widget.filter.categoriesSlugs.contains(match.child.slug);
+  }
+
   _CategoryMatch? _findCategoryMatch(String slug) {
     final referenceData = ref.read(eventReferenceDataProvider).valueOrNull;
     final categories = referenceData?.categories ?? const [];
@@ -1475,6 +1622,102 @@ class _WhatContentState extends ConsumerState<_WhatContent> {
       }
     }
     return null;
+  }
+}
+
+class _SearchCategoryParentTile extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final int? eventCount;
+  final int childCount;
+  final bool isSelected;
+  final bool isExpanded;
+  final VoidCallback onTap;
+  final VoidCallback? onExpandTap;
+
+  const _SearchCategoryParentTile({
+    required this.label,
+    required this.icon,
+    required this.eventCount,
+    required this.childCount,
+    required this.isSelected,
+    required this.isExpanded,
+    required this.onTap,
+    required this.onExpandTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor =
+        isSelected ? HbColors.brandPrimary : HbColors.textDark;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.only(left: 12, right: 4, top: 8, bottom: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? HbColors.brandPrimary.withValues(alpha: 0.08)
+                : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? HbColors.brandPrimary : Colors.grey.shade200,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: foregroundColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _labelWithCount(label, eventCount),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: foregroundColor,
+                  ),
+                ),
+              ),
+              if (isSelected) ...[
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.check_circle,
+                  size: 18,
+                  color: HbColors.brandPrimary,
+                ),
+              ],
+              if (onExpandTap != null)
+                IconButton(
+                  onPressed: onExpandTap,
+                  tooltip: isExpanded
+                      ? context.l10n.searchShowLess
+                      : context.l10n.searchShowMoreWithCount(childCount),
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 40,
+                    height: 40,
+                  ),
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
