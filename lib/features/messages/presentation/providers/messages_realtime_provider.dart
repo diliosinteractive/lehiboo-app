@@ -463,6 +463,14 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     messenger.showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 3),
+        // Floating so the snackbar sits ABOVE the centerDocked VoiceFab
+        // instead of being hidden behind it, and so users can swipe it
+        // down to dismiss without the FAB intercepting the gesture.
+        behavior: SnackBarBehavior.floating,
+        dismissDirection: DismissDirection.down,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         content: _NotificationSnackContent(notification: notification),
         action: SnackBarAction(
           label: l10n.messagesNotificationOpenAction,

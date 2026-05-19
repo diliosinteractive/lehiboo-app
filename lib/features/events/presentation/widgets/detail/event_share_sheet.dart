@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/config/env_config.dart';
+import 'package:lehiboo/core/analytics/analytics_event.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -44,6 +46,21 @@ class ShareButton extends ConsumerWidget {
     final text = _buildShareText(context, ref);
     await SharePlus.instance.share(
       ShareParams(text: text, subject: event.title),
+    );
+    ref.read(analyticsServiceProvider).logEvent(
+      AnalyticsEvent.eventShared,
+      params: {
+        AnalyticsParam.eventUuid: event.id,
+        AnalyticsParam.channel: AnalyticsChannel.native,
+      },
+    );
+    // Aussi le standard GA4 `share` pour les rapports built-in.
+    ref.read(analyticsServiceProvider).logEvent(
+      AnalyticsEvent.share,
+      params: {
+        AnalyticsParam.contentType: 'event',
+        AnalyticsParam.itemId: event.id,
+      },
     );
     await ref.read(gamificationApiDataSourceProvider).trackEventShare(
           event.slug,

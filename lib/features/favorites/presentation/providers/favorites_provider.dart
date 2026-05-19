@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
@@ -120,6 +122,21 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     try {
       final result =
           await _repository.toggleFavorite(eventUuid, listId: listId);
+
+      // Analytics : add_to_wishlist (standard GA4) ou remove_from_wishlist
+      // (custom). Le résultat backend `result.isFavorite` est la source de
+      // vérité — `wasAdding` peut diverger en cas de désynchro.
+      final added = result.isFavorite;
+      _ref.read(analyticsServiceProvider).logEvent(
+        added
+            ? AnalyticsEvent.addToWishlist
+            : AnalyticsEvent.removeFromWishlist,
+        params: {
+          AnalyticsParam.itemId: eventUuid,
+          AnalyticsParam.itemName: event.title,
+          AnalyticsParam.itemCategory: event.category.name,
+        },
+      );
 
       // Update list counter if adding to a specific list
       if (wasAdding && listId != null) {

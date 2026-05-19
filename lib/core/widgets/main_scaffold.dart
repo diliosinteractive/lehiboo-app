@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/petit_boo/presentation/providers/engagement_provider.dart';
+import '../analytics/analytics_consent.dart';
+import '../analytics/widgets/consent_gate_modal.dart';
 import '../l10n/l10n.dart';
 import '../utils/guest_guard.dart';
 import 'voice_fab/voice_fab.dart';
@@ -27,6 +29,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Initial Trigger
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(petitBooEngagementProvider.notifier).onAppStart();
+      _maybeShowConsentGate();
     });
 
     // Idle Checker Loop
@@ -35,6 +38,17 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
         ref.read(petitBooEngagementProvider.notifier).checkIdle();
       }
     });
+  }
+
+  /// Affiche le consent gate RGPD si l'utilisateur n'a pas encore tranché.
+  /// Premier point d'entrée dans la navigation principale → moment naturel
+  /// pour demander le consentement (option A du plan : avant l'accès à la
+  /// home complète).
+  void _maybeShowConsentGate() {
+    final consent = ref.read(analyticsConsentProvider);
+    if (consent.status != AnalyticsConsentStatus.unknown) return;
+    if (!mounted) return;
+    ConsentGateModal.show(context);
   }
 
   @override

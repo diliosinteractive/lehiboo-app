@@ -1,10 +1,20 @@
+import 'dart:ui' show PlatformDispatcher;
+
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'firebase_options.dart';
+import 'core/analytics/analytics_consent.dart';
+import 'core/analytics/analytics_event.dart';
+import 'core/analytics/analytics_provider.dart';
+import 'core/analytics/analytics_service.dart';
+import 'core/analytics/noop_analytics_service.dart';
+import 'core/constants/app_constants.dart';
 import 'core/l10n/app_locale.dart';
 import 'core/l10n/l10n.dart';
 import 'core/themes/app_theme.dart';
@@ -101,16 +111,28 @@ void main() async {
   // Initialize Dio client
   DioClient.initialize();
 
-  // Initialize Firebase (kept for analytics — push notifications are now
-  // handled by OneSignal below).
+  // Initialize Firebase + Analytics service (push notifications are handled
+  // by OneSignal below).
+  //
+  // RGPD: la collecte est désactivée par défaut au boot. Elle sera activée
+  // par le consent gate (étape 7). La user property `env` permet de filtrer
+  // dev/staging/prod sur un même projet Firebase (lehiboo-77c35).
+  late final AnalyticsService analytics;
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    analytics = FirebaseAnalyticsService(FirebaseAnalytics.instance);
     debugPrint('Firebase initialized successfully');
   } catch (e) {
+    analytics = const NoopAnalyticsService();
     debugPrint('Firebase initialization failed: $e');
   }
+  await analytics.setCollectionEnabled(false);
+  await analytics.setUserProperty(
+    AnalyticsUserProperty.env,
+    EnvConfig.environment,
+  );
 
   // Initialize OneSignal BEFORE runApp() so the click listener is registered
   // in time to capture cold-start payloads (app launched from a notification
@@ -152,11 +174,37 @@ void main() async {
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
 
+  // User property `app_locale` — résolution eager de la même logique que
+  // AppLocaleController pour avoir la valeur dès le boot (le controller la
+  // re-poussera ensuite à chaque setLanguageCode).
+  final bootLocale = resolveAppLocale(
+    savedLanguageCode: prefs.getString(AppConstants.keyLanguage),
+    platformLocale: PlatformDispatcher.instance.locale,
+  );
+  await analytics.setUserProperty(
+    AnalyticsUserProperty.appLocale,
+    bootLocale.languageCode,
+  );
+
+  // Consent RGPD — relit le statut persisté et applique la collecte en
+  // conséquence. Si `unknown` ou `denied`, on reste sur le no-op activé plus
+  // haut. Si `granted`, on (ré)active la collecte. Le consent gate modal de
+  // MainScaffold prend le relais pour faire trancher les nouveaux users.
+  final bootConsent = readConsentStatusFromPrefs(prefs);
+  if (bootConsent == AnalyticsConsentStatus.granted) {
+    await analytics.setCollectionEnabled(true);
+  }
+  await analytics.setUserProperty(
+    AnalyticsUserProperty.notifConsent,
+    bootConsent.name,
+  );
+
   // Container Riverpod explicite pour permettre à HibonsService (singleton)
   // de lire l'état depuis l'intercepteur Dio (qui n'a pas de Ref).
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
+      analyticsServiceProvider.overrideWithValue(analytics),
       ...(useRealApi ? _getRealApiOverrides() : _getFakeDataOverrides()),
     ],
   );

@@ -138,10 +138,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageEnglish => 'English';
 
   @override
-  String get settingsResetOnboardingTitle => 'Replay introduction';
+  String get settingsResetOnboardingTitle => 'Reset onboarding';
 
   @override
-  String get settingsResetOnboardingSubtitle => 'Restart the welcome tutorial';
+  String get settingsResetOnboardingSubtitle =>
+      'Replay the app introduction on next launch';
+
+  @override
+  String get settingsSectionPrivacy => 'Privacy';
+
+  @override
+  String get settingsAnalyticsConsentTitle => 'Anonymous usage statistics';
+
+  @override
+  String get settingsAnalyticsConsentSubtitle =>
+      'Helps us improve the app. No personal data.';
 
   @override
   String get settingsAccountDeletionTitle => 'Delete my account';
@@ -165,13 +176,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsVersionTitle => 'Version';
 
   @override
-  String get settingsResetDialogTitle => 'Restart onboarding?';
-
-  @override
-  String get settingsResetDialogContent =>
-      'Do you really want to replay the welcome screens? This will temporarily take you away from the home screen.';
-
-  @override
   String get commonCancel => 'Cancel';
 
   @override
@@ -185,9 +189,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonNext => 'Next';
-
-  @override
-  String get commonRestart => 'Restart';
 
   @override
   String get commonLoading => 'Loading...';

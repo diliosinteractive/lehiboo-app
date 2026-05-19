@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:lehiboo/core/analytics/analytics_event.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
@@ -372,6 +374,17 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
       debugPrint('🚫 Annulation réussie, status=${updated.status}');
       HapticFeedback.heavyImpact();
+
+      // refund (standard GA4) — pair avec le `purchase` initial via le même
+      // transaction_id = booking.id. Alimente les rapports Monetization.
+      ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.refund,
+        params: {
+          AnalyticsParam.transactionId: bookingUuid,
+          AnalyticsParam.value: updated.totalPrice ?? booking.totalPrice ?? 0,
+          AnalyticsParam.currency: 'EUR',
+        },
+      );
 
       // Spec §3.6: replace local booking with the response — no re-fetch.
       // Refresh the list so the home/bookings tab reflects the new status.
