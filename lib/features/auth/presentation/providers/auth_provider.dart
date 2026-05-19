@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
+import '../../../../core/analytics/analytics_service.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../domain/entities/user.dart';
@@ -93,6 +96,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
             : AuthStatus.unauthenticated,
         user: user,
       );
+      _syncAuthUser(user);
     } else {
       state = state.copyWith(status: AuthStatus.unauthenticated);
     }
@@ -119,9 +123,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       // No OTP required - check if we have auth result (Laravel v2 direct auth)
       if (result.authResult != null) {
+        final user = result.authResult!.user;
         state = state.copyWith(
           status: AuthStatus.authenticated,
-          user: result.authResult!.user,
+          user: user,
+        );
+        _syncAuthUser(user);
+        _analytics.logEvent(
+          AnalyticsEvent.login,
+          params: {AnalyticsParam.method: AnalyticsMethod.email},
         );
         // Personalized feed depends on identity — refetch on login (spec §7).
         _ref.invalidate(personalizedFeedProvider);
@@ -136,6 +146,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
         errorMessage: _parseError(e),
+      );
+      _analytics.logEvent(
+        AnalyticsEvent.loginFailed,
+        params: {AnalyticsParam.reason: _categorizeError(e)},
       );
       return null;
     }
@@ -171,6 +185,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.unauthenticated,
         errorMessage: _parseError(e),
       );
+      _analytics.logEvent(
+        AnalyticsEvent.signupFailed,
+        params: {AnalyticsParam.reason: _categorizeError(e)},
+      );
       return null;
     }
   }
@@ -194,6 +212,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         user: result.user,
         pendingUserId: null,
         pendingEmail: null,
+      );
+      _syncAuthUser(result.user);
+      _analytics.logEvent(
+        AnalyticsEvent.signUp,
+        params: {AnalyticsParam.method: AnalyticsMethod.email},
       );
       // Personalized feed depends on identity — refetch on registration OTP
       // success (spec §7).
@@ -265,6 +288,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingUserId: null,
         pendingEmail: null,
       );
+      _syncAuthUser(result.user);
+      _analytics.logEvent(
+        AnalyticsEvent.login,
+        params: {AnalyticsParam.method: AnalyticsMethod.email},
+      );
       // Personalized feed depends on identity — refetch on login OTP
       // success (spec §7).
       _ref.invalidate(personalizedFeedProvider);
@@ -284,6 +312,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _authRepository.forgotPassword(email);
       state = state.copyWith(status: AuthStatus.unauthenticated);
+      _analytics.logEvent(AnalyticsEvent.passwordResetRequested);
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -306,6 +335,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _authRepository.logout();
     await _clearPersistedUserData();
     state = const AuthState(status: AuthStatus.unauthenticated);
+    _syncAuthUser(null);
     _invalidateUserScopedProviders();
   }
 
@@ -315,6 +345,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _authRepository.clearLocalAuthData();
     await _clearPersistedUserData();
     state = const AuthState(status: AuthStatus.unauthenticated);
+    _syncAuthUser(null);
     _invalidateUserScopedProviders();
   }
 
@@ -400,6 +431,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       pendingEmail: null,
       errorMessage: null,
     );
+    _syncAuthUser(user);
+    _analytics.logEvent(
+      AnalyticsEvent.signUp,
+      params: {AnalyticsParam.method: AnalyticsMethod.email},
+    );
     // Personalized feed depends on identity — refetch when an external auth
     // path lands the user as authenticated (spec §7).
     _ref.invalidate(personalizedFeedProvider);
@@ -432,6 +468,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (next == null) return;
 
     state = state.copyWith(user: next);
+    _syncAuthUser(next);
 
     // Fire-and-forget: keep the in-memory update synchronous so the UI rebuilds
     // immediately. Disk I/O failures are non-fatal — the next login or
@@ -508,6 +545,74 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return l10n.authTooManyAttempts;
     }
     return l10n.authVerificationCodeInvalid;
+  }
+
+  // ─── Analytics helpers ─────────────────────────────────────────────
+  // Lecture paresseuse du service via _ref pour rester compatible avec
+  // l'instanciation actuelle (le constructeur ne reçoit pas le service
+  // explicitement). La collecte étant désactivée tant que l'étape 7 n'a
+  // pas livré le consent gate, ces appels sont des no-ops côté Firebase.
+
+  AnalyticsService get _analytics =>
+      _ref.read(analyticsServiceProvider);
+
+  /// Met à jour l'identité analytics à chaque transition de [state.user].
+  /// Appelée avec [user] = null à la déconnexion pour purger explicitement
+  /// les properties et le user_id — sinon GA4 colle l'ancien profil au
+  /// prochain compte qui se connectera sur le device.
+  void _syncAuthUser(HbUser? user) {
+    if (user != null) {
+      _analytics.setUserId(user.id);
+      _analytics.setUserProperty(
+        AnalyticsUserProperty.userRole,
+        _userRoleValue(user.role),
+      );
+      _analytics.setUserProperty(
+        AnalyticsUserProperty.homeCitySlug,
+        user.city ?? 'none',
+      );
+    } else {
+      _analytics.setUserId(null);
+      _analytics.setUserProperty(AnalyticsUserProperty.userRole, null);
+      _analytics.setUserProperty(AnalyticsUserProperty.homeCitySlug, null);
+    }
+  }
+
+  String _userRoleValue(UserRole role) {
+    return switch (role) {
+      UserRole.subscriber => AnalyticsUserRole.subscriber,
+      UserRole.partner => AnalyticsUserRole.partner,
+      UserRole.admin => AnalyticsUserRole.admin,
+    };
+  }
+
+  /// Normalise une exception en `reason` court et stable pour GA4.
+  /// Pendant la dimension n'est pas une chaîne libre — limiter la
+  /// cardinalité évite le sampling.
+  String _categorizeError(Object e) {
+    final message = e.toString().toLowerCase();
+    if (message.contains('invalid_credentials')) return 'invalid_credentials';
+    if (message.contains('invalid_otp')) return 'otp_invalid';
+    if (message.contains('otp_expired')) return 'otp_expired';
+    if (message.contains('too_many_attempts')) return 'too_many_attempts';
+    if (message.contains('user_exists')) return 'user_exists';
+    if (message.contains('weak_password')) return 'weak_password';
+    if (message.contains('invalid_email')) return 'invalid_email';
+    if (message.contains('socketexception') || message.contains('network')) {
+      return 'network';
+    }
+    if (e is DioException) {
+      return switch (e.type) {
+        DioExceptionType.connectionTimeout ||
+        DioExceptionType.receiveTimeout ||
+        DioExceptionType.sendTimeout =>
+          'network_timeout',
+        DioExceptionType.connectionError => 'network',
+        DioExceptionType.badResponse => 'bad_response',
+        _ => 'dio_unknown',
+      };
+    }
+    return 'unknown';
   }
 }
 
