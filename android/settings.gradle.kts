@@ -25,6 +25,7 @@ plugins {
     // ressources mergées. Sans ce plugin, Firebase Analytics logue
     // "Missing google_app_id" au runtime et désactive la collecte.
     id("com.google.gms.google-services") version "4.4.2" apply false
+    id("com.google.firebase.crashlytics") version "3.0.6" apply false
 }
 
 include(":app")

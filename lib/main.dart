@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'firebase_options.dart';
@@ -123,6 +124,7 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     analytics = FirebaseAnalyticsService(FirebaseAnalytics.instance);
+    await _configureCrashlytics();
     debugPrint('Firebase initialized successfully');
   } catch (e) {
     analytics = const NoopAnalyticsService();
@@ -217,6 +219,30 @@ void main() async {
       child: const LeHibooApp(),
     ),
   );
+}
+
+Future<void> _configureCrashlytics() async {
+  final crashlytics = FirebaseCrashlytics.instance;
+  final crashlyticsEnabled = AppConstants.enableCrashlytics &&
+      EnvConfig.crashlyticsEnabled &&
+      !kDebugMode;
+
+  await crashlytics.setCrashlyticsCollectionEnabled(crashlyticsEnabled);
+
+  if (!crashlyticsEnabled) {
+    debugPrint('Firebase Crashlytics disabled');
+    return;
+  }
+
+  await crashlytics.setCustomKey('env', EnvConfig.environment);
+
+  FlutterError.onError = crashlytics.recordFlutterFatalError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    crashlytics.recordError(error, stack, fatal: true);
+    return true;
+  };
+
+  debugPrint('Firebase Crashlytics enabled');
 }
 
 /// Real API repositories - connects to LeHiboo WordPress API v2
