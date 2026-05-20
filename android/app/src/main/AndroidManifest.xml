@@ -46,6 +46,8 @@
                 <data android:scheme="https" />
                 <data android:host="lehiboo.com" />
                 <data android:host="www.lehiboo.com" />
+                <data android:host="staging.lehiboo.com" />
+                <data android:host="www.staging.lehiboo.com" />
                 <data android:pathPrefix="/events/" />
             </intent-filter>
         </activity>

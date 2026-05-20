@@ -10,6 +10,8 @@
 	</array>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<string>applinks:staging.lehiboo.com</string>
+		<string>applinks:www.staging.lehiboo.com</string>
 		<string>applinks:lehiboo.com</string>
 		<string>applinks:www.lehiboo.com</string>
 	</array>
