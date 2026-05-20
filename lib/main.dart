@@ -15,6 +15,7 @@ import 'core/analytics/analytics_provider.dart';
 import 'core/analytics/analytics_service.dart';
 import 'core/analytics/noop_analytics_service.dart';
 import 'core/constants/app_constants.dart';
+import 'core/deeplinks/deeplink_listener.dart';
 import 'core/l10n/app_locale.dart';
 import 'core/l10n/l10n.dart';
 import 'core/themes/app_theme.dart';
@@ -341,8 +342,13 @@ class LeHibooApp extends ConsumerWidget {
       // Le coordinateur écoute HibonsService et déclenche les SnackBars +X Hibons
       // et l'overlay rank-up via les clés globales (rootNavigatorKey,
       // scaffoldMessengerKey) — son BuildContext est au-dessus du Navigator.
-      builder: (context, child) =>
-          HibonsAnimationCoordinator(child: child ?? const SizedBox()),
+      //
+      // DeeplinkListener est monté SOUS MaterialApp.router pour pouvoir appeler
+      // GoRouter.of(context) une fois la navigation prête (Universal Links iOS
+      // + App Links Android).
+      builder: (context, child) => DeeplinkListener(
+        child: HibonsAnimationCoordinator(child: child ?? const SizedBox()),
+      ),
     );
   }
 }

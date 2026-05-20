@@ -8,5 +8,10 @@
 	<array>
 		<string>group.com.dilios.lehiboo.onesignal</string>
 	</array>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:lehiboo.com</string>
+		<string>applinks:www.lehiboo.com</string>
+	</array>
 </dict>
 </plist>
