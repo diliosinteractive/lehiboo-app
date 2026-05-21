@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../config/env_config.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../checkin/presentation/providers/vendor_eligibility_provider.dart';
 import '../../../messages/presentation/providers/unread_count_provider.dart';
@@ -976,7 +977,11 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
         setState(() => _selectedImage = null);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.profileAvatarUploadError(e.toString())),
+            content: Text(
+              context.l10n.profileAvatarUploadError(
+                ApiResponseHandler.extractError(e),
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );

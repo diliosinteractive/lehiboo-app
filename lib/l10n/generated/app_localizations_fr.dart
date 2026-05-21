@@ -3359,7 +3359,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authPhoneInvalid => 'Numéro de téléphone invalide';
 
   @override
+  String get authBirthDateLabel => 'Date de naissance';
+
+  @override
   String get authBirthDateLabelOptional => 'Date de naissance (optionnel)';
+
+  @override
+  String get authBirthDateRequired => 'Veuillez entrer votre date de naissance';
+
+  @override
+  String get authBirthDateMinimumAge => 'Vous devez avoir au moins 15 ans';
 
   @override
   String get authBirthDateHelp => 'Date de naissance';

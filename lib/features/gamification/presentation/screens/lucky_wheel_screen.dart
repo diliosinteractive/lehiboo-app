@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../data/models/wheel_models.dart';
 import '../providers/gamification_provider.dart';
 
@@ -119,7 +120,11 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.gamificationErrorWithMessage('$e')),
+            content: Text(
+              context.l10n.gamificationErrorWithMessage(
+                ApiResponseHandler.extractError(e),
+              ),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -336,7 +341,11 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
-              Text(context.l10n.gamificationErrorWithMessage('$e')),
+              Text(
+                context.l10n.gamificationErrorWithMessage(
+                  ApiResponseHandler.extractError(e),
+                ),
+              ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref.invalidate(wheelConfigProvider),

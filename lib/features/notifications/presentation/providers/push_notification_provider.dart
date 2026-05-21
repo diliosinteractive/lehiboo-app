@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/services/push_notification_service.dart';
 import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -99,14 +100,12 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       return;
     }
     if (onesignalId == null || onesignalId.isEmpty) {
-      debugPrint(
-          'PushNotification: bind skipped — user.onesignal_id is null '
+      debugPrint('PushNotification: bind skipped — user.onesignal_id is null '
           '(user.id=${user.id}). User-targeted pushes will not route until '
           'the backend assigns one.');
       return;
     }
-    debugPrint(
-        'PushNotification: binding OneSignal external_id=$onesignalId '
+    debugPrint('PushNotification: binding OneSignal external_id=$onesignalId '
         '(user.id=${user.id})');
     _ref.read(pushNotificationServiceProvider).bindUser(onesignalId);
   }
@@ -174,7 +173,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       debugPrint('PushNotification: Failed to initialize - $e');
       state = state.copyWith(
         status: PushNotificationStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: ApiResponseHandler.extractError(e),
       );
     }
   }
@@ -236,7 +235,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       debugPrint('PushNotification: Failed to sync subscription - $e');
       state = state.copyWith(
         status: PushNotificationStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: ApiResponseHandler.extractError(e),
       );
       return false;
     }
@@ -247,7 +246,8 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     DeviceTokenDataSource tokenDataSource,
   ) {
     pushService.onSubscriptionReceived = (subscriptionId) async {
-      await _registerTokenWithBackend(subscriptionId, pushService, tokenDataSource);
+      await _registerTokenWithBackend(
+          subscriptionId, pushService, tokenDataSource);
     };
 
     pushService.onSubscriptionRemoved = (subscriptionId) async {
@@ -276,8 +276,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     final deviceName = await pushService.getDeviceName();
     final platform = pushService.getPlatform();
 
-    debugPrint(
-        'PushNotification → POST /auth/device-tokens payload: '
+    debugPrint('PushNotification → POST /auth/device-tokens payload: '
         'provider=$_oneSignalProvider, platform=$platform, '
         'subscription_id=$subscriptionId, '
         'external_user_id=${externalUserId ?? "<null>"}, '

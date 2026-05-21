@@ -65,7 +65,7 @@ class EventStories extends ConsumerWidget {
             children: [
               // Section header "À la une"
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
                 child: Row(
                   children: [
                     HomeSectionTitle(
@@ -127,7 +127,7 @@ class EventStories extends ConsumerWidget {
         children: [
           // Skeleton header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             child: Row(
               children: [
                 Container(

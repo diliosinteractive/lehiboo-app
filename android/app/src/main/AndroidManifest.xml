@@ -14,6 +14,9 @@
         android:label="LeHiboo Experiences"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -34,6 +37,21 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- App Links HTTPS — Universal Links équivalent Android. Vérifiés
+                 automatiquement à l'install via /.well-known/assetlinks.json
+                 sur lehiboo.com. Un bloc par host (autoVerify ne mélange pas
+                 plusieurs domaines dans un même filter). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="lehiboo.com" />
+                <data android:host="www.lehiboo.com" />
+                <data android:host="staging.lehiboo.com" />
+                <data android:host="www.staging.lehiboo.com" />
+                <data android:pathPrefix="/events/" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

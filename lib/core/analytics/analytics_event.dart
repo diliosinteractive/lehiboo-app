@@ -86,6 +86,10 @@ class AnalyticsEvent {
   static const String notificationOpened = 'notification_opened';
   static const String notificationPermissionResult =
       'notification_permission_result';
+
+  // ─── Deeplinks (custom) ─────────────────────────────────────────────
+  static const String deeplinkOpened = 'deeplink_opened';
+  static const String deeplinkUnmapped = 'deeplink_unmapped';
 }
 
 /// Noms de paramètres d'event.
@@ -146,6 +150,12 @@ class AnalyticsParam {
 
   // ─── Custom — memberships ───────────────────────────────────────────
   static const String organizationId = 'organization_id';
+
+  // ─── Custom — deeplinks ─────────────────────────────────────────────
+  static const String path = 'path';
+  static const String host = 'host';
+  static const String coldStart = 'cold_start';
+  static const String utmSource = 'utm_source';
 }
 
 /// Valeurs connues pour `AnalyticsParam.source` — d'où vient l'action.

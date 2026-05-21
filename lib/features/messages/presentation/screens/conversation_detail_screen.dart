@@ -78,7 +78,20 @@ class _ConversationDetailScreenState
 
     return Scaffold(
       body: state.conversation.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Column(
+          children: [
+            AppBar(
+              leading: BackButton(
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/messages'),
+              ),
+              title: const Text('Conversation'),
+            ),
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          ],
+        ),
         error: (e, _) => Column(
           children: [
             AppBar(
@@ -166,7 +179,7 @@ class _ConversationDetailScreenState
                                 fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => Text(
                                   titleInitial,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: _primaryColor,

@@ -1,11 +1,11 @@
 import 'dart:ui' show PlatformDispatcher;
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'firebase_options.dart';
@@ -15,6 +15,7 @@ import 'core/analytics/analytics_provider.dart';
 import 'core/analytics/analytics_service.dart';
 import 'core/analytics/noop_analytics_service.dart';
 import 'core/constants/app_constants.dart';
+import 'core/deeplinks/deeplink_listener.dart';
 import 'core/l10n/app_locale.dart';
 import 'core/l10n/l10n.dart';
 import 'core/themes/app_theme.dart';
@@ -123,6 +124,7 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     analytics = FirebaseAnalyticsService(FirebaseAnalytics.instance);
+    await _configureCrashlytics();
     debugPrint('Firebase initialized successfully');
   } catch (e) {
     analytics = const NoopAnalyticsService();
@@ -156,11 +158,6 @@ void main() async {
   final stripeKey = EnvConfig.stripePublishableKey;
   if (stripeKey.isNotEmpty) {
     Stripe.publishableKey = stripeKey;
-    // Required on iOS to prevent PaymentSheet hangs during the Apple Pay
-    // capability check, even when Apple Pay isn't enabled. Use a stable
-    // placeholder; replace with a real Apple-registered ID if/when Apple
-    // Pay is enabled.
-    Stripe.merchantIdentifier = 'merchant.com.lehiboo.app';
     try {
       await Stripe.instance.applySettings();
       debugPrint('Stripe initialized successfully');
@@ -217,6 +214,30 @@ void main() async {
       child: const LeHibooApp(),
     ),
   );
+}
+
+Future<void> _configureCrashlytics() async {
+  final crashlytics = FirebaseCrashlytics.instance;
+  final crashlyticsEnabled = AppConstants.enableCrashlytics &&
+      EnvConfig.crashlyticsEnabled &&
+      !kDebugMode;
+
+  await crashlytics.setCrashlyticsCollectionEnabled(crashlyticsEnabled);
+
+  if (!crashlyticsEnabled) {
+    debugPrint('Firebase Crashlytics disabled');
+    return;
+  }
+
+  await crashlytics.setCustomKey('env', EnvConfig.environment);
+
+  FlutterError.onError = crashlytics.recordFlutterFatalError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    crashlytics.recordError(error, stack, fatal: true);
+    return true;
+  };
+
+  debugPrint('Firebase Crashlytics enabled');
 }
 
 /// Real API repositories - connects to LeHiboo WordPress API v2
@@ -341,8 +362,13 @@ class LeHibooApp extends ConsumerWidget {
       // Le coordinateur écoute HibonsService et déclenche les SnackBars +X Hibons
       // et l'overlay rank-up via les clés globales (rootNavigatorKey,
       // scaffoldMessengerKey) — son BuildContext est au-dessus du Navigator.
-      builder: (context, child) =>
-          HibonsAnimationCoordinator(child: child ?? const SizedBox()),
+      //
+      // DeeplinkListener est monté SOUS MaterialApp.router pour pouvoir appeler
+      // GoRouter.of(context) une fois la navigation prête (Universal Links iOS
+      // + App Links Android).
+      builder: (context, child) => DeeplinkListener(
+        child: HibonsAnimationCoordinator(child: child ?? const SizedBox()),
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../providers/business_register_provider.dart';
+import '../utils/birth_date_validation.dart';
 import 'password_strength_indicator.dart';
 
 /// Step 1: Personal Information Form
@@ -66,9 +67,8 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
           lastName: _lastNameController.text,
           email: _emailController.text,
           phone: _phoneController.text,
-          birthDate: _birthDate != null
-              ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
-              : null,
+          birthDate:
+              _birthDate != null ? formatBirthDateForApi(_birthDate!) : null,
           membershipCity: _membershipCityController.text.trim().isNotEmpty
               ? _membershipCityController.text.trim()
               : null,
@@ -207,14 +207,16 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
             ),
             const SizedBox(height: 16),
 
-            // Birth date picker (optional)
+            // Birth date picker
             GestureDetector(
               onTap: () async {
-                final maxDate =
-                    DateTime.now().subtract(const Duration(days: 15 * 365));
+                final maxDate = latestAllowedBirthDate();
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: _birthDate ?? maxDate,
+                  initialDate:
+                      _birthDate != null && !_birthDate!.isAfter(maxDate)
+                          ? _birthDate!
+                          : maxDate,
                   firstDate: DateTime(1920),
                   lastDate: maxDate,
                   helpText: l10n.authBirthDateHelp,
@@ -227,15 +229,9 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
               child: AbsorbPointer(
                 child: TextFormField(
                   decoration: _inputDecoration(
-                    label: l10n.authBirthDateLabelOptional,
+                    label: l10n.authBirthDateLabel,
                     hint: l10n.authDateHint,
                     icon: Icons.cake_outlined,
-                    suffixIcon: _birthDate != null
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 20),
-                            onPressed: () => setState(() => _birthDate = null),
-                          )
-                        : null,
                   ),
                   controller: TextEditingController(
                     text: _birthDate != null
@@ -245,6 +241,15 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
                             .format(_birthDate!)
                         : '',
                   ),
+                  validator: (_) {
+                    if (_birthDate == null) {
+                      return l10n.authBirthDateRequired;
+                    }
+                    if (!meetsMinimumRegistrationAge(_birthDate!)) {
+                      return l10n.authBirthDateMinimumAge;
+                    }
+                    return null;
+                  },
                 ),
               ),
             ),

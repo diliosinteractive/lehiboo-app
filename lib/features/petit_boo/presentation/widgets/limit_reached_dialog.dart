@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../gamification/data/models/hibons_wallet.dart';
 import '../../../gamification/presentation/providers/gamification_provider.dart';
 import '../providers/petit_boo_chat_provider.dart';
@@ -143,7 +144,9 @@ class LimitReachedDialog extends ConsumerWidget {
                         error: (e, s) => Padding(
                           padding: const EdgeInsets.all(20),
                           child: Text(
-                            l10n.petitBooErrorWithMessage(e.toString()),
+                            l10n.petitBooErrorWithMessage(
+                              ApiResponseHandler.extractError(e),
+                            ),
                           ),
                         ),
                         data: (wallet) =>
@@ -321,7 +324,9 @@ class LimitReachedDialog extends ConsumerWidget {
       if (context.mounted) {
         PetitBooToast.error(
           context,
-          context.l10n.petitBooErrorWithMessage(e.toString()),
+          context.l10n.petitBooErrorWithMessage(
+            ApiResponseHandler.extractError(e),
+          ),
         );
       }
     }

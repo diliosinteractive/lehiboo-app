@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/domain/entities/city.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
@@ -15,55 +16,17 @@ final cityDetailProvider =
   final eventRepository = ref.watch(eventRepositoryProvider);
 
   try {
-    final citiesDto = await eventRepository.getCities();
+    final cities = await eventRepository.getCities();
     // Find city by slug
-    final cityDto = citiesDto.firstWhere(
+    return cities.firstWhere(
       (c) => c.slug == slug,
       orElse: () => throw Exception('City not found'),
-    );
-
-    return City(
-      id: cityDto.id.toString(),
-      name: cityDto.name,
-      slug: cityDto.slug,
-      eventCount: cityDto.eventCount,
-      imageUrl: _getCityImageUrl(cityDto.name),
     );
   } catch (e) {
     debugPrint('Error getting city by slug: $e');
     return null;
   }
 });
-
-/// Get a placeholder image URL for a city
-String _getCityImageUrl(String cityName) {
-  final cityImages = {
-    'california':
-        'https://images.unsplash.com/photo-1449034446853-66c86144b0ad?w=400',
-    'paris':
-        'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400',
-    'lyon':
-        'https://images.unsplash.com/photo-1524397057410-1e775ed476f3?w=400',
-    'marseille':
-        'https://images.unsplash.com/photo-1589394760766-91f2a2db1d6f?w=400',
-    'bordeaux':
-        'https://images.unsplash.com/photo-1565018054866-968e244671af?w=400',
-    'toulouse':
-        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',
-    'nantes':
-        'https://images.unsplash.com/photo-1588431379983-d4aefc8db5b0?w=400',
-    'nice':
-        'https://images.unsplash.com/photo-1491166617655-0723a0999cfc?w=400',
-    'strasbourg':
-        'https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=400',
-    'montpellier':
-        'https://images.unsplash.com/photo-1597418680155-3c28a6a6bbef?w=400',
-  };
-
-  final lowerName = cityName.toLowerCase();
-  return cityImages[lowerName] ??
-      'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400';
-}
 
 /// Paginated activities for a city.
 ///
@@ -221,6 +184,9 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
             );
           }
 
+          final imageUrl = city.imageUrl?.trim();
+          final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+
           return CustomScrollView(
             controller: _scrollController,
             slivers: [
@@ -230,27 +196,48 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
                 pinned: true,
                 backgroundColor: const Color(0xFFFF601F),
                 flexibleSpace: FlexibleSpaceBar(
-                  title: Text(city.name),
+                  title: Text(
+                    city.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black87,
+                          blurRadius: 12,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      if (city.imageUrl != null)
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Color(0xFFFF601F),
+                        ),
+                      ),
+                      if (hasImage)
                         Image.network(
-                          city.imageUrl!,
+                          imageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
-                            color: const Color(0xFFFF601F).withOpacity(0.3),
+                            color:
+                                const Color(0xFFFF601F).withValues(alpha: 0.3),
                           ),
                         ),
-                      Container(
+                      DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
+                              Colors.black.withValues(alpha: 0.2),
                               Colors.transparent,
-                              Colors.black.withOpacity(0.7),
+                              Colors.black.withValues(alpha: 0.82),
                             ],
+                            stops: const [0, 0.42, 1],
                           ),
                         ),
                       ),
@@ -344,8 +331,11 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
         loading: () => const Center(
           child: CircularProgressIndicator(color: Color(0xFFFF601F)),
         ),
-        error: (err, stack) =>
-            Center(child: Text(l10n.homeErrorWithMessage(err.toString()))),
+        error: (err, stack) => Center(
+          child: Text(
+            l10n.homeErrorWithMessage(ApiResponseHandler.extractError(err)),
+          ),
+        ),
       ),
     );
   }
@@ -419,7 +409,9 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
           child: Center(
             child: Padding(
               padding: const EdgeInsets.all(32.0),
-              child: Text(l10n.homeErrorWithMessage(err.toString())),
+              child: Text(
+                l10n.homeErrorWithMessage(ApiResponseHandler.extractError(err)),
+              ),
             ),
           ),
         ),

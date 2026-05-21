@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../domain/entities/user.dart';
 import '../../data/models/business_register_dto.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../utils/birth_date_validation.dart';
 
 /// Steps for business registration
 enum BusinessRegisterStep {
@@ -384,6 +386,15 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
     }
     if (state.phone.isNotEmpty && !_isValidPhone(state.phone)) {
       state = state.copyWith(errorMessage: l10n.authPhoneInvalid);
+      return false;
+    }
+    if (state.birthDate == null || state.birthDate!.isEmpty) {
+      state = state.copyWith(errorMessage: l10n.authBirthDateRequired);
+      return false;
+    }
+    final birthDate = DateTime.tryParse(state.birthDate!);
+    if (birthDate == null || !meetsMinimumRegistrationAge(birthDate)) {
+      state = state.copyWith(errorMessage: l10n.authBirthDateMinimumAge);
       return false;
     }
     if (!_isValidPassword(state.password)) {
@@ -793,12 +804,10 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
       return l10n.commonConnectionError;
     }
 
-    if (e is Exception) {
-      final msg = e.toString().replaceAll('Exception: ', '');
-      if (msg.isNotEmpty && !msg.startsWith('http')) return msg;
-    }
-
-    return l10n.commonGenericRetryError;
+    return ApiResponseHandler.extractError(
+      e,
+      fallback: l10n.commonGenericRetryError,
+    );
   }
 
   String _parseOtpError(dynamic e) {

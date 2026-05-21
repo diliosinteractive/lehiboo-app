@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import '../../domain/entities/broadcast.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 
@@ -74,7 +75,10 @@ class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
             children: [
               const Icon(Icons.error_outline, color: Colors.red, size: 40),
               const SizedBox(height: 8),
-              Text(context.l10n.messagesLoadError(e.toString()),
+              Text(
+                  context.l10n.messagesLoadError(
+                    ApiResponseHandler.extractError(e),
+                  ),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 16),

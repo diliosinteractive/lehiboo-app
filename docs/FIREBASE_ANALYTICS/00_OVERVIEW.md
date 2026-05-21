@@ -45,7 +45,7 @@ Le SDK est déjà chargé : **rien à installer**. Le travail restant est de con
 
 ## Hors périmètre
 
-- **Crashlytics** : le commentaire `# firebase_crashlytics: ^4.1.3` dans `pubspec.yaml` indique que c'est prévu mais désactivé. À traiter dans un plan séparé.
+- **Crashlytics** : configuré séparément via `firebase_crashlytics`, activé en runtime seulement si `CRASHLYTICS_ENABLED=true` et hors build debug.
 - **Performance Monitoring** : non couvert ici, peut être ajouté en réutilisant la même infra de service.
 - **A/B testing (Remote Config)** : non couvert.
 
