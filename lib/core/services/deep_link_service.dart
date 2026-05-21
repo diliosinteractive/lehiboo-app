@@ -84,8 +84,18 @@ class DeepLinkService {
     required String type,
     required Map<String, dynamic> data,
   }) {
-    if (type.toLowerCase() == 'new_message') {
+    final lower = type.toLowerCase();
+
+    if (lower == 'new_message') {
       push(routeForType(type, data) ?? _routeFromActionUrl(actionUrl) ?? '/messages');
+      return;
+    }
+
+    // Avis (review_submitted/approved/rejected) : router par type, pas par
+    // action_url (action_url est une URL web sans route mobile → ErrorScreen).
+    // Spec §5.2 : la route mobile dérive de data.type, jamais de data.action.
+    if (lower.startsWith('review_')) {
+      push(routeForType(type, data) ?? _routeFromActionUrl(actionUrl) ?? '/notifications');
       return;
     }
 
@@ -312,9 +322,8 @@ class DeepLinkService {
       case 'organization_member_left':
       case 'organizer_review_submitted':
       case 'organizer_review_approved':
-      case 'review_submitted':
-      case 'review_approved':
-      case 'review_rejected':
+      // Note: review_submitted/approved/rejected sont gérés par le prefix
+      // `startsWith('review_')` plus haut et ne tombent jamais ici.
       case 'question_answered':
       case 'question_approved':
       case 'question_rejected':
