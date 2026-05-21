@@ -25,6 +25,7 @@ class SearchScreen extends ConsumerStatefulWidget {
   final String? dateFilter;
   final EventFilter? initialFilter;
   final bool autoOpenFilter;
+  final bool searchBarOpensFilters;
 
   const SearchScreen({
     super.key,
@@ -33,6 +34,7 @@ class SearchScreen extends ConsumerStatefulWidget {
     this.dateFilter,
     this.initialFilter,
     this.autoOpenFilter = false,
+    this.searchBarOpensFilters = false,
   });
 
   @override
@@ -325,10 +327,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                       const SizedBox(height: 8),
                       // Compact Search Bar
-                      // - onTap: ouvre Airbnb-style (3 panneaux)
-                      // - onFilterTap: ouvre bottom sheet avec TOUTES les options détaillées
                       AirbnbSearchBar(
-                        onTap: _showSearchBottomSheet,
+                        onTap: widget.searchBarOpensFilters
+                            ? () => showFilterBottomSheet(context)
+                            : _showSearchBottomSheet,
                         onFilterTap: () => showFilterBottomSheet(context),
                       ),
                       const SizedBox(height: 12),
