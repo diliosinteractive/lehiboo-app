@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
@@ -170,11 +172,14 @@ class _VendorNewConversationScreenState
       }
     } catch (e) {
       if (mounted) {
+        final isForbidden = e is DioException && e.response?.statusCode == 403;
         setState(() {
           _submitting = false;
-          _error = e.toString().contains('403')
+          _error = isForbidden
               ? _forbiddenMessage(context)
-              : context.l10n.messagesLoadError(e.toString());
+              : context.l10n.messagesLoadError(
+                  ApiResponseHandler.extractError(e),
+                );
         });
       }
     }

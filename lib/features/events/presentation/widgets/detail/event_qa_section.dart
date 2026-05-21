@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
+import '../../../../../core/utils/api_response_handler.dart';
 import '../../../../../core/utils/guest_guard.dart';
 import '../../../../auth/presentation/providers/auth_provider.dart';
 import '../../../domain/entities/event_question.dart';
@@ -78,7 +79,8 @@ class EventQASection extends ConsumerWidget {
             previewAsync.when(
               // isLoading est déjà traité au-dessus
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => _ErrorBlock(
+              error: (e, _) => _ErrorBlock(
+                message: ApiResponseHandler.extractError(e),
                 onRetry: () =>
                     ref.invalidate(eventQuestionsPreviewProvider(eventSlug)),
               ),
@@ -518,8 +520,12 @@ class _LoadingPlaceholder extends StatelessWidget {
 }
 
 class _ErrorBlock extends StatelessWidget {
+  final String message;
   final VoidCallback onRetry;
-  const _ErrorBlock({required this.onRetry});
+  const _ErrorBlock({
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -545,6 +551,16 @@ class _ErrorBlock extends StatelessWidget {
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: HbColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              color: HbColors.grey500,
+              height: 1.35,
             ),
           ),
           const SizedBox(height: 10),

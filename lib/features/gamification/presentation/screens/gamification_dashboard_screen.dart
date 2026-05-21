@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../data/models/daily_reward.dart';
 import '../../data/models/hibons_wallet.dart';
 import '../providers/gamification_provider.dart';
@@ -409,10 +410,12 @@ class GamificationDashboardScreen extends ConsumerWidget {
             if (context.mounted) {
               // Extraire le message d'erreur de l'API si disponible
               String errorMessage = context.l10n.gamificationDailyClaimError;
-              final errorStr = e.toString();
+              final errorStr = ApiResponseHandler.extractError(e);
               if (errorStr.contains('déjà réclamé')) {
                 errorMessage =
                     context.l10n.gamificationDailyRewardAlreadyClaimed;
+              } else {
+                errorMessage = errorStr;
               }
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -434,7 +437,11 @@ class GamificationDashboardScreen extends ConsumerWidget {
         },
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Text(context.l10n.gamificationErrorWithMessage('$e')),
+      error: (e, s) => Text(
+        context.l10n.gamificationErrorWithMessage(
+          ApiResponseHandler.extractError(e),
+        ),
+      ),
     );
   }
 }

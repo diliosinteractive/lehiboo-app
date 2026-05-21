@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/trip_plan.dart';
 import '../providers/trip_plans_provider.dart';
 
@@ -81,7 +82,11 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
           ),
         ),
         body: Center(
-          child: Text(context.l10n.tripPlanEditErrorWithMessage(e.toString())),
+          child: Text(
+            context.l10n.tripPlanEditErrorWithMessage(
+              ApiResponseHandler.extractError(e),
+            ),
+          ),
         ),
       ),
       data: (plans) {
@@ -493,8 +498,11 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(context.l10n.tripPlanEditErrorWithMessage(e.toString())),
+            content: Text(
+              context.l10n.tripPlanEditErrorWithMessage(
+                ApiResponseHandler.extractError(e),
+              ),
+            ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
             shape: RoundedRectangleBorder(

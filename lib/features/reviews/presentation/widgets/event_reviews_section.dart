@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/can_review_result.dart';
 import '../../domain/entities/review.dart';
 import '../../domain/entities/review_stats.dart';
@@ -61,11 +62,17 @@ class EventReviewsSection extends ConsumerWidget {
         const SizedBox(height: 16),
         statsAsync.when(
           loading: _buildLoading,
-          error: (e, _) => _buildError(context, e.toString()),
+          error: (e, _) => _buildError(
+            context,
+            ApiResponseHandler.extractError(e),
+          ),
           data: (stats) {
             return reviewsAsync.when(
               loading: _buildLoading,
-              error: (e, _) => _buildError(context, e.toString()),
+              error: (e, _) => _buildError(
+                context,
+                ApiResponseHandler.extractError(e),
+              ),
               data: (page) {
                 // Évite le doublon : si l'avis user est déjà dans la liste
                 // publique (status approved), on le retire du bloc dédié.

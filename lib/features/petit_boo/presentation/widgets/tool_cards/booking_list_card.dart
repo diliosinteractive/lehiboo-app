@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
+import '../../../../../core/utils/api_response_handler.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
 
@@ -233,7 +234,9 @@ class _BookingItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
-          context.l10n.petitBooErrorWithMessage(e.toString()),
+          context.l10n.petitBooErrorWithMessage(
+            ApiResponseHandler.extractError(e),
+          ),
           style: const TextStyle(color: Colors.red),
         ),
       );

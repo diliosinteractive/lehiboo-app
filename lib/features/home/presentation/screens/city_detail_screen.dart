@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/domain/entities/city.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
@@ -330,8 +331,11 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
         loading: () => const Center(
           child: CircularProgressIndicator(color: Color(0xFFFF601F)),
         ),
-        error: (err, stack) =>
-            Center(child: Text(l10n.homeErrorWithMessage(err.toString()))),
+        error: (err, stack) => Center(
+          child: Text(
+            l10n.homeErrorWithMessage(ApiResponseHandler.extractError(err)),
+          ),
+        ),
       ),
     );
   }
@@ -405,7 +409,9 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
           child: Center(
             child: Padding(
               padding: const EdgeInsets.all(32.0),
-              child: Text(l10n.homeErrorWithMessage(err.toString())),
+              child: Text(
+                l10n.homeErrorWithMessage(ApiResponseHandler.extractError(err)),
+              ),
             ),
           ),
         ),
