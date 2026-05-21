@@ -7,6 +7,7 @@ import '../../../../domain/entities/user.dart';
 import '../../data/models/business_register_dto.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../utils/birth_date_validation.dart';
 
 /// Steps for business registration
 enum BusinessRegisterStep {
@@ -384,6 +385,15 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
     }
     if (state.phone.isNotEmpty && !_isValidPhone(state.phone)) {
       state = state.copyWith(errorMessage: l10n.authPhoneInvalid);
+      return false;
+    }
+    if (state.birthDate == null || state.birthDate!.isEmpty) {
+      state = state.copyWith(errorMessage: l10n.authBirthDateRequired);
+      return false;
+    }
+    final birthDate = DateTime.tryParse(state.birthDate!);
+    if (birthDate == null || !meetsMinimumRegistrationAge(birthDate)) {
+      state = state.copyWith(errorMessage: l10n.authBirthDateMinimumAge);
       return false;
     }
     if (!_isValidPassword(state.password)) {

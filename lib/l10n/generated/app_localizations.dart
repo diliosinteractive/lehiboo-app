@@ -5751,11 +5751,29 @@ abstract class AppLocalizations {
   /// **'Numéro de téléphone invalide'**
   String get authPhoneInvalid;
 
+  /// No description provided for @authBirthDateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de naissance'**
+  String get authBirthDateLabel;
+
   /// No description provided for @authBirthDateLabelOptional.
   ///
   /// In fr, this message translates to:
   /// **'Date de naissance (optionnel)'**
   String get authBirthDateLabelOptional;
+
+  /// No description provided for @authBirthDateRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez entrer votre date de naissance'**
+  String get authBirthDateRequired;
+
+  /// No description provided for @authBirthDateMinimumAge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous devez avoir au moins 15 ans'**
+  String get authBirthDateMinimumAge;
 
   /// No description provided for @authBirthDateHelp.
   ///

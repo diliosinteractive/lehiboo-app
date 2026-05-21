@@ -161,6 +161,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
     required String firstName,
     required String lastName,
+    required String birthDate,
   }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
@@ -170,6 +171,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         firstName: firstName,
         lastName: lastName,
+        birthDate: birthDate,
       );
 
       // Store pending verification info in state
@@ -553,8 +555,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // explicitement). La collecte étant désactivée tant que l'étape 7 n'a
   // pas livré le consent gate, ces appels sont des no-ops côté Firebase.
 
-  AnalyticsService get _analytics =>
-      _ref.read(analyticsServiceProvider);
+  AnalyticsService get _analytics => _ref.read(analyticsServiceProvider);
 
   /// Met à jour l'identité analytics à chaque transition de [state.user].
   /// Appelée avec [user] = null à la déconnexion pour purger explicitement

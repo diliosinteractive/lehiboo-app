@@ -3341,7 +3341,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPhoneInvalid => 'Invalid phone number';
 
   @override
+  String get authBirthDateLabel => 'Date of birth';
+
+  @override
   String get authBirthDateLabelOptional => 'Date of birth (optional)';
+
+  @override
+  String get authBirthDateRequired => 'Please enter your date of birth';
+
+  @override
+  String get authBirthDateMinimumAge => 'You must be at least 15 years old';
 
   @override
   String get authBirthDateHelp => 'Date of birth';

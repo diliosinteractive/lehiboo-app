@@ -68,8 +68,6 @@ class HomeCategoriesSection extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: HomeSectionTitle(
                   title: context.l10n.homeExploreByCategoryTitle,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0B1220),
                 ),
               ),
               const SizedBox(height: 20),

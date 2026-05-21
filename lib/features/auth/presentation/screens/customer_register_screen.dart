@@ -9,6 +9,7 @@ import '../../../../core/themes/colors.dart';
 import '../../../../shared/legal/legal_links.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../providers/auth_provider.dart';
+import '../utils/birth_date_validation.dart';
 import '../widgets/password_strength_indicator.dart';
 import '../../../../core/utils/api_response_handler.dart';
 
@@ -265,9 +266,7 @@ class _CustomerRegisterScreenState
         phone: _phoneController.text.trim().isNotEmpty
             ? _phoneController.text.trim()
             : null,
-        birthDate: _birthDate != null
-            ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
-            : null,
+        birthDate: formatBirthDateForApi(_birthDate!),
         membershipCity: _membershipCityController.text.trim().isNotEmpty
             ? _membershipCityController.text.trim()
             : null,
@@ -859,14 +858,16 @@ class _CustomerRegisterScreenState
             ),
             const SizedBox(height: 16),
 
-            // Birth date picker (optional)
+            // Birth date picker
             GestureDetector(
               onTap: () async {
-                final maxDate =
-                    DateTime.now().subtract(const Duration(days: 15 * 365));
+                final maxDate = latestAllowedBirthDate();
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: _birthDate ?? maxDate,
+                  initialDate:
+                      _birthDate != null && !_birthDate!.isAfter(maxDate)
+                          ? _birthDate!
+                          : maxDate,
                   firstDate: DateTime(1920),
                   lastDate: maxDate,
                   helpText: l10n.authBirthDateHelp,
@@ -878,15 +879,9 @@ class _CustomerRegisterScreenState
               child: AbsorbPointer(
                 child: TextFormField(
                   decoration: _inputDecoration(
-                    label: l10n.authBirthDateLabelOptional,
+                    label: l10n.authBirthDateLabel,
                     hint: l10n.authDateHint,
                     icon: Icons.cake_outlined,
-                    suffixIcon: _birthDate != null
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 20),
-                            onPressed: () => setState(() => _birthDate = null),
-                          )
-                        : null,
                   ),
                   controller: TextEditingController(
                     text: _birthDate != null
@@ -896,6 +891,15 @@ class _CustomerRegisterScreenState
                             .format(_birthDate!)
                         : '',
                   ),
+                  validator: (_) {
+                    if (_birthDate == null) {
+                      return l10n.authBirthDateRequired;
+                    }
+                    if (!meetsMinimumRegistrationAge(_birthDate!)) {
+                      return l10n.authBirthDateMinimumAge;
+                    }
+                    return null;
+                  },
                 ),
               ),
             ),
