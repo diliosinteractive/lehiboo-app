@@ -367,7 +367,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 OutlinedButton.icon(
-                  onPressed: () => context.pop(),
+                  onPressed: () =>
+                      context.canPop() ? context.pop() : context.go('/'),
                   icon: const Icon(Icons.arrow_back, size: 18),
                   label: Text(context.l10n.commonBack),
                   style: OutlinedButton.styleFrom(
@@ -631,7 +632,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           const SizedBox(width: 8),
           _buildCircularButton(
             icon: Icons.arrow_back,
-            onTap: () => context.pop(),
+            // Deeplink/cold start : router.go() remplace la pile, donc rien à
+            // pop. On retombe sur la home plutôt que de crasher ("nothing to pop").
+            onTap: () => context.canPop() ? context.pop() : context.go('/'),
             darkMode: opacity < 0.5,
           ),
           const Spacer(),
