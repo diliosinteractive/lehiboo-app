@@ -74,6 +74,27 @@ class EventMapper {
       category = _parseCategorySlug(resolvedCategory.slug);
     }
 
+    final venueName = _firstNonEmpty(
+      dto.location?.venueName,
+      dto.venueName,
+    );
+    final venueAddress = _firstNonEmpty(
+      dto.location?.address,
+      dto.venueAddress,
+    );
+    final city = _firstNonEmpty(
+      dto.location?.city,
+      dto.city,
+    );
+    final postalCode = _firstNonEmpty(
+      dto.location?.postalCode,
+      dto.postalCode,
+    );
+    final country = _firstNonEmpty(
+      dto.country,
+      dto.location?.country,
+    );
+
     // Get featured image URL (prefer large or full from featuredImage, fallback to thumbnail)
     String? imageUrl;
     if (dto.featuredImage != null) {
@@ -137,10 +158,10 @@ class EventMapper {
       targetAudiences: _resolveTargetAudiences(dto),
       startDate: startDate,
       endDate: endDate,
-      venue: dto.location?.venueName ?? '',
-      address: dto.location?.address ?? '',
-      city: dto.location?.city ?? '',
-      postalCode: dto.location?.postalCode ?? '',
+      venue: venueName ?? '',
+      address: venueAddress ?? '',
+      city: city ?? '',
+      postalCode: postalCode ?? '',
       latitude: dto.location?.lat ?? 0.0,
       longitude: dto.location?.lng ?? 0.0,
       distance: null,
@@ -244,7 +265,7 @@ class EventMapper {
       timezone: dto.timezone,
       calendarMode: dto.calendarMode,
       eventTypeMode: dto.eventTypeMode,
-      country: dto.country ?? dto.location?.country,
+      country: country,
       addressSource: dto.addressSource,
       venueId: dto.venueId,
       capacityGlobal: dto.capacityGlobal,
@@ -275,6 +296,20 @@ class EventMapper {
   static DateTime? _tryParseDateTime(String? value) {
     if (value == null || value.isEmpty) return null;
     return DateTime.tryParse(value);
+  }
+
+  static String? _firstNonEmpty(String? primary, String? fallback) {
+    final primaryTrimmed = primary?.trim();
+    if (primaryTrimmed != null && primaryTrimmed.isNotEmpty) {
+      return primaryTrimmed;
+    }
+
+    final fallbackTrimmed = fallback?.trim();
+    if (fallbackTrimmed != null && fallbackTrimmed.isNotEmpty) {
+      return fallbackTrimmed;
+    }
+
+    return null;
   }
 
   static EventCategory _parseCategorySlug(String slug) {
