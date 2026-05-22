@@ -1,7 +1,11 @@
 # Statut d'exécution — Phase 1 deeplinks événements
 
-> Date : 2026-05-19
+> Date : 2026-05-19 (correctifs routage : 2026-05-22)
 > Branche : `feat/analytics`
+
+> 🔧 Deux correctifs post-intégration ont été appliqués au runtime
+> (`No GoRouter found in context` et `There is nothing to pop`). Détails et
+> recommandations de routage dans [09_ROUTING_ET_FIXES.md](09_ROUTING_ET_FIXES.md).
 
 ---
 
