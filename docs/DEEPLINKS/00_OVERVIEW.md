@@ -59,6 +59,7 @@
 | 6 | [06_SHARE_URL_CLEANUP.md](06_SHARE_URL_CLEANUP.md) | Centralisation URL de partage + suppression des hard-codes | Mobile |
 | 7 | [07_TESTING_QA.md](07_TESTING_QA.md) | Tests manuels + automatisés, checklist QA | Mobile + QA |
 | 8 | [08_ROLLOUT.md](08_ROLLOUT.md) | Ordre de déploiement, feature flags, suivi analytics | Mobile + Backend |
+| 9 | [09_ROUTING_ET_FIXES.md](09_ROUTING_ET_FIXES.md) | Correctifs post-intégration + recommandations `go`/`push` + convention boutons retour | Mobile |
 
 L'ordre est important : **les fichiers AASA et `assetlinks.json` doivent être publiés AVANT d'envoyer un build avec les associated domains**, sinon iOS/Android marquent l'app comme "verification failed" et le système peut mettre 24h à retenter.
 

@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../routes/app_router.dart';
 import '../analytics/analytics_event.dart';
 import '../analytics/analytics_provider.dart';
 import 'deeplink_providers.dart';
@@ -15,9 +15,12 @@ import 'deeplink_router.dart';
 ///   - cold start : récupère l'URL qui a démarré l'app
 ///   - warm start : écoute les URLs reçues pendant la session
 ///
-/// Doit être monté **sous** le `ProviderScope` et **autour** de
-/// `MaterialApp.router` pour pouvoir appeler `GoRouter.of(context)` une
-/// fois la navigation prête.
+/// La navigation passe par l'instance `GoRouter` exposée par
+/// `routerProvider` (Riverpod), **pas** par `GoRouter.of(context)` : le
+/// `context` du `builder` de `MaterialApp.router` est au-dessus de
+/// l'`InheritedGoRouter`, donc le lookup par context échoue
+/// ("No GoRouter found in context"). L'instance Riverpod, elle, est un
+/// singleton accessible partout.
 ///
 /// Cold start race : au démarrage, [AuthState.status] vaut `initial` le
 /// temps que le bootstrap se termine. Tenter `go()` à ce moment ferait
@@ -109,8 +112,10 @@ class _DeeplinkListenerState extends ConsumerState<DeeplinkListener> {
       return;
     }
 
+    // On récupère le router via Riverpod (singleton) plutôt que via le
+    // context : robuste quel que soit l'emplacement de ce widget dans l'arbre.
     try {
-      GoRouter.of(context).go(route);
+      ref.read(routerProvider).go(route);
     } catch (e) {
       debugPrint('[DeeplinkListener] go() failed, deferring: $e');
       ref.read(pendingDeeplinkProvider.notifier).state = route;

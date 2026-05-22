@@ -9,10 +9,8 @@ import 'package:flutter/foundation.dart';
 const Set<String> kDeeplinkAllowedHosts = {
   'lehiboo.com',
   'www.lehiboo.com',
-  // À décommenter et à couvrir côté backend / configs natives si la prod
-  // utilise aussi `lehiboo.fr` :
-  // 'lehiboo.fr',
-  // 'www.lehiboo.fr',
+  'staging.lehiboo.com',
+  'www.staging.lehiboo.com',
 };
 
 /// Convertit une URL deeplink en route interne `go_router`,

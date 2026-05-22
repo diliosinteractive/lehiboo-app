@@ -357,6 +357,32 @@ class _EventLocationMapState extends State<EventLocationMap> {
     return parts.join(', ');
   }
 
+  String _buildMapsQuery() {
+    final parts = <String>[];
+    _addMapsQueryPart(parts, widget.event.venue);
+
+    final addressParts = <String>[];
+    _addMapsQueryPart(addressParts, widget.event.address);
+    _addMapsQueryPart(addressParts, widget.event.postalCode);
+    _addMapsQueryPart(addressParts, widget.event.city);
+    _addMapsQueryPart(addressParts, widget.event.country);
+    _addMapsQueryPart(parts, addressParts.join(', '));
+
+    if (parts.isNotEmpty) {
+      return parts.join(', ');
+    }
+
+    return '$_lat,$_lng';
+  }
+
+  void _addMapsQueryPart(List<String> parts, String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return;
+    final lowerParts = parts.map((part) => part.toLowerCase());
+    if (lowerParts.contains(trimmed.toLowerCase())) return;
+    parts.add(trimmed);
+  }
+
   void _toggleExpand() {
     HapticFeedback.lightImpact();
     setState(() {
@@ -367,8 +393,13 @@ class _EventLocationMapState extends State<EventLocationMap> {
   Future<void> _openMaps() async {
     if (!_hasCoordinates) return;
 
-    final url = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$_lat,$_lng',
+    final url = Uri.https(
+      'www.google.com',
+      '/maps/search/',
+      {
+        'api': '1',
+        'query': _buildMapsQuery(),
+      },
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
