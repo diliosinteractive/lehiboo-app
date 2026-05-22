@@ -683,7 +683,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
     _progressController.forward();
   }
 
-  void _onTapDown(TapDownDetails details, double screenWidth) {
+  void _onTapUp(TapUpDetails details, double screenWidth) {
     final x = details.globalPosition.dx;
     if (x < screenWidth / 3) {
       _goToPreviousStory();
@@ -722,7 +722,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
-        onTapDown: (details) => _onTapDown(details, screenWidth),
+        onTapUp: (details) => _onTapUp(details, screenWidth),
         onLongPressStart: _onLongPressStart,
         onLongPressEnd: _onLongPressEnd,
         onVerticalDragEnd: _onVerticalDragEnd,
