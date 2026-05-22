@@ -9,6 +9,7 @@ import '../../../../core/analytics/analytics_provider.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../domain/entities/user.dart';
 import '../../data/mappers/auth_mapper.dart';
 import '../../data/models/auth_response_dto.dart';
@@ -161,6 +162,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
     required String firstName,
     required String lastName,
+    required String birthDate,
   }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
@@ -170,6 +172,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         firstName: firstName,
         lastName: lastName,
+        birthDate: birthDate,
       );
 
       // Store pending verification info in state
@@ -223,11 +226,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _ref.invalidate(personalizedFeedProvider);
       return true;
     } catch (e) {
-      final errorMessage = e.toString();
+      final rawError = e.toString();
+      final errorMessage = ApiResponseHandler.extractError(e);
       debugPrint('🚨 Verify OTP Error: $errorMessage');
 
       // Handle case where user is already verified (e.g. double submission or retry)
-      if (errorMessage.contains('user_already_verified')) {
+      if (rawError.contains('user_already_verified')) {
         debugPrint('🚨 Treating already verified as success');
         state = state.copyWith(
           status: AuthStatus
@@ -525,13 +529,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return l10n.commonConnectionError;
     }
 
-    // Provide a slightly more helpful fallback if it's an Exception with a message
-    if (e is Exception) {
-      final msg = e.toString().replaceAll('Exception: ', '');
-      if (msg.isNotEmpty && !msg.startsWith('http')) return msg;
-    }
-
-    return l10n.commonGenericRetryError;
+    return ApiResponseHandler.extractError(
+      e,
+      fallback: l10n.commonGenericRetryError,
+    );
   }
 
   String _parseOtpError(dynamic e) {
@@ -553,8 +554,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // explicitement). La collecte étant désactivée tant que l'étape 7 n'a
   // pas livré le consent gate, ces appels sont des no-ops côté Firebase.
 
-  AnalyticsService get _analytics =>
-      _ref.read(analyticsServiceProvider);
+  AnalyticsService get _analytics => _ref.read(analyticsServiceProvider);
 
   /// Met à jour l'identité analytics à chaque transition de [state.user].
   /// Appelée avec [user] = null à la déconnexion pour purger explicitement

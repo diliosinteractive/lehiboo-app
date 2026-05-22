@@ -6,6 +6,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../shared/legal/legal_links.dart';
 import '../providers/auth_provider.dart';
+import '../utils/birth_date_validation.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -22,6 +23,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  DateTime? _birthDate;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _acceptTerms = false;
@@ -55,6 +57,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           password: _passwordController.text,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
+          birthDate: formatBirthDateForApi(_birthDate!),
         );
 
     debugPrint('📱 Register result: $result');
@@ -257,6 +260,67 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 16),
+
+                // Birth date picker
+                GestureDetector(
+                  onTap: () async {
+                    final maxDate = latestAllowedBirthDate();
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate:
+                          _birthDate != null && !_birthDate!.isAfter(maxDate)
+                              ? _birthDate!
+                              : maxDate,
+                      firstDate: DateTime(1920),
+                      lastDate: maxDate,
+                      helpText: l10n.authBirthDateHelp,
+                    );
+                    if (picked != null) {
+                      setState(() => _birthDate = picked);
+                    }
+                  },
+                  child: AbsorbPointer(
+                    child: TextFormField(
+                      decoration: InputDecoration(
+                        labelText: l10n.authBirthDateLabel,
+                        hintText: l10n.authDateHint,
+                        prefixIcon: const Icon(Icons.cake_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                              color: HbColors.brandPrimary, width: 2),
+                        ),
+                      ),
+                      controller: TextEditingController(
+                        text: _birthDate != null
+                            ? context
+                                .appDateFormat(
+                                  'dd/MM/yyyy',
+                                  enPattern: 'MM/dd/yyyy',
+                                )
+                                .format(_birthDate!)
+                            : '',
+                      ),
+                      validator: (_) {
+                        if (_birthDate == null) {
+                          return l10n.authBirthDateRequired;
+                        }
+                        if (!meetsMinimumRegistrationAge(_birthDate!)) {
+                          return l10n.authBirthDateMinimumAge;
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
 

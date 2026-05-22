@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/profile_api_datasource.dart';
 
@@ -512,7 +513,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = context.l10n.profileUploadImageError(e.toString());
+          _errorMessage = context.l10n.profileUploadImageError(
+            ApiResponseHandler.extractError(e),
+          );
         });
       }
     } finally {
@@ -567,7 +570,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = context.l10n.profileGenericError(e.toString());
+          _errorMessage = context.l10n.profileGenericError(
+            ApiResponseHandler.extractError(e),
+          );
         });
       }
     } finally {
@@ -674,8 +679,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content:
-                                  Text(l10n.profileGenericError(e.toString())),
+                              content: Text(l10n.profileGenericError(
+                                ApiResponseHandler.extractError(e),
+                              )),
                               backgroundColor: Colors.red,
                             ),
                           );

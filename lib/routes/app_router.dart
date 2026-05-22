@@ -256,6 +256,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 categorySlug: categorySlug,
                 city: city,
                 initialFilter: initialFilter,
+                searchBarOpensFilters: true,
               );
             },
           ),
@@ -933,7 +934,7 @@ class ErrorScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               context.l10n.routeNotFoundTitle,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -941,7 +942,7 @@ class ErrorScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               context.l10n.routeNotFoundBody,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
               ),
@@ -961,7 +962,7 @@ class ErrorScreen extends StatelessWidget {
               ),
               child: Text(
                 context.l10n.bookingBackHome,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),

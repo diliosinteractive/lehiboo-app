@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/utils/guest_guard.dart';
 import '../../domain/entities/event_question.dart';
 import '../providers/event_questions_providers.dart';
@@ -152,24 +153,24 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
             // chargement (initial OU refresh après soumission).
             final isLoading = listAsync.isLoading || myQuestionAsync.isLoading;
             if (isLoading) return const _LoadingList();
-            if (listAsync.hasError) {
-              return _ErrorList(
+            return listAsync.when(
+              loading: () => const _LoadingList(),
+              error: (e, _) => _ErrorList(
+                message: ApiResponseHandler.extractError(e),
                 onRetry: () => ref.invalidate(
                   eventQuestionsListControllerProvider(widget.eventSlug),
                 ),
-              );
-            }
-            final page = listAsync.valueOrNull;
-            if (page == null) return const _LoadingList();
-            return _QuestionsList(
-              scrollController: _scrollController,
-              page: page,
-              // Passer null ici quand myQuestion est déjà dans la liste publique
-              // → aucun dedupe, la question reste affichée avec ses boutons
-              // (Utile, etc.) et pas de bloc "Votre question" en double au top.
-              myQuestion: myQuestionToDisplay,
-              eventSlug: widget.eventSlug,
-              eventTitle: widget.eventTitle,
+              ),
+              data: (page) => _QuestionsList(
+                scrollController: _scrollController,
+                page: page,
+                // Passer null ici quand myQuestion est déjà dans la liste publique
+                // → aucun dedupe, la question reste affichée avec ses boutons
+                // (Utile, etc.) et pas de bloc "Votre question" en double au top.
+                myQuestion: myQuestionToDisplay,
+                eventSlug: widget.eventSlug,
+                eventTitle: widget.eventTitle,
+              ),
             );
           },
         ),
@@ -619,8 +620,12 @@ class _LoadingList extends StatelessWidget {
 }
 
 class _ErrorList extends StatelessWidget {
+  final String message;
   final VoidCallback onRetry;
-  const _ErrorList({required this.onRetry});
+  const _ErrorList({
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -650,7 +655,7 @@ class _ErrorList extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  context.l10n.eventCheckConnectionRetry,
+                  message,
                   style: const TextStyle(
                     fontSize: 13,
                     color: HbColors.grey500,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../providers/gamification_provider.dart';
 import '../../data/models/hibon_transaction.dart';
 import '../widgets/hibon_counter_widget.dart';
@@ -261,8 +262,11 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
                     },
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
-                    error: (e, s) =>
-                        Text(context.l10n.gamificationErrorWithMessage('$e')),
+                    error: (e, s) => Text(
+                      context.l10n.gamificationErrorWithMessage(
+                        ApiResponseHandler.extractError(e),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -367,8 +371,15 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l10n.gamificationErrorWithMessage('$e'))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              context.l10n.gamificationErrorWithMessage(
+                ApiResponseHandler.extractError(e),
+              ),
+            ),
+          ),
+        );
       }
     }
   }

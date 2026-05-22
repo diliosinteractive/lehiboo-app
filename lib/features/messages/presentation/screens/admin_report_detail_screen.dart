@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 
 import '../../domain/entities/conversation_report.dart';
 import '../../data/repositories/messages_repository_impl.dart';
@@ -184,7 +185,7 @@ class _AdminReportDetailScreenState
         error: (e, _) {
           final message = e is _ReportNotFoundException
               ? context.l10n.messagesAdminReportNotFound
-              : '$e';
+              : ApiResponseHandler.extractError(e);
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -563,7 +564,9 @@ class _AdminReportDetailScreenState
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l10n.messagesLoadError(e.toString())),
+            content: Text(context.l10n.messagesLoadError(
+              ApiResponseHandler.extractError(e),
+            )),
             backgroundColor: Colors.red));
       }
     }
@@ -616,7 +619,9 @@ class _AdminReportDetailScreenState
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l10n.messagesLoadError(e.toString())),
+            content: Text(context.l10n.messagesLoadError(
+              ApiResponseHandler.extractError(e),
+            )),
             backgroundColor: Colors.red));
       }
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import '../../domain/entities/broadcast.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../providers/vendor_broadcasts_provider.dart';
@@ -110,7 +111,7 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _previewError = e.toString();
+        _previewError = ApiResponseHandler.extractError(e);
         _loadingPreview = false;
       });
     }
@@ -139,7 +140,9 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
       setState(() => _sending = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.l10n.messagesLoadError(e.toString())),
+          content: Text(
+            context.l10n.messagesLoadError(ApiResponseHandler.extractError(e)),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -376,7 +379,10 @@ class _RecipientsStep extends ConsumerWidget {
               loading: true,
               onTap: null,
             ),
-            error: (e, _) => Text(context.l10n.messagesLoadError(e.toString()),
+            error: (e, _) => Text(
+                context.l10n.messagesLoadError(
+                  ApiResponseHandler.extractError(e),
+                ),
                 style: const TextStyle(color: Colors.red)),
             data: (events) => _SelectorField(
               label: selectedEvent?.title ??
@@ -406,7 +412,9 @@ class _RecipientsStep extends ConsumerWidget {
                     onTap: null,
                   ),
                   error: (e, _) => Text(
-                      context.l10n.messagesLoadError(e.toString()),
+                      context.l10n.messagesLoadError(
+                        ApiResponseHandler.extractError(e),
+                      ),
                       style: const TextStyle(color: Colors.red)),
                   data: (slots) => _SlotSelector(
                     slots: slots,

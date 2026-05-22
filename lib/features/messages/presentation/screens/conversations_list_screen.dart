@@ -16,6 +16,7 @@ import '../widgets/report_conversation_sheet.dart';
 import '../../domain/entities/conversation.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
@@ -103,7 +104,10 @@ Widget _buildConversationList<N extends StateNotifier<S>, S>({
         children: [
           const Icon(Icons.error_outline, color: Colors.red, size: 40),
           const SizedBox(height: 8),
-          Text(context.l10n.messagesLoadError('$e'),
+          Text(
+              context.l10n.messagesLoadError(
+                ApiResponseHandler.extractError(e),
+              ),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.red)),
           const SizedBox(height: 16),
@@ -602,7 +606,10 @@ class _VendorBroadcastsTab extends ConsumerWidget {
                     const Icon(Icons.error_outline,
                         color: Colors.red, size: 40),
                     const SizedBox(height: 8),
-                    Text(context.l10n.messagesLoadError('$e'),
+                    Text(
+                        context.l10n.messagesLoadError(
+                          ApiResponseHandler.extractError(e),
+                        ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 16),
@@ -959,7 +966,10 @@ class _AdminReportsTab extends ConsumerWidget {
                     const Icon(Icons.error_outline,
                         color: Colors.red, size: 40),
                     const SizedBox(height: 8),
-                    Text(context.l10n.messagesLoadError('$e'),
+                    Text(
+                        context.l10n.messagesLoadError(
+                          ApiResponseHandler.extractError(e),
+                        ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 16),

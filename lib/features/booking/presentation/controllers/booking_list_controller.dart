@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
@@ -235,7 +236,7 @@ class BookingListController extends StateNotifier<BookingsListState> {
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
-        error: e.toString(),
+        error: ApiResponseHandler.extractError(e),
       );
     }
   }

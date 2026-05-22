@@ -5,6 +5,7 @@ import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart';
@@ -436,7 +437,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                               children: [
                                 Text(
                                   context.l10n.eventEndOfList,
-                                  style: TextStyle(color: Colors.grey),
+                                  style: const TextStyle(color: Colors.grey),
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
@@ -515,7 +516,9 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                       CircularProgressIndicator(color: HbColors.brandPrimary),
                 );
               },
-              error: (error, stack) => _buildErrorState(error.toString()),
+              error: (error, stack) => _buildErrorState(
+                ApiResponseHandler.extractError(error),
+              ),
             ),
           ),
         ],
@@ -531,7 +534,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
       featureName: context.l10n.guestFeatureSaveSearch,
     );
     if (!allowed) return;
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     final filter = ref.read(eventFilterProvider);
     final alertsNotifier = ref.read(alertsProvider.notifier);
@@ -552,22 +555,20 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
       enableEmail: result.enableEmail,
     );
 
-    if (mounted) {
-      final hasNotifications = result.enablePush || result.enableEmail;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(hasNotifications
-              ? context.l10n.searchSavedAlertCreated(result.name)
-              : context.l10n.searchSavedSearchCreated(result.name)),
-          backgroundColor: HbColors.accentBlue,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
+    if (!context.mounted) return;
+    final hasNotifications = result.enablePush || result.enableEmail;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(hasNotifications
+            ? context.l10n.searchSavedAlertCreated(result.name)
+            : context.l10n.searchSavedSearchCreated(result.name)),
+        backgroundColor: HbColors.accentBlue,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Widget _buildEmptyState(EventFilter filter) {
@@ -593,7 +594,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
           const SizedBox(height: 24),
           Text(
             context.l10n.eventNoEventsTitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: HbColors.textSlate,
@@ -645,7 +646,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
           const SizedBox(height: 16),
           Text(
             context.l10n.eventGenericErrorTitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textSlate,

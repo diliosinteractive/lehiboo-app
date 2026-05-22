@@ -99,8 +99,13 @@ ConversationOrganization _orgFromJson(Map<String, dynamic> json) {
 
 class NewConversationForm extends ConsumerStatefulWidget {
   final NewConversationContext conversationContext;
+  final BuildContext navigationContext;
 
-  const NewConversationForm({super.key, required this.conversationContext});
+  const NewConversationForm({
+    super.key,
+    required this.conversationContext,
+    required this.navigationContext,
+  });
 
   /// Present as a modal bottom sheet from any BuildContext.
   /// Returns true if a conversation was successfully created, null if cancelled.
@@ -124,7 +129,10 @@ class NewConversationForm extends ConsumerStatefulWidget {
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(ctx).bottom,
         ),
-        child: NewConversationForm(conversationContext: conversationContext),
+        child: NewConversationForm(
+          conversationContext: conversationContext,
+          navigationContext: context,
+        ),
       ),
     );
   }
@@ -513,15 +521,17 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
           ref.read(vendorSupportProvider.notifier).refresh();
       }
       Navigator.of(context).pop(true);
+      final navigationContext = widget.navigationContext;
+      if (!navigationContext.mounted) return;
       // Use pushReplacement for contexts that are opened from a dedicated
       // "new conversation" screen (/messages/new, /messages/support/new,
       // /messages/new/from-organizer/…) so pressing back skips the spinner.
       if (ctx is SupportConversationContext ||
           ctx is DashboardConversationContext ||
           ctx is FromOrganizerConversationContext) {
-        context.pushReplacement(route);
+        navigationContext.pushReplacement(route);
       } else {
-        context.push(route);
+        navigationContext.push(route);
       }
     } catch (e) {
       if (mounted) {

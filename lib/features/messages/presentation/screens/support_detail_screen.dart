@@ -136,7 +136,20 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
 
     return Scaffold(
       body: state.conversation.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Column(
+          children: [
+            AppBar(
+              leading: BackButton(
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/messages'),
+              ),
+              title: Text(context.l10n.messagesTabSupportLeHiboo),
+            ),
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          ],
+        ),
         error: (e, _) => Column(
           children: [
             AppBar(

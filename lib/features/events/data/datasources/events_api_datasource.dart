@@ -482,12 +482,12 @@ class EventsApiDataSource {
       return City(
         id: dto.name,
         name: dto.name,
-        slug: dto.name.toLowerCase().replaceAll(' ', '-'),
+        slug: dto.slug,
         lat: dto.lat,
         lng: dto.lng,
         region: dto.region,
         eventCount: dto.eventCount,
-        imageUrl: dto.imageUrl,
+        imageUrl: dto.imageUrl ?? dto.thumbnailUrl,
       );
     }).toList();
   }

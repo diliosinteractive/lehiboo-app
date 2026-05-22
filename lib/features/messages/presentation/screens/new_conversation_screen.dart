@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 
 import '../../data/repositories/messages_repository_impl.dart';
 import '../providers/conversations_provider.dart';
@@ -78,7 +79,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString();
+        _errorMessage = ApiResponseHandler.extractError(e);
       });
     }
   }

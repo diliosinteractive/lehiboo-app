@@ -23,6 +23,7 @@ class LoginOtpResult {
   final String? userId;
   final String? email;
   final String? message;
+
   /// When requiresOtp is false and authResult is not null, the user is authenticated
   final AuthResult? authResult;
 
@@ -42,6 +43,7 @@ abstract class AuthRepository {
     required String password,
     required String firstName,
     required String lastName,
+    required String birthDate,
   });
 
   /// Verify OTP and complete registration
@@ -203,8 +205,10 @@ class OtpVerificationResult {
   final bool success;
   final bool verified;
   final String message;
+
   /// Token received after successful OTP verification (for registration)
   final String? verifiedEmailToken;
+
   /// Token expiration time in minutes
   final int? tokenExpiresInMinutes;
 

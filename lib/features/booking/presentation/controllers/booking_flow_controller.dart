@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/analytics/analytics_event.dart';
 import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/analytics/analytics_service.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
@@ -241,7 +242,10 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
       // Booking signal changed — drop the personalized feed (spec §7).
       _ref?.invalidate(personalizedFeedProvider);
     } catch (e) {
-      state = state.copyWith(isSubmitting: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: ApiResponseHandler.extractError(e),
+      );
       _analytics?.logEvent(
         AnalyticsEvent.bookingFailed,
         params: {

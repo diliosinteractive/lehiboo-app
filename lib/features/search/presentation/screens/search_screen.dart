@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
@@ -24,6 +25,7 @@ class SearchScreen extends ConsumerStatefulWidget {
   final String? dateFilter;
   final EventFilter? initialFilter;
   final bool autoOpenFilter;
+  final bool searchBarOpensFilters;
 
   const SearchScreen({
     super.key,
@@ -32,6 +34,7 @@ class SearchScreen extends ConsumerStatefulWidget {
     this.dateFilter,
     this.initialFilter,
     this.autoOpenFilter = false,
+    this.searchBarOpensFilters = false,
   });
 
   @override
@@ -324,10 +327,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                       const SizedBox(height: 8),
                       // Compact Search Bar
-                      // - onTap: ouvre Airbnb-style (3 panneaux)
-                      // - onFilterTap: ouvre bottom sheet avec TOUTES les options détaillées
                       AirbnbSearchBar(
-                        onTap: _showSearchBottomSheet,
+                        onTap: widget.searchBarOpensFilters
+                            ? () => showFilterBottomSheet(context)
+                            : _showSearchBottomSheet,
                         onFilterTap: () => showFilterBottomSheet(context),
                       ),
                       const SizedBox(height: 12),
@@ -418,7 +421,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       const Icon(Icons.error_outline,
                           size: 48, color: Colors.red),
                       const SizedBox(height: 16),
-                      Text(context.l10n.homeErrorWithMessage(error.toString())),
+                      Text(
+                        context.l10n.homeErrorWithMessage(
+                          ApiResponseHandler.extractError(error),
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () => ref.refresh(filteredEventsProvider),
