@@ -269,14 +269,18 @@ class PracticalInfoActions {
     required double lat,
     required double lng,
     String? label,
+    String? destinationLabel,
   }) {
     return PracticalInfoAction(
       icon: Icons.directions_car,
       label: label ?? context.l10n.eventDrivingDirections,
       isPrimary: true,
       onTap: () async {
-        final url = Uri.parse(
-          'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+        final url = _directionsUrl(
+          lat: lat,
+          lng: lng,
+          travelMode: 'driving',
+          destinationLabel: destinationLabel,
         );
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -289,13 +293,17 @@ class PracticalInfoActions {
     required BuildContext context,
     required double lat,
     required double lng,
+    String? destinationLabel,
   }) {
     return PracticalInfoAction(
       icon: Icons.directions_walk,
       label: context.l10n.eventWalkingDirections,
       onTap: () async {
-        final url = Uri.parse(
-          'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=walking',
+        final url = _directionsUrl(
+          lat: lat,
+          lng: lng,
+          travelMode: 'walking',
+          destinationLabel: destinationLabel,
         );
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -308,19 +316,50 @@ class PracticalInfoActions {
     required BuildContext context,
     required double lat,
     required double lng,
+    String? destinationLabel,
   }) {
     return PracticalInfoAction(
       icon: Icons.directions_transit,
       label: context.l10n.eventPublicTransportDirections,
       onTap: () async {
-        final url = Uri.parse(
-          'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=transit',
+        final url = _directionsUrl(
+          lat: lat,
+          lng: lng,
+          travelMode: 'transit',
+          destinationLabel: destinationLabel,
         );
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }
       },
     );
+  }
+
+  static Uri _directionsUrl({
+    required double lat,
+    required double lng,
+    required String travelMode,
+    String? destinationLabel,
+  }) {
+    return Uri.https(
+      'www.google.com',
+      '/maps/dir/',
+      {
+        'api': '1',
+        'destination': _mapsDestination(destinationLabel, lat, lng),
+        'travelmode': travelMode,
+      },
+    );
+  }
+
+  static String _mapsDestination(
+      String? destinationLabel, double lat, double lng) {
+    final trimmed = destinationLabel?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      return trimmed;
+    }
+
+    return '$lat,$lng';
   }
 
   static PracticalInfoAction copyAddress({

@@ -231,6 +231,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
     final lat = widget.event.latitude;
     final lng = widget.event.longitude;
     final address = _buildFullAddress();
+    final mapsDestination = _buildMapsDestination();
 
     PracticalInfoSheet.show(
       context,
@@ -240,16 +241,23 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       color: HbColors.brandPrimary,
       actions: [
         if (lat != null && lng != null) ...[
-          PracticalInfoActions.googleMaps(context: context, lat: lat, lng: lng),
+          PracticalInfoActions.googleMaps(
+            context: context,
+            lat: lat,
+            lng: lng,
+            destinationLabel: mapsDestination,
+          ),
           PracticalInfoActions.walkingDirections(
             context: context,
             lat: lat,
             lng: lng,
+            destinationLabel: mapsDestination,
           ),
           PracticalInfoActions.publicTransport(
             context: context,
             lat: lat,
             lng: lng,
+            destinationLabel: mapsDestination,
           ),
         ],
         if (address.isNotEmpty)
@@ -264,6 +272,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
 
     final lat = widget.event.latitude;
     final lng = widget.event.longitude;
+    final mapsDestination = _buildMapsDestination();
 
     PracticalInfoSheet.show(
       context,
@@ -279,6 +288,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
                 lat: lat,
                 lng: lng,
                 label: context.l10n.eventParkingDirections,
+                destinationLabel: mapsDestination,
               ),
             ]
           : null,
@@ -291,6 +301,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
 
     final lat = widget.event.latitude;
     final lng = widget.event.longitude;
+    final mapsDestination = _buildMapsDestination();
 
     PracticalInfoSheet.show(
       context,
@@ -305,6 +316,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
                 context: context,
                 lat: lat,
                 lng: lng,
+                destinationLabel: mapsDestination,
               ),
             ]
           : null,
@@ -370,6 +382,22 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       parts.add(widget.event.city!);
     }
     return parts.join(', ');
+  }
+
+  String _buildMapsDestination() {
+    final parts = <String>[];
+    _addMapsDestinationPart(parts, widget.event.venue);
+    _addMapsDestinationPart(parts, _buildFullAddress());
+    _addMapsDestinationPart(parts, widget.event.country);
+    return parts.join(', ');
+  }
+
+  void _addMapsDestinationPart(List<String> parts, String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return;
+    final lowerParts = parts.map((part) => part.toLowerCase());
+    if (lowerParts.contains(trimmed.toLowerCase())) return;
+    parts.add(trimmed);
   }
 }
 
