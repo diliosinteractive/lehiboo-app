@@ -1059,7 +1059,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         _isLoading = false;
         // TODO(debug): RETIRER avant prod — affichage de l'erreur brute au lieu
         // du message générique pour diagnostiquer l'échec de paiement TestFlight.
-        // Restaurer: _errorMessage = ApiResponseHandler.extractError(e);
+        // Restaurer: _errorMessage = ApiResponseHandler.extractError(e) ?? context.l10n.bookingPaymentFailed;
         _errorMessage = '[DEBUG $checkoutStep] $e';
       });
     }
