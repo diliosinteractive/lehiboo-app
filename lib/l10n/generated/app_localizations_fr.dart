@@ -3380,7 +3380,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authCityOptionalLabel => 'Ville (optionnel)';
 
   @override
-  String get authCityHint => 'Lyon, Paris...';
+  String get authCityHint => 'Ville où vous habitez';
 
   @override
   String get authMarketingOptIn =>

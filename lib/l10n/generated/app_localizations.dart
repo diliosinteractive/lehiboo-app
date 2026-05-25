@@ -5796,7 +5796,7 @@ abstract class AppLocalizations {
   /// No description provided for @authCityHint.
   ///
   /// In fr, this message translates to:
-  /// **'Lyon, Paris...'**
+  /// **'Ville où vous habitez'**
   String get authCityHint;
 
   /// No description provided for @authMarketingOptIn.
