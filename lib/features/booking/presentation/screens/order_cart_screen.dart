@@ -966,18 +966,16 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         );
 
         await Future<void>.delayed(const Duration(milliseconds: 500));
+        await WidgetsBinding.instance.endOfFrame;
 
         checkoutStep = 'present_payment_sheet';
-        final presentCompleter = Completer<void>();
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          try {
-            await Stripe.instance.presentPaymentSheet();
-            presentCompleter.complete();
-          } catch (e) {
-            presentCompleter.completeError(e);
-          }
-        });
-        await presentCompleter.future;
+        if (!mounted) {
+          throw StateError(
+            'Payment screen closed before Stripe sheet presentation.',
+          );
+        }
+
+        await Stripe.instance.presentPaymentSheet();
 
         shouldCancelOrderOnError = false;
         checkoutStep = 'confirm_order';

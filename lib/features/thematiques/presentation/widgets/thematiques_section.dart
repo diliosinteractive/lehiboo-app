@@ -38,7 +38,6 @@ class ThematiquesSection extends ConsumerWidget {
                   Expanded(
                     child: HomeSectionTitle(
                       title: context.l10n.thematiquesExploreByTypeTitle,
-                      fontSize: 19,
                       color: const Color(0xFF2D3748),
                     ),
                   ),

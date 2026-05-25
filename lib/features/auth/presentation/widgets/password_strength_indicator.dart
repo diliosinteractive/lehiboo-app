@@ -83,8 +83,8 @@ class PasswordStrengthIndicator extends StatelessWidget {
           ],
         ),
 
-        // Requirements list
-        if (showRequirements && password.isNotEmpty) ...[
+        // Requirements list — always visible so users see expectations upfront
+        if (showRequirements) ...[
           const SizedBox(height: 12),
           ...requirements.map((req) => _buildRequirement(req)),
         ],

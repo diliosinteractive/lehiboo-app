@@ -3362,7 +3362,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authCityOptionalLabel => 'City (optional)';
 
   @override
-  String get authCityHint => 'London, Paris...';
+  String get authCityHint => 'City where you live';
 
   @override
   String get authMarketingOptIn =>

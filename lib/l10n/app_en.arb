@@ -1604,7 +1604,7 @@
   "authBirthDateHelp": "Date of birth",
   "authDateHint": "MM/DD/YYYY",
   "authCityOptionalLabel": "City (optional)",
-  "authCityHint": "London, Paris...",
+  "authCityHint": "City where you live",
   "authMarketingOptIn": "I want to receive Le Hiboo news and offers by email.",
   "authStepEmail": "Email",
   "authStepCode": "Code",

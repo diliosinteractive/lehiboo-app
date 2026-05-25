@@ -19,7 +19,6 @@ class MainScaffold extends ConsumerStatefulWidget {
 }
 
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
-  int _selectedIndex = 0;
   Timer? _idleCheckTimer;
 
   @override
@@ -71,10 +70,6 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Track navigation
     ref.read(petitBooEngagementProvider.notifier).onNavigation();
 
-    setState(() {
-      _selectedIndex = index;
-    });
-
     switch (index) {
       case 0:
         context.go('/');
@@ -96,19 +91,25 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Track navigation
     ref.read(petitBooEngagementProvider.notifier).onNavigation();
 
-    setState(() {
-      _selectedIndex = 3;
-    });
-
     if (mounted) {
       context.go('/my-bookings');
     }
+  }
+
+  // Source of truth for the highlighted tab is the current route, so back
+  // navigation, deeplinks and programmatic context.go all stay in sync.
+  int _indexForLocation(String path) {
+    if (path.startsWith('/explore')) return 1;
+    if (path.startsWith('/my-bookings')) return 3;
+    return 0;
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final selectedIndex =
+        _indexForLocation(GoRouterState.of(context).uri.path);
 
     return Scaffold(
       body: widget.child,
@@ -127,17 +128,20 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 16.0),
-              child: _buildNavItem(Icons.home_rounded, l10n.navHome, 0),
+              child:
+                  _buildNavItem(Icons.home_rounded, l10n.navHome, 0, selectedIndex),
             ),
-            _buildNavItem(Icons.explore_outlined, l10n.navExplore, 1),
+            _buildNavItem(
+                Icons.explore_outlined, l10n.navExplore, 1, selectedIndex),
             const SizedBox(width: 64), // Space for FAB
-            _buildNavItem(Icons.map_outlined, l10n.navMap, 2),
+            _buildNavItem(Icons.map_outlined, l10n.navMap, 2, selectedIndex),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: _buildNavItem(
                 Icons.confirmation_number_outlined,
                 l10n.navBookings,
                 3,
+                selectedIndex,
               ),
             ),
           ],
@@ -146,8 +150,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    final isActive = _selectedIndex == index;
+  Widget _buildNavItem(
+      IconData icon, String label, int index, int selectedIndex) {
+    final isActive = selectedIndex == index;
 
     return InkWell(
       onTap: () => _onItemTapped(index),

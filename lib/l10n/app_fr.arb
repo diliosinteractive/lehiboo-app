@@ -1663,7 +1663,7 @@
   "authBirthDateHelp": "Date de naissance",
   "authDateHint": "JJ/MM/AAAA",
   "authCityOptionalLabel": "Ville (optionnel)",
-  "authCityHint": "Lyon, Paris...",
+  "authCityHint": "Ville où vous habitez",
   "authMarketingOptIn": "Je souhaite recevoir les actualités et offres du Hiboo par e-mail.",
   "authStepEmail": "Email",
   "authStepCode": "Code",
