@@ -1137,7 +1137,6 @@ class UrgencySection extends ConsumerWidget {
               child: HomeSectionTitle(
                 title: context.l10n.homeUrgencyTitle,
                 subtitle: context.l10n.homeUrgencySubtitle,
-                fontSize: 17,
               ),
             ),
 

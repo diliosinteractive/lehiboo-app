@@ -7,7 +7,7 @@ class HomeSectionTitle extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
-    this.fontSize = 20,
+    this.fontSize = 18,
     this.fontWeight = FontWeight.bold,
     this.color = HbColors.textSlate,
     this.iconSize = 20,
