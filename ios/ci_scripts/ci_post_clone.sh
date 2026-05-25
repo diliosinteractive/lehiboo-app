@@ -153,11 +153,12 @@ PUSHER_HOST=${PUSHER_HOST}
 PUSHER_PORT=${PUSHER_PORT}
 PUSHER_USE_TLS=${PUSHER_USE_TLS}
 PUSHER_AUTH_ENDPOINT=${PUSHER_AUTH_ENDPOINT}
+STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
 EOF
 
 # Validate that critical secrets were actually provided by the workflow
 missing=""
-for var in API_KEY GOOGLE_MAPS_API_KEY ONESIGNAL_APP_ID PUSHER_APP_KEY; do
+for var in API_KEY GOOGLE_MAPS_API_KEY ONESIGNAL_APP_ID PUSHER_APP_KEY STRIPE_PUBLISHABLE_KEY; do
     eval value=\$$var
     [ -z "$value" ] && missing="$missing $var"
 done
