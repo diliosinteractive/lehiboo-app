@@ -7,8 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/services/crash_reporter.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
+// TODO(debug): import conservé pour le restore du message générique — voir
+// TODO(debug) dans _submitOrder(). À nettoyer en même temps que ce dernier.
+// ignore: unused_import
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
@@ -923,6 +927,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
     final dataSource = ref.read(bookingApiDataSourceProvider);
     var shouldCancelOrderOnError = false;
+    // Suit l'étape en cours pour que Crashlytics indique précisément où le
+    // checkout a cassé (création commande / paiement / confirmation).
+    var checkoutStep = 'create_order';
 
     try {
       final order = await dataSource.createOrder(
@@ -946,9 +953,11 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
       if (order.totalAmount > 0) {
         shouldCancelOrderOnError = true;
+        checkoutStep = 'payment_intent';
         final paymentIntent =
             await dataSource.getOrderPaymentIntent(orderUuid: order.uuid);
 
+        checkoutStep = 'init_payment_sheet';
         await Stripe.instance.initPaymentSheet(
           paymentSheetParameters: SetupPaymentSheetParameters(
             paymentIntentClientSecret: paymentIntent.clientSecret,
@@ -959,6 +968,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         await Future<void>.delayed(const Duration(milliseconds: 500));
         await WidgetsBinding.instance.endOfFrame;
 
+        checkoutStep = 'present_payment_sheet';
         if (!mounted) {
           throw StateError(
             'Payment screen closed before Stripe sheet presentation.',
@@ -968,6 +978,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         await Stripe.instance.presentPaymentSheet();
 
         shouldCancelOrderOnError = false;
+        checkoutStep = 'confirm_order';
         confirmedOrder = await dataSource.confirmOrder(
           orderUuid: order.uuid,
           paymentIntentId: paymentIntent.paymentIntentId,
@@ -994,24 +1005,62 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
           'order': confirmedOrder,
         });
       }
-    } on StripeException catch (e) {
+    } on StripeException catch (e, stack) {
       await _cancelActiveOrderIfNeeded(dataSource);
+
+      // L'annulation par l'utilisateur (fermeture de la payment sheet) est
+      // attendue — inutile de polluer Crashlytics. Tout le reste (carte
+      // refusée, échec de config Stripe, etc.) est remonté.
+      if (e.error.code != FailureCode.Canceled) {
+        await CrashReporter.recordError(
+          e,
+          stack,
+          reason: 'Stripe payment failed',
+          context: {
+            'step': checkoutStep,
+            'order_uuid': _activeOrderUuid,
+            'stripe_code': e.error.code.name,
+            'stripe_message': e.error.message,
+          },
+        );
+      }
 
       setState(() {
         _isLoading = false;
-        _errorMessage =
-            e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
+        // TODO(debug): RETIRER avant prod — affichage de l'erreur Stripe brute
+        // pour diagnostiquer l'échec de paiement sur TestFlight.
+        // Restaurer: _errorMessage =
+        //     e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
+        _errorMessage = '[DEBUG $checkoutStep] '
+            'Stripe(${e.error.code.name}): '
+            '${e.error.message ?? e.error.localizedMessage ?? e}';
       });
-    } catch (e) {
+    } catch (e, stack) {
       if (shouldCancelOrderOnError) {
         await _cancelActiveOrderIfNeeded(dataSource);
       } else {
         _clearReservationTimer();
       }
 
+      // C'est le catch qui produit « Une erreur est survenue. Veuillez
+      // réessayer. » — on remonte l'exception réelle + l'étape pour pouvoir
+      // diagnostiquer (notamment les échecs TestFlight).
+      await CrashReporter.recordError(
+        e,
+        stack,
+        reason: 'Order checkout failed',
+        context: {
+          'step': checkoutStep,
+          'order_uuid': _activeOrderUuid,
+        },
+      );
+
       setState(() {
         _isLoading = false;
-        _errorMessage = ApiResponseHandler.extractError(e);
+        // TODO(debug): RETIRER avant prod — affichage de l'erreur brute au lieu
+        // du message générique pour diagnostiquer l'échec de paiement TestFlight.
+        // Restaurer: _errorMessage = ApiResponseHandler.extractError(e);
+        _errorMessage = '[DEBUG $checkoutStep] $e';
       });
     }
   }
