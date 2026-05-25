@@ -91,10 +91,10 @@ class DeepLinkService {
       return;
     }
 
-    // Avis (review_submitted/approved/rejected) : router par type, pas par
-    // action_url (action_url est une URL web sans route mobile → ErrorScreen).
+    // Avis (participant + organisateur) : router par type, pas par action_url
+    // (action_url est une URL web sans route mobile → ErrorScreen).
     // Spec §5.2 : la route mobile dérive de data.type, jamais de data.action.
-    if (lower.startsWith('review_')) {
+    if (lower.startsWith('review_') || lower.startsWith('organizer_review_')) {
       push(routeForType(type, data) ?? _routeFromActionUrl(actionUrl) ?? '/notifications');
       return;
     }
