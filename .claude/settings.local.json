@@ -4,7 +4,11 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\HP\\\\Documents\\\\Projects\\\\lehiboo-app\" -Directory)",
       "Bash(Select-Object Name)",
       "Bash(grep -E \"\\\\.\\(dart\\)$\")",
-      "Bash(grep -B 5 -A 5 \"'/event/\\\\${event.slug}/reviews'\" lib/features/events/presentation/screens/event_detail_screen.dart)"
+      "Bash(grep -B 5 -A 5 \"'/event/\\\\${event.slug}/reviews'\" lib/features/events/presentation/screens/event_detail_screen.dart)",
+      "Bash(Get-ChildItem -Path . -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(awk '{print $9, $5}')",
+      "mcp__plugin_context7_context7__query-docs"
     ]
   }
 }

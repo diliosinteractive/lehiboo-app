@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -836,22 +834,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         );
 
-        // iOS belt-and-suspenders: settle delay + post-frame callback so
-        // the view hierarchy is stable before Stripe walks it. The real
-        // fix lives in AppDelegate.window, but these add safety against
-        // future plugins that might leave transient presented VCs.
+        // iOS belt-and-suspenders: settle delay + explicit end-of-frame wait
+        // so the view hierarchy is stable before Stripe walks it. In release,
+        // addPostFrameCallback can stall if no new frame is scheduled here.
         await Future<void>.delayed(const Duration(milliseconds: 500));
+        await WidgetsBinding.instance.endOfFrame;
 
-        final presentCompleter = Completer<void>();
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          try {
-            await Stripe.instance.presentPaymentSheet();
-            presentCompleter.complete();
-          } catch (e) {
-            presentCompleter.completeError(e);
-          }
-        });
-        await presentCompleter.future;
+        if (!mounted) {
+          throw StateError(
+            'Payment screen closed before Stripe sheet presentation.',
+          );
+        }
+
+        await Stripe.instance.presentPaymentSheet();
 
         // 4. Confirmer le brouillon après paiement réussi et récupérer le Booking.
         confirmationBooking = await bookingDataSource.confirmDraftBooking(

@@ -267,9 +267,7 @@ class _CustomerRegisterScreenState
             ? _phoneController.text.trim()
             : null,
         birthDate: formatBirthDateForApi(_birthDate!),
-        membershipCity: _membershipCityController.text.trim().isNotEmpty
-            ? _membershipCityController.text.trim()
-            : null,
+        membershipCity: _membershipCityController.text.trim(),
         acceptTerms: _acceptTerms,
         acceptMarketing: _acceptMarketing,
       );
@@ -858,6 +856,26 @@ class _CustomerRegisterScreenState
             ),
             const SizedBox(height: 16),
 
+            // Membership city
+            TextFormField(
+              controller: _membershipCityController,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
+              maxLength: 120,
+              decoration: _inputDecoration(
+                label: l10n.authCityLabel,
+                hint: l10n.authCityHint,
+                icon: Icons.location_city_outlined,
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return l10n.authRequired;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
             // Birth date picker
             GestureDetector(
               onTap: () async {
@@ -882,6 +900,7 @@ class _CustomerRegisterScreenState
                     label: l10n.authBirthDateLabel,
                     hint: l10n.authDateHint,
                     icon: Icons.cake_outlined,
+                    helperText: l10n.authBirthDateMinimumAge,
                   ),
                   controller: TextEditingController(
                     text: _birthDate != null
@@ -901,20 +920,6 @@ class _CustomerRegisterScreenState
                     return null;
                   },
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Membership city (optional)
-            TextFormField(
-              controller: _membershipCityController,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              maxLength: 120,
-              decoration: _inputDecoration(
-                label: l10n.authCityOptionalLabel,
-                hint: l10n.authCityHint,
-                icon: Icons.location_city_outlined,
               ),
             ),
             const SizedBox(height: 16),
@@ -955,7 +960,7 @@ class _CustomerRegisterScreenState
               },
             ),
             const SizedBox(height: 8),
-            CompactPasswordStrengthIndicator(
+            PasswordStrengthIndicator(
               password: _passwordController.text,
             ),
             const SizedBox(height: 16),
@@ -1183,10 +1188,12 @@ class _CustomerRegisterScreenState
     required String hint,
     IconData? icon,
     Widget? suffixIcon,
+    String? helperText,
   }) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
+      helperText: helperText,
       prefixIcon: icon != null ? Icon(icon) : null,
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(

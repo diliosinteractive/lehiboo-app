@@ -38,10 +38,12 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- App Links HTTPS — Universal Links équivalent Android. Vérifiés
-                 automatiquement à l'install via /.well-known/assetlinks.json
-                 sur lehiboo.com. Un bloc par host (autoVerify ne mélange pas
-                 plusieurs domaines dans un même filter). -->
+            <!-- App Links HTTPS — équivalent Android des Universal Links. Les 4
+                 hosts (prod + staging) sont vérifiés automatiquement à l'install
+                 via leur /.well-known/assetlinks.json respectif. Plusieurs hosts
+                 dans un même intent-filter autoVerify est valide et recommandé ici
+                 car ils partagent le même scheme (https) et pathPrefix (/events/) ;
+                 autoVerify s'applique à l'app entière, pas au filter. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
