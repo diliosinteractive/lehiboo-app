@@ -163,7 +163,7 @@ for var in API_KEY GOOGLE_MAPS_API_KEY ONESIGNAL_APP_ID PUSHER_APP_KEY STRIPE_PU
     [ -z "$value" ] && missing="$missing $var"
 done
 if [ -n "$missing" ]; then
-    echo "⚠️  Missing Xcode Cloud workflow secrets:$missing"
+    echo "⚠️ Missing Xcode Cloud workflow secrets:$missing"
     echo "    Add them in App Store Connect → Xcode Cloud → Workflow → Environment (toggle 🔒 for secrets)"
 fi
 
