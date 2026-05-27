@@ -14,6 +14,7 @@ import '../widgets/conversation_filters_bar.dart';
 import '../widgets/new_conversation_form.dart';
 import '../widgets/report_conversation_sheet.dart';
 import '../../domain/entities/conversation.dart';
+import '../../domain/entities/conversation_route.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
@@ -155,12 +156,14 @@ Widget _buildConversationList<N extends StateNotifier<S>, S>({
 Future<void> _showVendorReportSheet(
   BuildContext context,
   WidgetRef ref,
-  Conversation conv,
-) =>
+  Conversation conv, {
+  required ConversationRoute route,
+}) =>
     showConversationReportSheet(
       context,
       conversationUuid: conv.uuid,
       ref: ref,
+      route: route,
     );
 
 Widget _emptyConversations(BuildContext context, [String? label]) => Center(
@@ -560,8 +563,12 @@ class _VendorClientsTab extends ConsumerWidget {
               routeFor: (conv) => '/messages/vendor/${conv.uuid}',
               emptyWidget:
                   _emptyConversations(context, context.l10n.messagesNoClients),
-              onReportTap: (conv) =>
-                  _showVendorReportSheet(context, ref, conv as Conversation),
+              onReportTap: (conv) => _showVendorReportSheet(
+                context,
+                ref,
+                conv as Conversation,
+                route: ConversationRoute.vendor,
+              ),
             ),
           ),
         ],
@@ -715,8 +722,12 @@ class _VendorPartnersTab extends ConsumerWidget {
               routeFor: (conv) => '/messages/vendor-org/${conv.uuid}',
               emptyWidget:
                   _emptyConversations(context, context.l10n.messagesNoPartners),
-              onReportTap: (conv) =>
-                  _showVendorReportSheet(context, ref, conv as Conversation),
+              onReportTap: (conv) => _showVendorReportSheet(
+                context,
+                ref,
+                conv as Conversation,
+                route: ConversationRoute.vendorOrgOrg,
+              ),
             ),
           ),
         ],

@@ -1,9 +1,17 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../data/repositories/messages_repository_impl.dart';
+import '../../domain/entities/conversation_route.dart';
+import '../providers/admin_conversations_provider.dart';
+import '../providers/conversation_detail_provider.dart';
+import '../providers/conversations_provider.dart';
+import '../providers/support_conversations_provider.dart';
+import '../providers/vendor_conversations_provider.dart';
+import '../providers/vendor_org_conversations_provider.dart';
 
 const _primaryColor = Color(0xFFFF601F);
 
@@ -18,6 +26,7 @@ Future<void> showConversationReportSheet(
   BuildContext context, {
   required String conversationUuid,
   required WidgetRef ref,
+  ConversationRoute? route,
 }) async {
   String? selectedReason;
   final commentController = TextEditingController();
@@ -265,10 +274,37 @@ Future<void> showConversationReportSheet(
                                               );
                                           supportUuid =
                                               result.supportConversationUuid;
+                                          _applyReportedAcrossProviders(
+                                              ref, conversationUuid, route);
                                           setSheetState(() {
                                             isSubmitting = false;
                                             submitted = true;
                                           });
+                                        } on DioException catch (e) {
+                                          // 422 « déjà signalé » → succès UI
+                                          if (_isAlreadyReportedError(e)) {
+                                            _applyReportedAcrossProviders(
+                                                ref, conversationUuid, route);
+                                            setSheetState(() {
+                                              isSubmitting = false;
+                                              submitted = true;
+                                            });
+                                            return;
+                                          }
+                                          setSheetState(
+                                              () => isSubmitting = false);
+                                          if (ctx.mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(SnackBar(
+                                              content: Text(
+                                                ctx.l10n.messagesLoadError(
+                                                  ApiResponseHandler
+                                                      .extractError(e),
+                                                ),
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ));
+                                          }
                                         } catch (e) {
                                           setSheetState(
                                               () => isSubmitting = false);
@@ -390,4 +426,93 @@ Widget _buildSuccess({
       ],
     ),
   );
+}
+
+/// Détecte un 422 « déjà signalé » : status 422 + body sans clé `errors`
+/// non vide. Les 422 de validation renvoient toujours
+/// `errors: { reason: [...], comment: [...] }`, tandis que le doublon
+/// renvoie uniquement `message`.
+bool _isAlreadyReportedError(DioException e) {
+  if (e.response?.statusCode != 422) return false;
+  final data = e.response?.data;
+  if (data is! Map) return false;
+  final errors = data['errors'];
+  if (errors is Map && errors.isNotEmpty) return false;
+  if (errors != null && errors is! Map) return false;
+
+  final message = data['message']?.toString().toLowerCase();
+  if (message == null) return false;
+  final normalized = message
+      .replaceAll('é', 'e')
+      .replaceAll('è', 'e')
+      .replaceAll('ê', 'e')
+      .replaceAll('à', 'a');
+
+  return (normalized.contains('deja') && normalized.contains('signale')) ||
+      (normalized.contains('already') && normalized.contains('report'));
+}
+
+/// Propage `userHasReported = true` aux providers concernés.
+/// - `route` connu → met à jour la liste correspondant à ce rôle ; touche le
+///   detail-provider uniquement s'il est déjà actif (sinon on réveillerait
+///   un notifier autoDispose et déclencherait un fetch inutile).
+/// - `route` null → broadcast no-op-safe à toutes les listes possibles.
+void _applyReportedAcrossProviders(
+  WidgetRef ref,
+  String conversationUuid,
+  ConversationRoute? route,
+) {
+  switch (route) {
+    case ConversationRoute.participant:
+      ref.read(conversationsProvider.notifier).applyReported(conversationUuid);
+    case ConversationRoute.participantSupport:
+      ref
+          .read(supportConversationsProvider.notifier)
+          .applyReported(conversationUuid);
+    case ConversationRoute.vendor:
+      ref
+          .read(vendorConversationsProvider.notifier)
+          .applyReported(conversationUuid);
+      ref.read(vendorSupportProvider.notifier).applyReported(conversationUuid);
+    case ConversationRoute.vendorOrgOrg:
+      ref
+          .read(vendorOrgConversationsProvider.notifier)
+          .applyReported(conversationUuid);
+    case ConversationRoute.admin:
+    case ConversationRoute.adminReadonly:
+      ref
+          .read(adminConversationsProvider('user_support').notifier)
+          .applyReported(conversationUuid);
+      ref
+          .read(adminConversationsProvider('vendor_admin').notifier)
+          .applyReported(conversationUuid);
+    case null:
+      ref.read(conversationsProvider.notifier).applyReported(conversationUuid);
+      ref
+          .read(supportConversationsProvider.notifier)
+          .applyReported(conversationUuid);
+      ref
+          .read(vendorConversationsProvider.notifier)
+          .applyReported(conversationUuid);
+      ref.read(vendorSupportProvider.notifier).applyReported(conversationUuid);
+      ref
+          .read(vendorOrgConversationsProvider.notifier)
+          .applyReported(conversationUuid);
+      ref
+          .read(adminConversationsProvider('user_support').notifier)
+          .applyReported(conversationUuid);
+      ref
+          .read(adminConversationsProvider('vendor_admin').notifier)
+          .applyReported(conversationUuid);
+  }
+
+  // Detail provider : update uniquement si déjà actif (écran détail ouvert).
+  if (route != null) {
+    final detailKey = (uuid: conversationUuid, route: route);
+    if (ref.exists(conversationDetailProvider(detailKey))) {
+      ref
+          .read(conversationDetailProvider(detailKey).notifier)
+          .applyReportedLocally();
+    }
+  }
 }

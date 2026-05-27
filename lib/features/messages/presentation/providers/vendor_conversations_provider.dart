@@ -295,6 +295,16 @@ class VendorConversationsNotifier
     state = state.copyWith(conversations: AsyncValue.data(updated));
   }
 
+  void applyReported(String uuid) {
+    final current = state.conversations.valueOrNull;
+    if (current == null) return;
+    final idx = current.indexWhere((c) => c.uuid == uuid);
+    if (idx == -1 || current[idx].userHasReported) return;
+    final updated = [...current];
+    updated[idx] = current[idx].copyWith(userHasReported: true);
+    state = state.copyWith(conversations: AsyncValue.data(updated));
+  }
+
   void setStatusFilter(String? status) {
     state = state.copyWith(
       statusFilter: status,
@@ -549,6 +559,16 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
     if (idx == -1 || current[idx].unreadCount == 0) return;
     final updated = [...current];
     updated[idx] = current[idx].copyWith(unreadCount: 0);
+    state = state.copyWith(conversations: AsyncValue.data(updated));
+  }
+
+  void applyReported(String uuid) {
+    final current = state.conversations.valueOrNull;
+    if (current == null) return;
+    final idx = current.indexWhere((c) => c.uuid == uuid);
+    if (idx == -1 || current[idx].userHasReported) return;
+    final updated = [...current];
+    updated[idx] = current[idx].copyWith(userHasReported: true);
     state = state.copyWith(conversations: AsyncValue.data(updated));
   }
 

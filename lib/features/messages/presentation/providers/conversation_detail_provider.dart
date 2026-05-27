@@ -544,6 +544,19 @@ class ConversationDetailNotifier
     );
   }
 
+  /// Marque la conversation signalée localement, sans refetch serveur.
+  /// À appeler après un POST report en succès (201) OU un 422 « déjà signalé ».
+  /// La propagation aux providers liste est faite par le caller (sheet),
+  /// pour éviter de réveiller des notifiers autoDispose inactifs.
+  void applyReportedLocally() {
+    final conv = state.conversation.valueOrNull;
+    if (conv == null) return;
+    if (conv.userHasReported) return;
+    state = state.copyWith(
+      conversation: AsyncValue.data(conv.copyWith(userHasReported: true)),
+    );
+  }
+
   void clearSendError() {
     state = state.copyWith(clearSendError: true);
   }

@@ -431,6 +431,7 @@ class _ConversationDetailScreenState
         context,
         conversationUuid: widget.conversationUuid,
         ref: ref,
+        route: widget.route,
       );
     }
   }
