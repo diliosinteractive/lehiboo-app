@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
@@ -22,7 +23,7 @@ class HomeSearchPill extends ConsumerWidget {
     final whatText = _getWhatText(context, filter);
 
     return GestureDetector(
-      onTap: () => AirbnbSearchSheet.show(context),
+      onTap: () => context.go('/explore?openFilter=true'),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

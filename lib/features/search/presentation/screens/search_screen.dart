@@ -86,9 +86,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         filterNotifier.resetSortToDefault(persist: false);
       }
 
-      // Auto open filter bottom sheet if requested
+      // Auto open filter bottom sheet if requested. Mirror the in-page
+      // search bar's branch so /explore?openFilter=true opens the refinement
+      // FilterBottomSheet, while /search?openFilter=true keeps opening the
+      // AirbnbSearchSheet composer.
       if (widget.autoOpenFilter) {
-        _showSearchBottomSheet();
+        if (widget.searchBarOpensFilters) {
+          showFilterBottomSheet(context);
+        } else {
+          _showSearchBottomSheet();
+        }
       }
     });
   }
