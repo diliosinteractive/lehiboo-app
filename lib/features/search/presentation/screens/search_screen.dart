@@ -82,6 +82,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             filterNotifier.setDateFilter(DateFilterType.thisWeekend);
             break;
         }
+      } else if (widget.searchBarOpensFilters) {
+        filterNotifier.resetSortToDefault(persist: false);
       }
 
       // Auto open filter bottom sheet if requested

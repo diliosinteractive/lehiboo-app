@@ -140,9 +140,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       'accessiblePMR': filter.accessiblePMR,
       'onlineOnly': filter.onlineOnly,
       'inPersonOnly': filter.inPersonOnly,
-      'sortBy': filter.sortBy.name,
-      'hasExplicitSort': filter.hasExplicitSort,
-      // Don't persist: search query, dates, location (temporary filters)
+      // Don't persist: search query, dates, location, sort (temporary filters)
     };
   }
 
@@ -180,9 +178,6 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       accessiblePMR: json['accessiblePMR'] as bool? ?? false,
       onlineOnly: json['onlineOnly'] as bool? ?? false,
       inPersonOnly: json['inPersonOnly'] as bool? ?? false,
-      sortBy:
-          _enumByName(SortOption.values, json['sortBy']) ?? SortOption.dateAsc,
-      hasExplicitSort: json['hasExplicitSort'] as bool? ?? false,
     );
   }
 
@@ -535,6 +530,16 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
   void setSortOption(SortOption option) {
     state = state.copyWith(sortBy: option, hasExplicitSort: true);
     _persistFilters();
+  }
+
+  void resetSortToDefault({bool persist = true}) {
+    state = state.copyWith(
+      sortBy: SortOption.dateAsc,
+      hasExplicitSort: false,
+    );
+    if (persist) {
+      _persistFilters();
+    }
   }
 
   // Pagination
