@@ -79,7 +79,8 @@ _$ConversationDtoImpl _$$ConversationDtoImplFromJson(
       lastMessageAt: json['last_message_at'] as String?,
       unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
       isSignalement: json['is_signalement'] as bool? ?? false,
-      userHasReported: json['user_has_reported'] as bool? ?? false,
+      userHasReported:
+          _readUserHasReported(json, 'user_has_reported') as bool? ?? false,
       organization: json['organization'] == null
           ? null
           : ConversationOrganizationDto.fromJson(
