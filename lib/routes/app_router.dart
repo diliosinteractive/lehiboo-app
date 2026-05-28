@@ -249,14 +249,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final categorySlug = state.uri.queryParameters['categorySlug'];
               final city = state.uri.queryParameters['city'];
-              final initialFilter = state.uri.queryParameters.isEmpty
+              final openFilter =
+                  state.uri.queryParameters['openFilter'] == 'true';
+              final filterParams =
+                  Map<String, String>.from(state.uri.queryParameters)
+                    ..remove('openFilter');
+              final initialFilter = filterParams.isEmpty
                   ? null
-                  : eventFilterFromQueryParams(state.uri.queryParameters);
+                  : eventFilterFromQueryParams(filterParams);
               return SearchScreen(
                 categorySlug: categorySlug,
                 city: city,
                 initialFilter: initialFilter,
                 searchBarOpensFilters: true,
+                autoOpenFilter: openFilter,
               );
             },
           ),

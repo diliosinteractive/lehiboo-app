@@ -80,6 +80,8 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                           fontWeight: FontWeight.w600,
                           color: HbColors.textDark,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -92,6 +94,8 @@ class _AirbnbSearchBarState extends ConsumerState<AirbnbSearchBar> {
                           fontSize: 12,
                           color: Colors.grey[600],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

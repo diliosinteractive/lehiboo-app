@@ -166,13 +166,16 @@ class HomeNearbyAvailableActivitiesNotifier
     double? lng,
     int? radius,
   }) async {
+    // Note: do NOT pass `availableOnly: true` — on prod, crawler-imported
+    // discovery events all have `available_capacity: 0`, which the backend
+    // treats as unavailable. We filter client-side via _isAvailableForHome
+    // so discovery events still surface here.
     final result = await eventRepository.getEvents(
       page: 1,
       perPage: _querySize,
       lat: lat,
       lng: lng,
       radius: radius,
-      availableOnly: true,
       sort: 'date_asc',
     );
 
@@ -209,7 +212,8 @@ Slot? _nearestAvailableSlot(Event event, DateTime now) {
   final slots = event.calendar?.dateSlots ?? const <CalendarDateSlot>[];
   final candidates = slots
       .map((slot) => _activitySlotFromCalendarSlot(event, slot))
-      .where((slot) => !_isSlotPast(slot, now))
+      .where((slot) =>
+          !_isSlotPast(slot, now) && _isAvailableForHome(event, slot, now))
       .toList()
     ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
@@ -235,7 +239,36 @@ Slot? _nearestAvailableSlot(Event event, DateTime now) {
     status: _eventStatusToSlotStatus(event.status),
   );
 
-  return _isSlotPast(fallback, now) ? null : fallback;
+  if (_isSlotPast(fallback, now)) return null;
+  if (!_isAvailableForHome(event, fallback, now)) return null;
+  return fallback;
+}
+
+/// Decides whether an (event, slot) pair should appear in home carousels
+/// ("Available nearby", "New activities", etc.).
+///
+/// Background: the prod catalog is dominated by crawler-imported discovery
+/// events whose slots have `capacityRemaining == 0` because the venue
+/// handles capacity externally — not because they're sold out. The backend's
+/// `available_only=1` filter treats them as unavailable, which empties the
+/// home on prod. We took over the call here so we can decide what
+/// "available" means.
+///
+/// TODO (you): implement the policy. Available fields you'll likely want:
+///   - `event.isDiscovery` (bool) — discovery events: no booking, user just shows up
+///   - `event.canAcceptDiscovery` (bool)
+///   - `event.bookingMode` — not exposed directly on Event; use isDiscovery
+///   - `slot.capacityRemaining` (int?) — null means uncapped, 0 means none left
+///   - `slot.status` — 'cancelled', 'sold_out', 'scheduled'
+///
+/// Question that shapes this: should a sold-out *bookable* event still show
+/// up in the home carousel (so users discover it for next time), or be
+/// hidden? The answer to that determines the predicate body.
+bool _isAvailableForHome(Event event, Slot slot, DateTime now) {
+  // TODO: replace this stub with the real policy (~5-10 lines).
+  // The stub below mirrors current behaviour (always true) so the app
+  // compiles — it will show every future slot including sold-out ones.
+  return true;
 }
 
 Slot _activitySlotFromCalendarSlot(Event event, CalendarDateSlot slot) {
@@ -729,10 +762,10 @@ class HomeNewActivitiesNotifier
   Future<List<Activity>> build() async {
     final eventRepository = ref.watch(eventRepositoryProvider);
     final now = DateTime.now();
+    // See _isAvailableForHome — same rationale as homeNearbyAvailableActivitiesProvider.
     final result = await eventRepository.getEvents(
       page: 1,
       perPage: _querySize,
-      availableOnly: true,
       sort: 'published_at',
       order: 'desc',
     );

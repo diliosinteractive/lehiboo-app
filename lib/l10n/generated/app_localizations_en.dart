@@ -24,6 +24,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navBookings => 'Bookings';
 
   @override
+  String get navScan => 'Scan';
+
+  @override
   String get guestFeatureBookings => 'view my bookings';
 
   @override

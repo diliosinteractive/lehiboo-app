@@ -136,45 +136,58 @@ class EventCard extends ConsumerWidget {
           ),
         ),
 
-        // Bottom-left: Category Badge.
-        if (activity.category != null)
+        // Bottom row: Category badge (left, wraps when long) and Private
+        // badge (right). Sharing a single Positioned + Row makes the row
+        // layout-aware — Flexible lets the category shrink-and-wrap instead
+        // of sliding under the private badge.
+        if (activity.category != null ||
+            activity.isMembersOnly ||
+            forcePrivateBadge)
           Positioned(
             bottom: 12,
             left: 12,
-            child: GestureDetector(
-              onTap: () => context
-                  .push('/search?categorySlug=${activity.category!.slug}'),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  context.homeActivityCategoryLabel(
-                    slug: activity.category!.slug,
-                    fallback: activity.category!.name,
-                  ),
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-        // Bottom-right: Privé badge (opposite end of the same row as the
-        // category). Render when the entity flag says members-only
-        // (authoritative for events list / search) OR when the caller
-        // forces it via section attribution (personalized feed).
-        if (activity.isMembersOnly || forcePrivateBadge)
-          const Positioned(
-            bottom: 12,
             right: 12,
-            child: _PrivateBadge(),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (activity.category != null)
+                  Flexible(
+                    child: GestureDetector(
+                      onTap: () => context.push(
+                          '/search?categorySlug=${activity.category!.slug}'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          context.homeActivityCategoryLabel(
+                            slug: activity.category!.slug,
+                            fallback: activity.category!.name,
+                          ),
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(),
+                if (activity.isMembersOnly || forcePrivateBadge)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: _PrivateBadge(),
+                  )
+                else
+                  const SizedBox.shrink(),
+              ],
+            ),
           ),
       ],
     );
