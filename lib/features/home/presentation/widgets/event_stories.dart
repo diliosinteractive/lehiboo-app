@@ -59,7 +59,7 @@ class EventStories extends ConsumerWidget {
         if (stories.isEmpty) return const SizedBox.shrink();
 
         return Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
+          padding: const EdgeInsets.only(bottom: 16.0, top: 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/checkin/presentation/providers/vendor_eligibility_provider.dart';
 import '../../features/petit_boo/presentation/providers/engagement_provider.dart';
 import '../analytics/analytics_consent.dart';
 import '../analytics/widgets/consent_gate_modal.dart';
@@ -63,7 +64,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     }
 
     if (index == 3) {
-      _navigateToBookings();
+      if (ref.read(vendorEligibilityProvider)) {
+        ref.read(petitBooEngagementProvider.notifier).onNavigation();
+        context.push('/vendor/scan');
+      } else {
+        _navigateToBookings();
+      }
       return;
     }
 
@@ -98,9 +104,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
   // Source of truth for the highlighted tab is the current route, so back
   // navigation, deeplinks and programmatic context.go all stay in sync.
-  int _indexForLocation(String path) {
+  int _indexForLocation(String path, bool canScan) {
     if (path.startsWith('/explore')) return 1;
-    if (path.startsWith('/my-bookings')) return 3;
+    if (path.startsWith('/my-bookings')) return canScan ? -1 : 3;
     return 0;
   }
 
@@ -108,8 +114,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final canScan = ref.watch(vendorEligibilityProvider);
     final selectedIndex =
-        _indexForLocation(GoRouterState.of(context).uri.path);
+        _indexForLocation(GoRouterState.of(context).uri.path, canScan);
 
     return Scaffold(
       body: widget.child,
@@ -137,12 +144,19 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
             _buildNavItem(Icons.map_outlined, l10n.navMap, 2, selectedIndex),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
-              child: _buildNavItem(
-                Icons.confirmation_number_outlined,
-                l10n.navBookings,
-                3,
-                selectedIndex,
-              ),
+              child: canScan
+                  ? _buildNavItem(
+                      Icons.qr_code_scanner_outlined,
+                      l10n.navScan,
+                      3,
+                      selectedIndex,
+                    )
+                  : _buildNavItem(
+                      Icons.confirmation_number_outlined,
+                      l10n.navBookings,
+                      3,
+                      selectedIndex,
+                    ),
             ),
           ],
         ),

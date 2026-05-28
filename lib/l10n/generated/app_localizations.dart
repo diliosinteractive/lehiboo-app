@@ -128,6 +128,12 @@ abstract class AppLocalizations {
   /// **'Réservations'**
   String get navBookings;
 
+  /// No description provided for @navScan.
+  ///
+  /// In fr, this message translates to:
+  /// **'Scanner'**
+  String get navScan;
+
   /// No description provided for @guestFeatureBookings.
   ///
   /// In fr, this message translates to:
