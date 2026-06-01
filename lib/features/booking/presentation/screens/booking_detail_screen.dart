@@ -4,13 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:lehiboo/core/analytics/analytics_event.dart';
-import 'package:lehiboo/core/analytics/analytics_provider.dart';
+// import 'package:lehiboo/core/analytics/analytics_event.dart';
+// import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
-import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
+// import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_hero_header.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/event_info_card.dart';
@@ -19,7 +19,7 @@ import 'package:lehiboo/features/booking/presentation/widgets/ticket_preview_car
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/presentation/utils/ticket_download_helper.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
-import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
+// import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -292,6 +292,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         .format(date);
   }
 
+  /*
   Future<void> _showCancelConfirmation() async {
     final reasonController = TextEditingController();
     final deadline = _booking?.cancellation?.deadlineFormatted;
@@ -434,6 +435,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       ),
     );
   }
+  */
 
   Future<void> _downloadAllTickets() async {
     if (_booking == null) return;
@@ -622,12 +624,14 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ? booking.id.substring(0, 8).toUpperCase()
         : booking.id.toUpperCase();
 
+    /*
     // Per spec §4: drive the cancel button purely from cancellation.canCancel
     // (which the backend computes from status, event.allow_cancellation, and
     // the deadline). Falls back to status-only when the API didn't include
     // the cancellation block — old/cached bookings.
     final canCancel = booking.cancellation?.canCancel ??
         (booking.status == 'confirmed' || booking.status == 'pending');
+    */
 
     return Scaffold(
       backgroundColor: HbColors.orangePastel,
@@ -749,6 +753,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                     ),
                   ),
                 SizedBox(height: tokens.spacing.xs),
+                /*
                 // Cancel button (if applicable)
                 if (canCancel)
                   Container(
@@ -769,6 +774,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ),
                     ),
                   ),
+                */
                 // Bottom spacing for safe area
                 SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
               ]),
