@@ -19,6 +19,7 @@ import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource
 import 'package:lehiboo/features/booking/domain/extensions/user_participant_extension.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/models/order_cart_item.dart';
+import 'package:lehiboo/features/booking/domain/models/refund_policy.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
@@ -49,6 +50,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   String? _customerBirthDate;
   final Map<String, List<ParticipantInfo>> _attendeesByCartItemId = {};
   bool _acceptedTerms = false;
+  bool _acceptedRefundPolicy = false;
   bool _isLoading = false;
   String? _errorMessage;
   String? _activeOrderUuid;
@@ -403,6 +405,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         items.fold<int>(0, (sum, item) => sum + item.quantity);
     final totalAmount =
         items.fold<double>(0, (sum, item) => sum + item.lineTotal);
+    final refundPolicies = _refundPoliciesForItems(items);
     _ensureAttendees(items);
 
     final user = ref.watch(authProvider).user;
@@ -498,7 +501,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                   const SizedBox(height: 16),
                   _buildBuyerForm(),
                   const SizedBox(height: 12),
-                  _buildTermsSection(),
+                  _buildTermsSection(refundPolicies),
                   if (_errorMessage != null) _buildError(),
                 ],
               ),
@@ -735,7 +738,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     );
   }
 
-  Widget _buildTermsSection() {
+  Widget _buildTermsSection(List<RefundPolicyEntry> refundPolicies) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -743,53 +746,121 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         border: Border.all(color: Colors.grey.shade200),
       ),
       padding: const EdgeInsets.all(14),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Checkbox(
-            value: _acceptedTerms,
-            activeColor: HbColors.brandPrimary,
-            onChanged: (value) =>
-                setState(() => _acceptedTerms = value ?? false),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
-              child: RichText(
-                text: TextSpan(
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                  children: [
-                    TextSpan(text: context.l10n.bookingTermsPrefix),
-                    TextSpan(
-                      text: context.l10n.legalSales.toLowerCase(),
-                      style: const TextStyle(
-                        color: HbColors.brandPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap =
-                            () => LegalLinks.open(context, LegalDocument.sales),
+          if (refundPolicies.isNotEmpty) ...[
+            _buildRefundPolicyAcceptance(refundPolicies),
+            const Divider(height: 22),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: _acceptedTerms,
+                activeColor: HbColors.brandPrimary,
+                onChanged: (value) =>
+                    setState(() => _acceptedTerms = value ?? false),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
+                  child: RichText(
+                    text: TextSpan(
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                      children: [
+                        TextSpan(text: context.l10n.bookingTermsPrefix),
+                        TextSpan(
+                          text: context.l10n.legalSales.toLowerCase(),
+                          style: const TextStyle(
+                            color: HbColors.brandPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () =>
+                                LegalLinks.open(context, LegalDocument.sales),
+                        ),
+                        TextSpan(text: context.l10n.bookingTermsConnector),
+                        TextSpan(
+                          text: context.l10n.legalPrivacy.toLowerCase(),
+                          style: const TextStyle(
+                            color: HbColors.brandPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () => LegalLinks.open(
+                                  context,
+                                  LegalDocument.privacy,
+                                ),
+                        ),
+                        const TextSpan(text: '.'),
+                      ],
                     ),
-                    TextSpan(text: context.l10n.bookingTermsConnector),
-                    TextSpan(
-                      text: context.l10n.legalPrivacy.toLowerCase(),
-                      style: const TextStyle(
-                        color: HbColors.brandPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = () =>
-                            LegalLinks.open(context, LegalDocument.privacy),
-                    ),
-                    const TextSpan(text: '.'),
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRefundPolicyAcceptance(
+    List<RefundPolicyEntry> refundPolicies,
+  ) {
+    final hasMultiple = refundPolicies.length > 1;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Checkbox(
+          value: _acceptedRefundPolicy,
+          activeColor: HbColors.brandPrimary,
+          onChanged: (value) =>
+              setState(() => _acceptedRefundPolicy = value ?? false),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () => setState(
+                  () => _acceptedRefundPolicy = !_acceptedRefundPolicy,
+                ),
+                child: Text(
+                  hasMultiple
+                      ? context.l10n.bookingRefundPoliciesAcceptance
+                      : context.l10n.bookingRefundPolicyAcceptance,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _openRefundPolicies(refundPolicies),
+                style: TextButton.styleFrom(
+                  foregroundColor: HbColors.brandPrimary,
+                  padding: const EdgeInsets.only(top: 2),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  hasMultiple
+                      ? context.l10n.refundPolicyOpenPoliciesLink
+                      : context.l10n.refundPolicyOpenLink,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -909,6 +980,20 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
 
     if (!_formKey.currentState!.validate()) return;
+
+    final cartItems = ref.read(orderCartProvider);
+    if (cartItems.isEmpty) return;
+
+    final refundPolicies = _refundPoliciesForItems(cartItems);
+    if (refundPolicies.isNotEmpty && !_acceptedRefundPolicy) {
+      setState(() {
+        _errorMessage = refundPolicies.length > 1
+            ? context.l10n.bookingRefundPoliciesRequired
+            : context.l10n.bookingRefundPolicyRequired;
+      });
+      return;
+    }
+
     if (!_acceptedTerms) {
       setState(() {
         _errorMessage = context.l10n.bookingAcceptSalesRequired;
@@ -916,8 +1001,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       return;
     }
 
-    final cartItems = ref.read(orderCartProvider);
-    if (cartItems.isEmpty) return;
     if (!_validateParticipants(cartItems)) return;
 
     setState(() {
@@ -942,6 +1025,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         customerTown: _townController.text.trim().isEmpty
             ? null
             : _townController.text.trim(),
+        acceptRefundPolicy: _acceptedRefundPolicy,
       );
 
       var confirmedOrder = order;
@@ -1120,6 +1204,41 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         ref.invalidate(eventDetailControllerProvider(slug));
       }
     }
+  }
+
+  List<RefundPolicyEntry> _refundPoliciesForItems(List<OrderCartItem> items) {
+    final entries = <RefundPolicyEntry>[];
+    final seenEventIds = <String>{};
+
+    for (final item in items) {
+      if (!seenEventIds.add(item.event.id)) continue;
+
+      final policy = item.event.vendorCancellationPolicy?.trim();
+      if (policy == null || policy.isEmpty) continue;
+
+      entries.add(
+        RefundPolicyEntry(
+          eventTitle: item.event.title,
+          policy: policy,
+        ),
+      );
+    }
+
+    return entries;
+  }
+
+  void _openRefundPolicies(List<RefundPolicyEntry> refundPolicies) {
+    if (refundPolicies.isEmpty) return;
+
+    context.push(
+      '/refund-policy',
+      extra: RefundPolicyRouteArgs(
+        title: refundPolicies.length > 1
+            ? context.l10n.refundPolicyListTitle
+            : context.l10n.refundPolicyTitle,
+        policies: refundPolicies,
+      ),
+    );
   }
 
   bool _validateParticipants(List<OrderCartItem> cartItems) {

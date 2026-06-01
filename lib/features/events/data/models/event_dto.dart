@@ -111,6 +111,7 @@ class EventDto with _$EventDto {
     @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull) String? saleEndAt,
     @JsonKey(name: 'allow_cancellation', fromJson: _parseBool) @Default(false) bool allowCancellation,
     @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull) int? cancelBeforeHours,
+    @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull) String? vendorCancellationPolicy,
     @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool) @Default(false) bool generateQrCodes,
 
     // §4.8 Status & flags

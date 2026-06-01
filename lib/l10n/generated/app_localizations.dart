@@ -9495,6 +9495,60 @@ abstract class AppLocalizations {
   /// **'Veuillez accepter les conditions générales de vente'**
   String get bookingAcceptSalesRequired;
 
+  /// No description provided for @refundPolicyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Politique de remboursement'**
+  String get refundPolicyTitle;
+
+  /// No description provided for @refundPolicyListTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Politiques de remboursement'**
+  String get refundPolicyListTitle;
+
+  /// No description provided for @refundPolicyOpenLink.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la politique de remboursement'**
+  String get refundPolicyOpenLink;
+
+  /// No description provided for @refundPolicyOpenPoliciesLink.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir les politiques de remboursement'**
+  String get refundPolicyOpenPoliciesLink;
+
+  /// No description provided for @refundPolicyUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune politique de remboursement n\'est disponible.'**
+  String get refundPolicyUnavailable;
+
+  /// No description provided for @bookingRefundPolicyAcceptance.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai lu et j\'accepte la politique de remboursement.'**
+  String get bookingRefundPolicyAcceptance;
+
+  /// No description provided for @bookingRefundPoliciesAcceptance.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai lu et j\'accepte les politiques de remboursement.'**
+  String get bookingRefundPoliciesAcceptance;
+
+  /// No description provided for @bookingRefundPolicyRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez accepter la politique de remboursement avant de continuer.'**
+  String get bookingRefundPolicyRequired;
+
+  /// No description provided for @bookingRefundPoliciesRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez accepter les politiques de remboursement avant de continuer.'**
+  String get bookingRefundPoliciesRequired;
+
   /// No description provided for @bookingEveryTicketNeedsParticipant.
   ///
   /// In fr, this message translates to:

@@ -41,6 +41,7 @@ import '../../../reviews/presentation/widgets/write_review_sheet.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../../reminders/presentation/providers/reminders_provider.dart';
 import '../../../reminders/data/datasources/reminders_api_datasource.dart';
+import '../../../booking/domain/models/refund_policy.dart';
 import '../../../booking/presentation/providers/order_cart_provider.dart';
 
 /// Provider to fetch event details by identifier (UUID or slug).
@@ -509,6 +510,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       });
                     },
                   ),
+                  _buildRefundPolicyLink(event),
                   const SizedBox(height: 24),
                 ],
               ],
@@ -548,6 +550,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     });
                   },
                 ),
+                _buildRefundPolicyLink(event),
                 const SizedBox(height: 24),
               ],
 
@@ -605,6 +608,36 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRefundPolicyLink(Event event) {
+    final policy = event.vendorCancellationPolicy?.trim();
+    if (policy == null || policy.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: () => _openRefundPolicy(event),
+          style: TextButton.styleFrom(
+            foregroundColor: HbColors.brandPrimary,
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            context.l10n.refundPolicyOpenLink,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1187,6 +1220,24 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       initialIndex: initialIndex,
       eventTitle: event.title,
       shareUrl: EnvConfig.eventShareUrl(event.slug),
+    );
+  }
+
+  void _openRefundPolicy(Event event) {
+    final policy = event.vendorCancellationPolicy?.trim();
+    if (policy == null || policy.isEmpty) return;
+
+    context.push(
+      '/refund-policy',
+      extra: RefundPolicyRouteArgs(
+        title: context.l10n.refundPolicyTitle,
+        policies: [
+          RefundPolicyEntry(
+            eventTitle: event.title,
+            policy: policy,
+          ),
+        ],
+      ),
     );
   }
 

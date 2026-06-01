@@ -23,6 +23,7 @@ class ApiBookingRepositoryImpl implements BookingRepository {
     required List<TicketSelection> ticketSelections,
     required BuyerInfo buyer,
     bool acceptTerms = false,
+    bool acceptRefundPolicy = false,
     bool acceptNewsletter = false,
     String? promoCode,
   }) async {
@@ -61,6 +62,7 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       customerTown: buyer.town,
       promoCode: promoCode,
       acceptTerms: acceptTerms,
+      acceptRefundPolicy: acceptRefundPolicy,
       acceptNewsletter: acceptNewsletter,
     );
 

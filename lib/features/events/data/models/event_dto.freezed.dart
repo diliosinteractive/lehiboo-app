@@ -188,6 +188,8 @@ mixin _$EventDto {
   bool get allowCancellation => throw _privateConstructorUsedError;
   @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
   int? get cancelBeforeHours => throw _privateConstructorUsedError;
+  @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+  String? get vendorCancellationPolicy => throw _privateConstructorUsedError;
   @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
   bool get generateQrCodes =>
       throw _privateConstructorUsedError; // §4.8 Status & flags
@@ -373,8 +375,9 @@ abstract class $EventDtoCopyWith<$Res> {
       bool allowCancellation,
       @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
       int? cancelBeforeHours,
-      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
-      bool generateQrCodes,
+      @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+      String? vendorCancellationPolicy,
+      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool) bool generateQrCodes,
       @JsonKey(fromJson: _parseStringOrNull) String? status,
       @JsonKey(fromJson: _parseStringOrNull) String? visibility,
       @JsonKey(name: 'is_password_protected', fromJson: _parseBool) bool isPasswordProtected,
@@ -495,6 +498,7 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? saleEndAt = freezed,
     Object? allowCancellation = null,
     Object? cancelBeforeHours = freezed,
+    Object? vendorCancellationPolicy = freezed,
     Object? generateQrCodes = null,
     Object? status = freezed,
     Object? visibility = freezed,
@@ -809,6 +813,10 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.cancelBeforeHours
           : cancelBeforeHours // ignore: cast_nullable_to_non_nullable
               as int?,
+      vendorCancellationPolicy: freezed == vendorCancellationPolicy
+          ? _value.vendorCancellationPolicy
+          : vendorCancellationPolicy // ignore: cast_nullable_to_non_nullable
+              as String?,
       generateQrCodes: null == generateQrCodes
           ? _value.generateQrCodes
           : generateQrCodes // ignore: cast_nullable_to_non_nullable
@@ -1144,8 +1152,9 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       bool allowCancellation,
       @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
       int? cancelBeforeHours,
-      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
-      bool generateQrCodes,
+      @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+      String? vendorCancellationPolicy,
+      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool) bool generateQrCodes,
       @JsonKey(fromJson: _parseStringOrNull) String? status,
       @JsonKey(fromJson: _parseStringOrNull) String? visibility,
       @JsonKey(name: 'is_password_protected', fromJson: _parseBool) bool isPasswordProtected,
@@ -1273,6 +1282,7 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? saleEndAt = freezed,
     Object? allowCancellation = null,
     Object? cancelBeforeHours = freezed,
+    Object? vendorCancellationPolicy = freezed,
     Object? generateQrCodes = null,
     Object? status = freezed,
     Object? visibility = freezed,
@@ -1587,6 +1597,10 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value.cancelBeforeHours
           : cancelBeforeHours // ignore: cast_nullable_to_non_nullable
               as int?,
+      vendorCancellationPolicy: freezed == vendorCancellationPolicy
+          ? _value.vendorCancellationPolicy
+          : vendorCancellationPolicy // ignore: cast_nullable_to_non_nullable
+              as String?,
       generateQrCodes: null == generateQrCodes
           ? _value.generateQrCodes
           : generateQrCodes // ignore: cast_nullable_to_non_nullable
@@ -1808,12 +1822,13 @@ class _$EventDtoImpl implements _EventDto {
       this.allowCancellation = false,
       @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
       this.cancelBeforeHours,
+      @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+      this.vendorCancellationPolicy,
       @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
       this.generateQrCodes = false,
       @JsonKey(fromJson: _parseStringOrNull) this.status,
       @JsonKey(fromJson: _parseStringOrNull) this.visibility,
-      @JsonKey(name: 'is_password_protected', fromJson: _parseBool)
-      this.isPasswordProtected = false,
+      @JsonKey(name: 'is_password_protected', fromJson: _parseBool) this.isPasswordProtected = false,
       @JsonKey(name: 'has_password', fromJson: _parseBool) this.hasPassword = false,
       @JsonKey(name: 'published_at', fromJson: _parseStringOrNull) this.publishedAt,
       @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull) this.scheduledPublishAt,
@@ -2310,6 +2325,9 @@ class _$EventDtoImpl implements _EventDto {
   @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
   final int? cancelBeforeHours;
   @override
+  @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+  final String? vendorCancellationPolicy;
+  @override
   @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
   final bool generateQrCodes;
 // §4.8 Status & flags
@@ -2407,7 +2425,7 @@ class _$EventDtoImpl implements _EventDto {
 
   @override
   String toString() {
-    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTypeMode: $eventTypeMode, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite, isMembersOnly: $isMembersOnly, version: $version, calendarMode: $calendarMode, timezone: $timezone, venueName: $venueName, venueAddress: $venueAddress, city: $city, postalCode: $postalCode, country: $country, addressSource: $addressSource, venueId: $venueId, startDate: $startDate, endDate: $endDate, priceFrom: $priceFrom, isFree: $isFree, capacityGlobal: $capacityGlobal, saleStartAt: $saleStartAt, saleEndAt: $saleEndAt, allowCancellation: $allowCancellation, cancelBeforeHours: $cancelBeforeHours, generateQrCodes: $generateQrCodes, status: $status, visibility: $visibility, isPasswordProtected: $isPasswordProtected, hasPassword: $hasPassword, publishedAt: $publishedAt, scheduledPublishAt: $scheduledPublishAt, isActive: $isActive, isOnSale: $isOnSale, isLive: $isLive, canAcceptBookings: $canAcceptBookings, canAcceptDiscovery: $canAcceptDiscovery, isDiscovery: $isDiscovery, participationCount: $participationCount, isParticipating: $isParticipating, externalTicketingUrl: $externalTicketingUrl, otherServices: $otherServices, entryTypeId: $entryTypeId, eventTagId: $eventTagId, metaTitle: $metaTitle, metaDescription: $metaDescription, meta: $meta, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTypeMode: $eventTypeMode, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite, isMembersOnly: $isMembersOnly, version: $version, calendarMode: $calendarMode, timezone: $timezone, venueName: $venueName, venueAddress: $venueAddress, city: $city, postalCode: $postalCode, country: $country, addressSource: $addressSource, venueId: $venueId, startDate: $startDate, endDate: $endDate, priceFrom: $priceFrom, isFree: $isFree, capacityGlobal: $capacityGlobal, saleStartAt: $saleStartAt, saleEndAt: $saleEndAt, allowCancellation: $allowCancellation, cancelBeforeHours: $cancelBeforeHours, vendorCancellationPolicy: $vendorCancellationPolicy, generateQrCodes: $generateQrCodes, status: $status, visibility: $visibility, isPasswordProtected: $isPasswordProtected, hasPassword: $hasPassword, publishedAt: $publishedAt, scheduledPublishAt: $scheduledPublishAt, isActive: $isActive, isOnSale: $isOnSale, isLive: $isLive, canAcceptBookings: $canAcceptBookings, canAcceptDiscovery: $canAcceptDiscovery, isDiscovery: $isDiscovery, participationCount: $participationCount, isParticipating: $isParticipating, externalTicketingUrl: $externalTicketingUrl, otherServices: $otherServices, entryTypeId: $entryTypeId, eventTagId: $eventTagId, metaTitle: $metaTitle, metaDescription: $metaDescription, meta: $meta, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -2529,6 +2547,7 @@ class _$EventDtoImpl implements _EventDto {
             (identical(other.saleEndAt, saleEndAt) || other.saleEndAt == saleEndAt) &&
             (identical(other.allowCancellation, allowCancellation) || other.allowCancellation == allowCancellation) &&
             (identical(other.cancelBeforeHours, cancelBeforeHours) || other.cancelBeforeHours == cancelBeforeHours) &&
+            (identical(other.vendorCancellationPolicy, vendorCancellationPolicy) || other.vendorCancellationPolicy == vendorCancellationPolicy) &&
             (identical(other.generateQrCodes, generateQrCodes) || other.generateQrCodes == generateQrCodes) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.visibility, visibility) || other.visibility == visibility) &&
@@ -2631,6 +2650,7 @@ class _$EventDtoImpl implements _EventDto {
         saleEndAt,
         allowCancellation,
         cancelBeforeHours,
+        vendorCancellationPolicy,
         generateQrCodes,
         status,
         visibility,
@@ -2791,6 +2811,8 @@ abstract class _EventDto implements EventDto {
       final bool allowCancellation,
       @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
       final int? cancelBeforeHours,
+      @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+      final String? vendorCancellationPolicy,
       @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
       final bool generateQrCodes,
       @JsonKey(fromJson: _parseStringOrNull) final String? status,
@@ -2820,8 +2842,7 @@ abstract class _EventDto implements EventDto {
       final String? externalTicketingUrl,
       @JsonKey(name: 'other_services', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? otherServices,
-      @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull)
-      final int? entryTypeId,
+      @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull) final int? entryTypeId,
       @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull) final int? eventTagId,
       @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull) final String? metaTitle,
       @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull) final String? metaDescription,
@@ -3053,6 +3074,9 @@ abstract class _EventDto implements EventDto {
   @override
   @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
   int? get cancelBeforeHours;
+  @override
+  @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+  String? get vendorCancellationPolicy;
   @override
   @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
   bool get generateQrCodes;

@@ -274,6 +274,7 @@ class EventMapper {
       saleEndAt: _tryParseDateTime(dto.saleEndAt),
       allowCancellation: dto.allowCancellation,
       cancelBeforeHours: dto.cancelBeforeHours,
+      vendorCancellationPolicy: dto.vendorCancellationPolicy,
       generateQrCodes: dto.generateQrCodes,
       publicationStatus: dto.status,
       visibility: dto.visibility,

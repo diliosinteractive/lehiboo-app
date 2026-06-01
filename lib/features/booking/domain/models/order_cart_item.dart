@@ -49,6 +49,7 @@ class OrderCartItem extends Equatable {
           'images': event.images,
           'organizer_id': event.organizerId,
           'organizer_name': event.organizerName,
+          'vendor_cancellation_policy': event.vendorCancellationPolicy,
         },
         'slot': selectedSlot == null
             ? {
@@ -87,6 +88,8 @@ class OrderCartItem extends Equatable {
         images: (eventJson['images'] as List?)?.cast<String>() ?? const [],
         organizerId: eventJson['organizer_id']?.toString() ?? '',
         organizerName: eventJson['organizer_name']?.toString() ?? '',
+        vendorCancellationPolicy:
+            eventJson['vendor_cancellation_policy']?.toString(),
       );
 
       return OrderCartItem(
