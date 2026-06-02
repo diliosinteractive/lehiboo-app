@@ -39,6 +39,12 @@ abstract class PetitBooRepository {
   /// Get user's chat quota
   Future<QuotaDto> getQuota();
 
+  /// Confirm and execute a pending Petit Boo action
+  Future<Map<String, dynamic>> confirmPendingAction(String actionId);
+
+  /// Cancel a pending Petit Boo action
+  Future<void> cancelPendingAction(String actionId);
+
   /// Check if Petit Boo service is available
   Future<bool> isServiceAvailable();
 
