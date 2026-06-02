@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/models/chat_message_dto.dart';
 import '../../data/models/conversation_dto.dart';
 import '../../data/models/petit_boo_event_dto.dart';
 import '../../data/models/quota_dto.dart';
@@ -19,6 +18,7 @@ abstract class PetitBooRepository {
   Stream<PetitBooEventDto> sendMessage({
     String? sessionUuid,
     required String message,
+    required bool memoryEnabled,
   });
 
   /// Get list of user's conversations

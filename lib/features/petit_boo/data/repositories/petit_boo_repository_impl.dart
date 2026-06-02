@@ -33,10 +33,12 @@ class PetitBooRepositoryImpl implements PetitBooRepository {
   Stream<PetitBooEventDto> sendMessage({
     String? sessionUuid,
     required String message,
+    required bool memoryEnabled,
   }) {
     return _sseDataSource.sendMessage(
       sessionUuid: sessionUuid,
       message: message,
+      memoryEnabled: memoryEnabled,
     );
   }
 

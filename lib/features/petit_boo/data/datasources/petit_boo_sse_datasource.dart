@@ -26,7 +26,8 @@ class PetitBooSseException implements Exception {
   PetitBooSseException(this.message, {this.code, this.statusCode});
 
   @override
-  String toString() => 'PetitBooSseException: $message (code: $code, status: $statusCode)';
+  String toString() =>
+      'PetitBooSseException: $message (code: $code, status: $statusCode)';
 }
 
 /// DataSource for SSE streaming chat with Petit Boo
@@ -54,6 +55,7 @@ class PetitBooSseDataSource {
   Stream<PetitBooEventDto> sendMessage({
     String? sessionUuid,
     required String message,
+    required bool memoryEnabled,
   }) async* {
     // Get auth token from secure storage
     final token = await storage.read(key: AppConstants.keyAuthToken);
@@ -75,11 +77,13 @@ class PetitBooSseDataSource {
     request.body = jsonEncode({
       if (sessionUuid != null) 'session_uuid': sessionUuid,
       'message': message,
+      'memory_enabled': memoryEnabled,
     });
 
     if (kDebugMode) {
       debugPrint('🤖 PetitBoo SSE: Sending message to $uri');
       debugPrint('🤖 PetitBoo SSE: session_uuid=$sessionUuid');
+      debugPrint('🤖 PetitBoo SSE: memory_enabled=$memoryEnabled');
     }
 
     try {
@@ -103,7 +107,8 @@ class PetitBooSseDataSource {
       // Buffer for incomplete SSE data
       String buffer = '';
 
-      await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
+      await for (final chunk
+          in streamedResponse.stream.transform(utf8.decoder)) {
         buffer += chunk;
 
         // Process complete lines
@@ -125,7 +130,8 @@ class PetitBooSseDataSource {
               final event = PetitBooEventDto.fromJson(json);
 
               if (kDebugMode) {
-                debugPrint('🤖 PetitBoo SSE: Received event type=${event.type}');
+                debugPrint(
+                    '🤖 PetitBoo SSE: Received event type=${event.type}');
               }
 
               yield event;
@@ -163,7 +169,8 @@ class PetitBooSseDataSource {
       if (kDebugMode) {
         debugPrint('🤖 PetitBoo SSE: ClientException - ${e.message}');
       }
-      throw PetitBooSseException('Network error: ${e.message}', code: 'network');
+      throw PetitBooSseException('Network error: ${e.message}',
+          code: 'network');
     } catch (e) {
       if (e is PetitBooSseException) rethrow;
       if (kDebugMode) {
@@ -187,9 +194,11 @@ class PetitBooSseDataSource {
   /// Check if the Petit Boo service is available
   Future<bool> healthCheck() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/health/ready'),
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/health/ready'),
+          )
+          .timeout(const Duration(seconds: 5));
 
       return response.statusCode == 200;
     } catch (e) {
