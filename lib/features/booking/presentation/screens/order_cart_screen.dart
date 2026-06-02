@@ -812,6 +812,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     List<RefundPolicyEntry> refundPolicies,
   ) {
     final hasMultiple = refundPolicies.length > 1;
+    final prefix = hasMultiple
+        ? context.l10n.bookingRefundPoliciesAcceptancePrefix
+        : context.l10n.bookingRefundPolicyAcceptancePrefix;
+    final linkText = hasMultiple
+        ? context.l10n.bookingRefundPoliciesAcceptanceLink
+        : context.l10n.bookingRefundPolicyAcceptanceLink;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -824,40 +830,28 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         ),
         const SizedBox(width: 4),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () => setState(
-                  () => _acceptedRefundPolicy = !_acceptedRefundPolicy,
-                ),
-                child: Text(
-                  hasMultiple
-                      ? context.l10n.bookingRefundPoliciesAcceptance
-                      : context.l10n.bookingRefundPolicyAcceptance,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                ),
-              ),
-              TextButton(
-                onPressed: () => _openRefundPolicies(refundPolicies),
-                style: TextButton.styleFrom(
-                  foregroundColor: HbColors.brandPrimary,
-                  padding: const EdgeInsets.only(top: 2),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  hasMultiple
-                      ? context.l10n.refundPolicyOpenPoliciesLink
-                      : context.l10n.refundPolicyOpenLink,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    decoration: TextDecoration.underline,
+          child: GestureDetector(
+            onTap: () => setState(
+              () => _acceptedRefundPolicy = !_acceptedRefundPolicy,
+            ),
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                children: [
+                  TextSpan(text: prefix),
+                  TextSpan(
+                    text: linkText,
+                    style: const TextStyle(
+                      color: HbColors.brandPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => _openRefundPolicies(refundPolicies),
                   ),
-                ),
+                  const TextSpan(text: '.'),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ],

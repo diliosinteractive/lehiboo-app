@@ -5523,7 +5523,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get refundPolicyListTitle => 'Politiques de remboursement';
 
   @override
-  String get refundPolicyOpenLink => 'Voir la politique de remboursement';
+  String get refundPolicyOpenLink =>
+      'Voir la politique d\'annulation et de remboursement';
+
+  @override
+  String get eventRefundPolicyOpenLink =>
+      'Voir la politique d\'annulation et de remboursement de l\'organisateur';
 
   @override
   String get refundPolicyOpenPoliciesLink =>
@@ -5542,12 +5547,26 @@ class AppLocalizationsFr extends AppLocalizations {
       'J\'ai lu et j\'accepte les politiques de remboursement.';
 
   @override
+  String get bookingRefundPolicyAcceptancePrefix => 'J\'accepte la ';
+
+  @override
+  String get bookingRefundPoliciesAcceptancePrefix => 'J\'accepte les ';
+
+  @override
+  String get bookingRefundPolicyAcceptanceLink =>
+      'politique d\'annulation et de remboursement de l\'organisateur';
+
+  @override
+  String get bookingRefundPoliciesAcceptanceLink =>
+      'politiques d\'annulation et de remboursement des organisateurs';
+
+  @override
   String get bookingRefundPolicyRequired =>
-      'Veuillez accepter la politique de remboursement avant de continuer.';
+      'Veuillez accepter la politique d\'annulation et de remboursement avant de continuer.';
 
   @override
   String get bookingRefundPoliciesRequired =>
-      'Veuillez accepter les politiques de remboursement avant de continuer.';
+      'Veuillez accepter les politiques d\'annulation et de remboursement avant de continuer.';
 
   @override
   String get bookingEveryTicketNeedsParticipant =>
