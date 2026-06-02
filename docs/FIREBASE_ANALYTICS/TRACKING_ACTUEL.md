@@ -101,8 +101,11 @@ actuel.
 | `login` | GA4 | `method` (`email`) | Login direct réussi ([L133](../../lib/features/auth/presentation/providers/auth_provider.dart#L133)) ou login OTP réussi ([L296](../../lib/features/auth/presentation/providers/auth_provider.dart#L296)) |
 | `login_failed` | custom | `reason` (catégorie d'erreur) | Échec de login ([L151](../../lib/features/auth/presentation/providers/auth_provider.dart#L151)) |
 | `sign_up` | GA4 | `method` (`email`) | OTP d'inscription vérifié ([L220](../../lib/features/auth/presentation/providers/auth_provider.dart#L220)) ou auth posée directement (registration business, [L439](../../lib/features/auth/presentation/providers/auth_provider.dart#L439)) |
-| `signup_failed` | custom | `reason` (catégorie d'erreur) | Échec d'inscription ([L191](../../lib/features/auth/presentation/providers/auth_provider.dart#L191)) |
-| `password_reset_requested` | custom | — | Demande de reset mot de passe ([L319](../../lib/features/auth/presentation/providers/auth_provider.dart#L319)) |
+| `signup_failed` | custom | `reason` (catégorie d'erreur) | Échec d'inscription |
+| `password_reset_requested` | custom | — | Demande de reset mot de passe |
+| `signup_started` | custom | `method` (`email`) | Soumission du formulaire d'inscription ([L177](../../lib/features/auth/presentation/providers/auth_provider.dart#L177)) — avant l'API |
+| `otp_sent` | custom | `type` (`register`/`login`) | OTP envoyé : succès register ([L199](../../lib/features/auth/presentation/providers/auth_provider.dart#L199)), login 2FA ([L124](../../lib/features/auth/presentation/providers/auth_provider.dart#L124)), renvoi manuel ([L290](../../lib/features/auth/presentation/providers/auth_provider.dart#L290)) |
+| `otp_verified` | custom | `type` (`register`/`login`) | OTP vérifié : inscription ([L239](../../lib/features/auth/presentation/providers/auth_provider.dart#L239)) ou login 2FA ([L324](../../lib/features/auth/presentation/providers/auth_provider.dart#L324)) |
 
 ### 4.2 Recherche & découverte
 
@@ -111,6 +114,7 @@ actuel.
 | `search_submitted` | custom | `query`, `city_slug`, `categories` (CSV), `has_date_filter` | [airbnb_search_sheet.dart:124](../../lib/features/search/presentation/widgets/airbnb_search_sheet.dart#L124) |
 | `search` | GA4 | `search_term` | [airbnb_search_sheet.dart:135](../../lib/features/search/presentation/widgets/airbnb_search_sheet.dart#L135) (seulement si query non vide) |
 | `search_saved` | custom | `enable_push`, `enable_email`, `city_slug` | [alerts_provider.dart:67](../../lib/features/alerts/presentation/providers/alerts_provider.dart#L67) |
+| `search_no_results` | custom | `query`, `city_slug`, `categories`, `has_date_filter` | [search_screen.dart:62](../../lib/features/search/presentation/screens/search_screen.dart#L62) — recherche réelle sans résultat, dédupliquée par filtre |
 | `map_opened` | custom | `source` (`home` / `deep_link`) | [map_view_screen.dart:67](../../lib/features/events/presentation/screens/map_view_screen.dart#L67) |
 | `map_pin_tapped` | custom | `event_uuid`, `quantity` (nb d'events sous le pin) | [map_view_screen.dart:255](../../lib/features/events/presentation/screens/map_view_screen.dart#L255) |
 
@@ -193,11 +197,10 @@ Définis dans le catalogue `AnalyticsEvent` mais **sans aucun call site** dans
 le code actuel (réservés pour usage futur) :
 
 - `select_content` (GA4)
-- `signup_started`
-- `otp_sent`
-- `otp_verified`
 - `search_filter_applied`
-- `search_no_results`
+
+> ✅ `signup_started`, `otp_sent`, `otp_verified` et `search_no_results` ont été
+> instrumentés (commit `3af9ed4`) — ils sont désormais actifs (cf. §4.1 et §4.2).
 
 User properties déclarées mais non posées : `has_membership`, `ios_att_status`.
 
@@ -208,8 +211,8 @@ User properties déclarées mais non posées : `has_membership`, `ios_att_status
 | Domaine | Events actifs |
 |---------|---------------|
 | Navigation | 1 (`screen_view` auto) |
-| Auth | 5 |
-| Recherche & découverte | 5 |
+| Auth | 8 |
+| Recherche & découverte | 6 |
 | Événements | 5 |
 | Réservation | 8 |
 | Petit Boo | 5 |
@@ -217,6 +220,6 @@ User properties déclarées mais non posées : `has_membership`, `ios_att_status
 | Memberships | 3 |
 | Notifications | 2 |
 | Deeplinks | 2 |
-| **Total events** | **38** (+ 6 déclarés inactifs) |
+| **Total events** | **42** (+ 2 déclarés inactifs) |
 
 | User properties actives | 7 (`env`, `app_locale`, `notif_consent`, `user_role`, `home_city_slug`, `push_enabled`, `hibons_rank`) + `user_id` |

@@ -19,7 +19,7 @@
 | Collecte pilotée par le consentement | ✅ | [main.dart:192](../../lib/main.dart#L192) + [analytics_consent.dart](../../lib/core/analytics/analytics_consent.dart) |
 | Toggle consentement dans Settings | ✅ | [settings_screen.dart](../../lib/features/profile/presentation/screens/settings_screen.dart) |
 | **`screen_view` auto** (observer root + ShellRoute) | ✅ | [app_router.dart:139](../../lib/routes/app_router.dart#L139) + [:238](../../lib/routes/app_router.dart#L238) |
-| 38 events instrumentés (10 domaines) | ✅ | cf. TRACKING_ACTUEL.md §4 |
+| 42 events instrumentés (10 domaines) | ✅ | cf. TRACKING_ACTUEL.md §4 |
 | 7 user properties + `user_id` | ✅ | cf. TRACKING_ACTUEL.md §3 |
 
 > **Bonne nouvelle** : le socle technique est complet. Les écarts ci-dessous
@@ -47,16 +47,22 @@ depuis le code) mais conditionnent toute l'analyse.
 
 ---
 
-### 🟠 P1 — Forte valeur, faible effort code : débloque des funnels entiers
+### 🟠 P1 — ✅ RÉSOLU (commit `3af9ed4`)
 
-| # | Écart | Ce que ça débloque | Effort |
-|---|-------|--------------------|--------|
-| 5 | **`signup_started` non instrumenté** (déclaré, sans call site) | Mesurer l'abandon **formulaire d'inscription → compte créé**. Aujourd'hui ce décrochage est invisible. | Faible (1 call site dans `register()`) |
-| 6 | **`otp_verified` non instrumenté** (idem ; `otp_sent` aussi) | Funnel d'inscription à 4 étapes (form → submit → OTP envoyé → vérifié). Localiser l'échec OTP. | Faible |
-| 7 | **`search_no_results` non instrumenté** | Mesurer la **qualité de recherche** : combien de recherches ne renvoient rien (frustration, lacune d'offre par ville). | Faible (à câbler dans SearchScreen quand résultats vides) |
+Les events qui débloquaient le funnel d'inscription et la qualité de recherche
+sont **désormais instrumentés** :
 
-> Ces 3 events sont **déjà déclarés** dans [analytics_event.dart](../../lib/core/analytics/analytics_event.dart)
-> — il ne reste qu'à poser les `logEvent`.
+| # | Écart | Statut | Débloque |
+|---|-------|--------|----------|
+| 5 | `signup_started` | ✅ Câblé dans `register()` | Abandon **formulaire d'inscription → compte créé** |
+| 6 | `otp_sent` + `otp_verified` | ✅ Câblés (register, login 2FA, resend / verifyOtp, verifyLoginOtp) | Funnel d'inscription 4 étapes + localisation de l'échec OTP |
+| 7 | `search_no_results` | ✅ Câblé dans SearchScreen (dédup par filtre) | **Qualité de recherche** (recherches sans résultat) |
+
+> Détail des call sites : [TRACKING_ACTUEL.md](TRACKING_ACTUEL.md) §4.1 et §4.2.
+> Ajout de la classe de valeurs `AnalyticsOtpType` (`register`/`login`).
+>
+> ⚠️ Pensez à déclarer la dimension custom `Type` (param `type`) côté GA4 si ce
+> n'est pas déjà fait — elle est partagée avec `notification_opened`.
 
 ---
 
@@ -89,10 +95,10 @@ P0 (config GA4, à confirmer console)
  3. Activer le filtre env = production
  4. Construire les 2 funnels P0 (Réservation, Découverte→Réservation)
 
-P1 (code, faible effort — 3 events déjà déclarés)
- 5. Câbler signup_started   → register()
- 6. Câbler otp_verified     → verifyOtp() / verifyLoginOtp()
- 7. Câbler search_no_results → SearchScreen (résultats vides)
+P1 (code) — ✅ FAIT (commit 3af9ed4)
+ 5. signup_started    → register()                       ✅
+ 6. otp_sent/verified → register / login 2FA / verifyOtp ✅
+ 7. search_no_results → SearchScreen (résultats vides)   ✅
 
 P2 (qualité de données)
  8. ATT iOS + set ios_att_status
@@ -105,6 +111,6 @@ P3 (nice-to-have)
 13. is_voice réel dans petitboo_message_sent
 ```
 
-> **Le chemin le plus rentable** : P0 (config, sans code) débloque
-> l'exploitation des 38 events déjà là, puis P1 (≈ 3 petits `logEvent`)
-> débloque le funnel d'inscription et la qualité de recherche.
+> **État actuel** : le P1 (code) est livré — funnel d'inscription et qualité de
+> recherche débloqués. Reste le **P0 (config console GA4)** qui rend exploitables
+> les 42 events instrumentés, puis le P2/P3.
