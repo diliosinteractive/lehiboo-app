@@ -5486,6 +5486,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get refundPolicyOpenLink => 'View cancellation and refund policy';
 
   @override
+  String get eventRefundPolicyOpenLink =>
+      'View the organizer\'s cancellation and refund policy';
+
+  @override
   String get refundPolicyOpenPoliciesLink => 'View refund policies';
 
   @override
@@ -5500,12 +5504,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'I have read and accept the refund policies.';
 
   @override
+  String get bookingRefundPolicyAcceptancePrefix => 'I accept the ';
+
+  @override
+  String get bookingRefundPoliciesAcceptancePrefix => 'I accept the ';
+
+  @override
+  String get bookingRefundPolicyAcceptanceLink =>
+      'organizer\'s cancellation and refund policy';
+
+  @override
+  String get bookingRefundPoliciesAcceptanceLink =>
+      'organizers\' cancellation and refund policies';
+
+  @override
   String get bookingRefundPolicyRequired =>
-      'Please accept the refund policy before continuing.';
+      'Please accept the cancellation and refund policy before continuing.';
 
   @override
   String get bookingRefundPoliciesRequired =>
-      'Please accept the refund policies before continuing.';
+      'Please accept the cancellation and refund policies before continuing.';
 
   @override
   String get bookingEveryTicketNeedsParticipant =>
