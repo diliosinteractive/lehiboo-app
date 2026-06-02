@@ -9537,16 +9537,40 @@ abstract class AppLocalizations {
   /// **'J\'ai lu et j\'accepte les politiques de remboursement.'**
   String get bookingRefundPoliciesAcceptance;
 
+  /// No description provided for @bookingRefundPolicyAcceptancePrefix.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'accepte la '**
+  String get bookingRefundPolicyAcceptancePrefix;
+
+  /// No description provided for @bookingRefundPoliciesAcceptancePrefix.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'accepte les '**
+  String get bookingRefundPoliciesAcceptancePrefix;
+
+  /// No description provided for @bookingRefundPolicyAcceptanceLink.
+  ///
+  /// In fr, this message translates to:
+  /// **'politique d\'annulation et de remboursement de l\'organisateur'**
+  String get bookingRefundPolicyAcceptanceLink;
+
+  /// No description provided for @bookingRefundPoliciesAcceptanceLink.
+  ///
+  /// In fr, this message translates to:
+  /// **'politiques d\'annulation et de remboursement des organisateurs'**
+  String get bookingRefundPoliciesAcceptanceLink;
+
   /// No description provided for @bookingRefundPolicyRequired.
   ///
   /// In fr, this message translates to:
-  /// **'Veuillez accepter la politique de remboursement avant de continuer.'**
+  /// **'Veuillez accepter la politique d\'annulation et de remboursement avant de continuer.'**
   String get bookingRefundPolicyRequired;
 
   /// No description provided for @bookingRefundPoliciesRequired.
   ///
   /// In fr, this message translates to:
-  /// **'Veuillez accepter les politiques de remboursement avant de continuer.'**
+  /// **'Veuillez accepter les politiques d\'annulation et de remboursement avant de continuer.'**
   String get bookingRefundPoliciesRequired;
 
   /// No description provided for @bookingEveryTicketNeedsParticipant.
