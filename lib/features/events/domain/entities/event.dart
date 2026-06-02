@@ -154,6 +154,7 @@ class Event extends Equatable {
   final DateTime? saleEndAt;
   final bool allowCancellation;
   final int? cancelBeforeHours;
+  final String? vendorCancellationPolicy;
   final bool generateQrCodes;
 
   // §4.8 — status & flags
@@ -286,6 +287,7 @@ class Event extends Equatable {
     this.saleEndAt,
     this.allowCancellation = false,
     this.cancelBeforeHours,
+    this.vendorCancellationPolicy,
     this.generateQrCodes = false,
     this.publicationStatus,
     this.visibility,
@@ -313,6 +315,7 @@ class Event extends Equatable {
     List<String> images = const [],
     String organizerId = '',
     String organizerName = '',
+    String? vendorCancellationPolicy,
   }) {
     final now = DateTime.now();
 
@@ -339,6 +342,7 @@ class Event extends Equatable {
       tags: const [],
       organizerId: organizerId,
       organizerName: organizerName,
+      vendorCancellationPolicy: vendorCancellationPolicy,
       isFavorite: false,
       isFeatured: false,
       isRecommended: false,
@@ -593,6 +597,7 @@ class Event extends Equatable {
     DateTime? saleEndAt,
     bool? allowCancellation,
     int? cancelBeforeHours,
+    String? vendorCancellationPolicy,
     bool? generateQrCodes,
     String? publicationStatus,
     String? visibility,
@@ -712,6 +717,8 @@ class Event extends Equatable {
       saleEndAt: saleEndAt ?? this.saleEndAt,
       allowCancellation: allowCancellation ?? this.allowCancellation,
       cancelBeforeHours: cancelBeforeHours ?? this.cancelBeforeHours,
+      vendorCancellationPolicy:
+          vendorCancellationPolicy ?? this.vendorCancellationPolicy,
       generateQrCodes: generateQrCodes ?? this.generateQrCodes,
       publicationStatus: publicationStatus ?? this.publicationStatus,
       visibility: visibility ?? this.visibility,
@@ -831,6 +838,7 @@ class Event extends Equatable {
         saleEndAt,
         allowCancellation,
         cancelBeforeHours,
+        vendorCancellationPolicy,
         generateQrCodes,
         publicationStatus,
         visibility,

@@ -12,6 +12,7 @@ import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart'
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/domain/models/checkout_params.dart';
+import 'package:lehiboo/features/booking/domain/models/refund_policy.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
@@ -51,6 +52,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // État
   bool _isLoading = false;
   bool _acceptedTerms = false;
+  bool _acceptedRefundPolicy = false;
   final bool _acceptNewsletter = false;
   String? _errorMessage;
 
@@ -544,53 +546,139 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildTermsSection(BuildContext context) {
+    final policy = widget.params.event.vendorCancellationPolicy?.trim();
+    final hasRefundPolicy = policy != null && policy.isNotEmpty;
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: Checkbox(
-              value: _acceptedTerms,
-              onChanged: (value) {
-                setState(() => _acceptedTerms = value ?? false);
-              },
-              activeColor: HbColors.brandPrimary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _acceptedTerms = !_acceptedTerms);
-              },
-              child: Text.rich(
-                TextSpan(
-                  text: context.l10n.bookingTermsPrefix,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                  children: [
-                    TextSpan(
-                      text: context.l10n.legalSales.toLowerCase(),
-                      style: const TextStyle(
-                        color: HbColors.brandPrimary,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                    TextSpan(text: context.l10n.bookingTermsConnector),
-                    TextSpan(
-                      text: context.l10n.legalPrivacy.toLowerCase(),
-                      style: const TextStyle(
-                        color: HbColors.brandPrimary,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ],
+          if (hasRefundPolicy) ...[
+            _buildRefundPolicyAcceptance(context),
+            const Divider(height: 22),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: _acceptedTerms,
+                  onChanged: (value) {
+                    setState(() => _acceptedTerms = value ?? false);
+                  },
+                  activeColor: HbColors.brandPrimary,
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _acceptedTerms = !_acceptedTerms);
+                  },
+                  child: Text.rich(
+                    TextSpan(
+                      text: context.l10n.bookingTermsPrefix,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                      children: [
+                        TextSpan(
+                          text: context.l10n.legalSales.toLowerCase(),
+                          style: const TextStyle(
+                            color: HbColors.brandPrimary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                        TextSpan(text: context.l10n.bookingTermsConnector),
+                        TextSpan(
+                          text: context.l10n.legalPrivacy.toLowerCase(),
+                          style: const TextStyle(
+                            color: HbColors.brandPrimary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefundPolicyAcceptance(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: _acceptedRefundPolicy,
+            onChanged: (value) {
+              setState(() => _acceptedRefundPolicy = value ?? false);
+            },
+            activeColor: HbColors.brandPrimary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(
+                    () => _acceptedRefundPolicy = !_acceptedRefundPolicy,
+                  );
+                },
+                child: Text(
+                  context.l10n.bookingRefundPolicyAcceptance,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                ),
+              ),
+              TextButton(
+                onPressed: _openRefundPolicy,
+                style: TextButton.styleFrom(
+                  foregroundColor: HbColors.brandPrimary,
+                  padding: const EdgeInsets.only(top: 2),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  context.l10n.refundPolicyOpenLink,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openRefundPolicy() {
+    final policy = widget.params.event.vendorCancellationPolicy?.trim();
+    if (policy == null || policy.isEmpty) return;
+
+    context.push(
+      '/refund-policy',
+      extra: RefundPolicyRouteArgs(
+        title: context.l10n.refundPolicyTitle,
+        policies: [
+          RefundPolicyEntry(
+            eventTitle: widget.params.event.title,
+            policy: policy,
           ),
         ],
       ),
@@ -732,6 +820,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
+    final policy = widget.params.event.vendorCancellationPolicy?.trim();
+    final hasRefundPolicy = policy != null && policy.isNotEmpty;
+    if (hasRefundPolicy && !_acceptedRefundPolicy) {
+      setState(() {
+        _errorMessage = context.l10n.bookingRefundPolicyRequired;
+      });
+      return;
+    }
+
     // Vérifier les CGV
     if (!_acceptedTerms) {
       setState(() {
@@ -810,6 +907,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         promoCode: widget.params.couponCode,
         paymentMethod: widget.params.isFree ? 'free' : 'card',
         acceptTerms: _acceptedTerms,
+        acceptRefundPolicy: _acceptedRefundPolicy,
         acceptNewsletter: _acceptNewsletter,
       );
 

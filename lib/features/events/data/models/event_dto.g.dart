@@ -106,6 +106,8 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
           ? false
           : _parseBool(json['allow_cancellation']),
       cancelBeforeHours: _parseIntOrNull(json['cancel_before_hours']),
+      vendorCancellationPolicy:
+          _parseStringOrNull(json['vendor_cancellation_policy']),
       generateQrCodes: json['generate_qr_codes'] == null
           ? false
           : _parseBool(json['generate_qr_codes']),
@@ -220,6 +222,7 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'sale_end_at': instance.saleEndAt,
       'allow_cancellation': instance.allowCancellation,
       'cancel_before_hours': instance.cancelBeforeHours,
+      'vendor_cancellation_policy': instance.vendorCancellationPolicy,
       'generate_qr_codes': instance.generateQrCodes,
       'status': instance.status,
       'visibility': instance.visibility,

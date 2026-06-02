@@ -45,8 +45,10 @@ import '../features/booking/presentation/screens/checkout_screen.dart';
 import '../features/booking/presentation/screens/booking_success_screen.dart';
 import '../features/booking/presentation/screens/order_cart_screen.dart';
 import '../features/booking/presentation/screens/order_success_screen.dart';
+import '../features/booking/presentation/screens/refund_policy_screen.dart';
 import '../features/booking/domain/models/checkout_params.dart';
 import '../features/booking/data/models/order_api_dto.dart';
+import '../features/booking/domain/models/refund_policy.dart';
 import '../domain/entities/booking.dart' as booking_entity;
 import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
@@ -730,6 +732,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/cart',
         name: 'cart',
         builder: (context, state) => const OrderCartScreen(),
+      ),
+      GoRoute(
+        path: '/refund-policy',
+        name: 'refund-policy',
+        builder: (context, state) {
+          final extra = state.extra;
+          final args = extra is RefundPolicyRouteArgs
+              ? extra
+              : RefundPolicyRouteArgs(
+                  title: context.l10n.refundPolicyTitle,
+                  policies: const [],
+                );
+          return RefundPolicyScreen(args: args);
+        },
       ),
       GoRoute(
         path: '/order-confirmation/:id',

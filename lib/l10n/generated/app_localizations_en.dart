@@ -5477,6 +5477,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bookingAcceptSalesRequired => 'Please accept the terms of sale';
 
   @override
+  String get refundPolicyTitle => 'Refund policy';
+
+  @override
+  String get refundPolicyListTitle => 'Refund policies';
+
+  @override
+  String get refundPolicyOpenLink => 'View cancellation and refund policy';
+
+  @override
+  String get refundPolicyOpenPoliciesLink => 'View refund policies';
+
+  @override
+  String get refundPolicyUnavailable => 'No refund policy is available.';
+
+  @override
+  String get bookingRefundPolicyAcceptance =>
+      'I have read and accept the refund policy.';
+
+  @override
+  String get bookingRefundPoliciesAcceptance =>
+      'I have read and accept the refund policies.';
+
+  @override
+  String get bookingRefundPolicyRequired =>
+      'Please accept the refund policy before continuing.';
+
+  @override
+  String get bookingRefundPoliciesRequired =>
+      'Please accept the refund policies before continuing.';
+
+  @override
   String get bookingEveryTicketNeedsParticipant =>
       'Each ticket must have a participant';
 

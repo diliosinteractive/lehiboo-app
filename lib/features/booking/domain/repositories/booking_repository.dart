@@ -8,6 +8,7 @@ abstract class BookingRepository {
     required List<TicketSelection> ticketSelections,
     required BuyerInfo buyer,
     bool acceptTerms = false,
+    bool acceptRefundPolicy = false,
     bool acceptNewsletter = false,
     String? promoCode,
   });

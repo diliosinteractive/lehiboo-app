@@ -17,6 +17,7 @@ class BookingRepositoryImpl implements BookingRepository {
     required List<TicketSelection> ticketSelections,
     required BuyerInfo buyer,
     bool acceptTerms = false,
+    bool acceptRefundPolicy = false,
     bool acceptNewsletter = false,
     String? promoCode,
   }) async {
@@ -53,6 +54,7 @@ class BookingRepositoryImpl implements BookingRepository {
         if (buyer.town != null) 'customer_town': buyer.town,
         if (promoCode != null) 'promo_code': promoCode,
         'accept_terms': acceptTerms,
+        'accept_refund_policy': acceptRefundPolicy,
         'accept_newsletter': acceptNewsletter,
       },
     );

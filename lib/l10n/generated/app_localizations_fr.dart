@@ -5517,6 +5517,40 @@ class AppLocalizationsFr extends AppLocalizations {
       'Veuillez accepter les conditions générales de vente';
 
   @override
+  String get refundPolicyTitle => 'Politique de remboursement';
+
+  @override
+  String get refundPolicyListTitle => 'Politiques de remboursement';
+
+  @override
+  String get refundPolicyOpenLink =>
+      'Voir la politique d\'annulation et de remboursement';
+
+  @override
+  String get refundPolicyOpenPoliciesLink =>
+      'Voir les politiques de remboursement';
+
+  @override
+  String get refundPolicyUnavailable =>
+      'Aucune politique de remboursement n\'est disponible.';
+
+  @override
+  String get bookingRefundPolicyAcceptance =>
+      'J\'ai lu et j\'accepte la politique de remboursement.';
+
+  @override
+  String get bookingRefundPoliciesAcceptance =>
+      'J\'ai lu et j\'accepte les politiques de remboursement.';
+
+  @override
+  String get bookingRefundPolicyRequired =>
+      'Veuillez accepter la politique de remboursement avant de continuer.';
+
+  @override
+  String get bookingRefundPoliciesRequired =>
+      'Veuillez accepter les politiques de remboursement avant de continuer.';
+
+  @override
   String get bookingEveryTicketNeedsParticipant =>
       'Chaque billet doit avoir un participant renseigné';
 

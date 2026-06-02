@@ -39,6 +39,7 @@ class BookingApiDataSource {
     String? promoCode,
     String? paymentMethod,
     bool acceptTerms = false,
+    bool acceptRefundPolicy = false,
     bool acceptNewsletter = false,
   }) async {
     final response = await _dio.post(
@@ -61,6 +62,7 @@ class BookingApiDataSource {
         if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
         if (paymentMethod != null) 'payment_method': paymentMethod,
         'accept_terms': acceptTerms,
+        'accept_refund_policy': acceptRefundPolicy,
         'accept_newsletter': acceptNewsletter,
       },
     );
@@ -88,6 +90,7 @@ class BookingApiDataSource {
     String? promoCode,
     String? paymentMethod,
     bool acceptTerms = false,
+    bool acceptRefundPolicy = false,
     bool acceptNewsletter = false,
   }) async {
     final response = await _dio.post(
@@ -110,6 +113,7 @@ class BookingApiDataSource {
         if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
         if (paymentMethod != null) 'payment_method': paymentMethod,
         'accept_terms': acceptTerms,
+        'accept_refund_policy': acceptRefundPolicy,
         'accept_newsletter': acceptNewsletter,
       },
     );
@@ -181,6 +185,7 @@ class BookingApiDataSource {
     String? customerTown,
     String? expiresAt,
     String? source,
+    bool acceptRefundPolicy = false,
   }) async {
     final response = await _dio.post(
       '/orders',
@@ -196,6 +201,7 @@ class BookingApiDataSource {
         if (customerTown != null && customerTown.isNotEmpty)
           'customer_town': customerTown,
         if (expiresAt != null && expiresAt.isNotEmpty) 'expires_at': expiresAt,
+        'accept_refund_policy': acceptRefundPolicy,
         'meta': {
           'source': source ?? 'mobile_cart_checkout',
         },
