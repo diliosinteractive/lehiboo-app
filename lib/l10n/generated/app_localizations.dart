@@ -9510,7 +9510,7 @@ abstract class AppLocalizations {
   /// No description provided for @refundPolicyOpenLink.
   ///
   /// In fr, this message translates to:
-  /// **'Voir la politique de remboursement'**
+  /// **'Voir la politique d\'annulation et de remboursement'**
   String get refundPolicyOpenLink;
 
   /// No description provided for @refundPolicyOpenPoliciesLink.

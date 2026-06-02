@@ -5523,7 +5523,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get refundPolicyListTitle => 'Politiques de remboursement';
 
   @override
-  String get refundPolicyOpenLink => 'Voir la politique de remboursement';
+  String get refundPolicyOpenLink =>
+      'Voir la politique d\'annulation et de remboursement';
 
   @override
   String get refundPolicyOpenPoliciesLink =>

@@ -5483,7 +5483,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get refundPolicyListTitle => 'Refund policies';
 
   @override
-  String get refundPolicyOpenLink => 'View refund policy';
+  String get refundPolicyOpenLink => 'View cancellation and refund policy';
 
   @override
   String get refundPolicyOpenPoliciesLink => 'View refund policies';
