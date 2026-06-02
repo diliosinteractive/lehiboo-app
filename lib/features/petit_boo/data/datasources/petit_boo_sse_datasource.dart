@@ -30,6 +30,51 @@ class PetitBooSseException implements Exception {
       'PetitBooSseException: $message (code: $code, status: $statusCode)';
 }
 
+class _PetitBooHttpError {
+  final String message;
+  final String? code;
+
+  const _PetitBooHttpError({
+    required this.message,
+    this.code,
+  });
+}
+
+_PetitBooHttpError _parsePetitBooHttpError(String body, int statusCode) {
+  final fallback = 'Server returned $statusCode';
+  if (body.trim().isEmpty) {
+    return _PetitBooHttpError(message: fallback);
+  }
+
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is Map<String, dynamic>) {
+      final error = decoded['error'];
+      String? message;
+      String? code;
+
+      if (error is Map<String, dynamic>) {
+        message = error['message'] as String?;
+        code = error['code'] as String?;
+      } else if (error is String) {
+        message = error;
+      }
+
+      message ??= decoded['message'] as String?;
+      code ??= decoded['code'] as String?;
+
+      return _PetitBooHttpError(
+        message: message ?? fallback,
+        code: code,
+      );
+    }
+  } catch (_) {
+    // Fall through to the generic status message.
+  }
+
+  return _PetitBooHttpError(message: fallback);
+}
+
 /// DataSource for SSE streaming chat with Petit Boo
 ///
 /// Uses the `http` package instead of Dio because Dio doesn't handle
@@ -97,9 +142,14 @@ class PetitBooSseDataSource {
       );
 
       if (streamedResponse.statusCode != 200) {
+        final body =
+            await streamedResponse.stream.transform(utf8.decoder).join();
+        final error =
+            _parsePetitBooHttpError(body, streamedResponse.statusCode);
         client.close();
         throw PetitBooSseException(
-          'Server returned ${streamedResponse.statusCode}',
+          error.message,
+          code: error.code,
           statusCode: streamedResponse.statusCode,
         );
       }

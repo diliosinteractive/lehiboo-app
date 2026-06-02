@@ -515,7 +515,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     if (error is PetitBooSseException) {
       errorMessage = _safePetitBooErrorMessage(error.message);
 
-      if (error.code == 'auth_required') {
+      if (error.code == 'auth_required' || error.code == 'auth_invalid') {
         errorMessage = _l10n.petitBooAuthRequiredError;
       } else if (error.code == 'quota_exceeded') {
         errorMessage = _l10n.petitBooQuotaExceededError;
