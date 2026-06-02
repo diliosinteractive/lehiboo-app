@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/analytics_event.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/petit_boo/presentation/providers/engagement_provider.dart';
@@ -43,6 +45,29 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final ScrollController _scrollController = ScrollController();
+
+  /// Signature du dernier filtre pour lequel `search_no_results` a été loggué,
+  /// pour ne pas refire l'event à chaque rebuild tant que le filtre est inchangé.
+  String? _loggedNoResultsKey;
+
+  /// Loggue `search_no_results` une fois par recherche réelle sans résultat.
+  /// Ignore l'état initial (aucun filtre actif) qui réutilise le même widget vide.
+  void _maybeLogNoResults(EventFilter filter) {
+    if (!filter.hasActiveFilters) return;
+    final key = '${filter.searchQuery}|${filter.citySlug ?? ''}|'
+        '${filter.categoriesSlugs.join(',')}|${filter.dateFilterType != null}';
+    if (key == _loggedNoResultsKey) return;
+    _loggedNoResultsKey = key;
+    ref.read(analyticsServiceProvider).logEvent(
+      AnalyticsEvent.searchNoResults,
+      params: {
+        AnalyticsParam.query: filter.searchQuery,
+        AnalyticsParam.citySlug: filter.citySlug ?? 'none',
+        AnalyticsParam.categories: filter.categoriesSlugs.join(','),
+        AnalyticsParam.hasDateFilter: filter.dateFilterType != null,
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -365,6 +390,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ref
                         .read(petitBooEngagementProvider.notifier)
                         .onSearchEmpty();
+                    _maybeLogNoResults(filter);
                   });
 
                   return SliverFillRemaining(

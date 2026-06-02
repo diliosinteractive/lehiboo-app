@@ -191,6 +191,17 @@ class AnalyticsMethod {
   static const String apple = 'apple';
 }
 
+/// Valeurs connues pour `AnalyticsParam.type` dans `otp_sent` / `otp_verified`.
+class AnalyticsOtpType {
+  AnalyticsOtpType._();
+
+  /// OTP de vérification d'inscription.
+  static const String register = 'register';
+
+  /// OTP de double authentification au login.
+  static const String login = 'login';
+}
+
 /// Valeurs connues pour `AnalyticsParam.step` dans `booking_failed`.
 class AnalyticsBookingStep {
   AnalyticsBookingStep._();

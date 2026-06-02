@@ -119,6 +119,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
           pendingUserId: result.userId,
           pendingEmail: result.email,
         );
+        // otp_sent — code 2FA envoyé suite à un login valide.
+        _analytics.logEvent(
+          AnalyticsEvent.otpSent,
+          params: {AnalyticsParam.type: AnalyticsOtpType.login},
+        );
         return result;
       }
 
@@ -166,6 +171,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
+    // signup_started — entrée dans le funnel d'inscription (form soumis).
+    // Loggué avant l'appel API pour capter aussi les tentatives qui échouent.
+    _analytics.logEvent(
+      AnalyticsEvent.signupStarted,
+      params: {AnalyticsParam.method: AnalyticsMethod.email},
+    );
+
     try {
       final result = await _authRepository.register(
         email: email,
@@ -180,6 +192,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.pendingVerification,
         pendingUserId: result.userId,
         pendingEmail: result.email,
+      );
+
+      // otp_sent — le backend a déclenché l'envoi du code de vérification.
+      _analytics.logEvent(
+        AnalyticsEvent.otpSent,
+        params: {AnalyticsParam.type: AnalyticsOtpType.register},
       );
 
       return result;
@@ -217,6 +235,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingEmail: null,
       );
       _syncAuthUser(result.user);
+      _analytics.logEvent(
+        AnalyticsEvent.otpVerified,
+        params: {AnalyticsParam.type: AnalyticsOtpType.register},
+      );
       _analytics.logEvent(
         AnalyticsEvent.signUp,
         params: {AnalyticsParam.method: AnalyticsMethod.email},
@@ -263,6 +285,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: email,
         type: type,
       );
+      // otp_sent — renvoi manuel du code (`type` = register | login).
+      _analytics.logEvent(
+        AnalyticsEvent.otpSent,
+        params: {AnalyticsParam.type: type},
+      );
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -293,6 +320,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingEmail: null,
       );
       _syncAuthUser(result.user);
+      _analytics.logEvent(
+        AnalyticsEvent.otpVerified,
+        params: {AnalyticsParam.type: AnalyticsOtpType.login},
+      );
       _analytics.logEvent(
         AnalyticsEvent.login,
         params: {AnalyticsParam.method: AnalyticsMethod.email},
