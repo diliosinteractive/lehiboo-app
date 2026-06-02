@@ -5486,6 +5486,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get refundPolicyOpenLink => 'View cancellation and refund policy';
 
   @override
+  String get eventRefundPolicyOpenLink =>
+      'View the organizer\'s cancellation and refund policy';
+
+  @override
   String get refundPolicyOpenPoliciesLink => 'View refund policies';
 
   @override

@@ -2909,6 +2909,7 @@
   "refundPolicyTitle": "Politique de remboursement",
   "refundPolicyListTitle": "Politiques de remboursement",
   "refundPolicyOpenLink": "Voir la politique d'annulation et de remboursement",
+  "eventRefundPolicyOpenLink": "Voir la politique d'annulation et de remboursement de l'organisateur",
   "refundPolicyOpenPoliciesLink": "Voir les politiques de remboursement",
   "refundPolicyUnavailable": "Aucune politique de remboursement n'est disponible.",
   "bookingRefundPolicyAcceptance": "J'ai lu et j'accepte la politique de remboursement.",

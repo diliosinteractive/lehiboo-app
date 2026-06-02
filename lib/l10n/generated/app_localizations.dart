@@ -9513,6 +9513,12 @@ abstract class AppLocalizations {
   /// **'Voir la politique d\'annulation et de remboursement'**
   String get refundPolicyOpenLink;
 
+  /// No description provided for @eventRefundPolicyOpenLink.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la politique d\'annulation et de remboursement de l\'organisateur'**
+  String get eventRefundPolicyOpenLink;
+
   /// No description provided for @refundPolicyOpenPoliciesLink.
   ///
   /// In fr, this message translates to:

@@ -5527,6 +5527,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Voir la politique d\'annulation et de remboursement';
 
   @override
+  String get eventRefundPolicyOpenLink =>
+      'Voir la politique d\'annulation et de remboursement de l\'organisateur';
+
+  @override
   String get refundPolicyOpenPoliciesLink =>
       'Voir les politiques de remboursement';
 

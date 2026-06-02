@@ -629,7 +629,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: Text(
-            context.l10n.refundPolicyOpenLink,
+            context.l10n.eventRefundPolicyOpenLink,
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,

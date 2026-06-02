@@ -2378,6 +2378,7 @@
   "refundPolicyTitle": "Refund policy",
   "refundPolicyListTitle": "Refund policies",
   "refundPolicyOpenLink": "View cancellation and refund policy",
+  "eventRefundPolicyOpenLink": "View the organizer's cancellation and refund policy",
   "refundPolicyOpenPoliciesLink": "View refund policies",
   "refundPolicyUnavailable": "No refund policy is available.",
   "bookingRefundPolicyAcceptance": "I have read and accept the refund policy.",
