@@ -348,6 +348,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       final stream = _repository.sendMessage(
         sessionUuid: state.sessionUuid,
         message: trimmedMessage,
+        memoryEnabled: state.isMemoryEnabled,
       );
 
       _streamSubscription = stream.listen(
