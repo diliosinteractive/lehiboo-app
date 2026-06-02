@@ -56,6 +56,23 @@ final petitBooContextStorageProvider = Provider<PetitBooContextStorage>((ref) {
 /// Sentinel value to distinguish "not provided" from "explicitly null"
 const _notProvided = Object();
 
+/// State-changing Petit Boo action waiting for explicit user confirmation.
+class PetitBooPendingConfirmation {
+  final String actionId;
+  final String tool;
+  final Map<String, dynamic> arguments;
+  final String message;
+  final String? expiresAt;
+
+  const PetitBooPendingConfirmation({
+    required this.actionId,
+    required this.tool,
+    required this.arguments,
+    required this.message,
+    this.expiresAt,
+  });
+}
+
 /// State for the Petit Boo chat
 class PetitBooChatState {
   final List<ChatMessageDto> messages;
@@ -71,6 +88,8 @@ class PetitBooChatState {
   final bool isMemoryEnabled;
   final bool isLimitReached;
   final int messageCount;
+  final PetitBooPendingConfirmation? pendingConfirmation;
+  final bool isConfirmingAction;
 
   const PetitBooChatState({
     this.messages = const [],
@@ -86,6 +105,8 @@ class PetitBooChatState {
     this.isMemoryEnabled = true,
     this.isLimitReached = false,
     this.messageCount = 0,
+    this.pendingConfirmation,
+    this.isConfirmingAction = false,
   });
 
   /// copyWith preserves error by default.
@@ -105,6 +126,8 @@ class PetitBooChatState {
     bool? isMemoryEnabled,
     bool? isLimitReached,
     int? messageCount,
+    Object? pendingConfirmation = _notProvided,
+    bool? isConfirmingAction,
   }) {
     return PetitBooChatState(
       messages: messages ?? this.messages,
@@ -120,6 +143,10 @@ class PetitBooChatState {
       isMemoryEnabled: isMemoryEnabled ?? this.isMemoryEnabled,
       isLimitReached: isLimitReached ?? this.isLimitReached,
       messageCount: messageCount ?? this.messageCount,
+      pendingConfirmation: pendingConfirmation == _notProvided
+          ? this.pendingConfirmation
+          : pendingConfirmation as PetitBooPendingConfirmation?,
+      isConfirmingAction: isConfirmingAction ?? this.isConfirmingAction,
     );
   }
 
@@ -342,6 +369,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       currentToolResults: [],
       isStreaming: true,
       error: null,
+      pendingConfirmation: null,
     );
 
     try {
@@ -423,6 +451,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
         }
         break;
 
+      case 'confirmation_required':
+        _handleConfirmationRequired(event);
+        break;
+
       case 'error':
         // Error during processing
         if (event.code == 'quota_exceeded') {
@@ -450,6 +482,24 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
         _finishStreaming();
         break;
     }
+  }
+
+  void _handleConfirmationRequired(dynamic event) {
+    final result = event.result;
+    if (result is! Map<String, dynamic>) return;
+
+    final actionId = result['action_id'];
+    if (actionId is! String || actionId.isEmpty) return;
+
+    state = state.copyWith(
+      pendingConfirmation: PetitBooPendingConfirmation(
+        actionId: actionId,
+        tool: event.tool as String? ?? '',
+        arguments: event.arguments as Map<String, dynamic>? ?? const {},
+        message: result['message'] as String? ?? _l10n.petitBooConfirmationBody,
+        expiresAt: result['expires_at'] as String?,
+      ),
+    );
   }
 
   /// Handle SSE stream error
@@ -596,6 +646,92 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   /// Clear error
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  /// Confirm the pending Petit Boo action and render its tool result.
+  Future<void> confirmPendingAction() async {
+    final pending = state.pendingConfirmation;
+    if (pending == null || state.isConfirmingAction) return;
+
+    state = state.copyWith(isConfirmingAction: true, error: null);
+
+    try {
+      final response = await _repository.confirmPendingAction(pending.actionId);
+      final tool = response['tool'] as String? ?? pending.tool;
+      final result = response['result'] as Map<String, dynamic>? ??
+          <String, dynamic>{'success': false};
+      final toolResult = ToolResultDto(
+        tool: tool,
+        data: result,
+        executedAt: DateTime.now().toIso8601String(),
+      );
+      final assistantMessage = ChatMessageDto.assistant(
+        content: _confirmedActionMessage(result),
+        toolResults: [toolResult],
+      );
+
+      state = state.copyWith(
+        messages: [...state.messages, assistantMessage],
+        pendingConfirmation: null,
+        isConfirmingAction: false,
+      );
+
+      _syncBrainMemoryFromToolResult(tool, result);
+    } catch (e) {
+      state = state.copyWith(
+        error: _safePetitBooErrorMessage(
+          e,
+          fallback: _l10n.petitBooConfirmationError,
+        ),
+        isConfirmingAction: false,
+      );
+    }
+  }
+
+  /// Cancel the pending Petit Boo action.
+  Future<void> cancelPendingAction() async {
+    final pending = state.pendingConfirmation;
+    if (pending == null || state.isConfirmingAction) return;
+
+    state = state.copyWith(isConfirmingAction: true, error: null);
+
+    try {
+      await _repository.cancelPendingAction(pending.actionId);
+      state = state.copyWith(
+        pendingConfirmation: null,
+        isConfirmingAction: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: _safePetitBooErrorMessage(
+          e,
+          fallback: _l10n.petitBooConfirmationError,
+        ),
+        isConfirmingAction: false,
+      );
+    }
+  }
+
+  String _confirmedActionMessage(Map<String, dynamic> result) {
+    final data = result['data'];
+    if (data is Map<String, dynamic>) {
+      final message = data['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message;
+      }
+    }
+
+    final message = result['message'];
+    if (message is String && message.trim().isNotEmpty) {
+      return message;
+    }
+
+    final error = result['error'];
+    if (error is String && error.trim().isNotEmpty) {
+      return error;
+    }
+
+    return _l10n.petitBooConfirmationDone;
   }
 
   /// Retry last message (remove last user message and resend)

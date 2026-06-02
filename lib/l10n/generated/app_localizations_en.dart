@@ -2136,6 +2136,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get petitBooGenericError => 'An error occurred';
 
   @override
+  String get petitBooConfirmationTitle => 'Confirmation required';
+
+  @override
+  String get petitBooConfirmationBody =>
+      'Petit Boo wants to perform this action.';
+
+  @override
+  String get petitBooConfirmationConfirm => 'Confirm';
+
+  @override
+  String get petitBooConfirmationDone => 'Action completed.';
+
+  @override
+  String get petitBooConfirmationError => 'Could not confirm this action.';
+
+  @override
   String get petitBooBrainManageMemory => 'Manage my memory';
 
   @override

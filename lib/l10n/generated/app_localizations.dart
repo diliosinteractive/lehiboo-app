@@ -3818,6 +3818,36 @@ abstract class AppLocalizations {
   /// **'Une erreur est survenue'**
   String get petitBooGenericError;
 
+  /// No description provided for @petitBooConfirmationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmation requise'**
+  String get petitBooConfirmationTitle;
+
+  /// No description provided for @petitBooConfirmationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit Boo souhaite effectuer cette action.'**
+  String get petitBooConfirmationBody;
+
+  /// No description provided for @petitBooConfirmationConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer'**
+  String get petitBooConfirmationConfirm;
+
+  /// No description provided for @petitBooConfirmationDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Action effectuée.'**
+  String get petitBooConfirmationDone;
+
+  /// No description provided for @petitBooConfirmationError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de confirmer cette action.'**
+  String get petitBooConfirmationError;
+
   /// No description provided for @petitBooBrainManageMemory.
   ///
   /// In fr, this message translates to:

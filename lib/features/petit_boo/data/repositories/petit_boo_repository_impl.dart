@@ -83,6 +83,16 @@ class PetitBooRepositoryImpl implements PetitBooRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> confirmPendingAction(String actionId) {
+    return _apiDataSource.confirmPendingAction(actionId);
+  }
+
+  @override
+  Future<void> cancelPendingAction(String actionId) {
+    return _apiDataSource.cancelPendingAction(actionId);
+  }
+
+  @override
   Future<bool> isServiceAvailable() {
     return _sseDataSource.healthCheck();
   }
