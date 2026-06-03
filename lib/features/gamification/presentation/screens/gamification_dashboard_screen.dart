@@ -171,14 +171,14 @@ class GamificationDashboardScreen extends ConsumerWidget {
                       ),
                       _buildPremiumCard(
                         context,
-                        title: context.l10n.gamificationShopTitle,
-                        icon: Icons.shopping_bag_rounded,
+                        title: context.l10n.gamificationHistoryTitle,
+                        icon: Icons.receipt_long_rounded,
                         color: Colors.orange,
                         gradientColors: [
                           Colors.orange.shade400,
                           Colors.orange.shade700
                         ],
-                        onTap: () => context.push('/hibons-shop'),
+                        onTap: () => context.push('/hibons/transactions'),
                       ),
                     ],
                   ),

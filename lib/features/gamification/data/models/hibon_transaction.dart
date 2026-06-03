@@ -19,7 +19,7 @@ class HibonTransaction with _$HibonTransaction {
     String? typeLabel,
     required int amount,
     String? formattedAmount,
-    required String description,
+    String? description,
     required DateTime timestamp,
     String? source,
     String? pillar,

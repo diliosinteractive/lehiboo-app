@@ -211,12 +211,12 @@ Map<String, dynamic> _$$HibonsRewardResponseDtoImplToJson(
 
 _$TransactionDtoImpl _$$TransactionDtoImplFromJson(Map<String, dynamic> json) =>
     _$TransactionDtoImpl(
-      id: json['id'] as String,
+      id: json['uuid'] as String,
       type: json['type'] as String,
       typeLabel: json['type_label'] as String?,
       amount: (json['amount'] as num).toInt(),
       formattedAmount: json['formatted_amount'] as String?,
-      description: json['description'] as String,
+      description: json['description'] as String?,
       source: json['source'] as String?,
       pillar: json['pillar'] as String?,
       pillarLabel: json['pillar_label'] as String?,
@@ -235,7 +235,7 @@ _$TransactionDtoImpl _$$TransactionDtoImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$TransactionDtoImplToJson(
         _$TransactionDtoImpl instance) =>
     <String, dynamic>{
-      'id': instance.id,
+      'uuid': instance.id,
       'type': instance.type,
       'type_label': instance.typeLabel,
       'amount': instance.amount,
@@ -306,6 +306,10 @@ _$TransactionsListResponseDtoImpl _$$TransactionsListResponseDtoImplFromJson(
                   EarningsByPillarEntryDto.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <EarningsByPillarEntryDto>[],
+      currentPage: (json['current_page'] as num?)?.toInt(),
+      lastPage: (json['last_page'] as num?)?.toInt(),
+      perPage: (json['per_page'] as num?)?.toInt(),
+      total: (json['total'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$TransactionsListResponseDtoImplToJson(
@@ -315,6 +319,10 @@ Map<String, dynamic> _$$TransactionsListResponseDtoImplToJson(
       'current_balance': instance.currentBalance,
       'lifetime_earned': instance.lifetimeEarned,
       'earnings_by_pillar': instance.earningsByPillar,
+      'current_page': instance.currentPage,
+      'last_page': instance.lastPage,
+      'per_page': instance.perPage,
+      'total': instance.total,
     };
 
 _$BalanceResponseDtoImpl _$$BalanceResponseDtoImplFromJson(

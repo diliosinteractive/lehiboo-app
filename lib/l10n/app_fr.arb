@@ -3602,6 +3602,11 @@
   "gamificationPillarEngagement": "Engagement",
   "gamificationPillarOnboarding": "Onboarding",
   "gamificationPillarParticipation": "Participation",
+  "gamificationTypeEarned": "Gagné",
+  "gamificationTypeSpent": "Dépensé",
+  "gamificationTypeBonus": "Bonus",
+  "gamificationTypePurchase": "Achat",
+  "gamificationTypeRefund": "Remboursement",
   "gamificationProgressionTitle": "Progression",
   "gamificationProgressThisWeek": "{completed}/{total} cette semaine",
   "@gamificationProgressThisWeek": {
