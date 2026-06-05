@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../shared/legal/legal_links.dart';
-import '../../data/repositories/auth_repository_impl.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
 import '../utils/birth_date_validation.dart';
 import '../widgets/password_strength_indicator.dart';
@@ -104,7 +104,7 @@ class _CustomerRegisterScreenState
     setState(() => _isLoading = true);
 
     try {
-      final authRepository = ref.read(authRepositoryImplProvider);
+      final authRepository = ref.read(authRepositoryProvider);
       final result = await authRepository.sendOtpCode(
         email: email,
         type: 'email_verification',
@@ -138,7 +138,7 @@ class _CustomerRegisterScreenState
     setState(() => _isLoading = true);
 
     try {
-      final authRepository = ref.read(authRepositoryImplProvider);
+      final authRepository = ref.read(authRepositoryProvider);
       final result = await authRepository.sendOtpCode(
         email: _emailController.text.trim(),
         type: 'email_verification',
@@ -171,7 +171,7 @@ class _CustomerRegisterScreenState
     setState(() => _isLoading = true);
 
     try {
-      final authRepository = ref.read(authRepositoryImplProvider);
+      final authRepository = ref.read(authRepositoryProvider);
       final result = await authRepository.verifyOtpCode(
         email: _emailController.text.trim(),
         code: _otpCode,
@@ -255,7 +255,7 @@ class _CustomerRegisterScreenState
     setState(() => _isLoading = true);
 
     try {
-      final authRepository = ref.read(authRepositoryImplProvider);
+      final authRepository = ref.read(authRepositoryProvider);
       final result = await authRepository.registerCustomer(
         verifiedEmailToken: _verifiedEmailToken!,
         firstName: _firstNameController.text.trim(),

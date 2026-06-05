@@ -2,10 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/trip_plan.dart';
 import '../../domain/repositories/trip_plans_repository.dart';
-import '../../data/repositories/trip_plans_repository_impl.dart';
 
-final tripPlansProvider = StateNotifierProvider<TripPlansNotifier, AsyncValue<List<TripPlan>>>((ref) {
-  final repository = ref.watch(tripPlansRepositoryImplProvider);
+final tripPlansProvider =
+    StateNotifierProvider<TripPlansNotifier, AsyncValue<List<TripPlan>>>((ref) {
+  final repository = ref.watch(tripPlansRepositoryProvider);
   return TripPlansNotifier(repository, ref);
 });
 
@@ -19,8 +19,7 @@ class TripPlansNotifier extends StateNotifier<AsyncValue<List<TripPlan>>> {
     _ref.listen<AuthStatus>(
       authProvider.select((s) => s.status),
       (previous, next) {
-        final loggedOut = next == AuthStatus.unauthenticated &&
-            previous == AuthStatus.authenticated;
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
         final loggedIn = next == AuthStatus.authenticated &&
             previous != AuthStatus.authenticated &&
             previous != AuthStatus.initial;
@@ -75,7 +74,8 @@ class TripPlansNotifier extends StateNotifier<AsyncValue<List<TripPlan>>> {
       await _repository.deleteTripPlan(uuid);
 
       final currentList = state.valueOrNull ?? [];
-      state = AsyncValue.data(currentList.where((p) => p.uuid != uuid).toList());
+      state =
+          AsyncValue.data(currentList.where((p) => p.uuid != uuid).toList());
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }

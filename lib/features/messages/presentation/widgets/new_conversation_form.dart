@@ -207,9 +207,8 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     if (widget.conversationContext is VendorToPartnerConversationContext) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
-          final partners = await ref
-              .read(messagesRepositoryImplProvider)
-              .getAcceptedPartners();
+          final partners =
+              await ref.read(messagesRepositoryProvider).getAcceptedPartners();
           if (mounted) setState(() => _allPartners = partners);
         } catch (_) {}
       });
@@ -224,7 +223,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     setState(() => _orgsLoading = true);
     try {
       final orgs = await ref
-          .read(messagesRepositoryImplProvider)
+          .read(messagesRepositoryProvider)
           .getContactableOrganizations();
       if (mounted) {
         setState(() {
@@ -378,7 +377,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Future<void> _openVendorParticipantSearch() async {
-    final repo = ref.read(messagesRepositoryImplProvider);
+    final repo = ref.read(messagesRepositoryProvider);
     final selected = await showModalBottomSheet<ConversationParticipant>(
       context: context,
       isScrollControlled: true,
@@ -421,7 +420,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       _submitError = null;
     });
     try {
-      final repo = ref.read(messagesRepositoryImplProvider);
+      final repo = ref.read(messagesRepositoryProvider);
       final subject = _subjectCtrl.text.trim();
       final message = _messageCtrl.text.trim();
       final ctx = widget.conversationContext;

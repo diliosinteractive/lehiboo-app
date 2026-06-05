@@ -18,6 +18,13 @@ final dioProvider = Provider<Dio>((ref) {
 /// Callback type for force logout triggered by 401 interceptor.
 typedef ForceLogoutCallback = Future<void> Function();
 
+@visibleForTesting
+String maskAuthTokenForDebugLog(String token) {
+  if (token.length <= 8) return '***';
+
+  return '${token.substring(0, 4)}...${token.substring(token.length - 4)}';
+}
+
 /// Singleton storage instance shared across the app
 /// This ensures consistency between token writes (auth) and reads (interceptor)
 class SharedSecureStorage {
@@ -201,14 +208,14 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     }
 
     if (kDebugMode) {
-      // Debug-only: print the full bearer so requests can be replayed via
-      // curl/Postman. NEVER enable in release — exposes account credentials.
       final hasToken = !isRefreshRequest && token != null && token.isNotEmpty;
       debugPrint(
         '🔐 JwtAuthInterceptor: path=${options.path}, hasToken=$hasToken',
       );
       if (hasToken) {
-        debugPrint('🔐   Authorization: Bearer $token');
+        debugPrint(
+          '🔐   Authorization: Bearer ${maskAuthTokenForDebugLog(token)}',
+        );
       }
     }
 

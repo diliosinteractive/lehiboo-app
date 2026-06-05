@@ -6,7 +6,6 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../domain/entities/user.dart';
 import '../../data/models/business_register_dto.dart';
-import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../utils/birth_date_validation.dart';
 
@@ -827,6 +826,6 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
 /// Provider for business registration
 final businessRegisterProvider = StateNotifierProvider.autoDispose<
     BusinessRegisterNotifier, BusinessRegisterState>((ref) {
-  final authRepository = ref.watch(authRepositoryImplProvider);
+  final authRepository = ref.watch(authRepositoryProvider);
   return BusinessRegisterNotifier(authRepository);
 });

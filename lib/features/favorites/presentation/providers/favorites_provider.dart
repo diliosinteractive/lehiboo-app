@@ -8,7 +8,6 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../data/models/toggle_favorite_result.dart';
 import '../../domain/repositories/favorites_repository.dart';
-import '../../data/repositories/favorites_repository_impl.dart';
 import 'favorite_lists_provider.dart';
 
 /// Callback type for toggle error handling
@@ -37,8 +36,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     _ref.listen<AuthStatus>(
       authProvider.select((s) => s.status),
       (previous, next) {
-        final loggedOut = next == AuthStatus.unauthenticated &&
-            previous == AuthStatus.authenticated;
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
         final loggedIn = next == AuthStatus.authenticated &&
             previous != AuthStatus.authenticated &&
             previous != AuthStatus.initial;
@@ -309,7 +307,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
 final favoritesProvider =
     StateNotifierProvider<FavoritesNotifier, AsyncValue<List<Event>>>((ref) {
-  final repository = ref.watch(favoritesRepositoryImplProvider);
+  final repository = ref.watch(favoritesRepositoryProvider);
   return FavoritesNotifier(repository, ref);
 });
 

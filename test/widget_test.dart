@@ -9,10 +9,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lehiboo/config/dio_client.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/noop_analytics_service.dart';
 import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
+import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
+import 'package:lehiboo/features/notifications/domain/repositories/in_app_notifications_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lehiboo/main.dart';
+import 'helpers/fake_auth_repository.dart';
+import 'helpers/fake_in_app_notifications_repository.dart';
 
 void main() {
   testWidgets('LeHiboo app starts correctly', (WidgetTester tester) async {
@@ -26,6 +32,13 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          analyticsServiceProvider.overrideWithValue(
+            const NoopAnalyticsService(),
+          ),
+          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+          inAppNotificationsRepositoryProvider.overrideWithValue(
+            FakeInAppNotificationsRepository(),
+          ),
         ],
         child: const LeHibooApp(),
       ),
