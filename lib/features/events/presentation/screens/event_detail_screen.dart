@@ -28,7 +28,6 @@ import '../widgets/detail/event_date_selector.dart';
 import '../widgets/detail/event_ticket_card.dart';
 import '../widgets/detail/event_indicative_prices.dart';
 import '../widgets/detail/event_practical_info.dart';
-import '../widgets/detail/event_indicative_prices.dart';
 import '../widgets/detail/event_accessibility_section.dart';
 import '../widgets/detail/event_location_map.dart';
 import '../widgets/detail/event_qa_section.dart';
@@ -529,12 +528,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   EventIndicativePrices(prices: event.indicativePrices),
                   const SizedBox(height: 24),
                 ],
-              ],
-
-              if (event.hasDirectBooking &&
-                  event.indicativePrices.isNotEmpty) ...[
-                EventIndicativePrices(prices: event.indicativePrices),
-                const SizedBox(height: 24),
               ],
 
               // 5c. Tags & caractéristiques
