@@ -1037,18 +1037,26 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Widget _buildEventChip() {
-    return Row(
+    final eventLabel = _eventTitle ?? _eventId ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(context.l10n.messagesEventLabel,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700)),
-        const SizedBox(width: 6),
-        Text(context.l10n.messagesOptionalLabel,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-        const SizedBox(width: 10),
+        Row(
+          children: [
+            Text(context.l10n.messagesEventLabel,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700)),
+            const SizedBox(width: 6),
+            Text(context.l10n.messagesOptionalLabel,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+          ],
+        ),
+        const SizedBox(height: 6),
         Container(
+          width: double.infinity,
           padding: const EdgeInsets.fromLTRB(10, 4, 6, 4),
           decoration: BoxDecoration(
             color: _primaryColor.withValues(alpha: 0.08),
@@ -1056,16 +1064,19 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
             border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Flexible(
-                child: Text(
-                  _eventTitle ?? _eventId ?? '',
-                  style: const TextStyle(
-                      fontSize: 12,
-                      color: _primaryColor,
-                      fontWeight: FontWeight.w500),
-                  overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Text(
+                    eventLabel,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: _primaryColor,
+                        fontWeight: FontWeight.w500),
+                  ),
                 ),
               ),
               const SizedBox(width: 4),

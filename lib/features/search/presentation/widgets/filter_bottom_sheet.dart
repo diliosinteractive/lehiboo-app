@@ -32,12 +32,18 @@ class FilterBottomSheet extends ConsumerStatefulWidget {
 
 class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late EventFilter _tempFilter;
+  SelectedSearchEvent? _tempSelectedEvent;
   bool _isLoadingLocation = false;
 
   @override
   void initState() {
     super.initState();
     _tempFilter = ref.read(eventFilterProvider);
+    final selectedEvent = ref.read(selectedSearchEventProvider);
+    if (selectedEvent != null &&
+        selectedEvent.title.trim() == _tempFilter.searchQuery.trim()) {
+      _tempSelectedEvent = selectedEvent;
+    }
   }
 
   /// Compte les filtres actifs pour le badge
@@ -187,8 +193,17 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         query: _tempFilter.searchQuery,
                         onChanged: (query) {
                           setState(() {
+                            _tempSelectedEvent = null;
                             _tempFilter =
                                 _tempFilter.copyWith(searchQuery: query);
+                          });
+                        },
+                        onEventSelected: (event) {
+                          setState(() {
+                            _tempSelectedEvent = event;
+                            _tempFilter = _tempFilter.copyWith(
+                              searchQuery: event.title,
+                            );
                           });
                         },
                       ),
@@ -553,7 +568,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           GestureDetector(
             onTap: () {
               filterNotifier.resetAll();
-              setState(() => _tempFilter = const EventFilter());
+              setState(() {
+                _tempFilter = const EventFilter();
+                _tempSelectedEvent = null;
+              });
             },
             child: Text(
               context.l10n.searchClear,
@@ -573,15 +591,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
 
   Widget _buildFooter(
       EventFilterNotifier filterNotifier, double bottomPadding) {
-    final previewCount = ref.watch(
-      filterPreviewCountProvider(_tempFilter.copyWith(page: 1, perPage: 1)),
-    );
-    final actionLabel = previewCount.when(
-      data: context.searchActionLabel,
-      loading: () => context.l10n.searchAction,
-      error: (_, __) => context.l10n.searchAction,
-    );
-
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
       decoration: BoxDecoration(
@@ -598,7 +607,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         top: false,
         child: GestureDetector(
           onTap: () {
-            filterNotifier.applyFilters(_tempFilter);
+            filterNotifier.applyFilters(
+              _tempFilter,
+              selectedSearchEvent: _tempSelectedEvent,
+            );
             Navigator.pop(context);
           },
           child: AnimatedContainer(
@@ -624,7 +636,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  actionLabel,
+                  context.l10n.searchAction,
                   style: GoogleFonts.montserrat(
                     color: Colors.white,
                     fontSize: 16,
@@ -725,10 +737,12 @@ class _SectionTitle extends StatelessWidget {
 class _SearchFilterSection extends ConsumerStatefulWidget {
   final String query;
   final ValueChanged<String> onChanged;
+  final ValueChanged<SelectedSearchEvent> onEventSelected;
 
   const _SearchFilterSection({
     required this.query,
     required this.onChanged,
+    required this.onEventSelected,
   });
 
   @override
@@ -830,6 +844,7 @@ class _SearchFilterSectionState extends ConsumerState<_SearchFilterSection> {
 
         return _SuggestionList(
           children: items.map((item) {
+            final isEvent = _isEventSuggestion(item);
             final isOrganization = item.type == 'organization';
             return _SuggestionTile(
               icon: isOrganization ? Icons.apartment : Icons.event,
@@ -840,6 +855,14 @@ class _SearchFilterSectionState extends ConsumerState<_SearchFilterSection> {
                 _controller.selection = TextSelection.collapsed(
                   offset: _controller.text.length,
                 );
+                if (isEvent) {
+                  final selectedEvent =
+                      SelectedSearchEvent.fromSuggestion(item);
+                  if (selectedEvent.identifier.isNotEmpty) {
+                    widget.onEventSelected(selectedEvent);
+                    return;
+                  }
+                }
                 widget.onChanged(item.label);
               },
             );
@@ -849,6 +872,11 @@ class _SearchFilterSectionState extends ConsumerState<_SearchFilterSection> {
       loading: () => const _AutocompleteLoading(),
       error: (_, __) => const SizedBox.shrink(),
     );
+  }
+
+  bool _isEventSuggestion(SearchSuggestionItemDto suggestion) {
+    return const {'event', 'events', 'activity', 'activities'}
+        .contains(suggestion.type);
   }
 }
 
