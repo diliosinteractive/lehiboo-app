@@ -70,6 +70,7 @@ class PetitBooSseDataSource {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
       'Cache-Control': 'no-cache',
+      'X-Platform': 'mobile',
     });
 
     request.body = jsonEncode({
@@ -189,6 +190,7 @@ class PetitBooSseDataSource {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/health/ready'),
+        headers: const {'X-Platform': 'mobile'},
       ).timeout(const Duration(seconds: 5));
 
       return response.statusCode == 200;

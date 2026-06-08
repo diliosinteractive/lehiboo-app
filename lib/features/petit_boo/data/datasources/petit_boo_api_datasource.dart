@@ -24,6 +24,7 @@ final petitBooApiDataSourceProvider = Provider<PetitBooApiDataSource>((ref) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'X-Platform': 'mobile',
       },
     ),
   );
