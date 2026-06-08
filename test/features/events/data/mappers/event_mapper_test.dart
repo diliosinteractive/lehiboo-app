@@ -56,5 +56,39 @@ void main() {
       expect(event.latitude, 50.6292);
       expect(event.longitude, 3.0573);
     });
+
+    test('maps indicative prices from event detail response', () {
+      final event = EventMapper.toEvent(
+        const EventDto(
+          id: 3,
+          title: 'Event test',
+          slug: 'event-test',
+          bookingMode: 'booking',
+          indicativePrices: [
+            {
+              'uuid': 'price-1',
+              'label': 'Cloack room',
+              'price': 0,
+              'currency': 'EUR',
+              'sort_order': 0,
+            },
+            {
+              'uuid': 'price-2',
+              'label': 'Massage parlor',
+              'price': 5,
+              'currency': 'EUR',
+              'sort_order': 1,
+            },
+          ],
+        ),
+      );
+
+      expect(event.hasDirectBooking, isTrue);
+      expect(event.indicativePrices, hasLength(2));
+      expect(event.indicativePrices.first.label, 'Cloack room');
+      expect(event.indicativePrices.first.price, 0);
+      expect(event.indicativePrices.last.label, 'Massage parlor');
+      expect(event.indicativePrices.last.formattedPrice, '5.00 €');
+    });
   });
 }

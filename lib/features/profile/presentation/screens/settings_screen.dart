@@ -1,8 +1,11 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/analytics/analytics_consent.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../config/dio_client.dart';
 import '../../../../config/env_config.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/app_locale.dart';
@@ -23,6 +26,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _busyNewsletter = false;
   bool _busyPush = false;
+  bool _testingRefresh = false;
 
   Future<void> _togglePref({
     required bool current,
@@ -236,7 +240,107 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: Text(l10n.settingsVersionTitle),
             trailing: const Text(AppConstants.appVersion),
           ),
+          // ── Debug only ────────────────────────────────────────────────────
+          // Outil de diagnostic du flow de refresh token (cf.
+          // docs/audits/analyse-authentification-deconnexions.md). Corrompt
+          // l'access token puis tape une route protégée pour forcer un vrai 401
+          // → l'intercepteur JwtAuthInterceptor déclenche _refreshAccessToken().
+          // Jamais compilé en release (kDebugMode).
+          if (kDebugMode) ...[
+            const Divider(),
+            _buildSectionHeader('Debug'),
+            ListTile(
+              leading: _testingRefresh
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : const Icon(Icons.refresh, color: Color(0xFFFF601F)),
+              title: const Text('Tester le refresh token'),
+              subtitle: const Text(
+                'Simule un 401 → déclenche le flow de refresh',
+              ),
+              onTap: _testingRefresh ? null : _testTokenRefreshFlow,
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  /// Diagnostic : force un 401 réel sur une route protégée pour exercer le
+  /// vrai chemin de refresh de [JwtAuthInterceptor].
+  ///
+  /// 1. lit access + refresh token (et détecte le cas `refresh == access`,
+  ///    hypothèse C1 de l'audit) ;
+  /// 2. corrompt l'access token en storage ;
+  /// 3. tape `/me/alerts` via `DioClient.instance` (passe par l'intercepteur) ;
+  /// 4. interprète le résultat :
+  ///    - 200 → le refresh a réussi et la requête a été rejouée ;
+  ///    - exception 401 → le refresh a échoué (et `forceLogout` se déclenche).
+  Future<void> _testTokenRefreshFlow() async {
+    final messenger = ScaffoldMessenger.of(context);
+    const storage = SharedSecureStorage.instance;
+
+    final accessBefore = await storage.read(key: AppConstants.keyAuthToken);
+    final refreshBefore =
+        await storage.read(key: AppConstants.keyRefreshToken);
+
+    if (accessBefore == null || accessBefore.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Aucun token en storage — connecte-toi d’abord.'),
+        ),
+      );
+      return;
+    }
+
+    final sameToken = accessBefore == refreshBefore;
+    debugPrint(
+      '🧪 RefreshTest: access.len=${accessBefore.length}, '
+      'refresh.len=${refreshBefore?.length}, refresh==access: $sameToken',
+    );
+
+    setState(() => _testingRefresh = true);
+
+    // Corrompt l'access token : le prochain appel protégé renverra un vrai 401.
+    final corrupted = 'invalid.$accessBefore';
+    await storage.write(key: AppConstants.keyAuthToken, value: corrupted);
+    debugPrint('🧪 RefreshTest: access token corrompu → appel /me/alerts');
+
+    String result;
+    Color color;
+    try {
+      await DioClient.instance.get<dynamic>('/me/alerts');
+      final accessAfter = await storage.read(key: AppConstants.keyAuthToken);
+      final rotated = accessAfter != null && accessAfter != corrupted;
+      if (rotated) {
+        result = '✅ Refresh OK : nouveau token obtenu, requête rejouée.';
+        color = Colors.green.shade700;
+      } else {
+        result = '⚠️ Requête passée mais token inchangé — à vérifier.';
+        color = Colors.orange.shade800;
+      }
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      result = '❌ Refresh échoué (HTTP $code). '
+          '${sameToken ? "refresh_token == access_token (cause C1). " : ""}'
+          'Déconnexion forcée déclenchée.';
+      color = Colors.red.shade700;
+    } catch (e) {
+      result = '❌ Erreur inattendue : $e';
+      color = Colors.red.shade700;
+    }
+
+    debugPrint('🧪 RefreshTest: $result');
+    if (!mounted) return;
+    setState(() => _testingRefresh = false);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(result),
+        backgroundColor: color,
+        duration: const Duration(seconds: 6),
       ),
     );
   }

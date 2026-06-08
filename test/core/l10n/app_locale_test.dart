@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/noop_analytics_service.dart';
 import 'package:lehiboo/core/constants/app_constants.dart';
 import 'package:lehiboo/core/l10n/app_locale.dart';
 import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
@@ -42,6 +44,9 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        analyticsServiceProvider.overrideWithValue(
+          const NoopAnalyticsService(),
+        ),
       ],
     );
     addTearDown(container.dispose);

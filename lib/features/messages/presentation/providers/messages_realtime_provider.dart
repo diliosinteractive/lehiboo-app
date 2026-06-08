@@ -98,6 +98,7 @@ class _StorageTokenAuthDelegate
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
+          'X-Platform': 'mobile',
         },
         body: {
           'socket_id': socketId,

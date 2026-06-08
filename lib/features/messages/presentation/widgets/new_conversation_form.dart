@@ -207,9 +207,8 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     if (widget.conversationContext is VendorToPartnerConversationContext) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
-          final partners = await ref
-              .read(messagesRepositoryImplProvider)
-              .getAcceptedPartners();
+          final partners =
+              await ref.read(messagesRepositoryProvider).getAcceptedPartners();
           if (mounted) setState(() => _allPartners = partners);
         } catch (_) {}
       });
@@ -224,7 +223,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     setState(() => _orgsLoading = true);
     try {
       final orgs = await ref
-          .read(messagesRepositoryImplProvider)
+          .read(messagesRepositoryProvider)
           .getContactableOrganizations();
       if (mounted) {
         setState(() {
@@ -378,7 +377,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Future<void> _openVendorParticipantSearch() async {
-    final repo = ref.read(messagesRepositoryImplProvider);
+    final repo = ref.read(messagesRepositoryProvider);
     final selected = await showModalBottomSheet<ConversationParticipant>(
       context: context,
       isScrollControlled: true,
@@ -421,7 +420,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       _submitError = null;
     });
     try {
-      final repo = ref.read(messagesRepositoryImplProvider);
+      final repo = ref.read(messagesRepositoryProvider);
       final subject = _subjectCtrl.text.trim();
       final message = _messageCtrl.text.trim();
       final ctx = widget.conversationContext;
@@ -1038,18 +1037,26 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Widget _buildEventChip() {
-    return Row(
+    final eventLabel = _eventTitle ?? _eventId ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(context.l10n.messagesEventLabel,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700)),
-        const SizedBox(width: 6),
-        Text(context.l10n.messagesOptionalLabel,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-        const SizedBox(width: 10),
+        Row(
+          children: [
+            Text(context.l10n.messagesEventLabel,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700)),
+            const SizedBox(width: 6),
+            Text(context.l10n.messagesOptionalLabel,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+          ],
+        ),
+        const SizedBox(height: 6),
         Container(
+          width: double.infinity,
           padding: const EdgeInsets.fromLTRB(10, 4, 6, 4),
           decoration: BoxDecoration(
             color: _primaryColor.withValues(alpha: 0.08),
@@ -1057,16 +1064,19 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
             border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Flexible(
-                child: Text(
-                  _eventTitle ?? _eventId ?? '',
-                  style: const TextStyle(
-                      fontSize: 12,
-                      color: _primaryColor,
-                      fontWeight: FontWeight.w500),
-                  overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Text(
+                    eventLabel,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: _primaryColor,
+                        fontWeight: FontWeight.w500),
+                  ),
                 ),
               ),
               const SizedBox(width: 4),

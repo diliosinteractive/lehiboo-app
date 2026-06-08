@@ -31,7 +31,11 @@ class ViewedStoriesNotifier extends StateNotifier<Set<String>> {
   Future<void> _loadViewedStories() async {
     final prefs = await SharedPreferences.getInstance();
     final viewed = prefs.getStringList(_storageKey) ?? [];
-    state = viewed.toSet();
+    final merged = {...viewed, ...state};
+    state = merged;
+    if (merged.length != viewed.length) {
+      await prefs.setStringList(_storageKey, merged.toList());
+    }
   }
 
   Future<void> markAsViewed(String storyId) async {
@@ -169,6 +173,9 @@ class EventStories extends ConsumerWidget {
 
   void _openStoryViewer(BuildContext context, WidgetRef ref,
       List<Story> stories, int initialIndex) {
+    ref
+        .read(viewedStoriesProvider.notifier)
+        .markAsViewed(stories[initialIndex].uuid);
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,

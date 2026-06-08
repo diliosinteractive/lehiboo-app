@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,9 +12,6 @@ import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/services/crash_reporter.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
-// TODO(debug): import conservé pour le restore du message générique — voir
-// TODO(debug) dans _submitOrder(). À nettoyer en même temps que ce dernier.
-// ignore: unused_import
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
@@ -1105,13 +1104,13 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
       setState(() {
         _isLoading = false;
-        // TODO(debug): RETIRER avant prod — affichage de l'erreur Stripe brute
-        // pour diagnostiquer l'échec de paiement sur TestFlight.
-        // Restaurer: _errorMessage =
-        //     e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
-        _errorMessage = '[DEBUG $checkoutStep] '
-            'Stripe(${e.error.code.name}): '
-            '${e.error.message ?? e.error.localizedMessage ?? e}';
+        // En debug : erreur Stripe brute pour diagnostiquer (TestFlight, etc.).
+        // En release : message localisé générique.
+        _errorMessage = kDebugMode
+            ? '[DEBUG $checkoutStep] '
+                'Stripe(${e.error.code.name}): '
+                '${e.error.message ?? e.error.localizedMessage ?? e}'
+            : e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
       });
     } catch (e, stack) {
       if (shouldCancelOrderOnError) {
@@ -1135,10 +1134,14 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
       setState(() {
         _isLoading = false;
-        // TODO(debug): RETIRER avant prod — affichage de l'erreur brute au lieu
-        // du message générique pour diagnostiquer l'échec de paiement TestFlight.
-        // Restaurer: _errorMessage = ApiResponseHandler.extractError(e) ?? context.l10n.bookingPaymentFailed;
-        _errorMessage = '[DEBUG $checkoutStep] $e';
+        // En debug : on expose l'erreur brute (corps de réponse 422 inclus)
+        // pour diagnostiquer. En release : message d'erreur localisé.
+        if (kDebugMode) {
+          final body = e is DioException ? e.response?.data : null;
+          _errorMessage = '[DEBUG $checkoutStep] ${body ?? e}';
+        } else {
+          _errorMessage = ApiResponseHandler.extractError(e);
+        }
       });
     }
   }

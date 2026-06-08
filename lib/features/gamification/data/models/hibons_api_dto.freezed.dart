@@ -2417,15 +2417,17 @@ TransactionDto _$TransactionDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$TransactionDto {
+// L'API expose l'identifiant public sous la clé `uuid` (cf. spec), pas `id`.
+  @JsonKey(name: 'uuid')
   String get id => throw _privateConstructorUsedError;
   String get type =>
-      throw _privateConstructorUsedError; // earn, spend, purchase, refund
+      throw _privateConstructorUsedError; // earned, spent, bonus, purchase, refund
   @JsonKey(name: 'type_label')
   String? get typeLabel => throw _privateConstructorUsedError;
   int get amount => throw _privateConstructorUsedError;
   @JsonKey(name: 'formatted_amount')
   String? get formattedAmount => throw _privateConstructorUsedError;
-  String get description => throw _privateConstructorUsedError;
+  String? get description => throw _privateConstructorUsedError;
   String? get source => throw _privateConstructorUsedError;
   String? get pillar => throw _privateConstructorUsedError;
   @JsonKey(name: 'pillar_label')
@@ -2454,12 +2456,12 @@ abstract class $TransactionDtoCopyWith<$Res> {
       _$TransactionDtoCopyWithImpl<$Res, TransactionDto>;
   @useResult
   $Res call(
-      {String id,
+      {@JsonKey(name: 'uuid') String id,
       String type,
       @JsonKey(name: 'type_label') String? typeLabel,
       int amount,
       @JsonKey(name: 'formatted_amount') String? formattedAmount,
-      String description,
+      String? description,
       String? source,
       String? pillar,
       @JsonKey(name: 'pillar_label') String? pillarLabel,
@@ -2492,7 +2494,7 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
     Object? typeLabel = freezed,
     Object? amount = null,
     Object? formattedAmount = freezed,
-    Object? description = null,
+    Object? description = freezed,
     Object? source = freezed,
     Object? pillar = freezed,
     Object? pillarLabel = freezed,
@@ -2525,10 +2527,10 @@ class _$TransactionDtoCopyWithImpl<$Res, $Val extends TransactionDto>
           ? _value.formattedAmount
           : formattedAmount // ignore: cast_nullable_to_non_nullable
               as String?,
-      description: null == description
+      description: freezed == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       source: freezed == source
           ? _value.source
           : source // ignore: cast_nullable_to_non_nullable
@@ -2594,12 +2596,12 @@ abstract class _$$TransactionDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String id,
+      {@JsonKey(name: 'uuid') String id,
       String type,
       @JsonKey(name: 'type_label') String? typeLabel,
       int amount,
       @JsonKey(name: 'formatted_amount') String? formattedAmount,
-      String description,
+      String? description,
       String? source,
       String? pillar,
       @JsonKey(name: 'pillar_label') String? pillarLabel,
@@ -2631,7 +2633,7 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
     Object? typeLabel = freezed,
     Object? amount = null,
     Object? formattedAmount = freezed,
-    Object? description = null,
+    Object? description = freezed,
     Object? source = freezed,
     Object? pillar = freezed,
     Object? pillarLabel = freezed,
@@ -2664,10 +2666,10 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
           ? _value.formattedAmount
           : formattedAmount // ignore: cast_nullable_to_non_nullable
               as String?,
-      description: null == description
+      description: freezed == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       source: freezed == source
           ? _value.source
           : source // ignore: cast_nullable_to_non_nullable
@@ -2716,12 +2718,12 @@ class __$$TransactionDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$TransactionDtoImpl implements _TransactionDto {
   const _$TransactionDtoImpl(
-      {required this.id,
+      {@JsonKey(name: 'uuid') required this.id,
       required this.type,
       @JsonKey(name: 'type_label') this.typeLabel,
       required this.amount,
       @JsonKey(name: 'formatted_amount') this.formattedAmount,
-      required this.description,
+      this.description,
       this.source,
       this.pillar,
       @JsonKey(name: 'pillar_label') this.pillarLabel,
@@ -2737,11 +2739,13 @@ class _$TransactionDtoImpl implements _TransactionDto {
   factory _$TransactionDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$TransactionDtoImplFromJson(json);
 
+// L'API expose l'identifiant public sous la clé `uuid` (cf. spec), pas `id`.
   @override
+  @JsonKey(name: 'uuid')
   final String id;
   @override
   final String type;
-// earn, spend, purchase, refund
+// earned, spent, bonus, purchase, refund
   @override
   @JsonKey(name: 'type_label')
   final String? typeLabel;
@@ -2751,7 +2755,7 @@ class _$TransactionDtoImpl implements _TransactionDto {
   @JsonKey(name: 'formatted_amount')
   final String? formattedAmount;
   @override
-  final String description;
+  final String? description;
   @override
   final String? source;
   @override
@@ -2859,12 +2863,12 @@ class _$TransactionDtoImpl implements _TransactionDto {
 
 abstract class _TransactionDto implements TransactionDto {
   const factory _TransactionDto(
-          {required final String id,
+          {@JsonKey(name: 'uuid') required final String id,
           required final String type,
           @JsonKey(name: 'type_label') final String? typeLabel,
           required final int amount,
           @JsonKey(name: 'formatted_amount') final String? formattedAmount,
-          required final String description,
+          final String? description,
           final String? source,
           final String? pillar,
           @JsonKey(name: 'pillar_label') final String? pillarLabel,
@@ -2880,11 +2884,12 @@ abstract class _TransactionDto implements TransactionDto {
   factory _TransactionDto.fromJson(Map<String, dynamic> json) =
       _$TransactionDtoImpl.fromJson;
 
-  @override
+  @override // L'API expose l'identifiant public sous la clé `uuid` (cf. spec), pas `id`.
+  @JsonKey(name: 'uuid')
   String get id;
   @override
   String get type;
-  @override // earn, spend, purchase, refund
+  @override // earned, spent, bonus, purchase, refund
   @JsonKey(name: 'type_label')
   String? get typeLabel;
   @override
@@ -2893,7 +2898,7 @@ abstract class _TransactionDto implements TransactionDto {
   @JsonKey(name: 'formatted_amount')
   String? get formattedAmount;
   @override
-  String get description;
+  String? get description;
   @override
   String? get source;
   @override
@@ -3389,7 +3394,14 @@ mixin _$TransactionsListResponseDto {
   int get lifetimeEarned => throw _privateConstructorUsedError;
   @JsonKey(name: 'earnings_by_pillar')
   List<EarningsByPillarEntryDto> get earningsByPillar =>
-      throw _privateConstructorUsedError;
+      throw _privateConstructorUsedError; // Champs de pagination (mode paginé uniquement, null en mode legacy).
+  @JsonKey(name: 'current_page')
+  int? get currentPage => throw _privateConstructorUsedError;
+  @JsonKey(name: 'last_page')
+  int? get lastPage => throw _privateConstructorUsedError;
+  @JsonKey(name: 'per_page')
+  int? get perPage => throw _privateConstructorUsedError;
+  int? get total => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -3410,7 +3422,11 @@ abstract class $TransactionsListResponseDtoCopyWith<$Res> {
       @JsonKey(name: 'current_balance') int currentBalance,
       @JsonKey(name: 'lifetime_earned') int lifetimeEarned,
       @JsonKey(name: 'earnings_by_pillar')
-      List<EarningsByPillarEntryDto> earningsByPillar});
+      List<EarningsByPillarEntryDto> earningsByPillar,
+      @JsonKey(name: 'current_page') int? currentPage,
+      @JsonKey(name: 'last_page') int? lastPage,
+      @JsonKey(name: 'per_page') int? perPage,
+      int? total});
 }
 
 /// @nodoc
@@ -3431,6 +3447,10 @@ class _$TransactionsListResponseDtoCopyWithImpl<$Res,
     Object? currentBalance = null,
     Object? lifetimeEarned = null,
     Object? earningsByPillar = null,
+    Object? currentPage = freezed,
+    Object? lastPage = freezed,
+    Object? perPage = freezed,
+    Object? total = freezed,
   }) {
     return _then(_value.copyWith(
       items: null == items
@@ -3449,6 +3469,22 @@ class _$TransactionsListResponseDtoCopyWithImpl<$Res,
           ? _value.earningsByPillar
           : earningsByPillar // ignore: cast_nullable_to_non_nullable
               as List<EarningsByPillarEntryDto>,
+      currentPage: freezed == currentPage
+          ? _value.currentPage
+          : currentPage // ignore: cast_nullable_to_non_nullable
+              as int?,
+      lastPage: freezed == lastPage
+          ? _value.lastPage
+          : lastPage // ignore: cast_nullable_to_non_nullable
+              as int?,
+      perPage: freezed == perPage
+          ? _value.perPage
+          : perPage // ignore: cast_nullable_to_non_nullable
+              as int?,
+      total: freezed == total
+          ? _value.total
+          : total // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -3467,7 +3503,11 @@ abstract class _$$TransactionsListResponseDtoImplCopyWith<$Res>
       @JsonKey(name: 'current_balance') int currentBalance,
       @JsonKey(name: 'lifetime_earned') int lifetimeEarned,
       @JsonKey(name: 'earnings_by_pillar')
-      List<EarningsByPillarEntryDto> earningsByPillar});
+      List<EarningsByPillarEntryDto> earningsByPillar,
+      @JsonKey(name: 'current_page') int? currentPage,
+      @JsonKey(name: 'last_page') int? lastPage,
+      @JsonKey(name: 'per_page') int? perPage,
+      int? total});
 }
 
 /// @nodoc
@@ -3487,6 +3527,10 @@ class __$$TransactionsListResponseDtoImplCopyWithImpl<$Res>
     Object? currentBalance = null,
     Object? lifetimeEarned = null,
     Object? earningsByPillar = null,
+    Object? currentPage = freezed,
+    Object? lastPage = freezed,
+    Object? perPage = freezed,
+    Object? total = freezed,
   }) {
     return _then(_$TransactionsListResponseDtoImpl(
       items: null == items
@@ -3505,6 +3549,22 @@ class __$$TransactionsListResponseDtoImplCopyWithImpl<$Res>
           ? _value._earningsByPillar
           : earningsByPillar // ignore: cast_nullable_to_non_nullable
               as List<EarningsByPillarEntryDto>,
+      currentPage: freezed == currentPage
+          ? _value.currentPage
+          : currentPage // ignore: cast_nullable_to_non_nullable
+              as int?,
+      lastPage: freezed == lastPage
+          ? _value.lastPage
+          : lastPage // ignore: cast_nullable_to_non_nullable
+              as int?,
+      perPage: freezed == perPage
+          ? _value.perPage
+          : perPage // ignore: cast_nullable_to_non_nullable
+              as int?,
+      total: freezed == total
+          ? _value.total
+          : total // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -3519,7 +3579,11 @@ class _$TransactionsListResponseDtoImpl
       @JsonKey(name: 'lifetime_earned') this.lifetimeEarned = 0,
       @JsonKey(name: 'earnings_by_pillar')
       final List<EarningsByPillarEntryDto> earningsByPillar =
-          const <EarningsByPillarEntryDto>[]})
+          const <EarningsByPillarEntryDto>[],
+      @JsonKey(name: 'current_page') this.currentPage,
+      @JsonKey(name: 'last_page') this.lastPage,
+      @JsonKey(name: 'per_page') this.perPage,
+      this.total})
       : _items = items,
         _earningsByPillar = earningsByPillar;
 
@@ -3551,9 +3615,22 @@ class _$TransactionsListResponseDtoImpl
     return EqualUnmodifiableListView(_earningsByPillar);
   }
 
+// Champs de pagination (mode paginé uniquement, null en mode legacy).
+  @override
+  @JsonKey(name: 'current_page')
+  final int? currentPage;
+  @override
+  @JsonKey(name: 'last_page')
+  final int? lastPage;
+  @override
+  @JsonKey(name: 'per_page')
+  final int? perPage;
+  @override
+  final int? total;
+
   @override
   String toString() {
-    return 'TransactionsListResponseDto(items: $items, currentBalance: $currentBalance, lifetimeEarned: $lifetimeEarned, earningsByPillar: $earningsByPillar)';
+    return 'TransactionsListResponseDto(items: $items, currentBalance: $currentBalance, lifetimeEarned: $lifetimeEarned, earningsByPillar: $earningsByPillar, currentPage: $currentPage, lastPage: $lastPage, perPage: $perPage, total: $total)';
   }
 
   @override
@@ -3567,7 +3644,13 @@ class _$TransactionsListResponseDtoImpl
             (identical(other.lifetimeEarned, lifetimeEarned) ||
                 other.lifetimeEarned == lifetimeEarned) &&
             const DeepCollectionEquality()
-                .equals(other._earningsByPillar, _earningsByPillar));
+                .equals(other._earningsByPillar, _earningsByPillar) &&
+            (identical(other.currentPage, currentPage) ||
+                other.currentPage == currentPage) &&
+            (identical(other.lastPage, lastPage) ||
+                other.lastPage == lastPage) &&
+            (identical(other.perPage, perPage) || other.perPage == perPage) &&
+            (identical(other.total, total) || other.total == total));
   }
 
   @JsonKey(ignore: true)
@@ -3577,7 +3660,11 @@ class _$TransactionsListResponseDtoImpl
       const DeepCollectionEquality().hash(_items),
       currentBalance,
       lifetimeEarned,
-      const DeepCollectionEquality().hash(_earningsByPillar));
+      const DeepCollectionEquality().hash(_earningsByPillar),
+      currentPage,
+      lastPage,
+      perPage,
+      total);
 
   @JsonKey(ignore: true)
   @override
@@ -3597,12 +3684,15 @@ class _$TransactionsListResponseDtoImpl
 abstract class _TransactionsListResponseDto
     implements TransactionsListResponseDto {
   const factory _TransactionsListResponseDto(
-          {required final List<TransactionDto> items,
-          @JsonKey(name: 'current_balance') final int currentBalance,
-          @JsonKey(name: 'lifetime_earned') final int lifetimeEarned,
-          @JsonKey(name: 'earnings_by_pillar')
-          final List<EarningsByPillarEntryDto> earningsByPillar}) =
-      _$TransactionsListResponseDtoImpl;
+      {required final List<TransactionDto> items,
+      @JsonKey(name: 'current_balance') final int currentBalance,
+      @JsonKey(name: 'lifetime_earned') final int lifetimeEarned,
+      @JsonKey(name: 'earnings_by_pillar')
+      final List<EarningsByPillarEntryDto> earningsByPillar,
+      @JsonKey(name: 'current_page') final int? currentPage,
+      @JsonKey(name: 'last_page') final int? lastPage,
+      @JsonKey(name: 'per_page') final int? perPage,
+      final int? total}) = _$TransactionsListResponseDtoImpl;
 
   factory _TransactionsListResponseDto.fromJson(Map<String, dynamic> json) =
       _$TransactionsListResponseDtoImpl.fromJson;
@@ -3618,6 +3708,17 @@ abstract class _TransactionsListResponseDto
   @override
   @JsonKey(name: 'earnings_by_pillar')
   List<EarningsByPillarEntryDto> get earningsByPillar;
+  @override // Champs de pagination (mode paginé uniquement, null en mode legacy).
+  @JsonKey(name: 'current_page')
+  int? get currentPage;
+  @override
+  @JsonKey(name: 'last_page')
+  int? get lastPage;
+  @override
+  @JsonKey(name: 'per_page')
+  int? get perPage;
+  @override
+  int? get total;
   @override
   @JsonKey(ignore: true)
   _$$TransactionsListResponseDtoImplCopyWith<_$TransactionsListResponseDtoImpl>

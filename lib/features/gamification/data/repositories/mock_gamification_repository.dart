@@ -108,6 +108,8 @@ class MockGamificationRepository implements GamificationRepository {
   Future<TransactionsListResult> getTransactions({
     String? type,
     String? pillar,
+    int? page,
+    int? perPage,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return TransactionsListResult(

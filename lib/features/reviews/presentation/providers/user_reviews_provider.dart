@@ -58,8 +58,7 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
     _ref.listen<AuthStatus>(
       authProvider.select((s) => s.status),
       (previous, next) {
-        final loggedOut = next == AuthStatus.unauthenticated &&
-            previous == AuthStatus.authenticated;
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
         final loggedIn = next == AuthStatus.authenticated &&
             previous != AuthStatus.authenticated &&
             previous != AuthStatus.initial;

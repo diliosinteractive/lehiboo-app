@@ -780,11 +780,10 @@ class HomeNewActivitiesNotifier
       if (activity == null || activity.nextSlot == null) continue;
 
       activities.add(activity);
-      if (activities.length >= _maxCards) break;
     }
 
     ref.keepAlive();
-    return activities;
+    return sortActivitiesChronologically(activities).take(_maxCards).toList();
   }
 
   Future<void> refresh() async {
@@ -813,12 +812,34 @@ class HomeActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
     }
 
     final events = feed.recommended.map(EventMapper.toEvent).toList();
+    final activities = EventToActivityMapper.toActivities(events);
     ref.keepAlive();
-    return EventToActivityMapper.toActivities(events);
+    return sortActivitiesChronologically(activities);
   }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => build());
   }
+}
+
+@visibleForTesting
+List<Activity> sortActivitiesChronologically(List<Activity> activities) {
+  final indexed = activities.asMap().entries.toList();
+  indexed.sort((a, b) {
+    final compareDates = _compareNullableDateTimes(
+      a.value.nextSlot?.startDateTime,
+      b.value.nextSlot?.startDateTime,
+    );
+    if (compareDates != 0) return compareDates;
+    return a.key.compareTo(b.key);
+  });
+  return indexed.map((entry) => entry.value).toList();
+}
+
+int _compareNullableDateTimes(DateTime? a, DateTime? b) {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return a.compareTo(b);
 }

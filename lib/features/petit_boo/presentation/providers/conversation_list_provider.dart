@@ -87,6 +87,8 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         perPage: 20,
       );
 
+      if (!mounted) return;
+
       if (kDebugMode) {
         debugPrint(
             '🦉 ConversationList: Got ${result.conversations.length} conversations');
@@ -102,6 +104,8 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         hasMore: result.hasNext,
       );
     } catch (e) {
+      if (!mounted) return;
+
       if (kDebugMode) {
         debugPrint('🦉 ConversationList: Error fetching conversations: $e');
       }
@@ -124,6 +128,8 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         perPage: 20,
       );
 
+      if (!mounted) return;
+
       state = state.copyWith(
         conversations: [...state.conversations, ...result.conversations],
         isLoadingMore: false,
@@ -132,6 +138,8 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         hasMore: result.hasNext,
       );
     } catch (e) {
+      if (!mounted) return;
+
       state = state.copyWith(
         isLoadingMore: false,
         error: _getError(e),
@@ -153,6 +161,8 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     try {
       await _repository.deleteConversation(uuid);
 
+      if (!mounted) return false;
+
       // Remove from local list
       state = state.copyWith(
         conversations:
@@ -161,6 +171,8 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
 
       return true;
     } catch (e) {
+      if (!mounted) return false;
+
       state = state.copyWith(error: _getError(e));
       return false;
     }

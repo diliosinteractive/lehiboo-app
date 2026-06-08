@@ -6788,6 +6788,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get gamificationPillarParticipation => 'Participation';
 
   @override
+  String get gamificationTypeEarned => 'Gagné';
+
+  @override
+  String get gamificationTypeSpent => 'Dépensé';
+
+  @override
+  String get gamificationTypeBonus => 'Bonus';
+
+  @override
+  String get gamificationTypePurchase => 'Achat';
+
+  @override
+  String get gamificationTypeRefund => 'Remboursement';
+
+  @override
   String get gamificationProgressionTitle => 'Progression';
 
   @override

@@ -23,8 +23,7 @@ final hibonsAuthSyncProvider = Provider<void>((ref) {
       final isLogin = next == AuthStatus.authenticated &&
           previous != AuthStatus.authenticated &&
           previous != AuthStatus.initial;
-      final isLogout = next == AuthStatus.unauthenticated &&
-          previous == AuthStatus.authenticated;
+      final isLogout = didTransitionToUnauthenticated(previous, next);
 
       if (!isLogin && !isLogout) return;
 

@@ -176,6 +176,129 @@ final earningsByPillarProvider = Provider<AsyncValue<List<EarningsByPillarEntry>
       .whenData((r) => r.earningsByPillar);
 });
 
+// ==== Transactions paginées (scroll infini) ====
+
+/// Clé du family : combinaison des filtres `type` + `pillar`. Le record offre
+/// une égalité structurelle, donc changer de filtre crée une nouvelle instance
+/// de notifier qui charge automatiquement la page 1.
+typedef TransactionsFilter = ({String? type, String? pillar});
+
+const _transactionsPerPage = 20;
+
+/// State de la liste paginée des transactions Hibons.
+class HibonsTransactionsState {
+  final AsyncValue<List<HibonTransaction>> transactions;
+  final int currentPage;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final int currentBalance;
+  final int lifetimeEarned;
+
+  const HibonsTransactionsState({
+    this.transactions = const AsyncValue.loading(),
+    this.currentPage = 1,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.currentBalance = 0,
+    this.lifetimeEarned = 0,
+  });
+
+  HibonsTransactionsState copyWith({
+    AsyncValue<List<HibonTransaction>>? transactions,
+    int? currentPage,
+    bool? hasMore,
+    bool? isLoadingMore,
+    int? currentBalance,
+    int? lifetimeEarned,
+  }) {
+    return HibonsTransactionsState(
+      transactions: transactions ?? this.transactions,
+      currentPage: currentPage ?? this.currentPage,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      currentBalance: currentBalance ?? this.currentBalance,
+      lifetimeEarned: lifetimeEarned ?? this.lifetimeEarned,
+    );
+  }
+}
+
+class HibonsTransactionsNotifier extends StateNotifier<HibonsTransactionsState> {
+  final GamificationRepository _repository;
+  final TransactionsFilter _filter;
+
+  HibonsTransactionsNotifier(this._repository, this._filter)
+      : super(const HibonsTransactionsState()) {
+    load();
+  }
+
+  /// Charge (ou recharge) la première page.
+  Future<void> load() async {
+    state = state.copyWith(
+      transactions: const AsyncValue.loading(),
+      currentPage: 1,
+      hasMore: false,
+    );
+    try {
+      final result = await _repository.getTransactions(
+        type: _filter.type,
+        pillar: _filter.pillar,
+        page: 1,
+        perPage: _transactionsPerPage,
+      );
+      state = state.copyWith(
+        transactions: AsyncValue.data(result.items),
+        currentPage: 1,
+        hasMore: result.hasMore,
+        currentBalance: result.currentBalance,
+        lifetimeEarned: result.lifetimeEarned,
+      );
+    } catch (e, st) {
+      debugPrint('🎮 HibonsTransactionsNotifier.load error: $e\n$st');
+      state = state.copyWith(transactions: AsyncValue.error(e, st));
+    }
+  }
+
+  /// Pull-to-refresh : identique à [load].
+  Future<void> refresh() => load();
+
+  /// Charge la page suivante et l'ajoute à la liste existante.
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasMore) return;
+    final current = state.transactions.valueOrNull;
+    if (current == null) return;
+
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final nextPage = state.currentPage + 1;
+      final result = await _repository.getTransactions(
+        type: _filter.type,
+        pillar: _filter.pillar,
+        page: nextPage,
+        perPage: _transactionsPerPage,
+      );
+      state = state.copyWith(
+        transactions: AsyncValue.data([...current, ...result.items]),
+        currentPage: nextPage,
+        hasMore: result.hasMore,
+        isLoadingMore: false,
+        currentBalance: result.currentBalance,
+        lifetimeEarned: result.lifetimeEarned,
+      );
+    } catch (_) {
+      // Conserver la liste existante en cas d'échec d'une page suivante.
+      state = state.copyWith(isLoadingMore: false);
+    }
+  }
+}
+
+/// Liste paginée des transactions, filtrée par `type` + `pillar`.
+final hibonsTransactionsListProvider = StateNotifierProvider.autoDispose
+    .family<HibonsTransactionsNotifier, HibonsTransactionsState,
+        TransactionsFilter>((ref, filter) {
+  final repository = ref.watch(gamificationRepositoryProvider);
+  return HibonsTransactionsNotifier(repository, filter);
+});
+
 // ==== Balance & Actions Catalog (Plan 05) ====
 
 /// Endpoint léger pour le badge header au cold start / pull-to-refresh.

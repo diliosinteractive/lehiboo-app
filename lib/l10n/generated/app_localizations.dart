@@ -11601,6 +11601,36 @@ abstract class AppLocalizations {
   /// **'Participation'**
   String get gamificationPillarParticipation;
 
+  /// No description provided for @gamificationTypeEarned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gagné'**
+  String get gamificationTypeEarned;
+
+  /// No description provided for @gamificationTypeSpent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dépensé'**
+  String get gamificationTypeSpent;
+
+  /// No description provided for @gamificationTypeBonus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonus'**
+  String get gamificationTypeBonus;
+
+  /// No description provided for @gamificationTypePurchase.
+  ///
+  /// In fr, this message translates to:
+  /// **'Achat'**
+  String get gamificationTypePurchase;
+
+  /// No description provided for @gamificationTypeRefund.
+  ///
+  /// In fr, this message translates to:
+  /// **'Remboursement'**
+  String get gamificationTypeRefund;
+
   /// No description provided for @gamificationProgressionTitle.
   ///
   /// In fr, this message translates to:

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+const Object _notProvided = Object();
+
 /// États possibles du VoiceFab
 enum VoiceFabStatus {
   /// État normal, FAB classique
@@ -34,14 +36,18 @@ class VoiceFabState {
 
   VoiceFabState copyWith({
     VoiceFabStatus? status,
-    String? transcription,
-    String? errorMessage,
+    Object? transcription = _notProvided,
+    Object? errorMessage = _notProvided,
     bool? hasShownHint,
   }) {
     return VoiceFabState(
       status: status ?? this.status,
-      transcription: transcription ?? this.transcription,
-      errorMessage: errorMessage ?? this.errorMessage,
+      transcription: identical(transcription, _notProvided)
+          ? this.transcription
+          : transcription as String?,
+      errorMessage: identical(errorMessage, _notProvided)
+          ? this.errorMessage
+          : errorMessage as String?,
       hasShownHint: hasShownHint ?? this.hasShownHint,
     );
   }

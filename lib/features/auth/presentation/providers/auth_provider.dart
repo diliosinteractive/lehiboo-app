@@ -14,7 +14,6 @@ import '../../../../domain/entities/user.dart';
 import '../../data/mappers/auth_mapper.dart';
 import '../../data/models/auth_response_dto.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../../data/repositories/auth_repository_impl.dart';
 import '../../../booking/presentation/providers/order_cart_provider.dart';
 import '../../../favorites/data/datasources/favorites_local_datasource.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
@@ -42,6 +41,8 @@ enum AuthStatus {
   error
 }
 
+const Object _notProvided = Object();
+
 class AuthState {
   final AuthStatus status;
   final HbUser? user;
@@ -60,23 +61,38 @@ class AuthState {
 
   AuthState copyWith({
     AuthStatus? status,
-    HbUser? user,
-    String? errorMessage,
-    String? pendingUserId,
-    String? pendingEmail,
+    Object? user = _notProvided,
+    Object? errorMessage = _notProvided,
+    Object? pendingUserId = _notProvided,
+    Object? pendingEmail = _notProvided,
   }) {
     return AuthState(
       status: status ?? this.status,
-      user: user ?? this.user,
-      errorMessage: errorMessage,
-      pendingUserId: pendingUserId ?? this.pendingUserId,
-      pendingEmail: pendingEmail ?? this.pendingEmail,
+      user: user == _notProvided ? this.user : user as HbUser?,
+      errorMessage: errorMessage == _notProvided
+          ? this.errorMessage
+          : errorMessage as String?,
+      pendingUserId: pendingUserId == _notProvided
+          ? this.pendingUserId
+          : pendingUserId as String?,
+      pendingEmail: pendingEmail == _notProvided
+          ? this.pendingEmail
+          : pendingEmail as String?,
     );
   }
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isLoading => status == AuthStatus.loading;
   bool get isPendingVerification => status == AuthStatus.pendingVerification;
+}
+
+bool didTransitionToUnauthenticated(
+  AuthStatus? previous,
+  AuthStatus next,
+) {
+  return next == AuthStatus.unauthenticated &&
+      previous != AuthStatus.unauthenticated &&
+      previous != AuthStatus.initial;
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -118,6 +134,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
           status: AuthStatus.pendingLoginOtp,
           pendingUserId: result.userId,
           pendingEmail: result.email,
+        );
+        // otp_sent — code 2FA envoyé suite à un login valide.
+        _analytics.logEvent(
+          AnalyticsEvent.otpSent,
+          params: {AnalyticsParam.type: AnalyticsOtpType.login},
         );
         return result;
       }
@@ -166,6 +187,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
+    // signup_started — entrée dans le funnel d'inscription (form soumis).
+    // Loggué avant l'appel API pour capter aussi les tentatives qui échouent.
+    _analytics.logEvent(
+      AnalyticsEvent.signupStarted,
+      params: {AnalyticsParam.method: AnalyticsMethod.email},
+    );
+
     try {
       final result = await _authRepository.register(
         email: email,
@@ -180,6 +208,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.pendingVerification,
         pendingUserId: result.userId,
         pendingEmail: result.email,
+      );
+
+      // otp_sent — le backend a déclenché l'envoi du code de vérification.
+      _analytics.logEvent(
+        AnalyticsEvent.otpSent,
+        params: {AnalyticsParam.type: AnalyticsOtpType.register},
       );
 
       return result;
@@ -217,6 +251,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingEmail: null,
       );
       _syncAuthUser(result.user);
+      _analytics.logEvent(
+        AnalyticsEvent.otpVerified,
+        params: {AnalyticsParam.type: AnalyticsOtpType.register},
+      );
       _analytics.logEvent(
         AnalyticsEvent.signUp,
         params: {AnalyticsParam.method: AnalyticsMethod.email},
@@ -263,6 +301,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: email,
         type: type,
       );
+      // otp_sent — renvoi manuel du code (`type` = register | login).
+      _analytics.logEvent(
+        AnalyticsEvent.otpSent,
+        params: {AnalyticsParam.type: type},
+      );
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -293,6 +336,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingEmail: null,
       );
       _syncAuthUser(result.user);
+      _analytics.logEvent(
+        AnalyticsEvent.otpVerified,
+        params: {AnalyticsParam.type: AnalyticsOtpType.login},
+      );
       _analytics.logEvent(
         AnalyticsEvent.login,
         params: {AnalyticsParam.method: AnalyticsMethod.email},
@@ -617,7 +664,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  final authRepository = ref.watch(authRepositoryImplProvider);
+  final authRepository = ref.watch(authRepositoryProvider);
   return AuthNotifier(authRepository, ref);
 });
 

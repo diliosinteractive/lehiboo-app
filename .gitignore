@@ -51,3 +51,6 @@ docs/session-report-*.md
 .env.development
 .env.production
 .env.staging
+
+# FVM Version Cache
+.fvm/

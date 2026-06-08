@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../data/repositories/in_app_notifications_repository_impl.dart';
 import '../../domain/entities/in_app_notification.dart';
 import '../../domain/repositories/in_app_notifications_repository.dart';
 
@@ -12,7 +11,7 @@ final inAppNotificationsProvider =
     StateNotifierProvider<InAppNotificationsNotifier, InAppNotificationsState>(
         (ref) {
   return InAppNotificationsNotifier(
-    repository: ref.watch(inAppNotificationsRepositoryImplProvider),
+    repository: ref.watch(inAppNotificationsRepositoryProvider),
     ref: ref,
   );
 });
@@ -155,6 +154,20 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     bool? unreadOnly,
   }) async {
     final nextUnreadOnly = unreadOnly ?? state.unreadOnly;
+    if (!_ref.read(authProvider).isAuthenticated) {
+      state = state.copyWith(
+        notifications: const AsyncValue.data([]),
+        currentPage: AppConstants.initialPage,
+        hasMore: false,
+        isLoadingMore: false,
+        unreadOnly: nextUnreadOnly,
+        unreadCount: 0,
+        hasLoadedInbox: false,
+        clearOrganizationId: true,
+      );
+      return;
+    }
+
     final current = state.notifications.valueOrNull;
 
     if (refresh || current == null || !state.hasLoadedInbox) {
@@ -204,6 +217,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
   }
 
   Future<void> loadMore() async {
+    if (!_ref.read(authProvider).isAuthenticated) return;
     if (state.isLoadingMore || !state.hasMore) return;
     final current = state.notifications.valueOrNull;
     if (current == null) return;

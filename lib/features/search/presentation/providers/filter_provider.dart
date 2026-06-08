@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/features/events/data/models/event_reference_data_dto.dart';
 import 'package:lehiboo/features/events/data/models/search_suggestions_dto.dart';
@@ -83,14 +84,44 @@ bool _hasPriceRangeFilter(EventFilter filter) {
 /// Main filter state provider
 final eventFilterProvider =
     StateNotifierProvider<EventFilterNotifier, EventFilter>((ref) {
-  return EventFilterNotifier();
+  return EventFilterNotifier(ref);
+});
+
+class SelectedSearchEvent {
+  final String id;
+  final String slug;
+  final String title;
+
+  const SelectedSearchEvent({
+    required this.id,
+    required this.slug,
+    required this.title,
+  });
+
+  factory SelectedSearchEvent.fromSuggestion(
+    SearchSuggestionItemDto suggestion,
+  ) {
+    return SelectedSearchEvent(
+      id: suggestion.id,
+      slug: suggestion.slug,
+      title: suggestion.label,
+    );
+  }
+
+  String get identifier => slug.isNotEmpty ? slug : id;
+}
+
+final selectedSearchEventProvider = StateProvider<SelectedSearchEvent?>((ref) {
+  return null;
 });
 
 /// Filter state notifier with all update methods and persistence
 class EventFilterNotifier extends StateNotifier<EventFilter> {
-  EventFilterNotifier() : super(const EventFilter()) {
+  EventFilterNotifier([this._ref]) : super(const EventFilter()) {
     _loadPersistedFilters();
   }
+
+  final Ref? _ref;
 
   /// Load persisted filters from SharedPreferences
   Future<void> _loadPersistedFilters() async {
@@ -183,17 +214,32 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
 
   // Reset all filters
   void resetAll() {
+    _clearSelectedSearchEvent();
     state = const EventFilter();
     _persistFilters();
   }
 
   // Search query
   void setSearchQuery(String query) {
-    state = state.copyWith(searchQuery: query);
+    final selectedEvent = _ref?.read(selectedSearchEventProvider);
+    if (selectedEvent != null && selectedEvent.title.trim() != query.trim()) {
+      _clearSelectedSearchEvent();
+    }
+    state = state.copyWith(searchQuery: query, page: 1);
+  }
+
+  void selectSearchEvent(SelectedSearchEvent event) {
+    _ref?.read(selectedSearchEventProvider.notifier).state = event;
+    state = state.copyWith(searchQuery: event.title, page: 1);
   }
 
   void clearSearchQuery() {
-    state = state.copyWith(searchQuery: '');
+    _clearSelectedSearchEvent();
+    state = state.copyWith(searchQuery: '', page: 1);
+  }
+
+  void _clearSelectedSearchEvent() {
+    _ref?.read(selectedSearchEventProvider.notifier).state = null;
   }
 
   // Date filters
@@ -556,7 +602,23 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
   }
 
   // Apply multiple filters at once
-  void applyFilters(EventFilter newFilter) {
+  void applyFilters(
+    EventFilter newFilter, {
+    SelectedSearchEvent? selectedSearchEvent,
+  }) {
+    final nextSearchQuery = newFilter.searchQuery.trim();
+    final currentSelectedEvent = _ref?.read(selectedSearchEventProvider);
+    if (selectedSearchEvent != null &&
+        selectedSearchEvent.title.trim() == nextSearchQuery) {
+      _ref?.read(selectedSearchEventProvider.notifier).state =
+          selectedSearchEvent;
+    } else if (currentSelectedEvent != null &&
+        currentSelectedEvent.title.trim() == nextSearchQuery) {
+      _ref?.read(selectedSearchEventProvider.notifier).state =
+          currentSelectedEvent;
+    } else {
+      _clearSelectedSearchEvent();
+    }
     state = newFilter.copyWith(page: 1);
     _persistFilters();
   }
@@ -759,7 +821,16 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
   @override
   Future<PaginatedActivities> build() async {
     final filter = ref.watch(eventFilterProvider);
+    final selectedSearchEvent = ref.watch(selectedSearchEventProvider);
     final eventRepository = ref.watch(eventRepositoryProvider);
+
+    if (_isSelectedSearchEventActive(selectedSearchEvent, filter)) {
+      return _fetchSelectedSearchEvent(
+        eventRepository,
+        filter,
+        selectedSearchEvent!,
+      );
+    }
 
     // If it's a new search, or if we are verifying valid initial build
     // But wait, if page > 1, it means we triggered loadMore.
@@ -807,6 +878,55 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
       }
       rethrow;
     }
+  }
+
+  bool _isSelectedSearchEventActive(
+    SelectedSearchEvent? selectedSearchEvent,
+    EventFilter filter,
+  ) {
+    return selectedSearchEvent != null &&
+        selectedSearchEvent.identifier.isNotEmpty &&
+        selectedSearchEvent.title.trim() == filter.searchQuery.trim();
+  }
+
+  Future<PaginatedActivities> _fetchSelectedSearchEvent(
+    EventRepository eventRepository,
+    EventFilter filter,
+    SelectedSearchEvent selectedSearchEvent,
+  ) async {
+    try {
+      final event = await eventRepository.getEvent(
+        selectedSearchEvent.identifier,
+      );
+      return _singlePageActivities([event]);
+    } catch (_) {
+      final result = await _fetchEventsForFilter(
+        eventRepository,
+        filter.copyWith(page: 1, perPage: 100),
+        page: 1,
+        perPage: 100,
+      );
+      final exactEvents = result.events.where((event) {
+        return event.slug == selectedSearchEvent.slug ||
+            event.id == selectedSearchEvent.id ||
+            _normalizeSearchText(event.title) ==
+                _normalizeSearchText(selectedSearchEvent.title);
+      }).toList();
+      return _singlePageActivities(exactEvents);
+    }
+  }
+
+  PaginatedActivities _singlePageActivities(List<Event> events) {
+    final activities = EventToActivityMapper.toActivities(events);
+    return PaginatedActivities(
+      activities: activities,
+      hasMore: false,
+      totalItems: activities.length,
+    );
+  }
+
+  String _normalizeSearchText(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
 }
 

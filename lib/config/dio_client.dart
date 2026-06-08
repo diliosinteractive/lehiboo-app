@@ -18,6 +18,13 @@ final dioProvider = Provider<Dio>((ref) {
 /// Callback type for force logout triggered by 401 interceptor.
 typedef ForceLogoutCallback = Future<void> Function();
 
+@visibleForTesting
+String maskAuthTokenForDebugLog(String token) {
+  if (token.length <= 8) return '***';
+
+  return '${token.substring(0, 4)}...${token.substring(token.length - 4)}';
+}
+
 /// Singleton storage instance shared across the app
 /// This ensures consistency between token writes (auth) and reads (interceptor)
 class SharedSecureStorage {
@@ -139,6 +146,13 @@ class JwtAuthInterceptor extends QueuedInterceptor {
 
   static const _refreshPath = '/auth/refresh';
 
+  /// Tentatives totales du refresh : 1 initiale + 2 retries.
+  static const _maxRefreshAttempts = 3;
+
+  /// Backoff de base entre deux tentatives de refresh (multiplié par le n° de
+  /// tentative). Sauté quand on détecte qu'un pair a déjà rotaté le token.
+  static const _refreshRetryBackoff = Duration(milliseconds: 400);
+
   /// Endpoints pour lesquels l'absence de token est attendue (juste pour le log).
   /// On envoie **toujours** le token si on en a un — même sur ces routes — car
   /// certaines sont user-aware (ex: `/events/{slug}/questions` renvoie
@@ -194,14 +208,14 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     }
 
     if (kDebugMode) {
-      // Debug-only: print the full bearer so requests can be replayed via
-      // curl/Postman. NEVER enable in release — exposes account credentials.
       final hasToken = !isRefreshRequest && token != null && token.isNotEmpty;
       debugPrint(
         '🔐 JwtAuthInterceptor: path=${options.path}, hasToken=$hasToken',
       );
       if (hasToken) {
-        debugPrint('🔐   Authorization: Bearer $token');
+        debugPrint(
+          '🔐   Authorization: Bearer ${maskAuthTokenForDebugLog(token)}',
+        );
       }
     }
 
@@ -274,40 +288,101 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     super.onError(err, handler);
   }
 
+  /// Rafraîchit l'access token avec jusqu'à [_maxRefreshAttempts] tentatives
+  /// (1 initiale + 2 retries).
+  ///
+  /// Les retries couvrent deux situations :
+  ///   1. **Échec réseau transitoire** pendant le POST /auth/refresh (timeout,
+  ///      connexion coupée, 5xx) — on réessaie après un backoff.
+  ///   2. **Course concurrente** : en back-office, plusieurs requêtes
+  ///      authentifiées partent en parallèle et peuvent toutes prendre un 401
+  ///      à l'expiration du token. Si un *pair* a rafraîchi entre-temps (et que
+  ///      le backend rotate le refresh token), notre refresh_token est déjà
+  ///      consommé → 401. On relit alors le nouveau token en storage et on
+  ///      réessaie immédiatement, au lieu de provoquer une déconnexion.
   Future<_RefreshTokens?> _refreshAccessToken() async {
-    final refreshToken = await _storage.read(
-      key: AppConstants.keyRefreshToken,
-    );
-    if (refreshToken == null || refreshToken.isEmpty) return null;
-
-    try {
-      final response = await _buildRefreshDio().post<Map<String, dynamic>>(
-        _refreshPath,
-        data: {'refresh_token': refreshToken},
-      );
-
-      final tokens = _parseRefreshTokens(response.data);
-      if (tokens == null) return null;
-
-      await _storage.write(
-        key: AppConstants.keyAuthToken,
-        value: tokens.accessToken,
-      );
-      await _storage.write(
+    for (var attempt = 1; attempt <= _maxRefreshAttempts; attempt++) {
+      final refreshToken = await _storage.read(
         key: AppConstants.keyRefreshToken,
-        value: tokens.refreshToken,
       );
+      if (refreshToken == null || refreshToken.isEmpty) return null;
 
-      if (kDebugMode) {
-        debugPrint('🔐 JwtAuthInterceptor: access token refreshed');
+      try {
+        final response = await _buildRefreshDio().post<Map<String, dynamic>>(
+          _refreshPath,
+          data: {'refresh_token': refreshToken},
+        );
+
+        final tokens = _parseRefreshTokens(response.data);
+        if (tokens != null) {
+          await _storage.write(
+            key: AppConstants.keyAuthToken,
+            value: tokens.accessToken,
+          );
+          await _storage.write(
+            key: AppConstants.keyRefreshToken,
+            value: tokens.refreshToken,
+          );
+          if (kDebugMode) {
+            debugPrint(
+              '🔐 JwtAuthInterceptor: access token refreshed '
+              '(tentative $attempt/$_maxRefreshAttempts)',
+            );
+          }
+          return tokens;
+        }
+
+        // HTTP 200 mais payload sans tokens exploitables : réessayer ne sert à
+        // rien (ce n'est ni transitoire ni une rotation), on abandonne.
+        if (kDebugMode) {
+          debugPrint(
+            '🔐 JwtAuthInterceptor: refresh 200 sans tokens (tentative $attempt)',
+          );
+        }
+        return null;
+      } on DioException catch (e) {
+        final status = e.response?.statusCode;
+        // Erreur transitoire : pas de réponse (réseau/timeout) ou 5xx serveur.
+        final isTransient = status == null || status >= 500;
+
+        // Course concurrente : le refresh token en storage a-t-il changé depuis
+        // celui qu'on vient d'essayer ? Si oui, un pair a rafraîchi → on
+        // réessaie tout de suite avec le nouveau.
+        final current = await _storage.read(
+          key: AppConstants.keyRefreshToken,
+        );
+        final rotatedByPeer = current != null &&
+            current.isNotEmpty &&
+            current != refreshToken;
+
+        final shouldRetry = attempt < _maxRefreshAttempts &&
+            (isTransient || rotatedByPeer);
+
+        if (kDebugMode) {
+          debugPrint(
+            '🔐 JwtAuthInterceptor: refresh échoué '
+            '(tentative $attempt/$_maxRefreshAttempts, status=$status, '
+            'rotatedByPeer=$rotatedByPeer, retry=$shouldRetry): ${e.message}',
+          );
+        }
+
+        if (!shouldRetry) return null;
+        // Rotation par un pair → retry immédiat ; sinon backoff progressif.
+        if (!rotatedByPeer) {
+          await Future<void>.delayed(_refreshRetryBackoff * attempt);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '🔐 JwtAuthInterceptor: refresh erreur inattendue '
+            '(tentative $attempt): $e',
+          );
+        }
+        if (attempt >= _maxRefreshAttempts) return null;
+        await Future<void>.delayed(_refreshRetryBackoff * attempt);
       }
-      return tokens;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🔐 JwtAuthInterceptor: refresh failed: $e');
-      }
-      return null;
     }
+    return null;
   }
 
   Dio _buildRefreshDio() {

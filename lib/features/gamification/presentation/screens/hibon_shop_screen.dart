@@ -239,7 +239,7 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
                                       size: 20,
                                     ),
                                   ),
-                            title: Text(tx.title ?? tx.description),
+                            title: Text(tx.title ?? tx.description ?? ''),
                             subtitle: Text(
                               tx.subtitle != null
                                   ? '${tx.subtitle} • ${DateFormat('dd/MM HH:mm').format(tx.timestamp)}'
