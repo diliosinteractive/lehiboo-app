@@ -26,6 +26,7 @@ import '../widgets/detail/event_social_proof.dart';
 import '../widgets/detail/event_organizer_card.dart';
 import '../widgets/detail/event_date_selector.dart';
 import '../widgets/detail/event_ticket_card.dart';
+import '../widgets/detail/event_indicative_prices.dart';
 import '../widgets/detail/event_practical_info.dart';
 import '../widgets/detail/event_indicative_prices.dart';
 import '../widgets/detail/event_accessibility_section.dart';
@@ -487,9 +488,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               const SizedBox(height: 24),
 
-              // 5b. Tarification (discovery events only)
-              if (!event.hasDirectBooking) ...[
+              // 5b. Tarification (discovery events only, unless indicative
+              // prices are shown in their dedicated section below)
+              if (!event.hasDirectBooking &&
+                  (event.discoveryPricingType != 'paid' ||
+                      event.indicativePrices.isEmpty)) ...[
                 _buildPricingSection(event),
+                const SizedBox(height: 24),
+              ],
+
+              if (!event.hasDirectBooking &&
+                  event.indicativePrices.isNotEmpty) ...[
+                EventIndicativePrices(prices: event.indicativePrices),
                 const SizedBox(height: 24),
               ],
 
@@ -519,6 +529,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   EventIndicativePrices(prices: event.indicativePrices),
                   const SizedBox(height: 24),
                 ],
+              ],
+
+              if (event.hasDirectBooking &&
+                  event.indicativePrices.isNotEmpty) ...[
+                EventIndicativePrices(prices: event.indicativePrices),
+                const SizedBox(height: 24),
               ],
 
               // 5c. Tags & caractéristiques

@@ -127,6 +127,42 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 /// n'importe où (ex: l'intercepteur Dio Hibons via le coordinateur).
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
+const List<String> protectedRoutePrefixes = [
+  '/messages',
+  '/notifications',
+  '/alerts',
+  '/trip-plans',
+  '/my-reminders',
+  '/my-questions',
+  '/my-reviews',
+];
+
+bool isProtectedRoute(String matchedLocation) {
+  return protectedRoutePrefixes.any(
+    (prefix) =>
+        matchedLocation == prefix || matchedLocation.startsWith('$prefix/'),
+  );
+}
+
+String loginRedirectLocation(Uri attemptedUri) {
+  final redirectTarget =
+      attemptedUri.toString().isEmpty ? '/' : attemptedUri.toString();
+  return Uri(
+    path: '/login',
+    queryParameters: {'redirect': redirectTarget},
+  ).toString();
+}
+
+String? protectedRouteRedirect({
+  required AuthStatus authStatus,
+  required String matchedLocation,
+  required Uri attemptedUri,
+}) {
+  if (authStatus != AuthStatus.unauthenticated) return null;
+  if (!isProtectedRoute(matchedLocation)) return null;
+  return loginRedirectLocation(attemptedUri);
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final prefs = ref.read(sharedPreferencesProvider);
   final analytics = ref.read(analyticsServiceProvider);
@@ -208,13 +244,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       // the navigation stack (losing e.g. the EventDetail a guest guard was
       // invoked from).
 
-      // 4. Messages require authentication — redirect to login if not authenticated.
-      //    Covers direct navigation, deep links from FCM, and URL-bar entry.
-      // 4. Messages require authentication — handled via GuestGuard in UI entries
-      // for a better UX (modal instead of full-screen redirect).
-      if (state.matchedLocation.startsWith('/messages') &&
-          authState.status == AuthStatus.unauthenticated) {
-        return null;
+      final protectedRedirect = protectedRouteRedirect(
+        authStatus: authState.status,
+        matchedLocation: state.matchedLocation,
+        attemptedUri: state.uri,
+      );
+      if (protectedRedirect != null) {
+        debugPrint('🔀 Protected route - redirecting to $protectedRedirect');
+        return protectedRedirect;
       }
 
       debugPrint('🔀 No redirect');

@@ -1,4 +1,12 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../entities/in_app_notification.dart';
+
+final inAppNotificationsRepositoryProvider =
+    Provider<InAppNotificationsRepository>((ref) {
+  throw UnimplementedError(
+      'inAppNotificationsRepositoryProvider not initialized');
+});
 
 abstract class InAppNotificationsRepository {
   Future<InAppNotificationsPage> getNotifications({

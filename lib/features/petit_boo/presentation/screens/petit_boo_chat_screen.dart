@@ -146,6 +146,8 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
         children: [
           if (chatState.error != null) _buildErrorBanner(chatState.error!),
           if (!chatState.isServiceAvailable) _buildServiceUnavailableBanner(),
+          if (chatState.pendingConfirmation != null)
+            _buildConfirmationBanner(chatState),
           Expanded(
             child: chatState.isLoading
                 ? Center(
@@ -327,6 +329,103 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
                   EdgeInsets.symmetric(horizontal: PetitBooTheme.spacing12),
             ),
             child: Text(context.l10n.commonRetry),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfirmationBanner(PetitBooChatState state) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: PetitBooTheme.spacing16,
+        vertical: PetitBooTheme.spacing12,
+      ),
+      decoration: BoxDecoration(
+        color: PetitBooTheme.primaryLight,
+        border: Border(
+          bottom: BorderSide(
+            color: PetitBooTheme.primary.withValues(alpha: 0.18),
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.verified_user_outlined,
+            color: PetitBooTheme.primary,
+            size: PetitBooTheme.iconMd,
+          ),
+          SizedBox(width: PetitBooTheme.spacing10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.l10n.petitBooConfirmationTitle,
+                  style: PetitBooTheme.label.copyWith(
+                    color: PetitBooTheme.textPrimary,
+                  ),
+                ),
+                SizedBox(height: PetitBooTheme.spacing2),
+                Text(
+                  context.l10n.petitBooConfirmationBody,
+                  style: PetitBooTheme.bodySm.copyWith(
+                    color: PetitBooTheme.textSecondary,
+                  ),
+                ),
+                SizedBox(height: PetitBooTheme.spacing8),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: state.isConfirmingAction
+                          ? null
+                          : () {
+                              ref
+                                  .read(petitBooChatProvider.notifier)
+                                  .cancelPendingAction();
+                            },
+                      style: TextButton.styleFrom(
+                        foregroundColor: PetitBooTheme.textSecondary,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: PetitBooTheme.spacing10,
+                        ),
+                      ),
+                      child: Text(context.l10n.commonCancel),
+                    ),
+                    SizedBox(width: PetitBooTheme.spacing8),
+                    FilledButton(
+                      onPressed: state.isConfirmingAction
+                          ? null
+                          : () {
+                              ref
+                                  .read(petitBooChatProvider.notifier)
+                                  .confirmPendingAction();
+                            },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: PetitBooTheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: PetitBooTheme.spacing14,
+                        ),
+                      ),
+                      child: state.isConfirmingAction
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(context.l10n.petitBooConfirmationConfirm),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

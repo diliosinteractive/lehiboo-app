@@ -40,8 +40,7 @@ class RemindersListNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
     _ref.listen<AuthStatus>(
       authProvider.select((s) => s.status),
       (previous, next) {
-        final loggedOut = next == AuthStatus.unauthenticated &&
-            previous == AuthStatus.authenticated;
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
         final loggedIn = next == AuthStatus.authenticated &&
             previous != AuthStatus.authenticated &&
             previous != AuthStatus.initial;
@@ -71,7 +70,9 @@ class RemindersListNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
     // Optimistic removal
     final previous = state.valueOrNull ?? [];
     state = AsyncValue.data(
-      previous.where((r) => !(r.eventUuid == eventUuid && r.id == slotUuid)).toList(),
+      previous
+          .where((r) => !(r.eventUuid == eventUuid && r.id == slotUuid))
+          .toList(),
     );
 
     try {

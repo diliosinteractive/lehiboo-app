@@ -175,6 +175,31 @@ class PetitBooApiDataSource {
     }
   }
 
+  /// Confirm and execute a pending Petit Boo action.
+  Future<Map<String, dynamic>> confirmPendingAction(String actionId) async {
+    try {
+      final response = await _dio.post('/api/v1/actions/$actionId/confirm');
+      return ApiResponseHandler.extractObject(response.data);
+    } on DioException catch (e) {
+      throw PetitBooApiException(
+        ApiResponseHandler.extractError(e, fallback: _petitBooApiFallback()),
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  /// Cancel a pending Petit Boo action.
+  Future<void> cancelPendingAction(String actionId) async {
+    try {
+      await _dio.post('/api/v1/actions/$actionId/cancel');
+    } on DioException catch (e) {
+      throw PetitBooApiException(
+        ApiResponseHandler.extractError(e, fallback: _petitBooApiFallback()),
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
   /// Get list of available tool schemas for dynamic UI rendering
   Future<List<ToolSchemaDto>> getToolSchemas() async {
     try {

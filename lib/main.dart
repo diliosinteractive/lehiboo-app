@@ -36,6 +36,14 @@ import 'features/booking/data/repositories/api_booking_repository_impl.dart';
 import 'features/booking/presentation/controllers/booking_flow_controller.dart'; // For bookingRepositoryProvider
 import 'features/favorites/data/repositories/favorites_repository_impl.dart';
 import 'features/favorites/domain/repositories/favorites_repository.dart';
+import 'features/alerts/data/repositories/alerts_repository_impl.dart';
+import 'features/alerts/domain/repositories/alerts_repository.dart';
+import 'features/notifications/data/repositories/in_app_notifications_repository_impl.dart';
+import 'features/notifications/domain/repositories/in_app_notifications_repository.dart';
+import 'features/stories/data/repositories/stories_repository_impl.dart';
+import 'features/stories/domain/repositories/stories_repository.dart';
+import 'features/trip_plans/data/repositories/trip_plans_repository_impl.dart';
+import 'features/trip_plans/domain/repositories/trip_plans_repository.dart';
 import 'features/blog/data/repositories/blog_repository_impl.dart';
 import 'features/blog/domain/repositories/blog_repository.dart';
 import 'features/petit_boo/data/repositories/petit_boo_repository_impl.dart';
@@ -260,6 +268,22 @@ List<Override> _getRealApiOverrides() {
     favoritesRepositoryProvider.overrideWith((ref) {
       return ref.read(favoritesRepositoryImplProvider);
     }),
+    // Alerts Repository
+    alertsRepositoryProvider.overrideWith((ref) {
+      return ref.read(alertsRepositoryImplProvider);
+    }),
+    // Stories Repository
+    storiesRepositoryProvider.overrideWith((ref) {
+      return ref.read(storiesRepositoryImplProvider);
+    }),
+    // Trip Plans Repository
+    tripPlansRepositoryProvider.overrideWith((ref) {
+      return ref.read(tripPlansRepositoryImplProvider);
+    }),
+    // In-app Notifications Repository
+    inAppNotificationsRepositoryProvider.overrideWith((ref) {
+      return ref.read(inAppNotificationsRepositoryImplProvider);
+    }),
     // Blog Repository
     blogRepositoryProvider.overrideWith((ref) {
       return ref.read(blogRepositoryImplProvider);
@@ -292,8 +316,26 @@ List<Override> _getRealApiOverrides() {
 /// Fake data repositories - for offline testing and development
 List<Override> _getFakeDataOverrides() {
   return [
+    authRepositoryProvider.overrideWith((ref) {
+      return ref.read(authRepositoryImplProvider);
+    }),
     activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),
     bookingRepositoryProvider.overrideWithValue(FakeBookingRepositoryImpl()),
+    favoritesRepositoryProvider.overrideWith((ref) {
+      return ref.read(favoritesRepositoryImplProvider);
+    }),
+    alertsRepositoryProvider.overrideWith((ref) {
+      return ref.read(alertsRepositoryImplProvider);
+    }),
+    storiesRepositoryProvider.overrideWith((ref) {
+      return ref.read(storiesRepositoryImplProvider);
+    }),
+    tripPlansRepositoryProvider.overrideWith((ref) {
+      return ref.read(tripPlansRepositoryImplProvider);
+    }),
+    inAppNotificationsRepositoryProvider.overrideWith((ref) {
+      return ref.read(inAppNotificationsRepositoryImplProvider);
+    }),
   ];
 }
 

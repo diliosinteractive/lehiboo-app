@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../data/repositories/favorites_repository_impl.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../../domain/repositories/favorites_repository.dart';
 
@@ -12,16 +11,17 @@ import '../../domain/repositories/favorites_repository.dart';
 final selectedFavoriteListProvider = StateProvider<String?>((ref) => null);
 
 /// Provider pour les listes de favoris
-final favoriteListsProvider =
-    StateNotifierProvider<FavoriteListsNotifier, AsyncValue<List<FavoriteList>>>(
+final favoriteListsProvider = StateNotifierProvider<FavoriteListsNotifier,
+    AsyncValue<List<FavoriteList>>>(
   (ref) {
-    final repository = ref.watch(favoritesRepositoryImplProvider);
+    final repository = ref.watch(favoritesRepositoryProvider);
     return FavoriteListsNotifier(repository, ref);
   },
 );
 
 /// Notifier pour gérer l'état des listes de favoris
-class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>> {
+class FavoriteListsNotifier
+    extends StateNotifier<AsyncValue<List<FavoriteList>>> {
   final FavoritesRepository _repository;
   final Ref _ref;
 
@@ -32,8 +32,7 @@ class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>
     _ref.listen<AuthStatus>(
       authProvider.select((s) => s.status),
       (previous, next) {
-        final loggedOut = next == AuthStatus.unauthenticated &&
-            previous == AuthStatus.authenticated;
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
         final loggedIn = next == AuthStatus.authenticated &&
             previous != AuthStatus.authenticated &&
             previous != AuthStatus.initial;

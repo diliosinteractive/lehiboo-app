@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/models/chat_message_dto.dart';
 import '../../data/models/conversation_dto.dart';
 import '../../data/models/petit_boo_event_dto.dart';
 import '../../data/models/quota_dto.dart';
@@ -19,6 +18,7 @@ abstract class PetitBooRepository {
   Stream<PetitBooEventDto> sendMessage({
     String? sessionUuid,
     required String message,
+    required bool memoryEnabled,
   });
 
   /// Get list of user's conversations
@@ -38,6 +38,12 @@ abstract class PetitBooRepository {
 
   /// Get user's chat quota
   Future<QuotaDto> getQuota();
+
+  /// Confirm and execute a pending Petit Boo action
+  Future<Map<String, dynamic>> confirmPendingAction(String actionId);
+
+  /// Cancel a pending Petit Boo action
+  Future<void> cancelPendingAction(String actionId);
 
   /// Check if Petit Boo service is available
   Future<bool> isServiceAvailable();

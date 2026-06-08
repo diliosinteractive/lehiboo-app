@@ -4,11 +4,11 @@ import '../../../../core/analytics/analytics_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../domain/repositories/alerts_repository.dart';
-import '../../data/repositories/alerts_repository_impl.dart';
 import '../../../search/domain/models/event_filter.dart';
 
-final alertsProvider = StateNotifierProvider<AlertsNotifier, AsyncValue<List<Alert>>>((ref) {
-  final repository = ref.watch(alertsRepositoryImplProvider);
+final alertsProvider =
+    StateNotifierProvider<AlertsNotifier, AsyncValue<List<Alert>>>((ref) {
+  final repository = ref.watch(alertsRepositoryProvider);
   return AlertsNotifier(repository, ref);
 });
 
@@ -23,8 +23,7 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
     _ref.listen<AuthStatus>(
       authProvider.select((s) => s.status),
       (previous, next) {
-        final loggedOut = next == AuthStatus.unauthenticated &&
-            previous == AuthStatus.authenticated;
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
         final loggedIn = next == AuthStatus.authenticated &&
             previous != AuthStatus.authenticated &&
             previous != AuthStatus.initial;
@@ -81,14 +80,14 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
   Future<void> deleteAlert(String id) async {
     try {
       await _repository.deleteAlert(id);
-      
+
       final currentList = state.valueOrNull ?? [];
       state = AsyncValue.data(currentList.where((a) => a.id != id).toList());
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
   }
-  
+
   /// Helper to check if a filter combination is already saved
   /// Compares all significant filter criteria
   bool isFilterSaved(EventFilter filter) {
@@ -104,7 +103,8 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
     if (alerts == null || alerts.isEmpty) return false;
 
     final normalizedName = name.trim().toLowerCase();
-    return alerts.any((alert) => alert.name.trim().toLowerCase() == normalizedName);
+    return alerts
+        .any((alert) => alert.name.trim().toLowerCase() == normalizedName);
   }
 
   bool _filtersMatch(EventFilter a, EventFilter b) {
@@ -112,7 +112,9 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
 
     // Search query (empty strings are equivalent)
     if ((a.searchQuery.isNotEmpty || b.searchQuery.isNotEmpty) &&
-        a.searchQuery != b.searchQuery) return false;
+        a.searchQuery != b.searchQuery) {
+      return false;
+    }
 
     // Location: city OR geolocation
     if (a.citySlug != b.citySlug) return false;
