@@ -5411,6 +5411,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventSourceInfo => 'Info source: ';
 
   @override
+  String get eventRelatedActivities => 'Related activities';
+
+  @override
   String get eventSimilarEvents => 'Similar events';
 
   @override

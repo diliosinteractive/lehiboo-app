@@ -8,15 +8,21 @@ class EventDto with _$EventDto {
   const factory EventDto({
     @JsonKey(fromJson: _parseEventId) required int id,
     @JsonKey(fromJson: _parseStringOrNull) String? uuid, // UUID from API
-    @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull) int? internalId, // Integer ID from API
+    @JsonKey(name: 'internal_id', fromJson: _parseIntOrNull)
+    int? internalId, // Integer ID from API
     @JsonKey(fromJson: _parseHtmlString) required String title,
     @JsonKey(fromJson: _parseHtmlString) required String slug,
     @JsonKey(fromJson: _parseHtmlString) String? excerpt,
-    @JsonKey(fromJson: _parseHtmlString) String? content, // Full HTML description (old format)
-    @JsonKey(name: 'description', fromJson: _parseHtmlString) String? fullDescription, // Full description (new mobile format)
-    @JsonKey(name: 'featured_image', fromJson: _parseImage) EventImageDto? featuredImage,
-    @JsonKey(fromJson: _parseStringOrNull) String? thumbnail, // Alternative image field from organizer events API
-    @JsonKey(fromJson: _parseGallery) List<String>? gallery, // Image gallery URLs
+    @JsonKey(fromJson: _parseHtmlString)
+    String? content, // Full HTML description (old format)
+    @JsonKey(name: 'description', fromJson: _parseHtmlString)
+    String? fullDescription, // Full description (new mobile format)
+    @JsonKey(name: 'featured_image', fromJson: _parseImage)
+    EventImageDto? featuredImage,
+    @JsonKey(fromJson: _parseStringOrNull)
+    String? thumbnail, // Alternative image field from organizer events API
+    @JsonKey(fromJson: _parseGallery)
+    List<String>? gallery, // Image gallery URLs
     EventCategoryDto? category,
     ThematiqueDto? thematique, // Main thematique
     EventDatesDto? dates,
@@ -27,54 +33,86 @@ class EventDto with _$EventDto {
     EventOrganizerDto? organizer,
     @JsonKey(fromJson: _parseStringList) List<String>? tags,
     // New fields for V2 API
-    @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull) List<dynamic>? ticketTypes,
+    @JsonKey(name: 'ticket_types', fromJson: _parseListOrNull)
+    List<dynamic>? ticketTypes,
     @JsonKey(fromJson: _parseListOrNull) List<dynamic>? tickets,
-    @JsonKey(name: 'time_slots', fromJson: _parseMapOrNull) Map<String, dynamic>? timeSlots,
+    @JsonKey(name: 'time_slots', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? timeSlots,
     @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? calendar,
     @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? recurrence,
-    @JsonKey(name: 'extra_services', fromJson: _parseListOrNull) List<dynamic>? extraServices,
-    @JsonKey(name: 'indicative_prices', fromJson: _parseListOrNull) List<dynamic>? indicativePrices,
-    @JsonKey(name: 'services', fromJson: _parseMapOrNull) Map<String, dynamic>? services,
-    @JsonKey(name: 'venue_type', fromJson: _parseStringOrNull) String? venueType,
-    @JsonKey(name: 'is_featured', fromJson: _parseBool) @Default(false) bool isFeatured,
+    @JsonKey(name: 'extra_services', fromJson: _parseListOrNull)
+    List<dynamic>? extraServices,
+    @JsonKey(name: 'indicative_prices', fromJson: _parseListOrNull)
+    List<dynamic>? indicativePrices,
+    @JsonKey(name: 'services', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? services,
+    @JsonKey(name: 'venue_type', fromJson: _parseStringOrNull)
+    String? venueType,
+    @JsonKey(name: 'is_featured', fromJson: _parseBool)
+    @Default(false)
+    bool isFeatured,
     @JsonKey(fromJson: _parseListOrNull) List<dynamic>? coupons,
-    @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull) Map<String, dynamic>? seatConfig,
-    @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull) Map<String, dynamic>? externalBooking,
+    @JsonKey(name: 'seat_config', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? seatConfig,
+    @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? externalBooking,
     // Legacy taxonomy term shape (e.g. {id, name, slug}) from the /events API.
     // Coexists with `eventTypeMode` below — they share the JSON key
     // `event_type` and are disambiguated at parse time by value runtime type.
-    @JsonKey(name: 'event_type', readValue: _readEventTypeMap, fromJson: _parseMapOrNull, includeToJson: false)
-      Map<String, dynamic>? eventType,
+    @JsonKey(
+        name: 'event_type',
+        readValue: _readEventTypeMap,
+        fromJson: _parseMapOrNull,
+        includeToJson: false)
+    Map<String, dynamic>? eventType,
     // Spec HOME_FEED §4.2: string enum "offline" | "online" | "hybrid".
-    @JsonKey(name: 'event_type', readValue: _readEventTypeString, fromJson: _parseStringOrNull, includeToJson: false)
-      String? eventTypeMode,
-    @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull) Map<String, dynamic>? eventTag,
-    @JsonKey(name: 'target_audience', fromJson: _parseListOrNull) List<dynamic>? targetAudience,
-    @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull) List<dynamic>? targetAudiences,
-    @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull) String? bookingMode,
-    @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull) String? discoveryPricingType,
+    @JsonKey(
+        name: 'event_type',
+        readValue: _readEventTypeString,
+        fromJson: _parseStringOrNull,
+        includeToJson: false)
+    String? eventTypeMode,
+    @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? eventTag,
+    @JsonKey(name: 'target_audience', fromJson: _parseListOrNull)
+    List<dynamic>? targetAudience,
+    @JsonKey(name: 'target_audiences', fromJson: _parseListOrNull)
+    List<dynamic>? targetAudiences,
+    @JsonKey(name: 'booking_mode', fromJson: _parseStringOrNull)
+    String? bookingMode,
+    @JsonKey(name: 'discovery_pricing_type', fromJson: _parseStringOrNull)
+    String? discoveryPricingType,
 
     // Rich Content V2
-    @JsonKey(name: 'location_details', fromJson: _parseMapOrNull) Map<String, dynamic>? locationDetails,
-    @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers) List<CoOrganizerDto>? coOrganizers,
-    @JsonKey(name: 'social_media', fromJson: _parseMapOrNull) Map<String, dynamic>? socialMedia,
+    @JsonKey(name: 'location_details', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? locationDetails,
+    @JsonKey(name: 'coorganizers', fromJson: _parseCoOrganizers)
+    List<CoOrganizerDto>? coOrganizers,
+    @JsonKey(name: 'social_media', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? socialMedia,
 
     // Mobile API v2 fields
-    @JsonKey(name: 'primary_category', fromJson: _parseCategoryOrNull) EventCategoryDto? primaryCategory,
-    @JsonKey(name: 'categories', fromJson: _parseCategoriesList) List<EventCategoryDto>? categories,
+    @JsonKey(name: 'primary_category', fromJson: _parseCategoryOrNull)
+    EventCategoryDto? primaryCategory,
+    @JsonKey(name: 'categories', fromJson: _parseCategoriesList)
+    List<EventCategoryDto>? categories,
+    @JsonKey(name: 'related_events', fromJson: _parseRelatedEvents)
+    List<EventRelatedDto>? relatedEvents,
     @JsonKey(fromJson: _parseListOrNull) List<dynamic>? slots,
-    @JsonKey(name: 'venue', fromJson: _parseMapOrNull) Map<String, dynamic>? venueData,
-    @JsonKey(name: 'creation_source', fromJson: _parseStringOrNull) String? creationSource,
-    @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull) String? originalOrganizerName,
-
+    @JsonKey(name: 'venue', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? venueData,
+    @JsonKey(name: 'creation_source', fromJson: _parseStringOrNull)
+    String? creationSource,
+    @JsonKey(name: 'original_organizer_name', fromJson: _parseStringOrNull)
+    String? originalOrganizerName,
     @JsonKey(fromJson: _parseNamedList) @Default([]) List<String> themes,
     @JsonKey(fromJson: _parseNamedList) @Default([]) List<String> emotions,
-
     @JsonKey(name: 'is_favorite') @Default(false) bool isFavorite,
     // Spec MEMBERSHIPS_MOBILE_SPEC.md §20: surfaced by both EventResource
     // (snake + camelCase) and MobileEventResource (snake_case only). When
     // true, drives a "Privé 🔒" badge on event cards across all listings.
-    @JsonKey(name: 'is_members_only', fromJson: _parseBool) @Default(false)
+    @JsonKey(name: 'is_members_only', fromJson: _parseBool)
+    @Default(false)
     bool isMembersOnly,
 
     // ---- HOME_FEED MobileEventResource fields (spec: docs/HOME_FEED_MOBILE_SPEC.md §4) ----
@@ -83,69 +121,110 @@ class EventDto with _$EventDto {
     @JsonKey(fromJson: _parseIntOrNull) int? version,
 
     // §4.2 Scheduling
-    @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull) String? calendarMode,
+    @JsonKey(name: 'calendar_mode', fromJson: _parseStringOrNull)
+    String? calendarMode,
     @JsonKey(fromJson: _parseStringOrNull) String? timezone,
 
     // §4.3 Flat venue/location (parallel to nested `location` object)
-    @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull) String? venueName,
-    @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull) String? venueAddress,
+    @JsonKey(name: 'venue_name', fromJson: _parseStringOrNull)
+    String? venueName,
+    @JsonKey(name: 'venue_address', fromJson: _parseStringOrNull)
+    String? venueAddress,
     @JsonKey(fromJson: _parseStringOrNull) String? city,
-    @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull) String? postalCode,
+    @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
+    String? postalCode,
     @JsonKey(fromJson: _parseStringOrNull) String? country,
-    @JsonKey(name: 'address_source', fromJson: _parseStringOrNull) String? addressSource,
+    @JsonKey(name: 'address_source', fromJson: _parseStringOrNull)
+    String? addressSource,
     @JsonKey(name: 'venue_id', fromJson: _parseStringOrNull) String? venueId,
 
     // §4.4 Top-level dates (first slot mirror)
-    @JsonKey(name: 'start_date', fromJson: _parseStringOrNull) String? startDate,
+    @JsonKey(name: 'start_date', fromJson: _parseStringOrNull)
+    String? startDate,
     @JsonKey(name: 'end_date', fromJson: _parseStringOrNull) String? endDate,
 
     // §4.5 Top-level pricing
-    @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull) double? priceFrom,
+    @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
+    double? priceFrom,
     @JsonKey(name: 'is_free', fromJson: _parseBool) @Default(false) bool isFree,
 
     // §4.6 Capacity (top-level cap)
-    @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull) int? capacityGlobal,
+    @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
+    int? capacityGlobal,
 
     // §4.7 Sale window & cancellation
-    @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull) String? saleStartAt,
-    @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull) String? saleEndAt,
-    @JsonKey(name: 'allow_cancellation', fromJson: _parseBool) @Default(false) bool allowCancellation,
-    @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull) int? cancelBeforeHours,
-    @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull) String? vendorCancellationPolicy,
-    @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool) @Default(false) bool generateQrCodes,
+    @JsonKey(name: 'sale_start_at', fromJson: _parseStringOrNull)
+    String? saleStartAt,
+    @JsonKey(name: 'sale_end_at', fromJson: _parseStringOrNull)
+    String? saleEndAt,
+    @JsonKey(name: 'allow_cancellation', fromJson: _parseBool)
+    @Default(false)
+    bool allowCancellation,
+    @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
+    int? cancelBeforeHours,
+    @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+    String? vendorCancellationPolicy,
+    @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
+    @Default(false)
+    bool generateQrCodes,
 
     // §4.8 Status & flags
     @JsonKey(fromJson: _parseStringOrNull) String? status,
     @JsonKey(fromJson: _parseStringOrNull) String? visibility,
     // Drives the password modal — see spec §4.8 caveat: not the same as `hasPassword`.
-    @JsonKey(name: 'is_password_protected', fromJson: _parseBool) @Default(false) bool isPasswordProtected,
-    @JsonKey(name: 'has_password', fromJson: _parseBool) @Default(false) bool hasPassword,
-    @JsonKey(name: 'published_at', fromJson: _parseStringOrNull) String? publishedAt,
-    @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull) String? scheduledPublishAt,
-    @JsonKey(name: 'is_active', fromJson: _parseBool) @Default(true) bool isActive,
-    @JsonKey(name: 'is_on_sale', fromJson: _parseBool) @Default(false) bool isOnSale,
+    @JsonKey(name: 'is_password_protected', fromJson: _parseBool)
+    @Default(false)
+    bool isPasswordProtected,
+    @JsonKey(name: 'has_password', fromJson: _parseBool)
+    @Default(false)
+    bool hasPassword,
+    @JsonKey(name: 'published_at', fromJson: _parseStringOrNull)
+    String? publishedAt,
+    @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull)
+    String? scheduledPublishAt,
+    @JsonKey(name: 'is_active', fromJson: _parseBool)
+    @Default(true)
+    bool isActive,
+    @JsonKey(name: 'is_on_sale', fromJson: _parseBool)
+    @Default(false)
+    bool isOnSale,
     @JsonKey(name: 'is_live', fromJson: _parseBool) @Default(false) bool isLive,
 
     // §4.9 Booking capabilities
-    @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool) @Default(false) bool canAcceptBookings,
-    @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool) @Default(false) bool canAcceptDiscovery,
-    @JsonKey(name: 'is_discovery', fromJson: _parseBool) @Default(false) bool isDiscovery,
+    @JsonKey(name: 'can_accept_bookings', fromJson: _parseBool)
+    @Default(false)
+    bool canAcceptBookings,
+    @JsonKey(name: 'can_accept_discovery', fromJson: _parseBool)
+    @Default(false)
+    bool canAcceptDiscovery,
+    @JsonKey(name: 'is_discovery', fromJson: _parseBool)
+    @Default(false)
+    bool isDiscovery,
     // §4.9: only present when bookingMode == "discovery".
-    @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull) int? participationCount,
-    @JsonKey(name: 'is_participating', fromJson: _parseBool) @Default(false) bool isParticipating,
-    @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull) String? externalTicketingUrl,
+    @JsonKey(name: 'participation_count', fromJson: _parseIntOrNull)
+    int? participationCount,
+    @JsonKey(name: 'is_participating', fromJson: _parseBool)
+    @Default(false)
+    bool isParticipating,
+    @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull)
+    String? externalTicketingUrl,
 
     // §4.10 Services & attributes
-    @JsonKey(name: 'other_services', fromJson: _parseMapOrNull) Map<String, dynamic>? otherServices,
+    @JsonKey(name: 'other_services', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? otherServices,
     @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull) int? entryTypeId,
     @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull) int? eventTagId,
 
     // §4.12 SEO & metadata
-    @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull) String? metaTitle,
-    @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull) String? metaDescription,
+    @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull)
+    String? metaTitle,
+    @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull)
+    String? metaDescription,
     @JsonKey(fromJson: _parseMapOrNull) Map<String, dynamic>? meta,
-    @JsonKey(name: 'created_at', fromJson: _parseStringOrNull) String? createdAt,
-    @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull) String? updatedAt,
+    @JsonKey(name: 'created_at', fromJson: _parseStringOrNull)
+    String? createdAt,
+    @JsonKey(name: 'updated_at', fromJson: _parseStringOrNull)
+    String? updatedAt,
   }) = _EventDto;
 
   factory EventDto.fromJson(Map<String, dynamic> json) =>
@@ -156,11 +235,16 @@ class EventDto with _$EventDto {
 List<String>? _parseGallery(dynamic value) {
   if (value == null) return null;
   if (value is List) {
-    return value.map((item) {
-      if (item is String) return item;
-      if (item is Map) return item['url']?.toString() ?? item['full']?.toString() ?? '';
-      return '';
-    }).where((s) => s.isNotEmpty).toList();
+    return value
+        .map((item) {
+          if (item is String) return item;
+          if (item is Map) {
+            return item['url']?.toString() ?? item['full']?.toString() ?? '';
+          }
+          return '';
+        })
+        .where((s) => s.isNotEmpty)
+        .toList();
   }
   return null;
 }
@@ -181,7 +265,7 @@ EventImageDto? _parseImage(dynamic value) {
     // Sanitize the map to ensure we don't pass booleans to fromJson
     // which would cause "type 'bool' is not a subtype of type 'String?'"
     final safeMap = <String, dynamic>{};
-    
+
     // Helper to safely get string
     String? getSafeString(dynamic v) {
       if (v is String && v.isNotEmpty) return v;
@@ -198,7 +282,7 @@ EventImageDto? _parseImage(dynamic value) {
     // Remove null keys to let Freezed handle them (though we put nulls above, handled by fromJson?)
     // Actually EventImageDto.fromJson handles explicit nulls fine for nullable fields.
     // The issue was non-nulls being WRONG types.
-    
+
     return EventImageDto.fromJson(safeMap);
   }
   return null;
@@ -218,15 +302,38 @@ class EventImageDto with _$EventImageDto {
 }
 
 @freezed
+class EventRelatedDto with _$EventRelatedDto {
+  const factory EventRelatedDto({
+    @JsonKey(fromJson: _parseStringOrNull) String? id,
+    @JsonKey(fromJson: _parseStringOrNull) String? uuid,
+    @JsonKey(fromJson: _parseHtmlString) @Default('') String title,
+    @JsonKey(fromJson: _parseHtmlString) @Default('') String slug,
+    @JsonKey(name: 'featured_image', fromJson: _parseStringOrNull)
+    String? featuredImage,
+    @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+    String? coverImage,
+    @JsonKey(fromJson: _parseHtmlString) String? excerpt,
+  }) = _EventRelatedDto;
+
+  factory EventRelatedDto.fromJson(Map<String, dynamic> json) =>
+      _$EventRelatedDtoFromJson(json);
+}
+
+@freezed
 class EventDatesDto with _$EventDatesDto {
   const factory EventDatesDto({
-    @JsonKey(name: 'start_date', fromJson: _parseStringOrNull) String? startDate,
+    @JsonKey(name: 'start_date', fromJson: _parseStringOrNull)
+    String? startDate,
     @JsonKey(name: 'end_date', fromJson: _parseStringOrNull) String? endDate,
-    @JsonKey(name: 'start_time', fromJson: _parseStringOrNull) String? startTime,
+    @JsonKey(name: 'start_time', fromJson: _parseStringOrNull)
+    String? startTime,
     @JsonKey(name: 'end_time', fromJson: _parseStringOrNull) String? endTime,
     @JsonKey(fromJson: _parseStringOrNull) String? display,
-    @JsonKey(name: 'duration_minutes', fromJson: _parseIntOrNull) int? durationMinutes,
-    @JsonKey(name: 'is_recurring', fromJson: _parseBool) @Default(false) bool isRecurring,
+    @JsonKey(name: 'duration_minutes', fromJson: _parseIntOrNull)
+    int? durationMinutes,
+    @JsonKey(name: 'is_recurring', fromJson: _parseBool)
+    @Default(false)
+    bool isRecurring,
   }) = _EventDatesDto;
 
   factory EventDatesDto.fromJson(Map<String, dynamic> json) =>
@@ -251,9 +358,12 @@ class EventPricingDto with _$EventPricingDto {
 class EventAvailabilityDto with _$EventAvailabilityDto {
   const factory EventAvailabilityDto({
     @JsonKey(fromJson: _parseStringOrNull) String? status,
-    @JsonKey(name: 'total_capacity', fromJson: _parseIntOrNull) int? totalCapacity,
-    @JsonKey(name: 'spots_remaining', fromJson: _parseIntOrNull) int? spotsRemaining,
-    @JsonKey(name: 'percentage_filled', fromJson: _parseIntOrNull) int? percentageFilled,
+    @JsonKey(name: 'total_capacity', fromJson: _parseIntOrNull)
+    int? totalCapacity,
+    @JsonKey(name: 'spots_remaining', fromJson: _parseIntOrNull)
+    int? spotsRemaining,
+    @JsonKey(name: 'percentage_filled', fromJson: _parseIntOrNull)
+    int? percentageFilled,
   }) = _EventAvailabilityDto;
 
   factory EventAvailabilityDto.fromJson(Map<String, dynamic> json) =>
@@ -270,12 +380,28 @@ class EventCategoryDto with _$EventCategoryDto {
     @JsonKey(fromJson: _parseHtmlString) String? description,
     @JsonKey(fromJson: _parseStringOrNull) String? icon,
     @JsonKey(fromJson: _parseStringOrNull) String? color,
-    @JsonKey(name: 'event_count', readValue: _readCategoryEventCount, fromJson: _parseIntOrNull) int? eventCount,
-    @JsonKey(name: 'image_url', readValue: _readImageUrl, fromJson: _parseStringOrNull) String? imageUrl,
-    @JsonKey(name: 'image_alt', readValue: _readImageAlt, fromJson: _parseStringOrNull) String? imageAlt,
-    @JsonKey(name: 'is_primary', fromJson: _parseBool) @Default(false) bool isPrimary,
+    @JsonKey(
+        name: 'event_count',
+        readValue: _readCategoryEventCount,
+        fromJson: _parseIntOrNull)
+    int? eventCount,
+    @JsonKey(
+        name: 'image_url',
+        readValue: _readImageUrl,
+        fromJson: _parseStringOrNull)
+    String? imageUrl,
+    @JsonKey(
+        name: 'image_alt',
+        readValue: _readImageAlt,
+        fromJson: _parseStringOrNull)
+    String? imageAlt,
+    @JsonKey(name: 'is_primary', fromJson: _parseBool)
+    @Default(false)
+    bool isPrimary,
     @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent,
-    @JsonKey(fromJson: _parseCategoriesListOrEmpty) @Default([]) List<EventCategoryDto> children,
+    @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+    @Default([])
+    List<EventCategoryDto> children,
   }) = _EventCategoryDto;
 
   factory EventCategoryDto.fromJson(Map<String, dynamic> json) =>
@@ -299,15 +425,20 @@ class EventPriceDto with _$EventPriceDto {
 class EventLocationDto with _$EventLocationDto {
   const factory EventLocationDto({
     // HOME_FEED §4.3 uses `name`; legacy /events used `venue_name`. Accept both.
-    @JsonKey(name: 'venue_name', readValue: _readLocationName, fromJson: _parseStringOrNull)
-      String? venueName,
+    @JsonKey(
+        name: 'venue_name',
+        readValue: _readLocationName,
+        fromJson: _parseStringOrNull)
+    String? venueName,
     @JsonKey(fromJson: _parseStringOrNull) String? address,
     @JsonKey(fromJson: _parseStringOrNull) String? city,
-    @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull) String? postalCode,
+    @JsonKey(name: 'postal_code', fromJson: _parseStringOrNull)
+    String? postalCode,
     @JsonKey(fromJson: _parseStringOrNull) String? country,
     @JsonKey(fromJson: _parseDoubleOrNull) double? lat,
     @JsonKey(fromJson: _parseDoubleOrNull) double? lng,
-    @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull) double? distanceKm,
+    @JsonKey(name: 'distance_km', fromJson: _parseDoubleOrNull)
+    double? distanceKm,
   }) = _EventLocationDto;
 
   factory EventLocationDto.fromJson(Map<String, dynamic> json) =>
@@ -323,12 +454,12 @@ String? _parseStringOrNull(dynamic value) {
   if (value is Map) {
     // Try known keys first
     final result = value['url']?.toString() ??
-           value['full']?.toString() ??
-           value['large']?.toString() ??
-           value['name']?.toString() ??
-           value['rendered']?.toString();
+        value['full']?.toString() ??
+        value['large']?.toString() ??
+        value['name']?.toString() ??
+        value['rendered']?.toString();
     if (result != null) return result;
-    
+
     // If no known keys, extract the first value (handles {1: "Villa Apartments"})
     if (value.isNotEmpty) {
       final firstValue = value.values.first;
@@ -395,7 +526,9 @@ Object? _readLocationName(Map map, Object key) {
 Map<String, dynamic>? _parseMapOrNull(dynamic value) {
   if (value == null) return null;
   if (value is Map<String, dynamic>) return value;
-  if (value is Map) return Map<String, dynamic>.from(value); // Cast if generic Map
+  if (value is Map) {
+    return Map<String, dynamic>.from(value); // Cast if generic Map
+  }
   return null; // Ignore Lists, Strings, etc.
 }
 
@@ -413,6 +546,22 @@ List<CoOrganizerDto>? _parseCoOrganizers(dynamic value) {
   return value
       .whereType<Map<String, dynamic>>()
       .map((e) => CoOrganizerDto.fromJson(e))
+      .toList();
+}
+
+List<EventRelatedDto>? _parseRelatedEvents(dynamic value) {
+  if (value == null) return null;
+  if (value is! List) return null;
+  return value
+      .whereType<Map>()
+      .map((e) {
+        try {
+          return EventRelatedDto.fromJson(Map<String, dynamic>.from(e));
+        } catch (_) {
+          return null;
+        }
+      })
+      .whereType<EventRelatedDto>()
       .toList();
 }
 
@@ -460,7 +609,8 @@ List<EventCategoryDto> _parseCategoriesListOrEmpty(dynamic value) {
 }
 
 /// Alias for backward compatibility (used by EventOrganizerDto.categories)
-List<EventCategoryDto>? _parseCategories(dynamic value) => _parseCategoriesList(value);
+List<EventCategoryDto>? _parseCategories(dynamic value) =>
+    _parseCategoriesList(value);
 
 List<String>? _parseStringList(dynamic value) {
   if (value == null) return null;
@@ -546,29 +696,42 @@ class EventOrganizerDto with _$EventOrganizerDto {
     @JsonKey(fromJson: _parseStringOrNull) String? avatar,
     @JsonKey(fromJson: _parseHtmlString) String? description,
     @JsonKey(fromJson: _parseStringOrNull) String? logo,
-    @JsonKey(name: 'logo_sizes', fromJson: _parseMapOrNull) Map<String, dynamic>? logoSizes,
+    @JsonKey(name: 'logo_sizes', fromJson: _parseMapOrNull)
+    Map<String, dynamic>? logoSizes,
     @JsonKey(fromJson: _parseStringOrNull) String? website,
     @JsonKey(fromJson: _parseStringOrNull) String? phone,
     @JsonKey(fromJson: _parseStringOrNull) String? email,
-    @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull) String? coverImage,
+    @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+    String? coverImage,
     OrganizerContactDto? contact,
     OrganizerLocationDto? location,
     @JsonKey(name: 'practical_info') OrganizerPracticalInfoDto? practicalInfo,
-    @JsonKey(name: 'social_links', fromJson: _parseSocialLinks) List<OrganizerSocialLinkDto>? socialLinks,
+    @JsonKey(name: 'social_links', fromJson: _parseSocialLinks)
+    List<OrganizerSocialLinkDto>? socialLinks,
     @JsonKey(name: 'stats') OrganizerStatsDto? stats,
-    @JsonKey(name: 'categories', fromJson: _parseCategories) List<EventCategoryDto>? categories,
-    @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers) List<CoOrganizerDto>? partnerships,
-    @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull) String? profileUrl,
-    @JsonKey(name: 'member_since', fromJson: _parseStringOrNull) String? memberSince,
+    @JsonKey(name: 'categories', fromJson: _parseCategories)
+    List<EventCategoryDto>? categories,
+    @JsonKey(name: 'partnerships', fromJson: _parseCoOrganizers)
+    List<CoOrganizerDto>? partnerships,
+    @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
+    String? profileUrl,
+    @JsonKey(name: 'member_since', fromJson: _parseStringOrNull)
+    String? memberSince,
     @JsonKey(fromJson: _parseBool) @Default(false) bool verified,
-    @JsonKey(name: 'is_platform', fromJson: _parseBool) @Default(false) bool isPlatform,
+    @JsonKey(name: 'is_platform', fromJson: _parseBool)
+    @Default(false)
+    bool isPlatform,
     // Mobile API v2 unified organizer fields
     @JsonKey(fromJson: _parseStringOrNull) String? uuid,
     @JsonKey(fromJson: _parseStringOrNull) String? slug,
     @JsonKey(name: 'events_count', fromJson: _parseIntOrNull) int? eventsCount,
-    @JsonKey(name: 'venue_types', fromJson: _parseStringList) List<String>? venueTypes,
-    @JsonKey(name: 'followers_count', fromJson: _parseIntOrNull) int? followersCount,
-    @JsonKey(name: 'allow_public_contact', fromJson: _parseBool) @Default(false) bool allowPublicContact,
+    @JsonKey(name: 'venue_types', fromJson: _parseStringList)
+    List<String>? venueTypes,
+    @JsonKey(name: 'followers_count', fromJson: _parseIntOrNull)
+    int? followersCount,
+    @JsonKey(name: 'allow_public_contact', fromJson: _parseBool)
+    @Default(false)
+    bool allowPublicContact,
   }) = _EventOrganizerDto;
 
   factory EventOrganizerDto.fromJson(Map<String, dynamic> json) =>
@@ -628,20 +791,23 @@ class OrganizerPracticalInfoDto with _$OrganizerPracticalInfoDto {
     // PMR
     @Default(false) bool pmr,
     @JsonKey(name: 'pmr_infos', fromJson: _parseStringOrNull) String? pmrInfos,
-    
+
     // Restauration
     @Default(false) bool restauration,
-    @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull) String? restaurationInfos,
-    
+    @JsonKey(name: 'restauration_infos', fromJson: _parseStringOrNull)
+    String? restaurationInfos,
+
     // Boisson
     @Default(false) bool boisson,
-    @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull) String? boissonInfos,
-    
+    @JsonKey(name: 'boisson_infos', fromJson: _parseStringOrNull)
+    String? boissonInfos,
+
     // Stationnement
     @JsonKey(fromJson: _parseStringOrNull) String? stationnement,
-    
+
     // Event Type
-    @JsonKey(name: 'event_type', fromJson: _parseStringOrNull) String? eventType,
+    @JsonKey(name: 'event_type', fromJson: _parseStringOrNull)
+    String? eventType,
   }) = _OrganizerPracticalInfoDto;
 
   factory OrganizerPracticalInfoDto.fromJson(Map<String, dynamic> json) =>
@@ -655,9 +821,11 @@ class CoOrganizerDto with _$CoOrganizerDto {
     @JsonKey(fromJson: _parseHtmlString) @Default('') String name,
     @JsonKey(fromJson: _parseStringOrNull) String? logo,
     @JsonKey(fromJson: _parseStringOrNull) String? role,
-    @JsonKey(name: 'role_label', fromJson: _parseStringOrNull) String? roleLabel,
+    @JsonKey(name: 'role_label', fromJson: _parseStringOrNull)
+    String? roleLabel,
     @JsonKey(fromJson: _parseStringOrNull) String? city,
-    @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull) String? profileUrl,
+    @JsonKey(name: 'profile_url', fromJson: _parseStringOrNull)
+    String? profileUrl,
   }) = _CoOrganizerDto;
 
   factory CoOrganizerDto.fromJson(Map<String, dynamic> json) =>
@@ -680,7 +848,8 @@ class EventsResponseDto with _$EventsResponseDto {
   const factory EventsResponseDto({
     required List<EventDto> events,
     required PaginationDto pagination,
-    @JsonKey(name: 'filters_applied', fromJson: _parseFiltersApplied) dynamic filtersApplied,
+    @JsonKey(name: 'filters_applied', fromJson: _parseFiltersApplied)
+    dynamic filtersApplied,
   }) = _EventsResponseDto;
 
   factory EventsResponseDto.fromJson(Map<String, dynamic> json) =>
@@ -695,12 +864,22 @@ Map<String, dynamic>? _parseFiltersApplied(dynamic value) {
 @freezed
 class PaginationDto with _$PaginationDto {
   const factory PaginationDto({
-    @JsonKey(name: 'current_page', fromJson: _parseInt) @Default(1) int currentPage,
+    @JsonKey(name: 'current_page', fromJson: _parseInt)
+    @Default(1)
+    int currentPage,
     @JsonKey(name: 'per_page', fromJson: _parseInt) @Default(10) int perPage,
-    @JsonKey(name: 'total_items', fromJson: _parseInt) @Default(0) int totalItems,
-    @JsonKey(name: 'total_pages', fromJson: _parseInt) @Default(0) int totalPages,
-    @JsonKey(name: 'has_next', fromJson: _parseBool) @Default(false) bool hasNext,
-    @JsonKey(name: 'has_prev', fromJson: _parseBool) @Default(false) bool hasPrev,
+    @JsonKey(name: 'total_items', fromJson: _parseInt)
+    @Default(0)
+    int totalItems,
+    @JsonKey(name: 'total_pages', fromJson: _parseInt)
+    @Default(0)
+    int totalPages,
+    @JsonKey(name: 'has_next', fromJson: _parseBool)
+    @Default(false)
+    bool hasNext,
+    @JsonKey(name: 'has_prev', fromJson: _parseBool)
+    @Default(false)
+    bool hasPrev,
   }) = _PaginationDto;
 
   factory PaginationDto.fromJson(Map<String, dynamic> json) =>
@@ -715,7 +894,8 @@ class FiltersResponseDto with _$FiltersResponseDto {
     required List<String> cities,
     @JsonKey(name: 'price_range') required PriceRangeDto priceRange,
     @JsonKey(name: 'sort_options') required List<SortOptionDto> sortOptions,
-    @JsonKey(name: 'additional_filters') List<AdditionalFilterDto>? additionalFilters,
+    @JsonKey(name: 'additional_filters')
+    List<AdditionalFilterDto>? additionalFilters,
   }) = _FiltersResponseDto;
 
   factory FiltersResponseDto.fromJson(Map<String, dynamic> json) =>
