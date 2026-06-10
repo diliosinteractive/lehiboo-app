@@ -771,20 +771,27 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
             if (details is Map<String, dynamic>) {
               final firstError = details.values.first;
               if (firstError is List && firstError.isNotEmpty) {
-                return firstError.first.toString();
+                return ApiResponseHandler.safeUserMessage(firstError.first) ??
+                    l10n.commonGenericRetryError;
               }
-              return firstError.toString();
+              return ApiResponseHandler.safeUserMessage(firstError) ??
+                  l10n.commonGenericRetryError;
             }
           }
           // Handle simple error string
           if (error != null && error is String) {
-            return error;
+            return ApiResponseHandler.safeUserMessage(error) ??
+                l10n.commonGenericRetryError;
           }
           if (data['message'] != null) {
-            return data['message'].toString();
+            return ApiResponseHandler.safeUserMessage(data['message']) ??
+                l10n.commonGenericRetryError;
           }
           if (data['data'] != null && data['data']['message'] != null) {
-            return data['data']['message'].toString();
+            return ApiResponseHandler.safeUserMessage(
+                  data['data']['message'],
+                ) ??
+                l10n.commonGenericRetryError;
           }
         }
       } else if (e.type == DioExceptionType.connectionTimeout ||
