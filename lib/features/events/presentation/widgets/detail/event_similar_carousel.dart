@@ -18,12 +18,16 @@ class EventSimilarCarousel extends StatelessWidget {
   final List<Event> events;
   final String? currentEventId;
   final VoidCallback? onViewAll;
+  final String? title;
+  final bool showPriceBadge;
 
   const EventSimilarCarousel({
     super.key,
     required this.events,
     this.currentEventId,
     this.onViewAll,
+    this.title,
+    this.showPriceBadge = true,
   });
 
   @override
@@ -44,7 +48,7 @@ class EventSimilarCarousel extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                context.l10n.eventSimilarEvents,
+                title ?? context.l10n.eventSimilarEvents,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -80,6 +84,7 @@ class EventSimilarCarousel extends StatelessWidget {
                 child: _SimilarEventCard(
                   event: filteredEvents[index],
                   index: index,
+                  showPriceBadge: showPriceBadge,
                 ),
               );
             },
@@ -93,10 +98,12 @@ class EventSimilarCarousel extends StatelessWidget {
 class _SimilarEventCard extends ConsumerWidget {
   final Event event;
   final int index;
+  final bool showPriceBadge;
 
   const _SimilarEventCard({
     required this.event,
     required this.index,
+    required this.showPriceBadge,
   });
 
   @override
@@ -161,11 +168,12 @@ class _SimilarEventCard extends ConsumerWidget {
                         ),
                       ),
                       // Badge prix
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: _buildPriceBadge(context),
-                      ),
+                      if (showPriceBadge)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: _buildPriceBadge(context),
+                        ),
                     ],
                   ),
                 ),
@@ -206,27 +214,28 @@ class _SimilarEventCard extends ConsumerWidget {
                       ),
                       const Spacer(),
                       // Lieu + Distance
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Text(
-                              event.city ?? event.venue ?? '',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                      if (_locationLabel.isNotEmpty)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 12,
+                              color: Colors.grey.shade600,
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                _locationLabel,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -236,6 +245,12 @@ class _SimilarEventCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String get _locationLabel {
+    final city = event.city.trim();
+    if (city.isNotEmpty) return city;
+    return event.venue.trim();
   }
 
   Widget _buildPriceBadge(BuildContext context) {

@@ -126,6 +126,7 @@ class Event extends Equatable {
   final EventVenue? venueDetails;
   final String? creationSource;
   final String? originalOrganizerName;
+  final List<Event> relatedEvents;
 
   // ---- HOME_FEED MobileEventResource fields (spec: docs/HOME_FEED_MOBILE_SPEC.md §4) ----
 
@@ -273,6 +274,7 @@ class Event extends Equatable {
     this.venueDetails,
     this.creationSource,
     this.originalOrganizerName,
+    this.relatedEvents = const [],
     // HOME_FEED §4 fields
     this.version,
     this.timezone,
@@ -343,6 +345,7 @@ class Event extends Equatable {
       organizerId: organizerId,
       organizerName: organizerName,
       vendorCancellationPolicy: vendorCancellationPolicy,
+      relatedEvents: const [],
       isFavorite: false,
       isFeatured: false,
       isRecommended: false,
@@ -584,6 +587,7 @@ class Event extends Equatable {
     EventVenue? venueDetails,
     String? creationSource,
     String? originalOrganizerName,
+    List<Event>? relatedEvents,
     int? version,
     String? timezone,
     String? calendarMode,
@@ -704,6 +708,7 @@ class Event extends Equatable {
       creationSource: creationSource ?? this.creationSource,
       originalOrganizerName:
           originalOrganizerName ?? this.originalOrganizerName,
+      relatedEvents: relatedEvents ?? this.relatedEvents,
       version: version ?? this.version,
       timezone: timezone ?? this.timezone,
       calendarMode: calendarMode ?? this.calendarMode,
@@ -825,6 +830,7 @@ class Event extends Equatable {
         venueDetails,
         creationSource,
         originalOrganizerName,
+        relatedEvents,
         version,
         timezone,
         calendarMode,

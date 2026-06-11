@@ -9381,6 +9381,12 @@ abstract class AppLocalizations {
   /// **'Source infos : '**
   String get eventSourceInfo;
 
+  /// No description provided for @eventRelatedActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités associées'**
+  String get eventRelatedActivities;
+
   /// No description provided for @eventSimilarEvents.
   ///
   /// In fr, this message translates to:

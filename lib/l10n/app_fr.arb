@@ -2880,6 +2880,7 @@
   "eventWrittenBy": "Rédigé par",
   "eventLehibooExperiences": "LEHIBOO EXPÉRIENCES",
   "eventSourceInfo": "Source infos : ",
+  "eventRelatedActivities": "Activités associées",
   "eventSimilarEvents": "Événements similaires",
   "eventPeopleWatching": "{count, plural, =1{1 personne regarde} other{{count} personnes regardent}}",
   "@eventPeopleWatching": {

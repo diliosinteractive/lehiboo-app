@@ -90,5 +90,45 @@ void main() {
       expect(event.indicativePrices.last.label, 'Massage parlor');
       expect(event.indicativePrices.last.formattedPrice, '5.00 €');
     });
+
+    test('maps related events from event detail response', () {
+      final event = EventMapper.toEvent(
+        EventDto.fromJson({
+          'id': 4,
+          'uuid': 'current-event',
+          'title': 'Current event',
+          'slug': 'current-event',
+          'venue_name': 'Main venue',
+          'city': 'Paris',
+          'related_events': [
+            {
+              'id': 'related-event',
+              'uuid': 'related-event',
+              'title': 'Related activity',
+              'slug': 'related-activity',
+              'featured_image': 'https://example.com/related.jpg',
+              'excerpt': 'Related activity excerpt.',
+            },
+            {
+              'id': 'current-event',
+              'uuid': 'current-event',
+              'title': 'Current event',
+              'slug': 'current-event',
+            },
+          ],
+        }),
+      );
+
+      expect(event.relatedEvents, hasLength(1));
+
+      final related = event.relatedEvents.single;
+      expect(related.id, 'related-event');
+      expect(related.slug, 'related-activity');
+      expect(related.title, 'Related activity');
+      expect(related.venue, 'Main venue');
+      expect(related.city, 'Paris');
+      expect(related.images, ['https://example.com/related.jpg']);
+      expect(related.relatedEvents, isEmpty);
+    });
   });
 }

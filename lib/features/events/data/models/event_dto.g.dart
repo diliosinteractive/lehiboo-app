@@ -71,6 +71,7 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       socialMedia: _parseMapOrNull(json['social_media']),
       primaryCategory: _parseCategoryOrNull(json['primary_category']),
       categories: _parseCategoriesList(json['categories']),
+      relatedEvents: _parseRelatedEvents(json['related_events']),
       slots: _parseListOrNull(json['slots']),
       venueData: _parseMapOrNull(json['venue']),
       creationSource: _parseStringOrNull(json['creation_source']),
@@ -195,6 +196,7 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'social_media': instance.socialMedia,
       'primary_category': instance.primaryCategory,
       'categories': instance.categories,
+      'related_events': instance.relatedEvents,
       'slots': instance.slots,
       'venue': instance.venueData,
       'creation_source': instance.creationSource,
@@ -263,6 +265,30 @@ Map<String, dynamic> _$$EventImageDtoImplToJson(_$EventImageDtoImpl instance) =>
       'medium': instance.medium,
       'large': instance.large,
       'full': instance.full,
+    };
+
+_$EventRelatedDtoImpl _$$EventRelatedDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$EventRelatedDtoImpl(
+      id: _parseStringOrNull(json['id']),
+      uuid: _parseStringOrNull(json['uuid']),
+      title: json['title'] == null ? '' : _parseHtmlString(json['title']),
+      slug: json['slug'] == null ? '' : _parseHtmlString(json['slug']),
+      featuredImage: _parseStringOrNull(json['featured_image']),
+      coverImage: _parseStringOrNull(json['cover_image']),
+      excerpt: _parseHtmlString(json['excerpt']),
+    );
+
+Map<String, dynamic> _$$EventRelatedDtoImplToJson(
+        _$EventRelatedDtoImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'uuid': instance.uuid,
+      'title': instance.title,
+      'slug': instance.slug,
+      'featured_image': instance.featuredImage,
+      'cover_image': instance.coverImage,
+      'excerpt': instance.excerpt,
     };
 
 _$EventDatesDtoImpl _$$EventDatesDtoImplFromJson(Map<String, dynamic> json) =>

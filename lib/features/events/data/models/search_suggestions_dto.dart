@@ -70,7 +70,7 @@ class SearchSuggestionItemDto {
       type: _asString(json['type']).isEmpty
           ? fallbackType
           : _asString(json['type']),
-      id: _asString(json['id']),
+      id: _firstString(json['uuid'], json['id']),
       slug: _asString(json['slug']),
       label: label,
       subtitle: _firstNullableString(

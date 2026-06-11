@@ -201,19 +201,28 @@ class ApiResponseHandler {
     // like "Instance of '<ClassName>'" — never surface that to the UI.
     if (error is Error) return fallbackMessage;
 
-    // Generic Exception — strip prefix if present
-    final str = error.toString();
-    final cleaned = str.startsWith('Exception: ') ? str.substring(11) : str;
-    // "Instance of '<Class>'" is the default toString for classes without
-    // an override — it's never a helpful message for a user.
-    if (cleaned.isNotEmpty &&
-        !cleaned.startsWith('http') &&
-        !cleaned.startsWith('Instance of ') &&
-        !cleaned.contains('DioException')) {
-      return cleaned;
+    final str = _stripGenericExceptionPrefix(error.toString());
+    if (_looksLikeConnectivityFailure(str)) {
+      return l10n.commonConnectionError;
     }
 
-    return fallbackMessage;
+    return safeUserMessage(str) ?? fallbackMessage;
+  }
+
+  /// Returns a short message only if it looks safe to show to end users.
+  ///
+  /// This intentionally keeps ordinary validation/API messages, but rejects
+  /// diagnostics such as stack traces, exception class names, file paths, SDK
+  /// provider details, and raw network/socket internals.
+  static String? safeUserMessage(Object? value) {
+    final raw = value?.toString().trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    final message = _stripGenericExceptionPrefix(raw).trim();
+    if (message.isEmpty) return null;
+    if (_looksLikeDiagnosticMessage(message)) return null;
+
+    return message;
   }
 
   /// Returns true when the exception is a transport/connectivity failure.
@@ -238,23 +247,86 @@ class ApiResponseHandler {
       final details = error['details'];
       if (details is Map<String, dynamic> && details.isNotEmpty) {
         final first = details.values.first;
-        if (first is List && first.isNotEmpty) return first.first.toString();
-        return first.toString();
+        if (first is List && first.isNotEmpty) {
+          return safeUserMessage(first.first);
+        }
+        return safeUserMessage(first);
       }
-      if (error['message'] is String) return error['message'] as String;
+      if (error['message'] is String) return safeUserMessage(error['message']);
     }
-    if (error is String) return error;
+    if (error is String) return safeUserMessage(error);
 
     // Top-level message
-    if (body['message'] is String) return body['message'] as String;
+    if (body['message'] is String) return safeUserMessage(body['message']);
 
     // Nested data.message
     final data = body['data'];
     if (data is Map<String, dynamic> && data['message'] is String) {
-      return data['message'] as String;
+      return safeUserMessage(data['message']);
     }
 
     return null;
+  }
+
+  static String _stripGenericExceptionPrefix(String value) {
+    const prefix = 'Exception: ';
+    return value.startsWith(prefix) ? value.substring(prefix.length) : value;
+  }
+
+  static bool _looksLikeConnectivityFailure(String value) {
+    final lower = value.toLowerCase();
+    return lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('network is unreachable') ||
+        lower.contains('connection refused') ||
+        lower.contains('connection timed out') ||
+        lower.contains('connection reset by peer');
+  }
+
+  static bool _looksLikeDiagnosticMessage(String value) {
+    final lower = value.toLowerCase();
+    if (value.length > 500) return true;
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return true;
+    }
+    if (value.startsWith('Instance of ')) return true;
+    if (_looksLikeConnectivityFailure(value)) return true;
+
+    final diagnosticTokens = <String>[
+      'traceback',
+      'stack trace',
+      'stacktrace',
+      'dioexception',
+      'socketexception',
+      'formatexception',
+      'stateerror',
+      'fluttererror',
+      'rangeerror',
+      'typeerror',
+      'assertion failed',
+      'error code:',
+      'unhandled exception',
+      'null check operator used on a null value',
+      'is not a subtype of type',
+      'bad state:',
+      'package:',
+      'file://',
+      'api.openai',
+      'openai',
+      'deepseek',
+      'langchain',
+      'insufficient_quota',
+    ];
+    if (diagnosticTokens.any(lower.contains)) return true;
+
+    final diagnosticPatterns = <RegExp>[
+      RegExp(r'(^|\n)\s*#\d+\s+'),
+      RegExp(r'(^|\n)\s*at\s+[\w.$<>]+\('),
+      RegExp(r'(/[A-Za-z0-9._-]+)+\.dart:\d+'),
+      RegExp(r'[A-Za-z]:\\[^:]+:\d+'),
+      RegExp(r'\.dart:\d+:\d+'),
+    ];
+    return diagnosticPatterns.any((pattern) => pattern.hasMatch(value));
   }
 
   // ---------------------------------------------------------------------------
