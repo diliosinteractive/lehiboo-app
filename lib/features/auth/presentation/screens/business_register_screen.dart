@@ -165,131 +165,136 @@ class _BusinessRegisterScreenState
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Step indicator
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: StepIndicator(
-                currentStep: state.stepIndex,
-                totalSteps: state.totalSteps,
-              ),
-            ),
-
-            // Success message
-            if (state.successMessage != null)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade200),
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            children: [
+              // Step indicator
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: StepIndicator(
+                  currentStep: state.stepIndex,
+                  totalSteps: state.totalSteps,
                 ),
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle_outline,
-                        color: Colors.green.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        state.successMessage!,
-                        style: TextStyle(
-                          color: Colors.green.shade700,
-                          fontSize: 13,
+              ),
+
+              // Success message
+              if (state.successMessage != null)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle_outline,
+                          color: Colors.green.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          state.successMessage!,
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () {
+                          ref
+                              .read(businessRegisterProvider.notifier)
+                              .clearSuccess();
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Error message
+              if (state.errorMessage != null)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline,
+                          color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          state.errorMessage!,
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () {
+                          ref
+                              .read(businessRegisterProvider.notifier)
+                              .clearError();
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Forms
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    // Step 1: Personal Info
+                    PersonalInfoForm(
+                      onSubmit: () {}, // Navigation handled by state listener
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 18),
-                      onPressed: () {
-                        ref
-                            .read(businessRegisterProvider.notifier)
-                            .clearSuccess();
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+
+                    // Step 2: OTP Verification
+                    OtpVerificationForm(
+                      onSubmit: () {},
+                      onBack: _handleBack,
+                    ),
+
+                    // Step 3: Company Info
+                    CompanyInfoForm(
+                      onSubmit: () {},
+                      onBack: _handleBack,
+                    ),
+
+                    // Step 4: Usage Mode
+                    UsageModeForm(
+                      onSubmit: () {},
+                      onBack: _handleBack,
+                    ),
+
+                    // Step 5: Terms & Summary
+                    TermsAcceptanceForm(
+                      onSubmit: () {},
+                      onBack: _handleBack,
                     ),
                   ],
                 ),
               ),
-
-            // Error message
-            if (state.errorMessage != null)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline,
-                        color: Colors.red.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        state.errorMessage!,
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 18),
-                      onPressed: () {
-                        ref
-                            .read(businessRegisterProvider.notifier)
-                            .clearError();
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-
-            // Forms
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  // Step 1: Personal Info
-                  PersonalInfoForm(
-                    onSubmit: () {}, // Navigation handled by state listener
-                  ),
-
-                  // Step 2: OTP Verification
-                  OtpVerificationForm(
-                    onSubmit: () {},
-                    onBack: _handleBack,
-                  ),
-
-                  // Step 3: Company Info
-                  CompanyInfoForm(
-                    onSubmit: () {},
-                    onBack: _handleBack,
-                  ),
-
-                  // Step 4: Usage Mode
-                  UsageModeForm(
-                    onSubmit: () {},
-                    onBack: _handleBack,
-                  ),
-
-                  // Step 5: Terms & Summary
-                  TermsAcceptanceForm(
-                    onSubmit: () {},
-                    onBack: _handleBack,
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

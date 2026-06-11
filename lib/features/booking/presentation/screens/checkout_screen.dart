@@ -151,58 +151,63 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Récapitulatif de la commande
-            _buildOrderSummary(context),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Récapitulatif de la commande
+              _buildOrderSummary(context),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Formulaire acheteur
-            _buildBuyerForm(context),
+              // Formulaire acheteur
+              _buildBuyerForm(context),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Formulaires participants
-            _buildParticipantsSection(),
+              // Formulaires participants
+              _buildParticipantsSection(),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // CGV
-            _buildTermsSection(context),
+              // CGV
+              _buildTermsSection(context),
 
-            // Message d'erreur
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(color: Colors.red),
+              // Message d'erreur
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border:
+                          Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-            // Espace pour le bouton
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
-          ],
+              // Espace pour le bouton
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: _buildConfirmButton(),

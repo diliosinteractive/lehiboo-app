@@ -259,26 +259,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       surfaceTintColor: Colors.transparent,
       centerTitle: false,
       toolbarHeight: 60,
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(
-            'assets/images/logo_picto_lehiboo_old.png',
-            width: 30,
-            height: 35,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => const Text(
-              'Le Hiboo',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo_picto_lehiboo_old.png',
+              width: 30,
+              height: 35,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Text(
+                'Le Hiboo',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: () => context.push('/hibons-dashboard'),
-            child: const HibonCounterWidget(compact: true),
-          ),
-        ],
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () => context.push('/hibons-dashboard'),
+              child: const HibonCounterWidget(compact: true),
+            ),
+          ],
+        ),
       ),
       titleSpacing: 8,
       actions: [

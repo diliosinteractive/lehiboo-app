@@ -449,62 +449,69 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             ),
         ],
       ),
-      body: items.isEmpty
-          ? _buildEmptyState()
-          : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CartSummarySection(
-                    items: items,
-                    onUpdateQuantity:
-                        ref.read(orderCartProvider.notifier).updateQuantity,
-                    onRemove: ref.read(orderCartProvider.notifier).remove,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    context.l10n.bookingParticipantsTitle,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textPrimary,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: items.isEmpty
+            ? _buildEmptyState()
+            : SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CartSummarySection(
+                      items: items,
+                      onUpdateQuantity:
+                          ref.read(orderCartProvider.notifier).updateQuantity,
+                      onRemove: ref.read(orderCartProvider.notifier).remove,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    context.l10n.bookingParticipantsInstruction,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 12),
-                  ParticipantsOverviewBlock(
-                    completedCount: completedCount,
-                    totalCount: totalParticipants,
-                    savedParticipants: savedParticipants,
-                    user: user,
-                    userIsComplete: userIsComplete,
-                    onFillFromProfile:
-                        user != null ? _fillAllFromProfile : null,
-                    onPickSavedParticipant: savedParticipants.isEmpty
-                        ? null
-                        : () => _pickSavedForFirstEmpty(savedParticipants),
-                    onCompleteProfile:
-                        user != null ? _goToCompleteProfile : null,
-                  ),
-                  const SizedBox(height: 16),
-                  ..._buildParticipantCards(
-                    items: items,
-                    savedParticipants: savedParticipants,
-                    firstIncompleteIndex: firstIncompleteIndex,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildBuyerForm(),
-                  const SizedBox(height: 12),
-                  _buildTermsSection(refundPolicies),
-                  if (_errorMessage != null) _buildError(),
-                ],
+                    const SizedBox(height: 16),
+                    Text(
+                      context.l10n.bookingParticipantsTitle,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: HbColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      context.l10n.bookingParticipantsInstruction,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 12),
+                    ParticipantsOverviewBlock(
+                      completedCount: completedCount,
+                      totalCount: totalParticipants,
+                      savedParticipants: savedParticipants,
+                      user: user,
+                      userIsComplete: userIsComplete,
+                      onFillFromProfile:
+                          user != null ? _fillAllFromProfile : null,
+                      onPickSavedParticipant: savedParticipants.isEmpty
+                          ? null
+                          : () => _pickSavedForFirstEmpty(savedParticipants),
+                      onCompleteProfile:
+                          user != null ? _goToCompleteProfile : null,
+                    ),
+                    const SizedBox(height: 16),
+                    ..._buildParticipantCards(
+                      items: items,
+                      savedParticipants: savedParticipants,
+                      firstIncompleteIndex: firstIncompleteIndex,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildBuyerForm(),
+                    const SizedBox(height: 12),
+                    _buildTermsSection(refundPolicies),
+                    if (_errorMessage != null) _buildError(),
+                  ],
+                ),
               ),
-            ),
+      ),
       bottomNavigationBar: items.isEmpty
           ? null
           : _buildConfirmButton(
