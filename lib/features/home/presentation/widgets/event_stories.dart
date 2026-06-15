@@ -7,7 +7,6 @@ import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/services/volume_routing.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
-import 'package:lehiboo/features/home/presentation/utils/home_l10n_formatters.dart';
 import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 import 'package:lehiboo/features/home/presentation/widgets/story_video_player.dart';
 import 'package:lehiboo/features/stories/domain/entities/story.dart';
@@ -928,7 +927,10 @@ class _StoryContent extends StatelessWidget {
                       color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    _formatDate(context, story.startDate),
+                    _formatDate(
+                      context,
+                      story.eventStartDate ?? story.startDate,
+                    ),
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
@@ -1000,6 +1002,15 @@ class _StoryContent extends StatelessWidget {
   }
 
   String _formatDate(BuildContext context, DateTime date) {
-    return context.homeFriendlyDate(date);
+    if (DateUtils.isSameDay(date, DateTime.now())) {
+      return context.l10n.commonToday;
+    }
+    if (DateUtils.isSameDay(
+        date, DateTime.now().add(const Duration(days: 1)))) {
+      return context.l10n.commonTomorrow;
+    }
+    return context
+        .appDateFormat('EEE d/M/yyyy', enPattern: 'EEE, M/d/yyyy')
+        .format(date);
   }
 }

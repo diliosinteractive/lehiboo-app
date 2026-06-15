@@ -26,10 +26,10 @@ class StoryOrganizationDto {
   factory StoryOrganizationDto.fromJson(Map<String, dynamic> json) {
     return StoryOrganizationDto(
       uuid: json['uuid'] as String? ?? '',
-      organizationName: json['organization_name'] as String?
-          ?? json['organizationName'] as String?,
-      displayName: json['display_name'] as String?
-          ?? json['displayName'] as String?,
+      organizationName: json['organization_name'] as String? ??
+          json['organizationName'] as String?,
+      displayName:
+          json['display_name'] as String? ?? json['displayName'] as String?,
     );
   }
 }
@@ -55,6 +55,7 @@ class StoryEventDto {
   final String? featuredImage;
   final String? city;
   final String? bookingMode;
+  final String? startDate;
   final StoryCategoryDto? primaryCategory;
   final StoryEventTagDto? eventTag;
 
@@ -65,6 +66,7 @@ class StoryEventDto {
     this.featuredImage,
     this.city,
     this.bookingMode,
+    this.startDate,
     this.primaryCategory,
     this.eventTag,
   });
@@ -72,12 +74,14 @@ class StoryEventDto {
   /// Parses both camelCase (old format) and snake_case (MobileEventResource).
   factory StoryEventDto.fromJson(Map<String, dynamic> json) {
     // featured_image may be a string URL or an object with size variants
-    String? image = json['featured_image'] as String?
-        ?? json['featuredImage'] as String?;
+    String? image =
+        json['featured_image'] as String? ?? json['featuredImage'] as String?;
     if (image == null && json['featured_image'] is Map) {
       final map = json['featured_image'] as Map;
-      image = map['large'] as String? ?? map['full'] as String?
-          ?? map['medium'] as String? ?? map['thumbnail'] as String?;
+      image = map['large'] as String? ??
+          map['full'] as String? ??
+          map['medium'] as String? ??
+          map['thumbnail'] as String?;
     }
 
     final categoryRaw = json['primary_category'] ?? json['primaryCategory'];
@@ -89,8 +93,11 @@ class StoryEventDto {
       title: json['title'] as String? ?? '',
       featuredImage: image,
       city: json['city'] as String?,
-      bookingMode: json['booking_mode'] as String?
-          ?? json['bookingMode'] as String?,
+      bookingMode:
+          json['booking_mode'] as String? ?? json['bookingMode'] as String?,
+      startDate: json['start_date'] as String? ??
+          json['startDate'] as String? ??
+          _parseNextSlotDate(json['next_slot'] ?? json['nextSlot']),
       primaryCategory: categoryRaw is Map<String, dynamic>
           ? StoryCategoryDto.fromJson(categoryRaw)
           : null,
@@ -98,6 +105,16 @@ class StoryEventDto {
           ? StoryEventTagDto.fromJson(tagRaw)
           : null,
     );
+  }
+
+  static String? _parseNextSlotDate(Object? raw) {
+    if (raw is! Map) return null;
+
+    return raw['start_date'] as String? ??
+        raw['startDate'] as String? ??
+        raw['start_datetime'] as String? ??
+        raw['startDatetime'] as String? ??
+        raw['date'] as String?;
   }
 }
 
@@ -142,20 +159,20 @@ class StoryDto {
       type: json['type'] as String? ?? 'optional',
       status: json['status'] as String? ?? 'active',
       title: json['title'] as String? ?? '',
-      mediaUrl: json['media_url'] as String?
-          ?? json['mediaUrl'] as String? ?? '',
-      mediaType: json['media_type'] as String?
-          ?? json['mediaType'] as String? ?? 'image',
-      posterUrl: json['poster_url'] as String?
-          ?? json['posterUrl'] as String?,
-      startDate: json['start_date'] as String?
-          ?? json['startDate'] as String? ?? '',
-      endDate: json['end_date'] as String?
-          ?? json['endDate'] as String? ?? '',
-      slotPosition: json['slot_position'] as int?
-          ?? json['slotPosition'] as int? ?? 0,
-      impressionsCount: json['impressions_count'] as int?
-          ?? json['impressionsCount'] as int? ?? 0,
+      mediaUrl:
+          json['media_url'] as String? ?? json['mediaUrl'] as String? ?? '',
+      mediaType: json['media_type'] as String? ??
+          json['mediaType'] as String? ??
+          'image',
+      posterUrl: json['poster_url'] as String? ?? json['posterUrl'] as String?,
+      startDate:
+          json['start_date'] as String? ?? json['startDate'] as String? ?? '',
+      endDate: json['end_date'] as String? ?? json['endDate'] as String? ?? '',
+      slotPosition:
+          json['slot_position'] as int? ?? json['slotPosition'] as int? ?? 0,
+      impressionsCount: json['impressions_count'] as int? ??
+          json['impressionsCount'] as int? ??
+          0,
       organization: orgRaw is Map<String, dynamic>
           ? StoryOrganizationDto.fromJson(orgRaw)
           : null,
