@@ -144,7 +144,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           // Bottom Section (Indicators & Button)
           Positioned(
-            bottom: 40,
+            bottom: MediaQuery.of(context).padding.bottom + 24,
             left: 20,
             right: 20,
             child: Row(

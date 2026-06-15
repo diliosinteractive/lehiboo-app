@@ -605,7 +605,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 const SizedBox(height: 24),
               ],
 
-              // 12. Événements similaires
+              // 12. Activités associées (curated by organizer/backend)
+              if (event.relatedEvents.isNotEmpty) ...[
+                EventSimilarCarousel(
+                  events: event.relatedEvents,
+                  currentEventId: event.id,
+                  title: context.l10n.eventRelatedActivities,
+                  showPriceBadge: false,
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              // 13. Événements similaires
               similarEventsAsync.when(
                 data: (similarEvents) => similarEvents.isNotEmpty
                     ? EventSimilarCarousel(
@@ -617,7 +628,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 error: (_, __) => const SizedBox.shrink(),
               ),
 
-              // 13. Espace pour la sticky bar
+              // 14. Espace pour la sticky bar
               SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
             ],
           ),
@@ -899,7 +910,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         children: [
           Text(
             context.l10n.eventAboutTitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -976,7 +987,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         children: [
           Text(
             context.l10n.eventPricingTitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -1030,7 +1041,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             ),
             child: Text(
               context.l10n.commonFree,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: HbColors.success,
@@ -1150,7 +1161,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         children: [
           Text(
             context.l10n.eventCharacteristicsTitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,

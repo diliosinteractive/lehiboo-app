@@ -196,123 +196,127 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Column(
-        children: [
-          // Step indicator
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              children: [
-                _StepDot(
-                    index: 0,
-                    current: _stepIndex,
-                    label: context.l10n.messagesBroadcastStepRecipients),
-                Expanded(
-                    child: Divider(
-                        color: _stepIndex > 0
-                            ? _primaryColor
-                            : Colors.grey.shade300)),
-                _StepDot(
-                    index: 1,
-                    current: _stepIndex,
-                    label: context.l10n.messagesMessageLabel),
-                Expanded(
-                    child: Divider(
-                        color: _stepIndex > 1
-                            ? _primaryColor
-                            : Colors.grey.shade300)),
-                _StepDot(
-                    index: 2,
-                    current: _stepIndex,
-                    label: context.l10n.messagesBroadcastStepReview),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: switch (_step) {
-              _Step.recipients => _RecipientsStep(
-                  selectedEvent: _selectedEvent,
-                  selectedSlot: _selectedSlot,
-                  recipientsCount: _recipientsCount,
-                  loadingPreview: _loadingPreview,
-                  previewError: _previewError,
-                  onEventSelected: (event) {
-                    setState(() {
-                      _selectedEvent = event;
-                      _selectedSlot = null;
-                      _recipientsCount = null;
-                    });
-                    if (event != null) {
-                      ref.invalidate(_eventSlotsProvider(event.uuid));
-                      _previewRecipients();
-                    }
-                  },
-                  onSlotSelected: (slot) {
-                    setState(() => _selectedSlot = slot);
-                    _previewRecipients();
-                  },
-                ),
-              _Step.message => _MessageStep(
-                  subjectCtrl: _subjectCtrl,
-                  messageCtrl: _messageCtrl,
-                  formKey: _formKey,
-                  onChanged: () => setState(() {}),
-                ),
-              _Step.review => _ReviewStep(
-                  event: _selectedEvent!,
-                  slot: _selectedSlot,
-                  recipientsCount: _recipientsCount ?? 0,
-                  subject: _subjectCtrl.text.trim(),
-                  message: _messageCtrl.text.trim(),
-                ),
-            },
-          ),
-          // Bottom nav
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          children: [
+            // Step indicator
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(
                 children: [
-                  if (_step != _Step.recipients)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _prevStep,
-                        child: Text(context.l10n.commonBack),
-                      ),
-                    ),
-                  if (_step != _Step.recipients) const SizedBox(width: 12),
+                  _StepDot(
+                      index: 0,
+                      current: _stepIndex,
+                      label: context.l10n.messagesBroadcastStepRecipients),
                   Expanded(
-                    flex: 2,
-                    child: _step == _Step.review
-                        ? FilledButton(
-                            style: FilledButton.styleFrom(
-                                backgroundColor: _primaryColor),
-                            onPressed: _sending ? null : _send,
-                            child: _sending
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(context.l10n.messagesSend),
-                          )
-                        : FilledButton(
-                            style: FilledButton.styleFrom(
-                                backgroundColor:
-                                    _canGoNext ? _primaryColor : Colors.grey),
-                            onPressed: _canGoNext ? _nextStep : null,
-                            child: Text(context.l10n.commonNext),
-                          ),
-                  ),
+                      child: Divider(
+                          color: _stepIndex > 0
+                              ? _primaryColor
+                              : Colors.grey.shade300)),
+                  _StepDot(
+                      index: 1,
+                      current: _stepIndex,
+                      label: context.l10n.messagesMessageLabel),
+                  Expanded(
+                      child: Divider(
+                          color: _stepIndex > 1
+                              ? _primaryColor
+                              : Colors.grey.shade300)),
+                  _StepDot(
+                      index: 2,
+                      current: _stepIndex,
+                      label: context.l10n.messagesBroadcastStepReview),
                 ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Expanded(
+              child: switch (_step) {
+                _Step.recipients => _RecipientsStep(
+                    selectedEvent: _selectedEvent,
+                    selectedSlot: _selectedSlot,
+                    recipientsCount: _recipientsCount,
+                    loadingPreview: _loadingPreview,
+                    previewError: _previewError,
+                    onEventSelected: (event) {
+                      setState(() {
+                        _selectedEvent = event;
+                        _selectedSlot = null;
+                        _recipientsCount = null;
+                      });
+                      if (event != null) {
+                        ref.invalidate(_eventSlotsProvider(event.uuid));
+                        _previewRecipients();
+                      }
+                    },
+                    onSlotSelected: (slot) {
+                      setState(() => _selectedSlot = slot);
+                      _previewRecipients();
+                    },
+                  ),
+                _Step.message => _MessageStep(
+                    subjectCtrl: _subjectCtrl,
+                    messageCtrl: _messageCtrl,
+                    formKey: _formKey,
+                    onChanged: () => setState(() {}),
+                  ),
+                _Step.review => _ReviewStep(
+                    event: _selectedEvent!,
+                    slot: _selectedSlot,
+                    recipientsCount: _recipientsCount ?? 0,
+                    subject: _subjectCtrl.text.trim(),
+                    message: _messageCtrl.text.trim(),
+                  ),
+              },
+            ),
+            // Bottom nav
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(
+                  children: [
+                    if (_step != _Step.recipients)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _prevStep,
+                          child: Text(context.l10n.commonBack),
+                        ),
+                      ),
+                    if (_step != _Step.recipients) const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: _step == _Step.review
+                          ? FilledButton(
+                              style: FilledButton.styleFrom(
+                                  backgroundColor: _primaryColor),
+                              onPressed: _sending ? null : _send,
+                              child: _sending
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(context.l10n.messagesSend),
+                            )
+                          : FilledButton(
+                              style: FilledButton.styleFrom(
+                                  backgroundColor:
+                                      _canGoNext ? _primaryColor : Colors.grey),
+                              onPressed: _canGoNext ? _nextStep : null,
+                              child: Text(context.l10n.commonNext),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

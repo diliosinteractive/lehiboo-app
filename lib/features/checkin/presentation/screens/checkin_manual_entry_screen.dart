@@ -69,11 +69,15 @@ class _CheckinManualEntryScreenState
       }
     } on CheckinFailure catch (e) {
       if (!mounted) return;
-      await showCheckinBlockedSheet(
-        context,
-        reason: e.blocker,
-        extraMessage: e.message,
-      );
+      if (e.isNetworkError) {
+        _toast(context.l10n.checkinNetworkRetype);
+      } else {
+        await showCheckinBlockedSheet(
+          context,
+          reason: e.blocker,
+          extraMessage: e.message,
+        );
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -152,7 +156,8 @@ class _CheckinManualEntryScreenState
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -11,6 +11,7 @@ class Story extends Equatable {
   final String type; // "reserved" or "optional"
   final DateTime startDate;
   final DateTime endDate;
+  final DateTime? eventStartDate;
   final int slotPosition;
   final int impressionsCount;
 
@@ -38,6 +39,7 @@ class Story extends Equatable {
     required this.type,
     required this.startDate,
     required this.endDate,
+    this.eventStartDate,
     required this.slotPosition,
     required this.impressionsCount,
     required this.eventUuid,

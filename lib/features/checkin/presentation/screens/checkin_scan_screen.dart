@@ -172,7 +172,11 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
       );
     } on CheckinFailure catch (e) {
       if (!mounted) return;
-      await _showBlocked(e);
+      if (e.isNetworkError) {
+        _showNetworkUnstableBanner();
+      } else {
+        await _showBlocked(e);
+      }
       return;
     }
 

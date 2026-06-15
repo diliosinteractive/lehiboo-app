@@ -155,133 +155,140 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
           ),
         ],
       ),
-      body: !_initialized
-          ? const Center(child: CircularProgressIndicator(color: _accentColor))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title field
-                  _buildSectionLabel(context.l10n.tripPlanEditTitleLabel),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: !_initialized
+            ? const Center(
+                child: CircularProgressIndicator(color: _accentColor))
+            : SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title field
+                    _buildSectionLabel(context.l10n.tripPlanEditTitleLabel),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _titleController,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: _accentColor, width: 2),
+                        ),
+                        hintText: context.l10n.tripPlanEditNameHint,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: _accentColor, width: 2),
-                      ),
-                      hintText: context.l10n.tripPlanEditNameHint,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
+                      onChanged: (_) => _checkChanges(),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Date picker
+                    _buildSectionLabel(context.l10n.tripPlanEditDateLabel),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _pickDate,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today,
+                              size: 20,
+                              color: _accentColor,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _selectedDate != null
+                                  ? _formatDate(context, _selectedDate!)
+                                  : context.l10n.tripPlanEditSelectDate,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: _selectedDate != null
+                                    ? const Color(0xFF2D3748)
+                                    : Colors.grey[500],
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              Icons.chevron_right,
+                              color: Colors.grey[400],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    onChanged: (_) => _checkChanges(),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // Date picker
-                  _buildSectionLabel(context.l10n.tripPlanEditDateLabel),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: _pickDate,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
+                    // Stops reorderable list
+                    Row(
+                      children: [
+                        _buildSectionLabel(context.l10n.tripPlanEditStopsLabel),
+                        const Spacer(),
+                        Text(
+                          context.l10n.tripPlanEditReorderHint,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade200),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            size: 20,
-                            color: _accentColor,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            _selectedDate != null
-                                ? _formatDate(context, _selectedDate!)
-                                : context.l10n.tripPlanEditSelectDate,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: _selectedDate != null
-                                  ? const Color(0xFF2D3748)
-                                  : Colors.grey[500],
-                            ),
-                          ),
-                          const Spacer(),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Colors.grey[400],
-                          ),
-                        ],
+                      clipBehavior: Clip.antiAlias,
+                      child: ReorderableListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        buildDefaultDragHandles: false,
+                        itemCount: _stops.length,
+                        onReorder: _onReorder,
+                        itemBuilder: (context, index) {
+                          final stop = _stops[index];
+                          return _buildStopItem(
+                            key: ValueKey(stop.eventUuid ?? index),
+                            index: index,
+                            stop: stop,
+                          );
+                        },
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Stops reorderable list
-                  Row(
-                    children: [
-                      _buildSectionLabel(context.l10n.tripPlanEditStopsLabel),
-                      const Spacer(),
-                      Text(
-                        context.l10n.tripPlanEditReorderHint,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ReorderableListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      buildDefaultDragHandles: false,
-                      itemCount: _stops.length,
-                      onReorder: _onReorder,
-                      itemBuilder: (context, index) {
-                        final stop = _stops[index];
-                        return _buildStopItem(
-                          key: ValueKey(stop.eventUuid ?? index),
-                          index: index,
-                          stop: stop,
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 

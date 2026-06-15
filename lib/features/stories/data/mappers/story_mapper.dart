@@ -3,6 +3,11 @@ import '../models/story_dto.dart';
 
 class StoryMapper {
   static Story toStory(StoryDto dto) {
+    final storyStartDate = DateTime.tryParse(dto.startDate) ?? DateTime.now();
+    final eventStartDate = dto.event?.startDate == null
+        ? null
+        : DateTime.tryParse(dto.event!.startDate!);
+
     return Story(
       uuid: dto.uuid,
       title: dto.title,
@@ -12,8 +17,9 @@ class StoryMapper {
           : StoryMediaType.image,
       posterUrl: dto.posterUrl,
       type: dto.type,
-      startDate: DateTime.tryParse(dto.startDate) ?? DateTime.now(),
+      startDate: storyStartDate,
       endDate: DateTime.tryParse(dto.endDate) ?? DateTime.now(),
+      eventStartDate: eventStartDate,
       slotPosition: dto.slotPosition,
       impressionsCount: dto.impressionsCount,
       eventUuid: dto.event?.uuid ?? '',
@@ -23,8 +29,8 @@ class StoryMapper {
       eventCity: dto.event?.city,
       eventBookingMode: dto.event?.bookingMode,
       eventTagName: dto.event?.eventTag?.name,
-      organizationName: dto.organization?.organizationName ??
-          dto.organization?.displayName,
+      organizationName:
+          dto.organization?.organizationName ?? dto.organization?.displayName,
       categoryName: dto.event?.primaryCategory?.name,
     );
   }
