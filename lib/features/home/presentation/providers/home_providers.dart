@@ -72,8 +72,9 @@ class HomeTodayActivitiesNotifier
     }
 
     final events = feed.today.map(EventMapper.toEvent).toList();
+    final activities = EventToActivityMapper.toActivities(events);
     ref.keepAlive();
-    return EventToActivityMapper.toActivities(events);
+    return sortActivitiesChronologically(activities);
   }
 
   Future<void> refresh() async {
@@ -103,8 +104,9 @@ class HomeTomorrowActivitiesNotifier
     }
 
     final events = feed.tomorrow.map(EventMapper.toEvent).toList();
+    final activities = EventToActivityMapper.toActivities(events);
     ref.keepAlive();
-    return EventToActivityMapper.toActivities(events);
+    return sortActivitiesChronologically(activities);
   }
 
   Future<void> refresh() async {
