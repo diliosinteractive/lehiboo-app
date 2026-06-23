@@ -90,6 +90,33 @@ void main() {
     });
   });
 
+  group('homeCategoriesProvider', () {
+    test('requests the backend home category list', () async {
+      final repository = _FakeEventRepository(
+        const [],
+        categories: const [
+          EventCategoryDto(
+            id: 1,
+            slug: 'culture',
+            name: 'Culture',
+            eventCount: 3,
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          eventRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final categories = await container.read(homeCategoriesProvider.future);
+
+      expect(repository.requestedHomeOnlyCategories, isTrue);
+      expect(categories.map((category) => category.slug), ['culture']);
+    });
+  });
+
   group('homeNewActivitiesProvider', () {
     test('sorts all fetched candidates before limiting to ten cards', () async {
       final baseDate = DateTime.now().add(const Duration(days: 10));
@@ -244,11 +271,16 @@ class _FakeHomeFeedNotifier extends HomeFeedNotifier {
 }
 
 class _FakeEventRepository implements EventRepository {
-  _FakeEventRepository(this.events);
+  _FakeEventRepository(
+    this.events, {
+    this.categories = const [],
+  });
 
   final List<Event> events;
+  final List<EventCategoryDto> categories;
   String? requestedSort;
   String? requestedOrder;
+  bool? requestedHomeOnlyCategories;
 
   @override
   Future<EventsResult> getEvents({
@@ -321,7 +353,10 @@ class _FakeEventRepository implements EventRepository {
       throw UnimplementedError();
 
   @override
-  Future<List<EventCategoryDto>> getCategories() => throw UnimplementedError();
+  Future<List<EventCategoryDto>> getCategories({bool homeOnly = false}) async {
+    requestedHomeOnlyCategories = homeOnly;
+    return categories;
+  }
 
   @override
   Future<List<ThematiqueDto>> getThematiques() => throw UnimplementedError();

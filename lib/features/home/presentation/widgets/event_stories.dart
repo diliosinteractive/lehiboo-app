@@ -37,15 +37,16 @@ class ViewedStoriesNotifier extends StateNotifier<Set<String>> {
     }
   }
 
-  Future<void> markAsViewed(String storyId) async {
-    if (state.contains(storyId)) return;
+  Future<void> markAsViewed(Story story) async {
+    final storyViewKey = story.viewedStateKey;
+    if (state.contains(storyViewKey)) return;
 
-    state = {...state, storyId};
+    state = {...state, storyViewKey};
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_storageKey, state.toList());
   }
 
-  bool isViewed(String storyId) => state.contains(storyId);
+  bool isViewed(Story story) => state.contains(story.viewedStateKey);
 }
 
 /// Stories d'événements trending, style Instagram
@@ -77,7 +78,8 @@ class EventStories extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     // Badge "NEW" si des stories non vues
-                    if (stories.any((s) => !viewedStories.contains(s.uuid)))
+                    if (stories
+                        .any((s) => !viewedStories.contains(s.viewedStateKey)))
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
@@ -110,7 +112,8 @@ class EventStories extends ConsumerWidget {
                       const SizedBox(width: 16),
                   itemBuilder: (context, index) {
                     final story = stories[index];
-                    final isViewed = viewedStories.contains(story.uuid);
+                    final isViewed =
+                        viewedStories.contains(story.viewedStateKey);
 
                     return _StoryCircle(
                       story: story,
@@ -174,7 +177,7 @@ class EventStories extends ConsumerWidget {
       List<Story> stories, int initialIndex) {
     ref
         .read(viewedStoriesProvider.notifier)
-        .markAsViewed(stories[initialIndex].uuid);
+        .markAsViewed(stories[initialIndex]);
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
@@ -636,7 +639,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
   void _markCurrentAsViewed() {
     final currentStory = widget.stories[_currentIndex];
-    ref.read(viewedStoriesProvider.notifier).markAsViewed(currentStory.uuid);
+    ref.read(viewedStoriesProvider.notifier).markAsViewed(currentStory);
   }
 
   void _recordCurrentImpression() {

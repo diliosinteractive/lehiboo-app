@@ -427,11 +427,13 @@ class EventsApiDataSource {
   Future<List<EventCategoryDto>> getCategories({
     bool includeCount = true,
     bool parentOnly = false,
+    bool homeOnly = false,
   }) async {
     final queryParams = <String, dynamic>{
       'include_count': includeCount,
     };
     if (parentOnly) queryParams['parent_only'] = true;
+    if (homeOnly) queryParams['home_only'] = '1';
 
     final response =
         await _dio.get('/categories', queryParameters: queryParams);

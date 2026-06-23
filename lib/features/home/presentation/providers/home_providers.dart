@@ -396,6 +396,11 @@ final categoriesProvider = AutoDisposeAsyncNotifierProvider<CategoriesNotifier,
   CategoriesNotifier.new,
 );
 
+final homeCategoriesProvider = AutoDisposeAsyncNotifierProvider<
+    HomeCategoriesNotifier, List<EventCategoryInfo>>(
+  HomeCategoriesNotifier.new,
+);
+
 class CategoriesNotifier
     extends AutoDisposeAsyncNotifier<List<EventCategoryInfo>> {
   @override
@@ -403,6 +408,23 @@ class CategoriesNotifier
     final eventRepository = ref.watch(eventRepositoryProvider);
 
     final categories = await eventRepository.getCategories();
+    ref.keepAlive();
+    return categories.map(EventCategoryInfo.fromDto).toList();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
+
+class HomeCategoriesNotifier
+    extends AutoDisposeAsyncNotifier<List<EventCategoryInfo>> {
+  @override
+  Future<List<EventCategoryInfo>> build() async {
+    final eventRepository = ref.watch(eventRepositoryProvider);
+
+    final categories = await eventRepository.getCategories(homeOnly: true);
     ref.keepAlive();
     return categories.map(EventCategoryInfo.fromDto).toList();
   }

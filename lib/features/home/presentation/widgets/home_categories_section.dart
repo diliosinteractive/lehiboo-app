@@ -51,7 +51,7 @@ class HomeCategoriesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(homeCategoriesProvider);
 
     return categoriesAsync.when(
       data: (allCategories) {

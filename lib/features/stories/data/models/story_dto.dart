@@ -130,6 +130,7 @@ class StoryDto {
   final String endDate;
   final int slotPosition;
   final int impressionsCount;
+  final String? updatedAt;
   final StoryOrganizationDto? organization;
   final StoryEventDto? event;
 
@@ -145,6 +146,7 @@ class StoryDto {
     required this.endDate,
     required this.slotPosition,
     required this.impressionsCount,
+    this.updatedAt,
     this.organization,
     this.event,
   });
@@ -173,6 +175,7 @@ class StoryDto {
       impressionsCount: json['impressions_count'] as int? ??
           json['impressionsCount'] as int? ??
           0,
+      updatedAt: json['updated_at'] as String? ?? json['updatedAt'] as String?,
       organization: orgRaw is Map<String, dynamic>
           ? StoryOrganizationDto.fromJson(orgRaw)
           : null,
