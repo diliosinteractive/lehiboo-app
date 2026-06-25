@@ -118,12 +118,16 @@ void main() {
   });
 
   group('homeNewActivitiesProvider', () {
-    test('sorts all fetched candidates before limiting to ten cards', () async {
+    test('preserves backend published-date order before limiting to ten cards',
+        () async {
       final baseDate = DateTime.now().add(const Duration(days: 10));
       final repository = _FakeEventRepository([
         _event(
-            id: 'excluded-late',
+            id: 'latest-future-long-way-out',
             startsAt: baseDate.add(const Duration(days: 30))),
+        _event(
+            id: 'past-filtered',
+            startsAt: DateTime.now().subtract(const Duration(days: 2))),
         _event(id: 'day-10', startsAt: baseDate.add(const Duration(days: 10))),
         _event(id: 'day-11', startsAt: baseDate.add(const Duration(days: 11))),
         _event(id: 'day-12', startsAt: baseDate.add(const Duration(days: 12))),
@@ -145,7 +149,7 @@ void main() {
       final activities = await container.read(homeNewActivitiesProvider.future);
 
       expect(activities.map((activity) => activity.id), [
-        'day-05',
+        'latest-future-long-way-out',
         'day-10',
         'day-11',
         'day-12',

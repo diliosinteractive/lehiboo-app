@@ -807,7 +807,7 @@ class HomeNewActivitiesNotifier
     }
 
     ref.keepAlive();
-    return sortActivitiesChronologically(activities).take(_maxCards).toList();
+    return activities.take(_maxCards).toList();
   }
 
   Future<void> refresh() async {
