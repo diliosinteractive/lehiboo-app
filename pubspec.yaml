@@ -2,7 +2,7 @@ name: lehiboo
 description: "Application LeHiboo - Découvrez des activités et événements près de chez vous"
 publish_to: 'none'
 
-version: 1.0.3+2
+version: 1.0.4+2
 
 environment:
   sdk: ^3.5.4
