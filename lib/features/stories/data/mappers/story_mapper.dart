@@ -22,6 +22,8 @@ class StoryMapper {
       eventStartDate: eventStartDate,
       slotPosition: dto.slotPosition,
       impressionsCount: dto.impressionsCount,
+      updatedAt:
+          dto.updatedAt == null ? null : DateTime.tryParse(dto.updatedAt!),
       eventUuid: dto.event?.uuid ?? '',
       eventSlug: dto.event?.slug ?? '',
       eventTitle: dto.event?.title ?? dto.title,

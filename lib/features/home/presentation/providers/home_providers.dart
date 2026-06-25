@@ -72,8 +72,9 @@ class HomeTodayActivitiesNotifier
     }
 
     final events = feed.today.map(EventMapper.toEvent).toList();
+    final activities = EventToActivityMapper.toActivities(events);
     ref.keepAlive();
-    return EventToActivityMapper.toActivities(events);
+    return sortActivitiesChronologically(activities);
   }
 
   Future<void> refresh() async {
@@ -103,8 +104,9 @@ class HomeTomorrowActivitiesNotifier
     }
 
     final events = feed.tomorrow.map(EventMapper.toEvent).toList();
+    final activities = EventToActivityMapper.toActivities(events);
     ref.keepAlive();
-    return EventToActivityMapper.toActivities(events);
+    return sortActivitiesChronologically(activities);
   }
 
   Future<void> refresh() async {
@@ -394,6 +396,11 @@ final categoriesProvider = AutoDisposeAsyncNotifierProvider<CategoriesNotifier,
   CategoriesNotifier.new,
 );
 
+final homeCategoriesProvider = AutoDisposeAsyncNotifierProvider<
+    HomeCategoriesNotifier, List<EventCategoryInfo>>(
+  HomeCategoriesNotifier.new,
+);
+
 class CategoriesNotifier
     extends AutoDisposeAsyncNotifier<List<EventCategoryInfo>> {
   @override
@@ -401,6 +408,23 @@ class CategoriesNotifier
     final eventRepository = ref.watch(eventRepositoryProvider);
 
     final categories = await eventRepository.getCategories();
+    ref.keepAlive();
+    return categories.map(EventCategoryInfo.fromDto).toList();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
+
+class HomeCategoriesNotifier
+    extends AutoDisposeAsyncNotifier<List<EventCategoryInfo>> {
+  @override
+  Future<List<EventCategoryInfo>> build() async {
+    final eventRepository = ref.watch(eventRepositoryProvider);
+
+    final categories = await eventRepository.getCategories(homeOnly: true);
     ref.keepAlive();
     return categories.map(EventCategoryInfo.fromDto).toList();
   }
@@ -783,7 +807,7 @@ class HomeNewActivitiesNotifier
     }
 
     ref.keepAlive();
-    return sortActivitiesChronologically(activities).take(_maxCards).toList();
+    return activities.take(_maxCards).toList();
   }
 
   Future<void> refresh() async {

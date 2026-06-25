@@ -62,7 +62,7 @@ abstract class EventRepository {
 
   Future<Event> verifyEventPassword(String identifier, String password);
 
-  Future<List<EventCategoryDto>> getCategories();
+  Future<List<EventCategoryDto>> getCategories({bool homeOnly = false});
 
   Future<List<ThematiqueDto>> getThematiques();
 

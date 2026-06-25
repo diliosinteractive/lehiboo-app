@@ -162,8 +162,8 @@ class EventRepositoryImpl implements EventRepository {
   }
 
   @override
-  Future<List<EventCategoryDto>> getCategories() async {
-    return await _apiDataSource.getCategories();
+  Future<List<EventCategoryDto>> getCategories({bool homeOnly = false}) async {
+    return await _apiDataSource.getCategories(homeOnly: homeOnly);
   }
 
   @override

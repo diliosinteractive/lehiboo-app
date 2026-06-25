@@ -12,13 +12,122 @@ import 'package:lehiboo/features/events/domain/repositories/event_repository.dar
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 
 void main() {
+  group('homeTodayActivitiesProvider', () {
+    test('orders feed events by same-day start time', () async {
+      final feed = HomeFeedDataDto(
+        today: [
+          _feedEvent(
+            id: 1,
+            slug: 'bar-a-rire-comedy-club',
+            title: 'Bar à rire Comedy Club',
+            date: '2030-06-23',
+            startTime: '20:00',
+          ),
+          _feedEvent(
+            id: 2,
+            slug: 'la-nuit-inoubliable',
+            title: 'La nuit inoubliable',
+            date: '2030-06-23',
+            startTime: '10:00',
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          homeFeedProvider.overrideWith(() => _FakeHomeFeedNotifier(feed)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final activities =
+          await container.read(homeTodayActivitiesProvider.future);
+
+      expect(activities.map((activity) => activity.slug), [
+        'la-nuit-inoubliable',
+        'bar-a-rire-comedy-club',
+      ]);
+      expect(
+        activities.map((activity) => activity.nextSlot?.startDateTime.hour),
+        [10, 20],
+      );
+    });
+  });
+
+  group('homeTomorrowActivitiesProvider', () {
+    test('orders feed events by start time', () async {
+      final feed = HomeFeedDataDto(
+        tomorrow: [
+          _feedEvent(
+            id: 1,
+            slug: 'tomorrow-late',
+            title: 'Tomorrow late',
+            date: '2030-06-24',
+            startTime: '20:00',
+          ),
+          _feedEvent(
+            id: 2,
+            slug: 'tomorrow-early',
+            title: 'Tomorrow early',
+            date: '2030-06-24',
+            startTime: '10:00',
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          homeFeedProvider.overrideWith(() => _FakeHomeFeedNotifier(feed)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final activities =
+          await container.read(homeTomorrowActivitiesProvider.future);
+
+      expect(activities.map((activity) => activity.slug), [
+        'tomorrow-early',
+        'tomorrow-late',
+      ]);
+    });
+  });
+
+  group('homeCategoriesProvider', () {
+    test('requests the backend home category list', () async {
+      final repository = _FakeEventRepository(
+        const [],
+        categories: const [
+          EventCategoryDto(
+            id: 1,
+            slug: 'culture',
+            name: 'Culture',
+            eventCount: 3,
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          eventRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final categories = await container.read(homeCategoriesProvider.future);
+
+      expect(repository.requestedHomeOnlyCategories, isTrue);
+      expect(categories.map((category) => category.slug), ['culture']);
+    });
+  });
+
   group('homeNewActivitiesProvider', () {
-    test('sorts all fetched candidates before limiting to ten cards', () async {
+    test('preserves backend published-date order before limiting to ten cards',
+        () async {
       final baseDate = DateTime.now().add(const Duration(days: 10));
       final repository = _FakeEventRepository([
         _event(
-            id: 'excluded-late',
+            id: 'latest-future-long-way-out',
             startsAt: baseDate.add(const Duration(days: 30))),
+        _event(
+            id: 'past-filtered',
+            startsAt: DateTime.now().subtract(const Duration(days: 2))),
         _event(id: 'day-10', startsAt: baseDate.add(const Duration(days: 10))),
         _event(id: 'day-11', startsAt: baseDate.add(const Duration(days: 11))),
         _event(id: 'day-12', startsAt: baseDate.add(const Duration(days: 12))),
@@ -40,7 +149,7 @@ void main() {
       final activities = await container.read(homeNewActivitiesProvider.future);
 
       expect(activities.map((activity) => activity.id), [
-        'day-05',
+        'latest-future-long-way-out',
         'day-10',
         'day-11',
         'day-12',
@@ -135,12 +244,47 @@ Event _event({
   );
 }
 
+EventDto _feedEvent({
+  required int id,
+  required String slug,
+  required String title,
+  required String date,
+  required String startTime,
+}) {
+  return EventDto(
+    id: id,
+    uuid: slug,
+    title: title,
+    slug: slug,
+    dates: EventDatesDto(
+      startDate: date,
+      endDate: date,
+      startTime: startTime,
+      endTime: '23:00',
+    ),
+  );
+}
+
+class _FakeHomeFeedNotifier extends HomeFeedNotifier {
+  _FakeHomeFeedNotifier(this.feed);
+
+  final HomeFeedDataDto feed;
+
+  @override
+  Future<HomeFeedDataDto> build() async => feed;
+}
+
 class _FakeEventRepository implements EventRepository {
-  _FakeEventRepository(this.events);
+  _FakeEventRepository(
+    this.events, {
+    this.categories = const [],
+  });
 
   final List<Event> events;
+  final List<EventCategoryDto> categories;
   String? requestedSort;
   String? requestedOrder;
+  bool? requestedHomeOnlyCategories;
 
   @override
   Future<EventsResult> getEvents({
@@ -213,7 +357,10 @@ class _FakeEventRepository implements EventRepository {
       throw UnimplementedError();
 
   @override
-  Future<List<EventCategoryDto>> getCategories() => throw UnimplementedError();
+  Future<List<EventCategoryDto>> getCategories({bool homeOnly = false}) async {
+    requestedHomeOnlyCategories = homeOnly;
+    return categories;
+  }
 
   @override
   Future<List<ThematiqueDto>> getThematiques() => throw UnimplementedError();
@@ -224,8 +371,8 @@ class _FakeEventRepository implements EventRepository {
     double? lng,
     int? radius,
     int? limit,
-  }) =>
-      throw UnimplementedError();
+  }) async =>
+      const HomeFeedDataDto();
 
   @override
   Future<FiltersResponseDto> getFilters() => throw UnimplementedError();

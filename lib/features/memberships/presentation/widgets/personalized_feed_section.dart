@@ -27,9 +27,11 @@ class _PersonalizedCardItem {
   });
 }
 
-_PersonalizedCardItem _buildCardItem(EventWithSections entry, DateTime now) {
+_PersonalizedCardItem? _buildCardItem(EventWithSections entry, DateTime now) {
   final event = EventMapper.toEvent(entry.event);
   final displaySlot = _closestDisplaySlot(event, now);
+  if (displaySlot == null) return null;
+
   final activity = EventToActivityMapper.toActivity(
     event.copyWith(
       startDate: displaySlot.startDateTime,
@@ -45,9 +47,12 @@ _PersonalizedCardItem _buildCardItem(EventWithSections entry, DateTime now) {
   );
 }
 
-Slot _closestDisplaySlot(Event event, DateTime now) {
+Slot? _closestDisplaySlot(Event event, DateTime now) {
   final calendarSlots = event.calendar?.dateSlots ?? const <CalendarDateSlot>[];
-  if (calendarSlots.isEmpty) return _fallbackSlot(event);
+  if (calendarSlots.isEmpty) {
+    final fallback = _fallbackSlot(event);
+    return _isSlotPast(fallback, now) ? null : fallback;
+  }
 
   final slots = calendarSlots
       .map((slot) => _activitySlotFromCalendarSlot(event, slot))
@@ -57,12 +62,7 @@ Slot _closestDisplaySlot(Event event, DateTime now) {
 
   if (available.isNotEmpty) return available.first;
 
-  slots.sort((a, b) {
-    final aDistance = a.startDateTime.difference(now).abs();
-    final bDistance = b.startDateTime.difference(now).abs();
-    return aDistance.compareTo(bDistance);
-  });
-  return slots.first;
+  return null;
 }
 
 Slot _fallbackSlot(Event event) {
@@ -226,8 +226,10 @@ class PersonalizedFeedSection extends ConsumerWidget {
         final now = DateTime.now();
         final items = view.ordered
             .map((entry) => _buildCardItem(entry, now))
+            .nonNulls
             .toList()
           ..sort(_compareCardItems);
+        if (items.isEmpty) return const SizedBox.shrink();
 
         // Thread each entry's section attribution into the card's badges.
         // Section membership is the source of truth for "this event is

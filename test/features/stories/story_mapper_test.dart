@@ -48,5 +48,25 @@ void main() {
 
       expect(story.eventStartDate, DateTime(2026, 7, 2));
     });
+
+    test('maps updated_at into the story viewed state key', () {
+      final dto = StoryDto.fromJson({
+        'uuid': 'story-1',
+        'title': 'Story title',
+        'media_url': 'https://example.com/story.jpg',
+        'media_type': 'image',
+        'start_date': '2026-06-15',
+        'end_date': '2026-06-20',
+        'updated_at': '2026-06-23T08:30:00Z',
+      });
+
+      final story = StoryMapper.toStory(dto);
+
+      expect(story.updatedAt, DateTime.utc(2026, 6, 23, 8, 30));
+      expect(
+        story.viewedStateKey,
+        'story-1:2026-06-23T08:30:00.000Z',
+      );
+    });
   });
 }

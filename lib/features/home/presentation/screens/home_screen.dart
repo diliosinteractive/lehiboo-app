@@ -79,7 +79,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(homeFeedProvider.notifier).refresh(),
       ref.read(homeNewActivitiesProvider.notifier).refresh(),
       ref.read(activeStoriesProvider.notifier).refresh(),
-      ref.read(categoriesProvider.notifier).refresh(),
+      ref.read(homeCategoriesProvider.notifier).refresh(),
       ref.read(homeCitiesProvider.notifier).refresh(),
       ref.read(popularCitiesProvider.notifier).refresh(),
       ref.read(mobileAppConfigProvider.notifier).refresh(),
