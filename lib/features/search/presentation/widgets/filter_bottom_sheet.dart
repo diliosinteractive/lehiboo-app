@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
@@ -196,14 +197,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             _tempSelectedEvent = null;
                             _tempFilter =
                                 _tempFilter.copyWith(searchQuery: query);
-                          });
-                        },
-                        onEventSelected: (event) {
-                          setState(() {
-                            _tempSelectedEvent = event;
-                            _tempFilter = _tempFilter.copyWith(
-                              searchQuery: event.title,
-                            );
                           });
                         },
                       ),
@@ -737,12 +730,10 @@ class _SectionTitle extends StatelessWidget {
 class _SearchFilterSection extends ConsumerStatefulWidget {
   final String query;
   final ValueChanged<String> onChanged;
-  final ValueChanged<SelectedSearchEvent> onEventSelected;
 
   const _SearchFilterSection({
     required this.query,
     required this.onChanged,
-    required this.onEventSelected,
   });
 
   @override
@@ -844,25 +835,31 @@ class _SearchFilterSectionState extends ConsumerState<_SearchFilterSection> {
 
         return _SuggestionList(
           children: items.map((item) {
-            final isEvent = _isEventSuggestion(item);
             final isOrganization = item.type == 'organization';
             return _SuggestionTile(
               icon: isOrganization ? Icons.apartment : Icons.event,
               label: item.label,
               subtitle: item.subtitle,
               onTap: () {
+                // Un clic sur une suggestion navigue directement vers la page
+                // concernée (event ou organisation) plutôt que de compléter la
+                // barre de recherche.
+                final destination = _suggestionDestination(item);
+                if (destination != null) {
+                  // Ferme la feuille de filtres avant de naviguer. On capture
+                  // le GoRouter (app-level) avant le pop car le context de ce
+                  // widget devient invalide une fois la modale fermée.
+                  final router = GoRouter.of(context);
+                  Navigator.of(context).pop();
+                  router.push(destination);
+                  return;
+                }
+
+                // Fallback : identifiant manquant → on complète la barre.
                 _controller.text = item.label;
                 _controller.selection = TextSelection.collapsed(
                   offset: _controller.text.length,
                 );
-                if (isEvent) {
-                  final selectedEvent =
-                      SelectedSearchEvent.fromSuggestion(item);
-                  if (selectedEvent.identifier.isNotEmpty) {
-                    widget.onEventSelected(selectedEvent);
-                    return;
-                  }
-                }
                 widget.onChanged(item.label);
               },
             );
@@ -877,6 +874,24 @@ class _SearchFilterSectionState extends ConsumerState<_SearchFilterSection> {
   bool _isEventSuggestion(SearchSuggestionItemDto suggestion) {
     return const {'event', 'events', 'activity', 'activities'}
         .contains(suggestion.type);
+  }
+
+  /// Route de destination pour une suggestion cliquée, ou `null` si aucun
+  /// identifiant exploitable n'est disponible.
+  ///
+  /// Les routes acceptent le slug ou l'UUID ; on privilégie le slug.
+  String? _suggestionDestination(SearchSuggestionItemDto suggestion) {
+    final identifier =
+        suggestion.slug.isNotEmpty ? suggestion.slug : suggestion.id;
+    if (identifier.isEmpty) return null;
+
+    if (_isEventSuggestion(suggestion)) {
+      return '/event/$identifier';
+    }
+    if (suggestion.type == 'organization') {
+      return '/organizers/$identifier';
+    }
+    return null;
   }
 }
 
