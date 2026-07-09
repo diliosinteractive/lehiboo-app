@@ -134,6 +134,12 @@ abstract class AppLocalizations {
   /// **'Scanner'**
   String get navScan;
 
+  /// No description provided for @navOrganizers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisateurs'**
+  String get navOrganizers;
+
   /// No description provided for @guestFeatureBookings.
   ///
   /// In fr, this message translates to:
@@ -655,6 +661,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Gérer les organisateurs que vous suivez'**
   String get profileFollowedOrganizersSubtitle;
+
+  /// No description provided for @profileOrganizersDirectoryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrir les organisateurs'**
+  String get profileOrganizersDirectoryTitle;
+
+  /// No description provided for @profileOrganizersDirectorySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parcourir l\'annuaire des organisateurs'**
+  String get profileOrganizersDirectorySubtitle;
 
   /// No description provided for @profileMembershipsTitle.
   ///
@@ -4700,6 +4718,54 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de charger la liste.'**
   String get organizerFollowedLoadError;
+
+  /// No description provided for @organizersDirectoryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisateurs'**
+  String get organizersDirectoryTitle;
+
+  /// No description provided for @organizersDirectorySearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un organisateur'**
+  String get organizersDirectorySearchHint;
+
+  /// No description provided for @organizersDirectoryEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun organisateur trouvé'**
+  String get organizersDirectoryEmptyTitle;
+
+  /// No description provided for @organizersDirectoryEmptyBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essayez un autre mot-clé ou modifiez le tri.'**
+  String get organizersDirectoryEmptyBody;
+
+  /// No description provided for @organizersSortLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trier par'**
+  String get organizersSortLabel;
+
+  /// No description provided for @organizersSortName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get organizersSortName;
+
+  /// No description provided for @organizersSortEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événements'**
+  String get organizersSortEvents;
+
+  /// No description provided for @organizersSortFollowers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Abonnés'**
+  String get organizersSortFollowers;
 
   /// No description provided for @organizerActivitiesLoadError.
   ///

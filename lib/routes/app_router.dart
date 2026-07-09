@@ -55,6 +55,7 @@ import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
 import '../features/partners/presentation/screens/organizer_profile_screen.dart';
 import '../features/partners/presentation/screens/followed_organizers_screen.dart';
+import '../features/partners/presentation/screens/organizers_directory_screen.dart';
 import '../features/memberships/presentation/screens/invitation_landing_screen.dart';
 import '../features/memberships/presentation/screens/memberships_screen.dart';
 import '../features/memberships/presentation/screens/private_events_screen.dart';
@@ -315,6 +316,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/my-bookings',
             name: 'my-bookings',
             builder: (context, state) => const BookingsListScreen(),
+          ),
+          // Public organizers directory — inside the shell so the bottom nav
+          // stays visible (it is the logged-out 4th tab, and a Profile entry
+          // for authed users).
+          GoRoute(
+            path: '/organizers',
+            name: 'organizers-directory',
+            builder: (context, state) => const OrganizersDirectoryScreen(),
           ),
         ],
       ),

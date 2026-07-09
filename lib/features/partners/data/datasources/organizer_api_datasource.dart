@@ -51,6 +51,27 @@ class FollowedOrganizersPage {
   bool get hasMore => page < lastPage;
 }
 
+/// Page of the public organizers directory.
+///
+/// Spec: docs/organizer/ORGANIZERS_LIST_API_MOBILE.md
+class OrganizersDirectoryPage {
+  final List<OrganizerProfileDto> items;
+  final int page;
+  final int perPage;
+  final int total;
+  final int lastPage;
+
+  const OrganizersDirectoryPage({
+    required this.items,
+    required this.page,
+    required this.perPage,
+    required this.total,
+    required this.lastPage,
+  });
+
+  bool get hasMore => page < lastPage;
+}
+
 /// Single entry-point for the four organizer endpoints.
 ///
 /// Spec: docs/ORGANIZER_PROFILE_MOBILE_SPEC.md §2
@@ -211,6 +232,75 @@ class OrganizerApiDataSource {
       perPage: resolvedPerPage,
       total: resolvedTotal,
       lastPage: resolvedLastPage == 0 ? 1 : resolvedLastPage,
+    );
+  }
+
+  /// `GET /organizers` — public organizers directory.
+  ///
+  /// Spec: docs/organizer/ORGANIZERS_LIST_API_MOBILE.md. Public (no auth),
+  /// verified organizers only. Standard Laravel resource-collection envelope
+  /// (`data` + `meta.current_page` / `meta.last_page`). `is_followed` /
+  /// `is_owner` are always `null` on this endpoint.
+  Future<OrganizersDirectoryPage> getOrganizers({
+    String? search,
+    String? city,
+    String sortBy = 'name',
+    String? sortOrder,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/organizers',
+      queryParameters: {
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (city != null && city.isNotEmpty) 'city': city,
+        'sort_by': sortBy,
+        if (sortOrder != null && sortOrder.isNotEmpty) 'sort_order': sortOrder,
+        'page': page,
+        'per_page': perPage,
+      },
+    );
+    final body = response.data ?? const {};
+    final data = body['data'];
+    final meta = body['meta'];
+    final links = body['links'];
+
+    final items = data is List
+        ? data
+            .whereType<Map<String, dynamic>>()
+            .map(OrganizerProfileDto.fromJson)
+            .toList()
+        : <OrganizerProfileDto>[];
+
+    int resolvedPage = page;
+    int resolvedPerPage = perPage;
+    int resolvedTotal = items.length;
+    int? resolvedLastPage;
+    if (meta is Map<String, dynamic>) {
+      // Laravel resource collections send `current_page`; some backends send
+      // `page`. Accept either so pagination survives minor contract drift.
+      resolvedPage =
+          _asInt(meta['current_page']) ?? _asInt(meta['page']) ?? resolvedPage;
+      resolvedPerPage = _asInt(meta['per_page']) ?? resolvedPerPage;
+      resolvedTotal = _asInt(meta['total']) ?? resolvedTotal;
+      resolvedLastPage = _asInt(meta['last_page']);
+    }
+
+    // Fallbacks for when `meta.last_page` is absent: a non-null `links.next`
+    // means there is at least one more page; otherwise a full page of results
+    // implies more may follow.
+    final hasNextLink =
+        links is Map<String, dynamic> && links['next'] != null;
+    resolvedLastPage ??= hasNextLink
+        ? resolvedPage + 1
+        : (items.length >= resolvedPerPage ? resolvedPage + 1 : resolvedPage);
+
+    return OrganizersDirectoryPage(
+      items: items,
+      page: resolvedPage,
+      perPage: resolvedPerPage,
+      total: resolvedTotal,
+      lastPage: resolvedLastPage <= 0 ? resolvedPage : resolvedLastPage,
     );
   }
 

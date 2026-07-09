@@ -318,18 +318,28 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   /// Send a message and process streaming response
   Future<void> sendMessage(String message) async {
     final trimmedMessage = message.trim();
-    if (trimmedMessage.isEmpty ||
-        state.isStreaming ||
-        state.isLoading ||
-        !state.isServiceAvailable) {
+    if (trimmedMessage.isEmpty) {
       return;
     }
 
-    // Wait for initialization to complete (max 2 seconds)
+    // Wait for initialization to complete (max 2 seconds).
+    // The notifier starts with isLoading=true and runs async setup
+    // (service availability + quota) before flipping it to false. A voice
+    // command sent right after a cold open (post-frame callback in initState)
+    // would otherwise hit the isLoading guard below and be silently dropped —
+    // which is why the first voice command was ignored while the second worked.
+    // We wait on both flags because _isInitialized flips to true before the
+    // service/quota calls finish (isLoading stays true a bit longer).
     int waitCount = 0;
-    while (!_isInitialized && waitCount < 20) {
+    while ((!_isInitialized || state.isLoading) && waitCount < 20) {
       await Future.delayed(const Duration(milliseconds: 100));
       waitCount++;
+    }
+
+    if (state.isStreaming ||
+        state.isLoading ||
+        !state.isServiceAvailable) {
+      return;
     }
 
     final quota = state.quota;

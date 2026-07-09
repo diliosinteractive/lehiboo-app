@@ -160,6 +160,13 @@ class ProfileScreen extends ConsumerWidget {
         ),
         _buildMenuItem(
           context,
+          icon: Icons.storefront_outlined,
+          title: context.l10n.profileOrganizersDirectoryTitle,
+          subtitle: context.l10n.profileOrganizersDirectorySubtitle,
+          onTap: () => context.push('/organizers'),
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.groups_outlined,
           title: context.l10n.profileFollowedOrganizersTitle,
           subtitle: context.l10n.profileFollowedOrganizersSubtitle,
