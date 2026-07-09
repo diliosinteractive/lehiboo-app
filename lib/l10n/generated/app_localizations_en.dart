@@ -27,6 +27,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navScan => 'Scan';
 
   @override
+  String get navOrganizers => 'Organizers';
+
+  @override
   String get guestFeatureBookings => 'view my bookings';
 
   @override
@@ -300,6 +303,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileFollowedOrganizersSubtitle =>
       'Manage organizers you follow';
+
+  @override
+  String get profileOrganizersDirectoryTitle => 'Discover organizers';
+
+  @override
+  String get profileOrganizersDirectorySubtitle =>
+      'Browse the organizers directory';
 
   @override
   String get profileMembershipsTitle => 'My memberships';
@@ -2729,6 +2739,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get organizerFollowedLoadError => 'Could not load the list.';
+
+  @override
+  String get organizersDirectoryTitle => 'Organizers';
+
+  @override
+  String get organizersDirectorySearchHint => 'Search for an organizer';
+
+  @override
+  String get organizersDirectoryEmptyTitle => 'No organizer found';
+
+  @override
+  String get organizersDirectoryEmptyBody =>
+      'Try another keyword or change the sorting.';
+
+  @override
+  String get organizersSortName => 'Name';
+
+  @override
+  String get organizersSortEvents => 'Events';
+
+  @override
+  String get organizersSortFollowers => 'Followers';
 
   @override
   String get organizerActivitiesLoadError => 'Could not load activities.';

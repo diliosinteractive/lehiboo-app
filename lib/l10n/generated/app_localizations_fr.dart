@@ -27,6 +27,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navScan => 'Scanner';
 
   @override
+  String get navOrganizers => 'Organisateurs';
+
+  @override
   String get guestFeatureBookings => 'consulter mes réservations';
 
   @override
@@ -300,6 +303,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get profileFollowedOrganizersSubtitle =>
       'Gérer les organisateurs que vous suivez';
+
+  @override
+  String get profileOrganizersDirectoryTitle => 'Découvrir les organisateurs';
+
+  @override
+  String get profileOrganizersDirectorySubtitle =>
+      'Parcourir l\'annuaire des organisateurs';
 
   @override
   String get profileMembershipsTitle => 'Mes adhésions';
@@ -2736,6 +2746,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get organizerFollowedLoadError => 'Impossible de charger la liste.';
+
+  @override
+  String get organizersDirectoryTitle => 'Organisateurs';
+
+  @override
+  String get organizersDirectorySearchHint => 'Rechercher un organisateur';
+
+  @override
+  String get organizersDirectoryEmptyTitle => 'Aucun organisateur trouvé';
+
+  @override
+  String get organizersDirectoryEmptyBody =>
+      'Essayez un autre mot-clé ou modifiez le tri.';
+
+  @override
+  String get organizersSortName => 'Nom';
+
+  @override
+  String get organizersSortEvents => 'Événements';
+
+  @override
+  String get organizersSortFollowers => 'Abonnés';
 
   @override
   String get organizerActivitiesLoadError =>
