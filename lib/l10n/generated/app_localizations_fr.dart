@@ -2761,6 +2761,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Essayez un autre mot-clé ou modifiez le tri.';
 
   @override
+  String get organizersSortLabel => 'Trier par';
+
+  @override
   String get organizersSortName => 'Nom';
 
   @override

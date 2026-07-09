@@ -1404,6 +1404,7 @@
   "organizersDirectorySearchHint": "Rechercher un organisateur",
   "organizersDirectoryEmptyTitle": "Aucun organisateur trouvé",
   "organizersDirectoryEmptyBody": "Essayez un autre mot-clé ou modifiez le tri.",
+  "organizersSortLabel": "Trier par",
   "organizersSortName": "Nom",
   "organizersSortEvents": "Événements",
   "organizersSortFollowers": "Abonnés",

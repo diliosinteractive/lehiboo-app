@@ -128,15 +128,43 @@ class _OrganizersDirectoryScreenState
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Row(
         children: [
-          chip(OrganizersSort.name, context.l10n.organizersSortName),
-          chip(OrganizersSort.eventsCount, context.l10n.organizersSortEvents),
-          chip(OrganizersSort.followersCount,
-              context.l10n.organizersSortFollowers),
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.swap_vert_rounded,
+                    size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  context.l10n.organizersSortLabel,
+                  style: GoogleFonts.figtree(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  chip(OrganizersSort.name, context.l10n.organizersSortName),
+                  chip(OrganizersSort.eventsCount,
+                      context.l10n.organizersSortEvents),
+                  chip(OrganizersSort.followersCount,
+                      context.l10n.organizersSortFollowers),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -190,16 +218,10 @@ class _OrganizersDirectoryScreenState
                   child: ListView.separated(
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(top: 4, bottom: 24),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                     itemCount:
                         state.items.length + (state.isLoadingMore ? 1 : 0),
-                    separatorBuilder: (_, __) => Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: Colors.grey[100],
-                      indent: 20,
-                      endIndent: 20,
-                    ),
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       if (index == state.items.length) {
                         return const Padding(

@@ -2754,6 +2754,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try another keyword or change the sorting.';
 
   @override
+  String get organizersSortLabel => 'Sort by';
+
+  @override
   String get organizersSortName => 'Name';
 
   @override

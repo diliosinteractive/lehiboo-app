@@ -1359,6 +1359,7 @@
   "organizersDirectorySearchHint": "Search for an organizer",
   "organizersDirectoryEmptyTitle": "No organizer found",
   "organizersDirectoryEmptyBody": "Try another keyword or change the sorting.",
+  "organizersSortLabel": "Sort by",
   "organizersSortName": "Name",
   "organizersSortEvents": "Events",
   "organizersSortFollowers": "Followers",

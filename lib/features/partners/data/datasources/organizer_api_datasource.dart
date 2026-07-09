@@ -263,6 +263,7 @@ class OrganizerApiDataSource {
     final body = response.data ?? const {};
     final data = body['data'];
     final meta = body['meta'];
+    final links = body['links'];
 
     final items = data is List
         ? data
@@ -274,20 +275,32 @@ class OrganizerApiDataSource {
     int resolvedPage = page;
     int resolvedPerPage = perPage;
     int resolvedTotal = items.length;
-    int resolvedLastPage = 1;
+    int? resolvedLastPage;
     if (meta is Map<String, dynamic>) {
-      resolvedPage = _asInt(meta['current_page']) ?? resolvedPage;
+      // Laravel resource collections send `current_page`; some backends send
+      // `page`. Accept either so pagination survives minor contract drift.
+      resolvedPage =
+          _asInt(meta['current_page']) ?? _asInt(meta['page']) ?? resolvedPage;
       resolvedPerPage = _asInt(meta['per_page']) ?? resolvedPerPage;
       resolvedTotal = _asInt(meta['total']) ?? resolvedTotal;
-      resolvedLastPage = _asInt(meta['last_page']) ?? resolvedLastPage;
+      resolvedLastPage = _asInt(meta['last_page']);
     }
+
+    // Fallbacks for when `meta.last_page` is absent: a non-null `links.next`
+    // means there is at least one more page; otherwise a full page of results
+    // implies more may follow.
+    final hasNextLink =
+        links is Map<String, dynamic> && links['next'] != null;
+    resolvedLastPage ??= hasNextLink
+        ? resolvedPage + 1
+        : (items.length >= resolvedPerPage ? resolvedPage + 1 : resolvedPage);
 
     return OrganizersDirectoryPage(
       items: items,
       page: resolvedPage,
       perPage: resolvedPerPage,
       total: resolvedTotal,
-      lastPage: resolvedLastPage == 0 ? 1 : resolvedLastPage,
+      lastPage: resolvedLastPage <= 0 ? resolvedPage : resolvedLastPage,
     );
   }
 

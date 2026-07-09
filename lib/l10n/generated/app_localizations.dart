@@ -4743,6 +4743,12 @@ abstract class AppLocalizations {
   /// **'Essayez un autre mot-clé ou modifiez le tri.'**
   String get organizersDirectoryEmptyBody;
 
+  /// No description provided for @organizersSortLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trier par'**
+  String get organizersSortLabel;
+
   /// No description provided for @organizersSortName.
   ///
   /// In fr, this message translates to:
