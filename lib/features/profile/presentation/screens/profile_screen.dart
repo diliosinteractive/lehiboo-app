@@ -241,6 +241,13 @@ class ProfileScreen extends ConsumerWidget {
           ),
         _buildMenuItem(
           context,
+          icon: Icons.volunteer_activism_outlined,
+          title: context.l10n.profileSupportTitle,
+          subtitle: context.l10n.profileSupportSubtitle,
+          onTap: () => context.push('/donations'),
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.settings_outlined,
           title: context.l10n.settingsTitle,
           subtitle: context.l10n.profileSettingsSubtitle,

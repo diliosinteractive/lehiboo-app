@@ -21,6 +21,7 @@ import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/profile/presentation/screens/profile_edit_screen.dart';
 import '../features/profile/presentation/screens/settings_screen.dart';
 import '../features/profile/presentation/screens/saved_participants_screen.dart';
+import '../features/donations/presentation/screens/donation_support_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/auth_bootstrap_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
@@ -845,6 +846,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/settings',
         name: 'settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+
+      // Donations — soutien volontaire à la plateforme
+      GoRoute(
+        path: '/donations',
+        name: 'donations',
+        builder: (context, state) => const DonationSupportScreen(),
       ),
 
       // Recommended events

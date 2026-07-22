@@ -37,6 +37,41 @@
   "settingsSectionAccount": "Compte",
   "settingsSectionLegal": "Informations légales",
   "settingsSectionInformation": "Informations",
+  "profileSupportTitle": "Soutenir Le Hiboo",
+  "profileSupportSubtitle": "Faites un don volontaire à la plateforme",
+  "donationsTitle": "Soutenir Le Hiboo",
+  "donationsHeaderTitle": "Soutenez Le Hiboo",
+  "donationsHeaderSubtitle": "Votre soutien libre aide Le Hiboo à rester indépendant et à grandir.",
+  "donationsAmountLabel": "Choisissez un montant",
+  "donationsPresetPopular": "Populaire",
+  "donationsCustomAmountLabel": "Autre montant",
+  "donationsCustomAmountHelper": "Entre 1 € et 1000 €",
+  "donationsContactTitle": "Vos coordonnées",
+  "donationsEmailLabel": "Email (pour le reçu)",
+  "donationsNameLabel": "Nom (facultatif)",
+  "donationsDisclaimer": "Soutien volontaire à la plateforme, sans contrepartie ni reçu fiscal. Paiement sécurisé par Stripe.",
+  "donationsCtaLabel": "Faire un don de {amount}",
+  "@donationsCtaLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "donationsCtaLabelGeneric": "Faire un don",
+  "donationsAmountInvalid": "Le montant doit être compris entre 1 € et 1000 €.",
+  "donationsEmailRequired": "Veuillez saisir votre adresse email.",
+  "donationsEmailInvalid": "Adresse email invalide.",
+  "donationsPaymentCancelled": "Paiement annulé.",
+  "donationsSuccessTitle": "Merci pour votre soutien !",
+  "donationsSuccessSubtitle": "Votre don de {amount} aide Le Hiboo à grandir. 🧡",
+  "@donationsSuccessSubtitle": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "settingsPushReward": "Active les notifications pour gagner 30 Hibons",
   "settingsPushTitle": "Notifications push",
   "settingsPushSubtitle": "Recevoir les alertes sur ton téléphone",

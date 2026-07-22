@@ -111,6 +111,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionInformation => 'Information';
 
   @override
+  String get profileSupportTitle => 'Support Le Hiboo';
+
+  @override
+  String get profileSupportSubtitle =>
+      'Make a voluntary donation to the platform';
+
+  @override
+  String get donationsTitle => 'Support Le Hiboo';
+
+  @override
+  String get donationsHeaderTitle => 'Support Le Hiboo';
+
+  @override
+  String get donationsHeaderSubtitle =>
+      'Your voluntary support helps Le Hiboo stay independent and grow.';
+
+  @override
+  String get donationsAmountLabel => 'Choose an amount';
+
+  @override
+  String get donationsPresetPopular => 'Popular';
+
+  @override
+  String get donationsCustomAmountLabel => 'Other amount';
+
+  @override
+  String get donationsCustomAmountHelper => 'Between €1 and €1000';
+
+  @override
+  String get donationsContactTitle => 'Your details';
+
+  @override
+  String get donationsEmailLabel => 'Email (for the receipt)';
+
+  @override
+  String get donationsNameLabel => 'Name (optional)';
+
+  @override
+  String get donationsDisclaimer =>
+      'Voluntary support to the platform, with no benefit or tax receipt. Payment secured by Stripe.';
+
+  @override
+  String donationsCtaLabel(String amount) {
+    return 'Donate $amount';
+  }
+
+  @override
+  String get donationsCtaLabelGeneric => 'Donate';
+
+  @override
+  String get donationsAmountInvalid =>
+      'The amount must be between €1 and €1000.';
+
+  @override
+  String get donationsEmailRequired => 'Please enter your email address.';
+
+  @override
+  String get donationsEmailInvalid => 'Invalid email address.';
+
+  @override
+  String get donationsPaymentCancelled => 'Payment cancelled.';
+
+  @override
+  String get donationsSuccessTitle => 'Thank you for your support!';
+
+  @override
+  String donationsSuccessSubtitle(String amount) {
+    return 'Your donation of $amount helps Le Hiboo grow. 🧡';
+  }
+
+  @override
   String get settingsPushReward => 'Turn on notifications to earn 30 Hibons';
 
   @override

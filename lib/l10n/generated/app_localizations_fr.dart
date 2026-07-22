@@ -111,6 +111,77 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsSectionInformation => 'Informations';
 
   @override
+  String get profileSupportTitle => 'Soutenir Le Hiboo';
+
+  @override
+  String get profileSupportSubtitle =>
+      'Faites un don volontaire à la plateforme';
+
+  @override
+  String get donationsTitle => 'Soutenir Le Hiboo';
+
+  @override
+  String get donationsHeaderTitle => 'Soutenez Le Hiboo';
+
+  @override
+  String get donationsHeaderSubtitle =>
+      'Votre soutien libre aide Le Hiboo à rester indépendant et à grandir.';
+
+  @override
+  String get donationsAmountLabel => 'Choisissez un montant';
+
+  @override
+  String get donationsPresetPopular => 'Populaire';
+
+  @override
+  String get donationsCustomAmountLabel => 'Autre montant';
+
+  @override
+  String get donationsCustomAmountHelper => 'Entre 1 € et 1000 €';
+
+  @override
+  String get donationsContactTitle => 'Vos coordonnées';
+
+  @override
+  String get donationsEmailLabel => 'Email (pour le reçu)';
+
+  @override
+  String get donationsNameLabel => 'Nom (facultatif)';
+
+  @override
+  String get donationsDisclaimer =>
+      'Soutien volontaire à la plateforme, sans contrepartie ni reçu fiscal. Paiement sécurisé par Stripe.';
+
+  @override
+  String donationsCtaLabel(String amount) {
+    return 'Faire un don de $amount';
+  }
+
+  @override
+  String get donationsCtaLabelGeneric => 'Faire un don';
+
+  @override
+  String get donationsAmountInvalid =>
+      'Le montant doit être compris entre 1 € et 1000 €.';
+
+  @override
+  String get donationsEmailRequired => 'Veuillez saisir votre adresse email.';
+
+  @override
+  String get donationsEmailInvalid => 'Adresse email invalide.';
+
+  @override
+  String get donationsPaymentCancelled => 'Paiement annulé.';
+
+  @override
+  String get donationsSuccessTitle => 'Merci pour votre soutien !';
+
+  @override
+  String donationsSuccessSubtitle(String amount) {
+    return 'Votre don de $amount aide Le Hiboo à grandir. 🧡';
+  }
+
+  @override
   String get settingsPushReward =>
       'Active les notifications pour gagner 30 Hibons';
 
