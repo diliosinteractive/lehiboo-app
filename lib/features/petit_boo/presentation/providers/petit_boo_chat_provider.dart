@@ -19,12 +19,9 @@ import '../../data/models/quota_dto.dart';
 import '../../data/models/tool_result_dto.dart';
 import '../../domain/repositories/petit_boo_repository.dart';
 
-const _genericPetitBooError =
-    'Petit Boo est temporairement indisponible. Réessaie dans un instant.';
-
 String _safePetitBooErrorMessage(
   Object? error, {
-  String fallback = _genericPetitBooError,
+  required String fallback,
 }) {
   final raw = (error ?? '').toString().trim();
   if (raw.isEmpty) return fallback;
@@ -522,13 +519,26 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     String errorMessage = _l10n.petitBooConnectionError;
 
     if (error is PetitBooSseException) {
-      errorMessage = _safePetitBooErrorMessage(error.message);
-
-      if (error.code == 'auth_required' || error.code == 'auth_invalid') {
-        errorMessage = _l10n.petitBooAuthRequiredError;
-      } else if (error.code == 'quota_exceeded') {
-        errorMessage = _l10n.petitBooQuotaExceededError;
-        _saveActiveMessageAsPending();
+      switch (error.code) {
+        case 'auth_required':
+        case 'auth_invalid':
+          errorMessage = _l10n.petitBooAuthRequiredError;
+          break;
+        case 'quota_exceeded':
+          errorMessage = _l10n.petitBooQuotaExceededError;
+          _saveActiveMessageAsPending();
+          break;
+        case 'timeout':
+        case 'network':
+        case 'connection_closed':
+          // Codes réseau : message localisé, jamais la string technique brute.
+          errorMessage = _l10n.petitBooConnectionError;
+          break;
+        default:
+          errorMessage = _safePetitBooErrorMessage(
+            error.message,
+            fallback: _l10n.petitBooUnavailable,
+          );
       }
     }
 
@@ -593,7 +603,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     }
 
     state = state.copyWith(
-      error: _safePetitBooErrorMessage(error),
+      error: _safePetitBooErrorMessage(
+        error,
+        fallback: _l10n.petitBooUnavailable,
+      ),
       isStreaming: false,
     );
     _activeMessage = null;

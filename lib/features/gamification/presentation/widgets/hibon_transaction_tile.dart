@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../data/models/hibon_transaction.dart';
 
 /// Ligne d'historique d'une transaction Hibons.
@@ -19,7 +19,9 @@ class HibonTransactionTile extends StatelessWidget {
     final tx = transaction;
     final isCredit = tx.amount >= 0;
     final pillarColor = _parsePillarColor(tx.pillarColor);
-    final dateLabel = DateFormat('dd/MM/yyyy HH:mm').format(tx.timestamp);
+    final dateLabel = context
+        .appDateFormat('dd/MM/yyyy HH:mm', enPattern: 'MM/dd/yyyy HH:mm')
+        .format(tx.timestamp);
 
     return ListTile(
       onTap: _navigationTarget(tx) != null ? () => _navigate(context, tx) : null,

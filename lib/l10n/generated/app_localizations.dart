@@ -302,6 +302,132 @@ abstract class AppLocalizations {
   /// **'Informations'**
   String get settingsSectionInformation;
 
+  /// No description provided for @profileSupportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Soutenir Le Hiboo'**
+  String get profileSupportTitle;
+
+  /// No description provided for @profileSupportSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Faites un don volontaire à la plateforme'**
+  String get profileSupportSubtitle;
+
+  /// No description provided for @donationsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Soutenir Le Hiboo'**
+  String get donationsTitle;
+
+  /// No description provided for @donationsHeaderTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Soutenez Le Hiboo'**
+  String get donationsHeaderTitle;
+
+  /// No description provided for @donationsHeaderSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre soutien libre aide Le Hiboo à rester indépendant et à grandir.'**
+  String get donationsHeaderSubtitle;
+
+  /// No description provided for @donationsAmountLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez un montant'**
+  String get donationsAmountLabel;
+
+  /// No description provided for @donationsPresetPopular.
+  ///
+  /// In fr, this message translates to:
+  /// **'Populaire'**
+  String get donationsPresetPopular;
+
+  /// No description provided for @donationsCustomAmountLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre montant'**
+  String get donationsCustomAmountLabel;
+
+  /// No description provided for @donationsCustomAmountHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entre 1 € et 1000 €'**
+  String get donationsCustomAmountHelper;
+
+  /// No description provided for @donationsContactTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos coordonnées'**
+  String get donationsContactTitle;
+
+  /// No description provided for @donationsEmailLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email (pour le reçu)'**
+  String get donationsEmailLabel;
+
+  /// No description provided for @donationsNameLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom (facultatif)'**
+  String get donationsNameLabel;
+
+  /// No description provided for @donationsDisclaimer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Soutien volontaire à la plateforme, sans contrepartie ni reçu fiscal. Paiement sécurisé par Stripe.'**
+  String get donationsDisclaimer;
+
+  /// No description provided for @donationsCtaLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Faire un don de {amount}'**
+  String donationsCtaLabel(String amount);
+
+  /// No description provided for @donationsCtaLabelGeneric.
+  ///
+  /// In fr, this message translates to:
+  /// **'Faire un don'**
+  String get donationsCtaLabelGeneric;
+
+  /// No description provided for @donationsAmountInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le montant doit être compris entre 1 € et 1000 €.'**
+  String get donationsAmountInvalid;
+
+  /// No description provided for @donationsEmailRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez saisir votre adresse email.'**
+  String get donationsEmailRequired;
+
+  /// No description provided for @donationsEmailInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse email invalide.'**
+  String get donationsEmailInvalid;
+
+  /// No description provided for @donationsPaymentCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paiement annulé.'**
+  String get donationsPaymentCancelled;
+
+  /// No description provided for @donationsSuccessTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Merci pour votre soutien !'**
+  String get donationsSuccessTitle;
+
+  /// No description provided for @donationsSuccessSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre don de {amount} aide Le Hiboo à grandir. 🧡'**
+  String donationsSuccessSubtitle(String amount);
+
   /// No description provided for @settingsPushReward.
   ///
   /// In fr, this message translates to:
@@ -565,6 +691,108 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Rechercher...'**
   String get commonSearchHint;
+
+  /// No description provided for @commonNoInternetTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune connexion internet'**
+  String get commonNoInternetTitle;
+
+  /// No description provided for @commonCheckConnectionRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifiez votre connexion puis réessayez.'**
+  String get commonCheckConnectionRetry;
+
+  /// No description provided for @commonCountryFrance.
+  ///
+  /// In fr, this message translates to:
+  /// **'France'**
+  String get commonCountryFrance;
+
+  /// No description provided for @commonUnknownCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inconnue'**
+  String get commonUnknownCity;
+
+  /// No description provided for @consentGateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aider à améliorer Le Hiboo ?'**
+  String get consentGateTitle;
+
+  /// No description provided for @consentGateBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous mesurons l\'usage anonyme de l\'application pour améliorer les fonctionnalités. Aucune donnée personnelle (nom, e-mail, téléphone) n\'est collectée. Vous pouvez changer d\'avis à tout moment dans Paramètres > Confidentialité.'**
+  String get consentGateBody;
+
+  /// No description provided for @consentGateLearnMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'En savoir plus sur la politique de confidentialité'**
+  String get consentGateLearnMore;
+
+  /// No description provided for @consentGateDecline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refuser'**
+  String get consentGateDecline;
+
+  /// No description provided for @consentGateAccept.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accepter'**
+  String get consentGateAccept;
+
+  /// No description provided for @messagesConversationLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger la conversation'**
+  String get messagesConversationLoadError;
+
+  /// No description provided for @messagesConversationFallbackTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversation'**
+  String get messagesConversationFallbackTitle;
+
+  /// No description provided for @petitBooUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit Boo est temporairement indisponible. Réessaie dans un instant.'**
+  String get petitBooUnavailable;
+
+  /// No description provided for @notificationFallbackTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notification'**
+  String get notificationFallbackTitle;
+
+  /// No description provided for @partnerSubscriptionPremium.
+  ///
+  /// In fr, this message translates to:
+  /// **'Premium'**
+  String get partnerSubscriptionPremium;
+
+  /// No description provided for @authSiretLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'SIRET'**
+  String get authSiretLabel;
+
+  /// No description provided for @eventParkingAvailableFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parking disponible'**
+  String get eventParkingAvailableFallback;
+
+  /// No description provided for @eventTransportAvailableFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Transport disponible'**
+  String get eventTransportAvailableFallback;
 
   /// No description provided for @routeEventFallbackTitle.
   ///

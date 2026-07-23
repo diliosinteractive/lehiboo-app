@@ -311,7 +311,9 @@ class _OrganizerEventTile extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          event.city.isEmpty ? 'France' : event.city,
+                          event.city.isEmpty
+                              ? context.l10n.commonCountryFrance
+                              : event.city,
                           style: const TextStyle(
                             fontSize: 12,
                             color: HbColors.brandPrimary,

@@ -1,3 +1,4 @@
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_submodels.dart';
 import '../models/event_dto.dart';
@@ -509,7 +510,8 @@ class EventMapper {
 
     final parking = hasParking
         ? RichInfoConfig(
-            description: practicalInfo?.stationnement ?? 'Parking disponible')
+            description: practicalInfo?.stationnement ??
+                cachedAppLocalizations().eventParkingAvailableFallback)
         : null;
     final food = hasFood
         ? AccessibilityConfig(
@@ -524,7 +526,8 @@ class EventMapper {
         : null;
     final wifi = hasWifi ? const AccessibilityConfig(available: true) : null;
     final transport = hasTransport
-        ? const RichInfoConfig(description: 'Transport disponible')
+        ? RichInfoConfig(
+            description: cachedAppLocalizations().eventTransportAvailableFallback)
         : null;
 
     if (parking == null &&

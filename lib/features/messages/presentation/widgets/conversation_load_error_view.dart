@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/widgets/feedback/hb_feedback.dart';
 
@@ -19,10 +20,10 @@ class ConversationLoadErrorView extends StatelessWidget {
 
     return HbErrorView(
       title: isNetworkError
-          ? 'Aucune connexion internet'
-          : 'Impossible de charger la conversation',
+          ? context.l10n.commonNoInternetTitle
+          : context.l10n.messagesConversationLoadError,
       message: isNetworkError
-          ? 'Vérifiez votre connexion puis réessayez.'
+          ? context.l10n.commonCheckConnectionRetry
           : ApiResponseHandler.extractError(error),
       onRetry: onRetry,
       icon: isNetworkError

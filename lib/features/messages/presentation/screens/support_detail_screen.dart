@@ -157,7 +157,7 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                 onPressed: () =>
                     context.canPop() ? context.pop() : context.go('/messages'),
               ),
-              title: const Text('Support LeHiboo'),
+              title: Text(context.l10n.messagesTabSupportLeHiboo),
             ),
             Expanded(
               child: ConversationLoadErrorView(

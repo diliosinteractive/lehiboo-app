@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/services/deep_link_service.dart';
 import '../../../../core/l10n/l10n.dart';
@@ -533,7 +532,9 @@ class _NotificationTile extends StatelessWidget {
     if (diff.inDays < 7) {
       return context.l10n.notificationsDaysAgoShort(diff.inDays);
     }
-    return DateFormat('dd/MM/yy').format(local);
+    return context
+        .appDateFormat('dd/MM/yy', enPattern: 'MM/dd/yy')
+        .format(local);
   }
 }
 

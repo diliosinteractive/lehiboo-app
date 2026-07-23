@@ -34,6 +34,41 @@
   "settingsSectionAccount": "Account",
   "settingsSectionLegal": "Legal information",
   "settingsSectionInformation": "Information",
+  "profileSupportTitle": "Support Le Hiboo",
+  "profileSupportSubtitle": "Make a voluntary donation to the platform",
+  "donationsTitle": "Support Le Hiboo",
+  "donationsHeaderTitle": "Support Le Hiboo",
+  "donationsHeaderSubtitle": "Your voluntary support helps Le Hiboo stay independent and grow.",
+  "donationsAmountLabel": "Choose an amount",
+  "donationsPresetPopular": "Popular",
+  "donationsCustomAmountLabel": "Other amount",
+  "donationsCustomAmountHelper": "Between €1 and €1000",
+  "donationsContactTitle": "Your details",
+  "donationsEmailLabel": "Email (for the receipt)",
+  "donationsNameLabel": "Name (optional)",
+  "donationsDisclaimer": "Voluntary support to the platform, with no benefit or tax receipt. Payment secured by Stripe.",
+  "donationsCtaLabel": "Donate {amount}",
+  "@donationsCtaLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "donationsCtaLabelGeneric": "Donate",
+  "donationsAmountInvalid": "The amount must be between €1 and €1000.",
+  "donationsEmailRequired": "Please enter your email address.",
+  "donationsEmailInvalid": "Invalid email address.",
+  "donationsPaymentCancelled": "Payment cancelled.",
+  "donationsSuccessTitle": "Thank you for your support!",
+  "donationsSuccessSubtitle": "Your donation of {amount} helps Le Hiboo grow. 🧡",
+  "@donationsSuccessSubtitle": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "settingsPushReward": "Turn on notifications to earn 30 Hibons",
   "settingsPushTitle": "Push notifications",
   "settingsPushSubtitle": "Receive alerts on your phone",
@@ -78,6 +113,23 @@
   "commonGenericRetryError": "Something went wrong. Please try again.",
   "commonConnectionError": "Connection error. Check your internet connection.",
   "commonSearchHint": "Search...",
+  "commonNoInternetTitle": "No internet connection",
+  "commonCheckConnectionRetry": "Check your connection and try again.",
+  "commonCountryFrance": "France",
+  "commonUnknownCity": "Unknown",
+  "consentGateTitle": "Help improve Le Hiboo?",
+  "consentGateBody": "We measure anonymous app usage to improve features. No personal data (name, email, phone) is collected. You can change your mind anytime in Settings > Privacy.",
+  "consentGateLearnMore": "Learn more about the privacy policy",
+  "consentGateDecline": "Decline",
+  "consentGateAccept": "Accept",
+  "messagesConversationLoadError": "Unable to load the conversation",
+  "messagesConversationFallbackTitle": "Conversation",
+  "petitBooUnavailable": "Petit Boo is temporarily unavailable. Try again in a moment.",
+  "notificationFallbackTitle": "Notification",
+  "partnerSubscriptionPremium": "Premium",
+  "authSiretLabel": "SIRET",
+  "eventParkingAvailableFallback": "Parking available",
+  "eventTransportAvailableFallback": "Public transport available",
   "routeEventFallbackTitle": "Event",
   "routeRecommendedTitle": "Recommended for you",
   "routeNotFoundTitle": "Oops! Page not found",

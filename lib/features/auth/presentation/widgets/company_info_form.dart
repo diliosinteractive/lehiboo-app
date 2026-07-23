@@ -276,7 +276,7 @@ class _CompanyInfoFormState extends ConsumerState<CompanyInfoForm> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildLabel(
-                              'SIRET',
+                              l10n.authSiretLabel,
                               required: false,
                               suffix: l10n.authOptionalSuffix,
                             ),

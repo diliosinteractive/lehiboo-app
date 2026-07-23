@@ -272,7 +272,9 @@ class EventCard extends ConsumerWidget {
 
             // Location
             Text(
-              activity.city?.name ?? activity.city?.region ?? 'France',
+              activity.city?.name ??
+                  activity.city?.region ??
+                  context.l10n.commonCountryFrance,
               style: TextStyle(
                 color: Colors.grey[600],
                 fontSize: 13,
@@ -314,7 +316,7 @@ class EventCard extends ConsumerWidget {
             // Compact mode: location + date — same style as recommendations / countdown cards
             const SizedBox(height: 4),
             Text(
-              activity.city?.name ?? 'France',
+              activity.city?.name ?? context.l10n.commonCountryFrance,
               style:
                   TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.1),
               maxLines: 1,

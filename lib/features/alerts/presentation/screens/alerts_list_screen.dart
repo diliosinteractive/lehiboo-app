@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/alerts_provider.dart';
@@ -375,7 +374,10 @@ class _AlertItemCard extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         context.l10n.alertsCreatedOn(
-                          DateFormat('dd/MM/yyyy').format(alert.createdAt),
+                          context
+                              .appDateFormat('dd/MM/yyyy',
+                                  enPattern: 'MM/dd/yyyy')
+                              .format(alert.createdAt),
                         ),
                         style: TextStyle(
                           fontSize: 11,

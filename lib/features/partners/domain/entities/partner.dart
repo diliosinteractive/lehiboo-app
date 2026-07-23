@@ -124,7 +124,7 @@ class Partner extends Equatable {
       case SubscriptionPlan.basic:
         return l10n.partnerSubscriptionBasic;
       case SubscriptionPlan.premium:
-        return 'Premium';
+        return l10n.partnerSubscriptionPremium;
       case SubscriptionPlan.enterprise:
         return l10n.partnerSubscriptionEnterprise;
     }

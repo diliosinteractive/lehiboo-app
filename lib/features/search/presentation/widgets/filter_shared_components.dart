@@ -400,9 +400,12 @@ class _MiniCalendarState extends State<MiniCalendar> {
             ],
           ),
           const SizedBox(height: 12),
-          // Weekday headers
+          // Weekday headers (localized narrow names, Monday-first)
           Row(
-            children: ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day) {
+            children: List.generate(7, (index) {
+              final day = context
+                  .appDateFormat('EEEEE')
+                  .format(DateTime(2024, 1, 1).add(Duration(days: index)));
               return Expanded(
                 child: Center(
                   child: Text(
@@ -415,7 +418,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ),
           const SizedBox(height: 8),
           // Calendar grid

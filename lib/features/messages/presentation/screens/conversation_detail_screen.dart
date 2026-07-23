@@ -85,7 +85,7 @@ class _ConversationDetailScreenState
                 onPressed: () =>
                     context.canPop() ? context.pop() : context.go('/messages'),
               ),
-              title: const Text('Conversation'),
+              title: Text(context.l10n.messagesConversationFallbackTitle),
             ),
             const Expanded(
               child: Center(child: CircularProgressIndicator()),
@@ -99,7 +99,7 @@ class _ConversationDetailScreenState
                 onPressed: () =>
                     context.canPop() ? context.pop() : context.go('/messages'),
               ),
-              title: const Text('Conversation'),
+              title: Text(context.l10n.messagesConversationFallbackTitle),
             ),
             Expanded(
               child: ConversationLoadErrorView(

@@ -1,3 +1,4 @@
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/in_app_notification.dart';
 
 class InAppNotificationDto {
@@ -33,7 +34,7 @@ class InAppNotificationDto {
       type: _string(json['type']) ??
           _string(_asMap(rawData)?['type']) ??
           'generic',
-      title: _string(json['title']) ?? 'Notification',
+      title: _string(json['title']) ?? cachedAppLocalizations().notificationFallbackTitle,
       message: _string(json['message']) ?? '',
       actionUrl: _blankToNull(_string(json['action_url'])),
       data: _asMap(rawData) ?? const {},
