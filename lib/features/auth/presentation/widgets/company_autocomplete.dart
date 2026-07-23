@@ -23,8 +23,8 @@ class CompanyAutocomplete extends StatefulWidget {
   const CompanyAutocomplete({
     super.key,
     required this.onSelect,
-    this.organizationName = 'organisation',
-    this.organizationPossessive = 'votre organisation',
+    required this.organizationName,
+    required this.organizationPossessive,
   });
 
   @override

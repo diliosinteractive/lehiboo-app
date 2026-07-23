@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../providers/gamification_provider.dart';
@@ -242,8 +241,10 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
                             title: Text(tx.title ?? tx.description ?? ''),
                             subtitle: Text(
                               tx.subtitle != null
-                                  ? '${tx.subtitle} • ${DateFormat('dd/MM HH:mm').format(tx.timestamp)}'
-                                  : DateFormat('dd/MM/yyyy HH:mm')
+                                  ? '${tx.subtitle} • ${context.appDateFormat('dd/MM HH:mm', enPattern: 'MM/dd HH:mm').format(tx.timestamp)}'
+                                  : context
+                                      .appDateFormat('dd/MM/yyyy HH:mm',
+                                          enPattern: 'MM/dd/yyyy HH:mm')
                                       .format(tx.timestamp),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

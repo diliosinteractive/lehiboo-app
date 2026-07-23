@@ -362,7 +362,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          widget.activity.city?.name ?? 'France',
+                          widget.activity.city?.name ?? context.l10n.commonCountryFrance,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -761,7 +761,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   const SizedBox(height: 2),
                   // Location
                   Text(
-                    widget.activity.city?.name ?? 'France',
+                    widget.activity.city?.name ?? context.l10n.commonCountryFrance,
                     style: TextStyle(
                         color: Colors.grey[600], fontSize: 13, height: 1.1),
                   ),

@@ -692,6 +692,108 @@ abstract class AppLocalizations {
   /// **'Rechercher...'**
   String get commonSearchHint;
 
+  /// No description provided for @commonNoInternetTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune connexion internet'**
+  String get commonNoInternetTitle;
+
+  /// No description provided for @commonCheckConnectionRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifiez votre connexion puis réessayez.'**
+  String get commonCheckConnectionRetry;
+
+  /// No description provided for @commonCountryFrance.
+  ///
+  /// In fr, this message translates to:
+  /// **'France'**
+  String get commonCountryFrance;
+
+  /// No description provided for @commonUnknownCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inconnue'**
+  String get commonUnknownCity;
+
+  /// No description provided for @consentGateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aider à améliorer Le Hiboo ?'**
+  String get consentGateTitle;
+
+  /// No description provided for @consentGateBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous mesurons l\'usage anonyme de l\'application pour améliorer les fonctionnalités. Aucune donnée personnelle (nom, e-mail, téléphone) n\'est collectée. Vous pouvez changer d\'avis à tout moment dans Paramètres > Confidentialité.'**
+  String get consentGateBody;
+
+  /// No description provided for @consentGateLearnMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'En savoir plus sur la politique de confidentialité'**
+  String get consentGateLearnMore;
+
+  /// No description provided for @consentGateDecline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refuser'**
+  String get consentGateDecline;
+
+  /// No description provided for @consentGateAccept.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accepter'**
+  String get consentGateAccept;
+
+  /// No description provided for @messagesConversationLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger la conversation'**
+  String get messagesConversationLoadError;
+
+  /// No description provided for @messagesConversationFallbackTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversation'**
+  String get messagesConversationFallbackTitle;
+
+  /// No description provided for @petitBooUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit Boo est temporairement indisponible. Réessaie dans un instant.'**
+  String get petitBooUnavailable;
+
+  /// No description provided for @notificationFallbackTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notification'**
+  String get notificationFallbackTitle;
+
+  /// No description provided for @partnerSubscriptionPremium.
+  ///
+  /// In fr, this message translates to:
+  /// **'Premium'**
+  String get partnerSubscriptionPremium;
+
+  /// No description provided for @authSiretLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'SIRET'**
+  String get authSiretLabel;
+
+  /// No description provided for @eventParkingAvailableFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parking disponible'**
+  String get eventParkingAvailableFallback;
+
+  /// No description provided for @eventTransportAvailableFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Transport disponible'**
+  String get eventTransportAvailableFallback;
+
   /// No description provided for @routeEventFallbackTitle.
   ///
   /// In fr, this message translates to:

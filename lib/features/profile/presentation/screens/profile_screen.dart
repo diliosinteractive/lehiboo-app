@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../config/env_config.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
@@ -292,7 +293,7 @@ class ProfileScreen extends ConsumerWidget {
         // App version
         Center(
           child: Text(
-            'Le Hiboo v1.0.0',
+            '${AppConstants.appName} v${AppConstants.appVersion}',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[400],

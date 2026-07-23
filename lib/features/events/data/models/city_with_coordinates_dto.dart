@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 class CityWithCoordinatesDto {
   final String name;
   final String slug;
@@ -45,7 +47,8 @@ class CityWithCoordinatesDto {
       );
     }
 
-    final name = json['name'] as String? ?? 'Inconnue';
+    final name =
+        json['name'] as String? ?? cachedAppLocalizations().commonUnknownCity;
     final slug = json['slug'] as String?;
 
     return CityWithCoordinatesDto(

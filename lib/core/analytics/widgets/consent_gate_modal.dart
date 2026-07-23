@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/legal/legal_links.dart';
+import '../../l10n/l10n.dart';
 import '../analytics_consent.dart';
 
 /// Bottom sheet de consentement RGPD.
@@ -10,10 +11,6 @@ import '../analytics_consent.dart';
 /// `MainScaffold`. Non-dismissible : l'utilisateur doit choisir Accepter ou
 /// Refuser. Pas de croix de fermeture (conformité CNIL : éviter les dark
 /// patterns, boutons équivalents visuellement).
-///
-/// Strings hardcodées en français pour ce premier livrable — à migrer vers
-/// `lib/l10n/app_fr.arb` + `app_en.arb` puis régénération via
-/// `flutter gen-l10n` quand le SDK Dart sera aligné.
 class ConsentGateModal extends ConsumerWidget {
   const ConsentGateModal._();
 
@@ -65,9 +62,9 @@ class ConsentGateModal extends ConsumerWidget {
                 color: Color(0xFFFF601F),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Aider à améliorer Le Hiboo ?',
-                style: TextStyle(
+              Text(
+                context.l10n.consentGateTitle,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -75,10 +72,7 @@ class ConsentGateModal extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Nous mesurons l\'usage anonyme de l\'application pour améliorer '
-                'les fonctionnalités. Aucune donnée personnelle (nom, e-mail, '
-                'téléphone) n\'est collectée. Vous pouvez changer d\'avis à tout '
-                'moment dans Paramètres > Confidentialité.',
+                context.l10n.consentGateBody,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey.shade700,
@@ -89,9 +83,9 @@ class ConsentGateModal extends ConsumerWidget {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => LegalLinks.open(context, LegalDocument.privacy),
-                child: const Text(
-                  'En savoir plus sur la politique de confidentialité',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.consentGateLearnMore,
+                  style: const TextStyle(
                     color: Color(0xFFFF601F),
                     fontSize: 13,
                   ),
@@ -116,9 +110,9 @@ class ConsentGateModal extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Refuser',
-                        style: TextStyle(
+                      child: Text(
+                        context.l10n.consentGateDecline,
+                        style: const TextStyle(
                           color: Colors.black87,
                           fontWeight: FontWeight.w600,
                         ),
@@ -142,9 +136,9 @@ class ConsentGateModal extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Accepter',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      child: Text(
+                        context.l10n.consentGateAccept,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),

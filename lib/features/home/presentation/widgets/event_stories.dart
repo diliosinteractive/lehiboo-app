@@ -919,7 +919,7 @@ class _StoryContent extends StatelessWidget {
                       color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    story.eventCity ?? 'France',
+                    story.eventCity ?? context.l10n.commonCountryFrance,
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,

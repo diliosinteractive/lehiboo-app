@@ -325,6 +325,62 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonSearchHint => 'Rechercher...';
 
   @override
+  String get commonNoInternetTitle => 'Aucune connexion internet';
+
+  @override
+  String get commonCheckConnectionRetry =>
+      'Vérifiez votre connexion puis réessayez.';
+
+  @override
+  String get commonCountryFrance => 'France';
+
+  @override
+  String get commonUnknownCity => 'Inconnue';
+
+  @override
+  String get consentGateTitle => 'Aider à améliorer Le Hiboo ?';
+
+  @override
+  String get consentGateBody =>
+      'Nous mesurons l\'usage anonyme de l\'application pour améliorer les fonctionnalités. Aucune donnée personnelle (nom, e-mail, téléphone) n\'est collectée. Vous pouvez changer d\'avis à tout moment dans Paramètres > Confidentialité.';
+
+  @override
+  String get consentGateLearnMore =>
+      'En savoir plus sur la politique de confidentialité';
+
+  @override
+  String get consentGateDecline => 'Refuser';
+
+  @override
+  String get consentGateAccept => 'Accepter';
+
+  @override
+  String get messagesConversationLoadError =>
+      'Impossible de charger la conversation';
+
+  @override
+  String get messagesConversationFallbackTitle => 'Conversation';
+
+  @override
+  String get petitBooUnavailable =>
+      'Petit Boo est temporairement indisponible. Réessaie dans un instant.';
+
+  @override
+  String get notificationFallbackTitle => 'Notification';
+
+  @override
+  String get partnerSubscriptionPremium => 'Premium';
+
+  @override
+  String get authSiretLabel => 'SIRET';
+
+  @override
+  String get eventParkingAvailableFallback => 'Parking disponible';
+
+  @override
+  String get eventTransportAvailableFallback => 'Transport disponible';
+
+  @override
   String get routeEventFallbackTitle => 'Événement';
 
   @override

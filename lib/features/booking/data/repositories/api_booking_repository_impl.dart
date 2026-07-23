@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/booking.dart';
 import '../../domain/models/booking_flow_state.dart';
@@ -215,7 +216,8 @@ class ApiBookingRepositoryImpl implements BookingRepository {
           bookingId: bookingUuid,
           userId: b.userId?.toString() ?? '',
           slotId: b.slotId?.toString() ?? '',
-          ticketType: a.ticketTypeName ?? 'Standard',
+          ticketType:
+              a.ticketTypeName ?? cachedAppLocalizations().bookingStandardTicket,
           status: 'active',
           attendeeFirstName: a.firstName,
           attendeeLastName: a.lastName,
