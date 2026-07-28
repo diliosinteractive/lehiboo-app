@@ -1,28 +1,74 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/alert.dart';
 import '../../domain/repositories/alerts_repository.dart';
 import '../../data/repositories/alerts_repository_impl.dart';
 import '../../../search/domain/models/event_filter.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
-final alertsProvider = StateNotifierProvider<AlertsNotifier, AsyncValue<List<Alert>>>((ref) {
+final alertsProvider =
+    StateNotifierProvider<AlertsNotifier, AsyncValue<List<Alert>>>((ref) {
   final repository = ref.watch(alertsRepositoryImplProvider);
-  return AlertsNotifier(repository);
+  final authenticatedUserId = ref.watch(
+    authProvider.select(
+      (state) => state.isAuthenticated ? state.user?.id : null,
+    ),
+  );
+  return AlertsNotifier(
+    repository,
+    isAuthenticated: authenticatedUserId != null,
+  );
 });
 
 class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
   final AlertsRepository _repository;
+  final bool _isAuthenticated;
+  Future<void>? _loadInFlight;
 
-  AlertsNotifier(this._repository) : super(const AsyncValue.loading()) {
-    loadAlerts();
+  AlertsNotifier(
+    this._repository, {
+    required bool isAuthenticated,
+  })  : _isAuthenticated = isAuthenticated,
+        super(const AsyncValue.data([])) {
+    if (_isAuthenticated) {
+      // Initial loading is fire-and-forget. Manual refresh callers await
+      // [loadAlerts] and receive failures so aggregate refresh can report them.
+      unawaited(loadAlerts().catchError((_) {}));
+    }
   }
 
-  Future<void> loadAlerts() async {
+  Future<void> loadAlerts() {
+    if (!_isAuthenticated) {
+      state = const AsyncValue.data([]);
+      return Future.value();
+    }
+
+    final inFlight = _loadInFlight;
+    if (inFlight != null) return inFlight;
+
+    late final Future<void> load;
+    load = _performLoad().whenComplete(() {
+      if (identical(_loadInFlight, load)) {
+        _loadInFlight = null;
+      }
+    });
+    _loadInFlight = load;
+    return load;
+  }
+
+  Future<void> _performLoad() async {
+    final previous = state;
     try {
-      state = const AsyncValue.loading();
+      state = const AsyncLoading<List<Alert>>().copyWithPrevious(previous);
       final alerts = await _repository.getAlerts();
+      if (!mounted) return;
       state = AsyncValue.data(alerts);
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      if (mounted) {
+        state = AsyncError<List<Alert>>(e, stack).copyWithPrevious(previous);
+      }
+      rethrow;
     }
   }
 
@@ -39,10 +85,12 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
         enablePush: enablePush,
         enableEmail: enableEmail,
       );
-      
+
+      if (!mounted) return;
       final currentList = state.valueOrNull ?? [];
       state = AsyncValue.data([newAlert, ...currentList]);
     } catch (e, stack) {
+      if (!mounted) return;
       // TODO: Handle error properly (show snackbar etc in UI)
       state = AsyncValue.error(e, stack);
     }
@@ -51,14 +99,16 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
   Future<void> deleteAlert(String id) async {
     try {
       await _repository.deleteAlert(id);
-      
+
+      if (!mounted) return;
       final currentList = state.valueOrNull ?? [];
       state = AsyncValue.data(currentList.where((a) => a.id != id).toList());
     } catch (e, stack) {
+      if (!mounted) return;
       state = AsyncValue.error(e, stack);
     }
   }
-  
+
   /// Helper to check if a filter combination is already saved
   /// Compares all significant filter criteria
   bool isFilterSaved(EventFilter filter) {
@@ -74,7 +124,8 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
     if (alerts == null || alerts.isEmpty) return false;
 
     final normalizedName = name.trim().toLowerCase();
-    return alerts.any((alert) => alert.name.trim().toLowerCase() == normalizedName);
+    return alerts
+        .any((alert) => alert.name.trim().toLowerCase() == normalizedName);
   }
 
   bool _filtersMatch(EventFilter a, EventFilter b) {
@@ -82,7 +133,9 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
 
     // Search query (empty strings are equivalent)
     if ((a.searchQuery.isNotEmpty || b.searchQuery.isNotEmpty) &&
-        a.searchQuery != b.searchQuery) return false;
+        a.searchQuery != b.searchQuery) {
+      return false;
+    }
 
     // Location: city OR geolocation
     if (a.citySlug != b.citySlug) return false;

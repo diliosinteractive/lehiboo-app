@@ -5,7 +5,6 @@ import '../../domain/entities/conversation.dart';
 import '../../domain/entities/conversation_report.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
-import '../../data/datasources/messages_polling_datasource.dart';
 import 'unread_count_provider.dart';
 import 'messages_realtime_provider.dart';
 
@@ -63,7 +62,6 @@ class AdminConversationsNotifier
     extends StateNotifier<AdminConversationsState> {
   final String _conversationType;
   final MessagesRepository _repo;
-  final MessagesPollingDatasource _polling;
   final Ref _ref;
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
@@ -72,7 +70,6 @@ class AdminConversationsNotifier
   AdminConversationsNotifier(
     this._conversationType,
     this._repo,
-    this._polling,
     this._ref,
   ) : super(const AdminConversationsState()) {
     load();
@@ -88,8 +85,7 @@ class AdminConversationsNotifier
     _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
       if (_ref.read(messagesRealtimeProvider)) return;
       try {
-        final count = await _polling.getAdminUnreadCount();
-        _ref.read(unreadCountProvider.notifier).state = count;
+        await _ref.read(unreadCountProvider.notifier).refresh();
       } catch (_) {}
     });
   }
@@ -265,8 +261,7 @@ class AdminConversationsNotifier
 
   Future<void> _refreshUnreadCount() async {
     try {
-      final count = await _polling.getAdminUnreadCount();
-      _ref.read(unreadCountProvider.notifier).state = count;
+      await _ref.read(unreadCountProvider.notifier).refresh();
     } catch (_) {}
   }
 
@@ -460,7 +455,6 @@ final adminConversationsProvider = StateNotifierProvider.family<
   (ref, conversationType) => AdminConversationsNotifier(
     conversationType,
     ref.read(messagesRepositoryProvider),
-    ref.read(messagesPollingDatasourceProvider),
     ref,
   ),
 );

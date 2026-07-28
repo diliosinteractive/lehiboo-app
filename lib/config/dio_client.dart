@@ -19,7 +19,7 @@ typedef ForceLogoutCallback = Future<void> Function();
 /// Singleton storage instance shared across the app
 /// This ensures consistency between token writes (auth) and reads (interceptor)
 class SharedSecureStorage {
-  static final FlutterSecureStorage instance = const FlutterSecureStorage(
+  static const FlutterSecureStorage instance = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
@@ -139,7 +139,23 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     '/mobile/config',
     '/posts',
     '/stories',
+    '/hero-slides',
   ];
+
+  @visibleForTesting
+  static bool isPublicPath(String path) {
+    return _publicPrefixes.any((prefix) => path.startsWith(prefix));
+  }
+
+  static String? _requestBearerToken(RequestOptions options) {
+    final authorization = options.headers['Authorization']?.toString();
+    if (authorization == null ||
+        !authorization.toLowerCase().startsWith('bearer ')) {
+      return null;
+    }
+    final token = authorization.substring(7).trim();
+    return token.isEmpty ? null : token;
+  }
 
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
@@ -151,8 +167,7 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     } else if (kDebugMode) {
-      final isPublic =
-          _publicPrefixes.any((e) => options.path.startsWith(e));
+      final isPublic = isPublicPath(options.path);
       if (!isPublic) {
         debugPrint(
           '⚠️ JwtAuthInterceptor: No token found for protected endpoint ${options.path}',
@@ -161,15 +176,10 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     }
 
     if (kDebugMode) {
-      // Debug-only: print the full bearer so requests can be replayed via
-      // curl/Postman. NEVER enable in release — exposes account credentials.
       final hasToken = token != null && token.isNotEmpty;
       debugPrint(
         '🔐 JwtAuthInterceptor: path=${options.path}, hasToken=$hasToken',
       );
-      if (hasToken) {
-        debugPrint('🔐   Authorization: Bearer $token');
-      }
     }
 
     // Add API key if configured
@@ -182,48 +192,62 @@ class JwtAuthInterceptor extends QueuedInterceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401 && !_isRefreshing) {
-      _isRefreshing = true;
+    if (err.response?.statusCode != 401) {
+      return super.onError(err, handler);
+    }
 
-      final path = err.requestOptions.path;
-      final isPublic = _publicPrefixes.any((e) => path.startsWith(e));
-
+    final path = err.requestOptions.path;
+    final isPublic = isPublicPath(path);
+    if (isPublic) {
       if (kDebugMode) {
         debugPrint(
-          '🔐 JwtAuthInterceptor: 401 on $path (isPublic=$isPublic)',
+          '🔐 JwtAuthInterceptor: 401 on public route $path',
         );
       }
-
-      // Ne force-logout que pour les routes *réellement* authentifiées.
-      // Un 401 sur une route publique signifie que le backend a rejeté un
-      // token invalide sans que la ressource ne nécessite l'auth — inutile
-      // et destructif de déconnecter l'user pour ça.
-      if (!isPublic) {
-        final currentToken = await _storage.read(
-          key: AppConstants.keyAuthToken,
-        );
-        if (currentToken != null && currentToken.isNotEmpty) {
-          if (kDebugMode) {
-            debugPrint(
-              '🔐 JwtAuthInterceptor: Token expired on protected route → force logout',
-            );
-          }
-          await _storage.delete(key: AppConstants.keyAuthToken);
-          await _storage.delete(key: AppConstants.keyRefreshToken);
-          await DioClient.onForceLogout?.call();
-        } else {
-          if (kDebugMode) {
-            debugPrint(
-              '🔐 JwtAuthInterceptor: No token found, nothing to clear',
-            );
-          }
-        }
-      }
-
-      _isRefreshing = false;
       return handler.reject(err);
     }
 
-    super.onError(err, handler);
+    // A public 401 must never acquire this lock: doing so can suppress a
+    // concurrent protected 401 that genuinely needs to expire the session.
+    if (_isRefreshing) {
+      return super.onError(err, handler);
+    }
+    _isRefreshing = true;
+
+    try {
+      final failedRequestToken = _requestBearerToken(err.requestOptions);
+      final currentToken = await _storage.read(
+        key: AppConstants.keyAuthToken,
+      );
+      if (failedRequestToken == null || currentToken != failedRequestToken) {
+        // The request may have been sent before logout/account switching.
+        // Never let its late 401 expire the newer session now in storage.
+        if (kDebugMode) {
+          debugPrint(
+            '🔐 JwtAuthInterceptor: Ignoring 401 from a stale protected request',
+          );
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+            '🔐 JwtAuthInterceptor: Token expired on protected route → force logout',
+          );
+        }
+        await _storage.delete(key: AppConstants.keyAuthToken);
+        await _storage.delete(key: AppConstants.keyRefreshToken);
+        await DioClient.onForceLogout?.call();
+      }
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint(
+          '🔐 JwtAuthInterceptor: failed to clear expired session: $error',
+        );
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    } finally {
+      _isRefreshing = false;
+    }
+
+    return handler.reject(err);
   }
 }

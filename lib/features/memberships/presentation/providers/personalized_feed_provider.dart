@@ -19,10 +19,12 @@ import '../../domain/repositories/memberships_repository.dart';
 /// per-event flag reliability.
 final personalizedFeedProvider =
     FutureProvider<PersonalizedFeedView>((ref) async {
-  final isAuthenticated = ref.watch(
-    authProvider.select((s) => s.isAuthenticated),
+  final authenticatedUserId = ref.watch(
+    authProvider.select(
+      (state) => state.isAuthenticated ? state.user?.id : null,
+    ),
   );
-  if (!isAuthenticated) return PersonalizedFeedView.empty();
+  if (authenticatedUserId == null) return PersonalizedFeedView.empty();
 
   final dto = await ref
       .watch(membershipsRepositoryProvider)

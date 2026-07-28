@@ -103,6 +103,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   final _storage = const FlutterSecureStorage();
   final _eventsController = StreamController<RealtimeEvent>.broadcast();
   int? _orgId; // numeric org ID currently subscribed to
+  String? _activeUserId;
 
   Stream<RealtimeEvent> get events => _eventsController.stream;
 
@@ -127,6 +128,12 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
 
   Future<void> _connect(String userId) async {
     await _disconnect();
+    final authState = _ref.read(authProvider);
+    if (!mounted ||
+        !authState.isAuthenticated ||
+        authState.user?.id != userId) {
+      return;
+    }
     if (EnvConfig.pusherKey.isEmpty) {
       dev.log('[Pusher] PUSHER_APP_KEY not configured — skipping WS');
       return;
@@ -135,6 +142,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
       dev.log('[Pusher] PUSHER_HOST not configured — skipping WS');
       return;
     }
+    _activeUserId = userId;
     dev.log(
       '[Pusher] Connecting → ${EnvConfig.pusherUseTLS ? "wss" : "ws"}://${EnvConfig.pusherHost}:${EnvConfig.pusherPort} key=${EnvConfig.pusherKey} channel=private-user.$userId',
     );
@@ -168,7 +176,9 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         authorizationDelegate: _StorageTokenAuthDelegate(_storage),
       );
 
-      _eventSub = channel.bindToAll().listen(_handleEvent);
+      _eventSub = channel.bindToAll().listen(
+        (event) => _handleEvent(event, subscriptionUserId: userId),
+      );
 
       _connectedSub = _client!.onConnectionEstablished.listen((_) {
         dev.log('[Pusher] Connected — subscribing to private-user.$userId');
@@ -191,10 +201,11 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     _ref.invalidate(vendorOrgConversationsProvider);
     _ref.invalidate(adminConversationsProvider);
     _ref.invalidate(adminReportsProvider);
-    _ref.read(unreadCountProvider.notifier).state = 0;
+    _ref.read(unreadCountProvider.notifier).reset();
   }
 
   Future<void> _disconnect() async {
+    _activeUserId = null;
     _lifecycleSub?.cancel();
     _eventSub?.cancel();
     _orgEventSub?.cancel();
@@ -228,18 +239,35 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
 
   void _subscribeOrgChannel(int orgId) {
     _orgEventSub?.cancel();
+    final subscriptionUserId = _activeUserId;
+    if (subscriptionUserId == null) return;
     final channelName = 'private-organization.$orgId';
     dev.log('[Pusher] Subscribing to $channelName');
     final orgChannel = _client!.privateChannel(
       channelName,
       authorizationDelegate: _StorageTokenAuthDelegate(_storage),
     );
-    _orgEventSub = orgChannel.bindToAll().listen(_handleEvent);
+    _orgEventSub = orgChannel.bindToAll().listen(
+      (event) => _handleEvent(
+        event,
+        subscriptionUserId: subscriptionUserId,
+      ),
+    );
     orgChannel.subscribeIfNotUnsubscribed();
   }
 
-  void _handleEvent(ChannelReadEvent event) {
+  void _handleEvent(
+    ChannelReadEvent event, {
+    required String subscriptionUserId,
+  }) {
     if (_eventsController.isClosed) return;
+    final authState = _ref.read(authProvider);
+    if (!authState.isAuthenticated ||
+        authState.user?.id != subscriptionUserId ||
+        _activeUserId != subscriptionUserId) {
+      dev.log('[Pusher] Dropped event from a stale account subscription');
+      return;
+    }
     final data = event.tryGetDataAsMap() ?? {};
     final convUuid = data['conversation_uuid'] as String?;
     final convType = data['conversation_type'] as String?;
@@ -257,7 +285,9 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         }
         // Increment badge immediately — no API round-trip needed.
         // Each notifier's _refreshUnreadCount() / 30s poll will re-sync the exact value.
-        _ref.read(unreadCountProvider.notifier).update((n) => n + 1);
+        _ref
+            .read(unreadCountProvider.notifier)
+            .increment(forUserId: subscriptionUserId);
         _emit(RealtimeEvent(
           type: RealtimeEventType.messageReceived,
           conversationUuid: convUuid,

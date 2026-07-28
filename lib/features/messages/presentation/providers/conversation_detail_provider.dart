@@ -53,6 +53,7 @@ class ConversationDetailNotifier
   final ConversationRoute _route;
   final MessagesRepository _repo;
   final Ref _ref;
+  late final String? _sessionUserId;
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
@@ -62,6 +63,7 @@ class ConversationDetailNotifier
     this._repo,
     this._ref,
   ) : super(ConversationDetailState(route: _route)) {
+    _sessionUserId = _ref.read(authProvider).user?.id;
     load();
     _startPolling();
     _subscribeToRealtime();
@@ -240,9 +242,9 @@ class ConversationDetailNotifier
       state = state.copyWith(conversation: AsyncValue.data(conversation));
       final unread = conversation.unreadCount;
       if (unread > 0) {
-        final current = _ref.read(unreadCountProvider);
-        _ref.read(unreadCountProvider.notifier).state =
-            (current - unread).clamp(0, current);
+        _ref
+            .read(unreadCountProvider.notifier)
+            .decrementBy(unread, forUserId: _sessionUserId);
       } else {
         // Re-apply zero so a list refresh that returned stale data is corrected.
         _applyReadToList();
@@ -264,9 +266,9 @@ class ConversationDetailNotifier
       state = state.copyWith(conversation: AsyncValue.data(conversation));
       _applyReadToList();
       if (prevUnread > 0) {
-        final current = _ref.read(unreadCountProvider);
-        _ref.read(unreadCountProvider.notifier).state =
-            (current - prevUnread).clamp(0, current);
+        _ref
+            .read(unreadCountProvider.notifier)
+            .decrementBy(prevUnread, forUserId: _sessionUserId);
       }
     } catch (e, st) {
       state = state.copyWith(conversation: AsyncValue.error(e, st));

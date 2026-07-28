@@ -4,7 +4,6 @@ import 'dart:developer' as dev;
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
-import '../../data/datasources/messages_polling_datasource.dart';
 import 'unread_count_provider.dart';
 import 'messages_realtime_provider.dart';
 
@@ -53,13 +52,12 @@ class ConversationsState {
 
 class ConversationsNotifier extends StateNotifier<ConversationsState> {
   final MessagesRepository _repo;
-  final MessagesPollingDatasource _polling;
   final Ref _ref;
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
 
-  ConversationsNotifier(this._repo, this._polling, this._ref)
+  ConversationsNotifier(this._repo, this._ref)
       : super(const ConversationsState()) {
     load();
     _startUnreadPolling();
@@ -72,8 +70,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
       // Skip when WebSocket is connected — WS events keep unread count current
       if (_ref.read(messagesRealtimeProvider)) return;
       try {
-        final count = await _polling.getTotalUnreadCount();
-        _ref.read(unreadCountProvider.notifier).state = count;
+        await _ref.read(unreadCountProvider.notifier).refresh();
       } catch (_) {}
     });
   }
@@ -261,8 +258,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
 
   Future<void> _refreshUnreadCount() async {
     try {
-      final count = await _polling.getTotalUnreadCount();
-      _ref.read(unreadCountProvider.notifier).state = count;
+      await _ref.read(unreadCountProvider.notifier).refresh();
     } catch (_) {}
   }
 
@@ -278,7 +274,6 @@ final conversationsProvider =
     StateNotifierProvider<ConversationsNotifier, ConversationsState>((ref) {
   return ConversationsNotifier(
     ref.read(messagesRepositoryProvider),
-    ref.read(messagesPollingDatasourceProvider),
     ref,
   );
 });

@@ -9,10 +9,16 @@ import '../../data/models/auth_response_dto.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../../booking/presentation/providers/order_cart_provider.dart';
-import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../../notifications/data/datasources/device_token_datasource.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, pendingVerification, pendingLoginOtp, error }
+
+/// User-facing signal set only when the API invalidates the current session.
+///
+/// Normal, user-initiated logout deliberately leaves [AuthState.errorMessage]
+/// empty.
+const authSessionExpiredMessage =
+    'Votre session a expiré. Veuillez vous reconnecter.';
 
 class AuthState {
   final AuthStatus status;
@@ -95,8 +101,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
           status: AuthStatus.authenticated,
           user: result.authResult!.user,
         );
-        // Personalized feed depends on identity — refetch on login (spec §7).
-        _ref.invalidate(personalizedFeedProvider);
         return result;
       }
 
@@ -167,9 +171,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingUserId: null,
         pendingEmail: null,
       );
-      // Personalized feed depends on identity — refetch on registration OTP
-      // success (spec §7).
-      _ref.invalidate(personalizedFeedProvider);
       return true;
     } catch (e) {
       final errorMessage = e.toString();
@@ -236,9 +237,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingUserId: null,
         pendingEmail: null,
       );
-      // Personalized feed depends on identity — refetch on login OTP
-      // success (spec §7).
-      _ref.invalidate(personalizedFeedProvider);
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -276,9 +274,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (_) {}
     await _authRepository.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
-    // Personalized feed depends on identity — drop any cached strata so the
-    // next read returns PersonalizedFeedView.empty() (spec §7).
-    _ref.invalidate(personalizedFeedProvider);
     // Cart is identity-bound and persisted to SharedPreferences; clear so the
     // next user (or guest) doesn't inherit stale items + an expired hold.
     _ref.read(orderCartProvider.notifier).clear();
@@ -288,10 +283,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Skips the API call to avoid triggering another 401 loop.
   Future<void> forceLogout() async {
     await _authRepository.clearLocalAuthData();
-    state = const AuthState(status: AuthStatus.unauthenticated);
-    // Personalized feed depends on identity — drop any cached strata so the
-    // next read returns PersonalizedFeedView.empty() (spec §7).
-    _ref.invalidate(personalizedFeedProvider);
+    state = const AuthState(
+      status: AuthStatus.unauthenticated,
+      errorMessage: authSessionExpiredMessage,
+    );
     _ref.read(orderCartProvider.notifier).clear();
   }
 
@@ -308,9 +303,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       pendingEmail: null,
       errorMessage: null,
     );
-    // Personalized feed depends on identity — refetch when an external auth
-    // path lands the user as authenticated (spec §7).
-    _ref.invalidate(personalizedFeedProvider);
   }
 
   /// Refresh auth status from repository (used after external auth changes)

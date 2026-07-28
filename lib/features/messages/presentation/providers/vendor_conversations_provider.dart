@@ -5,7 +5,6 @@ import '../../domain/entities/conversation.dart';
 import '../../domain/entities/vendor_stats.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
-import '../../data/datasources/messages_polling_datasource.dart';
 import 'unread_count_provider.dart';
 import 'messages_realtime_provider.dart';
 
@@ -90,13 +89,12 @@ class VendorSupportState {
 class VendorConversationsNotifier
     extends StateNotifier<VendorConversationsState> {
   final MessagesRepository _repo;
-  final MessagesPollingDatasource _polling;
   final Ref _ref;
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
 
-  VendorConversationsNotifier(this._repo, this._polling, this._ref)
+  VendorConversationsNotifier(this._repo, this._ref)
       : super(const VendorConversationsState()) {
     load();
     _startUnreadPolling();
@@ -108,8 +106,7 @@ class VendorConversationsNotifier
     _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
       if (_ref.read(messagesRealtimeProvider)) return;
       try {
-        final count = await _polling.getVendorUnreadCount();
-        _ref.read(unreadCountProvider.notifier).state = count;
+        await _ref.read(unreadCountProvider.notifier).refresh();
       } catch (_) {}
     });
   }
@@ -298,8 +295,7 @@ class VendorConversationsNotifier
 
   Future<void> _refreshUnreadCount() async {
     try {
-      final count = await _polling.getVendorUnreadCount();
-      _ref.read(unreadCountProvider.notifier).state = count;
+      await _ref.read(unreadCountProvider.notifier).refresh();
     } catch (_) {}
   }
 
@@ -473,7 +469,6 @@ final vendorConversationsProvider = StateNotifierProvider<
     VendorConversationsNotifier, VendorConversationsState>((ref) {
   return VendorConversationsNotifier(
     ref.read(messagesRepositoryProvider),
-    ref.read(messagesPollingDatasourceProvider),
     ref,
   );
 });

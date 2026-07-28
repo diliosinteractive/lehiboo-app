@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -23,9 +22,10 @@ class HibonCounterWidget extends ConsumerWidget {
 
     // Fallback /balance pendant que /wallet charge au cold start (Plan 05).
     final balanceAsync = ref.watch(hibonsBalanceProvider);
-    final fallbackBalance = balanceAsync.value?.balance;
+    final fallbackBalance = balanceAsync.valueOrNull?.balance;
 
     return profileAsync.when(
+      skipError: true,
       data: (wallet) => _buildBadge(balance: wallet.balance, compact: compact),
       loading: () {
         // Pendant le chargement de /wallet, afficher la balance légère
@@ -45,6 +45,12 @@ class HibonCounterWidget extends ConsumerWidget {
       error: (err, stack) {
         debugPrint('🎮 HibonCounterWidget ERROR: $err');
         debugPrint('🎮 HibonCounterWidget STACK: $stack');
+        if (fallbackBalance != null) {
+          return _buildBadge(
+            balance: fallbackBalance,
+            compact: compact,
+          );
+        }
         // Afficher un placeholder au lieu d'une erreur visible
         // L'utilisateur peut toujours cliquer pour aller au dashboard
         return Container(
@@ -65,7 +71,11 @@ class HibonCounterWidget extends ConsumerWidget {
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.stars_rounded, color: Colors.grey.shade400, size: 16),
+                child: Icon(
+                  Icons.stars_rounded,
+                  color: Colors.grey.shade400,
+                  size: 16,
+                ),
               ),
               SizedBox(width: compact ? 6 : 8),
               Text(
@@ -103,7 +113,8 @@ class HibonCounterWidget extends ConsumerWidget {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
