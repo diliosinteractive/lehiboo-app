@@ -50,7 +50,7 @@ final eventsListProvider = FutureProvider.family<List<Activity>, EventsListParam
     }
 
     if (params.onlyFree) {
-      activities = activities.where((a) => a.isFree == true).toList();
+      activities = activities.where((a) => a.isAuthoritativelyFree).toList();
       debugPrint('After free filter: ${activities.length} activities');
     }
 

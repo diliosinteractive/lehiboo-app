@@ -385,39 +385,50 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Price
-                      if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
-                        Builder(builder: (context) {
-                          final isTrulyFree = widget.activity.priceMin == 0 &&
-                              (widget.activity.priceMax == null || widget.activity.priceMax == 0);
-                          if (isTrulyFree) {
-                            return Text(
-                              'Gratuit',
-                              style: TextStyle(
-                                color: Colors.green[700],
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            );
-                          }
-                          final isBooking = widget.activity.reservationMode ==
-                                  ReservationMode.lehibooFree ||
-                              widget.activity.reservationMode ==
-                                  ReservationMode.lehibooPaid;
-                          if (!isBooking) {
+                      Builder(builder: (context) {
+                        if (!widget.activity.isBookingActivity) {
+                          if (!widget.activity.isFreeDiscovery) {
                             return const SizedBox.shrink();
                           }
-                          final price = (widget.activity.priceMin! > 0)
-                              ? widget.activity.priceMin!
-                              : widget.activity.priceMax!;
                           return Text(
-                            'À partir de ${price.toStringAsFixed(0)}€',
-                            style: const TextStyle(
-                              color: HbColors.textSlate,
+                            'Gratuit',
+                            style: TextStyle(
+                              color: Colors.green[700],
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
                           );
-                        }),
+                        }
+
+                        if (widget.activity.priceMin == null ||
+                            widget.activity.priceMin == -1) {
+                          return const SizedBox.shrink();
+                        }
+                        final price = (widget.activity.priceMin! > 0)
+                            ? widget.activity.priceMin!
+                            : (widget.activity.priceMax ?? 0);
+                        if (price <= 0) {
+                          if (!widget.activity.isAuthoritativelyFree) {
+                            return const SizedBox.shrink();
+                          }
+                          return Text(
+                            'Gratuit',
+                            style: TextStyle(
+                              color: Colors.green[700],
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        }
+                        return Text(
+                          'À partir de ${price.toStringAsFixed(0)}€',
+                          style: const TextStyle(
+                            color: HbColors.textSlate,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      }),
 
                       // CTA Button
                       ElevatedButton(
@@ -512,7 +523,9 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
       longitude: 0,
       images: widget.activity.imageUrl != null ? [widget.activity.imageUrl!] : [],
       coverImage: widget.activity.imageUrl,
-      priceType: widget.activity.priceMin == 0 ? PriceType.free : PriceType.paid,
+      priceType: widget.activity.isAuthoritativelyFree
+          ? PriceType.free
+          : PriceType.paid,
       minPrice: widget.activity.priceMin,
       maxPrice: widget.activity.priceMax,
       isIndoor: false,
@@ -525,7 +538,8 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
       isFeatured: false,
       isRecommended: false,
       status: EventStatus.upcoming,
-      hasDirectBooking: false,
+      hasDirectBooking: widget.activity.isBookingActivity,
+      discoveryPricingType: widget.activity.discoveryPricingType?.name,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       views: 0,
@@ -790,41 +804,53 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   ],
                   const SizedBox(height: 4),
                   // Prix
-                  if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
-                    Builder(builder: (context) {
-                      final isTrulyFree = widget.activity.priceMin == 0 &&
-                          (widget.activity.priceMax == null || widget.activity.priceMax == 0);
-                      if (isTrulyFree) {
-                        return Text(
-                          'Gratuit',
-                          style: TextStyle(
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            height: 1.1,
-                          ),
-                        );
-                      }
-                      final isBooking = widget.activity.reservationMode ==
-                              ReservationMode.lehibooFree ||
-                          widget.activity.reservationMode ==
-                              ReservationMode.lehibooPaid;
-                      if (!isBooking) {
+                  Builder(builder: (context) {
+                    if (!widget.activity.isBookingActivity) {
+                      if (!widget.activity.isFreeDiscovery) {
                         return const SizedBox.shrink();
                       }
-                      final price = (widget.activity.priceMin! > 0)
-                          ? widget.activity.priceMin!
-                          : widget.activity.priceMax!;
                       return Text(
-                        'À partir de ${price.toStringAsFixed(0)}€',
-                        style: const TextStyle(
-                          color: HbColors.brandPrimary,
+                        'Gratuit',
+                        style: TextStyle(
+                          color: Colors.green[700],
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                           height: 1.1,
                         ),
                       );
-                    }),
+                    }
+
+                    if (widget.activity.priceMin == null ||
+                        widget.activity.priceMin == -1) {
+                      return const SizedBox.shrink();
+                    }
+                    final price = (widget.activity.priceMin! > 0)
+                        ? widget.activity.priceMin!
+                        : (widget.activity.priceMax ?? 0);
+                    if (price <= 0) {
+                      if (!widget.activity.isAuthoritativelyFree) {
+                        return const SizedBox.shrink();
+                      }
+                      return Text(
+                        'Gratuit',
+                        style: TextStyle(
+                          color: Colors.green[700],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          height: 1.1,
+                        ),
+                      );
+                    }
+                    return Text(
+                      'À partir de ${price.toStringAsFixed(0)}€',
+                      style: const TextStyle(
+                        color: HbColors.brandPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        height: 1.1,
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -867,7 +893,9 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
       longitude: 0,
       images: widget.activity.imageUrl != null ? [widget.activity.imageUrl!] : [],
       coverImage: widget.activity.imageUrl,
-      priceType: widget.activity.priceMin == 0 ? PriceType.free : PriceType.paid,
+      priceType: widget.activity.isAuthoritativelyFree
+          ? PriceType.free
+          : PriceType.paid,
       minPrice: widget.activity.priceMin,
       maxPrice: widget.activity.priceMax,
       isIndoor: false,
@@ -880,7 +908,8 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
       isFeatured: false,
       isRecommended: false,
       status: EventStatus.upcoming,
-      hasDirectBooking: false,
+      hasDirectBooking: widget.activity.isBookingActivity,
+      discoveryPricingType: widget.activity.discoveryPricingType?.name,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       views: 0,
@@ -1056,39 +1085,50 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
                   ),
                   const SizedBox(height: 4),
                   // Prix
-                  if (widget.activity.priceMin != null && widget.activity.priceMin != -1)
-                    Builder(builder: (context) {
-                      final isTrulyFree = widget.activity.priceMin == 0 &&
-                          (widget.activity.priceMax == null || widget.activity.priceMax == 0);
-                      if (isTrulyFree) {
-                        return Text(
-                          'Gratuit',
-                          style: TextStyle(
-                            color: Colors.green[700],
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        );
-                      }
-                      final isBooking = widget.activity.reservationMode ==
-                              ReservationMode.lehibooFree ||
-                          widget.activity.reservationMode ==
-                              ReservationMode.lehibooPaid;
-                      if (!isBooking) {
+                  Builder(builder: (context) {
+                    if (!widget.activity.isBookingActivity) {
+                      if (!widget.activity.isFreeDiscovery) {
                         return const SizedBox.shrink();
                       }
-                      final price = (widget.activity.priceMin! > 0)
-                          ? widget.activity.priceMin!
-                          : widget.activity.priceMax!;
                       return Text(
-                        'Dès ${price.toStringAsFixed(0)}€',
-                        style: const TextStyle(
-                          color: HbColors.brandPrimary,
+                        'Gratuit',
+                        style: TextStyle(
+                          color: Colors.green[700],
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                       );
-                    }),
+                    }
+
+                    if (widget.activity.priceMin == null ||
+                        widget.activity.priceMin == -1) {
+                      return const SizedBox.shrink();
+                    }
+                    final price = (widget.activity.priceMin! > 0)
+                        ? widget.activity.priceMin!
+                        : (widget.activity.priceMax ?? 0);
+                    if (price <= 0) {
+                      if (!widget.activity.isAuthoritativelyFree) {
+                        return const SizedBox.shrink();
+                      }
+                      return Text(
+                        'Gratuit',
+                        style: TextStyle(
+                          color: Colors.green[700],
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    }
+                    return Text(
+                      'Dès ${price.toStringAsFixed(0)}€',
+                      style: const TextStyle(
+                        color: HbColors.brandPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),

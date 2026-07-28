@@ -223,8 +223,7 @@ class _SimilarEventCard extends StatelessWidget {
   }
 
   Widget _buildPriceBadge() {
-    final isFree = event.priceType == PriceType.free ||
-        (event.minPrice == 0 && event.maxPrice == 0);
+    final isFree = event.isAuthoritativelyFree;
 
     if (isFree) {
       return Container(

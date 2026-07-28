@@ -333,59 +333,58 @@ class EventCard extends ConsumerWidget {
           ],
 
           // Price
-          if (activity.priceMin != null && activity.priceMin != -1)
-            Builder(builder: (context) {
-              final isBooking =
-                  activity.reservationMode == ReservationMode.lehibooFree ||
-                      activity.reservationMode == ReservationMode.lehibooPaid;
-
-              if (isBooking) {
-                final price = (activity.priceMin! > 0)
-                    ? activity.priceMin!
-                    : (activity.priceMax ?? 0);
-                if (price <= 0) {
-                  // Trust the API's `is_free` signal: a paid event arriving
-                  // with min/max=0 (observed on /me/personalized-feed for
-                  // some members-only events) should hide the price rather
-                  // than mislabel it as "Gratuit".
-                  if (activity.isFree != true) return const SizedBox.shrink();
-                  return Text(
-                    'Gratuit',
-                    style: TextStyle(
-                      color: Colors.green[700],
-                      fontWeight: FontWeight.w600,
-                      fontSize: compact ? 12 : 14,
-                      height: 1.1,
-                    ),
-                  );
-                }
+          Builder(builder: (context) {
+            if (activity.isBookingActivity) {
+              if (activity.priceMin == null || activity.priceMin == -1) {
+                return const SizedBox.shrink();
+              }
+              final price = (activity.priceMin! > 0)
+                  ? activity.priceMin!
+                  : (activity.priceMax ?? 0);
+              if (price <= 0) {
+                // Trust the API's `is_free` signal: a paid event arriving
+                // with min/max=0 (observed on /me/personalized-feed for
+                // some members-only events) should hide the price rather
+                // than mislabel it as "Gratuit".
+                if (activity.isFree != true) return const SizedBox.shrink();
                 return Text(
-                  'À partir de ${price.toStringAsFixed(0)}€',
+                  'Gratuit',
                   style: TextStyle(
-                    color: const Color(0xFFFF601F),
+                    color: Colors.green[700],
                     fontWeight: FontWeight.w600,
                     fontSize: compact ? 12 : 14,
                     height: 1.1,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 );
               }
-
-              // Discovery: only label as "Gratuit" when truly free.
-              final isTrulyFree = activity.priceMin == 0 &&
-                  (activity.priceMax == null || activity.priceMax == 0);
-              if (!isTrulyFree) return const SizedBox.shrink();
               return Text(
-                'Gratuit',
+                'À partir de ${price.toStringAsFixed(0)}€',
                 style: TextStyle(
-                  color: Colors.green[700],
+                  color: const Color(0xFFFF601F),
                   fontWeight: FontWeight.w600,
                   fontSize: compact ? 12 : 14,
                   height: 1.1,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               );
-            }),
+            }
+
+            // Discovery: the API classification is authoritative. Numeric
+            // prices may be missing or indicative and are not a free signal.
+            if (!activity.isFreeDiscovery) {
+              return const SizedBox.shrink();
+            }
+            return Text(
+              'Gratuit',
+              style: TextStyle(
+                color: Colors.green[700],
+                fontWeight: FontWeight.w600,
+                fontSize: compact ? 12 : 14,
+                height: 1.1,
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -432,7 +431,8 @@ class EventCard extends ConsumerWidget {
       longitude: 0,
       images: activity.imageUrl != null ? [activity.imageUrl!] : [],
       coverImage: activity.imageUrl,
-      priceType: activity.priceMin == 0 ? PriceType.free : PriceType.paid,
+      priceType:
+          activity.isAuthoritativelyFree ? PriceType.free : PriceType.paid,
       minPrice: activity.priceMin,
       maxPrice: activity.priceMax,
       isIndoor: false,
@@ -445,7 +445,8 @@ class EventCard extends ConsumerWidget {
       isFeatured: false,
       isRecommended: false,
       status: EventStatus.upcoming,
-      hasDirectBooking: false,
+      hasDirectBooking: activity.isBookingActivity,
+      discoveryPricingType: activity.discoveryPricingType?.name,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       views: 0,

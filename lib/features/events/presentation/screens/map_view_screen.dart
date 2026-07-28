@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import 'package:lehiboo/features/events/presentation/providers/event_providers.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
@@ -127,23 +128,19 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   }
 
   Activity _eventToActivity(Event event) {
-    return Activity(
-        id: event.id.toString(),
-        title: event.title,
-        slug: '',
-        description: event.description,
-        imageUrl: event.coverImage,
-        isFree: event.isFree,
-        priceMin: event.minPrice,
-        city: null,
-        category: null,
-        tags: [],
-        nextSlot: Slot(
-          id: 'temp_${event.id}',
-          activityId: event.id.toString(),
-          startDateTime: event.startDate, // Use real dates
-          endDateTime: event.endDate,
-        ));
+    return EventToActivityMapper.toActivity(event);
+  }
+
+  String _formatEventPrice(Event event) {
+    if (event.isAuthoritativelyFree) return 'Gratuit';
+
+    final price = event.minPrice != null && event.minPrice! > 0
+        ? event.minPrice
+        : event.maxPrice != null && event.maxPrice! > 0
+            ? event.maxPrice
+            : event.price;
+    if (price == null || price <= 0) return 'Prix non défini';
+    return '${price.toStringAsFixed(0)}€';
   }
 
   void _onMapReady() {
@@ -290,9 +287,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         ],
                       ),
                       child: Text(
-                        (event.minPrice ?? 0) == 0
-                            ? 'Gratuit'
-                            : '${(event.minPrice ?? 0).toStringAsFixed(0)}€',
+                        _formatEventPrice(event),
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 10),
                         overflow: TextOverflow.ellipsis,
@@ -385,7 +380,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        "${DateFormat('dd MMM HH:mm', 'fr_FR').format(event.startDate)} • ${(event.minPrice ?? 0) == 0 ? 'Gratuit' : '${(event.minPrice ?? 0).toStringAsFixed(0)}€'}",
+                        "${DateFormat('dd MMM HH:mm', 'fr_FR').format(event.startDate)} • ${_formatEventPrice(event)}",
                         style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
                       trailing: isSelected

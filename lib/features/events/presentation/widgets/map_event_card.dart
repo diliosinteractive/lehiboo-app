@@ -171,22 +171,33 @@ class MapEventCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Builder(builder: (context) {
-                    final isTrulyFree = activity.priceMin == 0 &&
-                        (activity.priceMax == null || activity.priceMax == 0);
-                    if (isTrulyFree) {
+                    if (!activity.isBookingActivity) {
+                      if (!activity.isFreeDiscovery) {
+                        return const SizedBox.shrink();
+                      }
                       return const Text(
                         'Gratuit',
                         style: TextStyle(color: Colors.white70, fontSize: 12),
                       );
                     }
-                    final isBooking =
-                        activity.reservationMode == ReservationMode.lehibooFree ||
-                            activity.reservationMode == ReservationMode.lehibooPaid;
-                    if (!isBooking) {
+
+                    final price = activity.priceMin != null &&
+                            activity.priceMin! > 0
+                        ? activity.priceMin
+                        : activity.priceMax;
+                    if (price == null || price <= 0) {
+                      if (activity.isAuthoritativelyFree) {
+                        return const Text(
+                          'Gratuit',
+                          style:
+                              TextStyle(color: Colors.white70, fontSize: 12),
+                        );
+                      }
                       return const SizedBox.shrink();
                     }
+
                     return Text(
-                      '${(activity.priceMin ?? 0).toStringAsFixed(0)}€',
+                      '${price.toStringAsFixed(0)}€',
                       style: const TextStyle(color: Colors.white70, fontSize: 12),
                     );
                   }),
@@ -218,7 +229,9 @@ class MapEventCard extends ConsumerWidget {
                             longitude: 0,
                             images: activity.imageUrl != null ? [activity.imageUrl!] : [],
                             coverImage: activity.imageUrl,
-                            priceType: activity.priceMin == 0 ? PriceType.free : PriceType.paid,
+                            priceType: activity.isAuthoritativelyFree
+                                ? PriceType.free
+                                : PriceType.paid,
                             minPrice: activity.priceMin,
                             maxPrice: activity.priceMax,
                             isIndoor: false,
@@ -230,7 +243,9 @@ class MapEventCard extends ConsumerWidget {
                             isFeatured: false,
                             isRecommended: false,
                             status: EventStatus.upcoming,
-                            hasDirectBooking: false,
+                            hasDirectBooking: activity.isBookingActivity,
+                            discoveryPricingType:
+                                activity.discoveryPricingType?.name,
                             createdAt: DateTime.now(),
                             updatedAt: DateTime.now(),
                             views: 0

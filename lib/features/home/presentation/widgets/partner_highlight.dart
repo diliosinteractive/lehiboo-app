@@ -364,15 +364,22 @@ class _PartnerEventCard extends StatelessWidget {
                     const SizedBox(height: 6),
 
                     // Price
-                    if (activity.priceMin != null && activity.priceMin != -1)
+                    if (activity.isAuthoritativelyFree)
                       Text(
-                        activity.priceMin == 0
-                            ? 'Gratuit'
-                            : 'Dès ${activity.priceMin!.toStringAsFixed(0)}€',
+                        'Gratuit',
                         style: TextStyle(
-                          color: activity.priceMin == 0
-                              ? Colors.green[700]
-                              : brandColor,
+                          color: Colors.green[700],
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    if (!activity.isAuthoritativelyFree &&
+                        activity.priceMin != null &&
+                        activity.priceMin! > 0)
+                      Text(
+                        'Dès ${activity.priceMin!.toStringAsFixed(0)}€',
+                        style: TextStyle(
+                          color: brandColor,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),

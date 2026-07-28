@@ -111,7 +111,7 @@ class PersonalizedActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Score
       }
 
       // +0.5 point for free activities (user preference for deals)
-      if (activity.priceMin == 0) {
+      if (activity.isAuthoritativelyFree) {
         score += 0.5;
       }
 

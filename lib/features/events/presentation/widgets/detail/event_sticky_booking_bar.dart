@@ -83,10 +83,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
     return false;
   }
 
-  bool get _isFreeEvent {
-    return widget.event.priceType == PriceType.free ||
-        (widget.event.minPrice == 0 && widget.event.maxPrice == 0);
-  }
+  bool get _isFreeEvent => widget.event.isAuthoritativelyFree;
 
   bool get _isDiscovery => !widget.event.hasDirectBooking;
 
