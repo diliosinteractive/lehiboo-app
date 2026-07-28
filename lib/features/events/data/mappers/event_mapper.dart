@@ -126,6 +126,24 @@ class EventMapper {
           .toList();
     }
 
+    final hasDirectBooking = dto.bookingMode != null
+        ? dto.bookingMode != 'discovery'
+        : !dto.isDiscovery && dto.discoveryPricingType == null;
+    final pricingMin = dto.pricing?.min;
+    final shouldUsePriceFrom =
+        !hasDirectBooking && (pricingMin == null || pricingMin <= 0);
+    final mappedMinPrice =
+        shouldUsePriceFrom ? dto.priceFrom ?? pricingMin : pricingMin;
+    double? mappedPrice;
+    if (dto.pricing != null && dto.pricing!.min == dto.pricing!.max) {
+      mappedPrice =
+          hasDirectBooking || dto.pricing!.min > 0 || dto.priceFrom == null
+              ? dto.pricing!.min
+              : dto.priceFrom;
+    } else if (!hasDirectBooking && dto.pricing == null) {
+      mappedPrice = dto.priceFrom;
+    }
+
     return Event(
       id: dto.uuid ?? dto.id.toString(),
       slug: dto.slug,
@@ -147,9 +165,10 @@ class EventMapper {
       images: allImages.toList(),
       coverImage: imageUrl ?? (allImages.isNotEmpty ? allImages.first : null),
       priceType: priceType,
-      price: dto.pricing?.min == dto.pricing?.max ? dto.pricing?.min : null,
-      minPrice: dto.pricing?.min,
+      price: mappedPrice,
+      minPrice: mappedMinPrice,
       maxPrice: dto.pricing?.max,
+      priceDetails: hasDirectBooking ? null : dto.pricing?.display,
       isIndoor: dto.venueType?.toLowerCase() != 'outdoor',
       isOutdoor: dto.venueType?.toLowerCase() != 'indoor',
       tags: dto.tags ?? [],
@@ -168,7 +187,7 @@ class EventMapper {
       isFeatured: dto.isFeatured,
       isRecommended: false,
       status: _determineStatus(startDate, endDate),
-      hasDirectBooking: dto.bookingMode != 'discovery',
+      hasDirectBooking: hasDirectBooking,
       discoveryPricingType: dto.discoveryPricingType,
       createdAt: _tryParseDateTime(dto.createdAt) ?? DateTime.now(),
       updatedAt: _tryParseDateTime(dto.updatedAt) ?? DateTime.now(),

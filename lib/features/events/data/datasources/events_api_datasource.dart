@@ -159,6 +159,14 @@ class EventsApiDataSource {
 
       // Map pins to EventDto structure
       final mappedEvents = pins.map<Map<String, dynamic>>((pin) {
+        final bookingMode = pin['booking_mode'] ?? pin['bookingMode'];
+        final discoveryPricingType = pin['discovery_pricing_type'] ??
+            pin['discoveryPricingType'];
+        final isDiscovery = pin['is_discovery'] ??
+            pin['isDiscovery'] ??
+            (bookingMode == 'discovery' ||
+                (bookingMode == null && discoveryPricingType != null));
+
         return <String, dynamic>{
           'id': pin['id'],
           'title': pin['title'] ?? '',
@@ -176,8 +184,16 @@ class EventsApiDataSource {
           'pricing': <String, dynamic>{
             'min': (pin['price_min'] ?? pin['price'] ?? 0).toDouble(),
             'max': (pin['price_max'] ?? pin['price'] ?? 0).toDouble(),
-            'is_free': (pin['price'] == 0 || pin['price_min'] == 0),
+            // A missing explicit flag stays unknown/false; zero is not a
+            // reliable free signal, especially for discovery events.
+            'is_free': pin['is_free'] ?? pin['isFree'] ?? false,
           },
+          // Preserve authoritative pricing/mode fields when the lightweight
+          // endpoint provides them. Older pin payloads may omit these keys.
+          'booking_mode':
+              bookingMode ?? (isDiscovery == true ? 'discovery' : null),
+          'discovery_pricing_type': discoveryPricingType,
+          'is_discovery': isDiscovery,
           'dates': <String, dynamic>{},
         };
       }).toList();

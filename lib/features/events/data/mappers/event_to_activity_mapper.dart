@@ -92,7 +92,7 @@ class EventToActivityMapper {
       imageUrl: event.coverImage ?? (event.images.isNotEmpty ? event.images.first : null),
       category: category,
       tags: tags,
-      isFree: event.isFree,
+      isFree: event.isAuthoritativelyFree,
       priceMin: event.minPrice ?? event.price,
       priceMax: event.maxPrice ?? event.price,
       currency: 'EUR',
@@ -113,6 +113,8 @@ class EventToActivityMapper {
         phone: event.contactPhone,
         website: event.website,
       ),
+      discoveryPricingType:
+          _mapDiscoveryPricingType(event.discoveryPricingType),
       nextSlot: nextSlot,
       rating: event.rating,
       reviewsCount: event.reviewsCount,
@@ -122,6 +124,17 @@ class EventToActivityMapper {
 
   static List<Activity> toActivities(List<Event> events) {
     return events.map(toActivity).toList();
+  }
+
+  static DiscoveryPricingType? _mapDiscoveryPricingType(String? value) {
+    switch (value) {
+      case 'free':
+        return DiscoveryPricingType.free;
+      case 'paid':
+        return DiscoveryPricingType.paid;
+      default:
+        return null;
+    }
   }
 
   static String _categoryToSlug(EventCategory category) {

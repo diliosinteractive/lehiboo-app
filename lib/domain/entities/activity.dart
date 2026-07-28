@@ -15,6 +15,14 @@ enum ReservationMode {
   email,
 }
 
+/// Authoritative pricing classification for discovery-mode events.
+///
+/// The API exposes this as `discovery_pricing_type` with the values
+/// `free` and `paid`. Keep it separate from numeric prices: discovery
+/// prices can be incomplete or indicative and must not determine whether
+/// the event is free.
+enum DiscoveryPricingType { free, paid }
+
 @freezed
 class Activity with _$Activity {
   const factory Activity({
@@ -36,6 +44,7 @@ class Activity with _$Activity {
     int? durationMinutes,
     City? city,
     Partner? partner,
+    DiscoveryPricingType? discoveryPricingType,
     ReservationMode? reservationMode,
     String? externalBookingUrl,
     String? bookingPhone,
@@ -43,10 +52,29 @@ class Activity with _$Activity {
     Slot? nextSlot,
     double? rating,
     int? reviewsCount,
+
     /// Members-only event — drives the "Privé 🔒" badge on event cards.
     /// Spec: MEMBERSHIPS_MOBILE_SPEC.md §20.
     @Default(false) bool isMembersOnly,
   }) = _Activity;
+}
+
+extension ActivityPricingX on Activity {
+  bool get isBookingActivity =>
+      reservationMode == ReservationMode.lehibooFree ||
+      reservationMode == ReservationMode.lehibooPaid;
+
+  /// Whether a discovery activity is authoritatively classified as free.
+  ///
+  /// Unknown/null values deliberately remain non-free rather than falling
+  /// back to potentially misleading min/max prices.
+  bool get isFreeDiscovery =>
+      !isBookingActivity && discoveryPricingType == DiscoveryPricingType.free;
+
+  /// Mode-aware free classification used by listing, filtering, and
+  /// synthetic Activity-to-Event conversions.
+  bool get isAuthoritativelyFree =>
+      isBookingActivity ? isFree == true : isFreeDiscovery;
 }
 
 @freezed

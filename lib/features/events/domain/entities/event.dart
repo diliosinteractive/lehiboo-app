@@ -345,6 +345,59 @@ class Event extends Equatable {
 
   bool get isFree => priceType == PriceType.free;
 
+  /// Mode-aware free classification.
+  ///
+  /// Booking events use the ticket-derived `priceType`; discovery events
+  /// use `discovery_pricing_type`, which is their authoritative source.
+  bool get isAuthoritativelyFree =>
+      hasDirectBooking ? isFree : discoveryPricingType == 'free';
+
+  /// Primary amount for a paid discovery event.
+  ///
+  /// The API-provided display is preferred because it is localized and
+  /// discovery payloads can legitimately contain `min > max` (for example,
+  /// min=22 and max=0). Positive numeric values are conservative fallbacks.
+  String? get discoveryPaidPriceLabel {
+    if (hasDirectBooking || discoveryPricingType != 'paid') return null;
+
+    final display = priceDetails?.trim();
+    if (display != null &&
+        display.isNotEmpty &&
+        !_looksLikeFreePrice(display)) {
+      return display;
+    }
+
+    final candidates = [minPrice, price, maxPrice];
+    for (final candidate in candidates) {
+      if (candidate != null && candidate > 0) {
+        return _formatDiscoveryPrice(candidate);
+      }
+    }
+    return null;
+  }
+
+  bool _looksLikeFreePrice(String display) {
+    final normalized = display.trim().toLowerCase();
+    if (normalized.contains('gratuit') ||
+        RegExp(r'\bfree\b').hasMatch(normalized)) {
+      return true;
+    }
+
+    final numericMatch =
+        RegExp(r'[-+]?\d+(?:[.,]\d+)?').firstMatch(normalized);
+    if (numericMatch == null) return false;
+    final amount =
+        double.tryParse(numericMatch.group(0)!.replaceAll(',', '.'));
+    return amount == 0;
+  }
+
+  String _formatDiscoveryPrice(double amount) {
+    if (amount == amount.roundToDouble()) {
+      return '${amount.toStringAsFixed(0)}€';
+    }
+    return '${amount.toStringAsFixed(2).replaceAll('.', ',')}€';
+  }
+
   bool get isToday {
     final now = DateTime.now();
     return startDate.year == now.year &&
@@ -365,8 +418,12 @@ class Event extends Equatable {
   }
 
   String get formattedPrice {
-    if (priceType == PriceType.free) {
+    if (isAuthoritativelyFree) {
       return 'Gratuit';
+    } else if (!hasDirectBooking && discoveryPricingType == 'paid') {
+      return discoveryPaidPriceLabel ?? 'Prix non communiqué';
+    } else if (!hasDirectBooking) {
+      return 'Prix non défini';
     } else if (priceType == PriceType.donation) {
       return 'Participation libre';
     } else if (price != null) {

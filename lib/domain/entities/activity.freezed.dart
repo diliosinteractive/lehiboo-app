@@ -34,6 +34,8 @@ mixin _$Activity {
   int? get durationMinutes => throw _privateConstructorUsedError;
   City? get city => throw _privateConstructorUsedError;
   Partner? get partner => throw _privateConstructorUsedError;
+  DiscoveryPricingType? get discoveryPricingType =>
+      throw _privateConstructorUsedError;
   ReservationMode? get reservationMode => throw _privateConstructorUsedError;
   String? get externalBookingUrl => throw _privateConstructorUsedError;
   String? get bookingPhone => throw _privateConstructorUsedError;
@@ -75,6 +77,7 @@ abstract class $ActivityCopyWith<$Res> {
       int? durationMinutes,
       City? city,
       Partner? partner,
+      DiscoveryPricingType? discoveryPricingType,
       ReservationMode? reservationMode,
       String? externalBookingUrl,
       String? bookingPhone,
@@ -123,6 +126,7 @@ class _$ActivityCopyWithImpl<$Res, $Val extends Activity>
     Object? durationMinutes = freezed,
     Object? city = freezed,
     Object? partner = freezed,
+    Object? discoveryPricingType = freezed,
     Object? reservationMode = freezed,
     Object? externalBookingUrl = freezed,
     Object? bookingPhone = freezed,
@@ -205,6 +209,10 @@ class _$ActivityCopyWithImpl<$Res, $Val extends Activity>
           ? _value.partner
           : partner // ignore: cast_nullable_to_non_nullable
               as Partner?,
+      discoveryPricingType: freezed == discoveryPricingType
+          ? _value.discoveryPricingType
+          : discoveryPricingType // ignore: cast_nullable_to_non_nullable
+              as DiscoveryPricingType?,
       reservationMode: freezed == reservationMode
           ? _value.reservationMode
           : reservationMode // ignore: cast_nullable_to_non_nullable
@@ -340,6 +348,7 @@ abstract class _$$ActivityImplCopyWith<$Res>
       int? durationMinutes,
       City? city,
       Partner? partner,
+      DiscoveryPricingType? discoveryPricingType,
       ReservationMode? reservationMode,
       String? externalBookingUrl,
       String? bookingPhone,
@@ -392,6 +401,7 @@ class __$$ActivityImplCopyWithImpl<$Res>
     Object? durationMinutes = freezed,
     Object? city = freezed,
     Object? partner = freezed,
+    Object? discoveryPricingType = freezed,
     Object? reservationMode = freezed,
     Object? externalBookingUrl = freezed,
     Object? bookingPhone = freezed,
@@ -474,6 +484,10 @@ class __$$ActivityImplCopyWithImpl<$Res>
           ? _value.partner
           : partner // ignore: cast_nullable_to_non_nullable
               as Partner?,
+      discoveryPricingType: freezed == discoveryPricingType
+          ? _value.discoveryPricingType
+          : discoveryPricingType // ignore: cast_nullable_to_non_nullable
+              as DiscoveryPricingType?,
       reservationMode: freezed == reservationMode
           ? _value.reservationMode
           : reservationMode // ignore: cast_nullable_to_non_nullable
@@ -532,6 +546,7 @@ class _$ActivityImpl implements _Activity {
       this.durationMinutes,
       this.city,
       this.partner,
+      this.discoveryPricingType,
       this.reservationMode,
       this.externalBookingUrl,
       this.bookingPhone,
@@ -587,6 +602,8 @@ class _$ActivityImpl implements _Activity {
   @override
   final Partner? partner;
   @override
+  final DiscoveryPricingType? discoveryPricingType;
+  @override
   final ReservationMode? reservationMode;
   @override
   final String? externalBookingUrl;
@@ -609,7 +626,7 @@ class _$ActivityImpl implements _Activity {
 
   @override
   String toString() {
-    return 'Activity(id: $id, title: $title, slug: $slug, description: $description, excerpt: $excerpt, imageUrl: $imageUrl, category: $category, tags: $tags, ageRange: $ageRange, audience: $audience, isFree: $isFree, priceMin: $priceMin, priceMax: $priceMax, currency: $currency, indoorOutdoor: $indoorOutdoor, durationMinutes: $durationMinutes, city: $city, partner: $partner, reservationMode: $reservationMode, externalBookingUrl: $externalBookingUrl, bookingPhone: $bookingPhone, bookingEmail: $bookingEmail, nextSlot: $nextSlot, rating: $rating, reviewsCount: $reviewsCount, isMembersOnly: $isMembersOnly)';
+    return 'Activity(id: $id, title: $title, slug: $slug, description: $description, excerpt: $excerpt, imageUrl: $imageUrl, category: $category, tags: $tags, ageRange: $ageRange, audience: $audience, isFree: $isFree, priceMin: $priceMin, priceMax: $priceMax, currency: $currency, indoorOutdoor: $indoorOutdoor, durationMinutes: $durationMinutes, city: $city, partner: $partner, discoveryPricingType: $discoveryPricingType, reservationMode: $reservationMode, externalBookingUrl: $externalBookingUrl, bookingPhone: $bookingPhone, bookingEmail: $bookingEmail, nextSlot: $nextSlot, rating: $rating, reviewsCount: $reviewsCount, isMembersOnly: $isMembersOnly)';
   }
 
   @override
@@ -645,6 +662,8 @@ class _$ActivityImpl implements _Activity {
                 other.durationMinutes == durationMinutes) &&
             (identical(other.city, city) || other.city == city) &&
             (identical(other.partner, partner) || other.partner == partner) &&
+            (identical(other.discoveryPricingType, discoveryPricingType) ||
+                other.discoveryPricingType == discoveryPricingType) &&
             (identical(other.reservationMode, reservationMode) ||
                 other.reservationMode == reservationMode) &&
             (identical(other.externalBookingUrl, externalBookingUrl) ||
@@ -683,6 +702,7 @@ class _$ActivityImpl implements _Activity {
         durationMinutes,
         city,
         partner,
+        discoveryPricingType,
         reservationMode,
         externalBookingUrl,
         bookingPhone,
@@ -720,6 +740,7 @@ abstract class _Activity implements Activity {
       final int? durationMinutes,
       final City? city,
       final Partner? partner,
+      final DiscoveryPricingType? discoveryPricingType,
       final ReservationMode? reservationMode,
       final String? externalBookingUrl,
       final String? bookingPhone,
@@ -765,6 +786,8 @@ abstract class _Activity implements Activity {
   City? get city;
   @override
   Partner? get partner;
+  @override
+  DiscoveryPricingType? get discoveryPricingType;
   @override
   ReservationMode? get reservationMode;
   @override
