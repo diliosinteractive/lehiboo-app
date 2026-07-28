@@ -14,6 +14,7 @@ class HomeCitiesSection extends ConsumerWidget {
     final citiesAsync = ref.watch(citiesProvider);
 
     return citiesAsync.when(
+      skipError: true,
       data: (cities) {
         if (cities.isEmpty) return const SizedBox.shrink();
 

@@ -15,6 +15,7 @@ class AdsBannersSection extends ConsumerWidget {
     final configAsyncValue = ref.watch(mobileAppConfigProvider);
 
     return configAsyncValue.when(
+      skipError: true,
       data: (config) {
         // Don't show if ads are disabled or no banners
         if (!config.ads.enabled || config.ads.banners.isEmpty) {

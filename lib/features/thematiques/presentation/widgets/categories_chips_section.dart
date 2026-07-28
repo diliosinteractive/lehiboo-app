@@ -18,6 +18,7 @@ class CategoriesChipsSection extends ConsumerWidget {
     final thematiquesAsync = ref.watch(thematiquesProvider);
 
     return categoriesAsync.when(
+      skipError: true,
       data: (categories) {
         if (categories.isEmpty) {
           return const SizedBox.shrink();

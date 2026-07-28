@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -8,8 +10,11 @@ import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/domain/entities/city.dart';
 import 'package:lehiboo/features/blog/presentation/widgets/blog_section.dart';
+import 'package:lehiboo/features/blog/presentation/providers/blog_providers.dart';
+import 'package:lehiboo/features/events/presentation/providers/cities_provider.dart';
 import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_section.dart';
 import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
+import 'package:lehiboo/features/thematiques/presentation/providers/thematiques_provider.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/providers/hero_slides_provider.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
@@ -20,6 +25,7 @@ import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
 import '../widgets/home_cities_section.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
+import 'package:lehiboo/features/gamification/presentation/providers/gamification_provider.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -30,6 +36,7 @@ import 'package:lehiboo/core/utils/api_response_handler.dart';
 import '../widgets/contextual_hero.dart';
 import '../widgets/event_stories.dart';
 import '../widgets/countdown_event_card.dart';
+import '../widgets/home_section_feedback.dart';
 // Legacy client-side "Pour vous" — superseded by the server-driven
 // PersonalizedFeedSection (PERSONALIZED_FEED_MOBILE_SPEC.md). Kept commented
 // for reference only.
@@ -47,21 +54,65 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
+  static const _resumeRefreshAfter = Duration(minutes: 15);
+
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
+  DateTime? _lastHomeFeedSuccessAt;
+  Future<void>? _refreshInFlight;
+  bool _inFlightRefreshesLocation = false;
+  int _sessionExpiryGeneration = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_onScroll);
+    ref.listenManual<String?>(
+      authProvider.select((state) => state.errorMessage),
+      _handleAuthError,
+      fireImmediately: true,
+    );
+    ref.listenManual(homeFeedProvider, (_, next) {
+      if (next.hasValue && !next.isLoading && !next.hasError) {
+        _lastHomeFeedSuccessAt = DateTime.now();
+      }
+    }, fireImmediately: true);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || _refreshInFlight != null) return;
+
+    final now = DateTime.now();
+    final lastSuccessAt = _lastHomeFeedSuccessAt;
+    final crossedDateBoundary = lastSuccessAt == null ||
+        now.year != lastSuccessAt.year ||
+        now.month != lastSuccessAt.month ||
+        now.day != lastSuccessAt.day;
+    final isStale = lastSuccessAt == null ||
+        now.difference(lastSuccessAt) >= _resumeRefreshAfter;
+
+    if (crossedDateBoundary || isStale) {
+      // UserLocationNotifier owns its resume recovery. Avoid a duplicate
+      // permission/location request while still refreshing other sections.
+      unawaited(
+        _refreshData(
+          refreshLocation: true,
+          showFailureFeedback: false,
+        ),
+      );
+    }
   }
 
   void _onScroll() {
@@ -70,25 +121,170 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
+  void _handleAuthError(String? previous, String? next) {
+    if (next != authSessionExpiredMessage || previous == next) return;
+    _sessionExpiryGeneration++;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(authSessionExpiredMessage),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      ref.read(authProvider.notifier).clearError();
+    });
+  }
+
   /// Refresh all home screen data
-  Future<void> _refreshData() async {
-    // Refresh only independent providers in parallel.
-    // Derived providers (today, tomorrow, homeActivities) will auto-rebuild
-    // via ref.watch(homeFeedProvider.future) when homeFeed completes.
-    await Future.wait([
-      ref.read(homeFeedProvider.notifier).refresh(),
-      ref.read(activeStoriesProvider.notifier).refresh(),
-      ref.read(categoriesProvider.notifier).refresh(),
-      ref.read(homeCitiesProvider.notifier).refresh(),
-      ref.read(mobileAppConfigProvider.notifier).refresh(),
-      ref.read(heroSlidesProvider.notifier).refresh(),
+  Future<void> _refreshData({
+    bool refreshLocation = true,
+    bool showFailureFeedback = true,
+  }) {
+    final inFlight = _refreshInFlight;
+    if (inFlight != null) {
+      if (!refreshLocation || _inFlightRefreshesLocation) return inFlight;
+
+      // A pull-to-refresh arrived during a refresh that does not cover
+      // location. Run the explicit refresh after it so the gesture still
+      // covers every visible dependency and awaits the real work.
+      return inFlight.then((_) => _refreshData());
+    }
+
+    _inFlightRefreshesLocation = refreshLocation;
+    late final Future<void> refresh;
+    refresh = _performRefresh(
+      refreshLocation: refreshLocation,
+      showFailureFeedback: showFailureFeedback,
+    ).whenComplete(() {
+      if (identical(_refreshInFlight, refresh)) {
+        _refreshInFlight = null;
+        _inFlightRefreshesLocation = false;
+      }
+    });
+    _refreshInFlight = refresh;
+    return refresh;
+  }
+
+  Future<void> _performRefresh({
+    required bool refreshLocation,
+    required bool showFailureFeedback,
+  }) async {
+    var didAnyRefreshFail = false;
+    final sessionExpiryGeneration = _sessionExpiryGeneration;
+
+    // Resolve location first so the home feed refresh uses current coordinates.
+    // UserLocationNotifier deduplicates its own lifecycle refresh, so this also
+    // joins a resume-triggered request instead of racing it.
+    if (refreshLocation) {
+      final locationSucceeded = await _safeRefresh(
+        'location',
+        () => ref.read(userLocationProvider.notifier).refresh(),
+      );
+      didAnyRefreshFail = !locationSucceeded;
+      if (!mounted) return;
+    }
+
+    // Derived activity providers watch homeFeedProvider.future and rebuild
+    // automatically. Every other provider below directly feeds a visible
+    // home section, so each refresh is started and awaited explicitly.
+    final results = await Future.wait([
+      _safeRefresh(
+        'home feed',
+        () => ref.read(homeFeedProvider.notifier).refresh(),
+      ),
+      _safeRefresh(
+        'stories',
+        () => ref.read(activeStoriesProvider.notifier).refresh(),
+      ),
+      _safeRefresh(
+        'categories',
+        () => ref.read(categoriesProvider.notifier).refresh(),
+      ),
+      _safeRefresh(
+        'city chips',
+        () => ref.refresh(citiesProvider.future).then<void>((_) {}),
+      ),
+      _safeRefresh(
+        'popular cities',
+        () => ref.read(homeCitiesProvider.notifier).refresh(),
+      ),
+      _safeRefresh(
+        'mobile config',
+        () => ref.read(mobileAppConfigProvider.notifier).refresh(),
+      ),
+      _safeRefresh(
+        'hero slides',
+        () => ref.read(heroSlidesProvider.notifier).refresh(),
+      ),
+      _safeRefresh(
+        'blog',
+        () => ref.refresh(latestBlogPostsProvider.future).then<void>((_) {}),
+      ),
+      _safeRefresh(
+        'thematiques',
+        () => ref.refresh(thematiquesProvider.future).then<void>((_) {}),
+      ),
+      _safeRefresh(
+        'personalized feed',
+        () => ref.refresh(personalizedFeedProvider.future).then<void>((_) {}),
+      ),
+      _safeRefresh(
+        'alerts',
+        () => ref.read(alertsProvider.notifier).loadAlerts(),
+      ),
+      _safeRefresh(
+        'Hibons',
+        () async {
+          await Future.wait<void>([
+            ref.read(gamificationNotifierProvider.notifier).refresh(),
+            ref
+                .refresh(hibonsBalanceProvider.future)
+                .then<void>((_) {}),
+          ]);
+        },
+      ),
+      _safeRefresh(
+        'unread messages',
+        () => ref.read(unreadCountProvider.notifier).refresh(),
+      ),
     ]);
-    ref.invalidate(alertsProvider);
-    ref.invalidate(viewedStoriesProvider);
-    // `personalizedFeedProvider` is a FutureProvider (not an
-    // AsyncNotifierProvider), so refresh via invalidate to actually
-    // re-trigger the fetch on pull-to-refresh.
-    ref.invalidate(personalizedFeedProvider);
+    didAnyRefreshFail =
+        didAnyRefreshFail || results.any((succeeded) => !succeeded);
+
+    if (!mounted) return;
+    if (didAnyRefreshFail &&
+        showFailureFeedback &&
+        sessionExpiryGeneration == _sessionExpiryGeneration) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Certaines données n’ont pas pu être actualisées. '
+              'Veuillez réessayer.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
+  }
+
+  Future<bool> _safeRefresh(
+    String label,
+    Future<void> Function() refresh,
+  ) async {
+    try {
+      await refresh();
+      return true;
+    } catch (error, stackTrace) {
+      debugPrint('Home refresh failed for $label: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      return false;
+    }
   }
 
   @override
@@ -168,43 +364,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   _buildSectionTitle('Les recommandations', '/recommended'),
                   const SizedBox(height: 16),
-                  activitiesAsyncValue.when(
-                    data: (activities) {
-                      if (activities.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: Text('Aucune activité trouvée.'),
-                        );
-                      }
-                      return SizedBox(
-                        height: 360,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: activities.length,
-                          itemBuilder: (context, index) {
-                            final activity = activities[index];
-                            return Container(
-                              width: 200,
-                              margin: const EdgeInsets.only(right: 16),
-                              child: EventCard(
-                                activity: activity,
-                                heroTagPrefix: 'home_main',
-                                isCompact: true,
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                    loading: () => _buildCarouselSkeleton(),
-                    error: (err, stack) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        ApiResponseHandler.extractError(err),
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
+                  _buildActivityState(
+                    activitiesAsyncValue,
+                    emptyMessage:
+                        'Aucune recommandation disponible pour le moment.',
+                    heroTagPrefix: 'home_main',
+                    onRetry: () =>
+                        ref.read(homeFeedProvider.notifier).refresh(),
                   ),
                 ],
               ),
@@ -330,7 +496,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ref: ref,
                   featureName: 'voir vos messages',
                 );
-                if (allowed && mounted) {
+                if (allowed && context.mounted) {
                   context.push('/messages');
                 }
               },
@@ -424,7 +590,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }) {
     final activitiesAsyncValue = ref.watch(provider);
     final userLocationAsync = ref.watch(userLocationProvider);
-    final cityName = userLocationAsync.value?.cityName;
+    final cityName = userLocationAsync.valueOrNull?.cityName;
 
     // Construct dynamic title: "Title • City >"
     final title = cityName != null ? '$baseTitle • $cityName' : baseTitle;
@@ -458,39 +624,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        activitiesAsyncValue.when(
-          data: (activities) {
-            if (activities.isEmpty) {
-              return const SizedBox.shrink();
-            }
-            return SizedBox(
-              height: 360,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: activities.length,
-                itemBuilder: (context, index) {
-                  final activity = activities[index];
-                  return Container(
-                    width: 200,
-                    margin: const EdgeInsets.only(right: 16),
-                    child: EventCard(
-                      activity: activity,
-                      isCompact: true,
-                      isToday: isToday,
-                      isTomorrow: isTomorrow,
-                      heroTagPrefix: isTomorrow ? 'tomorrow' : 'today',
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-          loading: () => _buildCarouselSkeleton(),
-          error: (err, stack) => const SizedBox.shrink(),
+        _buildActivityState(
+          activitiesAsyncValue,
+          emptyMessage: emptyMessage,
+          heroTagPrefix: isTomorrow ? 'tomorrow' : 'today',
+          isToday: isToday,
+          isTomorrow: isTomorrow,
+          onRetry: () => ref.read(homeFeedProvider.notifier).refresh(),
         ),
         const SizedBox(height: 4),
       ],
+    );
+  }
+
+  Widget _buildActivityState(
+    AsyncValue<List<Activity>> activitiesAsyncValue, {
+    required String emptyMessage,
+    required String heroTagPrefix,
+    required Future<void> Function() onRetry,
+    bool isToday = false,
+    bool isTomorrow = false,
+  }) {
+    return activitiesAsyncValue.when(
+      skipError: true,
+      data: (activities) {
+        if (activities.isEmpty) {
+          return HomeSectionFeedback(message: emptyMessage);
+        }
+
+        return SizedBox(
+          height: 360,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: activities.length,
+            itemBuilder: (context, index) {
+              final activity = activities[index];
+              return Container(
+                width: 200,
+                margin: const EdgeInsets.only(right: 16),
+                child: EventCard(
+                  activity: activity,
+                  isCompact: true,
+                  isToday: isToday,
+                  isTomorrow: isTomorrow,
+                  heroTagPrefix: heroTagPrefix,
+                ),
+              );
+            },
+          ),
+        );
+      },
+      loading: _buildCarouselSkeleton,
+      error: (error, _) => HomeSectionFeedback(
+        message: ApiResponseHandler.extractError(error),
+        isError: true,
+        onRetry: onRetry,
+      ),
     );
   }
 
@@ -571,6 +761,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final citiesAsyncValue = ref.watch(homeCitiesProvider);
 
     return citiesAsyncValue.when(
+      skipError: true,
       data: (cities) {
         // Masquer la section si aucune ville disponible
         if (cities.isEmpty) return const SizedBox.shrink();

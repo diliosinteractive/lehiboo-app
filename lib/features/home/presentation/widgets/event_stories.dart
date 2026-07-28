@@ -51,6 +51,7 @@ class EventStories extends ConsumerWidget {
     final viewedStories = ref.watch(viewedStoriesProvider);
 
     return storiesAsync.when(
+      skipError: true,
       data: (stories) {
         if (stories.isEmpty) return const SizedBox.shrink();
 

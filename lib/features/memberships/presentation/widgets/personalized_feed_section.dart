@@ -22,6 +22,7 @@ class PersonalizedFeedSection extends ConsumerWidget {
     final feedAsync = ref.watch(personalizedFeedProvider);
 
     return feedAsync.when(
+      skipError: true,
       // Loading state is silent — the home screen has plenty of other
       // content to show, no need to flash a spinner here.
       loading: () => const SizedBox.shrink(),

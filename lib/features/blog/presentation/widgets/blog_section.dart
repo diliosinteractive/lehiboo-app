@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/features/home/presentation/widgets/home_section_feedback.dart';
+
 import '../providers/blog_providers.dart';
 import 'blog_post_card.dart';
 
@@ -44,6 +47,7 @@ class BlogSection extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         postsAsync.when(
+          skipError: true,
           data: (posts) {
             if (posts.isEmpty) {
               return const Padding(
@@ -99,31 +103,11 @@ class BlogSection extends ConsumerWidget {
               },
             ),
           ),
-          error: (error, _) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Erreur: $error',
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () => ref.refresh(latestBlogPostsProvider),
-                  ),
-                ],
-              ),
-            ),
+          error: (error, _) => HomeSectionFeedback(
+            message: ApiResponseHandler.extractError(error),
+            isError: true,
+            onRetry: () =>
+                ref.refresh(latestBlogPostsProvider.future).then<void>((_) {}),
           ),
         ),
       ],
