@@ -18,6 +18,7 @@ import '../widgets/detail/event_compact_header.dart';
 import '../widgets/detail/event_social_proof.dart';
 import '../widgets/detail/event_organizer_card.dart';
 import '../widgets/detail/event_date_selector.dart';
+import '../widgets/detail/event_discovery_pricing_section.dart';
 import '../widgets/detail/event_ticket_card.dart';
 import '../widgets/detail/event_practical_info.dart';
 import '../widgets/detail/event_accessibility_section.dart';
@@ -412,7 +413,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               // 5b. Tarification (discovery events only)
               if (!event.hasDirectBooking) ...[
-                _buildPricingSection(event),
+                EventDiscoveryPricingSection(event: event),
                 const SizedBox(height: 24),
               ],
 
@@ -841,142 +842,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPricingSection(Event event) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tarification',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: _buildPriceContent(event),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPriceContent(Event event) {
-    final pricingType = event.discoveryPricingType;
-
-    // Null → undefined pricing
-    if (pricingType == null) {
-      return Row(
-        children: [
-          Icon(Icons.info_outline, size: 16, color: Colors.grey.shade400),
-          const SizedBox(width: 8),
-          Text(
-            'Non définie',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Free
-    if (pricingType == 'free') {
-      return Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: HbColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Text(
-              'Gratuit',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: HbColors.success,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            'Aucun frais d\'entrée',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-          ),
-        ],
-      );
-    }
-
-    // Paid → display indicative prices if available
-    if (event.indicativePrices.isNotEmpty) {
-      final sorted = List.of(event.indicativePrices)
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Prix indicatifs communiqués par l\'organisateur',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-          ),
-          const SizedBox(height: 12),
-          for (var i = 0; i < sorted.length; i++) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    sorted[i].label,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: HbColors.textPrimary,
-                    ),
-                  ),
-                ),
-                Text(
-                  sorted[i].formattedPrice,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: HbColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            if (i < sorted.length - 1)
-              Divider(height: 20, color: Colors.grey.shade200),
-          ],
-        ],
-      );
-    }
-
-    // Paid but no indicative prices
-    return Row(
-      children: [
-        Icon(Icons.info_outline, size: 16, color: Colors.grey.shade400),
-        const SizedBox(width: 8),
-        Text(
-          'Non définie',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade600,
-          ),
-        ),
-      ],
     );
   }
 
