@@ -19,15 +19,17 @@ class MobileConfigDataSource {
   /// Get mobile app configuration.
   ///
   /// Returns hero section, banners, and customizable texts.
-  /// Falls back to [MobileAppConfig.defaultConfig] on any error.
+  ///
+  /// Errors remain observable to the provider. Presentation consumers use
+  /// [MobileAppConfig.defaultConfig] while no server value is available.
   Future<MobileAppConfig> getConfig() async {
     try {
       final response = await _dio.get('/mobile/config');
       final payload = ApiResponseHandler.extractObject(response.data);
       return MobileAppConfig.fromJson(payload);
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('MobileConfig error: ${ApiResponseHandler.extractError(e)}');
-      return MobileAppConfig.defaultConfig();
+      Error.throwWithStackTrace(e, stackTrace);
     }
   }
 }

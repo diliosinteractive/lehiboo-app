@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../events/data/models/event_dto.dart';
 import '../models/invitation_dto.dart';
 import '../models/membership_dto.dart';
@@ -168,7 +169,10 @@ class MembershipsApiDataSource {
     if (data is Map<String, dynamic>) {
       return PersonalizedFeedDto.fromJson(data);
     }
-    return PersonalizedFeedDto.empty();
+    throw ApiFormatException(
+      'Expected personalized feed data to be an object',
+      body,
+    );
   }
 
   /// `GET /me/private-events` — spec §10. Paginated event list filtered to
@@ -194,10 +198,7 @@ class MembershipsApiDataSource {
     final meta = body['meta'];
 
     final events = data is List
-        ? data
-            .whereType<Map<String, dynamic>>()
-            .map(EventDto.fromJson)
-            .toList()
+        ? data.whereType<Map<String, dynamic>>().map(EventDto.fromJson).toList()
         : <EventDto>[];
 
     int resolvedPage = page;

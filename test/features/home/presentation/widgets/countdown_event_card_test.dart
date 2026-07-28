@@ -90,4 +90,54 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  testWidgets('urgency membership updates as the 12-hour window moves', (
+    tester,
+  ) async {
+    var now = DateTime.now();
+    final start = now.add(const Duration(hours: 12, minutes: 30));
+    final activity = Activity(
+      id: 'moving-window-event',
+      title: 'Moving window event',
+      slug: 'moving-window-event',
+      description: '',
+      discoveryPricingType: DiscoveryPricingType.paid,
+      nextSlot: Slot(
+        id: 'moving-window-slot',
+        activityId: 'moving-window-event',
+        startDateTime: start,
+        endDateTime: start.add(const Duration(hours: 1)),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          isAuthenticatedProvider.overrideWithValue(false),
+          favoritesRepositoryImplProvider.overrideWithValue(
+            _FakeFavoritesRepository(),
+          ),
+          homeNowProvider.overrideWithValue(() => now),
+          homeTodayActivitiesProvider.overrideWith(
+            () => _FakeHomeTodayActivitiesNotifier([activity]),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: UrgencySection()),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Moving window event'), findsNothing);
+
+    now = now.add(const Duration(minutes: 31));
+    await tester.pump(const Duration(minutes: 1));
+    expect(find.text('Moving window event'), findsOneWidget);
+
+    now = start.add(const Duration(minutes: 1));
+    await tester.pump(const Duration(minutes: 1));
+    expect(find.text('Moving window event'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

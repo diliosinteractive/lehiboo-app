@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +15,61 @@ import 'user_location_provider.dart';
 import '../../../../features/events/data/models/home_feed_response_dto.dart'
     show HomeFeedDataDto;
 import '../../../events/data/mappers/event_mapper.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+
+/// Maximum age of Home data while the provider remains cached.
+///
+/// Date-sensitive feeds refresh sooner when the local day changes.
+const homeDataFreshness = Duration(minutes: 15);
+
+/// Injectable wall clock used by date-sensitive Home providers and widgets.
+final homeNowProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+mixin _RefreshableHomeProvider<T> on AutoDisposeAsyncNotifier<T> {
+  Future<void>? _refreshInFlight;
+  Timer? _freshnessTimer;
+  KeepAliveLink? _cacheLink;
+
+  void scheduleBoundedRefresh({
+    required DateTime now,
+    bool refreshAtMidnight = false,
+  }) {
+    var delay = homeDataFreshness;
+    if (refreshAtMidnight) {
+      final nextDay = DateTime(now.year, now.month, now.day + 1);
+      final untilNextDay = nextDay.difference(now);
+      if (untilNextDay < delay) {
+        delay = untilNextDay;
+      }
+    }
+
+    _cacheLink?.close();
+    _cacheLink = ref.keepAlive();
+    _freshnessTimer?.cancel();
+    _freshnessTimer = Timer(delay, () {
+      _cacheLink?.close();
+      _cacheLink = null;
+      ref.invalidateSelf();
+    });
+    ref.onDispose(() {
+      _freshnessTimer?.cancel();
+      _freshnessTimer = null;
+      _cacheLink?.close();
+      _cacheLink = null;
+    });
+  }
+
+  Future<void> reload() {
+    return _refreshInFlight ??= _reload().whenComplete(() {
+      _refreshInFlight = null;
+    });
+  }
+
+  Future<void> _reload() async {
+    ref.invalidateSelf();
+    await future;
+  }
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Home Feed
@@ -22,27 +79,33 @@ final homeFeedProvider = AutoDisposeAsyncNotifierProvider<HomeFeedNotifier, Home
   HomeFeedNotifier.new,
 );
 
-class HomeFeedNotifier extends AutoDisposeAsyncNotifier<HomeFeedDataDto> {
+class HomeFeedNotifier extends AutoDisposeAsyncNotifier<HomeFeedDataDto>
+    with _RefreshableHomeProvider<HomeFeedDataDto> {
   @override
   Future<HomeFeedDataDto> build() async {
+    // The endpoint is auth-optional and can include member-only activities.
+    // Key the cache by identity so logout/account switching immediately drops
+    // the previous account's feed and Riverpod discards any late response.
+    ref.watch(
+      authProvider.select(
+        (state) => state.isAuthenticated ? state.user?.id : null,
+      ),
+    );
     final eventRepository = ref.watch(eventRepositoryProvider);
     final userLocationAsync = ref.watch(userLocationProvider);
     final userLocation = userLocationAsync.valueOrNull;
+    final now = ref.watch(homeNowProvider)();
 
-    final result = await eventRepository.getHomeFeed(
+    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
+    return eventRepository.getHomeFeed(
       lat: userLocation?.lat,
       lng: userLocation?.lng,
       radius: userLocation != null ? 30 : null,
       limit: 10,
     );
-    ref.keepAlive();
-    return result;
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
+  Future<void> refresh() => reload();
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -53,25 +116,22 @@ final homeTodayActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeTodayAc
   HomeTodayActivitiesNotifier.new,
 );
 
-class HomeTodayActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
+class HomeTodayActivitiesNotifier
+    extends AutoDisposeAsyncNotifier<List<Activity>>
+    with _RefreshableHomeProvider<List<Activity>> {
   @override
   Future<List<Activity>> build() async {
+    final now = ref.watch(homeNowProvider)();
+    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
     final feed = await ref.watch(homeFeedProvider.future);
 
-    if (feed.today.isEmpty) {
-      ref.keepAlive();
-      return [];
-    }
+    if (feed.today.isEmpty) return [];
 
     final events = feed.today.map(EventMapper.toEvent).toList();
-    ref.keepAlive();
     return EventToActivityMapper.toActivities(events);
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
+  Future<void> refresh() => reload();
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -82,25 +142,22 @@ final homeTomorrowActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeTomo
   HomeTomorrowActivitiesNotifier.new,
 );
 
-class HomeTomorrowActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
+class HomeTomorrowActivitiesNotifier
+    extends AutoDisposeAsyncNotifier<List<Activity>>
+    with _RefreshableHomeProvider<List<Activity>> {
   @override
   Future<List<Activity>> build() async {
+    final now = ref.watch(homeNowProvider)();
+    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
     final feed = await ref.watch(homeFeedProvider.future);
 
-    if (feed.tomorrow.isEmpty) {
-      ref.keepAlive();
-      return [];
-    }
+    if (feed.tomorrow.isEmpty) return [];
 
     final events = feed.tomorrow.map(EventMapper.toEvent).toList();
-    ref.keepAlive();
     return EventToActivityMapper.toActivities(events);
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
+  Future<void> refresh() => reload();
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -111,13 +168,15 @@ final categoriesProvider = AutoDisposeAsyncNotifierProvider<CategoriesNotifier, 
   CategoriesNotifier.new,
 );
 
-class CategoriesNotifier extends AutoDisposeAsyncNotifier<List<EventCategoryInfo>> {
+class CategoriesNotifier
+    extends AutoDisposeAsyncNotifier<List<EventCategoryInfo>>
+    with _RefreshableHomeProvider<List<EventCategoryInfo>> {
   @override
   Future<List<EventCategoryInfo>> build() async {
     final eventRepository = ref.watch(eventRepositoryProvider);
+    scheduleBoundedRefresh(now: ref.watch(homeNowProvider)());
 
     final categories = await eventRepository.getCategories();
-    ref.keepAlive();
     return categories
         .map((cat) => EventCategoryInfo(
               id: cat.id.toString(),
@@ -129,10 +188,7 @@ class CategoriesNotifier extends AutoDisposeAsyncNotifier<List<EventCategoryInfo
         .toList();
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
+  Future<void> refresh() => reload();
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -143,17 +199,18 @@ final homeCitiesProvider = AutoDisposeAsyncNotifierProvider<HomeCitiesNotifier, 
   HomeCitiesNotifier.new,
 );
 
-class HomeCitiesNotifier extends AutoDisposeAsyncNotifier<List<City>> {
+class HomeCitiesNotifier extends AutoDisposeAsyncNotifier<List<City>>
+    with _RefreshableHomeProvider<List<City>> {
   @override
   Future<List<City>> build() async {
     final eventRepository = ref.watch(eventRepositoryProvider);
+    scheduleBoundedRefresh(now: ref.watch(homeNowProvider)());
 
     final cities = await eventRepository.getCities();
 
     final sortedCities = List.of(cities)
       ..sort((a, b) => (b.eventCount ?? 0).compareTo(a.eventCount ?? 0));
 
-    ref.keepAlive();
     return sortedCities
         .take(6)
         .map((city) {
@@ -173,10 +230,7 @@ class HomeCitiesNotifier extends AutoDisposeAsyncNotifier<List<City>> {
         .toList();
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
+  Future<void> refresh() => reload();
 }
 
 /// Get a placeholder image URL for a city
@@ -224,19 +278,16 @@ final mobileAppConfigProvider = AutoDisposeAsyncNotifierProvider<MobileAppConfig
   MobileAppConfigNotifier.new,
 );
 
-class MobileAppConfigNotifier extends AutoDisposeAsyncNotifier<MobileAppConfig> {
+class MobileAppConfigNotifier extends AutoDisposeAsyncNotifier<MobileAppConfig>
+    with _RefreshableHomeProvider<MobileAppConfig> {
   @override
   Future<MobileAppConfig> build() async {
     final dataSource = ref.watch(mobileConfigDataSourceProvider);
-    final result = await dataSource.getConfig();
-    ref.keepAlive();
-    return result;
+    scheduleBoundedRefresh(now: ref.watch(homeNowProvider)());
+    return dataSource.getConfig();
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
+  Future<void> refresh() => reload();
 }
 
 /// Model for a saved/recent search
@@ -369,23 +420,19 @@ final homeActivitiesProvider = AutoDisposeAsyncNotifierProvider<HomeActivitiesNo
   HomeActivitiesNotifier.new,
 );
 
-class HomeActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>> {
+class HomeActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>>
+    with _RefreshableHomeProvider<List<Activity>> {
   @override
   Future<List<Activity>> build() async {
+    final now = ref.watch(homeNowProvider)();
+    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
     final feed = await ref.watch(homeFeedProvider.future);
 
-    if (feed.recommended.isEmpty) {
-      ref.keepAlive();
-      return [];
-    }
+    if (feed.recommended.isEmpty) return [];
 
     final events = feed.recommended.map(EventMapper.toEvent).toList();
-    ref.keepAlive();
     return EventToActivityMapper.toActivities(events);
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
+  Future<void> refresh() => reload();
 }

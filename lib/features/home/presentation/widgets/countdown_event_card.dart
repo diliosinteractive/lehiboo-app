@@ -1154,20 +1154,44 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
 }
 
 /// Section urgency - carousel horizontal avec design complet
-class UrgencySection extends ConsumerWidget {
+class UrgencySection extends ConsumerStatefulWidget {
   const UrgencySection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UrgencySection> createState() => _UrgencySectionState();
+}
+
+class _UrgencySectionState extends ConsumerState<UrgencySection> {
+  static const _membershipRefreshInterval = Duration(minutes: 1);
+  late final Timer _membershipTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _membershipTimer = Timer.periodic(_membershipRefreshInterval, (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _membershipTimer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final activitiesAsync = ref.watch(homeTodayActivitiesProvider);
+    final now = ref.watch(homeNowProvider)();
 
     return activitiesAsync.when(
+      skipError: true,
       data: (activities) {
-        final now = DateTime.now();
+        final urgencyLimit = now.add(const Duration(hours: 12));
         final urgentActivities = activities.where((activity) {
-          if (activity.nextSlot == null) return false;
-          final diff = activity.nextSlot!.startDateTime.difference(now);
-          return diff.inHours >= 0 && diff.inHours <= 12;
+          final start = activity.nextSlot?.startDateTime;
+          if (start == null) return false;
+          return !start.isBefore(now) && !start.isAfter(urgencyLimit);
         }).take(6).toList();
 
         if (urgentActivities.isEmpty) return const SizedBox.shrink();

@@ -16,9 +16,8 @@ final heroSlidesApiDataSourceProvider =
 /// Spec: docs/HERO_SLIDES_MOBILE_SPEC.md.
 ///
 /// `GET /hero-slides` requires no auth and returns rows already sorted
-/// by the server. Errors collapse to an empty list so the home screen
-/// can fall back to the static hero image cleanly — the carousel
-/// "never visibly fails."
+/// by the server. Failures remain observable to the provider; the Home UI
+/// independently falls back to its static hero image.
 class HeroSlidesApiDataSource {
   final Dio _dio;
 
@@ -31,9 +30,9 @@ class HeroSlidesApiDataSource {
           .whereType<Map<String, dynamic>>()
           .map(HeroSlideDto.fromJson)
           .toList(growable: false);
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('HeroSlides error: ${ApiResponseHandler.extractError(e)}');
-      return const [];
+      Error.throwWithStackTrace(e, stackTrace);
     }
   }
 }
