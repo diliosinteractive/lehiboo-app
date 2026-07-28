@@ -22,6 +22,9 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
     final favorites = await _apiDataSource.getFavorites(listId: listId);
 
     return favorites.map((f) {
+      final hasDirectBooking = f.bookingMode != null
+          ? f.bookingMode != 'discovery'
+          : f.discoveryPricingType == null;
       final dateTime = DateTime.tryParse(f.date) ?? DateTime.now();
       DateTime startDate = dateTime;
 
@@ -70,7 +73,8 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
         isFeatured: false,
         isRecommended: false,
         status: f.isUpcoming ? EventStatus.upcoming : EventStatus.completed,
-        hasDirectBooking: true,
+        hasDirectBooking: hasDirectBooking,
+        discoveryPricingType: f.discoveryPricingType,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         views: 0,

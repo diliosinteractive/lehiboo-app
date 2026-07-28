@@ -524,6 +524,7 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
         northEastLng: filter.northEastLng,
         southWestLat: filter.southWestLat,
         southWestLng: filter.southWestLng,
+        freeOnly: filter.onlyFree,
         perPage: filter.perPage,
         page: filter.page,
       );

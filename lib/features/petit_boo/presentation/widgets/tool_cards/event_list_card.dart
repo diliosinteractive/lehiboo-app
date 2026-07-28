@@ -253,7 +253,16 @@ class _EventItemCard extends StatelessWidget {
     final time = _getStringValue(['time', 'next_slot_time', 'start_time']);
 
     // Price handling
-    final isFree = item['is_free'] == true;
+    final bookingMode = _getStringValue(['booking_mode', 'bookingMode']);
+    final discoveryPricingType = _getStringValue([
+      'discovery_pricing_type',
+      'discoveryPricingType',
+    ]);
+    final isDiscovery =
+        bookingMode == 'discovery' || discoveryPricingType != null;
+    final isFree = isDiscovery
+        ? discoveryPricingType == 'free'
+        : item['is_free'] == true;
     final priceFrom = item['price_from'] ?? item['price_min'] ?? item['price'];
     final priceDisplay = _getStringValue(['price_display']);
 

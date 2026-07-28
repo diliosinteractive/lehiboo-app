@@ -172,6 +172,8 @@ class FavoriteEventDto {
   final String? favoritedAt;
   final String? organizerName;
   final String? organizerLogo;
+  final String? bookingMode;
+  final String? discoveryPricingType;
   // Liste informations
   final String? listId;
   final String? listName;
@@ -193,6 +195,8 @@ class FavoriteEventDto {
     this.favoritedAt,
     this.organizerName,
     this.organizerLogo,
+    this.bookingMode,
+    this.discoveryPricingType,
     this.listId,
     this.listName,
     this.listColor,
@@ -247,6 +251,10 @@ class FavoriteEventDto {
       favoritedAt: _parseString(json['favorited_at']),
       organizerName: orgName,
       organizerLogo: orgLogo,
+      bookingMode:
+          _parseString(json['booking_mode']) ?? _parseString(json['bookingMode']),
+      discoveryPricingType: _parseString(json['discovery_pricing_type']) ??
+          _parseString(json['discoveryPricingType']),
       listId: listId,
       listName: listName,
       listColor: listColor,
