@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/services/volume_routing.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 import 'package:lehiboo/features/home/presentation/widgets/story_video_player.dart';
 import 'package:lehiboo/features/stories/domain/entities/story.dart';
 import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
@@ -13,7 +15,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
 /// Provider pour suivre les stories vues
-final viewedStoriesProvider = StateNotifierProvider<ViewedStoriesNotifier, Set<String>>((ref) {
+final viewedStoriesProvider =
+    StateNotifierProvider<ViewedStoriesNotifier, Set<String>>((ref) {
   return ViewedStoriesNotifier();
 });
 
@@ -27,18 +30,23 @@ class ViewedStoriesNotifier extends StateNotifier<Set<String>> {
   Future<void> _loadViewedStories() async {
     final prefs = await SharedPreferences.getInstance();
     final viewed = prefs.getStringList(_storageKey) ?? [];
-    state = viewed.toSet();
+    final merged = {...viewed, ...state};
+    state = merged;
+    if (merged.length != viewed.length) {
+      await prefs.setStringList(_storageKey, merged.toList());
+    }
   }
 
-  Future<void> markAsViewed(String storyId) async {
-    if (state.contains(storyId)) return;
+  Future<void> markAsViewed(Story story) async {
+    final storyViewKey = story.viewedStateKey;
+    if (state.contains(storyViewKey)) return;
 
-    state = {...state, storyId};
+    state = {...state, storyViewKey};
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_storageKey, state.toList());
   }
 
-  bool isViewed(String storyId) => state.contains(storyId);
+  bool isViewed(Story story) => state.contains(story.viewedStateKey);
 }
 
 /// Stories d'événements trending, style Instagram
@@ -55,85 +63,70 @@ class EventStories extends ConsumerWidget {
       data: (stories) {
         if (stories.isEmpty) return const SizedBox.shrink();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section header "À la une"
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-              child: Row(
-                children: [
-                  // Icône avec fond gradient
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [HbColors.brandPrimary, HbColors.brandPrimaryLight],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'À la une',
-                    style: GoogleFonts.montserrat(
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section header "À la une"
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: Row(
+                  children: [
+                    HomeSectionTitle(
+                      title: context.l10n.homeStoriesFeaturedTitle,
                       fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textSlate,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Badge "NEW" si des stories non vues
-                  if (stories.any((s) => !viewedStories.contains(s.uuid)))
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: HbColors.brandPrimary,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text(
-                        'NEW',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                    const SizedBox(width: 8),
+                    // Badge "NEW" si des stories non vues
+                    if (stories
+                        .any((s) => !viewedStories.contains(s.viewedStateKey)))
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: HbColors.brandPrimary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          context.l10n.homeStoriesNewBadge,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            // Stories list
-            SizedBox(
-              height: 124,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: stories.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 16),
-                itemBuilder: (context, index) {
-                  final story = stories[index];
-                  final isViewed = viewedStories.contains(story.uuid);
+              // Stories list
+              SizedBox(
+                height: 124,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: stories.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 16),
+                  itemBuilder: (context, index) {
+                    final story = stories[index];
+                    final isViewed =
+                        viewedStories.contains(story.viewedStateKey);
 
-                  return _StoryCircle(
-                    story: story,
-                    isViewed: isViewed,
-                    onTap: () => _openStoryViewer(context, ref, stories, index),
-                  );
-                },
+                    return _StoryCircle(
+                      story: story,
+                      isViewed: isViewed,
+                      onTap: () =>
+                          _openStoryViewer(context, ref, stories, index),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
       loading: () => Column(
@@ -141,7 +134,7 @@ class EventStories extends ConsumerWidget {
         children: [
           // Skeleton header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             child: Row(
               children: [
                 Container(
@@ -181,7 +174,11 @@ class EventStories extends ConsumerWidget {
     );
   }
 
-  void _openStoryViewer(BuildContext context, WidgetRef ref, List<Story> stories, int initialIndex) {
+  void _openStoryViewer(BuildContext context, WidgetRef ref,
+      List<Story> stories, int initialIndex) {
+    ref
+        .read(viewedStoriesProvider.notifier)
+        .markAsViewed(stories[initialIndex]);
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
@@ -215,7 +212,8 @@ class _StoryCircle extends StatefulWidget {
   State<_StoryCircle> createState() => _StoryCircleState();
 }
 
-class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderStateMixin {
+class _StoryCircleState extends State<_StoryCircle>
+    with SingleTickerProviderStateMixin {
   late AnimationController _shimmerController;
 
   @override
@@ -284,7 +282,8 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
                         ? null
                         : [
                             BoxShadow(
-                              color: HbColors.brandPrimary.withValues(alpha: 0.3),
+                              color:
+                                  HbColors.brandPrimary.withValues(alpha: 0.3),
                               blurRadius: 8,
                               spreadRadius: 0,
                             ),
@@ -320,7 +319,8 @@ class _StoryCircleState extends State<_StoryCircle> with SingleTickerProviderSta
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.2),
+                                      color:
+                                          Colors.black.withValues(alpha: 0.2),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -534,7 +534,8 @@ class _StoryViewerOverlay extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_StoryViewerOverlay> createState() => _StoryViewerOverlayState();
+  ConsumerState<_StoryViewerOverlay> createState() =>
+      _StoryViewerOverlayState();
 }
 
 class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
@@ -639,12 +640,14 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
   void _markCurrentAsViewed() {
     final currentStory = widget.stories[_currentIndex];
-    ref.read(viewedStoriesProvider.notifier).markAsViewed(currentStory.uuid);
+    ref.read(viewedStoriesProvider.notifier).markAsViewed(currentStory);
   }
 
   void _recordCurrentImpression() {
     final currentStory = widget.stories[_currentIndex];
-    ref.read(activeStoriesProvider.notifier).recordImpression(currentStory.uuid);
+    ref
+        .read(activeStoriesProvider.notifier)
+        .recordImpression(currentStory.uuid);
   }
 
   void _goToNextStory() {
@@ -690,7 +693,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
     _progressController.forward();
   }
 
-  void _onTapDown(TapDownDetails details, double screenWidth) {
+  void _onTapUp(TapUpDetails details, double screenWidth) {
     final x = details.globalPosition.dx;
     if (x < screenWidth / 3) {
       _goToPreviousStory();
@@ -729,7 +732,7 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
-        onTapDown: (details) => _onTapDown(details, screenWidth),
+        onTapUp: (details) => _onTapUp(details, screenWidth),
         onLongPressStart: _onLongPressStart,
         onLongPressEnd: _onLongPressEnd,
         onVerticalDragEnd: _onVerticalDragEnd,
@@ -753,7 +756,8 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
             // Progress indicators
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   children: List.generate(widget.stories.length, (index) {
                     return Expanded(
@@ -774,8 +778,10 @@ class _StoryViewerOverlayState extends ConsumerState<_StoryViewerOverlay>
 
                             return LinearProgressIndicator(
                               value: progress,
-                              backgroundColor: Colors.white.withValues(alpha: 0.3),
-                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.3),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.white),
                             );
                           },
                         ),
@@ -874,13 +880,14 @@ class _StoryContent extends StatelessWidget {
               // Category badge
               if (story.categoryName != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: HbColors.brandPrimary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    _buildCategoryLabel(),
+                    _buildCategoryLabel(context),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -909,20 +916,25 @@ class _StoryContent extends StatelessWidget {
               // Location & Date
               Row(
                 children: [
-                  const Icon(Icons.location_on_outlined, color: Colors.white70, size: 16),
+                  const Icon(Icons.location_on_outlined,
+                      color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    story.eventCity ?? 'France',
+                    story.eventCity ?? context.l10n.commonCountryFrance,
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 16),
+                  const Icon(Icons.calendar_today_outlined,
+                      color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    _formatDate(story.startDate),
+                    _formatDate(
+                      context,
+                      story.eventStartDate ?? story.startDate,
+                    ),
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
@@ -950,9 +962,9 @@ class _StoryContent extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Voir l\'activité',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.homeStoryViewActivity,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -966,7 +978,7 @@ class _StoryContent extends StatelessWidget {
     );
   }
 
-  String _buildCategoryLabel() {
+  String _buildCategoryLabel(BuildContext context) {
     final parts = <String>[];
     if (story.categoryName != null && story.categoryName!.isNotEmpty) {
       parts.add(story.categoryName!);
@@ -974,7 +986,9 @@ class _StoryContent extends StatelessWidget {
     if (story.eventTagName != null && story.eventTagName!.isNotEmpty) {
       parts.add(story.eventTagName!);
     }
-    parts.add(story.eventBookingMode == 'booking' ? 'Billetterie' : 'Découverte');
+    parts.add(story.eventBookingMode == 'booking'
+        ? context.l10n.homeStoryBookingLabel
+        : context.l10n.homeStoryDiscoveryLabel);
     return parts.join(' \u00b7 ');
   }
 
@@ -991,20 +1005,16 @@ class _StoryContent extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    if (dateOnly == today) {
-      return 'Aujourd\'hui';
-    } else if (dateOnly == tomorrow) {
-      return 'Demain';
-    } else {
-      final weekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-      final year = (date.year % 100).toString().padLeft(2, '0');
-      return '${weekdays[date.weekday - 1]} ${date.day}/${date.month}/$year';
+  String _formatDate(BuildContext context, DateTime date) {
+    if (DateUtils.isSameDay(date, DateTime.now())) {
+      return context.l10n.commonToday;
     }
+    if (DateUtils.isSameDay(
+        date, DateTime.now().add(const Duration(days: 1)))) {
+      return context.l10n.commonTomorrow;
+    }
+    return context
+        .appDateFormat('EEE d/M/yyyy', enPattern: 'EEE, M/d/yyyy')
+        .format(date);
   }
 }

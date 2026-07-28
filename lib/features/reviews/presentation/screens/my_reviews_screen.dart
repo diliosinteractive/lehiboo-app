@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/widgets/feedback/hb_feedback.dart';
 import '../../domain/entities/user_review.dart';
@@ -76,8 +77,8 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
       case ReviewActionSuccess():
         ref.read(userReviewsProvider.notifier).removeLocal(review.uuid);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Avis supprimé'),
+          SnackBar(
+            content: Text(context.l10n.reviewsDeleteSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -93,7 +94,8 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
 
   void _scrollToHighlightIfNeeded(List<UserReview> items) {
     if (_highlightScrolled || widget.highlightReviewUuid == null) return;
-    final target = items.indexWhere((r) => r.uuid == widget.highlightReviewUuid);
+    final target =
+        items.indexWhere((r) => r.uuid == widget.highlightReviewUuid);
     if (target == -1) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -121,7 +123,7 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Mes Avis'),
+        title: Text(context.l10n.profileReviewsTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: HbColors.textPrimary,
@@ -155,14 +157,12 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
 
     if (state.isEmpty) {
       return ListView(
-        children: const [
-          SizedBox(height: 80),
+        children: [
+          const SizedBox(height: 80),
           HbEmptyState(
             icon: Icons.rate_review_outlined,
-            title: 'Aucun avis',
-            message:
-                'Vous n\'avez encore laissé aucun avis. Une fois un événement '
-                'terminé, vous pourrez partager votre expérience !',
+            title: context.l10n.reviewsMyEmptyTitle,
+            message: context.l10n.reviewsMyEmptyBody,
           ),
         ],
       );

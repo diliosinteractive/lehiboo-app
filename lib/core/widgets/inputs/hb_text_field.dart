@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/l10n.dart';
 import '../../themes/hb_theme.dart';
 
 class HbTextField extends StatelessWidget {
@@ -57,14 +58,14 @@ class HbSearchField extends StatelessWidget {
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onClear;
-  final String hint;
+  final String? hint;
 
   const HbSearchField({
     super.key,
     this.controller,
     this.onChanged,
     this.onClear,
-    this.hint = 'Rechercher...',
+    this.hint,
   });
 
   @override
@@ -75,7 +76,7 @@ class HbSearchField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       decoration: InputDecoration(
-        hintText: hint,
+        hintText: hint ?? context.l10n.commonSearchHint,
         prefixIcon: const Icon(Icons.search),
         suffixIcon: controller?.text.isNotEmpty == true
             ? IconButton(

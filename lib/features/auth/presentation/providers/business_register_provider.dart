@@ -2,18 +2,20 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../domain/entities/user.dart';
 import '../../data/models/business_register_dto.dart';
-import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../utils/birth_date_validation.dart';
 
 /// Steps for business registration
 enum BusinessRegisterStep {
-  personalInfo,    // Step 1
+  personalInfo, // Step 1
   otpVerification, // Step 2
-  companyInfo,     // Step 3
-  usageMode,       // Step 4
-  terms,           // Step 5
+  companyInfo, // Step 3
+  usageMode, // Step 4
+  terms, // Step 5
 }
 
 /// Organization types
@@ -34,17 +36,6 @@ extension OrganizationTypeExtension on OrganizationType {
         return 'municipality';
     }
   }
-
-  String get label {
-    switch (this) {
-      case OrganizationType.company:
-        return 'Entreprise';
-      case OrganizationType.association:
-        return 'Association';
-      case OrganizationType.municipality:
-        return 'Collectivité';
-    }
-  }
 }
 
 /// Usage modes
@@ -60,24 +51,6 @@ extension UsageModeExtension on UsageMode {
         return 'personal';
       case UsageMode.team:
         return 'team';
-    }
-  }
-
-  String get label {
-    switch (this) {
-      case UsageMode.personal:
-        return 'Utilisation personnelle';
-      case UsageMode.team:
-        return 'Équipe';
-    }
-  }
-
-  String get description {
-    switch (this) {
-      case UsageMode.personal:
-        return 'Je suis le seul à utiliser le compte';
-      case UsageMode.team:
-        return 'Plusieurs personnes utiliseront le compte';
     }
   }
 }
@@ -251,7 +224,8 @@ class BusinessRegisterState {
       acceptTerms: acceptTerms ?? this.acceptTerms,
       acceptBusinessTerms: acceptBusinessTerms ?? this.acceptBusinessTerms,
       // Result
-      isRegistrationComplete: isRegistrationComplete ?? this.isRegistrationComplete,
+      isRegistrationComplete:
+          isRegistrationComplete ?? this.isRegistrationComplete,
       organization: organization ?? this.organization,
       authenticatedUser: authenticatedUser ?? this.authenticatedUser,
     );
@@ -275,7 +249,8 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
   final AuthRepository _authRepository;
   Timer? _cooldownTimer;
 
-  BusinessRegisterNotifier(this._authRepository) : super(const BusinessRegisterState());
+  BusinessRegisterNotifier(this._authRepository)
+      : super(const BusinessRegisterState());
 
   @override
   void dispose() {
@@ -359,7 +334,7 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
       if (emailExists) {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: 'Un compte existe déjà avec cet email',
+          errorMessage: cachedAppLocalizations().authAccountAlreadyExists,
         );
         return false;
       }
@@ -395,28 +370,40 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
   }
 
   bool _validatePersonalInfo() {
+    final l10n = cachedAppLocalizations();
     if (state.firstName.trim().length < 2) {
-      state = state.copyWith(errorMessage: 'Le prénom doit contenir au moins 2 caractères');
+      state = state.copyWith(errorMessage: l10n.authFirstNameMinLength);
       return false;
     }
     if (state.lastName.trim().length < 2) {
-      state = state.copyWith(errorMessage: 'Le nom doit contenir au moins 2 caractères');
+      state = state.copyWith(errorMessage: l10n.authLastNameMinLength);
       return false;
     }
     if (!_isValidEmail(state.email)) {
-      state = state.copyWith(errorMessage: 'Veuillez entrer un email valide');
+      state = state.copyWith(errorMessage: l10n.authEmailInvalid);
       return false;
     }
     if (state.phone.isNotEmpty && !_isValidPhone(state.phone)) {
-      state = state.copyWith(errorMessage: 'Numéro de téléphone invalide');
+      state = state.copyWith(errorMessage: l10n.authPhoneInvalid);
+      return false;
+    }
+    if (state.birthDate == null || state.birthDate!.isEmpty) {
+      state = state.copyWith(errorMessage: l10n.authBirthDateRequired);
+      return false;
+    }
+    final birthDate = DateTime.tryParse(state.birthDate!);
+    if (birthDate == null || !meetsMinimumRegistrationAge(birthDate)) {
+      state = state.copyWith(errorMessage: l10n.authBirthDateMinimumAge);
       return false;
     }
     if (!_isValidPassword(state.password)) {
-      state = state.copyWith(errorMessage: 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un symbole');
+      state = state.copyWith(
+        errorMessage: l10n.authPasswordNeedsUppercaseNumberSpecial,
+      );
       return false;
     }
     if (state.password != state.passwordConfirmation) {
-      state = state.copyWith(errorMessage: 'Les mots de passe ne correspondent pas');
+      state = state.copyWith(errorMessage: l10n.authPasswordsDoNotMatch);
       return false;
     }
     return true;
@@ -429,7 +416,8 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
   /// Verify OTP code
   Future<bool> verifyOtp(String code) async {
     if (code.length != 6) {
-      state = state.copyWith(errorMessage: 'Veuillez entrer le code complet');
+      state = state.copyWith(
+          errorMessage: cachedAppLocalizations().authOtpIncompleteCode);
       return false;
     }
 
@@ -448,13 +436,13 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
           isOtpVerified: true,
           verifiedEmailToken: result.verifiedEmailToken,
           currentStep: BusinessRegisterStep.companyInfo,
-          successMessage: 'Email vérifié avec succès',
+          successMessage: cachedAppLocalizations().authOtpEmailVerified,
         );
         return true;
       } else {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: 'Code de vérification invalide',
+          errorMessage: cachedAppLocalizations().authVerificationCodeInvalid,
         );
         return false;
       }
@@ -484,7 +472,7 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
       if (result.success) {
         state = state.copyWith(
           isResendingOtp: false,
-          successMessage: 'Un nouveau code a été envoyé',
+          successMessage: cachedAppLocalizations().authOtpResent,
         );
         _startCooldown();
         return true;
@@ -509,7 +497,8 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
     state = state.copyWith(otpCooldownSeconds: 60);
     _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (state.otpCooldownSeconds > 0) {
-        state = state.copyWith(otpCooldownSeconds: state.otpCooldownSeconds - 1);
+        state =
+            state.copyWith(otpCooldownSeconds: state.otpCooldownSeconds - 1);
       } else {
         timer.cancel();
       }
@@ -557,24 +546,26 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
   }
 
   bool _validateCompanyInfo() {
+    final l10n = cachedAppLocalizations();
     if (state.companyName.trim().length < 2) {
-      state = state.copyWith(errorMessage: 'Le nom de l\'entreprise doit contenir au moins 2 caractères');
+      state = state.copyWith(errorMessage: l10n.authCompanyNameMinLength);
       return false;
     }
     if (state.siret.isNotEmpty && !_isValidSiret(state.siret)) {
-      state = state.copyWith(errorMessage: 'Le numéro SIRET doit contenir 14 chiffres');
+      state = state.copyWith(errorMessage: l10n.authSiretMustHave14Digits);
       return false;
     }
     if (state.address.trim().length < 5) {
-      state = state.copyWith(errorMessage: 'L\'adresse doit contenir au moins 5 caractères');
+      state = state.copyWith(errorMessage: l10n.authAddressMinLength);
       return false;
     }
     if (state.city.trim().length < 2) {
-      state = state.copyWith(errorMessage: 'La ville doit contenir au moins 2 caractères');
+      state = state.copyWith(errorMessage: l10n.authCityMinLength);
       return false;
     }
-    if (state.postalCode.trim().length < 3 || state.postalCode.trim().length > 10) {
-      state = state.copyWith(errorMessage: 'Le code postal doit contenir entre 3 et 10 caractères');
+    if (state.postalCode.trim().length < 3 ||
+        state.postalCode.trim().length > 10) {
+      state = state.copyWith(errorMessage: l10n.authPostalCodeLength);
       return false;
     }
     return true;
@@ -599,11 +590,18 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
 
   bool submitUsageMode() {
     // Team emails validation only if usage mode is team
-    if (state.usageMode == UsageMode.team && state.teamEmails.trim().isNotEmpty) {
-      final emails = state.teamEmails.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+    if (state.usageMode == UsageMode.team &&
+        state.teamEmails.trim().isNotEmpty) {
+      final emails = state.teamEmails
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty);
       for (final email in emails) {
         if (!_isValidEmail(email)) {
-          state = state.copyWith(errorMessage: 'Email invalide: $email');
+          state = state.copyWith(
+            errorMessage:
+                cachedAppLocalizations().authInvalidEmailWithValue(email),
+          );
           return false;
         }
       }
@@ -634,17 +632,22 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
   /// Final submission
   Future<bool> submitRegistration() async {
     if (!state.acceptTerms) {
-      state = state.copyWith(errorMessage: 'Veuillez accepter les conditions d\'utilisation');
+      state = state.copyWith(
+        errorMessage: cachedAppLocalizations().authAcceptTermsRequired,
+      );
       return false;
     }
     if (!state.acceptBusinessTerms) {
-      state = state.copyWith(errorMessage: 'Veuillez accepter les conditions business');
+      state = state.copyWith(
+        errorMessage: cachedAppLocalizations().authBusinessTermsRequired,
+      );
       return false;
     }
 
     if (state.verifiedEmailToken == null || state.verifiedEmailToken!.isEmpty) {
       state = state.copyWith(
-        errorMessage: 'Le token de vérification email est manquant. Veuillez refaire la vérification OTP.',
+        errorMessage:
+            cachedAppLocalizations().authRegisterMissingVerificationToken,
       );
       return false;
     }
@@ -667,15 +670,19 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
         organizationType: state.organizationType.value,
         companyName: state.companyName.trim(),
         siret: state.siret.trim().isNotEmpty ? state.siret.trim() : null,
-        industry: state.industry.trim().isNotEmpty ? state.industry.trim() : null,
-        employeeCount: state.employeeCount.trim().isNotEmpty ? state.employeeCount.trim() : null,
+        industry:
+            state.industry.trim().isNotEmpty ? state.industry.trim() : null,
+        employeeCount: state.employeeCount.trim().isNotEmpty
+            ? state.employeeCount.trim()
+            : null,
         address: state.address.trim(),
         city: state.city.trim(),
         postalCode: state.postalCode.trim(),
         country: state.country,
         // Usage
         usageMode: state.usageMode.value,
-        teamEmails: state.teamEmails.trim().isNotEmpty ? state.teamEmails.trim() : null,
+        teamEmails:
+            state.teamEmails.trim().isNotEmpty ? state.teamEmails.trim() : null,
         defaultBudget: state.defaultBudget.trim().isNotEmpty
             ? double.tryParse(state.defaultBudget.trim())
             : null,
@@ -691,10 +698,11 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
         isRegistrationComplete: true,
         organization: result.organization,
         authenticatedUser: result.authResult.user,
-        successMessage: 'Inscription réussie !',
+        successMessage: cachedAppLocalizations().authBusinessSuccessTitle,
       );
 
-      debugPrint('📱 Business registration complete: ${result.organization?.name}');
+      debugPrint(
+          '📱 Business registration complete: ${result.organization?.name}');
       debugPrint('📱 User authenticated: ${result.authResult.user.email}');
       return true;
     } catch (e) {
@@ -748,72 +756,83 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
   }
 
   String _parseError(dynamic e) {
+    final l10n = cachedAppLocalizations();
+
     if (e is DioException) {
       if (e.type == DioExceptionType.badResponse) {
         final data = e.response?.data;
         if (data != null && data is Map<String, dynamic>) {
           // Handle structured error with details
           final error = data['error'];
-          if (error != null && error is Map<String, dynamic> && error['details'] != null) {
+          if (error != null &&
+              error is Map<String, dynamic> &&
+              error['details'] != null) {
             final details = error['details'];
             if (details is Map<String, dynamic>) {
               final firstError = details.values.first;
               if (firstError is List && firstError.isNotEmpty) {
-                return firstError.first.toString();
+                return ApiResponseHandler.safeUserMessage(firstError.first) ??
+                    l10n.commonGenericRetryError;
               }
-              return firstError.toString();
+              return ApiResponseHandler.safeUserMessage(firstError) ??
+                  l10n.commonGenericRetryError;
             }
           }
           // Handle simple error string
           if (error != null && error is String) {
-            return error;
+            return ApiResponseHandler.safeUserMessage(error) ??
+                l10n.commonGenericRetryError;
           }
           if (data['message'] != null) {
-            return data['message'].toString();
+            return ApiResponseHandler.safeUserMessage(data['message']) ??
+                l10n.commonGenericRetryError;
           }
           if (data['data'] != null && data['data']['message'] != null) {
-            return data['data']['message'].toString();
+            return ApiResponseHandler.safeUserMessage(
+                  data['data']['message'],
+                ) ??
+                l10n.commonGenericRetryError;
           }
         }
       } else if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.connectionError) {
-        return 'Erreur de connexion. Vérifiez votre connexion internet.';
+        return l10n.commonConnectionError;
       }
     }
 
     final message = e.toString();
     if (message.contains('user_exists')) {
-      return 'Un compte existe déjà avec cet email';
-    } else if (message.contains('network') || message.contains('SocketException')) {
-      return 'Erreur de connexion. Vérifiez votre connexion internet.';
+      return l10n.authAccountAlreadyExists;
+    } else if (message.contains('network') ||
+        message.contains('SocketException')) {
+      return l10n.commonConnectionError;
     }
 
-    if (e is Exception) {
-      final msg = e.toString().replaceAll('Exception: ', '');
-      if (msg.isNotEmpty && !msg.startsWith('http')) return msg;
-    }
-
-    return 'Une erreur est survenue. Veuillez réessayer.';
+    return ApiResponseHandler.extractError(
+      e,
+      fallback: l10n.commonGenericRetryError,
+    );
   }
 
   String _parseOtpError(dynamic e) {
+    final l10n = cachedAppLocalizations();
     final message = e.toString();
     if (message.contains('invalid_otp') || message.contains('invalid')) {
-      return 'Code de vérification invalide';
+      return l10n.authVerificationCodeInvalid;
     } else if (message.contains('expired')) {
-      return 'Le code a expiré. Veuillez en demander un nouveau.';
+      return l10n.authVerificationCodeExpired;
     } else if (message.contains('too_many')) {
-      return 'Trop de tentatives. Réessayez dans 15 minutes.';
+      return l10n.authTooManyAttempts;
     }
-    return 'Code de vérification invalide';
+    return l10n.authVerificationCodeInvalid;
   }
 }
 
 /// Provider for business registration
-final businessRegisterProvider =
-    StateNotifierProvider.autoDispose<BusinessRegisterNotifier, BusinessRegisterState>((ref) {
-  final authRepository = ref.watch(authRepositoryImplProvider);
+final businessRegisterProvider = StateNotifierProvider.autoDispose<
+    BusinessRegisterNotifier, BusinessRegisterState>((ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
   return BusinessRegisterNotifier(authRepository);
 });

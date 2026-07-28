@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lehiboo/core/themes/hb_theme.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 
 class BookingStepperHeader extends StatelessWidget {
@@ -21,13 +21,24 @@ class BookingStepperHeader extends StatelessWidget {
       color: Colors.white,
       child: Row(
         children: [
-          _StepIndicator(index: 1, currentIndex: currentStepIndex, label: 'Créneau'),
+          _StepIndicator(
+            index: 1,
+            currentIndex: currentStepIndex,
+            label: context.l10n.bookingLegacyStepSlot,
+          ),
           _StepDashedLine(active: currentStepIndex > 1),
-          _StepIndicator(index: 2, currentIndex: currentStepIndex, label: 'Infos'),
+          _StepIndicator(
+            index: 2,
+            currentIndex: currentStepIndex,
+            label: context.l10n.bookingLegacyStepInfo,
+          ),
           _StepDashedLine(active: currentStepIndex > 2),
-             // Hide payment step if skipping might be confusing, but for now simple linear
-          _StepIndicator(index: 3, currentIndex: currentStepIndex, label: 'Paiement'),
-          
+          // Hide payment step if skipping might be confusing, but for now simple linear
+          _StepIndicator(
+            index: 3,
+            currentIndex: currentStepIndex,
+            label: context.l10n.bookingLegacyStepPayment,
+          ),
         ],
       ),
     );
@@ -35,7 +46,8 @@ class BookingStepperHeader extends StatelessWidget {
 }
 
 class _StepIndicator extends StatelessWidget {
-  const _StepIndicator({required this.index, required this.currentIndex, required this.label});
+  const _StepIndicator(
+      {required this.index, required this.currentIndex, required this.label});
   final int index;
   final int currentIndex;
   final String label;
@@ -53,12 +65,15 @@ class _StepIndicator extends StatelessWidget {
           backgroundColor: color,
           child: Text(
             '$index',
-            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
           ),
         ),
         if (isCurrent) ...[
-             const SizedBox(height: 4),
-             Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold))
+          const SizedBox(height: 4),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10, color: color, fontWeight: FontWeight.bold))
         ]
       ],
     );

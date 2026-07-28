@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 import 'package:lehiboo/features/booking/domain/models/order_cart_item.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
@@ -94,7 +95,11 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
 
       final ticket = event.tickets.firstWhere(
         (candidate) => candidate.id == entry.key,
-        orElse: () => const Ticket(id: '', name: 'Billet', price: 0),
+        orElse: () => Ticket(
+          id: '',
+          name: cachedAppLocalizations().bookingTicketFallback,
+          price: 0,
+        ),
       );
       if (ticket.id.isEmpty) continue;
 

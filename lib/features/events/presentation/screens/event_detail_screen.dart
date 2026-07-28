@@ -3,23 +3,30 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lehiboo/config/env_config.dart';
+import 'package:lehiboo/core/analytics/analytics_event.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/entities/event.dart';
+import '../../domain/entities/event_detail_state.dart';
 import '../../domain/entities/event_submodels.dart';
+import '../../domain/exceptions/event_password_exceptions.dart';
 import '../../domain/repositories/event_repository.dart';
 import '../../data/datasources/events_api_datasource.dart';
 import '../../data/models/event_availability_dto.dart';
 import '../widgets/detail/event_hero_gallery.dart';
+import '../widgets/detail/event_locked_view.dart';
 import '../widgets/detail/event_gallery_fullscreen.dart';
 import '../widgets/detail/event_compact_header.dart';
 import '../widgets/detail/event_social_proof.dart';
 import '../widgets/detail/event_organizer_card.dart';
 import '../widgets/detail/event_date_selector.dart';
-import '../widgets/detail/event_discovery_pricing_section.dart';
 import '../widgets/detail/event_ticket_card.dart';
+import '../widgets/detail/event_indicative_prices.dart';
 import '../widgets/detail/event_practical_info.dart';
 import '../widgets/detail/event_accessibility_section.dart';
 import '../widgets/detail/event_location_map.dart';
@@ -27,6 +34,7 @@ import '../widgets/detail/event_qa_section.dart';
 import '../widgets/detail/event_similar_carousel.dart';
 import '../widgets/detail/event_share_sheet.dart';
 import '../widgets/detail/event_sticky_booking_bar.dart';
+import '../utils/event_l10n.dart';
 import '../../../memberships/domain/exceptions/members_only_exception.dart';
 import '../../../memberships/presentation/widgets/members_only_gate.dart';
 import '../../../reviews/presentation/widgets/event_reviews_section.dart';
@@ -34,14 +42,51 @@ import '../../../reviews/presentation/widgets/write_review_sheet.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../../reminders/presentation/providers/reminders_provider.dart';
 import '../../../reminders/data/datasources/reminders_api_datasource.dart';
+import '../../../booking/domain/models/refund_policy.dart';
 import '../../../booking/presentation/providers/order_cart_provider.dart';
 
-/// Provider to fetch event details by identifier (UUID or slug)
-final eventDetailProvider =
-    FutureProvider.family<Event, String>((ref, identifier) async {
-  final repository = ref.watch(eventRepositoryProvider);
-  return repository.getEvent(identifier);
-});
+/// Provider to fetch event details by identifier (UUID or slug).
+///
+/// Wraps the repository fetch in an [EventDetailState] sealed union so the
+/// screen can distinguish a fully loaded [Event] from a locked-shell preview
+/// (`403 password_required`). The controller exposes [seed] for callers that
+/// already have a verified [Event] (list-side unlock path) and [unlock] for
+/// the password sheet to submit a password and transition into `.loaded`.
+final eventDetailControllerProvider = AsyncNotifierProviderFamily<
+    EventDetailController, EventDetailState, String>(
+  EventDetailController.new,
+);
+
+class EventDetailController
+    extends FamilyAsyncNotifier<EventDetailState, String> {
+  @override
+  Future<EventDetailState> build(String identifier) async {
+    try {
+      final event =
+          await ref.read(eventRepositoryProvider).getEvent(identifier);
+      return EventDetailState.loaded(event);
+    } on EventPasswordRequiredException catch (e) {
+      return EventDetailState.locked(e.shell);
+    }
+  }
+
+  /// Pre-seed the cache with an already-unlocked event (list-side unlock).
+  void seed(Event event) {
+    state = AsyncData(EventDetailState.loaded(event));
+  }
+
+  /// Submit a password to the verify endpoint. On success the state flips to
+  /// `loaded(event)` and the returned event is handed back to the sheet.
+  /// Typed exceptions propagate so the sheet can surface them (shake,
+  /// countdown, members-only swap).
+  Future<Event> unlock(String password) async {
+    final event = await ref
+        .read(eventRepositoryProvider)
+        .verifyEventPassword(arg, password);
+    state = AsyncData(EventDetailState.loaded(event));
+    return event;
+  }
+}
 
 /// Provider to fetch event availability (slots & tickets)
 final eventAvailabilityProvider =
@@ -76,13 +121,26 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   bool _isDescriptionExpanded = false;
   double _scrollOffset = 0;
 
+  /// Garde-fou pour ne pas re-logger `event_viewed` à chaque rebuild quand
+  /// l'AsyncValue passe à `data` à plusieurs reprises (refetch, invalidation).
+  bool _loggedView = false;
+
   /// Cache des slots disponibles pour l'événement (pour obtenir le label de date)
   List<CalendarDateSlot> _availableSlots = [];
 
   static const int _maxDescriptionLength = 250;
 
+  /// Read the currently-loaded [Event] from cache, or null if the state is
+  /// loading, errored, or still in the `locked(shell)` branch.
+  Event? _currentEvent() {
+    final async = ref.read(eventDetailControllerProvider(widget.eventId));
+    final state = async.valueOrNull;
+    if (state is EventDetailLoaded) return state.event;
+    return null;
+  }
+
   double get _totalPrice {
-    final event = ref.read(eventDetailProvider(widget.eventId)).valueOrNull;
+    final event = _currentEvent();
     if (event == null) return 0.0;
 
     double total = 0.0;
@@ -113,28 +171,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
     if (slot.id != _selectedSlotId) return null;
 
-    final months = [
-      'Jan',
-      'Fév',
-      'Mars',
-      'Avr',
-      'Mai',
-      'Juin',
-      'Juil',
-      'Août',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Déc'
-    ];
-    final days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-
-    final dayName = days[slot.date.weekday - 1];
-    final monthName = months[slot.date.month - 1];
-    final dateStr = '$dayName ${slot.date.day} $monthName';
+    final dateStr = context
+        .appDateFormat('EEE d MMM', enPattern: 'EEE, MMM d')
+        .format(slot.date);
 
     if (slot.startTime != null) {
-      return '$dateStr à ${slot.startTime}';
+      return context.eventDateAtTime(dateStr, slot.startTime!);
     }
     return dateStr;
   }
@@ -144,7 +186,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     // Sold-out check only applies to vendor events with real inventory.
     // Platform events report spots_remaining: 0 because they don't
     // manage bookable inventory — the bar should still show for them.
-    if (!event.organizerIsPlatform &&
+    if (event.hasDirectBooking &&
+        !event.organizerIsPlatform &&
         event.availableSeats != null &&
         event.availableSeats! <= 0) {
       return true;
@@ -210,13 +253,46 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final eventAsync = ref.watch(eventDetailProvider(widget.eventId));
+    final stateAsync = ref.watch(eventDetailControllerProvider(widget.eventId));
+
+    // Sticky booking bar is only meaningful when an Event is loaded — never
+    // show it on top of the locked shell, the loading spinner, or an error.
+    final loadedEvent = stateAsync.valueOrNull is EventDetailLoaded
+        ? (stateAsync.value as EventDetailLoaded).event
+        : null;
+
+    // event_viewed — fire-once dès que l'event est chargé. `_loggedView`
+    // empêche le re-fire sur invalidation/refetch.
+    if (!_loggedView && loadedEvent != null) {
+      _loggedView = true;
+      final event = loadedEvent;
+      debugPrint("event name test");
+      ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.eventViewed,
+        params: {
+          AnalyticsParam.eventUuid: event.id,
+          AnalyticsParam.category: event.category.name,
+          AnalyticsParam.citySlug: event.city,
+          AnalyticsParam.isFree: event.priceType == PriceType.free,
+        },
+      );
+    }
 
     return Scaffold(
       // Flat design : fond gris clair pour créer hiérarchie avec cards blanches
       backgroundColor: HbColors.backgroundLight,
-      body: eventAsync.when(
-        data: (event) => _buildContent(event),
+      body: stateAsync.when(
+        data: (state) {
+          switch (state) {
+            case EventDetailLoaded(:final event):
+              return _buildContent(event);
+            case EventDetailLocked(:final shell):
+              return EventLockedView(
+                shell: shell,
+                identifier: widget.eventId,
+              );
+          }
+        },
         loading: () => const Center(
           child: CircularProgressIndicator(color: HbColors.brandPrimary),
         ),
@@ -229,10 +305,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           return _buildErrorState(error);
         },
       ),
-      bottomNavigationBar: eventAsync.valueOrNull != null &&
-              !_shouldHideBookingBar(eventAsync.value!)
-          ? _buildStickyBar(eventAsync.value!)
-          : null,
+      bottomNavigationBar:
+          loadedEvent != null && !_shouldHideBookingBar(loadedEvent)
+              ? _buildStickyBar(loadedEvent)
+              : null,
     );
   }
 
@@ -272,7 +348,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget _buildErrorState(Object error) {
     final message = ApiResponseHandler.extractError(
       error,
-      fallback: 'Impossible de charger l\'activité.',
+      fallback: context.l10n.eventLoadError,
     );
 
     return Center(
@@ -293,9 +369,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 OutlinedButton.icon(
-                  onPressed: () => context.pop(),
+                  onPressed: () =>
+                      context.canPop() ? context.pop() : context.go('/'),
                   icon: const Icon(Icons.arrow_back, size: 18),
-                  label: const Text('Retour'),
+                  label: Text(context.l10n.commonBack),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.grey.shade700,
                     side: BorderSide(color: Colors.grey.shade300),
@@ -306,10 +383,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
-                  onPressed: () =>
-                      ref.invalidate(eventDetailProvider(widget.eventId)),
+                  onPressed: () => ref.invalidate(
+                      eventDetailControllerProvider(widget.eventId)),
                   icon: const Icon(Icons.refresh, size: 18),
-                  label: const Text('Réessayer'),
+                  label: Text(context.l10n.searchRetry),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
@@ -351,7 +428,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 right: 0,
                 child: _buildOverlayAppBar(event),
               ),
-
             ],
           ),
         ),
@@ -413,7 +489,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
               // 5b. Tarification (discovery events only)
               if (!event.hasDirectBooking) ...[
-                EventDiscoveryPricingSection(event: event),
+                _buildPricingSection(event),
+                const SizedBox(height: 24),
+              ],
+
+              if (!event.hasDirectBooking &&
+                  event.indicativePrices.isNotEmpty) ...[
+                EventIndicativePrices(prices: event.indicativePrices),
                 const SizedBox(height: 24),
               ],
 
@@ -435,6 +517,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       });
                     },
                   ),
+                  _buildRefundPolicyLink(event),
+                  const SizedBox(height: 24),
+                ],
+                // Services additionnels indicatifs (parking, restauration…)
+                if (event.indicativePrices.isNotEmpty) ...[
+                  EventIndicativePrices(prices: event.indicativePrices),
                   const SizedBox(height: 24),
                 ],
               ],
@@ -474,9 +562,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     });
                   },
                 ),
+                _buildRefundPolicyLink(event),
                 const SizedBox(height: 24),
               ],
-
 
               // 8. Infos pratiques (grille 2x2)
               EventPracticalInfo(
@@ -514,7 +602,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 const SizedBox(height: 24),
               ],
 
-              // 12. Événements similaires
+              // 12. Activités associées (curated by organizer/backend)
+              if (event.relatedEvents.isNotEmpty) ...[
+                EventSimilarCarousel(
+                  events: event.relatedEvents,
+                  currentEventId: event.id,
+                  title: context.l10n.eventRelatedActivities,
+                  showPriceBadge: false,
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              // 13. Événements similaires
               similarEventsAsync.when(
                 data: (similarEvents) => similarEvents.isNotEmpty
                     ? EventSimilarCarousel(
@@ -526,12 +625,42 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 error: (_, __) => const SizedBox.shrink(),
               ),
 
-              // 13. Espace pour la sticky bar
+              // 14. Espace pour la sticky bar
               SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRefundPolicyLink(Event event) {
+    final policy = event.vendorCancellationPolicy?.trim();
+    if (policy == null || policy.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: () => _openRefundPolicy(event),
+          style: TextButton.styleFrom(
+            foregroundColor: HbColors.brandPrimary,
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            context.l10n.eventRefundPolicyOpenLink,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -559,14 +688,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           const SizedBox(width: 8),
           _buildCircularButton(
             icon: Icons.arrow_back,
-            onTap: () => context.pop(),
+            // Deeplink/cold start : router.go() remplace la pile, donc rien à
+            // pop. On retombe sur la home plutôt que de crasher ("nothing to pop").
+            onTap: () => context.canPop() ? context.pop() : context.go('/'),
             darkMode: opacity < 0.5,
           ),
           const Spacer(),
           // Bouton partage (ouvre le nouveau sheet)
           ShareButton(
             event: event,
-            shareUrl: 'https://lehiboo.com/events/${event.slug}',
+            shareUrl: EnvConfig.eventShareUrl(event.slug),
             backgroundColor:
                 opacity < 0.5 ? Colors.white : Colors.grey.shade100,
             iconColor: HbColors.textPrimary,
@@ -676,7 +807,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Dates bientôt disponibles. Contactez l\'organisateur pour plus d\'infos.',
+                  context.l10n.eventDatesSoonAvailable,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade700,
@@ -708,8 +839,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Widget _buildDateSelectorWidget(Event event, List<CalendarDateSlot> slots) {
-    final isDiscovery = !event.hasDirectBooking;
-
     return EventDateSelector(
       slots: slots,
       selectedSlotId: _selectedSlotId,
@@ -725,7 +854,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'activer un rappel',
+      featureName: context.l10n.guestFeatureEnableReminder,
     );
     if (!allowed || !mounted) return;
 
@@ -776,9 +905,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'À propos de l\'événement',
-            style: TextStyle(
+          Text(
+            context.l10n.eventAboutTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -819,7 +948,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 child: Row(
                   children: [
                     Text(
-                      _isDescriptionExpanded ? 'Voir moins' : 'Lire la suite',
+                      _isDescriptionExpanded
+                          ? context.l10n.searchShowLess
+                          : context.l10n.eventReadMore,
                       style: const TextStyle(
                         color: HbColors.brandPrimary,
                         fontWeight: FontWeight.w600,
@@ -843,6 +974,113 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildPricingSection(Event event) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.eventPricingTitle,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: HbColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: _buildPriceContent(event),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceContent(Event event) {
+    switch (event.discoveryPricingType) {
+      case 'free':
+        return Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: HbColors.success.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                context.l10n.commonFree,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: HbColors.success,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                context.l10n.eventNoEntryFee,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            ),
+          ],
+        );
+      case 'paid':
+        return Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                context.l10n.searchPricePaid,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: HbColors.brandPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                event.discoveryPaidPriceLabel ?? context.l10n.eventUndefined,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: HbColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        );
+      default:
+        return Row(
+          children: [
+            Icon(Icons.info_outline, size: 16, color: Colors.grey.shade400),
+            const SizedBox(width: 8),
+            Text(
+              context.l10n.eventUndefined,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        );
+    }
   }
 
   Widget _buildTagsSection(Event event) {
@@ -887,9 +1125,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Caractéristiques',
-            style: TextStyle(
+          Text(
+            context.l10n.eventCharacteristicsTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -973,7 +1211,25 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       images: event.images,
       initialIndex: initialIndex,
       eventTitle: event.title,
-      shareUrl: 'https://lehiboo.com/events/${event.slug}',
+      shareUrl: EnvConfig.eventShareUrl(event.slug),
+    );
+  }
+
+  void _openRefundPolicy(Event event) {
+    final policy = event.vendorCancellationPolicy?.trim();
+    if (policy == null || policy.isEmpty) return;
+
+    context.push(
+      '/refund-policy',
+      extra: RefundPolicyRouteArgs(
+        title: context.l10n.refundPolicyTitle,
+        policies: [
+          RefundPolicyEntry(
+            eventTitle: event.title,
+            policy: policy,
+          ),
+        ],
+      ),
     );
   }
 
@@ -1000,13 +1256,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'réserver une activité',
+      featureName: context.l10n.guestFeatureBookActivity,
     );
     if (!allowed) return;
     if (!mounted) return;
 
     HapticFeedback.mediumImpact();
-    final event = ref.read(eventDetailProvider(widget.eventId)).valueOrNull;
+    final event = _currentEvent();
     if (event == null) return;
 
     final externalUrl = event.externalBooking?.url;
@@ -1018,9 +1274,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lien de réservation invalide'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.eventInvalidBookingLink),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -1031,9 +1287,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (_selectedSlotId == null) {
       _scrollToDateSection();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez d\'abord choisir une date'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.eventChooseDateFirst),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -1042,9 +1298,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     // Vérification: au moins un billet sélectionné
     if (_totalTickets == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner au moins un billet'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.eventSelectAtLeastOneTicket),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -1078,9 +1334,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   ),
                   alignment: Alignment.center,
                 ),
-                const Text(
-                  'Que voulez-vous faire ?',
-                  style: TextStyle(
+                Text(
+                  context.l10n.eventBookingChoiceTitle,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: HbColors.textPrimary,
@@ -1088,7 +1344,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ajoutez ces billets au panier pour les payer avec d autres evenements, ou finalisez maintenant.',
+                  context.l10n.eventBookingChoiceBody,
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 18),
@@ -1110,17 +1366,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         );
                     messenger.showSnackBar(
                       SnackBar(
-                        content: const Text('Billets ajoutes au panier'),
+                        content: Text(context.l10n.eventTicketsAddedToCart),
                         duration: const Duration(seconds: 6),
                         action: SnackBarAction(
-                          label: 'Voir',
+                          label: context.l10n.eventView,
                           onPressed: () => router.push('/cart'),
                         ),
                       ),
                     );
                   },
                   icon: const Icon(Icons.add_shopping_cart),
-                  label: const Text('Ajouter au panier'),
+                  label: Text(context.l10n.eventAddToCart),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -1131,18 +1387,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   onPressed: () {
+                    // Capture router before pop — sheetContext is disposed by
+                    // Navigator.pop() and the navigation call would otherwise
+                    // dereference a dead context (same trap as the
+                    // "Ajouter au panier" button above).
+                    final router = GoRouter.of(context);
                     Navigator.of(sheetContext).pop();
-                    context.push('/checkout', extra: {
-                      'event': event,
-                      'slotId': _selectedSlotId,
-                      'selectedSlot': _selectedSlot,
-                      'ticketQuantities':
-                          Map<String, int>.from(_ticketQuantities),
-                      'totalPrice': _totalPrice,
-                    });
+                    ref.read(orderCartProvider.notifier).addSelection(
+                          event: event,
+                          slotId: _selectedSlotId!,
+                          selectedSlot: _selectedSlot,
+                          ticketQuantities:
+                              Map<String, int>.from(_ticketQuantities),
+                        );
+                    router.push('/cart');
                   },
                   icon: const Icon(Icons.lock),
-                  label: const Text('Reserver maintenant'),
+                  label: Text(context.l10n.eventBookNow),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
@@ -1192,7 +1453,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Toutes les dates (${slots.length})',
+                      context.eventAllDatesCount(slots.length),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1243,7 +1504,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'laisser un avis',
+      featureName: context.l10n.guestFeatureWriteReview,
     );
     if (!allowed || !mounted) return;
     await WriteReviewSheet.show(
@@ -1305,7 +1566,7 @@ class _DateSlotModalCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _formatDate(slot.date),
+                    _formatDate(context, slot.date),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -1333,9 +1594,9 @@ class _DateSlotModalCard extends StatelessWidget {
                   color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'Complet',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.eventFull,
+                  style: const TextStyle(
                     color: Colors.grey,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1362,9 +1623,9 @@ class _DateSlotModalCard extends StatelessWidget {
                   color: HbColors.brandPrimary,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'Choisir',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.eventChoose,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1376,33 +1637,12 @@ class _DateSlotModalCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'janvier',
-      'février',
-      'mars',
-      'avril',
-      'mai',
-      'juin',
-      'juillet',
-      'août',
-      'septembre',
-      'octobre',
-      'novembre',
-      'décembre'
-    ];
-    final days = [
-      'lundi',
-      'mardi',
-      'mercredi',
-      'jeudi',
-      'vendredi',
-      'samedi',
-      'dimanche'
-    ];
-    final dayName = days[date.weekday - 1];
-    final monthName = months[date.month - 1];
-    return '${dayName[0].toUpperCase()}${dayName.substring(1)} ${date.day} $monthName';
+  String _formatDate(BuildContext context, DateTime date) {
+    final formatted = context
+        .appDateFormat('EEEE d MMMM', enPattern: 'EEEE, MMMM d')
+        .format(date);
+    if (formatted.isEmpty) return formatted;
+    return formatted[0].toUpperCase() + formatted.substring(1);
   }
 
   String _formatTimeRange() {

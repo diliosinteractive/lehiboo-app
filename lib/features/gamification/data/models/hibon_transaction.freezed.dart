@@ -21,7 +21,7 @@ mixin _$HibonTransaction {
   String? get typeLabel => throw _privateConstructorUsedError;
   int get amount => throw _privateConstructorUsedError;
   String? get formattedAmount => throw _privateConstructorUsedError;
-  String get description => throw _privateConstructorUsedError;
+  String? get description => throw _privateConstructorUsedError;
   DateTime get timestamp => throw _privateConstructorUsedError;
   String? get source => throw _privateConstructorUsedError;
   String? get pillar => throw _privateConstructorUsedError;
@@ -49,7 +49,7 @@ abstract class $HibonTransactionCopyWith<$Res> {
       String? typeLabel,
       int amount,
       String? formattedAmount,
-      String description,
+      String? description,
       DateTime timestamp,
       String? source,
       String? pillar,
@@ -79,7 +79,7 @@ class _$HibonTransactionCopyWithImpl<$Res, $Val extends HibonTransaction>
     Object? typeLabel = freezed,
     Object? amount = null,
     Object? formattedAmount = freezed,
-    Object? description = null,
+    Object? description = freezed,
     Object? timestamp = null,
     Object? source = freezed,
     Object? pillar = freezed,
@@ -111,10 +111,10 @@ class _$HibonTransactionCopyWithImpl<$Res, $Val extends HibonTransaction>
           ? _value.formattedAmount
           : formattedAmount // ignore: cast_nullable_to_non_nullable
               as String?,
-      description: null == description
+      description: freezed == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       timestamp: null == timestamp
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
@@ -169,7 +169,7 @@ abstract class _$$HibonTransactionImplCopyWith<$Res>
       String? typeLabel,
       int amount,
       String? formattedAmount,
-      String description,
+      String? description,
       DateTime timestamp,
       String? source,
       String? pillar,
@@ -197,7 +197,7 @@ class __$$HibonTransactionImplCopyWithImpl<$Res>
     Object? typeLabel = freezed,
     Object? amount = null,
     Object? formattedAmount = freezed,
-    Object? description = null,
+    Object? description = freezed,
     Object? timestamp = null,
     Object? source = freezed,
     Object? pillar = freezed,
@@ -229,10 +229,10 @@ class __$$HibonTransactionImplCopyWithImpl<$Res>
           ? _value.formattedAmount
           : formattedAmount // ignore: cast_nullable_to_non_nullable
               as String?,
-      description: null == description
+      description: freezed == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       timestamp: null == timestamp
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
@@ -282,7 +282,7 @@ class _$HibonTransactionImpl implements _HibonTransaction {
       this.typeLabel,
       required this.amount,
       this.formattedAmount,
-      required this.description,
+      this.description,
       required this.timestamp,
       this.source,
       this.pillar,
@@ -304,7 +304,7 @@ class _$HibonTransactionImpl implements _HibonTransaction {
   @override
   final String? formattedAmount;
   @override
-  final String description;
+  final String? description;
   @override
   final DateTime timestamp;
   @override
@@ -394,7 +394,7 @@ abstract class _HibonTransaction implements HibonTransaction {
       final String? typeLabel,
       required final int amount,
       final String? formattedAmount,
-      required final String description,
+      final String? description,
       required final DateTime timestamp,
       final String? source,
       final String? pillar,
@@ -416,7 +416,7 @@ abstract class _HibonTransaction implements HibonTransaction {
   @override
   String? get formattedAmount;
   @override
-  String get description;
+  String? get description;
   @override
   DateTime get timestamp;
   @override

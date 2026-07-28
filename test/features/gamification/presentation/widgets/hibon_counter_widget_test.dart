@@ -6,6 +6,7 @@ import 'package:lehiboo/features/gamification/data/models/hibons_balance.dart';
 import 'package:lehiboo/features/gamification/data/models/hibons_wallet.dart';
 import 'package:lehiboo/features/gamification/presentation/providers/gamification_provider.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
+import 'package:lehiboo/l10n/generated/app_localizations.dart';
 
 class _TestGamificationNotifier extends GamificationNotifier {
   _TestGamificationNotifier(this._loadWallet);
@@ -49,8 +50,10 @@ void main() {
             (ref) async => _fallbackBalance,
           ),
         ],
-        child: const MaterialApp(
-          home: Scaffold(body: HibonCounterWidget()),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: HibonCounterWidget()),
         ),
       ),
     );
@@ -86,8 +89,10 @@ void main() {
             (ref) async => _fallbackBalance,
           ),
         ],
-        child: const MaterialApp(
-          home: Scaffold(body: HibonCounterWidget()),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: HibonCounterWidget()),
         ),
       ),
     );

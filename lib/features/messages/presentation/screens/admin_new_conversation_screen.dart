@@ -1,12 +1,11 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
@@ -84,16 +83,12 @@ class AdminNewConversationScreen extends ConsumerStatefulWidget {
 class _AdminNewConversationScreenState
     extends ConsumerState<AdminNewConversationScreen> {
   static const _primaryColor = Color(0xFFFF601F);
-  static const _maxFiles = 3;
-  static const _maxFileBytes = 5 * 1024 * 1024;
-  static const _allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
 
   _AdminUser? _selectedUser;
   _AdminOrg? _selectedOrg;
 
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
-  final List<XFile> _attachments = [];
 
   bool _submitting = false;
   String? _error;
@@ -105,89 +100,11 @@ class _AdminNewConversationScreenState
     super.dispose();
   }
 
-  String get _title => switch (widget.mode) {
-        AdminConversationMode.toUser => 'Contacter un utilisateur',
-        AdminConversationMode.toOrganizer => 'Contacter un organisateur',
+  String _title(BuildContext context) => switch (widget.mode) {
+        AdminConversationMode.toUser => context.l10n.messagesContactUser,
+        AdminConversationMode.toOrganizer =>
+          context.l10n.messagesContactOrganizer,
       };
-
-  // ── Attachments ──────────────────────────────────────────────────────────────
-
-  Future<void> _pickAttachment() async {
-    if (_attachments.length >= _maxFiles) {
-      _showSnack('Maximum $_maxFiles fichiers par message.');
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Photo / Image'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await _pickImages();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf),
-              title: const Text('Document (PDF)'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await _pickPdf();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickImages() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickMultiImage();
-    await _addFiles(picked.map((x) => XFile(x.path, name: x.name)).toList());
-  }
-
-  Future<void> _pickPdf() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-      allowMultiple: false,
-    );
-    if (result == null || result.files.isEmpty) return;
-    final path = result.files.single.path;
-    final name = result.files.single.name;
-    if (path != null) await _addFiles([XFile(path, name: name)]);
-  }
-
-  Future<void> _addFiles(List<XFile> files) async {
-    for (final file in files) {
-      if (_attachments.length >= _maxFiles) {
-        _showSnack('Maximum $_maxFiles fichiers.');
-        break;
-      }
-      final ext = file.name.split('.').last.toLowerCase();
-      if (!_allowedExtensions.contains(ext)) {
-        _showSnack('Type non supporté : .$ext');
-        continue;
-      }
-      final size = await file.length();
-      if (size > _maxFileBytes) {
-        _showSnack('${file.name} dépasse 5 Mo.');
-        continue;
-      }
-      setState(() => _attachments.add(file));
-    }
-  }
-
-  void _showSnack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
-  }
 
   // ── Search modals ─────────────────────────────────────────────────────────────
 
@@ -221,12 +138,12 @@ class _AdminNewConversationScreenState
     setState(() => _error = null);
 
     if (widget.mode == AdminConversationMode.toUser && _selectedUser == null) {
-      setState(() => _error = 'Veuillez sélectionner un utilisateur.');
+      setState(() => _error = context.l10n.messagesSelectUserRequired);
       return;
     }
     if (widget.mode == AdminConversationMode.toOrganizer &&
         _selectedOrg == null) {
-      setState(() => _error = 'Veuillez sélectionner une organisation.');
+      setState(() => _error = context.l10n.messagesSelectOrganizationRequired);
       return;
     }
 
@@ -236,7 +153,6 @@ class _AdminNewConversationScreenState
       final repo = ref.read(messagesRepositoryProvider);
       final subject = _subjectController.text.trim();
       final message = _messageController.text.trim();
-      final files = _attachments.isNotEmpty ? _attachments : null;
       late final String convUuid;
 
       switch (widget.mode) {
@@ -245,7 +161,6 @@ class _AdminNewConversationScreenState
             userId: _selectedUser!.id,
             subject: subject.isEmpty ? null : subject,
             message: message.isEmpty ? null : message,
-            attachments: files,
           );
           convUuid = conv.uuid;
 
@@ -254,7 +169,6 @@ class _AdminNewConversationScreenState
             organizationUuid: _selectedOrg!.uuid,
             subject: subject.isEmpty ? null : subject,
             message: message.isEmpty ? null : message,
-            attachments: files,
           );
           convUuid = conv.uuid;
       }
@@ -264,7 +178,8 @@ class _AdminNewConversationScreenState
       if (mounted) {
         setState(() {
           _submitting = false;
-          _error = 'Erreur : ${ApiResponseHandler.extractError(e)}';
+          _error = context.l10n
+              .messagesLoadError(ApiResponseHandler.extractError(e));
         });
       }
     }
@@ -275,7 +190,7 @@ class _AdminNewConversationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_title)),
+      appBar: AppBar(title: Text(_title(context))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -292,9 +207,12 @@ class _AdminNewConversationScreenState
             TextField(
               controller: _subjectController,
               maxLength: 100,
-              decoration: const InputDecoration(
-                labelText: 'Sujet (optionnel)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: _optionalLabel(
+                  context,
+                  context.l10n.messagesSubjectLabel,
+                ),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -303,14 +221,15 @@ class _AdminNewConversationScreenState
               maxLines: 5,
               maxLength: 2000,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Message (optionnel)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: _optionalLabel(
+                  context,
+                  context.l10n.messagesMessageLabel,
+                ),
+                border: const OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
             ),
-            const SizedBox(height: 8),
-            _buildAttachmentsSection(),
             if (_error != null) ...[
               const SizedBox(height: 8),
               Text(_error!, style: const TextStyle(color: Colors.red)),
@@ -330,7 +249,7 @@ class _AdminNewConversationScreenState
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Créer la conversation'),
+                  : Text(context.l10n.messagesCreateConversation),
             ),
           ],
         ),
@@ -344,7 +263,7 @@ class _AdminNewConversationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Destinataire *',
+        Text(_requiredLabel(context, context.l10n.messagesRecipientLabel),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
         if (_selectedUser != null)
@@ -356,7 +275,7 @@ class _AdminNewConversationScreenState
           )
         else
           _SearchTapField(
-            hint: 'Rechercher un utilisateur…',
+            hint: context.l10n.messagesSearchUserPlaceholder,
             icon: Icons.person_search_outlined,
             onTap: _openUserSearch,
           ),
@@ -368,7 +287,7 @@ class _AdminNewConversationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Organisation *',
+        Text(_requiredLabel(context, context.l10n.messagesOrganizationLabel),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
         if (_selectedOrg != null)
@@ -379,69 +298,19 @@ class _AdminNewConversationScreenState
           )
         else
           _SearchTapField(
-            hint: 'Rechercher une organisation…',
+            hint: context.l10n.messagesSearchOrganizationPlaceholder,
             icon: Icons.business_outlined,
             onTap: _openOrgSearch,
           ),
       ],
     );
   }
-
-  Widget _buildAttachmentsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Pièces jointes',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(width: 6),
-            Text('(max 3 • 5 Mo)',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-            const Spacer(),
-            if (_attachments.length < _maxFiles)
-              TextButton.icon(
-                onPressed: _pickAttachment,
-                icon: const Icon(Icons.attach_file, size: 16),
-                label: const Text('Ajouter', style: TextStyle(fontSize: 13)),
-                style: TextButton.styleFrom(foregroundColor: _primaryColor),
-              ),
-          ],
-        ),
-        if (_attachments.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: _attachments.map((f) {
-              final isPdf = f.name.toLowerCase().endsWith('.pdf');
-              return Chip(
-                avatar: Icon(
-                  isPdf ? Icons.picture_as_pdf : Icons.image_outlined,
-                  size: 14,
-                  color: isPdf ? Colors.red.shade400 : Colors.blue.shade400,
-                ),
-                label: Text(f.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11)),
-                deleteIcon: const Icon(Icons.close, size: 14),
-                onDeleted: () => setState(() => _attachments.remove(f)),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              );
-            }).toList(),
-          ),
-        ],
-      ],
-    );
-  }
 }
+
+String _requiredLabel(BuildContext context, String label) => '$label *';
+
+String _optionalLabel(BuildContext context, String label) =>
+    '$label ${context.l10n.messagesOptionalLabel}';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared selector UI components
@@ -477,8 +346,7 @@ class _SearchTapField extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(hint,
-                  style: TextStyle(
-                      color: Colors.grey.shade500, fontSize: 15)),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 15)),
             ),
             Icon(icon, size: 18, color: _primaryColor),
           ],
@@ -535,12 +403,11 @@ class _SelectedCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
                 if (subtitle != null)
                   Text(subtitle!,
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600)),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               ],
             ),
           ),
@@ -647,14 +514,16 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
       builder: (_, scrollCtrl) => Column(
         children: [
           _dragHandle(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text('Rechercher un utilisateur',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              context.l10n.messagesSearchUserTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: _searchField(onChanged: _onChanged),
+            child: _searchField(context, onChanged: _onChanged),
           ),
           Expanded(
             child: _loading
@@ -663,8 +532,8 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
                     ? _emptyState(
                         icon: Icons.person_search,
                         label: !_searched
-                            ? 'Chargement…'
-                            : 'Aucun résultat',
+                            ? context.l10n.commonLoading
+                            : context.l10n.messagesNoResults,
                       )
                     : ListView.builder(
                         controller: scrollCtrl,
@@ -695,12 +564,10 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
                                     fontWeight: FontWeight.w500)),
                             subtitle: Text(user.email,
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600)),
+                                    fontSize: 12, color: Colors.grey.shade600)),
                             trailing: Text('#${user.id}',
                                 style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade400)),
+                                    fontSize: 11, color: Colors.grey.shade400)),
                             onTap: () => Navigator.pop(ctx, user),
                           );
                         },
@@ -750,8 +617,7 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
   Future<void> _loadInitial() async {
     setState(() => _loading = true);
     try {
-      final raw =
-          await widget.datasource.searchAdminOrganizations(search: '');
+      final raw = await widget.datasource.searchAdminOrganizations(search: '');
       if (!mounted) return;
       setState(() {
         _results = raw.map(_AdminOrg.fromJson).toList();
@@ -806,14 +672,16 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
       builder: (_, scrollCtrl) => Column(
         children: [
           _dragHandle(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text('Rechercher une organisation',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              context.l10n.messagesSearchOrganizationTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: _searchField(onChanged: _onChanged),
+            child: _searchField(context, onChanged: _onChanged),
           ),
           Expanded(
             child: _loading
@@ -821,7 +689,9 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
                 : _results.isEmpty
                     ? _emptyState(
                         icon: Icons.business_outlined,
-                        label: !_searched ? 'Chargement…' : 'Aucun résultat',
+                        label: !_searched
+                            ? context.l10n.commonLoading
+                            : context.l10n.messagesNoResults,
                       )
                     : ListView.builder(
                         controller: scrollCtrl,
@@ -852,8 +722,7 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
                                     fontWeight: FontWeight.w500)),
                             trailing: Text('#${org.id}',
                                 style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade400)),
+                                    fontSize: 11, color: Colors.grey.shade400)),
                             onTap: () => Navigator.pop(ctx, org),
                           );
                         },
@@ -883,12 +752,15 @@ Widget _dragHandle() => Center(
       ),
     );
 
-Widget _searchField({required void Function(String) onChanged}) {
+Widget _searchField(
+  BuildContext context, {
+  required void Function(String) onChanged,
+}) {
   return TextField(
     autofocus: true,
     onChanged: onChanged,
     decoration: InputDecoration(
-      hintText: 'Rechercher…',
+      hintText: context.l10n.messagesSearchHint,
       prefixIcon: const Icon(Icons.search, size: 20),
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(vertical: 10),

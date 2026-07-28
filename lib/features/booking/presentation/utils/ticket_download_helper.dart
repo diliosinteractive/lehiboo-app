@@ -15,7 +15,7 @@ const _androidFileSaver = MethodChannel('com.lehiboo.app/file_saver');
 /// UI can show in a "saved to <label>" snackbar.
 class TicketSaveResult {
   final String path; // Real path on iOS, content:// URI on Android API 29+
-  final String displayLocation; // Human-readable (e.g. "Téléchargements/Lehiboo")
+  final String displayLocation; // Human-readable, already localized by caller.
   const TicketSaveResult({required this.path, required this.displayLocation});
 }
 
@@ -25,8 +25,16 @@ class TicketSaveResult {
 ///   iOS    : <App sandbox>/Documents/tickets/<filename>.pdf
 ///   Android: /Download/Lehiboo/<filename>.pdf via MediaStore on API 29+
 ///            (scoped storage compatible) or direct file write on older.
-Future<TicketSaveResult> shareTicketPdf(TicketPdfDownload download) async {
-  final result = await _saveToPublicFolder(download);
+Future<TicketSaveResult> shareTicketPdf(
+  TicketPdfDownload download, {
+  required String androidDisplayLocation,
+  required String documentsDisplayLocation,
+}) async {
+  final result = await _saveToPublicFolder(
+    download,
+    androidDisplayLocation: androidDisplayLocation,
+    documentsDisplayLocation: documentsDisplayLocation,
+  );
 
   // share_plus needs a real file path — Android MediaStore content:// URIs
   // are not directly shareable. Always stage a temp copy for the share
@@ -35,13 +43,17 @@ Future<TicketSaveResult> shareTicketPdf(TicketPdfDownload download) async {
     final tempDir = await getTemporaryDirectory();
     final tempFile = File('${tempDir.path}/${download.filename}');
     await tempFile.writeAsBytes(download.bytes, flush: true);
-    await Share.shareXFiles([
-      XFile(
-        tempFile.path,
-        mimeType: 'application/pdf',
-        name: download.filename,
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [
+          XFile(
+            tempFile.path,
+            mimeType: 'application/pdf',
+            name: download.filename,
+          ),
+        ],
       ),
-    ]);
+    );
   } catch (e) {
     // Persisting succeeded; the share sheet is a nice-to-have.
     debugPrint('🎫 share sheet failed (non-fatal): $e');
@@ -50,7 +62,11 @@ Future<TicketSaveResult> shareTicketPdf(TicketPdfDownload download) async {
   return result;
 }
 
-Future<TicketSaveResult> _saveToPublicFolder(TicketPdfDownload download) async {
+Future<TicketSaveResult> _saveToPublicFolder(
+  TicketPdfDownload download, {
+  required String androidDisplayLocation,
+  required String documentsDisplayLocation,
+}) async {
   if (Platform.isAndroid) {
     final saved = await _androidFileSaver.invokeMethod<String>(
       'saveToDownloads',
@@ -66,7 +82,7 @@ Future<TicketSaveResult> _saveToPublicFolder(TicketPdfDownload download) async {
     debugPrint('🎫 saved to Android Downloads: $saved');
     return TicketSaveResult(
       path: saved,
-      displayLocation: 'Téléchargements/Lehiboo',
+      displayLocation: androidDisplayLocation,
     );
   }
 
@@ -81,6 +97,6 @@ Future<TicketSaveResult> _saveToPublicFolder(TicketPdfDownload download) async {
   debugPrint('🎫 saved to iOS Documents: ${file.path}');
   return TicketSaveResult(
     path: file.path,
-    displayLocation: 'Documents › Lehiboo › tickets',
+    displayLocation: documentsDisplayLocation,
   );
 }

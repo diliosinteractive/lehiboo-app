@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/mobile_app_config.dart';
 import '../providers/home_providers.dart';
+import 'home_section_title.dart';
 
 /// Section displaying advertising banners from WordPress admin config
 class AdsBannersSection extends ConsumerWidget {
@@ -28,13 +29,9 @@ class AdsBannersSection extends ConsumerWidget {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Offres et bons plans',
-                style: GoogleFonts.montserrat(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2D3748),
-                ),
+              child: HomeSectionTitle(
+                title: context.l10n.homeOffersTitle,
+                color: const Color(0xFF2D3748),
               ),
             ),
             const SizedBox(height: 16),
@@ -117,15 +114,16 @@ class _BannerCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  errorWidget: (context, url, error) => _buildPlaceholder(),
+                  errorWidget: (context, url, error) =>
+                      _buildPlaceholder(context),
                 )
-              : _buildPlaceholder(),
+              : _buildPlaceholder(context),
         ),
       ),
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -137,19 +135,19 @@ class _BannerCard extends StatelessWidget {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.local_offer,
               color: Colors.white,
               size: 40,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Offre spéciale',
-              style: TextStyle(
+              context.l10n.homeSpecialOffer,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,

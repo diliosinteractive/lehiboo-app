@@ -111,7 +111,9 @@ class _EventGalleryFullscreenState extends State<EventGalleryFullscreen> {
     final text = widget.eventTitle != null
         ? '${widget.eventTitle}\n${widget.shareUrl ?? widget.images[_currentIndex]}'
         : widget.shareUrl ?? widget.images[_currentIndex];
-    await Share.share(text);
+    await SharePlus.instance.share(
+      ShareParams(text: text),
+    );
   }
 
   @override

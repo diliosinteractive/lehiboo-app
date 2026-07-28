@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../domain/entities/event_question.dart';
 
@@ -90,7 +91,7 @@ class _AuthorRow extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  author?.name ?? 'Anonyme',
+                  author?.name ?? context.l10n.eventAnonymous,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -202,18 +203,18 @@ class _AnswerBlock extends StatelessWidget {
                 color: HbColors.surfaceLight,
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.check_circle_outline,
                     size: 14,
                     color: HbColors.textPrimary,
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Text(
-                    'Réponse officielle',
-                    style: TextStyle(
+                    context.l10n.eventOfficialAnswer,
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: HbColors.textPrimary,
@@ -298,7 +299,9 @@ class _HelpfulButton extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              count > 0 ? 'Utile ($count)' : 'Utile',
+              count > 0
+                  ? context.l10n.eventHelpfulCount(count)
+                  : context.l10n.eventHelpful,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,

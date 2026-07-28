@@ -7,10 +7,13 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart'; // For attribution links
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import 'package:lehiboo/core/analytics/analytics_event.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
+import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
 import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import 'package:lehiboo/features/events/presentation/providers/event_providers.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
@@ -18,6 +21,7 @@ import 'package:lehiboo/features/events/presentation/widgets/map_event_card.dart
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart'; // Import filter sheet
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
+import 'package:lehiboo/features/search/presentation/utils/search_l10n.dart';
 // Note: MapTheme is no longer needed for styling as we use a specific tile provider
 
 /// Active filter chips for the map - shows all active filters
@@ -59,6 +63,17 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
       'initialZoom=${widget.initialZoom}',
     );
     _checkLocationPermission();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.mapOpened,
+        params: {
+          AnalyticsParam.source: widget.initialLat != null
+              ? AnalyticsSource.deepLink
+              : AnalyticsSource.home,
+        },
+      );
+    });
   }
 
   @override
@@ -100,13 +115,14 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
 
   Future<void> _locateMe() async {
     setState(() => _isLocating = true);
+    final locationError = context.l10n.eventMapLocationError;
     try {
       final position = await Geolocator.getCurrentPosition();
 
       _mapController.move(LatLng(position.latitude, position.longitude), 15.0);
     } catch (e) {
       if (mounted) {
-        PetitBooToast.error(context, 'Impossible de récupérer votre position');
+        PetitBooToast.error(context, locationError);
       }
     } finally {
       if (mounted) setState(() => _isLocating = false);
@@ -131,16 +147,12 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
     return EventToActivityMapper.toActivity(event);
   }
 
-  String _formatEventPrice(Event event) {
-    if (event.isAuthoritativelyFree) return 'Gratuit';
-
-    final price = event.minPrice != null && event.minPrice! > 0
-        ? event.minPrice
-        : event.maxPrice != null && event.maxPrice! > 0
-            ? event.maxPrice
-            : event.price;
-    if (price == null || price <= 0) return 'Prix non défini';
-    return '${price.toStringAsFixed(0)}€';
+  String _formatEventPrice(BuildContext context, Event event) {
+    if (event.isAuthoritativelyFree) return context.l10n.commonFree;
+    if (!event.hasDirectBooking) {
+      return event.discoveryPaidPriceLabel ?? context.l10n.eventUndefined;
+    }
+    return event.formattedPrice;
   }
 
   void _onMapReady() {
@@ -163,7 +175,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
     _locateMe();
   }
 
-  List<Marker> _buildMarkers(List<Event> events) {
+  List<Marker> _buildMarkers(BuildContext context, List<Event> events) {
     // Debug: log coordinates
     if (kDebugMode) {
       debugPrint(
@@ -233,6 +245,13 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
         alignment: Alignment.topCenter,
         child: GestureDetector(
           onTap: () {
+            ref.read(analyticsServiceProvider).logEvent(
+              AnalyticsEvent.mapPinTapped,
+              params: {
+                AnalyticsParam.eventUuid: event.id,
+                AnalyticsParam.quantity: count,
+              },
+            );
             if (count == 1) {
               _pageController.animateToPage(
                 displayEntry.key,
@@ -287,7 +306,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         ],
                       ),
                       child: Text(
-                        _formatEventPrice(event),
+                        _formatEventPrice(context, event),
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 10),
                         overflow: TextOverflow.ellipsis,
@@ -346,7 +365,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${group.length} événements ici',
+                      context.eventMapEventsHere(group.length),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -380,7 +399,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        "${DateFormat('dd MMM HH:mm', 'fr_FR').format(event.startDate)} • ${_formatEventPrice(event)}",
+                        "${context.appDateFormat('dd MMM HH:mm', enPattern: 'MMM d, HH:mm').format(event.startDate)} • ${_formatEventPrice(context, event)}",
                         style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
                       trailing: isSelected
@@ -434,9 +453,10 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: widget.initialLat != null && widget.initialLng != null
-                  ? LatLng(widget.initialLat!, widget.initialLng!)
-                  : _kDefaultCenter,
+              initialCenter:
+                  widget.initialLat != null && widget.initialLng != null
+                      ? LatLng(widget.initialLat!, widget.initialLng!)
+                      : _kDefaultCenter,
               initialZoom: widget.initialZoom ?? _kDefaultZoom,
               onPositionChanged: _onPositionChanged,
               onMapReady: _onMapReady,
@@ -449,13 +469,14 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                 urlTemplate:
                     'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
-                userAgentPackageName: 'com.dilios.lehiboo',
+                userAgentPackageName: 'com.dilios.lehibooexperience',
               ),
               Builder(
                 builder: (context) {
                   if (eventsAsync.hasValue) {
                     return MarkerLayer(
-                      markers: _buildMarkers(eventsAsync.value!.events),
+                      markers:
+                          _buildMarkers(context, eventsAsync.value!.events),
                     );
                   }
                   return const MarkerLayer(markers: []);
@@ -510,22 +531,23 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                             scrollDirection: Axis.horizontal,
                             child: Row(
                               children: [
-                                _buildDateChip('Aujourd\'hui',
+                                _buildDateChip(context.l10n.commonToday,
                                     DateFilterType.today, filter),
                                 const SizedBox(width: 8),
-                                _buildDateChip(
-                                    'Demain', DateFilterType.tomorrow, filter),
+                                _buildDateChip(context.l10n.commonTomorrow,
+                                    DateFilterType.tomorrow, filter),
                                 const SizedBox(width: 8),
-                                _buildDateChip('Ce week-end',
+                                _buildDateChip(context.l10n.commonThisWeekend,
                                     DateFilterType.thisWeekend, filter),
                                 const SizedBox(width: 8),
-                                _buildDateChip('Cette semaine',
+                                _buildDateChip(context.l10n.searchDateThisWeek,
                                     DateFilterType.thisWeek, filter),
                                 const SizedBox(width: 8),
-                                _buildDateChip('Ce mois',
+                                _buildDateChip(context.l10n.searchDateThisMonth,
                                     DateFilterType.thisMonth, filter),
                                 const SizedBox(width: 8),
-                                _buildBooleanChip('Gratuit', filter.onlyFree,
+                                _buildBooleanChip(
+                                    context.l10n.commonFree, filter.onlyFree,
                                     (val) {
                                   ref
                                       .read(eventFilterProvider.notifier)
@@ -533,7 +555,8 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                                 }),
                                 const SizedBox(width: 8),
                                 _buildBooleanChip(
-                                    'En famille', filter.familyFriendly, (val) {
+                                    context.l10n.searchFamilyTitle,
+                                    filter.familyFriendly, (val) {
                                   ref
                                       .read(eventFilterProvider.notifier)
                                       .setFamilyFriendly(val);
@@ -573,17 +596,17 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                             BoxShadow(color: Colors.black12, blurRadius: 4)
                           ],
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SizedBox(
+                            const SizedBox(
                                 width: 14,
                                 height: 14,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: Color(0xFFFF601F))),
-                            SizedBox(width: 8),
-                            Text("Recherche en cours...",
-                                style: TextStyle(
+                            const SizedBox(width: 8),
+                            Text(context.l10n.eventMapSearching,
+                                style: const TextStyle(
                                     fontSize: 12, fontWeight: FontWeight.w500)),
                           ],
                         ),
@@ -652,7 +675,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                             borderRadius: BorderRadius.circular(30),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -671,10 +694,10 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              const Flexible(
+                              Flexible(
                                 child: Text(
-                                  "Oups, c'est calme par ici !\nBesoin d'un coup de pouce ?",
-                                  style: TextStyle(
+                                  context.l10n.eventMapEmptyHelp,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
                                     color: Colors.black87,
@@ -826,7 +849,7 @@ class _MapActiveFilters extends ConsumerWidget {
                     Icon(Icons.clear_all, size: 14, color: Colors.grey[700]),
                     const SizedBox(width: 4),
                     Text(
-                      'Effacer',
+                      context.l10n.searchClear,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[700],
@@ -857,7 +880,7 @@ class _MapActiveFilters extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _formatLabel(chip),
+                    _formatLabel(context, chip),
                     style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFFFF601F),
@@ -868,7 +891,7 @@ class _MapActiveFilters extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF601F).withOpacity(0.15),
+                      color: const Color(0xFFFF601F).withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.close,
@@ -883,14 +906,87 @@ class _MapActiveFilters extends ConsumerWidget {
     );
   }
 
-  String _formatLabel(ActiveFilterChip chip) {
+  String _formatLabel(BuildContext context, ActiveFilterChip chip) {
+    final localized = _localizedSystemChipLabel(context, chip);
+    if (localized != null) return localized;
+
     if (chip.type == FilterChipType.thematique ||
-        chip.type == FilterChipType.category) {
+        chip.type == FilterChipType.category ||
+        chip.type == FilterChipType.eventTag ||
+        chip.type == FilterChipType.targetAudience ||
+        chip.type == FilterChipType.specialEvent ||
+        chip.type == FilterChipType.emotion) {
       final words = chip.label.split('-').map((word) {
         if (word.isEmpty) return word;
         return word[0].toUpperCase() + word.substring(1);
       });
       return words.join(' ');
+    }
+    return chip.label;
+  }
+
+  String? _localizedSystemChipLabel(
+    BuildContext context,
+    ActiveFilterChip chip,
+  ) {
+    switch (chip.id) {
+      case 'price':
+        return _priceLabel(context, chip);
+      case 'city':
+        final radius = int.tryParse(chip.value ?? '');
+        return radius == null
+            ? chip.label
+            : context.searchCityRadiusLabel(chip.label, radius);
+      case 'location':
+        final radius = int.tryParse(chip.value ?? '');
+        return context.searchAroundMeLabel(radius ?? 10);
+      case 'available_only':
+        return context.l10n.searchAvailablePlaces;
+      case 'family':
+        return context.l10n.searchFamilyTitle;
+      case 'pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_family':
+        return context.l10n.searchFamilyTitle;
+      case 'public_filter_pmr':
+        return context.l10n.searchAccessiblePmr;
+      case 'public_filter_group':
+        return context.l10n.searchAudienceGroup;
+      case 'public_filter_school':
+        return context.l10n.searchAudienceSchoolGroup;
+      case 'public_filter_professional':
+        return context.l10n.searchAudienceProfessional;
+      case 'online':
+        return context.l10n.searchOnline;
+      case 'in_person':
+        return context.l10n.searchInPerson;
+      case 'location_type':
+        return _locationTypeLabel(context, chip.value);
+    }
+    return null;
+  }
+
+  String? _locationTypeLabel(BuildContext context, String? value) {
+    return switch (value) {
+      'physical' => context.l10n.searchLocationIndoor,
+      'offline' => context.l10n.searchLocationOutdoor,
+      'online' => context.l10n.searchLocationTypeOnline,
+      'hybrid' => context.l10n.searchLocationMixed,
+      _ => null,
+    };
+  }
+
+  String _priceLabel(BuildContext context, ActiveFilterChip chip) {
+    final value = chip.value ?? chip.label;
+    if (value == 'free') return context.l10n.commonFree;
+    if (value == 'paid') return context.l10n.searchPricePaid;
+    if (value.startsWith('range:')) {
+      final parts = value.split(':');
+      final min = parts.length > 1 ? int.tryParse(parts[1]) : null;
+      final max = parts.length > 2 ? int.tryParse(parts[2]) : null;
+      if (min != null && max != null) {
+        return context.l10n.searchPriceRange(min, max);
+      }
     }
     return chip.label;
   }

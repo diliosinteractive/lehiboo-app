@@ -46,3 +46,11 @@ app.*.map.json
 
 # Local-only working notes
 docs/session-report-*.md
+
+.env
+.env.development
+.env.production
+.env.staging
+
+# FVM Version Cache
+.fvm/

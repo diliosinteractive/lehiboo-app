@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 
@@ -16,38 +18,15 @@ enum BookingFilterType {
 enum BookingSortOption {
   dateAsc,
   dateDesc,
+  createdDesc,
   statusAsc,
 }
 
 extension BookingSortOptionExtension on BookingSortOption {
-  String get label {
-    switch (this) {
-      case BookingSortOption.dateAsc:
-        return 'Date (plus proche)';
-      case BookingSortOption.dateDesc:
-        return 'Date (plus lointaine)';
-      case BookingSortOption.statusAsc:
-        return 'Statut';
-    }
-  }
-
   String get id => name;
 }
 
 extension BookingFilterTypeExtension on BookingFilterType {
-  String get label {
-    switch (this) {
-      case BookingFilterType.all:
-        return 'Tous';
-      case BookingFilterType.upcoming:
-        return 'À venir';
-      case BookingFilterType.past:
-        return 'Passés';
-      case BookingFilterType.cancelled:
-        return 'Annulés';
-    }
-  }
-
   String get id => name;
 }
 
@@ -65,7 +44,7 @@ class BookingsListState {
   const BookingsListState({
     this.allBookings = const [],
     this.currentFilter = BookingFilterType.all,
-    this.sortOption = BookingSortOption.dateAsc,
+    this.sortOption = BookingSortOption.createdDesc,
     this.isLoading = false,
     this.error,
     this.isRefreshing = false,
@@ -96,8 +75,9 @@ class BookingsListState {
         }).toList();
         break;
       case BookingFilterType.cancelled:
-        filtered = allBookings.where((b) =>
-            b.status == 'cancelled' || b.status == 'refunded').toList();
+        filtered = allBookings
+            .where((b) => b.status == 'cancelled' || b.status == 'refunded')
+            .toList();
         break;
     }
 
@@ -118,6 +98,13 @@ class BookingsListState {
           if (dateA == null) return 1;
           if (dateB == null) return -1;
           return dateB.compareTo(dateA);
+        case BookingSortOption.createdDesc:
+          final createdA = a.createdAt;
+          final createdB = b.createdAt;
+          if (createdA == null && createdB == null) return 0;
+          if (createdA == null) return 1;
+          if (createdB == null) return -1;
+          return createdB.compareTo(createdA);
         case BookingSortOption.statusAsc:
           return (a.status ?? '').compareTo(b.status ?? '');
       }
@@ -145,8 +132,9 @@ class BookingsListState {
           return slotDate != null && slotDate.isBefore(now);
         }).length;
       case BookingFilterType.cancelled:
-        return allBookings.where((b) =>
-            b.status == 'cancelled' || b.status == 'refunded').length;
+        return allBookings
+            .where((b) => b.status == 'cancelled' || b.status == 'refunded')
+            .length;
     }
   }
 
@@ -178,15 +166,38 @@ final bookingsListControllerProvider =
     StateNotifierProvider<BookingListController, BookingsListState>(
   (ref) {
     final repo = ref.watch(bookingRepositoryProvider);
-    return BookingListController(bookingRepository: repo)..loadBookings();
+    return BookingListController(bookingRepository: repo, ref: ref)
+      ..loadBookings();
   },
 );
 
 class BookingListController extends StateNotifier<BookingsListState> {
-  BookingListController({required this.bookingRepository})
-      : super(const BookingsListState(isLoading: true));
+  BookingListController({required this.bookingRepository, required Ref ref})
+      : _ref = ref,
+        super(const BookingsListState(isLoading: true)) {
+    // Bookings are user-scoped. The provider is NOT autoDispose, so its state
+    // survives logout and would leak the previous user's reservations to the
+    // next sign-in on the same app session. Mirror the hibons/notifications
+    // pattern: reset state on real auth transitions only (skip the `loading`
+    // hop that logout() itself triggers).
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          state = const BookingsListState();
+        } else if (loggedIn) {
+          loadBookings(refresh: true);
+        }
+      },
+    );
+  }
 
   final BookingRepository bookingRepository;
+  final Ref _ref;
 
   Future<void> loadBookings({bool refresh = false}) async {
     debugPrint('📋 loadBookings called (refresh: $refresh)');
@@ -224,7 +235,7 @@ class BookingListController extends StateNotifier<BookingsListState> {
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
-        error: e.toString(),
+        error: ApiResponseHandler.extractError(e),
       );
     }
   }
@@ -259,15 +270,16 @@ class BookingListController extends StateNotifier<BookingsListState> {
 }
 
 // Legacy provider for backward compatibility
-final legacyBookingsListControllerProvider =
-    StateNotifierProvider<LegacyBookingListController, AsyncValue<List<Booking>>>(
+final legacyBookingsListControllerProvider = StateNotifierProvider<
+    LegacyBookingListController, AsyncValue<List<Booking>>>(
   (ref) {
     final repo = ref.watch(bookingRepositoryProvider);
     return LegacyBookingListController(bookingRepository: repo)..load();
   },
 );
 
-class LegacyBookingListController extends StateNotifier<AsyncValue<List<Booking>>> {
+class LegacyBookingListController
+    extends StateNotifier<AsyncValue<List<Booking>>> {
   LegacyBookingListController({required this.bookingRepository})
       : super(const AsyncValue.loading());
 

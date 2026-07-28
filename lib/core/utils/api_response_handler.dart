@@ -21,10 +21,12 @@
 ///  – `meta` extracted from root or `data.pagination` when present.
 ///
 /// **Errors**
-///  – [extractError] turns any exception into a user-facing French string.
+///  – [extractError] turns any exception into a localized user-facing string.
 library;
 
 import 'package:dio/dio.dart';
+
+import '../l10n/l10n.dart';
 
 class ApiResponseHandler {
   ApiResponseHandler._();
@@ -165,43 +167,76 @@ class ApiResponseHandler {
   ///  4. `{ "message": "…" }`                                    — top-level message
   ///  5. `{ "data": { "message": "…" } }`                        — nested message
   ///
-  /// Network / timeout errors return a generic French connectivity message.
+  /// Network / timeout errors return a localized connectivity message.
   /// [ApiFormatException] and unrecognised errors return [fallback].
   static String extractError(
     dynamic error, {
-    String fallback = 'Une erreur est survenue. Veuillez réessayer.',
+    String? fallback,
   }) {
+    final l10n = cachedAppLocalizations();
+    final fallbackMessage = fallback ?? l10n.commonGenericRetryError;
+
     if (error is DioException) {
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
         case DioExceptionType.connectionError:
-          return 'Erreur de connexion. Vérifiez votre connexion internet.';
+          return l10n.commonConnectionError;
         case DioExceptionType.badResponse:
           final data = error.response?.data;
           if (data is Map<String, dynamic>) {
-            return _extractMessageFromBody(data) ?? fallback;
+            return _extractMessageFromBody(data) ?? fallbackMessage;
           }
-          return fallback;
+          return fallbackMessage;
         default:
-          return fallback;
+          return fallbackMessage;
       }
     }
 
-    if (error is ApiFormatException) return fallback;
+    if (error is ApiFormatException) return fallbackMessage;
 
-    // Generic Exception — strip prefix if present
-    final str = error.toString();
-    final cleaned =
-        str.startsWith('Exception: ') ? str.substring(11) : str;
-    if (cleaned.isNotEmpty &&
-        !cleaned.startsWith('http') &&
-        !cleaned.contains('DioException')) {
-      return cleaned;
+    // Dart `Error` subclasses (CircularDependencyError, RangeError, etc.) are
+    // programming bugs, not user-facing problems. Their toString often looks
+    // like "Instance of '<ClassName>'" — never surface that to the UI.
+    if (error is Error) return fallbackMessage;
+
+    final str = _stripGenericExceptionPrefix(error.toString());
+    if (_looksLikeConnectivityFailure(str)) {
+      return l10n.commonConnectionError;
     }
 
-    return fallback;
+    return safeUserMessage(str) ?? fallbackMessage;
+  }
+
+  /// Returns a short message only if it looks safe to show to end users.
+  ///
+  /// This intentionally keeps ordinary validation/API messages, but rejects
+  /// diagnostics such as stack traces, exception class names, file paths, SDK
+  /// provider details, and raw network/socket internals.
+  static String? safeUserMessage(Object? value) {
+    final raw = value?.toString().trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    final message = _stripGenericExceptionPrefix(raw).trim();
+    if (message.isEmpty) return null;
+    if (_looksLikeDiagnosticMessage(message)) return null;
+
+    return message;
+  }
+
+  /// Returns true when the exception is a transport/connectivity failure.
+  static bool isNetworkError(dynamic error) {
+    if (error is! DioException) return false;
+
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError =>
+        true,
+      _ => false,
+    };
   }
 
   /// Extracts a human-readable message from a Laravel error response body.
@@ -212,23 +247,86 @@ class ApiResponseHandler {
       final details = error['details'];
       if (details is Map<String, dynamic> && details.isNotEmpty) {
         final first = details.values.first;
-        if (first is List && first.isNotEmpty) return first.first.toString();
-        return first.toString();
+        if (first is List && first.isNotEmpty) {
+          return safeUserMessage(first.first);
+        }
+        return safeUserMessage(first);
       }
-      if (error['message'] is String) return error['message'] as String;
+      if (error['message'] is String) return safeUserMessage(error['message']);
     }
-    if (error is String) return error;
+    if (error is String) return safeUserMessage(error);
 
     // Top-level message
-    if (body['message'] is String) return body['message'] as String;
+    if (body['message'] is String) return safeUserMessage(body['message']);
 
     // Nested data.message
     final data = body['data'];
     if (data is Map<String, dynamic> && data['message'] is String) {
-      return data['message'] as String;
+      return safeUserMessage(data['message']);
     }
 
     return null;
+  }
+
+  static String _stripGenericExceptionPrefix(String value) {
+    const prefix = 'Exception: ';
+    return value.startsWith(prefix) ? value.substring(prefix.length) : value;
+  }
+
+  static bool _looksLikeConnectivityFailure(String value) {
+    final lower = value.toLowerCase();
+    return lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('network is unreachable') ||
+        lower.contains('connection refused') ||
+        lower.contains('connection timed out') ||
+        lower.contains('connection reset by peer');
+  }
+
+  static bool _looksLikeDiagnosticMessage(String value) {
+    final lower = value.toLowerCase();
+    if (value.length > 500) return true;
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return true;
+    }
+    if (value.startsWith('Instance of ')) return true;
+    if (_looksLikeConnectivityFailure(value)) return true;
+
+    final diagnosticTokens = <String>[
+      'traceback',
+      'stack trace',
+      'stacktrace',
+      'dioexception',
+      'socketexception',
+      'formatexception',
+      'stateerror',
+      'fluttererror',
+      'rangeerror',
+      'typeerror',
+      'assertion failed',
+      'error code:',
+      'unhandled exception',
+      'null check operator used on a null value',
+      'is not a subtype of type',
+      'bad state:',
+      'package:',
+      'file://',
+      'api.openai',
+      'openai',
+      'deepseek',
+      'langchain',
+      'insufficient_quota',
+    ];
+    if (diagnosticTokens.any(lower.contains)) return true;
+
+    final diagnosticPatterns = <RegExp>[
+      RegExp(r'(^|\n)\s*#\d+\s+'),
+      RegExp(r'(^|\n)\s*at\s+[\w.$<>]+\('),
+      RegExp(r'(/[A-Za-z0-9._-]+)+\.dart:\d+'),
+      RegExp(r'[A-Za-z]:\\[^:]+:\d+'),
+      RegExp(r'\.dart:\d+:\d+'),
+    ];
+    return diagnosticPatterns.any((pattern) => pattern.hasMatch(value));
   }
 
   // ---------------------------------------------------------------------------

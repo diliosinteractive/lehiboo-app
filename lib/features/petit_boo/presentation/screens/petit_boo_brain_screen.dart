@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
-import '../../data/datasources/petit_boo_context_storage.dart';
 import '../providers/petit_boo_chat_provider.dart';
 
 /// Screen showing Petit Boo's "brain" - the user context/memory it has learned.
@@ -12,13 +12,14 @@ class PetitBooBrainScreen extends ConsumerStatefulWidget {
   const PetitBooBrainScreen({super.key});
 
   @override
-  ConsumerState<PetitBooBrainScreen> createState() => _PetitBooBrainScreenState();
+  ConsumerState<PetitBooBrainScreen> createState() =>
+      _PetitBooBrainScreenState();
 }
 
 class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
   @override
   Widget build(BuildContext context) {
-    final chatState = ref.watch(petitBooChatProvider);
+    ref.watch(petitBooChatProvider);
     final notifier = ref.read(petitBooChatProvider.notifier);
     final isMemoryEnabled = notifier.isMemoryEnabled;
     final contextMap = notifier.userContext;
@@ -42,11 +43,12 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
                 color: HbColors.brandPrimary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: const Icon(Icons.psychology, color: HbColors.brandPrimary, size: 20),
+              child: const Icon(Icons.psychology,
+                  color: HbColors.brandPrimary, size: 20),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Mémoire de Petit Boo',
+            Text(
+              context.l10n.petitBooBrainTitle,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -67,8 +69,8 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
             const SizedBox(height: 24),
 
             if (isMemoryEnabled) ...[
-              const Text(
-                'Ce que je sais sur vous',
+              Text(
+                context.l10n.petitBooMemoryKnownTitle,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -82,9 +84,10 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
                 _buildEmptyState()
               else
                 ...contextMap.entries
-                    .where((e) => !e.key.startsWith('_')) // Filter internal keys
-                    .map((e) => _buildMemoryItem(context, notifier, e.key, e.value))
-                    .toList(),
+                    .where(
+                        (e) => !e.key.startsWith('_')) // Filter internal keys
+                    .map((e) =>
+                        _buildMemoryItem(context, notifier, e.key, e.value)),
 
               // Clear all button
               if (contextMap.isNotEmpty) ...[
@@ -94,7 +97,7 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
                     onPressed: () => _confirmClearAll(context, notifier),
                     icon: Icon(Icons.delete_forever, color: HbColors.error),
                     label: Text(
-                      'Tout effacer',
+                      context.l10n.petitBooMemoryClearAll,
                       style: TextStyle(color: HbColors.error),
                     ),
                   ),
@@ -108,7 +111,10 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
     );
   }
 
-  Widget _buildMemoryToggleCard(bool isMemoryEnabled, PetitBooChatNotifier notifier) {
+  Widget _buildMemoryToggleCard(
+      bool isMemoryEnabled, PetitBooChatNotifier notifier) {
+    final l10n = context.l10n;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -123,16 +129,21 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
           Row(
             children: [
               Icon(
-                isMemoryEnabled ? Icons.check_circle_outline : Icons.pause_circle_outline,
+                isMemoryEnabled
+                    ? Icons.check_circle_outline
+                    : Icons.pause_circle_outline,
                 color: isMemoryEnabled ? Colors.green[700] : Colors.grey[700],
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  isMemoryEnabled ? 'Mémoire activée' : 'Mémoire en pause',
+                  isMemoryEnabled
+                      ? l10n.petitBooMemoryEnabled
+                      : l10n.petitBooMemoryPaused,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isMemoryEnabled ? Colors.green[900] : Colors.grey[800],
+                    color:
+                        isMemoryEnabled ? Colors.green[900] : Colors.grey[800],
                     fontSize: 16,
                   ),
                 ),
@@ -150,9 +161,10 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
           const SizedBox(height: 8),
           Text(
             isMemoryEnabled
-                ? 'Petit Boo apprend de vos échanges pour vous proposer des sorties qui vous ressemblent. Vous pouvez corriger ou supprimer ces infos ci-dessous.'
-                : 'Petit Boo ne retient plus rien de vos nouvelles conversations. Les anciennes informations restent stockées mais ne sont pas utilisées.',
-            style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.4),
+                ? l10n.petitBooMemoryEnabledDescription
+                : l10n.petitBooMemoryPausedDescription,
+            style:
+                TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.4),
           ),
         ],
       ),
@@ -178,7 +190,7 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            "Je n'ai pas encore d'infos sur vous.",
+            context.l10n.petitBooMemoryEmptyTitle,
             style: TextStyle(
               color: HbColors.textSecondary,
               fontSize: 15,
@@ -187,7 +199,7 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Discutez avec moi pour que j\'apprenne vos goûts !',
+            context.l10n.petitBooMemoryEmptyBody,
             textAlign: TextAlign.center,
             style: TextStyle(color: HbColors.textSecondary, fontSize: 13),
           ),
@@ -202,10 +214,11 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
       alignment: Alignment.center,
       child: Column(
         children: [
-          Icon(Icons.visibility_off_outlined, size: 48, color: HbColors.textSecondary),
+          Icon(Icons.visibility_off_outlined,
+              size: 48, color: HbColors.textSecondary),
           const SizedBox(height: 16),
           Text(
-            'Réactivez la mémoire pour voir et modifier vos informations.',
+            context.l10n.petitBooMemoryDisabledBody,
             textAlign: TextAlign.center,
             style: TextStyle(color: HbColors.textSecondary),
           ),
@@ -220,9 +233,9 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
     String key,
     dynamic value,
   ) {
-    final label = PetitBooContextStorage.getKeyLabel(key);
-    final formattedValue = PetitBooContextStorage.formatValue(key, value);
-    final icon = PetitBooContextStorage.getKeyIcon(key);
+    final label = _contextKeyLabel(context, key);
+    final formattedValue = _formatContextValue(context, key, value);
+    final icon = _contextKeyIcon(key);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -279,23 +292,23 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'edit',
               child: Row(
                 children: [
-                  Icon(Icons.edit_outlined, size: 20, color: Colors.blue),
-                  SizedBox(width: 12),
-                  Text('Modifier'),
+                  const Icon(Icons.edit_outlined, size: 20, color: Colors.blue),
+                  const SizedBox(width: 12),
+                  Text(context.l10n.petitBooMemoryEditAction),
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: Row(
                 children: [
-                  Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                  SizedBox(width: 12),
-                  Text('Oublier'),
+                  const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                  const SizedBox(width: 12),
+                  Text(context.l10n.petitBooMemoryForgetAction),
                 ],
               ),
             ),
@@ -312,24 +325,24 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
     dynamic currentValue,
   ) {
     final controller = TextEditingController(text: currentValue.toString());
-    final label = PetitBooContextStorage.getKeyLabel(key);
+    final label = _contextKeyLabel(context, key);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Modifier $label'),
+        title: Text(context.l10n.petitBooMemoryEditTitle(label)),
         content: TextField(
           controller: controller,
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
-            hintText: 'Nouvelle valeur',
+            hintText: context.l10n.petitBooMemoryNewValueHint,
             labelText: label,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text(context.l10n.commonCancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -342,7 +355,10 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: HbColors.brandPrimary,
             ),
-            child: const Text('Enregistrer', style: TextStyle(color: Colors.white)),
+            child: Text(
+              context.l10n.commonSave,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -354,17 +370,17 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
     PetitBooChatNotifier notifier,
     String key,
   ) {
-    final label = PetitBooContextStorage.getKeyLabel(key);
+    final label = _contextKeyLabel(context, key);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Oublier cette info ?'),
-        content: Text('Voulez-vous vraiment que Petit Boo oublie : $label ?'),
+        title: Text(context.l10n.petitBooMemoryForgetTitle),
+        content: Text(context.l10n.petitBooMemoryForgetBody(label)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Non'),
+            child: Text(context.l10n.petitBooMemoryNoKeep),
           ),
           TextButton(
             onPressed: () async {
@@ -374,7 +390,10 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
               }
               setState(() {});
             },
-            child: Text('Oui, oublier', style: TextStyle(color: HbColors.error)),
+            child: Text(
+              context.l10n.petitBooMemoryForgetConfirm,
+              style: TextStyle(color: HbColors.error),
+            ),
           ),
         ],
       ),
@@ -385,14 +404,12 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Tout effacer ?'),
-        content: const Text(
-          'Voulez-vous vraiment effacer toutes les informations que Petit Boo a apprises sur vous ?',
-        ),
+        title: Text(context.l10n.petitBooMemoryClearAllTitle),
+        content: Text(context.l10n.petitBooMemoryClearAllBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Non'),
+            child: Text(context.l10n.petitBooMemoryNoKeep),
           ),
           TextButton(
             onPressed: () async {
@@ -402,10 +419,190 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
               }
               setState(() {});
             },
-            child: Text('Oui, tout effacer', style: TextStyle(color: HbColors.error)),
+            child: Text(
+              context.l10n.petitBooMemoryClearAllConfirm,
+              style: TextStyle(color: HbColors.error),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  String _contextKeyLabel(BuildContext context, String key) {
+    final l10n = context.l10n;
+
+    switch (key) {
+      case 'first_name':
+        return l10n.petitBooMemoryLabelFirstName;
+      case 'last_name':
+        return l10n.petitBooMemoryLabelLastName;
+      case 'nickname':
+        return l10n.petitBooMemoryLabelNickname;
+      case 'age':
+        return l10n.petitBooMemoryLabelAge;
+      case 'birth_year':
+        return l10n.petitBooMemoryLabelBirthYear;
+      case 'age_group':
+        return l10n.petitBooMemoryLabelAgeGroup;
+      case 'city':
+        return l10n.petitBooMemoryLabelCity;
+      case 'region':
+        return l10n.petitBooMemoryLabelRegion;
+      case 'country':
+        return l10n.petitBooMemoryLabelCountry;
+      case 'latitude':
+        return l10n.petitBooMemoryLabelLatitude;
+      case 'longitude':
+        return l10n.petitBooMemoryLabelLongitude;
+      case 'max_distance':
+        return l10n.petitBooMemoryLabelMaxDistance;
+      case 'favorite_activities':
+        return l10n.petitBooMemoryLabelFavoriteActivities;
+      case 'disliked_activities':
+        return l10n.petitBooMemoryLabelDislikedActivities;
+      case 'favorite_categories':
+        return l10n.petitBooMemoryLabelFavoriteCategories;
+      case 'budget_preference':
+        return l10n.petitBooMemoryLabelBudgetPreference;
+      case 'group_type':
+        return l10n.petitBooMemoryLabelGroupType;
+      case 'has_children':
+        return l10n.petitBooMemoryLabelHasChildren;
+      case 'children_ages':
+        return l10n.petitBooMemoryLabelChildrenAges;
+      case 'dietary_preferences':
+        return l10n.petitBooMemoryLabelDietaryPreferences;
+      case 'mobility_constraints':
+        return l10n.petitBooMemoryLabelMobilityConstraints;
+      case 'pet_friendly_needed':
+        return l10n.petitBooMemoryLabelPetFriendlyNeeded;
+      case 'preferred_times':
+        return l10n.petitBooMemoryLabelPreferredTimes;
+      case 'preferred_language':
+        return l10n.petitBooMemoryLabelPreferredLanguage;
+      case 'interests':
+        return l10n.petitBooMemoryLabelInterests;
+      case '_lastUpdated':
+        return l10n.petitBooMemoryLabelLastUpdated;
+      default:
+        return key;
+    }
+  }
+
+  String _contextKeyIcon(String key) {
+    switch (key) {
+      case 'first_name':
+      case 'last_name':
+      case 'nickname':
+        return '👤';
+      case 'age':
+      case 'birth_year':
+      case 'age_group':
+        return '🎂';
+      case 'city':
+      case 'region':
+      case 'country':
+      case 'latitude':
+      case 'longitude':
+        return '📍';
+      case 'max_distance':
+        return '📏';
+      case 'favorite_activities':
+      case 'interests':
+        return '❤️';
+      case 'disliked_activities':
+        return '👎';
+      case 'favorite_categories':
+        return '🏷️';
+      case 'budget_preference':
+        return '💰';
+      case 'group_type':
+        return '👥';
+      case 'has_children':
+      case 'children_ages':
+        return '👶';
+      case 'dietary_preferences':
+        return '🍽️';
+      case 'mobility_constraints':
+        return '♿';
+      case 'pet_friendly_needed':
+        return '🐾';
+      case 'preferred_times':
+      case '_lastUpdated':
+        return '🕐';
+      case 'preferred_language':
+        return '🌐';
+      default:
+        return '📝';
+    }
+  }
+
+  String _formatContextValue(BuildContext context, String key, dynamic value) {
+    final l10n = context.l10n;
+
+    if (value == null) return l10n.petitBooMemoryUndefined;
+
+    if (value is List) {
+      return value.join(', ');
+    }
+
+    if (value is bool) {
+      return value ? l10n.petitBooMemoryYes : l10n.petitBooMemoryNo;
+    }
+
+    if (key == 'age_group') {
+      switch (value) {
+        case 'young_adult':
+          return l10n.petitBooMemoryAgeGroupYoungAdult;
+        case 'adult':
+          return l10n.petitBooMemoryAgeGroupAdult;
+        case 'senior':
+          return l10n.petitBooMemoryAgeGroupSenior;
+        default:
+          return value.toString();
+      }
+    }
+
+    if (key == 'budget_preference') {
+      switch (value) {
+        case 'low':
+          return l10n.petitBooMemoryBudgetLow;
+        case 'medium':
+          return l10n.petitBooMemoryBudgetMedium;
+        case 'high':
+          return l10n.petitBooMemoryBudgetHigh;
+        default:
+          return value.toString();
+      }
+    }
+
+    if (key == 'group_type') {
+      switch (value) {
+        case 'solo':
+          return l10n.petitBooMemoryGroupSolo;
+        case 'couple':
+          return l10n.petitBooMemoryGroupCouple;
+        case 'family':
+          return l10n.petitBooMemoryGroupFamily;
+        case 'friends':
+          return l10n.petitBooMemoryGroupFriends;
+        default:
+          return value.toString();
+      }
+    }
+
+    if (key == '_lastUpdated') {
+      try {
+        final date = DateTime.parse(value.toString());
+        return context
+            .appDateFormat('d/M/y HH:mm', enPattern: 'M/d/y h:mm a')
+            .format(date);
+      } catch (e) {
+        return value.toString();
+      }
+    }
+
+    return value.toString();
   }
 }

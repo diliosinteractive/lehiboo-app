@@ -78,11 +78,16 @@ class GamificationRepositoryImpl implements GamificationRepository {
   Future<TransactionsListResult> getTransactions({
     String? type,
     String? pillar,
+    int? page,
+    int? perPage,
   }) async {
-    debugPrint('🎮 GamificationRepo: getTransactions(type=$type, pillar=$pillar)');
+    debugPrint(
+        '🎮 GamificationRepo: getTransactions(type=$type, pillar=$pillar, page=$page, perPage=$perPage)');
     final response = await _dataSource.getTransactions(
       type: type,
       pillar: pillar,
+      page: page,
+      perPage: perPage,
     );
 
     final items = response.items.map(_mapTransaction).toList();
@@ -101,6 +106,10 @@ class GamificationRepositoryImpl implements GamificationRepository {
       currentBalance: response.currentBalance,
       lifetimeEarned: response.lifetimeEarned,
       earningsByPillar: earningsByPillar,
+      currentPage: response.currentPage,
+      lastPage: response.lastPage,
+      perPage: response.perPage,
+      total: response.total,
     );
   }
 
@@ -180,11 +189,19 @@ class GamificationRepositoryImpl implements GamificationRepository {
     return source;
   }
 
+  /// Mappe les types renvoyés par l'API (`earned`, `spent`, `bonus`,
+  /// `purchase`, `refund` — cf. spec) vers l'enum interne à 3 valeurs. Le
+  /// crédit/débit affiché est de toute façon dérivé du signe du montant + du
+  /// `typeLabel` API, donc bonus/refund (crédits) sont regroupés sous `earn`.
   TransactionType _parseTransactionType(String type) {
     switch (type.toLowerCase()) {
       case 'earn':
+      case 'earned':
+      case 'bonus':
+      case 'refund':
         return TransactionType.earn;
       case 'spend':
+      case 'spent':
         return TransactionType.spend;
       case 'buy':
       case 'purchase':

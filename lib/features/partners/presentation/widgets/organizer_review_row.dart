@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../reviews/data/models/review_dto.dart';
 
@@ -18,7 +19,8 @@ class OrganizerReviewRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final author = review.author;
-    final isVerified = review.isVerifiedPurchase || review.isVerifiedPurchaseCamel;
+    final isVerified =
+        review.isVerifiedPurchase || review.isVerifiedPurchaseCamel;
     final helpful = review.helpfulCount > 0
         ? review.helpfulCount
         : review.helpfulCountCamel;
@@ -27,10 +29,14 @@ class OrganizerReviewRow extends StatelessWidget {
         : review.createdAtFormattedCamel;
 
     final eventTitle = review.eventTitle ?? review.event?.title;
-    final eventTarget = review.eventUuid ?? review.event?.uuid ?? review.eventSlug ?? review.event?.slug;
+    final eventTarget = review.eventUuid ??
+        review.event?.uuid ??
+        review.eventSlug ??
+        review.event?.slug;
 
     final showOrganizerReply = review.hasResponse ||
-        (review.organizerResponse != null && review.organizerResponse!.isNotEmpty) ||
+        (review.organizerResponse != null &&
+            review.organizerResponse!.isNotEmpty) ||
         review.response != null;
 
     return Padding(
@@ -50,7 +56,7 @@ class OrganizerReviewRow extends StatelessWidget {
                     Text(
                       author?.name.isNotEmpty == true
                           ? author!.name
-                          : 'Utilisateur',
+                          : context.l10n.organizerReviewUserFallback,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -106,13 +112,12 @@ class OrganizerReviewRow extends StatelessWidget {
                   : () => context.push('/event/$eventTarget'),
               borderRadius: BorderRadius.circular(6),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 child: RichText(
                   text: TextSpan(
                     style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                     children: [
-                      const TextSpan(text: 'Avis pour '),
+                      TextSpan(text: '${context.l10n.organizerReviewFor} '),
                       TextSpan(
                         text: eventTitle,
                         style: const TextStyle(
@@ -142,9 +147,7 @@ class OrganizerReviewRow extends StatelessWidget {
           if (showOrganizerReply) ...[
             const SizedBox(height: 12),
             _OrganizerReplyCard(
-              text: review.organizerResponse ??
-                  review.response?.response ??
-                  '',
+              text: review.organizerResponse ?? review.response?.response ?? '',
               author: review.response?.author?.name ??
                   review.response?.organization?.name ??
                   '',
@@ -238,7 +241,7 @@ class _VerifiedChip extends StatelessWidget {
           Icon(Icons.verified_outlined, size: 13, color: Colors.green.shade700),
           const SizedBox(width: 4),
           Text(
-            'Achat vérifié',
+            context.l10n.organizerVerifiedPurchase,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -267,11 +270,10 @@ class _HelpfulChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.thumb_up_alt_outlined,
-              size: 13, color: Colors.grey[700]),
+          Icon(Icons.thumb_up_alt_outlined, size: 13, color: Colors.grey[700]),
           const SizedBox(width: 4),
           Text(
-            '$count utile${count > 1 ? "s" : ""}',
+            context.l10n.organizerHelpfulCount(count),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -318,8 +320,8 @@ class _OrganizerReplyCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   author.isNotEmpty
-                      ? 'Réponse de $author'
-                      : "Réponse de l'organisateur",
+                      ? context.l10n.organizerReplyBy(author)
+                      : context.l10n.organizerReplyFallback,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

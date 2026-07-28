@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../data/models/hibon_badge.dart';
 import '../providers/gamification_provider.dart';
@@ -15,9 +16,10 @@ class AchievementsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
       appBar: AppBar(
-        title: const Text(
-          'Mes Badges',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+        title: Text(
+          context.l10n.gamificationMyBadgesTitle,
+          style: const TextStyle(
+              fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -73,8 +75,8 @@ class AchievementsScreen extends ConsumerWidget {
               color: Colors.grey.shade400,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Impossible de charger tes badges',
+            Text(
+              context.l10n.gamificationBadgesLoadError,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
@@ -86,7 +88,7 @@ class AchievementsScreen extends ConsumerWidget {
             ElevatedButton.icon(
               onPressed: () => ref.invalidate(hibonBadgesProvider),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Réessayer'),
+              label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
@@ -161,9 +163,9 @@ class _BadgesHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Tu es',
-                  style: TextStyle(
+                Text(
+                  context.l10n.gamificationCurrentRankPrefix,
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -180,7 +182,9 @@ class _BadgesHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${meta.lifetimeEarned} HIBONs cumulés',
+                  context.l10n.gamificationLifetimeHibonsAccumulated(
+                    meta.lifetimeEarned,
+                  ),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -229,21 +233,21 @@ class _ProgressSummary extends StatelessWidget {
         children: [
           _SummaryItem(
             value: '${meta.unlocked}',
-            label: 'Débloqués',
+            label: context.l10n.gamificationUnlockedCountLabel,
             color: HbColors.success,
             icon: Icons.check_circle_rounded,
           ),
           const _Divider(),
           _SummaryItem(
             value: '${meta.locked}',
-            label: 'À débloquer',
+            label: context.l10n.gamificationLockedCountLabel,
             color: HbColors.grey500,
             icon: Icons.lock_outline_rounded,
           ),
           const _Divider(),
           _SummaryItem(
             value: '${meta.total}',
-            label: 'Total',
+            label: context.l10n.gamificationTotalCountLabel,
             color: HbColors.brandPrimary,
             icon: Icons.military_tech_rounded,
           ),
@@ -375,8 +379,10 @@ class _BadgeCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           badge.petitBooBonus > 0
-                              ? '+${badge.petitBooBonus} message${badge.petitBooBonus > 1 ? 's' : ''} Petit Boo / jour'
-                              : 'Rang de départ',
+                              ? context.l10n.gamificationPetitBooDailyBonus(
+                                  badge.petitBooBonus,
+                                )
+                              : context.l10n.gamificationStartingRank,
                           style: const TextStyle(
                             fontSize: 13,
                             color: HbColors.textMuted,
@@ -403,8 +409,14 @@ class _BadgeCard extends StatelessWidget {
                 children: [
                   Text(
                     unlocked
-                        ? '${badge.hibonsThreshold} / ${badge.hibonsThreshold} HIBONs'
-                        : '${badge.progress} / ${badge.hibonsThreshold} HIBONs',
+                        ? context.l10n.gamificationHibonsProgress(
+                            badge.hibonsThreshold,
+                            badge.hibonsThreshold,
+                          )
+                        : context.l10n.gamificationHibonsProgress(
+                            badge.progress,
+                            badge.hibonsThreshold,
+                          ),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -510,7 +522,9 @@ class _StatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        unlocked ? 'Débloqué' : 'À débloquer',
+        unlocked
+            ? context.l10n.gamificationBadgeUnlocked
+            : context.l10n.gamificationBadgeLocked,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
@@ -599,7 +613,9 @@ class _BadgeDetailDialog extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '+${badge.petitBooBonus} message${badge.petitBooBonus > 1 ? 's' : ''} Petit Boo / jour',
+                    context.l10n.gamificationPetitBooDailyBonus(
+                      badge.petitBooBonus,
+                    ),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -613,16 +629,18 @@ class _BadgeDetailDialog extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Progression',
-                style: TextStyle(
+              Text(
+                context.l10n.gamificationProgressionTitle,
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: HbColors.textMuted,
                 ),
               ),
               Text(
                 unlocked
-                    ? '${badge.hibonsThreshold} HIBONs'
+                    ? context.l10n.gamificationHibonsAmount(
+                        badge.hibonsThreshold,
+                      )
                     : '${badge.progress} / ${badge.hibonsThreshold}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
@@ -644,7 +662,7 @@ class _BadgeDetailDialog extends StatelessWidget {
           const SizedBox(height: 12),
           if (!unlocked)
             Text(
-              'Encore $remaining HIBONs pour débloquer ce badge',
+              context.l10n.gamificationHibonsRemainingForBadge(remaining),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,
@@ -652,10 +670,10 @@ class _BadgeDetailDialog extends StatelessWidget {
               ),
             )
           else
-            const Text(
-              'Bravo, tu as débloqué ce badge !',
+            Text(
+              context.l10n.gamificationBadgeUnlockedCongrats,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: HbColors.success,
@@ -674,9 +692,10 @@ class _BadgeDetailDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Top !',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              child: Text(
+                context.l10n.gamificationTopCta,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ),
           ),

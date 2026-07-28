@@ -1,8 +1,13 @@
+// ignore_for_file: invalid_annotation_target
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'message_dto.dart';
 
 part 'conversation_dto.freezed.dart';
 part 'conversation_dto.g.dart';
+
+Object? _readUserHasReported(Map json, String key) =>
+    json[key] ?? json['userHasReported'];
 
 @freezed
 class ConversationOrganizationDto with _$ConversationOrganizationDto {
@@ -59,7 +64,9 @@ class ConversationDto with _$ConversationDto {
     @JsonKey(name: 'last_message_at') String? lastMessageAt,
     @JsonKey(name: 'unread_count') @Default(0) int unreadCount,
     @JsonKey(name: 'is_signalement') @Default(false) bool isSignalement,
-    @JsonKey(name: 'user_has_reported') @Default(false) bool userHasReported,
+    @JsonKey(name: 'user_has_reported', readValue: _readUserHasReported)
+    @Default(false)
+    bool userHasReported,
     ConversationOrganizationDto? organization,
     @JsonKey(name: 'partner_organization')
     ConversationOrganizationDto? partnerOrganization,
@@ -99,8 +106,8 @@ class ConversationsListResponseDto {
       meta = json['meta'] as Map<String, dynamic>?;
     } else if (rawData is Map<String, dynamic>) {
       dataList = rawData['data'] as List? ?? [];
-      meta = rawData['meta'] as Map<String, dynamic>?
-          ?? json['meta'] as Map<String, dynamic>?;
+      meta = rawData['meta'] as Map<String, dynamic>? ??
+          json['meta'] as Map<String, dynamic>?;
     } else {
       dataList = [];
       meta = json['meta'] as Map<String, dynamic>?;

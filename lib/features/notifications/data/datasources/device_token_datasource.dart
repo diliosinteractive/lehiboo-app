@@ -77,16 +77,24 @@ class DeviceTokenDataSource {
 
   DeviceTokenDataSource(this._dio);
 
-  /// Register a new device token for push notifications
+  /// Register a new device token for push notifications.
   ///
-  /// [token] - FCM/APNs token
+  /// [token] - OneSignal Subscription ID (or legacy FCM token)
   /// [platform] - 'android', 'ios', or 'web'
+  /// [provider] - 'onesignal' (or legacy 'fcm')
+  /// [subscriptionId] - OneSignal Subscription ID (recommended; same value as
+  ///   [token] today, kept separate for forward compatibility)
+  /// [externalUserId] - Backend user uuid bound on OneSignal (recommended; lets
+  ///   the backend fan out via External ID without storing every Subscription)
   /// [deviceId] - Unique device identifier
   /// [deviceName] - Human readable device name
   /// [appVersion] - Current app version
   Future<DeviceTokenResult> registerToken({
     required String token,
     required String platform,
+    required String provider,
+    String? subscriptionId,
+    String? externalUserId,
     String? deviceId,
     String? deviceName,
     String? appVersion,
@@ -95,7 +103,10 @@ class DeviceTokenDataSource {
       '/auth/device-tokens',
       data: {
         'token': token,
+        'provider': provider,
         'platform': platform,
+        if (subscriptionId != null) 'subscription_id': subscriptionId,
+        if (externalUserId != null) 'external_user_id': externalUserId,
         if (deviceId != null) 'device_id': deviceId,
         if (deviceName != null) 'device_name': deviceName,
         if (appVersion != null) 'app_version': appVersion,

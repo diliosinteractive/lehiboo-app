@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import '../../providers/tool_schemas_provider.dart';
@@ -32,15 +33,19 @@ class DynamicToolResultCard extends ConsumerWidget {
     final schemasAsync = ref.watch(toolSchemasProvider);
 
     return schemasAsync.when(
-      data: (schemas) => _buildCard(schemas),
+      data: (schemas) => _buildCard(context, schemas),
       loading: () => _LoadingCard(toolName: toolName),
-      error: (_, __) => _buildCard({}), // Use fallback on error
+      error: (_, __) => _buildCard(context, {}), // Use fallback on error
     );
   }
 
-  Widget _buildCard(Map<String, ToolSchemaDto> loadedSchemas) {
+  Widget _buildCard(
+    BuildContext context,
+    Map<String, ToolSchemaDto> loadedSchemas,
+  ) {
     // Get schema from API or fallback to defaults
-    final schema = getToolSchemaWithFallback(loadedSchemas, toolName);
+    final schema =
+        getToolSchemaWithFallback(loadedSchemas, toolName, context.l10n);
 
     if (schema == null) {
       return UnknownToolCard(toolName: toolName, data: data);
@@ -57,7 +62,8 @@ class DynamicToolResultCard extends ConsumerWidget {
       'brain_memory' => BrainMemoryCard(schema: schema, data: data),
       'trip_plan' => TripPlanCard(schema: schema, data: data),
       'trip_plans_list' => TripPlansListCard(schema: schema, data: data),
-      'action_confirmation' => ActionConfirmationCard(schema: schema, data: data),
+      'action_confirmation' =>
+        ActionConfirmationCard(schema: schema, data: data),
       'favorite_lists' => FavoriteListsCard(schema: schema, data: data),
       _ => GenericListCard(schema: schema, data: data),
     };
@@ -97,7 +103,7 @@ class _LoadingCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            'Chargement...',
+            context.l10n.commonLoading,
             style: TextStyle(
               fontSize: 14,
               color: HbColors.textSecondary,

@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/repositories/stories_repository_impl.dart';
 import '../../domain/entities/story.dart';
+import '../../domain/repositories/stories_repository.dart';
 
 const _storiesFreshness = Duration(minutes: 15);
 
@@ -18,7 +18,7 @@ class ActiveStoriesNotifier extends AutoDisposeAsyncNotifier<List<Story>> {
 
   @override
   Future<List<Story>> build() async {
-    final repository = ref.watch(storiesRepositoryImplProvider);
+    final repository = ref.watch(storiesRepositoryProvider);
     _cacheLink?.close();
     _cacheLink = ref.keepAlive();
     _freshnessTimer?.cancel();
@@ -50,7 +50,7 @@ class ActiveStoriesNotifier extends AutoDisposeAsyncNotifier<List<Story>> {
 
   /// Fire-and-forget impression recording.
   void recordImpression(String storyUuid) {
-    final repository = ref.read(storiesRepositoryImplProvider);
+    final repository = ref.read(storiesRepositoryProvider);
     repository.recordImpression(storyUuid);
   }
 }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../models/auth_response_dto.dart';
 import '../models/business_register_dto.dart';
 import '../../../../core/utils/api_response_handler.dart';
@@ -30,7 +31,8 @@ class RegisterResult {
       pendingVerification: json['pending_verification'] ?? true,
       userId: json['user_id']?.toString() ?? '',
       email: json['email'] ?? '',
-      message: json['message'] ?? 'Un code de vérification a été envoyé',
+      message:
+          json['message'] ?? cachedAppLocalizations().authVerificationCodeSent,
     );
   }
 }
@@ -68,12 +70,15 @@ class AuthApiDataSource {
 
   AuthApiDataSource(this._dio);
 
+  static const _defaultAccessTtlSeconds = 172800;
+
   /// Register a new user - returns pending verification result
   Future<RegisterResult> register({
     required String email,
     required String password,
     required String firstName,
     required String lastName,
+    required String birthDate,
   }) async {
     final response = await _dio.post(
       '/auth/register',
@@ -82,6 +87,7 @@ class AuthApiDataSource {
         'password': password,
         'first_name': firstName,
         'last_name': lastName,
+        'birth_date': birthDate,
       },
     );
 
@@ -145,8 +151,10 @@ class AuthApiDataSource {
     debugPrint('🔐 Login response received: ${response.data.runtimeType}');
 
     final responseData = ApiResponseHandler.extractObject(response.data);
+    final hasToken =
+        responseData['tokens'] != null || responseData['token'] != null;
     debugPrint(
-        '🔐 Response data found: user=${responseData['user'] != null}, token=${responseData['token'] != null}');
+        '🔐 Response data found: user=${responseData['user'] != null}, token=$hasToken');
 
     // Check if OTP is required (2FA)
     if (responseData['requires_otp'] == true) {
@@ -155,7 +163,7 @@ class AuthApiDataSource {
     }
 
     // Direct auth data (Laravel v2 - no OTP required)
-    if (responseData['user'] != null && responseData['token'] != null) {
+    if (responseData['user'] != null && hasToken) {
       debugPrint('🔐 Parsing Laravel auth response...');
       final authResponse = _parseLaravelAuthResponse(responseData);
       debugPrint('🔐 Auth response parsed successfully');
@@ -171,7 +179,6 @@ class AuthApiDataSource {
   /// Parse Laravel v2 auth response format
   AuthResponseDto _parseLaravelAuthResponse(Map<String, dynamic> data) {
     final userData = data['user'] as Map<String, dynamic>;
-    final token = data['token']?.toString() ?? '';
 
     // Map Laravel fields to Flutter DTO
     // Laravel returns: { id, name, email, phone, role, ... }
@@ -194,19 +201,22 @@ class AuthApiDataSource {
       registeredAt: userData['created_at']?.toString(),
       isVerified: userData['is_email_verified'] == true,
       newsletter: userData['newsletter'] == true,
+      onesignalId: userData['onesignal_id']?.toString(),
       pushNotificationsEnabled:
           userData['push_notifications_enabled'] == true ||
               userData['pushNotificationsEnabled'] == true,
     );
 
-    // Laravel Sanctum uses single token, no refresh token
-    // We'll use the same token for both access and refresh
-    final tokens = TokensDto(
-      accessToken: token,
-      refreshToken: token, // Sanctum doesn't have refresh tokens
-      tokenType: data['token_type']?.toString() ?? 'Bearer',
-      expiresIn: 604800, // 7 days default
-    );
+    final tokens = _parseTokensFromPayload(data) ??
+        TokensDto(
+          accessToken: data['token']?.toString() ?? '',
+          refreshToken: data['token']?.toString() ?? '',
+          tokenType: data['token_type']?.toString() ?? 'Bearer',
+          expiresIn: _intOrDefault(
+            data['expires_in'],
+            _defaultAccessTtlSeconds,
+          ),
+        );
 
     return AuthResponseDto(user: user, tokens: tokens);
   }
@@ -237,8 +247,15 @@ class AuthApiDataSource {
       },
     );
 
-    final payload = ApiResponseHandler.extractObject(response.data);
-    return TokensDto.fromJson(payload['tokens'] ?? payload);
+    final payload = _extractObjectPayload(response.data, allowRoot: true);
+    final tokens = _parseTokensFromPayload(
+      payload,
+      requireRefreshToken: true,
+    );
+    if (tokens == null) {
+      throw const FormatException('Refresh response did not contain tokens');
+    }
+    return tokens;
   }
 
   Future<void> forgotPassword(String email) async {
@@ -271,8 +288,67 @@ class AuthApiDataSource {
     final responseData = ApiResponseHandler.extractObject(data);
     return AuthResponseDto(
       user: UserDto.fromJson(responseData['user']),
-      tokens: TokensDto.fromJson(responseData['tokens']),
+      tokens: _parseTokensFromPayload(responseData) ??
+          TokensDto.fromJson(responseData['tokens']),
     );
+  }
+
+  Map<String, dynamic> _extractObjectPayload(
+    dynamic data, {
+    bool allowRoot = false,
+  }) {
+    try {
+      return ApiResponseHandler.extractObject(data);
+    } on ApiFormatException {
+      if (allowRoot && data is Map<String, dynamic>) {
+        return data;
+      }
+      rethrow;
+    }
+  }
+
+  TokensDto? _parseTokensFromPayload(
+    Map<String, dynamic> payload, {
+    bool requireRefreshToken = false,
+  }) {
+    final rawTokens = payload['tokens'];
+    final tokenMap =
+        rawTokens is Map ? Map<String, dynamic>.from(rawTokens) : payload;
+
+    final accessToken = _stringOrNull(tokenMap['access_token']) ??
+        _stringOrNull(tokenMap['token']) ??
+        _stringOrNull(payload['token']);
+    if (accessToken == null || accessToken.isEmpty) return null;
+
+    final parsedRefreshToken = _stringOrNull(tokenMap['refresh_token']) ??
+        _stringOrNull(payload['refresh_token']);
+    if (requireRefreshToken && parsedRefreshToken == null) return null;
+
+    final refreshToken = parsedRefreshToken ?? accessToken;
+
+    return TokensDto(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      tokenType: _stringOrNull(tokenMap['token_type']) ??
+          _stringOrNull(payload['token_type']) ??
+          'Bearer',
+      expiresIn: _intOrDefault(
+        tokenMap['expires_in'] ?? payload['expires_in'],
+        _defaultAccessTtlSeconds,
+      ),
+    );
+  }
+
+  String? _stringOrNull(dynamic value) {
+    final text = value?.toString();
+    return text == null || text.isEmpty ? null : text;
+  }
+
+  int _intOrDefault(dynamic value, int defaultValue) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
   }
 
   // ============================================================
@@ -293,6 +369,7 @@ class AuthApiDataSource {
     String? birthDate,
     String? membershipCity,
     required bool acceptTerms,
+    bool acceptMarketing = false,
   }) async {
     final response = await _dio.post(
       '/auth/register',
@@ -307,6 +384,7 @@ class AuthApiDataSource {
         if (birthDate != null) 'birth_date': birthDate,
         if (membershipCity != null) 'membership_city': membershipCity,
         'accept_terms': acceptTerms,
+        'newsletter': acceptMarketing,
       },
     );
 
@@ -317,6 +395,7 @@ class AuthApiDataSource {
       user: responseData['user'] != null
           ? UserDto.fromJson(responseData['user'])
           : null,
+      tokens: _parseTokensFromPayload(responseData),
       token: responseData['token']?.toString(),
       emailVerificationRequired:
           responseData['email_verification_required'] ?? true,
@@ -324,8 +403,8 @@ class AuthApiDataSource {
       userId: responseData['user_id']?.toString() ??
           responseData['user']?['id']?.toString(),
       email: responseData['email'] ?? email,
-      message:
-          responseData['message'] ?? 'Un code de vérification a été envoyé',
+      message: responseData['message'] ??
+          cachedAppLocalizations().authVerificationCodeSent,
     );
   }
 
@@ -347,6 +426,7 @@ class AuthApiDataSource {
       organization: responseData['organization'] != null
           ? OrganizationDto.fromJson(responseData['organization'])
           : null,
+      tokens: _parseTokensFromPayload(responseData),
       token: responseData['token']?.toString() ?? '',
       invitationsSent: responseData['invitations_sent'] ?? 0,
       invitedEmails: responseData['invited_emails'] != null
@@ -376,7 +456,8 @@ class AuthApiDataSource {
         ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
     return OtpSendResult(
       success: true,
-      message: payload['message'] ?? 'Code envoyé',
+      message: payload['message'] ??
+          cachedAppLocalizations().authVerificationCodeSent,
       expiresAt: payload['expires_at'],
     );
   }
@@ -408,7 +489,8 @@ class AuthApiDataSource {
     return OtpVerifyResult(
       success: true,
       verified: payload['verified'] ?? true,
-      message: payload['message'] ?? 'Code vérifié',
+      message: payload['message'] ??
+          cachedAppLocalizations().authVerificationCodeVerified,
       verifiedEmailToken: payload['verified_email_token']?.toString(),
       tokenExpiresInMinutes: payload['token_expires_in_minutes'] is int
           ? payload['token_expires_in_minutes']
@@ -437,7 +519,7 @@ class AuthApiDataSource {
         ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
     return OtpSendResult(
       success: true,
-      message: payload['message'] ?? 'Nouveau code envoyé',
+      message: payload['message'] ?? cachedAppLocalizations().authOtpResent,
       expiresAt: payload['expires_at'],
     );
   }
@@ -489,6 +571,7 @@ class AuthApiDataSource {
 /// Result of customer registration
 class CustomerRegisterResult {
   final UserDto? user;
+  final TokensDto? tokens;
   final String? token;
   final bool emailVerificationRequired;
   final bool pendingVerification;
@@ -498,6 +581,7 @@ class CustomerRegisterResult {
 
   CustomerRegisterResult({
     this.user,
+    this.tokens,
     this.token,
     required this.emailVerificationRequired,
     required this.pendingVerification,
@@ -511,6 +595,7 @@ class CustomerRegisterResult {
 class BusinessRegisterResult {
   final UserDto user;
   final OrganizationDto? organization;
+  final TokensDto? tokens;
   final String token;
   final int invitationsSent;
   final List<String>? invitedEmails;
@@ -518,6 +603,7 @@ class BusinessRegisterResult {
   BusinessRegisterResult({
     required this.user,
     this.organization,
+    this.tokens,
     required this.token,
     required this.invitationsSent,
     this.invitedEmails,

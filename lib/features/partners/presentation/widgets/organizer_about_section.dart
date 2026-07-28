@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../../core/l10n/l10n.dart';
+import '../../../../core/themes/colors.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import 'organizer_social_link_row.dart';
 
@@ -7,15 +10,25 @@ import 'organizer_social_link_row.dart';
 /// Renders inline below the identity card (used to be a tab).
 ///
 /// Spec §1, §3.3 (`description`, `establishment_types`, `social_links`)
-class OrganizerAboutSection extends StatelessWidget {
+class OrganizerAboutSection extends StatefulWidget {
   final OrganizerProfileDto organizer;
 
   const OrganizerAboutSection({super.key, required this.organizer});
 
   @override
+  State<OrganizerAboutSection> createState() => _OrganizerAboutSectionState();
+}
+
+class _OrganizerAboutSectionState extends State<OrganizerAboutSection> {
+  static const int _maxDescriptionLength = 250;
+
+  bool _isDescriptionExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final hasDescription =
-        organizer.description != null && organizer.description!.isNotEmpty;
+    final organizer = widget.organizer;
+    final description = organizer.description;
+    final hasDescription = description != null && description.isNotEmpty;
     final types = organizer.establishmentTypes ?? const [];
     final hasTypes = types.isNotEmpty;
     final hasSocials = organizer.socialLinks != null &&
@@ -30,21 +43,23 @@ class OrganizerAboutSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionTitle('À propos'),
+          _SectionTitle(context.l10n.organizerAboutTitle),
           const SizedBox(height: 8),
           if (hasDescription) ...[
-            Text(
-              organizer.description!,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.5,
-                color: Colors.grey[800],
-              ),
+            _ExpandableDescription(
+              description: description,
+              maxLength: _maxDescriptionLength,
+              isExpanded: _isDescriptionExpanded,
+              onToggle: () {
+                HapticFeedback.lightImpact();
+                setState(
+                    () => _isDescriptionExpanded = !_isDescriptionExpanded);
+              },
             ),
             const SizedBox(height: 16),
           ],
           if (hasTypes) ...[
-            const _SectionTitle('Types d\'établissement'),
+            _SectionTitle(context.l10n.organizerEstablishmentTypesTitle),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -52,8 +67,8 @@ class OrganizerAboutSection extends StatelessWidget {
               children: [
                 for (final type in types)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(20),
@@ -72,7 +87,7 @@ class OrganizerAboutSection extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           if (hasSocials) ...[
-            const _SectionTitle('Réseaux sociaux'),
+            _SectionTitle(context.l10n.organizerSocialLinksTitle),
             const SizedBox(height: 12),
             OrganizerSocialLinkRow(links: organizer.socialLinks!),
           ],
@@ -104,6 +119,79 @@ class _SectionTitle extends StatelessWidget {
         fontWeight: FontWeight.bold,
         color: Color(0xFF1A1A2E),
       ),
+    );
+  }
+}
+
+class _ExpandableDescription extends StatelessWidget {
+  final String description;
+  final int maxLength;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+
+  const _ExpandableDescription({
+    required this.description,
+    required this.maxLength,
+    required this.isExpanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isLongText = description.length > maxLength;
+    final textStyle = TextStyle(
+      fontSize: 14,
+      height: 1.5,
+      color: Colors.grey[800],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedCrossFade(
+          firstChild: Text(
+            isLongText
+                ? '${description.substring(0, maxLength)}...'
+                : description,
+            style: textStyle,
+          ),
+          secondChild: Text(description, style: textStyle),
+          crossFadeState:
+              isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 300),
+        ),
+        if (isLongText)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: GestureDetector(
+              onTap: onToggle,
+              child: Row(
+                children: [
+                  Text(
+                    isExpanded
+                        ? context.l10n.searchShowLess
+                        : context.l10n.eventReadMore,
+                    style: const TextStyle(
+                      color: HbColors.brandPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 18,
+                      color: HbColors.brandPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

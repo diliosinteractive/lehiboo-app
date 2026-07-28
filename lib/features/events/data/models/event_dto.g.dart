@@ -71,6 +71,7 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       socialMedia: _parseMapOrNull(json['social_media']),
       primaryCategory: _parseCategoryOrNull(json['primary_category']),
       categories: _parseCategoriesList(json['categories']),
+      relatedEvents: _parseRelatedEvents(json['related_events']),
       slots: _parseListOrNull(json['slots']),
       venueData: _parseMapOrNull(json['venue']),
       creationSource: _parseStringOrNull(json['creation_source']),
@@ -106,6 +107,8 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
           ? false
           : _parseBool(json['allow_cancellation']),
       cancelBeforeHours: _parseIntOrNull(json['cancel_before_hours']),
+      vendorCancellationPolicy:
+          _parseStringOrNull(json['vendor_cancellation_policy']),
       generateQrCodes: json['generate_qr_codes'] == null
           ? false
           : _parseBool(json['generate_qr_codes']),
@@ -193,6 +196,7 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'social_media': instance.socialMedia,
       'primary_category': instance.primaryCategory,
       'categories': instance.categories,
+      'related_events': instance.relatedEvents,
       'slots': instance.slots,
       'venue': instance.venueData,
       'creation_source': instance.creationSource,
@@ -220,6 +224,7 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'sale_end_at': instance.saleEndAt,
       'allow_cancellation': instance.allowCancellation,
       'cancel_before_hours': instance.cancelBeforeHours,
+      'vendor_cancellation_policy': instance.vendorCancellationPolicy,
       'generate_qr_codes': instance.generateQrCodes,
       'status': instance.status,
       'visibility': instance.visibility,
@@ -260,6 +265,30 @@ Map<String, dynamic> _$$EventImageDtoImplToJson(_$EventImageDtoImpl instance) =>
       'medium': instance.medium,
       'large': instance.large,
       'full': instance.full,
+    };
+
+_$EventRelatedDtoImpl _$$EventRelatedDtoImplFromJson(
+        Map<String, dynamic> json) =>
+    _$EventRelatedDtoImpl(
+      id: _parseStringOrNull(json['id']),
+      uuid: _parseStringOrNull(json['uuid']),
+      title: json['title'] == null ? '' : _parseHtmlString(json['title']),
+      slug: json['slug'] == null ? '' : _parseHtmlString(json['slug']),
+      featuredImage: _parseStringOrNull(json['featured_image']),
+      coverImage: _parseStringOrNull(json['cover_image']),
+      excerpt: _parseHtmlString(json['excerpt']),
+    );
+
+Map<String, dynamic> _$$EventRelatedDtoImplToJson(
+        _$EventRelatedDtoImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'uuid': instance.uuid,
+      'title': instance.title,
+      'slug': instance.slug,
+      'featured_image': instance.featuredImage,
+      'cover_image': instance.coverImage,
+      'excerpt': instance.excerpt,
     };
 
 _$EventDatesDtoImpl _$$EventDatesDtoImplFromJson(Map<String, dynamic> json) =>
@@ -328,29 +357,39 @@ _$EventCategoryDtoImpl _$$EventCategoryDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$EventCategoryDtoImpl(
       id: json['id'] == null ? 0 : _parseInt(json['id']),
+      parentId: _parseIntOrNull(json['parent_id']),
       name: json['name'] == null ? '' : _parseHtmlString(json['name']),
       slug: json['slug'] == null ? '' : _parseHtmlString(json['slug']),
       description: _parseHtmlString(json['description']),
       icon: _parseStringOrNull(json['icon']),
       color: _parseStringOrNull(json['color']),
-      eventCount: _parseIntOrNull(json['event_count']),
+      eventCount: _parseIntOrNull(_readCategoryEventCount(json, 'event_count')),
+      imageUrl: _parseStringOrNull(_readImageUrl(json, 'image_url')),
+      imageAlt: _parseStringOrNull(_readImageAlt(json, 'image_alt')),
       isPrimary:
           json['is_primary'] == null ? false : _parseBool(json['is_primary']),
       parent: _parseCategoryOrNull(json['parent']),
+      children: json['children'] == null
+          ? const []
+          : _parseCategoriesListOrEmpty(json['children']),
     );
 
 Map<String, dynamic> _$$EventCategoryDtoImplToJson(
         _$EventCategoryDtoImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
+      'parent_id': instance.parentId,
       'name': instance.name,
       'slug': instance.slug,
       'description': instance.description,
       'icon': instance.icon,
       'color': instance.color,
       'event_count': instance.eventCount,
+      'image_url': instance.imageUrl,
+      'image_alt': instance.imageAlt,
       'is_primary': instance.isPrimary,
       'parent': instance.parent,
+      'children': instance.children,
     };
 
 _$EventPriceDtoImpl _$$EventPriceDtoImplFromJson(Map<String, dynamic> json) =>

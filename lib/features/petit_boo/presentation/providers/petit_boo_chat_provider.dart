@@ -1,17 +1,48 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/providers/shared_preferences_provider.dart';
+import '../../../../l10n/generated/app_localizations.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/petit_boo_context_storage.dart';
 import '../../data/datasources/petit_boo_sse_datasource.dart';
 import '../../data/models/chat_message_dto.dart';
 import '../../data/models/quota_dto.dart';
 import '../../data/models/tool_result_dto.dart';
 import '../../domain/repositories/petit_boo_repository.dart';
+
+String _safePetitBooErrorMessage(
+  Object? error, {
+  required String fallback,
+}) {
+  final raw = (error ?? '').toString().trim();
+  if (raw.isEmpty) return fallback;
+
+  final lower = raw.toLowerCase();
+  final exposesProviderDetails = lower.contains('openai') ||
+      lower.contains('deepseek') ||
+      lower.contains('platform.') ||
+      lower.contains('api.openai') ||
+      lower.contains('insufficient_quota') ||
+      lower.contains('billing') ||
+      lower.contains('error code:') ||
+      lower.contains('model') ||
+      lower.contains('provider') ||
+      lower.contains('langchain') ||
+      lower.contains('traceback');
+
+  if (exposesProviderDetails) return fallback;
+
+  return raw;
+}
 
 /// Provider for the context storage
 final petitBooContextStorageProvider = Provider<PetitBooContextStorage>((ref) {
@@ -21,6 +52,23 @@ final petitBooContextStorageProvider = Provider<PetitBooContextStorage>((ref) {
 
 /// Sentinel value to distinguish "not provided" from "explicitly null"
 const _notProvided = Object();
+
+/// State-changing Petit Boo action waiting for explicit user confirmation.
+class PetitBooPendingConfirmation {
+  final String actionId;
+  final String tool;
+  final Map<String, dynamic> arguments;
+  final String message;
+  final String? expiresAt;
+
+  const PetitBooPendingConfirmation({
+    required this.actionId,
+    required this.tool,
+    required this.arguments,
+    required this.message,
+    this.expiresAt,
+  });
+}
 
 /// State for the Petit Boo chat
 class PetitBooChatState {
@@ -37,6 +85,8 @@ class PetitBooChatState {
   final bool isMemoryEnabled;
   final bool isLimitReached;
   final int messageCount;
+  final PetitBooPendingConfirmation? pendingConfirmation;
+  final bool isConfirmingAction;
 
   const PetitBooChatState({
     this.messages = const [],
@@ -52,6 +102,8 @@ class PetitBooChatState {
     this.isMemoryEnabled = true,
     this.isLimitReached = false,
     this.messageCount = 0,
+    this.pendingConfirmation,
+    this.isConfirmingAction = false,
   });
 
   /// copyWith preserves error by default.
@@ -71,6 +123,8 @@ class PetitBooChatState {
     bool? isMemoryEnabled,
     bool? isLimitReached,
     int? messageCount,
+    Object? pendingConfirmation = _notProvided,
+    bool? isConfirmingAction,
   }) {
     return PetitBooChatState(
       messages: messages ?? this.messages,
@@ -86,6 +140,10 @@ class PetitBooChatState {
       isMemoryEnabled: isMemoryEnabled ?? this.isMemoryEnabled,
       isLimitReached: isLimitReached ?? this.isLimitReached,
       messageCount: messageCount ?? this.messageCount,
+      pendingConfirmation: pendingConfirmation == _notProvided
+          ? this.pendingConfirmation
+          : pendingConfirmation as PetitBooPendingConfirmation?,
+      isConfirmingAction: isConfirmingAction ?? this.isConfirmingAction,
     );
   }
 
@@ -116,14 +174,38 @@ final petitBooChatProvider =
 class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   final PetitBooRepository _repository;
   final PetitBooContextStorage _contextStorage;
+  final Ref _ref;
   StreamSubscription? _streamSubscription;
   String? _pendingMessage; // For auto-send after limit unlock
   String? _activeMessage; // Message currently being streamed
   bool _isInitialized = false;
 
-  PetitBooChatNotifier(this._repository, this._contextStorage, Ref _)
+  PetitBooChatNotifier(this._repository, this._contextStorage, this._ref)
       : super(const PetitBooChatState(isLoading: true)) {
     _initialize();
+    // Petit Boo holds the user's name, kids' ages, and chat history in
+    // memory. Persisted copies are wiped by AuthNotifier._clearPersistedUserData
+    // — we still need to drop the in-memory mirror so the previous user's
+    // messages don't render until next pull.
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          _streamSubscription?.cancel();
+          _pendingMessage = null;
+          _activeMessage = null;
+          _isInitialized = false;
+          state = const PetitBooChatState();
+        } else if (loggedIn) {
+          _isInitialized = false;
+          _initialize();
+        }
+      },
+    );
   }
 
   // ==================== Getters for Brain Screen ====================
@@ -133,6 +215,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Check if memory is enabled
   bool get isMemoryEnabled => _contextStorage.getMemoryEnabled();
+
+  AppLocalizations get _l10n => lookupAppLocalizations(
+        Locale(AppLocaleCache.languageCode),
+      );
 
   // ==================== Brain/Context Methods ====================
 
@@ -174,7 +260,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     );
 
     // Load saved session UUID FIRST (critical for session continuity)
-    final storage = SharedSecureStorage.instance;
+    const storage = SharedSecureStorage.instance;
     final savedSessionUuid = await storage.read(
       key: AppConstants.keyPetitBooSessionUuid,
     );
@@ -229,25 +315,49 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   /// Send a message and process streaming response
   Future<void> sendMessage(String message) async {
     final trimmedMessage = message.trim();
-    if (trimmedMessage.isEmpty ||
-        state.isStreaming ||
+    if (trimmedMessage.isEmpty) {
+      return;
+    }
+
+    // Wait for initialization to complete (max 2 seconds).
+    // The notifier starts with isLoading=true and runs async setup
+    // (service availability + quota) before flipping it to false. A voice
+    // command sent right after a cold open (post-frame callback in initState)
+    // would otherwise hit the isLoading guard below and be silently dropped —
+    // which is why the first voice command was ignored while the second worked.
+    // We wait on both flags because _isInitialized flips to true before the
+    // service/quota calls finish (isLoading stays true a bit longer).
+    int waitCount = 0;
+    while ((!_isInitialized || state.isLoading) && waitCount < 20) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      waitCount++;
+    }
+
+    if (state.isStreaming ||
         state.isLoading ||
         !state.isServiceAvailable) {
       return;
     }
 
-    // Wait for initialization to complete (max 2 seconds)
-    int waitCount = 0;
-    while (!_isInitialized && waitCount < 20) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      waitCount++;
-    }
-
     final quota = state.quota;
     if (state.isLimitReached || (quota?.isExhausted ?? false)) {
       savePendingMessage(trimmedMessage);
+      _ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.petitbooQuotaReached,
+        params: {AnalyticsParam.quotaType: AnalyticsQuotaType.daily},
+      );
       return;
     }
+
+    _ref.read(analyticsServiceProvider).logEvent(
+      AnalyticsEvent.petitbooMessageSent,
+      params: {
+        AnalyticsParam.length: trimmedMessage.length,
+        AnalyticsParam.isVoice: false,
+        if (state.sessionUuid != null)
+          AnalyticsParam.sessionUuid: state.sessionUuid!,
+      },
+    );
 
     if (kDebugMode) {
       debugPrint('🤖 PetitBoo: sendMessage - sessionUuid=${state.sessionUuid}');
@@ -265,12 +375,14 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       currentToolResults: [],
       isStreaming: true,
       error: null,
+      pendingConfirmation: null,
     );
 
     try {
       final stream = _repository.sendMessage(
         sessionUuid: state.sessionUuid,
         message: trimmedMessage,
+        memoryEnabled: state.isMemoryEnabled,
       );
 
       _streamSubscription = stream.listen(
@@ -335,9 +447,18 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
             currentToolResults: [...state.currentToolResults, toolResult],
           );
 
+          _ref.read(analyticsServiceProvider).logEvent(
+            AnalyticsEvent.petitbooToolUsed,
+            params: {AnalyticsParam.toolName: event.tool},
+          );
+
           // Sync brain memory to local storage when brain tools are called
           _syncBrainMemoryFromToolResult(event.tool, event.result);
         }
+        break;
+
+      case 'confirmation_required':
+        _handleConfirmationRequired(event);
         break;
 
       case 'error':
@@ -348,7 +469,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
             messages: _withoutActiveOptimisticMessage(),
             currentStreamingText: '',
             currentToolResults: [],
-            error: event.error ?? 'Vous avez atteint votre limite de messages',
+            error: event.error ?? _l10n.petitBooQuotaExceededError,
             isStreaming: false,
             isLimitReached: true,
           );
@@ -357,7 +478,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
           break;
         }
         state = state.copyWith(
-          error: event.error ?? 'An error occurred',
+          error: event.error ?? _l10n.petitBooGenericError,
           isStreaming: false,
         );
         break;
@@ -369,6 +490,24 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     }
   }
 
+  void _handleConfirmationRequired(dynamic event) {
+    final result = event.result;
+    if (result is! Map<String, dynamic>) return;
+
+    final actionId = result['action_id'];
+    if (actionId is! String || actionId.isEmpty) return;
+
+    state = state.copyWith(
+      pendingConfirmation: PetitBooPendingConfirmation(
+        actionId: actionId,
+        tool: event.tool as String? ?? '',
+        arguments: event.arguments as Map<String, dynamic>? ?? const {},
+        message: result['message'] as String? ?? _l10n.petitBooConfirmationBody,
+        expiresAt: result['expires_at'] as String?,
+      ),
+    );
+  }
+
   /// Handle SSE stream error
   void _handleSseError(dynamic error) {
     if (!mounted) return;
@@ -377,16 +516,29 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       debugPrint('🤖 PetitBoo: Stream error - $error');
     }
 
-    String errorMessage = 'Erreur de connexion';
+    String errorMessage = _l10n.petitBooConnectionError;
 
     if (error is PetitBooSseException) {
-      errorMessage = error.message;
-
-      if (error.code == 'auth_required') {
-        errorMessage = 'Connectez-vous pour discuter avec Petit Boo';
-      } else if (error.code == 'quota_exceeded') {
-        errorMessage = 'Vous avez atteint votre limite de messages';
-        _saveActiveMessageAsPending();
+      switch (error.code) {
+        case 'auth_required':
+        case 'auth_invalid':
+          errorMessage = _l10n.petitBooAuthRequiredError;
+          break;
+        case 'quota_exceeded':
+          errorMessage = _l10n.petitBooQuotaExceededError;
+          _saveActiveMessageAsPending();
+          break;
+        case 'timeout':
+        case 'network':
+        case 'connection_closed':
+          // Codes réseau : message localisé, jamais la string technique brute.
+          errorMessage = _l10n.petitBooConnectionError;
+          break;
+        default:
+          errorMessage = _safePetitBooErrorMessage(
+            error.message,
+            fallback: _l10n.petitBooUnavailable,
+          );
       }
     }
 
@@ -451,7 +603,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     }
 
     state = state.copyWith(
-      error: error.toString(),
+      error: _safePetitBooErrorMessage(
+        error,
+        fallback: _l10n.petitBooUnavailable,
+      ),
       isStreaming: false,
     );
     _activeMessage = null;
@@ -460,7 +615,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   /// Save session UUID to secure storage
   Future<void> _saveSessionUuid(String uuid) async {
     try {
-      final storage = SharedSecureStorage.instance;
+      const storage = SharedSecureStorage.instance;
       await storage.write(
           key: AppConstants.keyPetitBooSessionUuid, value: uuid);
     } catch (e) {
@@ -487,7 +642,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: 'Impossible de charger la conversation',
+        error: _l10n.petitBooConversationLoadFailed,
       );
     }
   }
@@ -498,7 +653,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
     // Clear saved session UUID
     try {
-      final storage = SharedSecureStorage.instance;
+      const storage = SharedSecureStorage.instance;
       await storage.delete(key: AppConstants.keyPetitBooSessionUuid);
     } catch (e) {
       if (kDebugMode) {
@@ -513,6 +668,92 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   /// Clear error
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  /// Confirm the pending Petit Boo action and render its tool result.
+  Future<void> confirmPendingAction() async {
+    final pending = state.pendingConfirmation;
+    if (pending == null || state.isConfirmingAction) return;
+
+    state = state.copyWith(isConfirmingAction: true, error: null);
+
+    try {
+      final response = await _repository.confirmPendingAction(pending.actionId);
+      final tool = response['tool'] as String? ?? pending.tool;
+      final result = response['result'] as Map<String, dynamic>? ??
+          <String, dynamic>{'success': false};
+      final toolResult = ToolResultDto(
+        tool: tool,
+        data: result,
+        executedAt: DateTime.now().toIso8601String(),
+      );
+      final assistantMessage = ChatMessageDto.assistant(
+        content: _confirmedActionMessage(result),
+        toolResults: [toolResult],
+      );
+
+      state = state.copyWith(
+        messages: [...state.messages, assistantMessage],
+        pendingConfirmation: null,
+        isConfirmingAction: false,
+      );
+
+      _syncBrainMemoryFromToolResult(tool, result);
+    } catch (e) {
+      state = state.copyWith(
+        error: _safePetitBooErrorMessage(
+          e,
+          fallback: _l10n.petitBooConfirmationError,
+        ),
+        isConfirmingAction: false,
+      );
+    }
+  }
+
+  /// Cancel the pending Petit Boo action.
+  Future<void> cancelPendingAction() async {
+    final pending = state.pendingConfirmation;
+    if (pending == null || state.isConfirmingAction) return;
+
+    state = state.copyWith(isConfirmingAction: true, error: null);
+
+    try {
+      await _repository.cancelPendingAction(pending.actionId);
+      state = state.copyWith(
+        pendingConfirmation: null,
+        isConfirmingAction: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: _safePetitBooErrorMessage(
+          e,
+          fallback: _l10n.petitBooConfirmationError,
+        ),
+        isConfirmingAction: false,
+      );
+    }
+  }
+
+  String _confirmedActionMessage(Map<String, dynamic> result) {
+    final data = result['data'];
+    if (data is Map<String, dynamic>) {
+      final message = data['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message;
+      }
+    }
+
+    final message = result['message'];
+    if (message is String && message.trim().isNotEmpty) {
+      return message;
+    }
+
+    final error = result['error'];
+    if (error is String && error.trim().isNotEmpty) {
+      return error;
+    }
+
+    return _l10n.petitBooConfirmationDone;
   }
 
   /// Retry last message (remove last user message and resend)

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/repositories/favorites_repository_impl.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../../domain/repositories/favorites_repository.dart';
 
@@ -11,20 +11,39 @@ import '../../domain/repositories/favorites_repository.dart';
 final selectedFavoriteListProvider = StateProvider<String?>((ref) => null);
 
 /// Provider pour les listes de favoris
-final favoriteListsProvider =
-    StateNotifierProvider<FavoriteListsNotifier, AsyncValue<List<FavoriteList>>>(
+final favoriteListsProvider = StateNotifierProvider<FavoriteListsNotifier,
+    AsyncValue<List<FavoriteList>>>(
   (ref) {
-    final repository = ref.watch(favoritesRepositoryImplProvider);
-    return FavoriteListsNotifier(repository);
+    final repository = ref.watch(favoritesRepositoryProvider);
+    return FavoriteListsNotifier(repository, ref);
   },
 );
 
 /// Notifier pour gérer l'état des listes de favoris
-class FavoriteListsNotifier extends StateNotifier<AsyncValue<List<FavoriteList>>> {
+class FavoriteListsNotifier
+    extends StateNotifier<AsyncValue<List<FavoriteList>>> {
   final FavoritesRepository _repository;
+  final Ref _ref;
 
-  FavoriteListsNotifier(this._repository) : super(const AsyncValue.loading()) {
+  FavoriteListsNotifier(this._repository, this._ref)
+      : super(const AsyncValue.loading()) {
     loadLists();
+    // Lists are user-scoped; reset on real auth transitions.
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          state = const AsyncValue.data([]);
+          _ref.read(selectedFavoriteListProvider.notifier).state = null;
+        } else if (loggedIn) {
+          loadLists();
+        }
+      },
+    );
   }
 
   /// Charger les listes depuis l'API

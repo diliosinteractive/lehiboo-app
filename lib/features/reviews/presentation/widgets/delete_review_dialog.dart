@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 
 /// Dialog de confirmation pour la suppression d'un avis.
@@ -21,17 +22,16 @@ class DeleteReviewDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      title: const Text('Supprimer cet avis ?'),
-      content: const Text(
-        'Cette action est définitive. Vous pourrez en écrire un nouveau '
-        'plus tard.',
+      title: Text(context.l10n.reviewsDeleteConfirmTitle),
+      content: Text(
+        context.l10n.reviewsDeleteConfirmBody,
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text(
-            'Annuler',
-            style: TextStyle(color: HbColors.textPrimary),
+          child: Text(
+            context.l10n.commonCancel,
+            style: const TextStyle(color: HbColors.textPrimary),
           ),
         ),
         FilledButton(
@@ -39,7 +39,7 @@ class DeleteReviewDialog extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: Colors.red.shade600,
           ),
-          child: const Text('Supprimer'),
+          child: Text(context.l10n.reviewsDeleteAction),
         ),
       ],
     );

@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["__TEAM_ID__.com.dilios.lehiboo"],
+        "components": [
+          {
+            "/": "/events/*",
+            "comment": "Détail d'un event partagé"
+          }
+        ]
+      }
+    ]
+  }
+}

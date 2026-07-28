@@ -1,15 +1,25 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:lehiboo/config/dio_client.dart';
 import 'package:lehiboo/config/env_config.dart';
 import 'package:lehiboo/core/constants/app_constants.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/services/deep_link_service.dart';
 import 'dart:developer' as dev;
+import 'package:lehiboo/features/notifications/data/models/in_app_notification_dto.dart';
+import 'package:lehiboo/features/notifications/domain/entities/in_app_notification.dart';
+import 'package:lehiboo/features/notifications/presentation/providers/in_app_notifications_provider.dart';
+import 'package:lehiboo/routes/app_router.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/domain/entities/user.dart';
 import 'conversations_provider.dart';
 import 'support_conversations_provider.dart';
+import 'vendor_broadcasts_provider.dart';
 import 'vendor_conversations_provider.dart';
 import 'vendor_org_conversations_provider.dart';
 import 'admin_conversations_provider.dart';
@@ -26,12 +36,14 @@ enum RealtimeEventType {
   conversationCreated,
   conversationClosed,
   conversationReopened,
+  broadcastSent,
 }
 
 class RealtimeEvent {
   final RealtimeEventType type;
   final String? conversationUuid;
   final String? conversationType;
+  final String? senderType;
   final String? messageUuid;
   final String? content;
   final DateTime? editedAt;
@@ -40,6 +52,7 @@ class RealtimeEvent {
     required this.type,
     this.conversationUuid,
     this.conversationType,
+    this.senderType,
     this.messageUuid,
     this.content,
     this.editedAt,
@@ -66,25 +79,62 @@ class _StorageTokenAuthDelegate
     String socketId,
     String channelName,
   ) async {
+    final endpoint = EnvConfig.pusherAuthEndpoint;
     final token = await _storage.read(key: AppConstants.keyAuthToken);
-    if (token == null) throw Exception('No auth token available');
-    final response = await http.post(
-      Uri.parse(EnvConfig.pusherAuthEndpoint),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      },
-      body: {
-        'socket_id': socketId,
-        'channel_name': channelName,
-      },
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Pusher auth failed: ${response.statusCode}');
+    if (token == null || token.isEmpty) {
+      dev.log(
+        '[Pusher][auth] ✗ No auth token in secure storage — channel=$channelName endpoint=$endpoint',
+      );
+      throw Exception('No auth token available');
     }
-    final decoded = jsonDecode(response.body) as Map;
-    return PrivateChannelAuthorizationData(authKey: decoded['auth'] as String);
+    dev.log(
+      '[Pusher][auth] → POST $endpoint channel=$channelName socket=$socketId tokenLen=${token.length}',
+    );
+    final http.Response response;
+    try {
+      response = await http.post(
+        Uri.parse(endpoint),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+          'X-Platform': 'mobile',
+        },
+        body: {
+          'socket_id': socketId,
+          'channel_name': channelName,
+        },
+      );
+    } catch (e, st) {
+      dev.log('[Pusher][auth] ✗ Network error calling $endpoint: $e\n$st');
+      rethrow;
+    }
+    if (response.statusCode != 200) {
+      dev.log(
+        '[Pusher][auth] ✗ HTTP ${response.statusCode} from $endpoint — body=${response.body}',
+      );
+      throw Exception(
+        'Pusher auth failed: ${response.statusCode} ${response.body}',
+      );
+    }
+    final Map decoded;
+    try {
+      decoded = jsonDecode(response.body) as Map;
+    } catch (e) {
+      dev.log(
+        '[Pusher][auth] ✗ Could not decode auth response: $e — body=${response.body}',
+      );
+      rethrow;
+    }
+    final authKey = decoded['auth'];
+    if (authKey is! String) {
+      dev.log(
+        '[Pusher][auth] ✗ Response missing "auth" string field — body=${response.body}',
+      );
+      throw Exception('Pusher auth response missing "auth" key');
+    }
+    dev.log('[Pusher][auth] ✓ OK channel=$channelName');
+    return PrivateChannelAuthorizationData(authKey: authKey);
   }
 }
 
@@ -99,8 +149,9 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   StreamSubscription<PusherChannelsClientLifeCycleState>? _lifecycleSub;
   StreamSubscription<ChannelReadEvent>? _eventSub;
   StreamSubscription<ChannelReadEvent>? _orgEventSub;
+  StreamSubscription<PusherChannelsReadEvent>? _allEventsSub;
   StreamSubscription<void>? _connectedSub;
-  final _storage = const FlutterSecureStorage();
+  final _storage = SharedSecureStorage.instance;
   final _eventsController = StreamController<RealtimeEvent>.broadcast();
   int? _orgId; // numeric org ID currently subscribed to
   String? _activeUserId;
@@ -171,14 +222,25 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         }
       });
 
+      // Global wiretap: logs EVERY frame received from the WebSocket —
+      // protocol events (pusher:*, pusher_internal:*) and channel events.
+      // Useful when an event is fired by the backend but not handled by any
+      // bound channel (wrong channel name, wrong event name, payload shape…).
+      _allEventsSub = _client!.eventStream.listen((event) {
+        final root = event.rootObject;
+        dev.log(
+          '[Pusher][wire] ← name="${root['event']}" channel="${root['channel'] ?? '-'}" data=${root['data']}',
+        );
+      });
+
       final channel = _client!.privateChannel(
         'private-user.$userId',
         authorizationDelegate: _StorageTokenAuthDelegate(_storage),
       );
 
       _eventSub = channel.bindToAll().listen(
-        (event) => _handleEvent(event, subscriptionUserId: userId),
-      );
+            (event) => _handleEvent(event, subscriptionUserId: userId),
+          );
 
       _connectedSub = _client!.onConnectionEstablished.listen((_) {
         dev.log('[Pusher] Connected — subscribing to private-user.$userId');
@@ -199,6 +261,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     _ref.invalidate(vendorConversationsProvider);
     _ref.invalidate(vendorSupportProvider);
     _ref.invalidate(vendorOrgConversationsProvider);
+    _ref.invalidate(vendorBroadcastsProvider);
     _ref.invalidate(adminConversationsProvider);
     _ref.invalidate(adminReportsProvider);
     _ref.read(unreadCountProvider.notifier).reset();
@@ -209,10 +272,12 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     _lifecycleSub?.cancel();
     _eventSub?.cancel();
     _orgEventSub?.cancel();
+    _allEventsSub?.cancel();
     _connectedSub?.cancel();
     _lifecycleSub = null;
     _eventSub = null;
     _orgEventSub = null;
+    _allEventsSub = null;
     _connectedSub = null;
     _orgId = null;
     try {
@@ -231,7 +296,8 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     if (_client == null) {
       // Client not yet created; _orgId is stored and will be used in
       // onConnectionEstablished once _connect() runs.
-      dev.log('[Pusher] subscribeToOrganization: client not ready, queued orgId=$orgId');
+      dev.log(
+          '[Pusher] subscribeToOrganization: client not ready, queued orgId=$orgId');
       return;
     }
     _subscribeOrgChannel(orgId);
@@ -248,11 +314,11 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
       authorizationDelegate: _StorageTokenAuthDelegate(_storage),
     );
     _orgEventSub = orgChannel.bindToAll().listen(
-      (event) => _handleEvent(
-        event,
-        subscriptionUserId: subscriptionUserId,
-      ),
-    );
+          (event) => _handleEvent(
+            event,
+            subscriptionUserId: subscriptionUserId,
+          ),
+        );
     orgChannel.subscribeIfNotUnsubscribed();
   }
 
@@ -271,6 +337,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     final data = event.tryGetDataAsMap() ?? {};
     final convUuid = data['conversation_uuid'] as String?;
     final convType = data['conversation_type'] as String?;
+    final senderType = data['sender_type'] as String?;
     final msgUuid = data['message_uuid'] as String?;
 
     dev.log(
@@ -285,13 +352,20 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         }
         // Increment badge immediately — no API round-trip needed.
         // Each notifier's _refreshUnreadCount() / 30s poll will re-sync the exact value.
-        _ref
-            .read(unreadCountProvider.notifier)
-            .increment(forUserId: subscriptionUserId);
+        if (_isOwnMessage(senderType)) {
+          dev.log(
+            '[Pusher] message.received ignored for unread badge: own sender_type=$senderType',
+          );
+        } else {
+          _ref
+              .read(unreadCountProvider.notifier)
+              .increment(forUserId: subscriptionUserId);
+        }
         _emit(RealtimeEvent(
           type: RealtimeEventType.messageReceived,
           conversationUuid: convUuid,
           conversationType: convType,
+          senderType: senderType,
           messageUuid: msgUuid,
         ));
       case 'message.delivered':
@@ -303,6 +377,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           type: RealtimeEventType.messageDelivered,
           conversationUuid: convUuid,
           conversationType: convType,
+          senderType: senderType,
           messageUuid: msgUuid,
         ));
       case 'message.edited':
@@ -314,6 +389,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           type: RealtimeEventType.messageEdited,
           conversationUuid: convUuid,
           conversationType: convType,
+          senderType: senderType,
           messageUuid: msgUuid,
           content: data['content'] as String?,
           editedAt: DateTime.tryParse(data['edited_at'] as String? ?? ''),
@@ -327,6 +403,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           type: RealtimeEventType.messageDeleted,
           conversationUuid: convUuid,
           conversationType: convType,
+          senderType: senderType,
           messageUuid: msgUuid,
         ));
       case 'conversation.read':
@@ -346,7 +423,8 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'conversation.closed':
         if (convUuid == null) {
-          dev.log('[Pusher] conversation.closed dropped — no conversation_uuid');
+          dev.log(
+              '[Pusher] conversation.closed dropped — no conversation_uuid');
           return;
         }
         _emit(RealtimeEvent(
@@ -356,7 +434,8 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ));
       case 'conversation.reopened':
         if (convUuid == null) {
-          dev.log('[Pusher] conversation.reopened dropped — no conversation_uuid');
+          dev.log(
+              '[Pusher] conversation.reopened dropped — no conversation_uuid');
           return;
         }
         _emit(RealtimeEvent(
@@ -364,9 +443,137 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
           conversationUuid: convUuid,
           conversationType: convType,
         ));
+      case 'broadcast.sent':
+        final broadcastUuid = data['broadcast_uuid'] as String?;
+        _emit(RealtimeEvent(
+          type: RealtimeEventType.broadcastSent,
+          conversationUuid: broadcastUuid,
+        ));
+        // Broadcast creates new conversations — refresh the clients list
+        _ref.invalidate(vendorConversationsProvider);
+      case 'notification.created':
+        _handleNotificationCreated(data);
       default:
         dev.log('[Pusher] ⚠ unhandled event="${event.name}" data=$data');
     }
+  }
+
+  void _handleNotificationCreated(Map<String, dynamic> data) {
+    final rawNotification = data['notification'];
+    if (rawNotification is! Map) {
+      dev.log('[Pusher] notification.created dropped — missing notification');
+      return;
+    }
+
+    final json = rawNotification.map(
+      (key, value) => MapEntry(key.toString(), value),
+    );
+    final notification = InAppNotificationDto.fromJson(json).toDomain();
+    final unreadCount = _int(data['unread_count']);
+
+    if (_isOwnMessageNotification(notification)) {
+      dev.log(
+        '[Pusher] notification.created ignored for own new_message sender_type=${_notificationSenderType(notification)}',
+      );
+      return;
+    }
+
+    _ref.read(inAppNotificationsProvider.notifier).handleRealtimeNotification(
+          notification,
+          unreadCount: unreadCount,
+        );
+    _showForegroundNotification(notification);
+  }
+
+  void _showForegroundNotification(InAppNotification notification) {
+    final messenger = scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+    final l10n = messenger.context.l10n;
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 3),
+        // Floating so the snackbar sits ABOVE the centerDocked VoiceFab
+        // instead of being hidden behind it, and so users can swipe it
+        // down to dismiss without the FAB intercepting the gesture.
+        behavior: SnackBarBehavior.floating,
+        dismissDirection: DismissDirection.down,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        content: _NotificationSnackContent(notification: notification),
+        action: SnackBarAction(
+          label: l10n.messagesNotificationOpenAction,
+          onPressed: () {
+            _ref.read(deepLinkServiceProvider).navigateFromNotification(
+                  actionUrl: notification.actionUrl,
+                  type: notification.type,
+                  data: notification.data,
+                );
+          },
+        ),
+      ),
+    );
+  }
+
+  int? _int(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  bool _isOwnMessage(String? senderType) {
+    if (senderType == null || senderType.isEmpty) return false;
+    final user = _ref.read(authProvider).user;
+    if (user == null) return false;
+
+    return switch (user.role) {
+      UserRole.partner => senderType == 'organization',
+      UserRole.admin => senderType == 'admin',
+      _ => senderType == 'participant',
+    };
+  }
+
+  bool _isOwnMessageNotification(InAppNotification notification) {
+    if (notification.type.toLowerCase() != 'new_message') return false;
+    if (_bool(notification.data['is_mine']) == true ||
+        _bool(notification.data['isMine']) == true) {
+      return true;
+    }
+    return _isOwnMessage(_notificationSenderType(notification));
+  }
+
+  String? _notificationSenderType(InAppNotification notification) {
+    final direct = notification.data['sender_type'] ??
+        notification.data['senderType'] ??
+        notification.data['sender_role'] ??
+        notification.data['senderRole'];
+    if (direct != null && direct.toString().isNotEmpty) {
+      return direct.toString();
+    }
+
+    final sender = notification.data['sender'];
+    if (sender is Map) {
+      final nested = sender['type'] ?? sender['sender_type'] ?? sender['role'];
+      if (nested != null && nested.toString().isNotEmpty) {
+        return nested.toString();
+      }
+    }
+
+    return null;
+  }
+
+  bool? _bool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return null;
   }
 
   void _emit(RealtimeEvent event) {
@@ -388,3 +595,31 @@ final messagesRealtimeProvider =
     StateNotifierProvider<MessagesRealtimeNotifier, bool>((ref) {
   return MessagesRealtimeNotifier(ref);
 });
+
+class _NotificationSnackContent extends StatelessWidget {
+  final InAppNotification notification;
+
+  const _NotificationSnackContent({required this.notification});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          notification.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        if (notification.message.isNotEmpty)
+          Text(
+            notification.message,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+      ],
+    );
+  }
+}

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/analytics/analytics_event.dart';
+import '../../../core/analytics/analytics_provider.dart';
 import '../data/models/hibons_api_dto.dart';
 import '../data/models/hibons_update.dart';
 import '../presentation/providers/gamification_provider.dart';
@@ -73,10 +75,12 @@ class HibonsService {
       newRankLabel: dto.newRankLabel,
       animationLabel: dto.animationLabel,
       pillar: dto.pillar,
+      source: dto.source,
+      rewardMessage: dto.rewardMessage,
     );
 
     debugPrint(
-      '🪙 HibonsService: parsed update delta=${update.delta} balance=${update.newBalance} rankChanged=${update.rankChanged}',
+      '🪙 HibonsService: parsed update delta=${update.delta} balance=${update.newBalance} source=${update.source} rankChanged=${update.rankChanged}',
     );
 
     // Mise à jour du state Riverpod
@@ -108,6 +112,37 @@ class HibonsService {
         rank: update.newRank!,
         rankLabel: update.newRankLabel!,
       ));
+    }
+
+    // Analytics — `hibons_earned` (delta positif uniquement, on ignore les
+    // débits manuels) et `hibons_rank_up`. Lecture du service via le
+    // container : `attach()` est appelé au boot avant tout `handleEnvelope`.
+    if (container != null) {
+      try {
+        final analytics = container.read(analyticsServiceProvider);
+        if (update.delta > 0) {
+          analytics.logEvent(
+            AnalyticsEvent.hibonsEarned,
+            params: {
+              AnalyticsParam.amount: update.delta,
+              AnalyticsParam.source: update.source ?? 'unknown',
+            },
+          );
+        }
+        if (update.rankChanged && update.newRank != null) {
+          analytics.logEvent(
+            AnalyticsEvent.hibonsRankUp,
+            params: {AnalyticsParam.newRank: update.newRank!},
+          );
+          // User property pour segmenter sans event scope.
+          analytics.setUserProperty(
+            AnalyticsUserProperty.hibonsRank,
+            update.newRank,
+          );
+        }
+      } catch (e) {
+        debugPrint('🪙 HibonsService: analytics logging failed: $e');
+      }
     }
   }
 

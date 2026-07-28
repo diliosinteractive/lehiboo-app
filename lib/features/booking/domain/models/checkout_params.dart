@@ -1,3 +1,6 @@
+import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/app_locale.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 
@@ -43,20 +46,16 @@ class CheckoutParams {
   String? get formattedDate {
     if (selectedSlot == null) return null;
 
-    final months = [
-      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-    ];
-    final days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-
     final slot = selectedSlot!;
-    final dayName = days[slot.date.weekday - 1];
-    final monthName = months[slot.date.month - 1];
-
-    String dateStr = '${dayName[0].toUpperCase()}${dayName.substring(1)} ${slot.date.day} $monthName ${slot.date.year}';
+    final l10n = cachedAppLocalizations();
+    final isEnglish = AppLocaleCache.languageCode == 'en';
+    final dateStr = DateFormat(
+      isEnglish ? 'EEEE, MMMM d, y' : 'EEEE d MMMM yyyy',
+      AppLocaleCache.localeName,
+    ).format(slot.date);
 
     if (slot.startTime != null) {
-      dateStr += ' à ${slot.startTime}';
+      return l10n.homeDateAtTime(dateStr, slot.startTime!);
     }
 
     return dateStr;

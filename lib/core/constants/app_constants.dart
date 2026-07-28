@@ -115,8 +115,6 @@ class AppConstants {
   // Support
   static const String supportEmail = 'support@lehiboo.fr';
   static const String supportPhone = '+33 1 23 45 67 89';
-  static String get privacyPolicyUrl => EnvConfig.privacyPolicyUrl;
-  static String get termsOfServiceUrl => EnvConfig.termsOfServiceUrl;
 
   // Map Configuration
   static const double defaultMapZoom = 14.0;

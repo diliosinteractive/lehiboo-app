@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/blog_post_dto.dart';
 
@@ -23,19 +24,19 @@ class BlogPostCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: isCompact ? _buildCompactCard() : _buildFullCard(),
+        child: isCompact ? _buildCompactCard(context) : _buildFullCard(context),
       ),
     );
   }
 
-  Widget _buildCompactCard() {
+  Widget _buildCompactCard(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -69,7 +70,7 @@ class BlogPostCard extends StatelessWidget {
                     Icon(Icons.access_time, size: 12, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
-                      '${post.readingTime} min',
+                      context.l10n.blogReadingTimeMinutes(post.readingTime!),
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey[500],
@@ -85,7 +86,7 @@ class BlogPostCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFullCard() {
+  Widget _buildFullCard(BuildContext context) {
     return Row(
       children: [
         // Image on left
@@ -105,9 +106,10 @@ class BlogPostCard extends StatelessWidget {
                 // Category
                 if (post.categories != null && post.categories!.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF601F).withOpacity(0.1),
+                      color: const Color(0xFFFF601F).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -156,10 +158,11 @@ class BlogPostCard extends StatelessWidget {
                     ],
                     const Spacer(),
                     if (post.readingTime != null) ...[
-                      Icon(Icons.access_time, size: 12, color: Colors.grey[500]),
+                      Icon(Icons.access_time,
+                          size: 12, color: Colors.grey[500]),
                       const SizedBox(width: 4),
                       Text(
-                        '${post.readingTime} min',
+                        context.l10n.blogReadingTimeMinutes(post.readingTime!),
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[500],
@@ -183,7 +186,7 @@ class BlogPostCard extends StatelessWidget {
 
     if (imageUrl == null) {
       return Container(
-        color: const Color(0xFFFF601F).withOpacity(0.1),
+        color: const Color(0xFFFF601F).withValues(alpha: 0.1),
         child: const Center(
           child: Icon(
             Icons.article,
@@ -207,7 +210,7 @@ class BlogPostCard extends StatelessWidget {
         ),
       ),
       errorWidget: (context, url, error) => Container(
-        color: const Color(0xFFFF601F).withOpacity(0.1),
+        color: const Color(0xFFFF601F).withValues(alpha: 0.1),
         child: const Center(
           child: Icon(
             Icons.article,

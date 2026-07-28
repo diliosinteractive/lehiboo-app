@@ -39,10 +39,6 @@ _$MessageDtoImpl _$$MessageDtoImplFromJson(Map<String, dynamic> json) =>
       isRead: json['is_read'] as bool? ?? false,
       isDelivered: json['is_delivered'] as bool? ?? false,
       isMine: json['is_mine'] as bool? ?? false,
-      attachments: (json['attachments'] as List<dynamic>?)
-              ?.map((e) => AttachmentDto.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
       createdAt: json['created_at'] as String,
       editedAt: json['edited_at'] as String?,
       readAt: json['read_at'] as String?,
@@ -64,7 +60,6 @@ Map<String, dynamic> _$$MessageDtoImplToJson(_$MessageDtoImpl instance) =>
       'is_read': instance.isRead,
       'is_delivered': instance.isDelivered,
       'is_mine': instance.isMine,
-      'attachments': instance.attachments,
       'created_at': instance.createdAt,
       'edited_at': instance.editedAt,
       'read_at': instance.readAt,

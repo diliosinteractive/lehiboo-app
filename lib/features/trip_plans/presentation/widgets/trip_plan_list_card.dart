@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/trip_plan.dart';
 
 /// Card displaying a trip plan in the profile list
@@ -105,7 +105,7 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.plan.title,
+                      _planTitle(context),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -116,7 +116,7 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                     ),
                     if (widget.plan.plannedDate != null)
                       Text(
-                        _formatDate(widget.plan.plannedDate!),
+                        _formatDate(context, widget.plan.plannedDate!),
                         style: const TextStyle(
                           fontSize: 13,
                           color: _textSecondary,
@@ -126,7 +126,8 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                 ),
               ),
               // Score badge
-              if (widget.plan.score != null) _buildScoreBadge(widget.plan.score!),
+              if (widget.plan.score != null)
+                _buildScoreBadge(widget.plan.score!),
               const SizedBox(width: 8),
               // Expand indicator
               AnimatedRotation(
@@ -148,11 +149,17 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
             runSpacing: 6,
             children: [
               _buildStatChip(Icons.schedule, widget.plan.formattedDuration),
-              if (widget.plan.totalDistanceKm != null && widget.plan.totalDistanceKm! > 0)
-                _buildStatChip(Icons.directions_car, '${widget.plan.totalDistanceKm!.toStringAsFixed(1)} km'),
-              if (widget.plan.timeRange != null && widget.plan.timeRange!.isNotEmpty)
+              if (widget.plan.totalDistanceKm != null &&
+                  widget.plan.totalDistanceKm! > 0)
+                _buildStatChip(Icons.directions_car,
+                    '${widget.plan.totalDistanceKm!.toStringAsFixed(1)} km'),
+              if (widget.plan.timeRange != null &&
+                  widget.plan.timeRange!.isNotEmpty)
                 _buildStatChip(Icons.access_time, widget.plan.timeRange!),
-              _buildStatChip(Icons.flag, '${widget.plan.stopsCount} étape${widget.plan.stopsCount > 1 ? 's' : ''}'),
+              _buildStatChip(
+                Icons.flag,
+                context.l10n.tripPlansStopsCount(widget.plan.stopsCount),
+              ),
             ],
           ),
         ],
@@ -250,7 +257,9 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                 const Icon(Icons.info_outline, size: 16, color: _textTertiary),
                 const SizedBox(width: 8),
                 Text(
-                  '${widget.plan.stopsCount} étape${widget.plan.stopsCount > 1 ? 's' : ''} prévue${widget.plan.stopsCount > 1 ? 's' : ''}',
+                  context.l10n.tripPlansStopsPlanned(
+                    widget.plan.stopsCount,
+                  ),
                   style: const TextStyle(
                     fontSize: 13,
                     color: _textTertiary,
@@ -366,10 +375,12 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
           child: Padding(
             padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
             child: InkWell(
-              onTap: hasEventLink ? () {
-                HapticFeedback.selectionClick();
-                context.push('/event/$eventId');
-              } : null,
+              onTap: hasEventLink
+                  ? () {
+                      HapticFeedback.selectionClick();
+                      context.push('/event/$eventId');
+                    }
+                  : null,
               borderRadius: BorderRadius.circular(8),
               child: Row(
                 children: [
@@ -378,7 +389,7 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          stop.eventTitle,
+                          _stopTitle(context, stop),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -392,7 +403,8 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                             padding: const EdgeInsets.only(top: 2),
                             child: Row(
                               children: [
-                                const Icon(Icons.location_on, size: 12, color: _textTertiary),
+                                const Icon(Icons.location_on,
+                                    size: 12, color: _textTertiary),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
@@ -408,11 +420,13 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                               ],
                             ),
                           ),
-                        if (stop.durationMinutes != null && stop.durationMinutes! > 0)
+                        if (stop.durationMinutes != null &&
+                            stop.durationMinutes! > 0)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
                                 color: _accentColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(6),
@@ -420,10 +434,14 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.schedule, size: 12, color: _accentColor),
+                                  const Icon(Icons.schedule,
+                                      size: 12, color: _accentColor),
                                   const SizedBox(width: 4),
                                   Text(
-                                    _formatDuration(stop.durationMinutes!),
+                                    _formatDuration(
+                                      context,
+                                      stop.durationMinutes!,
+                                    ),
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
@@ -464,10 +482,12 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
     required VoidCallback onTap,
   }) {
     return InkWell(
-      onTap: enabled ? () {
-        HapticFeedback.lightImpact();
-        onTap();
-      } : null,
+      onTap: enabled
+          ? () {
+              HapticFeedback.lightImpact();
+              onTap();
+            }
+          : null,
       borderRadius: BorderRadius.circular(10),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -518,32 +538,38 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
   }
 
   void _openInGoogleMaps() {
-    final validStops = widget.plan.stops.where((s) => s.hasCoordinates).toList();
+    final validStops =
+        widget.plan.stops.where((s) => s.hasCoordinates).toList();
     if (validStops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucune coordonnée disponible')),
+        SnackBar(
+          content: Text(context.l10n.tripPlansNoCoordinatesAvailable),
+        ),
       );
       return;
     }
 
-    final waypoints = validStops
-        .map((s) => '${s.latitude},${s.longitude}')
-        .join('/');
+    final waypoints =
+        validStops.map((s) => '${s.latitude},${s.longitude}').join('/');
     final url = 'https://www.google.com/maps/dir/$waypoints';
     launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   void _openInWaze() {
-    final validStops = widget.plan.stops.where((s) => s.hasCoordinates).toList();
+    final validStops =
+        widget.plan.stops.where((s) => s.hasCoordinates).toList();
     if (validStops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucune coordonnée disponible')),
+        SnackBar(
+          content: Text(context.l10n.tripPlansNoCoordinatesAvailable),
+        ),
       );
       return;
     }
 
     final firstStop = validStops.first;
-    final url = 'https://waze.com/ul?ll=${firstStop.latitude},${firstStop.longitude}&navigate=yes';
+    final url =
+        'https://waze.com/ul?ll=${firstStop.latitude},${firstStop.longitude}&navigate=yes';
     launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
@@ -552,14 +578,16 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer ce plan ?'),
-        content: Text('Le plan "${widget.plan.title}" sera définitivement supprimé.'),
+        title: Text(context.l10n.tripPlansDeleteDialogTitle),
+        content: Text(
+          context.l10n.tripPlansDeleteDialogBody(_planTitle(context)),
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              'Annuler',
+              context.l10n.commonCancel,
               style: TextStyle(color: Colors.grey[600]),
             ),
           ),
@@ -575,24 +603,37 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Supprimer'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    final formatter = DateFormat('EEEE d MMMM', 'fr_FR');
+  String _formatDate(BuildContext context, DateTime date) {
+    final formatter = context.appDateFormat(
+      'EEEE d MMMM',
+      enPattern: 'EEEE, MMMM d',
+    );
     final formatted = formatter.format(date);
     return formatted[0].toUpperCase() + formatted.substring(1);
   }
 
-  String _formatDuration(int minutes) {
-    if (minutes < 60) return '${minutes}min';
+  String _planTitle(BuildContext context) {
+    final title = widget.plan.title.trim();
+    return title.isEmpty ? context.l10n.tripPlansUntitledPlan : title;
+  }
+
+  String _stopTitle(BuildContext context, TripStop stop) {
+    final title = stop.eventTitle.trim();
+    return title.isEmpty ? context.l10n.tripPlansStopFallback : title;
+  }
+
+  String _formatDuration(BuildContext context, int minutes) {
+    if (minutes < 60) return context.l10n.tripPlansDurationMinutes(minutes);
     final hours = minutes ~/ 60;
     final mins = minutes % 60;
-    if (mins == 0) return '${hours}h';
-    return '${hours}h${mins.toString().padLeft(2, '0')}';
+    if (mins == 0) return context.l10n.tripPlansDurationHours(hours);
+    return context.l10n.tripPlansDurationHoursMinutes(hours, mins);
   }
 }

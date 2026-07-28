@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/admin_report_stats.dart';
+import '../../domain/entities/broadcast.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/conversation_report.dart';
 import '../../domain/entities/message.dart';
@@ -10,7 +10,7 @@ import '../../domain/repositories/messages_repository.dart';
 import '../datasources/messages_api_datasource.dart';
 import '../models/accepted_partner_dto.dart';
 import '../models/admin_report_stats_dto.dart';
-import '../models/attachment_dto.dart';
+import '../models/broadcast_dto.dart';
 import '../models/conversation_dto.dart';
 import '../models/conversation_report_dto.dart';
 import '../models/message_dto.dart';
@@ -22,16 +22,6 @@ class MessagesRepositoryImpl implements MessagesRepository {
   MessagesRepositoryImpl(this._api);
 
   // ===== Mapping helpers =====
-
-  MessageAttachment _mapAttachment(AttachmentDto dto) => MessageAttachment(
-        uuid: dto.uuid,
-        url: dto.url,
-        originalName: dto.originalName,
-        mimeType: dto.mimeType,
-        size: dto.size,
-        isImage: dto.isImage,
-        isPdf: dto.isPdf,
-      );
 
   MessageSender? _mapSender(MessageSenderDto? dto) {
     if (dto == null) return null;
@@ -49,7 +39,6 @@ class MessagesRepositoryImpl implements MessagesRepository {
         isRead: dto.isRead,
         isDelivered: dto.isDelivered,
         isMine: dto.isMine,
-        attachments: dto.attachments.map(_mapAttachment).toList(),
         createdAt: DateTime.parse(dto.createdAt),
         editedAt: dto.editedAt != null ? DateTime.parse(dto.editedAt!) : null,
         readAt: dto.readAt != null ? DateTime.parse(dto.readAt!) : null,
@@ -215,14 +204,12 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createConversation(
       organizationUuid: organizationUuid,
       subject: subject,
       message: message,
       eventId: eventId,
-      attachments: attachments,
     ));
   }
 
@@ -241,14 +228,12 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String subject,
     required String message,
     String? eventId,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createFromOrganization(
       organizationUuid: organizationUuid,
       subject: subject,
       message: message,
       eventId: eventId,
-      attachments: attachments,
     ));
   }
 
@@ -261,12 +246,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Message> sendMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 
@@ -315,9 +298,19 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<ConversationsListResult> getSupportConversations({
     int page = 1,
     int perPage = 15,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
   }) async {
-    final response =
-        await _api.getSupportConversations(page: page, perPage: perPage);
+    final response = await _api.getSupportConversations(
+      page: page,
+      perPage: perPage,
+      status: status,
+      unreadOnly: unreadOnly,
+      search: search,
+      period: period,
+    );
     return _mapListResult(response, page);
   }
 
@@ -333,25 +326,26 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Conversation> createSupportConversation({
     required String subject,
     required String message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createSupportConversation(
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
+  }
+
+  @override
+  Future<Conversation> closeSupportConversation(String uuid) async {
+    return _mapConversation(await _api.closeSupportConversation(uuid));
   }
 
   @override
   Future<Message> sendSupportMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendSupportMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 
@@ -407,14 +401,12 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String subject,
     required String message,
     int? eventId,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createVendorConversationToParticipant(
       participantId: participantId,
       subject: subject,
       message: message,
       eventId: eventId,
-      attachments: attachments,
     ));
   }
 
@@ -422,12 +414,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Conversation> createVendorSupportThread({
     required String subject,
     required String message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createVendorSupportThread(
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
   }
 
@@ -445,12 +435,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Message> sendVendorMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendVendorMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 
@@ -516,13 +504,11 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required int partnerOrganizationId,
     required String subject,
     required String message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createOrgConversation(
       partnerOrganizationId: partnerOrganizationId,
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
   }
 
@@ -540,12 +526,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Message> sendOrgMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendOrgMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 
@@ -611,14 +595,12 @@ class MessagesRepositoryImpl implements MessagesRepository {
     String? userUuid,
     String? subject,
     String? message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createAdminUserThread(
       userId: userId,
       userUuid: userUuid,
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
   }
 
@@ -627,13 +609,11 @@ class MessagesRepositoryImpl implements MessagesRepository {
     required String organizationUuid,
     String? subject,
     String? message,
-    List<XFile>? attachments,
   }) async {
     return _mapConversation(await _api.createAdminSupportThread(
       organizationUuid: organizationUuid,
       subject: subject,
       message: message,
-      attachments: attachments,
     ));
   }
 
@@ -651,12 +631,10 @@ class MessagesRepositoryImpl implements MessagesRepository {
   Future<Message> sendAdminMessage({
     required String conversationUuid,
     String? content,
-    List<XFile>? attachments,
   }) async {
     return _mapMessage(await _api.sendAdminMessage(
       conversationUuid: conversationUuid,
       content: content,
-      attachments: attachments,
     ));
   }
 
@@ -746,6 +724,101 @@ class MessagesRepositoryImpl implements MessagesRepository {
       reportUuid: reportUuid,
       adminNote: adminNote,
     );
+  }
+
+  // ── Vendor — broadcasts ───────────────────────────────────────────────────
+
+  VendorEvent _mapVendorEvent(VendorEventDto dto) =>
+      VendorEvent(id: dto.id, uuid: dto.uuid, title: dto.title, slug: dto.slug);
+
+  SlotOption _mapSlotOption(SlotOptionDto dto) => SlotOption(
+        id: dto.id,
+        uuid: dto.uuid,
+        slotDate: dto.slotDate,
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+      );
+
+  BroadcastEvent _mapBroadcastEvent(BroadcastEventDto dto) =>
+      BroadcastEvent(uuid: dto.uuid, title: dto.title);
+
+  Broadcast _mapBroadcast(BroadcastDto dto) => Broadcast(
+        uuid: dto.uuid,
+        subject: dto.subject,
+        body: dto.body,
+        recipientsCount: dto.recipientsCount,
+        readCount: dto.readCount,
+        conversationsCreated: dto.conversationsCreated,
+        isSent: dto.isSent,
+        sentAt: dto.sentAt != null ? DateTime.tryParse(dto.sentAt!) : null,
+        events: dto.events.map(_mapBroadcastEvent).toList(),
+        createdAt: DateTime.tryParse(dto.createdAt) ?? DateTime.now(),
+      );
+
+  @override
+  Future<List<VendorEvent>> getVendorEvents() async {
+    final dtos = await _api.getVendorEvents();
+    return dtos.map(_mapVendorEvent).toList();
+  }
+
+  @override
+  Future<List<SlotOption>> getEventSlots(String eventUuid) async {
+    final dtos = await _api.getEventSlots(eventUuid);
+    return dtos.map(_mapSlotOption).toList();
+  }
+
+  @override
+  Future<BroadcastsListResult> getBroadcasts({
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    final response = await _api.getBroadcasts(
+      search: search,
+      period: period,
+      page: page,
+      perPage: perPage,
+    );
+    return BroadcastsListResult(
+      broadcasts: response.data.map(_mapBroadcast).toList(),
+      hasMore: response.hasMore,
+      currentPage: response.currentPage,
+      totalCount: response.total,
+    );
+  }
+
+  @override
+  Future<Broadcast> getBroadcast(String uuid) async {
+    final dto = await _api.getBroadcast(uuid);
+    return _mapBroadcast(dto);
+  }
+
+  @override
+  Future<int> previewBroadcastRecipients({
+    required List<String> eventIds,
+    List<String>? slotIds,
+  }) {
+    return _api.previewBroadcastRecipients(
+      eventIds: eventIds,
+      slotIds: slotIds,
+    );
+  }
+
+  @override
+  Future<Broadcast> createBroadcast({
+    required String subject,
+    required String message,
+    required List<String> eventIds,
+    List<String>? slotIds,
+  }) async {
+    final dto = await _api.createBroadcast(
+      subject: subject,
+      message: message,
+      eventIds: eventIds,
+      slotIds: slotIds,
+    );
+    return _mapBroadcast(dto);
   }
 }
 

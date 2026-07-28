@@ -124,6 +124,9 @@ mixin _$EventDto {
   EventCategoryDto? get primaryCategory => throw _privateConstructorUsedError;
   @JsonKey(name: 'categories', fromJson: _parseCategoriesList)
   List<EventCategoryDto>? get categories => throw _privateConstructorUsedError;
+  @JsonKey(name: 'related_events', fromJson: _parseRelatedEvents)
+  List<EventRelatedDto>? get relatedEvents =>
+      throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseListOrNull)
   List<dynamic>? get slots => throw _privateConstructorUsedError;
   @JsonKey(name: 'venue', fromJson: _parseMapOrNull)
@@ -188,6 +191,8 @@ mixin _$EventDto {
   bool get allowCancellation => throw _privateConstructorUsedError;
   @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
   int? get cancelBeforeHours => throw _privateConstructorUsedError;
+  @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+  String? get vendorCancellationPolicy => throw _privateConstructorUsedError;
   @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
   bool get generateQrCodes =>
       throw _privateConstructorUsedError; // §4.8 Status & flags
@@ -298,11 +303,7 @@ abstract class $EventDtoCopyWith<$Res> {
       Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       Map<String, dynamic>? externalBooking,
-      @JsonKey(
-          name: 'event_type',
-          readValue: _readEventTypeMap,
-          fromJson: _parseMapOrNull,
-          includeToJson: false)
+      @JsonKey(name: 'event_type', readValue: _readEventTypeMap, fromJson: _parseMapOrNull, includeToJson: false)
       Map<String, dynamic>? eventType,
       @JsonKey(
           name: 'event_type',
@@ -330,6 +331,8 @@ abstract class $EventDtoCopyWith<$Res> {
       EventCategoryDto? primaryCategory,
       @JsonKey(name: 'categories', fromJson: _parseCategoriesList)
       List<EventCategoryDto>? categories,
+      @JsonKey(name: 'related_events', fromJson: _parseRelatedEvents)
+      List<EventRelatedDto>? relatedEvents,
       @JsonKey(fromJson: _parseListOrNull) List<dynamic>? slots,
       @JsonKey(name: 'venue', fromJson: _parseMapOrNull)
       Map<String, dynamic>? venueData,
@@ -373,6 +376,8 @@ abstract class $EventDtoCopyWith<$Res> {
       bool allowCancellation,
       @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
       int? cancelBeforeHours,
+      @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+      String? vendorCancellationPolicy,
       @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
       bool generateQrCodes,
       @JsonKey(fromJson: _parseStringOrNull) String? status,
@@ -468,6 +473,7 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? socialMedia = freezed,
     Object? primaryCategory = freezed,
     Object? categories = freezed,
+    Object? relatedEvents = freezed,
     Object? slots = freezed,
     Object? venueData = freezed,
     Object? creationSource = freezed,
@@ -495,6 +501,7 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? saleEndAt = freezed,
     Object? allowCancellation = null,
     Object? cancelBeforeHours = freezed,
+    Object? vendorCancellationPolicy = freezed,
     Object? generateQrCodes = null,
     Object? status = freezed,
     Object? visibility = freezed,
@@ -701,6 +708,10 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.categories
           : categories // ignore: cast_nullable_to_non_nullable
               as List<EventCategoryDto>?,
+      relatedEvents: freezed == relatedEvents
+          ? _value.relatedEvents
+          : relatedEvents // ignore: cast_nullable_to_non_nullable
+              as List<EventRelatedDto>?,
       slots: freezed == slots
           ? _value.slots
           : slots // ignore: cast_nullable_to_non_nullable
@@ -809,6 +820,10 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
           ? _value.cancelBeforeHours
           : cancelBeforeHours // ignore: cast_nullable_to_non_nullable
               as int?,
+      vendorCancellationPolicy: freezed == vendorCancellationPolicy
+          ? _value.vendorCancellationPolicy
+          : vendorCancellationPolicy // ignore: cast_nullable_to_non_nullable
+              as String?,
       generateQrCodes: null == generateQrCodes
           ? _value.generateQrCodes
           : generateQrCodes // ignore: cast_nullable_to_non_nullable
@@ -1069,11 +1084,7 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       Map<String, dynamic>? externalBooking,
-      @JsonKey(
-          name: 'event_type',
-          readValue: _readEventTypeMap,
-          fromJson: _parseMapOrNull,
-          includeToJson: false)
+      @JsonKey(name: 'event_type', readValue: _readEventTypeMap, fromJson: _parseMapOrNull, includeToJson: false)
       Map<String, dynamic>? eventType,
       @JsonKey(
           name: 'event_type',
@@ -1101,6 +1112,8 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       EventCategoryDto? primaryCategory,
       @JsonKey(name: 'categories', fromJson: _parseCategoriesList)
       List<EventCategoryDto>? categories,
+      @JsonKey(name: 'related_events', fromJson: _parseRelatedEvents)
+      List<EventRelatedDto>? relatedEvents,
       @JsonKey(fromJson: _parseListOrNull) List<dynamic>? slots,
       @JsonKey(name: 'venue', fromJson: _parseMapOrNull)
       Map<String, dynamic>? venueData,
@@ -1144,6 +1157,8 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       bool allowCancellation,
       @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
       int? cancelBeforeHours,
+      @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+      String? vendorCancellationPolicy,
       @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
       bool generateQrCodes,
       @JsonKey(fromJson: _parseStringOrNull) String? status,
@@ -1246,6 +1261,7 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? socialMedia = freezed,
     Object? primaryCategory = freezed,
     Object? categories = freezed,
+    Object? relatedEvents = freezed,
     Object? slots = freezed,
     Object? venueData = freezed,
     Object? creationSource = freezed,
@@ -1273,6 +1289,7 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? saleEndAt = freezed,
     Object? allowCancellation = null,
     Object? cancelBeforeHours = freezed,
+    Object? vendorCancellationPolicy = freezed,
     Object? generateQrCodes = null,
     Object? status = freezed,
     Object? visibility = freezed,
@@ -1479,6 +1496,10 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value._categories
           : categories // ignore: cast_nullable_to_non_nullable
               as List<EventCategoryDto>?,
+      relatedEvents: freezed == relatedEvents
+          ? _value._relatedEvents
+          : relatedEvents // ignore: cast_nullable_to_non_nullable
+              as List<EventRelatedDto>?,
       slots: freezed == slots
           ? _value._slots
           : slots // ignore: cast_nullable_to_non_nullable
@@ -1587,6 +1608,10 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value.cancelBeforeHours
           : cancelBeforeHours // ignore: cast_nullable_to_non_nullable
               as int?,
+      vendorCancellationPolicy: freezed == vendorCancellationPolicy
+          ? _value.vendorCancellationPolicy
+          : vendorCancellationPolicy // ignore: cast_nullable_to_non_nullable
+              as String?,
       generateQrCodes: null == generateQrCodes
           ? _value.generateQrCodes
           : generateQrCodes // ignore: cast_nullable_to_non_nullable
@@ -1735,11 +1760,7 @@ class _$EventDtoImpl implements _EventDto {
       final Map<String, dynamic>? seatConfig,
       @JsonKey(name: 'external_booking', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? externalBooking,
-      @JsonKey(
-          name: 'event_type',
-          readValue: _readEventTypeMap,
-          fromJson: _parseMapOrNull,
-          includeToJson: false)
+      @JsonKey(name: 'event_type', readValue: _readEventTypeMap, fromJson: _parseMapOrNull, includeToJson: false)
       final Map<String, dynamic>? eventType,
       @JsonKey(
           name: 'event_type',
@@ -1767,6 +1788,8 @@ class _$EventDtoImpl implements _EventDto {
       this.primaryCategory,
       @JsonKey(name: 'categories', fromJson: _parseCategoriesList)
       final List<EventCategoryDto>? categories,
+      @JsonKey(name: 'related_events', fromJson: _parseRelatedEvents)
+      final List<EventRelatedDto>? relatedEvents,
       @JsonKey(fromJson: _parseListOrNull) final List<dynamic>? slots,
       @JsonKey(name: 'venue', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? venueData,
@@ -1808,6 +1831,8 @@ class _$EventDtoImpl implements _EventDto {
       this.allowCancellation = false,
       @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
       this.cancelBeforeHours,
+      @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+      this.vendorCancellationPolicy,
       @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
       this.generateQrCodes = false,
       @JsonKey(fromJson: _parseStringOrNull) this.status,
@@ -1855,6 +1880,7 @@ class _$EventDtoImpl implements _EventDto {
         _coOrganizers = coOrganizers,
         _socialMedia = socialMedia,
         _categories = categories,
+        _relatedEvents = relatedEvents,
         _slots = slots,
         _venueData = venueData,
         _themes = themes,
@@ -2189,6 +2215,17 @@ class _$EventDtoImpl implements _EventDto {
     return EqualUnmodifiableListView(value);
   }
 
+  final List<EventRelatedDto>? _relatedEvents;
+  @override
+  @JsonKey(name: 'related_events', fromJson: _parseRelatedEvents)
+  List<EventRelatedDto>? get relatedEvents {
+    final value = _relatedEvents;
+    if (value == null) return null;
+    if (_relatedEvents is EqualUnmodifiableListView) return _relatedEvents;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   final List<dynamic>? _slots;
   @override
   @JsonKey(fromJson: _parseListOrNull)
@@ -2310,6 +2347,9 @@ class _$EventDtoImpl implements _EventDto {
   @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
   final int? cancelBeforeHours;
   @override
+  @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+  final String? vendorCancellationPolicy;
+  @override
   @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
   final bool generateQrCodes;
 // §4.8 Status & flags
@@ -2407,7 +2447,7 @@ class _$EventDtoImpl implements _EventDto {
 
   @override
   String toString() {
-    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTypeMode: $eventTypeMode, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite, isMembersOnly: $isMembersOnly, version: $version, calendarMode: $calendarMode, timezone: $timezone, venueName: $venueName, venueAddress: $venueAddress, city: $city, postalCode: $postalCode, country: $country, addressSource: $addressSource, venueId: $venueId, startDate: $startDate, endDate: $endDate, priceFrom: $priceFrom, isFree: $isFree, capacityGlobal: $capacityGlobal, saleStartAt: $saleStartAt, saleEndAt: $saleEndAt, allowCancellation: $allowCancellation, cancelBeforeHours: $cancelBeforeHours, generateQrCodes: $generateQrCodes, status: $status, visibility: $visibility, isPasswordProtected: $isPasswordProtected, hasPassword: $hasPassword, publishedAt: $publishedAt, scheduledPublishAt: $scheduledPublishAt, isActive: $isActive, isOnSale: $isOnSale, isLive: $isLive, canAcceptBookings: $canAcceptBookings, canAcceptDiscovery: $canAcceptDiscovery, isDiscovery: $isDiscovery, participationCount: $participationCount, isParticipating: $isParticipating, externalTicketingUrl: $externalTicketingUrl, otherServices: $otherServices, entryTypeId: $entryTypeId, eventTagId: $eventTagId, metaTitle: $metaTitle, metaDescription: $metaDescription, meta: $meta, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTypeMode: $eventTypeMode, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, relatedEvents: $relatedEvents, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite, isMembersOnly: $isMembersOnly, version: $version, calendarMode: $calendarMode, timezone: $timezone, venueName: $venueName, venueAddress: $venueAddress, city: $city, postalCode: $postalCode, country: $country, addressSource: $addressSource, venueId: $venueId, startDate: $startDate, endDate: $endDate, priceFrom: $priceFrom, isFree: $isFree, capacityGlobal: $capacityGlobal, saleStartAt: $saleStartAt, saleEndAt: $saleEndAt, allowCancellation: $allowCancellation, cancelBeforeHours: $cancelBeforeHours, vendorCancellationPolicy: $vendorCancellationPolicy, generateQrCodes: $generateQrCodes, status: $status, visibility: $visibility, isPasswordProtected: $isPasswordProtected, hasPassword: $hasPassword, publishedAt: $publishedAt, scheduledPublishAt: $scheduledPublishAt, isActive: $isActive, isOnSale: $isOnSale, isLive: $isLive, canAcceptBookings: $canAcceptBookings, canAcceptDiscovery: $canAcceptDiscovery, isDiscovery: $isDiscovery, participationCount: $participationCount, isParticipating: $isParticipating, externalTicketingUrl: $externalTicketingUrl, otherServices: $otherServices, entryTypeId: $entryTypeId, eventTagId: $eventTagId, metaTitle: $metaTitle, metaDescription: $metaDescription, meta: $meta, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -2489,6 +2529,8 @@ class _$EventDtoImpl implements _EventDto {
                 other.primaryCategory == primaryCategory) &&
             const DeepCollectionEquality()
                 .equals(other._categories, _categories) &&
+            const DeepCollectionEquality()
+                .equals(other._relatedEvents, _relatedEvents) &&
             const DeepCollectionEquality().equals(other._slots, _slots) &&
             const DeepCollectionEquality()
                 .equals(other._venueData, _venueData) &&
@@ -2521,14 +2563,14 @@ class _$EventDtoImpl implements _EventDto {
             (identical(other.startDate, startDate) ||
                 other.startDate == startDate) &&
             (identical(other.endDate, endDate) || other.endDate == endDate) &&
-            (identical(other.priceFrom, priceFrom) ||
-                other.priceFrom == priceFrom) &&
+            (identical(other.priceFrom, priceFrom) || other.priceFrom == priceFrom) &&
             (identical(other.isFree, isFree) || other.isFree == isFree) &&
             (identical(other.capacityGlobal, capacityGlobal) || other.capacityGlobal == capacityGlobal) &&
             (identical(other.saleStartAt, saleStartAt) || other.saleStartAt == saleStartAt) &&
             (identical(other.saleEndAt, saleEndAt) || other.saleEndAt == saleEndAt) &&
             (identical(other.allowCancellation, allowCancellation) || other.allowCancellation == allowCancellation) &&
             (identical(other.cancelBeforeHours, cancelBeforeHours) || other.cancelBeforeHours == cancelBeforeHours) &&
+            (identical(other.vendorCancellationPolicy, vendorCancellationPolicy) || other.vendorCancellationPolicy == vendorCancellationPolicy) &&
             (identical(other.generateQrCodes, generateQrCodes) || other.generateQrCodes == generateQrCodes) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.visibility, visibility) || other.visibility == visibility) &&
@@ -2604,6 +2646,7 @@ class _$EventDtoImpl implements _EventDto {
         const DeepCollectionEquality().hash(_socialMedia),
         primaryCategory,
         const DeepCollectionEquality().hash(_categories),
+        const DeepCollectionEquality().hash(_relatedEvents),
         const DeepCollectionEquality().hash(_slots),
         const DeepCollectionEquality().hash(_venueData),
         creationSource,
@@ -2631,6 +2674,7 @@ class _$EventDtoImpl implements _EventDto {
         saleEndAt,
         allowCancellation,
         cancelBeforeHours,
+        vendorCancellationPolicy,
         generateQrCodes,
         status,
         visibility,
@@ -2746,6 +2790,8 @@ abstract class _EventDto implements EventDto {
       final EventCategoryDto? primaryCategory,
       @JsonKey(name: 'categories', fromJson: _parseCategoriesList)
       final List<EventCategoryDto>? categories,
+      @JsonKey(name: 'related_events', fromJson: _parseRelatedEvents)
+      final List<EventRelatedDto>? relatedEvents,
       @JsonKey(fromJson: _parseListOrNull) final List<dynamic>? slots,
       @JsonKey(name: 'venue', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? venueData,
@@ -2791,6 +2837,8 @@ abstract class _EventDto implements EventDto {
       final bool allowCancellation,
       @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
       final int? cancelBeforeHours,
+      @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+      final String? vendorCancellationPolicy,
       @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
       final bool generateQrCodes,
       @JsonKey(fromJson: _parseStringOrNull) final String? status,
@@ -2818,10 +2866,8 @@ abstract class _EventDto implements EventDto {
       final bool isParticipating,
       @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull)
       final String? externalTicketingUrl,
-      @JsonKey(name: 'other_services', fromJson: _parseMapOrNull)
-      final Map<String, dynamic>? otherServices,
-      @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull)
-      final int? entryTypeId,
+      @JsonKey(name: 'other_services', fromJson: _parseMapOrNull) final Map<String, dynamic>? otherServices,
+      @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull) final int? entryTypeId,
       @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull) final int? eventTagId,
       @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull) final String? metaTitle,
       @JsonKey(name: 'meta_description', fromJson: _parseStringOrNull) final String? metaDescription,
@@ -2970,6 +3016,9 @@ abstract class _EventDto implements EventDto {
   @JsonKey(name: 'categories', fromJson: _parseCategoriesList)
   List<EventCategoryDto>? get categories;
   @override
+  @JsonKey(name: 'related_events', fromJson: _parseRelatedEvents)
+  List<EventRelatedDto>? get relatedEvents;
+  @override
   @JsonKey(fromJson: _parseListOrNull)
   List<dynamic>? get slots;
   @override
@@ -3053,6 +3102,9 @@ abstract class _EventDto implements EventDto {
   @override
   @JsonKey(name: 'cancel_before_hours', fromJson: _parseIntOrNull)
   int? get cancelBeforeHours;
+  @override
+  @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
+  String? get vendorCancellationPolicy;
   @override
   @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
   bool get generateQrCodes;
@@ -3318,6 +3370,300 @@ abstract class _EventImageDto implements EventImageDto {
   @override
   @JsonKey(ignore: true)
   _$$EventImageDtoImplCopyWith<_$EventImageDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+EventRelatedDto _$EventRelatedDtoFromJson(Map<String, dynamic> json) {
+  return _EventRelatedDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$EventRelatedDto {
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get id => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get uuid => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseHtmlString)
+  String get title => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseHtmlString)
+  String get slug => throw _privateConstructorUsedError;
+  @JsonKey(name: 'featured_image', fromJson: _parseStringOrNull)
+  String? get featuredImage => throw _privateConstructorUsedError;
+  @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+  String? get coverImage => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseHtmlString)
+  String? get excerpt => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $EventRelatedDtoCopyWith<EventRelatedDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $EventRelatedDtoCopyWith<$Res> {
+  factory $EventRelatedDtoCopyWith(
+          EventRelatedDto value, $Res Function(EventRelatedDto) then) =
+      _$EventRelatedDtoCopyWithImpl<$Res, EventRelatedDto>;
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: _parseStringOrNull) String? id,
+      @JsonKey(fromJson: _parseStringOrNull) String? uuid,
+      @JsonKey(fromJson: _parseHtmlString) String title,
+      @JsonKey(fromJson: _parseHtmlString) String slug,
+      @JsonKey(name: 'featured_image', fromJson: _parseStringOrNull)
+      String? featuredImage,
+      @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+      String? coverImage,
+      @JsonKey(fromJson: _parseHtmlString) String? excerpt});
+}
+
+/// @nodoc
+class _$EventRelatedDtoCopyWithImpl<$Res, $Val extends EventRelatedDto>
+    implements $EventRelatedDtoCopyWith<$Res> {
+  _$EventRelatedDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = freezed,
+    Object? uuid = freezed,
+    Object? title = null,
+    Object? slug = null,
+    Object? featuredImage = freezed,
+    Object? coverImage = freezed,
+    Object? excerpt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      slug: null == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String,
+      featuredImage: freezed == featuredImage
+          ? _value.featuredImage
+          : featuredImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      coverImage: freezed == coverImage
+          ? _value.coverImage
+          : coverImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      excerpt: freezed == excerpt
+          ? _value.excerpt
+          : excerpt // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$EventRelatedDtoImplCopyWith<$Res>
+    implements $EventRelatedDtoCopyWith<$Res> {
+  factory _$$EventRelatedDtoImplCopyWith(_$EventRelatedDtoImpl value,
+          $Res Function(_$EventRelatedDtoImpl) then) =
+      __$$EventRelatedDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: _parseStringOrNull) String? id,
+      @JsonKey(fromJson: _parseStringOrNull) String? uuid,
+      @JsonKey(fromJson: _parseHtmlString) String title,
+      @JsonKey(fromJson: _parseHtmlString) String slug,
+      @JsonKey(name: 'featured_image', fromJson: _parseStringOrNull)
+      String? featuredImage,
+      @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+      String? coverImage,
+      @JsonKey(fromJson: _parseHtmlString) String? excerpt});
+}
+
+/// @nodoc
+class __$$EventRelatedDtoImplCopyWithImpl<$Res>
+    extends _$EventRelatedDtoCopyWithImpl<$Res, _$EventRelatedDtoImpl>
+    implements _$$EventRelatedDtoImplCopyWith<$Res> {
+  __$$EventRelatedDtoImplCopyWithImpl(
+      _$EventRelatedDtoImpl _value, $Res Function(_$EventRelatedDtoImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = freezed,
+    Object? uuid = freezed,
+    Object? title = null,
+    Object? slug = null,
+    Object? featuredImage = freezed,
+    Object? coverImage = freezed,
+    Object? excerpt = freezed,
+  }) {
+    return _then(_$EventRelatedDtoImpl(
+      id: freezed == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String?,
+      uuid: freezed == uuid
+          ? _value.uuid
+          : uuid // ignore: cast_nullable_to_non_nullable
+              as String?,
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      slug: null == slug
+          ? _value.slug
+          : slug // ignore: cast_nullable_to_non_nullable
+              as String,
+      featuredImage: freezed == featuredImage
+          ? _value.featuredImage
+          : featuredImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      coverImage: freezed == coverImage
+          ? _value.coverImage
+          : coverImage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      excerpt: freezed == excerpt
+          ? _value.excerpt
+          : excerpt // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$EventRelatedDtoImpl implements _EventRelatedDto {
+  const _$EventRelatedDtoImpl(
+      {@JsonKey(fromJson: _parseStringOrNull) this.id,
+      @JsonKey(fromJson: _parseStringOrNull) this.uuid,
+      @JsonKey(fromJson: _parseHtmlString) this.title = '',
+      @JsonKey(fromJson: _parseHtmlString) this.slug = '',
+      @JsonKey(name: 'featured_image', fromJson: _parseStringOrNull)
+      this.featuredImage,
+      @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+      this.coverImage,
+      @JsonKey(fromJson: _parseHtmlString) this.excerpt});
+
+  factory _$EventRelatedDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$EventRelatedDtoImplFromJson(json);
+
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  final String? id;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  final String? uuid;
+  @override
+  @JsonKey(fromJson: _parseHtmlString)
+  final String title;
+  @override
+  @JsonKey(fromJson: _parseHtmlString)
+  final String slug;
+  @override
+  @JsonKey(name: 'featured_image', fromJson: _parseStringOrNull)
+  final String? featuredImage;
+  @override
+  @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+  final String? coverImage;
+  @override
+  @JsonKey(fromJson: _parseHtmlString)
+  final String? excerpt;
+
+  @override
+  String toString() {
+    return 'EventRelatedDto(id: $id, uuid: $uuid, title: $title, slug: $slug, featuredImage: $featuredImage, coverImage: $coverImage, excerpt: $excerpt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$EventRelatedDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.uuid, uuid) || other.uuid == uuid) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.slug, slug) || other.slug == slug) &&
+            (identical(other.featuredImage, featuredImage) ||
+                other.featuredImage == featuredImage) &&
+            (identical(other.coverImage, coverImage) ||
+                other.coverImage == coverImage) &&
+            (identical(other.excerpt, excerpt) || other.excerpt == excerpt));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, id, uuid, title, slug, featuredImage, coverImage, excerpt);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$EventRelatedDtoImplCopyWith<_$EventRelatedDtoImpl> get copyWith =>
+      __$$EventRelatedDtoImplCopyWithImpl<_$EventRelatedDtoImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$EventRelatedDtoImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _EventRelatedDto implements EventRelatedDto {
+  const factory _EventRelatedDto(
+          {@JsonKey(fromJson: _parseStringOrNull) final String? id,
+          @JsonKey(fromJson: _parseStringOrNull) final String? uuid,
+          @JsonKey(fromJson: _parseHtmlString) final String title,
+          @JsonKey(fromJson: _parseHtmlString) final String slug,
+          @JsonKey(name: 'featured_image', fromJson: _parseStringOrNull)
+          final String? featuredImage,
+          @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+          final String? coverImage,
+          @JsonKey(fromJson: _parseHtmlString) final String? excerpt}) =
+      _$EventRelatedDtoImpl;
+
+  factory _EventRelatedDto.fromJson(Map<String, dynamic> json) =
+      _$EventRelatedDtoImpl.fromJson;
+
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get id;
+  @override
+  @JsonKey(fromJson: _parseStringOrNull)
+  String? get uuid;
+  @override
+  @JsonKey(fromJson: _parseHtmlString)
+  String get title;
+  @override
+  @JsonKey(fromJson: _parseHtmlString)
+  String get slug;
+  @override
+  @JsonKey(name: 'featured_image', fromJson: _parseStringOrNull)
+  String? get featuredImage;
+  @override
+  @JsonKey(name: 'cover_image', fromJson: _parseStringOrNull)
+  String? get coverImage;
+  @override
+  @JsonKey(fromJson: _parseHtmlString)
+  String? get excerpt;
+  @override
+  @JsonKey(ignore: true)
+  _$$EventRelatedDtoImplCopyWith<_$EventRelatedDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -4098,6 +4444,8 @@ EventCategoryDto _$EventCategoryDtoFromJson(Map<String, dynamic> json) {
 mixin _$EventCategoryDto {
   @JsonKey(fromJson: _parseInt)
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull)
+  int? get parentId => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseHtmlString)
   String get name => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseHtmlString)
@@ -4108,12 +4456,23 @@ mixin _$EventCategoryDto {
   String? get icon => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseStringOrNull)
   String? get color => throw _privateConstructorUsedError;
-  @JsonKey(name: 'event_count', fromJson: _parseIntOrNull)
+  @JsonKey(
+      name: 'event_count',
+      readValue: _readCategoryEventCount,
+      fromJson: _parseIntOrNull)
   int? get eventCount => throw _privateConstructorUsedError;
+  @JsonKey(
+      name: 'image_url', readValue: _readImageUrl, fromJson: _parseStringOrNull)
+  String? get imageUrl => throw _privateConstructorUsedError;
+  @JsonKey(
+      name: 'image_alt', readValue: _readImageAlt, fromJson: _parseStringOrNull)
+  String? get imageAlt => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_primary', fromJson: _parseBool)
   bool get isPrimary => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseCategoryOrNull)
   EventCategoryDto? get parent => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+  List<EventCategoryDto> get children => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -4129,14 +4488,31 @@ abstract class $EventCategoryDtoCopyWith<$Res> {
   @useResult
   $Res call(
       {@JsonKey(fromJson: _parseInt) int id,
+      @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull) int? parentId,
       @JsonKey(fromJson: _parseHtmlString) String name,
       @JsonKey(fromJson: _parseHtmlString) String slug,
       @JsonKey(fromJson: _parseHtmlString) String? description,
       @JsonKey(fromJson: _parseStringOrNull) String? icon,
       @JsonKey(fromJson: _parseStringOrNull) String? color,
-      @JsonKey(name: 'event_count', fromJson: _parseIntOrNull) int? eventCount,
+      @JsonKey(
+          name: 'event_count',
+          readValue: _readCategoryEventCount,
+          fromJson: _parseIntOrNull)
+      int? eventCount,
+      @JsonKey(
+          name: 'image_url',
+          readValue: _readImageUrl,
+          fromJson: _parseStringOrNull)
+      String? imageUrl,
+      @JsonKey(
+          name: 'image_alt',
+          readValue: _readImageAlt,
+          fromJson: _parseStringOrNull)
+      String? imageAlt,
       @JsonKey(name: 'is_primary', fromJson: _parseBool) bool isPrimary,
-      @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent});
+      @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent,
+      @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+      List<EventCategoryDto> children});
 
   $EventCategoryDtoCopyWith<$Res>? get parent;
 }
@@ -4155,20 +4531,28 @@ class _$EventCategoryDtoCopyWithImpl<$Res, $Val extends EventCategoryDto>
   @override
   $Res call({
     Object? id = null,
+    Object? parentId = freezed,
     Object? name = null,
     Object? slug = null,
     Object? description = freezed,
     Object? icon = freezed,
     Object? color = freezed,
     Object? eventCount = freezed,
+    Object? imageUrl = freezed,
+    Object? imageAlt = freezed,
     Object? isPrimary = null,
     Object? parent = freezed,
+    Object? children = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      parentId: freezed == parentId
+          ? _value.parentId
+          : parentId // ignore: cast_nullable_to_non_nullable
+              as int?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -4193,6 +4577,14 @@ class _$EventCategoryDtoCopyWithImpl<$Res, $Val extends EventCategoryDto>
           ? _value.eventCount
           : eventCount // ignore: cast_nullable_to_non_nullable
               as int?,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imageAlt: freezed == imageAlt
+          ? _value.imageAlt
+          : imageAlt // ignore: cast_nullable_to_non_nullable
+              as String?,
       isPrimary: null == isPrimary
           ? _value.isPrimary
           : isPrimary // ignore: cast_nullable_to_non_nullable
@@ -4201,6 +4593,10 @@ class _$EventCategoryDtoCopyWithImpl<$Res, $Val extends EventCategoryDto>
           ? _value.parent
           : parent // ignore: cast_nullable_to_non_nullable
               as EventCategoryDto?,
+      children: null == children
+          ? _value.children
+          : children // ignore: cast_nullable_to_non_nullable
+              as List<EventCategoryDto>,
     ) as $Val);
   }
 
@@ -4227,14 +4623,31 @@ abstract class _$$EventCategoryDtoImplCopyWith<$Res>
   @useResult
   $Res call(
       {@JsonKey(fromJson: _parseInt) int id,
+      @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull) int? parentId,
       @JsonKey(fromJson: _parseHtmlString) String name,
       @JsonKey(fromJson: _parseHtmlString) String slug,
       @JsonKey(fromJson: _parseHtmlString) String? description,
       @JsonKey(fromJson: _parseStringOrNull) String? icon,
       @JsonKey(fromJson: _parseStringOrNull) String? color,
-      @JsonKey(name: 'event_count', fromJson: _parseIntOrNull) int? eventCount,
+      @JsonKey(
+          name: 'event_count',
+          readValue: _readCategoryEventCount,
+          fromJson: _parseIntOrNull)
+      int? eventCount,
+      @JsonKey(
+          name: 'image_url',
+          readValue: _readImageUrl,
+          fromJson: _parseStringOrNull)
+      String? imageUrl,
+      @JsonKey(
+          name: 'image_alt',
+          readValue: _readImageAlt,
+          fromJson: _parseStringOrNull)
+      String? imageAlt,
       @JsonKey(name: 'is_primary', fromJson: _parseBool) bool isPrimary,
-      @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent});
+      @JsonKey(fromJson: _parseCategoryOrNull) EventCategoryDto? parent,
+      @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+      List<EventCategoryDto> children});
 
   @override
   $EventCategoryDtoCopyWith<$Res>? get parent;
@@ -4252,20 +4665,28 @@ class __$$EventCategoryDtoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? parentId = freezed,
     Object? name = null,
     Object? slug = null,
     Object? description = freezed,
     Object? icon = freezed,
     Object? color = freezed,
     Object? eventCount = freezed,
+    Object? imageUrl = freezed,
+    Object? imageAlt = freezed,
     Object? isPrimary = null,
     Object? parent = freezed,
+    Object? children = null,
   }) {
     return _then(_$EventCategoryDtoImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      parentId: freezed == parentId
+          ? _value.parentId
+          : parentId // ignore: cast_nullable_to_non_nullable
+              as int?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -4290,6 +4711,14 @@ class __$$EventCategoryDtoImplCopyWithImpl<$Res>
           ? _value.eventCount
           : eventCount // ignore: cast_nullable_to_non_nullable
               as int?,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imageAlt: freezed == imageAlt
+          ? _value.imageAlt
+          : imageAlt // ignore: cast_nullable_to_non_nullable
+              as String?,
       isPrimary: null == isPrimary
           ? _value.isPrimary
           : isPrimary // ignore: cast_nullable_to_non_nullable
@@ -4298,6 +4727,10 @@ class __$$EventCategoryDtoImplCopyWithImpl<$Res>
           ? _value.parent
           : parent // ignore: cast_nullable_to_non_nullable
               as EventCategoryDto?,
+      children: null == children
+          ? _value._children
+          : children // ignore: cast_nullable_to_non_nullable
+              as List<EventCategoryDto>,
     ));
   }
 }
@@ -4307,14 +4740,32 @@ class __$$EventCategoryDtoImplCopyWithImpl<$Res>
 class _$EventCategoryDtoImpl implements _EventCategoryDto {
   const _$EventCategoryDtoImpl(
       {@JsonKey(fromJson: _parseInt) this.id = 0,
+      @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull) this.parentId,
       @JsonKey(fromJson: _parseHtmlString) this.name = '',
       @JsonKey(fromJson: _parseHtmlString) this.slug = '',
       @JsonKey(fromJson: _parseHtmlString) this.description,
       @JsonKey(fromJson: _parseStringOrNull) this.icon,
       @JsonKey(fromJson: _parseStringOrNull) this.color,
-      @JsonKey(name: 'event_count', fromJson: _parseIntOrNull) this.eventCount,
+      @JsonKey(
+          name: 'event_count',
+          readValue: _readCategoryEventCount,
+          fromJson: _parseIntOrNull)
+      this.eventCount,
+      @JsonKey(
+          name: 'image_url',
+          readValue: _readImageUrl,
+          fromJson: _parseStringOrNull)
+      this.imageUrl,
+      @JsonKey(
+          name: 'image_alt',
+          readValue: _readImageAlt,
+          fromJson: _parseStringOrNull)
+      this.imageAlt,
       @JsonKey(name: 'is_primary', fromJson: _parseBool) this.isPrimary = false,
-      @JsonKey(fromJson: _parseCategoryOrNull) this.parent});
+      @JsonKey(fromJson: _parseCategoryOrNull) this.parent,
+      @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+      final List<EventCategoryDto> children = const []})
+      : _children = children;
 
   factory _$EventCategoryDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$EventCategoryDtoImplFromJson(json);
@@ -4322,6 +4773,9 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
   @override
   @JsonKey(fromJson: _parseInt)
   final int id;
+  @override
+  @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull)
+  final int? parentId;
   @override
   @JsonKey(fromJson: _parseHtmlString)
   final String name;
@@ -4338,18 +4792,37 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
   @JsonKey(fromJson: _parseStringOrNull)
   final String? color;
   @override
-  @JsonKey(name: 'event_count', fromJson: _parseIntOrNull)
+  @JsonKey(
+      name: 'event_count',
+      readValue: _readCategoryEventCount,
+      fromJson: _parseIntOrNull)
   final int? eventCount;
+  @override
+  @JsonKey(
+      name: 'image_url', readValue: _readImageUrl, fromJson: _parseStringOrNull)
+  final String? imageUrl;
+  @override
+  @JsonKey(
+      name: 'image_alt', readValue: _readImageAlt, fromJson: _parseStringOrNull)
+  final String? imageAlt;
   @override
   @JsonKey(name: 'is_primary', fromJson: _parseBool)
   final bool isPrimary;
   @override
   @JsonKey(fromJson: _parseCategoryOrNull)
   final EventCategoryDto? parent;
+  final List<EventCategoryDto> _children;
+  @override
+  @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+  List<EventCategoryDto> get children {
+    if (_children is EqualUnmodifiableListView) return _children;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_children);
+  }
 
   @override
   String toString() {
-    return 'EventCategoryDto(id: $id, name: $name, slug: $slug, description: $description, icon: $icon, color: $color, eventCount: $eventCount, isPrimary: $isPrimary, parent: $parent)';
+    return 'EventCategoryDto(id: $id, parentId: $parentId, name: $name, slug: $slug, description: $description, icon: $icon, color: $color, eventCount: $eventCount, imageUrl: $imageUrl, imageAlt: $imageAlt, isPrimary: $isPrimary, parent: $parent, children: $children)';
   }
 
   @override
@@ -4358,6 +4831,8 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
         (other.runtimeType == runtimeType &&
             other is _$EventCategoryDtoImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.parentId, parentId) ||
+                other.parentId == parentId) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.slug, slug) || other.slug == slug) &&
             (identical(other.description, description) ||
@@ -4366,15 +4841,33 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
             (identical(other.color, color) || other.color == color) &&
             (identical(other.eventCount, eventCount) ||
                 other.eventCount == eventCount) &&
+            (identical(other.imageUrl, imageUrl) ||
+                other.imageUrl == imageUrl) &&
+            (identical(other.imageAlt, imageAlt) ||
+                other.imageAlt == imageAlt) &&
             (identical(other.isPrimary, isPrimary) ||
                 other.isPrimary == isPrimary) &&
-            (identical(other.parent, parent) || other.parent == parent));
+            (identical(other.parent, parent) || other.parent == parent) &&
+            const DeepCollectionEquality().equals(other._children, _children));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, slug, description,
-      icon, color, eventCount, isPrimary, parent);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      parentId,
+      name,
+      slug,
+      description,
+      icon,
+      color,
+      eventCount,
+      imageUrl,
+      imageAlt,
+      isPrimary,
+      parent,
+      const DeepCollectionEquality().hash(_children));
 
   @JsonKey(ignore: true)
   @override
@@ -4394,16 +4887,32 @@ class _$EventCategoryDtoImpl implements _EventCategoryDto {
 abstract class _EventCategoryDto implements EventCategoryDto {
   const factory _EventCategoryDto(
       {@JsonKey(fromJson: _parseInt) final int id,
+      @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull)
+      final int? parentId,
       @JsonKey(fromJson: _parseHtmlString) final String name,
       @JsonKey(fromJson: _parseHtmlString) final String slug,
       @JsonKey(fromJson: _parseHtmlString) final String? description,
       @JsonKey(fromJson: _parseStringOrNull) final String? icon,
       @JsonKey(fromJson: _parseStringOrNull) final String? color,
-      @JsonKey(name: 'event_count', fromJson: _parseIntOrNull)
+      @JsonKey(
+          name: 'event_count',
+          readValue: _readCategoryEventCount,
+          fromJson: _parseIntOrNull)
       final int? eventCount,
+      @JsonKey(
+          name: 'image_url',
+          readValue: _readImageUrl,
+          fromJson: _parseStringOrNull)
+      final String? imageUrl,
+      @JsonKey(
+          name: 'image_alt',
+          readValue: _readImageAlt,
+          fromJson: _parseStringOrNull)
+      final String? imageAlt,
       @JsonKey(name: 'is_primary', fromJson: _parseBool) final bool isPrimary,
-      @JsonKey(fromJson: _parseCategoryOrNull)
-      final EventCategoryDto? parent}) = _$EventCategoryDtoImpl;
+      @JsonKey(fromJson: _parseCategoryOrNull) final EventCategoryDto? parent,
+      @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+      final List<EventCategoryDto> children}) = _$EventCategoryDtoImpl;
 
   factory _EventCategoryDto.fromJson(Map<String, dynamic> json) =
       _$EventCategoryDtoImpl.fromJson;
@@ -4411,6 +4920,9 @@ abstract class _EventCategoryDto implements EventCategoryDto {
   @override
   @JsonKey(fromJson: _parseInt)
   int get id;
+  @override
+  @JsonKey(name: 'parent_id', fromJson: _parseIntOrNull)
+  int? get parentId;
   @override
   @JsonKey(fromJson: _parseHtmlString)
   String get name;
@@ -4427,14 +4939,28 @@ abstract class _EventCategoryDto implements EventCategoryDto {
   @JsonKey(fromJson: _parseStringOrNull)
   String? get color;
   @override
-  @JsonKey(name: 'event_count', fromJson: _parseIntOrNull)
+  @JsonKey(
+      name: 'event_count',
+      readValue: _readCategoryEventCount,
+      fromJson: _parseIntOrNull)
   int? get eventCount;
+  @override
+  @JsonKey(
+      name: 'image_url', readValue: _readImageUrl, fromJson: _parseStringOrNull)
+  String? get imageUrl;
+  @override
+  @JsonKey(
+      name: 'image_alt', readValue: _readImageAlt, fromJson: _parseStringOrNull)
+  String? get imageAlt;
   @override
   @JsonKey(name: 'is_primary', fromJson: _parseBool)
   bool get isPrimary;
   @override
   @JsonKey(fromJson: _parseCategoryOrNull)
   EventCategoryDto? get parent;
+  @override
+  @JsonKey(fromJson: _parseCategoriesListOrEmpty)
+  List<EventCategoryDto> get children;
   @override
   @JsonKey(ignore: true)
   _$$EventCategoryDtoImplCopyWith<_$EventCategoryDtoImpl> get copyWith =>

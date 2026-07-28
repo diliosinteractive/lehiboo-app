@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/analytics_event.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/petit_boo/presentation/providers/engagement_provider.dart';
@@ -12,21 +16,27 @@ import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../widgets/airbnb_search_bar.dart';
 import '../widgets/airbnb_search_sheet.dart';
+import '../widgets/active_filter_chips.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/save_search_sheet.dart';
+import '../utils/search_l10n.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   final String? categorySlug;
   final String? city;
   final String? dateFilter;
+  final EventFilter? initialFilter;
   final bool autoOpenFilter;
+  final bool searchBarOpensFilters;
 
   const SearchScreen({
     super.key,
     this.categorySlug,
     this.city,
     this.dateFilter,
+    this.initialFilter,
     this.autoOpenFilter = false,
+    this.searchBarOpensFilters = false,
   });
 
   @override
@@ -36,6 +46,29 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final ScrollController _scrollController = ScrollController();
 
+  /// Signature du dernier filtre pour lequel `search_no_results` a été loggué,
+  /// pour ne pas refire l'event à chaque rebuild tant que le filtre est inchangé.
+  String? _loggedNoResultsKey;
+
+  /// Loggue `search_no_results` une fois par recherche réelle sans résultat.
+  /// Ignore l'état initial (aucun filtre actif) qui réutilise le même widget vide.
+  void _maybeLogNoResults(EventFilter filter) {
+    if (!filter.hasActiveFilters) return;
+    final key = '${filter.searchQuery}|${filter.citySlug ?? ''}|'
+        '${filter.categoriesSlugs.join(',')}|${filter.dateFilterType != null}';
+    if (key == _loggedNoResultsKey) return;
+    _loggedNoResultsKey = key;
+    ref.read(analyticsServiceProvider).logEvent(
+      AnalyticsEvent.searchNoResults,
+      params: {
+        AnalyticsParam.query: filter.searchQuery,
+        AnalyticsParam.citySlug: filter.citySlug ?? 'none',
+        AnalyticsParam.categories: filter.categoriesSlugs.join(','),
+        AnalyticsParam.hasDateFilter: filter.dateFilterType != null,
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -44,36 +77,50 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     // Initialize filters if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final filterNotifier = ref.read(eventFilterProvider.notifier);
-      if (widget.categorySlug != null ||
+      if (widget.initialFilter != null) {
+        filterNotifier.applyFilters(widget.initialFilter!);
+        if (widget.initialFilter!.categoriesSlugs.isNotEmpty) {
+          _trackCategoryView(widget.initialFilter!.categoriesSlugs.first);
+        }
+      } else if (widget.categorySlug != null ||
           widget.city != null ||
           widget.dateFilter != null) {
         filterNotifier.resetAll();
+
+        if (widget.categorySlug != null) {
+          filterNotifier.addCategory(widget.categorySlug!);
+          _trackCategoryView(widget.categorySlug!);
+        }
+        if (widget.city != null) {
+          final cityName =
+              widget.city![0].toUpperCase() + widget.city!.substring(1);
+          filterNotifier.setCity(widget.city!, cityName);
+        }
+        switch (widget.dateFilter) {
+          case 'today':
+            filterNotifier.setDateFilter(DateFilterType.today);
+            break;
+          case 'tomorrow':
+            filterNotifier.setDateFilter(DateFilterType.tomorrow);
+            break;
+          case 'weekend':
+            filterNotifier.setDateFilter(DateFilterType.thisWeekend);
+            break;
+        }
+      } else if (widget.searchBarOpensFilters) {
+        filterNotifier.resetSortToDefault(persist: false);
       }
 
-      if (widget.categorySlug != null) {
-        filterNotifier.addCategory(widget.categorySlug!);
-        _trackCategoryView(widget.categorySlug!);
-      }
-      if (widget.city != null) {
-        final cityName =
-            widget.city![0].toUpperCase() + widget.city!.substring(1);
-        filterNotifier.setCity(widget.city!, cityName);
-      }
-      switch (widget.dateFilter) {
-        case 'today':
-          filterNotifier.setDateFilter(DateFilterType.today);
-          break;
-        case 'tomorrow':
-          filterNotifier.setDateFilter(DateFilterType.tomorrow);
-          break;
-        case 'weekend':
-          filterNotifier.setDateFilter(DateFilterType.thisWeekend);
-          break;
-      }
-
-      // Auto open filter bottom sheet if requested
+      // Auto open filter bottom sheet if requested. Mirror the in-page
+      // search bar's branch so /explore?openFilter=true opens the refinement
+      // FilterBottomSheet, while /search?openFilter=true keeps opening the
+      // AirbnbSearchSheet composer.
       if (widget.autoOpenFilter) {
-        _showSearchBottomSheet();
+        if (widget.searchBarOpensFilters) {
+          showFilterBottomSheet(context);
+        } else {
+          _showSearchBottomSheet();
+        }
       }
     });
   }
@@ -128,10 +175,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'sauvegarder une recherche',
+      featureName: context.l10n.guestFeatureSaveSearch,
     );
     if (!allowed) return;
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     final filter = ref.read(eventFilterProvider);
     final alertsNotifier = ref.read(alertsProvider.notifier);
@@ -159,8 +206,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     PetitBooToast.success(
       context,
       hasNotifications
-          ? 'Alerte "${result.name}" créée avec notifications !'
-          : 'Recherche "${result.name}" enregistrée !',
+          ? context.l10n.searchSavedAlertCreated(result.name)
+          : context.l10n.searchSavedSearchCreated(result.name),
     );
   }
 
@@ -210,9 +257,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               },
                               icon: const Icon(Icons.arrow_back),
                             ),
-                            const Text(
-                              'Rechercher',
-                              style: TextStyle(
+                            Text(
+                              context.l10n.searchAction,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -258,7 +305,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                             size: 18, color: Colors.grey[500]),
                                         const SizedBox(width: 4),
                                         Text(
-                                          'Recherche\nenregistrée',
+                                          context
+                                              .l10n.searchAlreadySavedMultiline,
                                           textAlign: TextAlign.start,
                                           style: TextStyle(
                                             color: Colors.grey[600],
@@ -287,16 +335,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     backgroundColor: HbColors.brandPrimary
                                         .withValues(alpha: 0.05),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.bookmark_border,
-                                          size: 18, color: HbColors.brandPrimary),
-                                      SizedBox(width: 4),
+                                      const Icon(Icons.bookmark_border,
+                                          size: 18,
+                                          color: HbColors.brandPrimary),
+                                      const SizedBox(width: 4),
                                       Text(
-                                        'Sauvegarder\nma recherche',
+                                        context.l10n.searchSaveSearchMultiline,
                                         textAlign: TextAlign.start,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: HbColors.brandPrimary,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10,
@@ -312,16 +361,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                       const SizedBox(height: 8),
                       // Compact Search Bar
-                      // - onTap: ouvre Airbnb-style (3 panneaux)
-                      // - onFilterTap: ouvre bottom sheet avec TOUTES les options détaillées
                       AirbnbSearchBar(
-                        onTap: _showSearchBottomSheet,
+                        onTap: widget.searchBarOpensFilters
+                            ? () => showFilterBottomSheet(context)
+                            : _showSearchBottomSheet,
                         onFilterTap: () => showFilterBottomSheet(context),
                       ),
                       const SizedBox(height: 12),
                     ],
                   ),
                 ),
+              ),
+            ),
+            const SliverToBoxAdapter(
+              child: ActiveFilterChips(
+                padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
               ),
             ),
 
@@ -336,6 +390,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ref
                         .read(petitBooEngagementProvider.notifier)
                         .onSearchEmpty();
+                    _maybeLogNoResults(filter);
                   });
 
                   return SliverFillRemaining(
@@ -401,11 +456,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       const Icon(Icons.error_outline,
                           size: 48, color: Colors.red),
                       const SizedBox(height: 16),
-                      Text('Erreur: $error'),
+                      Text(
+                        context.l10n.homeErrorWithMessage(
+                          ApiResponseHandler.extractError(error),
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () => ref.refresh(filteredEventsProvider),
-                        child: const Text('Réessayer'),
+                        child: Text(context.l10n.searchRetry),
                       ),
                     ],
                   ),
@@ -437,7 +496,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '$displayCount résultat${displayCount > 1 ? 's' : ''}',
+                displayCount == 1
+                    ? context.l10n.searchResult(displayCount)
+                    : context.l10n.searchResultsCount(displayCount),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -460,7 +521,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       const Icon(Icons.sort, size: 18, color: Colors.grey),
                       const SizedBox(width: 6),
                       Text(
-                        _getSortLabel(filter.sortBy),
+                        context.searchSortOptionLabel(filter.sortBy),
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey[700],
@@ -513,9 +574,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
             child: Column(
               children: [
-                const Text(
-                  "C'est tout pour le moment !",
-                  style: TextStyle(
+                Text(
+                  context.l10n.searchNoMoreResults,
+                  style: const TextStyle(
                     color: Colors.grey,
                     fontSize: 14,
                   ),
@@ -524,7 +585,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ElevatedButton.icon(
                   onPressed: () => _showCreateAlertDialog(context),
                   icon: const Icon(Icons.notifications_active_outlined),
-                  label: const Text('M\'alerter des nouveautés'),
+                  label: Text(context.l10n.searchAlertNewActivities),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.accentBlue,
                     foregroundColor: Colors.white,
@@ -541,25 +602,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
     ];
-  }
-
-  String _getSortLabel(SortOption sortBy) {
-    switch (sortBy) {
-      case SortOption.relevance:
-        return 'Pertinence';
-      case SortOption.dateAsc:
-        return 'Date';
-      case SortOption.dateDesc:
-        return 'Date (desc)';
-      case SortOption.priceAsc:
-        return 'Prix';
-      case SortOption.priceDesc:
-        return 'Prix (desc)';
-      case SortOption.popularity:
-        return 'Popularité';
-      case SortOption.distance:
-        return 'Distance';
-    }
   }
 
   void _showSortOptions(
@@ -585,18 +627,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Text(
-                'Trier par',
-                style: TextStyle(
+                context.l10n.searchSortBy,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
             _SortOption(
-              label: 'Pertinence',
+              label: context.l10n.searchSortRelevance,
               icon: Icons.auto_awesome,
               isSelected: filter.sortBy == SortOption.relevance,
               onTap: () {
@@ -605,7 +647,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
             _SortOption(
-              label: 'Date (plus proche)',
+              label: context.l10n.searchSortNewest,
+              icon: Icons.fiber_new,
+              isSelected: filter.sortBy == SortOption.newest,
+              onTap: () {
+                filterNotifier.setSortOption(SortOption.newest);
+                Navigator.pop(context);
+              },
+            ),
+            _SortOption(
+              label: context.l10n.searchSortDateAsc,
               icon: Icons.calendar_today,
               isSelected: filter.sortBy == SortOption.dateAsc,
               onTap: () {
@@ -614,7 +665,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
             _SortOption(
-              label: 'Prix (croissant)',
+              label: context.l10n.searchSortPriceAsc,
               icon: Icons.arrow_upward,
               isSelected: filter.sortBy == SortOption.priceAsc,
               onTap: () {
@@ -623,7 +674,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
             _SortOption(
-              label: 'Prix (décroissant)',
+              label: context.l10n.searchSortPriceDesc,
               icon: Icons.arrow_downward,
               isSelected: filter.sortBy == SortOption.priceDesc,
               onTap: () {
@@ -632,7 +683,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
             ),
             _SortOption(
-              label: 'Popularité',
+              label: context.l10n.searchSortPopularity,
               icon: Icons.trending_up,
               isSelected: filter.sortBy == SortOption.popularity,
               onTap: () {
@@ -677,8 +728,8 @@ class _EmptyResults extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               hasFilters
-                  ? 'Aucun résultat pour ces filtres'
-                  : 'Commencez votre recherche',
+                  ? context.l10n.searchNoResultsForFilters
+                  : context.l10n.searchStartTitle,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -689,8 +740,8 @@ class _EmptyResults extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               hasFilters
-                  ? 'Essayez de modifier ou supprimer certains filtres pour voir plus de résultats.'
-                  : 'Utilisez la barre de recherche ci-dessus pour trouver des activités.',
+                  ? context.l10n.searchNoResultsBody
+                  : context.l10n.searchStartBody,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -705,7 +756,7 @@ class _EmptyResults extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: onCreateAlert,
                   icon: const Icon(Icons.notifications_active_outlined),
-                  label: const Text('M\'alerter des nouveaux événements'),
+                  label: Text(context.l10n.searchAlertNewEvents),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.accentBlue, // Bleu foncé
                     foregroundColor: Colors.white,
@@ -724,7 +775,7 @@ class _EmptyResults extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 icon: const Icon(Icons.clear),
-                label: const Text('Effacer les filtres'),
+                label: Text(context.l10n.searchClearFilters),
               ),
             ],
             const SizedBox(height: 40),
@@ -762,8 +813,9 @@ class _SortOption extends StatelessWidget {
           color: isSelected ? HbColors.brandPrimary : null,
         ),
       ),
-      trailing:
-          isSelected ? const Icon(Icons.check, color: HbColors.brandPrimary) : null,
+      trailing: isSelected
+          ? const Icon(Icons.check, color: HbColors.brandPrimary)
+          : null,
       onTap: onTap,
     );
   }

@@ -3,15 +3,38 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import '../../../../config/dio_client.dart';
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
+import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../domain/entities/user.dart';
 import '../../data/mappers/auth_mapper.dart';
 import '../../data/models/auth_response_dto.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../../data/repositories/auth_repository_impl.dart';
 import '../../../booking/presentation/providers/order_cart_provider.dart';
+import '../../../favorites/data/datasources/favorites_local_datasource.dart';
+import '../../../memberships/presentation/providers/private_events_provider.dart';
 import '../../../notifications/data/datasources/device_token_datasource.dart';
+import '../../../partners/presentation/providers/followed_organizers_providers.dart';
+import '../../../petit_boo/presentation/providers/conversation_list_provider.dart';
+import '../../../petit_boo/presentation/providers/petit_boo_chat_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../profile/presentation/providers/saved_participants_provider.dart';
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, pendingVerification, pendingLoginOtp, error }
+enum AuthStatus {
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  pendingVerification,
+  pendingLoginOtp,
+  error
+}
+
+const Object _notProvided = Object();
 
 /// User-facing signal set only when the API invalidates the current session.
 ///
@@ -38,23 +61,38 @@ class AuthState {
 
   AuthState copyWith({
     AuthStatus? status,
-    HbUser? user,
-    String? errorMessage,
-    String? pendingUserId,
-    String? pendingEmail,
+    Object? user = _notProvided,
+    Object? errorMessage = _notProvided,
+    Object? pendingUserId = _notProvided,
+    Object? pendingEmail = _notProvided,
   }) {
     return AuthState(
       status: status ?? this.status,
-      user: user ?? this.user,
-      errorMessage: errorMessage,
-      pendingUserId: pendingUserId ?? this.pendingUserId,
-      pendingEmail: pendingEmail ?? this.pendingEmail,
+      user: user == _notProvided ? this.user : user as HbUser?,
+      errorMessage: errorMessage == _notProvided
+          ? this.errorMessage
+          : errorMessage as String?,
+      pendingUserId: pendingUserId == _notProvided
+          ? this.pendingUserId
+          : pendingUserId as String?,
+      pendingEmail: pendingEmail == _notProvided
+          ? this.pendingEmail
+          : pendingEmail as String?,
     );
   }
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isLoading => status == AuthStatus.loading;
   bool get isPendingVerification => status == AuthStatus.pendingVerification;
+}
+
+bool didTransitionToUnauthenticated(
+  AuthStatus? previous,
+  AuthStatus next,
+) {
+  return next == AuthStatus.unauthenticated &&
+      previous != AuthStatus.unauthenticated &&
+      previous != AuthStatus.initial;
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -70,20 +108,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (isAuth) {
       final user = await _authRepository.getCurrentUser();
       state = state.copyWith(
-        status: user != null ? AuthStatus.authenticated : AuthStatus.unauthenticated,
+        status: user != null
+            ? AuthStatus.authenticated
+            : AuthStatus.unauthenticated,
         user: user,
       );
+      _syncAuthUser(user);
     } else {
       state = state.copyWith(status: AuthStatus.unauthenticated);
     }
   }
 
   /// Login - may require OTP verification (2FA) or direct auth (Laravel v2)
-  Future<LoginOtpResult?> login({required String email, required String password}) async {
+  Future<LoginOtpResult?> login(
+      {required String email, required String password}) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
-      final result = await _authRepository.login(email: email, password: password);
+      final result =
+          await _authRepository.login(email: email, password: password);
 
       if (result.requiresOtp) {
         // OTP required - store pending info
@@ -92,14 +135,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
           pendingUserId: result.userId,
           pendingEmail: result.email,
         );
+        // otp_sent — code 2FA envoyé suite à un login valide.
+        _analytics.logEvent(
+          AnalyticsEvent.otpSent,
+          params: {AnalyticsParam.type: AnalyticsOtpType.login},
+        );
         return result;
       }
 
       // No OTP required - check if we have auth result (Laravel v2 direct auth)
       if (result.authResult != null) {
+        final user = result.authResult!.user;
         state = state.copyWith(
           status: AuthStatus.authenticated,
-          user: result.authResult!.user,
+          user: user,
+        );
+        _syncAuthUser(user);
+        _analytics.logEvent(
+          AnalyticsEvent.login,
+          params: {AnalyticsParam.method: AnalyticsMethod.email},
         );
         return result;
       }
@@ -113,6 +167,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.unauthenticated,
         errorMessage: _parseError(e),
       );
+      _analytics.logEvent(
+        AnalyticsEvent.loginFailed,
+        params: {AnalyticsParam.reason: _categorizeError(e)},
+      );
       return null;
     }
   }
@@ -123,8 +181,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
     required String firstName,
     required String lastName,
+    required String birthDate,
   }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+
+    // signup_started — entrée dans le funnel d'inscription (form soumis).
+    // Loggué avant l'appel API pour capter aussi les tentatives qui échouent.
+    _analytics.logEvent(
+      AnalyticsEvent.signupStarted,
+      params: {AnalyticsParam.method: AnalyticsMethod.email},
+    );
 
     try {
       final result = await _authRepository.register(
@@ -132,20 +198,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         firstName: firstName,
         lastName: lastName,
+        birthDate: birthDate,
       );
-      
+
       // Store pending verification info in state
       state = state.copyWith(
         status: AuthStatus.pendingVerification,
         pendingUserId: result.userId,
         pendingEmail: result.email,
       );
-      
+
+      // otp_sent — le backend a déclenché l'envoi du code de vérification.
+      _analytics.logEvent(
+        AnalyticsEvent.otpSent,
+        params: {AnalyticsParam.type: AnalyticsOtpType.register},
+      );
+
       return result;
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
         errorMessage: _parseError(e),
+      );
+      _analytics.logEvent(
+        AnalyticsEvent.signupFailed,
+        params: {AnalyticsParam.reason: _categorizeError(e)},
       );
       return null;
     }
@@ -171,21 +248,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingUserId: null,
         pendingEmail: null,
       );
+      _syncAuthUser(result.user);
+      _analytics.logEvent(
+        AnalyticsEvent.otpVerified,
+        params: {AnalyticsParam.type: AnalyticsOtpType.register},
+      );
+      _analytics.logEvent(
+        AnalyticsEvent.signUp,
+        params: {AnalyticsParam.method: AnalyticsMethod.email},
+      );
       return true;
     } catch (e) {
-      final errorMessage = e.toString();
+      final rawError = e.toString();
+      final errorMessage = ApiResponseHandler.extractError(e);
       debugPrint('🚨 Verify OTP Error: $errorMessage');
-      
+
       // Handle case where user is already verified (e.g. double submission or retry)
-      if (errorMessage.contains('user_already_verified')) {
-         debugPrint('🚨 Treating already verified as success');
-         state = state.copyWith(
-            status: AuthStatus.unauthenticated, // Will redirect to login (since we don't have token)
-            pendingUserId: null,
-            pendingEmail: null,
-            errorMessage: 'Votre compte est déjà vérifié. Veuillez vous connecter.',
-         );
-         return true; // Treat as handled/success to allow navigation
+      if (rawError.contains('user_already_verified')) {
+        debugPrint('🚨 Treating already verified as success');
+        state = state.copyWith(
+          status: AuthStatus
+              .unauthenticated, // Will redirect to login (since we don't have token)
+          pendingUserId: null,
+          pendingEmail: null,
+          errorMessage: cachedAppLocalizations().authAccountAlreadyVerified,
+        );
+        return true; // Treat as handled/success to allow navigation
       }
 
       state = state.copyWith(
@@ -207,6 +295,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         userId: userId,
         email: email,
         type: type,
+      );
+      // otp_sent — renvoi manuel du code (`type` = register | login).
+      _analytics.logEvent(
+        AnalyticsEvent.otpSent,
+        params: {AnalyticsParam.type: type},
       );
       return true;
     } catch (e) {
@@ -237,6 +330,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         pendingUserId: null,
         pendingEmail: null,
       );
+      _syncAuthUser(result.user);
+      _analytics.logEvent(
+        AnalyticsEvent.otpVerified,
+        params: {AnalyticsParam.type: AnalyticsOtpType.login},
+      );
+      _analytics.logEvent(
+        AnalyticsEvent.login,
+        params: {AnalyticsParam.method: AnalyticsMethod.email},
+      );
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -253,6 +355,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _authRepository.forgotPassword(email);
       state = state.copyWith(status: AuthStatus.unauthenticated);
+      _analytics.logEvent(AnalyticsEvent.passwordResetRequested);
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -273,21 +376,83 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _ref.read(deviceTokenDataSourceProvider).unregisterAllTokens();
     } catch (_) {}
     await _authRepository.logout();
+    await _clearPersistedUserData();
     state = const AuthState(status: AuthStatus.unauthenticated);
-    // Cart is identity-bound and persisted to SharedPreferences; clear so the
-    // next user (or guest) doesn't inherit stale items + an expired hold.
-    _ref.read(orderCartProvider.notifier).clear();
+    _syncAuthUser(null);
+    _invalidateUserScopedProviders();
   }
 
   /// Force logout without calling the API (used by 401 interceptor).
   /// Skips the API call to avoid triggering another 401 loop.
   Future<void> forceLogout() async {
     await _authRepository.clearLocalAuthData();
+    await _clearPersistedUserData();
     state = const AuthState(
       status: AuthStatus.unauthenticated,
       errorMessage: authSessionExpiredMessage,
     );
-    _ref.read(orderCartProvider.notifier).clear();
+    _syncAuthUser(null);
+    _invalidateUserScopedProviders();
+  }
+
+  /// Flush every disk-backed cache that holds the current user's identity.
+  ///
+  /// In-memory provider state is handled by per-notifier `ref.listen` hooks
+  /// on `authProvider` (see `BookingListController`, `FavoritesProvider`,
+  /// `PetitBooChatNotifier`, …). Disk caches can't self-listen, so they get
+  /// flushed here and we `await` them before flipping to `unauthenticated`
+  /// to guarantee the next user can't observe the previous tenant's bytes.
+  Future<void> _clearPersistedUserData() async {
+    // Cart (SharedPreferences `order_cart_items_v1` + hold expiry).
+    // OrderCartNotifier.clear() is fire-and-forget on _prefs.remove(), so we
+    // don't await it — calling it synchronously is enough to wipe in-memory
+    // state and queue the disk removal.
+    try {
+      _ref.read(orderCartProvider.notifier).clear();
+    } catch (_) {}
+    // Favorites cache (SharedPreferences `favorite_ids` + `favorites_last_sync`).
+    try {
+      await _ref.read(favoritesLocalDatasourceProvider).clear();
+    } catch (_) {}
+    // Petit Boo persisted context, chat history, memory toggle.
+    try {
+      await _ref.read(petitBooContextStorageProvider).clearAll();
+    } catch (_) {}
+    // Petit Boo session UUID (SecureStorage). Survives app restarts — must be
+    // wiped or the next user resumes the previous user's AI session.
+    try {
+      await SharedSecureStorage.instance
+          .delete(key: AppConstants.keyPetitBooSessionUuid);
+    } catch (_) {}
+  }
+
+  /// Invalidate read-only / FutureProvider state that no notifier owns.
+  ///
+  /// Providers in this list either don't expose a notifier we can hook
+  /// `ref.listen(authProvider)` onto (FutureProvider, AsyncNotifier without
+  /// an auth-aware build, StateProvider), or do expose one but pre-date the
+  /// auth-listener convention used elsewhere in the codebase. Anything that
+  /// already self-listens (hibons, inAppNotifications, activeOrganization,
+  /// messages, conversationDetail, messagesRealtime, pushNotification, bookings,
+  /// favorites, favorite_lists, alerts, reminders, userReviews, tripPlans,
+  /// petitBooChat) MUST NOT appear here — double-reset would mask bugs in
+  /// those listeners.
+  void _invalidateUserScopedProviders() {
+    // Profile / stats / saved participants (FutureProvider.autoDispose, but a
+    // mounted screen at logout time would keep the previous user's data
+    // visible until next navigation — invalidate to force a rebuild).
+    _ref.invalidate(userStatsProvider);
+    _ref.invalidate(savedParticipantsProvider);
+    // Partners — followed organizers list.
+    _ref.invalidate(followedOrganizersControllerProvider);
+    // Memberships derived screens (myMembershipsListProvider self-clears via
+    // its build()'s ref.watch on authProvider).
+    _ref.invalidate(privateEventsControllerProvider);
+    _ref.invalidate(privateEventsSearchProvider);
+    _ref.invalidate(privateEventsOrgFilterProvider);
+    // Petit Boo conversation history list (autoDispose; covers the case
+    // where the user is on the history screen at logout time).
+    _ref.invalidate(conversationListProvider);
   }
 
   void clearError() {
@@ -302,6 +467,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       pendingUserId: null,
       pendingEmail: null,
       errorMessage: null,
+    );
+    _syncAuthUser(user);
+    _analytics.logEvent(
+      AnalyticsEvent.signUp,
+      params: {AnalyticsParam.method: AnalyticsMethod.email},
     );
   }
 
@@ -322,9 +492,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // AuthMapper may default role to subscriber if the profile endpoint
       // doesn't return it — preserve the current role in that case.
       next = mapped.copyWith(
-        role: mapped.role != UserRole.subscriber
-            ? mapped.role
-            : currentUser.role,
+        role:
+            mapped.role != UserRole.subscriber ? mapped.role : currentUser.role,
       );
     } else if (updatedUser is HbUser) {
       next = updatedUser;
@@ -333,6 +502,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (next == null) return;
 
     state = state.copyWith(user: next);
+    _syncAuthUser(next);
 
     // Fire-and-forget: keep the in-memory update synchronous so the UI rebuilds
     // immediately. Disk I/O failures are non-fatal — the next login or
@@ -341,6 +511,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   String _parseError(dynamic e) {
+    final l10n = cachedAppLocalizations();
+
     if (e is DioException) {
       if (e.type == DioExceptionType.badResponse) {
         final data = e.response?.data;
@@ -349,67 +521,139 @@ class AuthNotifier extends StateNotifier<AuthState> {
           if (data['error'] != null && data['error']['details'] != null) {
             final details = data['error']['details'];
             if (details is Map<String, dynamic>) {
-               // Return the first validation error message found
-               final firstError = details.values.first;
-               if (firstError is List && firstError.isNotEmpty) {
-                 return firstError.first.toString();
-               }
-               return firstError.toString();
+              // Return the first validation error message found
+              final firstError = details.values.first;
+              if (firstError is List && firstError.isNotEmpty) {
+                return ApiResponseHandler.safeUserMessage(firstError.first) ??
+                    l10n.commonGenericRetryError;
+              }
+              return ApiResponseHandler.safeUserMessage(firstError) ??
+                  l10n.commonGenericRetryError;
             }
           }
           // Fallback to general message if available
-           if (data['message'] != null) {
-            return data['message'].toString();
+          if (data['message'] != null) {
+            return ApiResponseHandler.safeUserMessage(data['message']) ??
+                l10n.commonGenericRetryError;
           }
-           if (data['data'] != null && data['data']['message'] != null) {
-            return data['data']['message'].toString();
+          if (data['data'] != null && data['data']['message'] != null) {
+            return ApiResponseHandler.safeUserMessage(
+                  data['data']['message'],
+                ) ??
+                l10n.commonGenericRetryError;
           }
         }
-      } else if (e.type == DioExceptionType.connectionTimeout || 
-                 e.type == DioExceptionType.receiveTimeout || 
-                 e.type == DioExceptionType.sendTimeout ||
-                 e.type == DioExceptionType.connectionError) {
-        return 'Erreur de connexion. Vérifiez votre connexion internet.';
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        return l10n.commonConnectionError;
       }
     }
 
     final message = e.toString();
     if (message.contains('invalid_credentials')) {
-      return 'Email ou mot de passe incorrect';
+      return l10n.authEmailOrPasswordIncorrect;
     } else if (message.contains('user_exists')) {
-      return 'Un compte existe déjà avec cet email';
+      return l10n.authAccountAlreadyExists;
     } else if (message.contains('weak_password')) {
-      return 'Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre';
+      return l10n.authWeakPasswordDetailed;
     } else if (message.contains('invalid_email')) {
-      return 'Adresse email invalide';
-    } else if (message.contains('network') || message.contains('SocketException')) {
-      return 'Erreur de connexion. Vérifiez votre connexion internet.';
+      return l10n.authEmailAddressInvalid;
+    } else if (message.contains('network') ||
+        message.contains('SocketException')) {
+      return l10n.commonConnectionError;
     }
-    
-    // Provide a slightly more helpful fallback if it's an Exception with a message
-    if (e is Exception) {
-      final msg = e.toString().replaceAll('Exception: ', '');
-      if (msg.isNotEmpty && !msg.startsWith('http')) return msg;
-    }
-    
-    return 'Une erreur est survenue. Veuillez réessayer.';
+
+    return ApiResponseHandler.extractError(
+      e,
+      fallback: l10n.commonGenericRetryError,
+    );
   }
 
   String _parseOtpError(dynamic e) {
+    final l10n = cachedAppLocalizations();
     final message = e.toString();
     if (message.contains('invalid_otp')) {
-      return 'Code de vérification invalide';
+      return l10n.authVerificationCodeInvalid;
     } else if (message.contains('otp_expired')) {
-      return 'Le code a expiré. Veuillez en demander un nouveau.';
+      return l10n.authVerificationCodeExpired;
     } else if (message.contains('too_many_attempts')) {
-      return 'Trop de tentatives. Réessayez dans 15 minutes.';
+      return l10n.authTooManyAttempts;
     }
-    return 'Code de vérification invalide';
+    return l10n.authVerificationCodeInvalid;
+  }
+
+  // ─── Analytics helpers ─────────────────────────────────────────────
+  // Lecture paresseuse du service via _ref pour rester compatible avec
+  // l'instanciation actuelle (le constructeur ne reçoit pas le service
+  // explicitement). La collecte étant désactivée tant que l'étape 7 n'a
+  // pas livré le consent gate, ces appels sont des no-ops côté Firebase.
+
+  AnalyticsService get _analytics => _ref.read(analyticsServiceProvider);
+
+  /// Met à jour l'identité analytics à chaque transition de [state.user].
+  /// Appelée avec [user] = null à la déconnexion pour purger explicitement
+  /// les properties et le user_id — sinon GA4 colle l'ancien profil au
+  /// prochain compte qui se connectera sur le device.
+  void _syncAuthUser(HbUser? user) {
+    if (user != null) {
+      _analytics.setUserId(user.id);
+      _analytics.setUserProperty(
+        AnalyticsUserProperty.userRole,
+        _userRoleValue(user.role),
+      );
+      _analytics.setUserProperty(
+        AnalyticsUserProperty.homeCitySlug,
+        user.city ?? 'none',
+      );
+    } else {
+      _analytics.setUserId(null);
+      _analytics.setUserProperty(AnalyticsUserProperty.userRole, null);
+      _analytics.setUserProperty(AnalyticsUserProperty.homeCitySlug, null);
+    }
+  }
+
+  String _userRoleValue(UserRole role) {
+    return switch (role) {
+      UserRole.subscriber => AnalyticsUserRole.subscriber,
+      UserRole.partner => AnalyticsUserRole.partner,
+      UserRole.admin => AnalyticsUserRole.admin,
+    };
+  }
+
+  /// Normalise une exception en `reason` court et stable pour GA4.
+  /// Pendant la dimension n'est pas une chaîne libre — limiter la
+  /// cardinalité évite le sampling.
+  String _categorizeError(Object e) {
+    final message = e.toString().toLowerCase();
+    if (message.contains('invalid_credentials')) return 'invalid_credentials';
+    if (message.contains('invalid_otp')) return 'otp_invalid';
+    if (message.contains('otp_expired')) return 'otp_expired';
+    if (message.contains('too_many_attempts')) return 'too_many_attempts';
+    if (message.contains('user_exists')) return 'user_exists';
+    if (message.contains('weak_password')) return 'weak_password';
+    if (message.contains('invalid_email')) return 'invalid_email';
+    if (message.contains('socketexception') || message.contains('network')) {
+      return 'network';
+    }
+    if (e is DioException) {
+      return switch (e.type) {
+        DioExceptionType.connectionTimeout ||
+        DioExceptionType.receiveTimeout ||
+        DioExceptionType.sendTimeout =>
+          'network_timeout',
+        DioExceptionType.connectionError => 'network',
+        DioExceptionType.badResponse => 'bad_response',
+        _ => 'dio_unknown',
+      };
+    }
+    return 'unknown';
   }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  final authRepository = ref.watch(authRepositoryImplProvider);
+  final authRepository = ref.watch(authRepositoryProvider);
   return AuthNotifier(authRepository, ref);
 });
 

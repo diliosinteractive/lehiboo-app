@@ -4,10 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+// import 'package:lehiboo/core/analytics/analytics_event.dart';
+// import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
-import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
+// import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_hero_header.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/event_info_card.dart';
@@ -16,7 +19,7 @@ import 'package:lehiboo/features/booking/presentation/widgets/ticket_preview_car
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/presentation/utils/ticket_download_helper.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
-import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
+// import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -29,7 +32,8 @@ class BookingDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BookingDetailScreen> createState() => _BookingDetailScreenState();
+  ConsumerState<BookingDetailScreen> createState() =>
+      _BookingDetailScreenState();
 }
 
 class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
@@ -71,7 +75,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   }
 
   Future<void> _loadBookingDetails() async {
-    debugPrint('📖 BookingDetailScreen: Loading details for bookingId=${widget.bookingId}');
+    debugPrint(
+        '📖 BookingDetailScreen: Loading details for bookingId=${widget.bookingId}');
 
     if (_booking == null) {
       setState(() => _isLoading = true);
@@ -80,7 +85,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       final controller = ref.read(bookingsListControllerProvider.notifier);
       final state = ref.read(bookingsListControllerProvider);
 
-      debugPrint('📖 BookingDetailScreen: Current bookings count=${state.allBookings.length}');
+      debugPrint(
+          '📖 BookingDetailScreen: Current bookings count=${state.allBookings.length}');
 
       if (state.allBookings.isEmpty) {
         debugPrint('📖 BookingDetailScreen: Loading bookings from API...');
@@ -89,24 +95,30 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
       // Chercher le booking par ID (essayer plusieurs formats)
       final updatedState = ref.read(bookingsListControllerProvider);
-      debugPrint('📖 BookingDetailScreen: Searching in ${updatedState.allBookings.length} bookings');
+      debugPrint(
+          '📖 BookingDetailScreen: Searching in ${updatedState.allBookings.length} bookings');
 
       // Debug: afficher les IDs disponibles
       for (final b in updatedState.allBookings) {
-        debugPrint('📖 BookingDetailScreen: Available booking id=${b.id}, numericId=${b.numericId}');
+        debugPrint(
+            '📖 BookingDetailScreen: Available booking id=${b.id}, numericId=${b.numericId}');
       }
 
       // Chercher par UUID (id) ou par ID numérique
       final searchId = widget.bookingId;
-      final foundBooking = updatedState.allBookings.where(
-        (b) => b.id == searchId || b.numericId?.toString() == searchId,
-      ).firstOrNull;
+      final foundBooking = updatedState.allBookings
+          .where(
+            (b) => b.id == searchId || b.numericId?.toString() == searchId,
+          )
+          .firstOrNull;
 
       if (foundBooking != null) {
-        debugPrint('📖 BookingDetailScreen: Found booking! id=${foundBooking.id}, activity=${foundBooking.activity?.title}');
+        debugPrint(
+            '📖 BookingDetailScreen: Found booking! id=${foundBooking.id}, activity=${foundBooking.activity?.title}');
         _booking = foundBooking;
       } else {
-        debugPrint('📖 BookingDetailScreen: Booking NOT FOUND for id=$searchId');
+        debugPrint(
+            '📖 BookingDetailScreen: Booking NOT FOUND for id=$searchId');
         _notFound = true;
       }
 
@@ -140,14 +152,15 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       final attendees = booking.attendees;
       final merged = List<Ticket>.generate(dtos.length, (index) {
         final dto = dtos[index];
-        final attendee =
-            (attendees != null && index < attendees.length) ? attendees[index] : null;
+        final attendee = (attendees != null && index < attendees.length)
+            ? attendees[index]
+            : null;
         return Ticket(
           id: dto.id,
           bookingId: booking.id,
           userId: booking.userId,
           slotId: booking.slotId,
-          ticketType: attendee?.ticketTypeName ?? 'Standard',
+          ticketType: attendee?.ticketTypeName,
           qrCodeData: dto.qrCode,
           status: dto.status,
           attendeeFirstName: dto.attendeeFirstName ?? attendee?.firstName,
@@ -182,31 +195,34 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         bookingId: _booking?.id ?? '',
         userId: _booking?.userId ?? '',
         slotId: _booking?.slotId ?? '',
-        ticketType: 'Standard',
-        qrCodeData: '${_booking?.id}_${index}_${DateTime.now().millisecondsSinceEpoch}',
+        ticketType: null,
+        qrCodeData:
+            '${_booking?.id}_${index}_${DateTime.now().millisecondsSinceEpoch}',
         status: 'active',
       ),
     );
     setState(() {});
   }
 
-  void _shareBooking() {
+  Future<void> _shareBooking() async {
     final booking = _booking;
     if (booking == null) return;
 
     final activity = booking.activity;
     final slot = booking.slot;
 
-    String shareText = 'Ma réservation Le Hiboo\n';
+    String shareText = '${context.l10n.bookingShareBookingTitle}\n';
     if (activity != null) {
       shareText += '\n${activity.title}';
     }
-    if (slot?.startDateTime != null) {
-      shareText += '\nLe ${_formatDate(slot!.startDateTime!)}';
+    final slotStart = slot?.startDateTime;
+    if (slotStart != null) {
+      shareText += '\n${_formatDate(slotStart)}';
     }
-    shareText += '\n\n${_tickets.length} billet(s)';
+    shareText +=
+        '\n\n${context.l10n.bookingShareTicketsCount(_tickets.length)}';
 
-    Share.share(shareText);
+    await SharePlus.instance.share(ShareParams(text: shareText));
   }
 
   /// Hands off to the system calendar's "create event" flow with the booking
@@ -240,7 +256,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         activity.excerpt!
       else if (activity.description.isNotEmpty)
         activity.description,
-      'Réservation Le Hiboo : $reference',
+      context.l10n.bookingCalendarReference(reference),
     ];
 
     final event = cal.Event(
@@ -259,8 +275,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       SnackBar(
         content: Text(
           added
-              ? 'Événement ajouté au calendrier'
-              : "Impossible d'ajouter au calendrier",
+              ? context.l10n.bookingCalendarAdded
+              : context.l10n.bookingCalendarAddFailed,
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -268,24 +284,15 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   }
 
   String _formatDate(DateTime date) {
-    final months = [
-      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-    ];
-    final weekdays = [
-      'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'
-    ];
-
-    final weekday = weekdays[date.weekday - 1];
-    final day = date.day;
-    final month = months[date.month - 1];
-    final year = date.year;
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-
-    return '$weekday $day $month $year à $hour:$minute';
+    return context
+        .appDateFormat(
+          "EEEE d MMMM yyyy 'à' HH:mm",
+          enPattern: 'EEEE, MMMM d, yyyy HH:mm',
+        )
+        .format(date);
   }
 
+  /*
   Future<void> _showCancelConfirmation() async {
     final reasonController = TextEditingController();
     final deadline = _booking?.cancellation?.deadlineFormatted;
@@ -293,19 +300,16 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Annuler la réservation'),
+        title: Text(context.l10n.bookingCancelDialogTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Êtes-vous sûr de vouloir annuler cette réservation ? '
-              'Cette action est irréversible.',
-            ),
+            Text(context.l10n.bookingCancelDialogBody),
             if (deadline != null) ...[
               const SizedBox(height: 8),
               Text(
-                'Date limite : $deadline',
+                context.l10n.bookingCancelDeadline(deadline),
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade600,
@@ -317,16 +321,16 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               controller: reasonController,
               maxLength: 1000,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Raison (optionnel)',
-                hintText: 'Empêchement personnel…',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.bookingCancelReasonLabel,
+                hintText: context.l10n.bookingCancelReasonHint,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              "Attention : aucun remboursement ne sera effectué après l'annulation.",
-              style: TextStyle(
+              context.l10n.bookingCancelWarning,
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: HbColors.error,
@@ -337,12 +341,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Non, garder'),
+            child: Text(context.l10n.bookingCancelKeep),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: HbColors.error),
-            child: const Text('Oui, annuler'),
+            child: Text(context.l10n.bookingCancelConfirm),
           ),
         ],
       ),
@@ -366,10 +370,22 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
     try {
       final repository = ref.read(bookingRepositoryProvider);
-      final updated = await repository.cancelBooking(bookingUuid, reason: reason);
+      final updated =
+          await repository.cancelBooking(bookingUuid, reason: reason);
 
       debugPrint('🚫 Annulation réussie, status=${updated.status}');
       HapticFeedback.heavyImpact();
+
+      // refund (standard GA4) — pair avec le `purchase` initial via le même
+      // transaction_id = booking.id. Alimente les rapports Monetization.
+      ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.refund,
+        params: {
+          AnalyticsParam.transactionId: bookingUuid,
+          AnalyticsParam.value: updated.totalPrice ?? booking.totalPrice ?? 0,
+          AnalyticsParam.currency: 'EUR',
+        },
+      );
 
       // Spec §3.6: replace local booking with the response — no re-fetch.
       // Refresh the list so the home/bookings tab reflects the new status.
@@ -383,10 +399,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Réservation annulée. Aucun remboursement ne sera effectué.'),
+        SnackBar(
+          content: Text(context.l10n.bookingCancelSuccess),
           backgroundColor: HbColors.error,
-          duration: Duration(seconds: 4),
+          duration: const Duration(seconds: 4),
         ),
       );
     } on BookingCancellationForbiddenException {
@@ -394,17 +410,18 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       // button visibility updates and the user sees the right state.
       debugPrint('🚫 403 Forbidden — refreshing booking');
       ref.read(bookingsListControllerProvider.notifier).refresh();
-      _showCancelError(
-        "L'annulation n'est plus possible "
-        "(délai dépassé ou non autorisé par l'organisateur).",
-      );
+      if (!mounted) return;
+      _showCancelError(context.l10n.bookingCancelForbidden);
     } on BookingCancellationNotFoundException {
-      _showCancelError('Cette réservation est introuvable.');
+      if (!mounted) return;
+      _showCancelError(context.l10n.bookingCancelNotFound);
     } on BookingCancellationValidationException {
-      _showCancelError('La raison saisie est trop longue (1000 caractères max).');
+      if (!mounted) return;
+      _showCancelError(context.l10n.bookingCancelValidationTooLong);
     } catch (e) {
       debugPrint('🚫 Erreur annulation: $e');
-      _showCancelError("Impossible d'annuler la réservation. Réessayez.");
+      if (!mounted) return;
+      _showCancelError(context.l10n.bookingCancelGenericError);
     }
   }
 
@@ -418,30 +435,38 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       ),
     );
   }
+  */
 
   Future<void> _downloadAllTickets() async {
     if (_booking == null) return;
     HapticFeedback.lightImpact();
+    final l10n = context.l10n;
+    final androidDisplayLocation = l10n.bookingAndroidDownloadsLocation;
+    final documentsDisplayLocation = l10n.bookingDocumentsTicketsLocation;
 
-    _showInfoSnack('Préparation du PDF…');
+    _showInfoSnack(l10n.bookingPreparingPdf);
 
     try {
       final pdf = await ref
           .read(bookingApiDataSourceProvider)
           .downloadBookingTicketsBundle(_booking!.id);
       _hideSnack();
-      final saved = await shareTicketPdf(pdf);
-      _showInfoSnack('Billets enregistrés dans ${saved.displayLocation}');
+      final saved = await shareTicketPdf(
+        pdf,
+        androidDisplayLocation: androidDisplayLocation,
+        documentsDisplayLocation: documentsDisplayLocation,
+      );
+      if (!mounted) return;
+      _showInfoSnack(l10n.bookingTicketsSaved(saved.displayLocation));
     } on TicketsNotReadyException {
-      _showDownloadError(
-        'Vos billets sont en cours de génération, réessayez dans un instant.',
-      );
+      if (!mounted) return;
+      _showDownloadError(context.l10n.bookingTicketsNotReady);
     } on NotAuthorizedToDownloadException {
-      _showDownloadError(
-        "Vous n'êtes pas autorisé à télécharger ces billets.",
-      );
+      if (!mounted) return;
+      _showDownloadError(context.l10n.bookingTicketsNotAuthorized);
     } catch (_) {
-      _showDownloadError('Téléchargement impossible. Réessayez plus tard.');
+      if (!mounted) return;
+      _showDownloadError(context.l10n.bookingDownloadError);
     }
   }
 
@@ -500,6 +525,14 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     );
   }
 
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/my-bookings');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = HbTheme.tokens(context);
@@ -512,7 +545,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: HbColors.textPrimary),
-            onPressed: () => context.pop(),
+            onPressed: _goBack,
           ),
         ),
         body: const Center(
@@ -526,13 +559,13 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          title: const Text(
-            'Réservation',
-            style: TextStyle(color: HbColors.textPrimary),
+          title: Text(
+            context.l10n.bookingReservationFallback,
+            style: const TextStyle(color: HbColors.textPrimary),
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: HbColors.textPrimary),
-            onPressed: () => context.pop(),
+            onPressed: _goBack,
           ),
         ),
         body: Center(
@@ -547,9 +580,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   color: Colors.grey.shade400,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Réservation introuvable',
-                  style: TextStyle(
+                Text(
+                  context.l10n.bookingNotFoundTitle,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: HbColors.textPrimary,
@@ -557,7 +590,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Cette réservation n\'existe pas ou a été supprimée.',
+                  context.l10n.bookingNotFoundBody,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -570,12 +603,13 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: HbColors.brandPrimary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Voir mes réservations'),
+                  child: Text(context.l10n.bookingViewMyBookings),
                 ),
               ],
             ),
@@ -590,12 +624,14 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ? booking.id.substring(0, 8).toUpperCase()
         : booking.id.toUpperCase();
 
+    /*
     // Per spec §4: drive the cancel button purely from cancellation.canCancel
     // (which the backend computes from status, event.allow_cancellation, and
     // the deadline). Falls back to status-only when the API didn't include
     // the cancellation block — old/cached bookings.
     final canCancel = booking.cancellation?.canCancel ??
         (booking.status == 'confirmed' || booking.status == 'pending');
+    */
 
     return Scaffold(
       backgroundColor: HbColors.orangePastel,
@@ -610,22 +646,24 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.arrow_back, color: HbColors.textPrimary, size: 20),
+                child: const Icon(Icons.arrow_back,
+                    color: HbColors.textPrimary, size: 20),
               ),
-              onPressed: () => context.pop(),
+              onPressed: _goBack,
             ),
             actions: [
               IconButton(
                 icon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.share, color: HbColors.textPrimary, size: 20),
+                  child: const Icon(Icons.share,
+                      color: HbColors.textPrimary, size: 20),
                 ),
                 onPressed: _shareBooking,
               ),
@@ -678,11 +716,13 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 if (_booking != null && _booking!.slot?.startDateTime != null)
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
                     child: OutlinedButton.icon(
                       onPressed: _addToCalendar,
-                      icon: const Icon(Icons.event_available_outlined, size: 18),
-                      label: const Text('Ajouter au calendrier'),
+                      icon:
+                          const Icon(Icons.event_available_outlined, size: 18),
+                      label: Text(context.l10n.bookingAddToCalendar),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -696,13 +736,14 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 if (_booking != null)
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
                     child: OutlinedButton.icon(
                       onPressed: () => context.push(
                         '/messages/new/from-booking/${_booking!.id}',
                       ),
                       icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                      label: const Text("Contacter l'organisateur"),
+                      label: Text(context.l10n.bookingContactOrganizer),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -712,15 +753,17 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                     ),
                   ),
                 SizedBox(height: tokens.spacing.xs),
+                /*
                 // Cancel button (if applicable)
                 if (canCancel)
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: tokens.spacing.xs),
                     child: OutlinedButton.icon(
                       onPressed: _showCancelConfirmation,
                       icon: const Icon(Icons.cancel_outlined, size: 18),
-                      label: const Text('Annuler la réservation'),
+                      label: Text(context.l10n.bookingCancelDialogTitle),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: HbColors.error,
                         side: const BorderSide(color: HbColors.error),
@@ -731,6 +774,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ),
                     ),
                   ),
+                */
                 // Bottom spacing for safe area
                 SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
               ]),
@@ -761,9 +805,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Informations complémentaires',
-            style: TextStyle(
+          Text(
+            context.l10n.bookingAdditionalInfoTitle,
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: HbColors.textPrimary,
@@ -775,10 +819,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
-                  Icon(Icons.person_outline, size: 16, color: Colors.grey.shade600),
+                  Icon(Icons.person_outline,
+                      size: 16, color: Colors.grey.shade600),
                   const SizedBox(width: 8),
                   Text(
-                    '$age ans',
+                    context.l10n.bookingAgeYears(age),
                     style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
                   ),
                 ],
@@ -787,7 +832,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
           if (booking.customerTown != null)
             Row(
               children: [
-                Icon(Icons.location_on_outlined, size: 16, color: Colors.grey.shade600),
+                Icon(Icons.location_on_outlined,
+                    size: 16, color: Colors.grey.shade600),
                 const SizedBox(width: 8),
                 Text(
                   booking.customerTown!,

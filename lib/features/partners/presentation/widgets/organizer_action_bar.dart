@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/guest_restriction_dialog.dart';
@@ -92,7 +93,7 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
             Expanded(
               child: _PrimaryButton(
                 icon: Icons.mail_outline,
-                label: 'Contacter',
+                label: context.l10n.organizerContactAction,
                 onTap: () => _handle(PendingOrganizerAction.contact),
               ),
             ),
@@ -103,7 +104,7 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
               icon: widget.coordinatesOpen
                   ? Icons.expand_less
                   : Icons.expand_more,
-              label: 'Coordonnées',
+              label: context.l10n.organizerCoordinatesAction,
               onTap: () => _handle(PendingOrganizerAction.coordinates),
             ),
           ),
@@ -119,10 +120,13 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
       GuestRestrictionDialog.show(
         context,
         featureName: switch (action) {
-          PendingOrganizerAction.follow => "suivre cet organisateur",
-          PendingOrganizerAction.contact => "contacter cet organisateur",
-          PendingOrganizerAction.coordinates => "voir les coordonnées",
-          PendingOrganizerAction.join => "rejoindre cet organisateur",
+          PendingOrganizerAction.follow =>
+            context.l10n.guestFeatureFollowOrganizer,
+          PendingOrganizerAction.contact =>
+            context.l10n.guestFeatureContactThisOrganizer,
+          PendingOrganizerAction.coordinates =>
+            context.l10n.guestFeatureViewCoordinates,
+          PendingOrganizerAction.join => context.l10n.guestFeatureJoinOrganizer,
         },
       );
       return;

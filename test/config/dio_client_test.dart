@@ -26,6 +26,20 @@ void main() {
     DioClient.onForceLogout = previousForceLogout;
   });
 
+  group('maskAuthTokenForDebugLog', () {
+    test('masks short tokens completely', () {
+      expect(maskAuthTokenForDebugLog('abcd1234'), '***');
+      expect(maskAuthTokenForDebugLog('short'), '***');
+    });
+
+    test('keeps only the first and last four characters for longer tokens', () {
+      expect(
+        maskAuthTokenForDebugLog('abcdefghijklmnopqrstuvwxyz'),
+        'abcd...wxyz',
+      );
+    });
+  });
+
   test('hero slides are classified as a public endpoint', () {
     expect(JwtAuthInterceptor.isPublicPath('/hero-slides'), isTrue);
   });
@@ -60,6 +74,9 @@ void main() {
   test('a 401 from a protected endpoint expires the user session', () async {
     var forceLogoutCalls = 0;
     DioClient.onForceLogout = () async => forceLogoutCalls++;
+    // No refresh token: this exercises the terminal protected-401 path
+    // without making a network request to the configured refresh endpoint.
+    await storage.delete(key: AppConstants.keyRefreshToken);
     final dio = _unauthorizedDio(storage);
 
     await expectLater(

@@ -1,10 +1,15 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/services/crash_reporter.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
@@ -13,13 +18,17 @@ import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource
 import 'package:lehiboo/features/booking/domain/extensions/user_participant_extension.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/models/order_cart_item.dart';
+import 'package:lehiboo/features/booking/domain/models/refund_policy.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/cart_summary_section.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_form_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participants_overview_block.dart';
+import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
+import 'package:lehiboo/shared/legal/legal_links.dart';
 
 class OrderCartScreen extends ConsumerStatefulWidget {
   const OrderCartScreen({super.key});
@@ -40,6 +49,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   String? _customerBirthDate;
   final Map<String, List<ParticipantInfo>> _attendeesByCartItemId = {};
   bool _acceptedTerms = false;
+  bool _acceptedRefundPolicy = false;
   bool _isLoading = false;
   String? _errorMessage;
   String? _activeOrderUuid;
@@ -166,8 +176,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       ref.read(orderCartProvider.notifier).clear();
       setState(() {
         _cartHoldRemaining = null;
-        _errorMessage =
-            'Le delai du panier est depasse. Ajoutez a nouveau vos billets pour continuer.';
+        _errorMessage = context.l10n.bookingCartHoldExpired;
       });
       return;
     }
@@ -207,19 +216,17 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Vider le panier ?'),
-        content: const Text(
-          'Tous les billets ajoutes seront supprimes. Cette action est irreversible.',
-        ),
+        title: Text(context.l10n.bookingClearCartTitle),
+        content: Text(context.l10n.bookingClearCartBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Annuler'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Vider'),
+            child: Text(context.l10n.bookingClear),
           ),
         ],
       ),
@@ -316,11 +323,11 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
                 child: Text(
-                  'Choisir un participant enregistre',
-                  style: TextStyle(
+                  context.l10n.bookingChooseSavedParticipant,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: HbColors.textPrimary,
@@ -366,6 +373,16 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                   itemCount: participants.length,
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: Text(
+                  context.l10n.bookingAddToNextEmptyTicket,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: HbColors.textMuted,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -387,6 +404,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         items.fold<int>(0, (sum, item) => sum + item.quantity);
     final totalAmount =
         items.fold<double>(0, (sum, item) => sum + item.lineTotal);
+    final refundPolicies = _refundPoliciesForItems(items);
     _ensureAttendees(items);
 
     final user = ref.watch(authProvider).user;
@@ -405,85 +423,95 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Panier'),
+        title: Text(context.l10n.bookingCartTitle),
         backgroundColor: Colors.white,
         foregroundColor: HbColors.textPrimary,
         elevation: 0,
         actions: [
           if (_cartHoldRemaining != null && _activeOrderUuid == null)
             _CartTimerChip(
-              label: 'Panier ${_formatRemaining(_cartHoldRemaining!)}',
+              label: context.l10n
+                  .bookingCartHoldLabel(_formatRemaining(_cartHoldRemaining!)),
               onTap: _showCartHoldInfo,
             ),
           if (_activeOrderUuid != null && _reservationRemaining != null)
             _CartTimerChip(
-              label: 'Places ${_formatRemaining(_reservationRemaining!)}',
+              label: context.l10n.bookingPlacesHoldLabel(
+                _formatRemaining(_reservationRemaining!),
+              ),
               onTap: _showCartHoldInfo,
               highlight: true,
             ),
           if (items.isNotEmpty)
             TextButton(
               onPressed: _isLoading ? null : _confirmClearCart,
-              child: const Text('Vider'),
+              child: Text(context.l10n.bookingClear),
             ),
         ],
       ),
-      body: items.isEmpty
-          ? _buildEmptyState()
-          : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CartSummarySection(
-                    items: items,
-                    onUpdateQuantity:
-                        ref.read(orderCartProvider.notifier).updateQuantity,
-                    onRemove: ref.read(orderCartProvider.notifier).remove,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Participants',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textPrimary,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: items.isEmpty
+            ? _buildEmptyState()
+            : SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CartSummarySection(
+                      items: items,
+                      onUpdateQuantity:
+                          ref.read(orderCartProvider.notifier).updateQuantity,
+                      onRemove: ref.read(orderCartProvider.notifier).remove,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Choisissez une personne enregistree ou renseignez chaque billet.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 12),
-                  ParticipantsOverviewBlock(
-                    completedCount: completedCount,
-                    totalCount: totalParticipants,
-                    savedParticipants: savedParticipants,
-                    user: user,
-                    userIsComplete: userIsComplete,
-                    onFillFromProfile:
-                        user != null ? _fillAllFromProfile : null,
-                    onPickSavedParticipant: savedParticipants.isEmpty
-                        ? null
-                        : () => _pickSavedForFirstEmpty(savedParticipants),
-                    onCompleteProfile:
-                        user != null ? _goToCompleteProfile : null,
-                  ),
-                  const SizedBox(height: 16),
-                  ..._buildParticipantCards(
-                    items: items,
-                    savedParticipants: savedParticipants,
-                    firstIncompleteIndex: firstIncompleteIndex,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildBuyerForm(),
-                  const SizedBox(height: 12),
-                  _buildTermsSection(),
-                  if (_errorMessage != null) _buildError(),
-                ],
+                    const SizedBox(height: 16),
+                    Text(
+                      context.l10n.bookingParticipantsTitle,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: HbColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      context.l10n.bookingParticipantsInstruction,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 12),
+                    ParticipantsOverviewBlock(
+                      completedCount: completedCount,
+                      totalCount: totalParticipants,
+                      savedParticipants: savedParticipants,
+                      user: user,
+                      userIsComplete: userIsComplete,
+                      onFillFromProfile:
+                          user != null ? _fillAllFromProfile : null,
+                      onPickSavedParticipant: savedParticipants.isEmpty
+                          ? null
+                          : () => _pickSavedForFirstEmpty(savedParticipants),
+                      onCompleteProfile:
+                          user != null ? _goToCompleteProfile : null,
+                    ),
+                    const SizedBox(height: 16),
+                    ..._buildParticipantCards(
+                      items: items,
+                      savedParticipants: savedParticipants,
+                      firstIncompleteIndex: firstIncompleteIndex,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildBuyerForm(),
+                    const SizedBox(height: 12),
+                    _buildTermsSection(refundPolicies),
+                    if (_errorMessage != null) _buildError(),
+                  ],
+                ),
               ),
-            ),
+      ),
       bottomNavigationBar: items.isEmpty
           ? null
           : _buildConfirmButton(
@@ -495,14 +523,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Conservation du panier'),
-        content: const Text(
-          'Votre selection est conservee 15 minutes apres le dernier ajout. Au moment du paiement, les places sont bloquees pour le temps necessaire a la finalisation.',
-        ),
+        title: Text(context.l10n.bookingCartHoldTitle),
+        content: Text(context.l10n.bookingCartHoldBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Compris'),
+            child: Text(context.l10n.bookingUnderstood),
           ),
         ],
       ),
@@ -530,9 +556,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Votre panier est vide',
-              style: TextStyle(
+            Text(
+              context.l10n.bookingEmptyCartTitle,
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textPrimary,
@@ -540,7 +566,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ajoutez des billets depuis une fiche evenement pour payer plusieurs reservations en une fois.',
+              context.l10n.bookingEmptyCartBody,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade600),
             ),
@@ -551,7 +577,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                 backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Explorer les evenements'),
+              child: Text(context.l10n.bookingExploreEvents),
             ),
           ],
         ),
@@ -593,7 +619,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             initialValue: initial,
             savedParticipants: savedParticipants,
             eventTitle: item.event.title,
-            slotLabel: _formatSlot(item),
+            slotLabel: context.bookingCartItemSlotLabel(item),
             initiallyExpanded: cardIndex == firstIncompleteIndex,
             onChanged: (info) => _updateAttendee(item.id, i, info),
           ),
@@ -619,9 +645,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Coordonnees',
-              style: TextStyle(
+            Text(
+              context.l10n.bookingContactDetailsTitle,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: HbColors.textPrimary,
@@ -629,7 +655,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Vous recevrez votre confirmation et vos billets a cette adresse.',
+              context.l10n.bookingContactDetailsSubtitle,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 14),
@@ -643,11 +669,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                     width: fieldWidth,
                     child: TextFormField(
                       controller: _firstNameController,
-                      decoration: _inputDecoration('Prenom *'),
+                      decoration: _inputDecoration(
+                          context.l10n.bookingFirstNameLabelRequired),
                       textCapitalization: TextCapitalization.words,
                       validator: (value) =>
                           value == null || value.trim().isEmpty
-                              ? 'Le prenom est requis'
+                              ? context.l10n.bookingFirstNameRequired
                               : null,
                     ),
                   ),
@@ -655,11 +682,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                     width: fieldWidth,
                     child: TextFormField(
                       controller: _lastNameController,
-                      decoration: _inputDecoration('Nom *'),
+                      decoration: _inputDecoration(
+                          context.l10n.bookingLastNameLabelRequired),
                       textCapitalization: TextCapitalization.words,
                       validator: (value) =>
                           value == null || value.trim().isEmpty
-                              ? 'Le nom est requis'
+                              ? context.l10n.bookingLastNameRequired
                               : null,
                     ),
                   ),
@@ -669,14 +697,15 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             const SizedBox(height: 10),
             TextFormField(
               controller: _emailController,
-              decoration: _inputDecoration('Email *'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingEmailLabelRequired),
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'L\'email est requis';
+                  return context.l10n.bookingEmailRequired;
                 }
                 if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                  return 'Email invalide';
+                  return context.l10n.bookingEmailInvalid;
                 }
                 return null;
               },
@@ -692,7 +721,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                     width: fieldWidth,
                     child: TextFormField(
                       controller: _phoneController,
-                      decoration: _inputDecoration('Telephone'),
+                      decoration:
+                          _inputDecoration(context.l10n.bookingPhoneLabel),
                       keyboardType: TextInputType.phone,
                     ),
                   ),
@@ -700,7 +730,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                     width: fieldWidth,
                     child: TextFormField(
                       controller: _townController,
-                      decoration: _inputDecoration('Ville d\'appartenance'),
+                      decoration: _inputDecoration(
+                          context.l10n.bookingMembershipCityLabel),
                       textCapitalization: TextCapitalization.words,
                     ),
                   ),
@@ -713,7 +744,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     );
   }
 
-  Widget _buildTermsSection() {
+  Widget _buildTermsSection(List<RefundPolicyEntry> refundPolicies) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -721,27 +752,115 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         border: Border.all(color: Colors.grey.shade200),
       ),
       padding: const EdgeInsets.all(14),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Checkbox(
-            value: _acceptedTerms,
-            activeColor: HbColors.brandPrimary,
-            onChanged: (value) =>
-                setState(() => _acceptedTerms = value ?? false),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
-              child: Text(
-                'J\'accepte les conditions generales de vente et la politique de confidentialite.',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+          if (refundPolicies.isNotEmpty) ...[
+            _buildRefundPolicyAcceptance(refundPolicies),
+            const Divider(height: 22),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: _acceptedTerms,
+                activeColor: HbColors.brandPrimary,
+                onChanged: (value) =>
+                    setState(() => _acceptedTerms = value ?? false),
               ),
-            ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
+                  child: RichText(
+                    text: TextSpan(
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                      children: [
+                        TextSpan(text: context.l10n.bookingTermsPrefix),
+                        TextSpan(
+                          text: context.l10n.legalSales.toLowerCase(),
+                          style: const TextStyle(
+                            color: HbColors.brandPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () =>
+                                LegalLinks.open(context, LegalDocument.sales),
+                        ),
+                        TextSpan(text: context.l10n.bookingTermsConnector),
+                        TextSpan(
+                          text: context.l10n.legalPrivacy.toLowerCase(),
+                          style: const TextStyle(
+                            color: HbColors.brandPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () => LegalLinks.open(
+                                  context,
+                                  LegalDocument.privacy,
+                                ),
+                        ),
+                        const TextSpan(text: '.'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRefundPolicyAcceptance(
+    List<RefundPolicyEntry> refundPolicies,
+  ) {
+    final hasMultiple = refundPolicies.length > 1;
+    final prefix = hasMultiple
+        ? context.l10n.bookingRefundPoliciesAcceptancePrefix
+        : context.l10n.bookingRefundPolicyAcceptancePrefix;
+    final linkText = hasMultiple
+        ? context.l10n.bookingRefundPoliciesAcceptanceLink
+        : context.l10n.bookingRefundPolicyAcceptanceLink;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Checkbox(
+          value: _acceptedRefundPolicy,
+          activeColor: HbColors.brandPrimary,
+          onChanged: (value) =>
+              setState(() => _acceptedRefundPolicy = value ?? false),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => setState(
+              () => _acceptedRefundPolicy = !_acceptedRefundPolicy,
+            ),
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                children: [
+                  TextSpan(text: prefix),
+                  TextSpan(
+                    text: linkText,
+                    style: const TextStyle(
+                      color: HbColors.brandPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => _openRefundPolicies(refundPolicies),
+                  ),
+                  const TextSpan(text: '.'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -797,7 +916,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      totalAmount == 0 ? 'Gratuit' : _formatPrice(totalAmount),
+                      totalAmount == 0
+                          ? context.l10n.commonFree
+                          : _formatPrice(totalAmount),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -805,7 +926,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                       ),
                     ),
                     Text(
-                      '$totalQuantity billet${totalQuantity > 1 ? 's' : ''}',
+                      context.l10n.bookingTicketsCount(totalQuantity),
                       style:
                           TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
@@ -840,8 +961,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                               size: 18),
                           const SizedBox(width: 8),
                           Text(totalAmount == 0
-                              ? 'Confirmer'
-                              : 'Continuer vers le paiement'),
+                              ? context.l10n.bookingConfirm
+                              : context.l10n.bookingContinueToPayment),
                         ],
                       ),
               ),
@@ -859,15 +980,27 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
 
     if (!_formKey.currentState!.validate()) return;
-    if (!_acceptedTerms) {
+
+    final cartItems = ref.read(orderCartProvider);
+    if (cartItems.isEmpty) return;
+
+    final refundPolicies = _refundPoliciesForItems(cartItems);
+    if (refundPolicies.isNotEmpty && !_acceptedRefundPolicy) {
       setState(() {
-        _errorMessage = 'Veuillez accepter les conditions generales de vente';
+        _errorMessage = refundPolicies.length > 1
+            ? context.l10n.bookingRefundPoliciesRequired
+            : context.l10n.bookingRefundPolicyRequired;
       });
       return;
     }
 
-    final cartItems = ref.read(orderCartProvider);
-    if (cartItems.isEmpty) return;
+    if (!_acceptedTerms) {
+      setState(() {
+        _errorMessage = context.l10n.bookingAcceptSalesRequired;
+      });
+      return;
+    }
+
     if (!_validateParticipants(cartItems)) return;
 
     setState(() {
@@ -877,6 +1010,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
     final dataSource = ref.read(bookingApiDataSourceProvider);
     var shouldCancelOrderOnError = false;
+    // Suit l'étape en cours pour que Crashlytics indique précisément où le
+    // checkout a cassé (création commande / paiement / confirmation).
+    var checkoutStep = 'create_order';
 
     try {
       final order = await dataSource.createOrder(
@@ -889,6 +1025,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         customerTown: _townController.text.trim().isEmpty
             ? null
             : _townController.text.trim(),
+        acceptRefundPolicy: _acceptedRefundPolicy,
       );
 
       var confirmedOrder = order;
@@ -900,9 +1037,11 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
       if (order.totalAmount > 0) {
         shouldCancelOrderOnError = true;
+        checkoutStep = 'payment_intent';
         final paymentIntent =
             await dataSource.getOrderPaymentIntent(orderUuid: order.uuid);
 
+        checkoutStep = 'init_payment_sheet';
         await Stripe.instance.initPaymentSheet(
           paymentSheetParameters: SetupPaymentSheetParameters(
             paymentIntentClientSecret: paymentIntent.clientSecret,
@@ -911,19 +1050,19 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         );
 
         await Future<void>.delayed(const Duration(milliseconds: 500));
+        await WidgetsBinding.instance.endOfFrame;
 
-        final presentCompleter = Completer<void>();
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          try {
-            await Stripe.instance.presentPaymentSheet();
-            presentCompleter.complete();
-          } catch (e) {
-            presentCompleter.completeError(e);
-          }
-        });
-        await presentCompleter.future;
+        checkoutStep = 'present_payment_sheet';
+        if (!mounted) {
+          throw StateError(
+            'Payment screen closed before Stripe sheet presentation.',
+          );
+        }
+
+        await Stripe.instance.presentPaymentSheet();
 
         shouldCancelOrderOnError = false;
+        checkoutStep = 'confirm_order';
         confirmedOrder = await dataSource.confirmOrder(
           orderUuid: order.uuid,
           paymentIntentId: paymentIntent.paymentIntentId,
@@ -934,9 +1073,15 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       // Failures here must not block the booking confirmation.
       await _persistFlaggedParticipants();
 
+      // Capture the cart contents BEFORE clearing — we need them below to
+      // invalidate per-event caches so "spots remaining" reflects the seats
+      // we just consumed when the user navigates back to the event detail.
+      final bookedItems = ref.read(orderCartProvider);
+
       _clearReservationTimer();
       ref.read(orderCartProvider.notifier).clear();
       ref.invalidate(bookingsListControllerProvider);
+      _invalidateBookedEventsCache(bookedItems);
       HapticFeedback.heavyImpact();
 
       if (mounted) {
@@ -944,23 +1089,66 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
           'order': confirmedOrder,
         });
       }
-    } on StripeException catch (e) {
+    } on StripeException catch (e, stack) {
       await _cancelActiveOrderIfNeeded(dataSource);
+
+      // L'annulation par l'utilisateur (fermeture de la payment sheet) est
+      // attendue — inutile de polluer Crashlytics. Tout le reste (carte
+      // refusée, échec de config Stripe, etc.) est remonté.
+      if (e.error.code != FailureCode.Canceled) {
+        await CrashReporter.recordError(
+          e,
+          stack,
+          reason: 'Stripe payment failed',
+          context: {
+            'step': checkoutStep,
+            'order_uuid': _activeOrderUuid,
+            'stripe_code': e.error.code.name,
+            'stripe_message': e.error.message,
+          },
+        );
+      }
 
       setState(() {
         _isLoading = false;
-        _errorMessage = e.error.localizedMessage ?? 'Paiement annule';
+        // En debug : erreur Stripe brute pour diagnostiquer (TestFlight, etc.).
+        // En release : message localisé générique.
+        _errorMessage = kDebugMode
+            ? '[DEBUG $checkoutStep] '
+                'Stripe(${e.error.code.name}): '
+                '${e.error.message ?? e.error.localizedMessage ?? e}'
+            : e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
       });
-    } catch (e) {
+    } catch (e, stack) {
       if (shouldCancelOrderOnError) {
         await _cancelActiveOrderIfNeeded(dataSource);
       } else {
         _clearReservationTimer();
       }
 
+      // C'est le catch qui produit « Une erreur est survenue. Veuillez
+      // réessayer. » — on remonte l'exception réelle + l'étape pour pouvoir
+      // diagnostiquer (notamment les échecs TestFlight).
+      await CrashReporter.recordError(
+        e,
+        stack,
+        reason: 'Order checkout failed',
+        context: {
+          'step': checkoutStep,
+          'order_uuid': _activeOrderUuid,
+        },
+      );
+
       setState(() {
         _isLoading = false;
-        _errorMessage = ApiResponseHandler.extractError(e);
+        // En debug : on expose l'erreur brute (corps de réponse 422 inclus)
+        // pour diagnostiquer. En release : message d'erreur localisé.
+        if (kDebugMode) {
+          final body = e is DioException ? e.response?.data : null;
+          _errorMessage = '[DEBUG $checkoutStep] ${body ?? e}';
+        } else {
+          _errorMessage = ApiResponseHandler.extractError(e);
+        }
       });
     }
   }
@@ -995,12 +1183,74 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     }
   }
 
+  /// Refresh every event-level cache for the events the user just paid for,
+  /// so the next visit to an event detail screen shows the post-booking
+  /// "spots remaining" instead of the pre-booking number still sitting in
+  /// Riverpod's family caches.
+  ///
+  /// Lives here (not in OrderSuccessScreen) because the cart is the only
+  /// place that holds the full [Event] entity per line — including both the
+  /// UUID (`event.id`) and the slug. The event detail route accepts either
+  /// as the path param, so the family cache may be keyed by slug for users
+  /// who arrived via a deep link / story / question card. Invalidating only
+  /// the UUID key would leave those slug-keyed entries stale.
+  void _invalidateBookedEventsCache(List<OrderCartItem> bookedItems) {
+    final seenIds = <String>{};
+    for (final item in bookedItems) {
+      final event = item.event;
+      if (!seenIds.add(event.id)) continue;
+
+      ref.invalidate(eventAvailabilityProvider(event.id));
+      ref.invalidate(eventDetailControllerProvider(event.id));
+
+      final slug = event.slug;
+      if (slug.isNotEmpty && slug != event.id) {
+        ref.invalidate(eventDetailControllerProvider(slug));
+      }
+    }
+  }
+
+  List<RefundPolicyEntry> _refundPoliciesForItems(List<OrderCartItem> items) {
+    final entries = <RefundPolicyEntry>[];
+    final seenEventIds = <String>{};
+
+    for (final item in items) {
+      if (!seenEventIds.add(item.event.id)) continue;
+
+      final policy = item.event.vendorCancellationPolicy?.trim();
+      if (policy == null || policy.isEmpty) continue;
+
+      entries.add(
+        RefundPolicyEntry(
+          eventTitle: item.event.title,
+          policy: policy,
+        ),
+      );
+    }
+
+    return entries;
+  }
+
+  void _openRefundPolicies(List<RefundPolicyEntry> refundPolicies) {
+    if (refundPolicies.isEmpty) return;
+
+    context.push(
+      '/refund-policy',
+      extra: RefundPolicyRouteArgs(
+        title: refundPolicies.length > 1
+            ? context.l10n.refundPolicyListTitle
+            : context.l10n.refundPolicyTitle,
+        policies: refundPolicies,
+      ),
+    );
+  }
+
   bool _validateParticipants(List<OrderCartItem> cartItems) {
     for (final item in cartItems) {
       final attendees = _attendeesByCartItemId[item.id] ?? [];
       if (attendees.length != item.quantity) {
         setState(() {
-          _errorMessage = 'Chaque billet doit avoir un participant renseigne';
+          _errorMessage = context.l10n.bookingEveryTicketNeedsParticipant;
         });
         return false;
       }
@@ -1008,8 +1258,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       for (final attendee in attendees) {
         if (!attendee.isComplete) {
           setState(() {
-            _errorMessage =
-                'Veuillez renseigner le prenom, la date de naissance, la ville et la relation de chaque participant';
+            _errorMessage = context.l10n.bookingParticipantsMissingCartDetails;
           });
           return false;
         }
@@ -1066,16 +1315,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     );
-  }
-
-  String? _formatSlot(OrderCartItem item) {
-    final slot = item.selectedSlot;
-    if (slot == null) return null;
-
-    return [
-      '${slot.date.day.toString().padLeft(2, '0')}/${slot.date.month.toString().padLeft(2, '0')}/${slot.date.year}',
-      slot.startTime,
-    ].whereType<String>().where((value) => value.isNotEmpty).join(' · ');
   }
 
   String _formatPrice(double price) {

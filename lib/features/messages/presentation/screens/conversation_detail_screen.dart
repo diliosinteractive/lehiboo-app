@@ -2,14 +2,16 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
+import '../widgets/conversation_load_error_view.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
+import '../widgets/report_conversation_sheet.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
@@ -40,8 +42,10 @@ class _ConversationDetailScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authState = ref.read(authProvider);
       if (authState.status == AuthStatus.unauthenticated) {
-        GuestRestrictionDialog.show(context,
-            featureName: 'voir cette conversation');
+        GuestRestrictionDialog.show(
+          context,
+          featureName: context.l10n.guestFeatureViewConversation,
+        );
       }
     });
   }
@@ -50,8 +54,7 @@ class _ConversationDetailScreenState
   Widget build(BuildContext context) {
     final pk = (uuid: widget.conversationUuid, route: widget.route);
     final state = ref.watch(conversationDetailProvider(pk));
-    final detailNotifier =
-        ref.read(conversationDetailProvider(pk).notifier);
+    final detailNotifier = ref.read(conversationDetailProvider(pk).notifier);
 
     ref.listen<ConversationDetailState>(
       conversationDetailProvider(pk),
@@ -62,7 +65,7 @@ class _ConversationDetailScreenState
               content: Text(next.sendError!),
               backgroundColor: Colors.red,
               action: SnackBarAction(
-                label: 'OK',
+                label: context.l10n.commonOk,
                 textColor: Colors.white,
                 onPressed: detailNotifier.clearSendError,
               ),
@@ -75,27 +78,41 @@ class _ConversationDetailScreenState
 
     return Scaffold(
       body: state.conversation.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 40),
-              const SizedBox(height: 8),
-              Text('Erreur : ${ApiResponseHandler.extractError(e)}', style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 16),
-              ElevatedButton(
+        loading: () => Column(
+          children: [
+            AppBar(
+              leading: BackButton(
                 onPressed: () =>
-                    ref.read(conversationDetailProvider(pk).notifier).load(),
-                child: const Text('Réessayer'),
+                    context.canPop() ? context.pop() : context.go('/messages'),
               ),
-            ],
-          ),
+              title: Text(context.l10n.messagesConversationFallbackTitle),
+            ),
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          ],
+        ),
+        error: (e, _) => Column(
+          children: [
+            AppBar(
+              leading: BackButton(
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/messages'),
+              ),
+              title: Text(context.l10n.messagesConversationFallbackTitle),
+            ),
+            Expanded(
+              child: ConversationLoadErrorView(
+                error: e,
+                onRetry: () =>
+                    ref.read(conversationDetailProvider(pk).notifier).load(),
+              ),
+            ),
+          ],
         ),
         data: (conversation) {
           final isClosed = conversation.status == 'closed';
-          final notifier =
-              ref.read(conversationDetailProvider(pk).notifier);
+          final notifier = ref.read(conversationDetailProvider(pk).notifier);
           final route = widget.route;
 
           final titleText = switch (route) {
@@ -112,15 +129,12 @@ class _ConversationDetailScreenState
               conversation.participant?.name ??
                   conversation.organization?.companyName ??
                   conversation.subject,
-            _ =>
-              conversation.organization?.companyName ?? conversation.subject,
+            _ => conversation.organization?.companyName ?? conversation.subject,
           };
 
           final titleAvatarUrl = switch (route) {
-            ConversationRoute.participant =>
-              conversation.organization?.logoUrl,
-            ConversationRoute.vendor =>
-              conversation.participant?.avatarUrl,
+            ConversationRoute.participant => conversation.organization?.logoUrl,
+            ConversationRoute.vendor => conversation.participant?.avatarUrl,
             ConversationRoute.vendorOrgOrg =>
               conversation.partnerOrganization?.logoUrl,
             ConversationRoute.admin ||
@@ -131,11 +145,11 @@ class _ConversationDetailScreenState
               conversation.participant?.avatarUrl ??
                   conversation.organization?.logoUrl,
           };
-          final titleInitial = titleText.isNotEmpty
-              ? titleText[0].toUpperCase()
-              : '?';
+          final titleInitial =
+              titleText.isNotEmpty ? titleText[0].toUpperCase() : '?';
 
-          final showSubjectSubtitle = route != ConversationRoute.participantSupport;
+          final showSubjectSubtitle =
+              route != ConversationRoute.participantSupport;
           final showOverflowMenu = !_isReadonly;
           final canReport = route == ConversationRoute.participant ||
               route == ConversationRoute.vendor ||
@@ -147,8 +161,9 @@ class _ConversationDetailScreenState
             children: [
               AppBar(
                 leading: BackButton(
-                  onPressed: () =>
-                      context.canPop() ? context.pop() : context.go('/messages'),
+                  onPressed: () => context.canPop()
+                      ? context.pop()
+                      : context.go('/messages'),
                 ),
                 title: Row(
                   children: [
@@ -164,7 +179,7 @@ class _ConversationDetailScreenState
                                 fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => Text(
                                   titleInitial,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: _primaryColor,
@@ -174,7 +189,7 @@ class _ConversationDetailScreenState
                             )
                           : Text(
                               titleInitial,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: _primaryColor,
@@ -225,8 +240,7 @@ class _ConversationDetailScreenState
                                 size: 12, color: _primaryColor),
                             const SizedBox(width: 4),
                             ConstrainedBox(
-                              constraints:
-                                  const BoxConstraints(maxWidth: 100),
+                              constraints: const BoxConstraints(maxWidth: 100),
                               child: Text(
                                 conversation.event!.title,
                                 style: const TextStyle(
@@ -244,7 +258,7 @@ class _ConversationDetailScreenState
                   if (canReopen)
                     IconButton(
                       icon: const Icon(Icons.lock_open),
-                      tooltip: 'Rouvrir',
+                      tooltip: context.l10n.messagesReopenTooltip,
                       onPressed: () async {
                         try {
                           await notifier.reopenConversation();
@@ -252,7 +266,11 @@ class _ConversationDetailScreenState
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                  content: Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
+                                  content: Text(
+                                    context.l10n.messagesLoadError(
+                                      ApiResponseHandler.extractError(e),
+                                    ),
+                                  ),
                                   backgroundColor: Colors.red),
                             );
                           }
@@ -265,26 +283,28 @@ class _ConversationDetailScreenState
                           context, value, notifier, conversation.status),
                       itemBuilder: (ctx) => [
                         if (canClose)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'close',
                             child: Row(
                               children: [
-                                Icon(Icons.lock_outline, size: 18),
-                                SizedBox(width: 8),
-                                Text('Fermer la conversation'),
+                                const Icon(Icons.lock_outline, size: 18),
+                                const SizedBox(width: 8),
+                                Text(context.l10n.messagesCloseConversation),
                               ],
                             ),
                           ),
                         if (canReport && !conversation.userHasReported)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'report',
                             child: Row(
                               children: [
-                                Icon(Icons.flag_outlined,
+                                const Icon(Icons.flag_outlined,
                                     size: 18, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Signaler',
-                                    style: TextStyle(color: Colors.red)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  context.l10n.messagesReportLabel,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
                               ],
                             ),
                           ),
@@ -294,10 +314,9 @@ class _ConversationDetailScreenState
                             child: Row(
                               children: [
                                 Icon(Icons.flag,
-                                    size: 18,
-                                    color: Colors.orange.shade400),
+                                    size: 18, color: Colors.orange.shade400),
                                 const SizedBox(width: 8),
-                                Text('Signalé',
+                                Text(context.l10n.messagesReportedLabel,
                                     style: TextStyle(
                                         color: Colors.orange.shade400,
                                         fontWeight: FontWeight.w600)),
@@ -310,10 +329,7 @@ class _ConversationDetailScreenState
               ),
               if (_isReadonly)
                 MaterialBanner(
-                  content: const Text(
-                    'Mode lecture seule — conversation liée à un signalement. '
-                    'Vous observez les échanges entre les deux parties.',
-                  ),
+                  content: Text(context.l10n.messagesReadonlyBanner),
                   leading: const Icon(Icons.visibility_outlined,
                       color: Colors.amber),
                   backgroundColor: Colors.amber.shade50,
@@ -321,40 +337,44 @@ class _ConversationDetailScreenState
                     TextButton(
                       onPressed: () => ScaffoldMessenger.of(context)
                           .hideCurrentMaterialBanner(),
-                      child: const Text('OK'),
+                      child: Text(context.l10n.commonOk),
                     ),
                   ],
                 ),
               if (!_isReadonly && isClosed)
-                MaterialBanner(
-                  content: const Text('Cette conversation est fermée.'),
-                  leading: const Icon(Icons.lock_outline),
-                  backgroundColor: Colors.grey.shade100,
-                  actions: [
-                    TextButton(
-                      onPressed: () => ScaffoldMessenger.of(context)
-                          .hideCurrentMaterialBanner(),
-                      child: const Text('OK'),
-                    ),
-                  ],
+                Container(
+                  width: double.infinity,
+                  color: Colors.grey.shade100,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock_outline,
+                          size: 18, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Text(
+                        context.l10n.messagesClosedNotice,
+                        style: TextStyle(
+                            color: Colors.grey.shade700, fontSize: 13),
+                      ),
+                    ],
+                  ),
                 ),
               Expanded(
                 child: _MessagesList(
                   messages: conversation.messages,
                   notifier: notifier,
                   readonly: _isReadonly,
-                  organizationLogoUrl: conversation.organization?.logoUrl
-                      ?? conversation.organization?.avatarUrl,
+                  organizationLogoUrl: conversation.organization?.logoUrl ??
+                      conversation.organization?.avatarUrl,
                 ),
               ),
               MessageComposer(
                 conversationUuid: widget.conversationUuid,
                 disabled: isClosed || _isReadonly,
-                isSupport:
-                    widget.route == ConversationRoute.participantSupport,
-                onSend: (content, attachments) => notifier.sendMessage(
+                isSupport: widget.route == ConversationRoute.participantSupport,
+                onSend: (content) => notifier.sendMessage(
                   content: content,
-                  attachments: attachments,
                 ),
               ),
             ],
@@ -374,18 +394,19 @@ class _ConversationDetailScreenState
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Fermer la conversation'),
-          content: const Text(
-              'Voulez-vous fermer cette conversation ? Vous ne pourrez plus envoyer de messages.'),
+          title: Text(context.l10n.messagesCloseConversation),
+          content: Text(context.l10n.messagesCloseConversationBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler'),
+              child: Text(context.l10n.commonCancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Fermer',
-                  style: TextStyle(color: Colors.red)),
+              child: Text(
+                context.l10n.commonClose,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           ],
         ),
@@ -397,324 +418,22 @@ class _ConversationDetailScreenState
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content: Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
+                  content: Text(context.l10n.messagesLoadError(
+                    ApiResponseHandler.extractError(e),
+                  )),
                   backgroundColor: Colors.red),
             );
           }
         }
       }
     } else if (action == 'report') {
-      _showReportDialog(context, notifier);
+      showConversationReportSheet(
+        context,
+        conversationUuid: widget.conversationUuid,
+        ref: ref,
+        route: widget.route,
+      );
     }
-  }
-
-  void _showReportDialog(
-      BuildContext context, ConversationDetailNotifier notifier) {
-    String? selectedReason;
-    final commentController = TextEditingController();
-    bool isSubmitting = false;
-    bool submitted = false;
-    String? commentError;
-    String? supportUuid;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) {
-          return DraggableScrollableSheet(
-            initialChildSize: 0.55,
-            minChildSize: 0.4,
-            maxChildSize: 0.85,
-            expand: false,
-            builder: (_, scrollCtrl) => Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: submitted
-                  ? _buildReportSuccess(
-                      ctx: ctx,
-                      supportUuid: supportUuid,
-                      context: context,
-                    )
-                  : ListView(
-                      controller: scrollCtrl,
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                      children: [
-                        Center(
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 12),
-                            child: Container(
-                              width: 36,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Icon(Icons.flag_outlined,
-                                color: Colors.red.shade400, size: 22),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Signaler la conversation',
-                              style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Aidez-nous à maintenir un environnement sûr en signalant les contenus inappropriés.',
-                          style: TextStyle(
-                              fontSize: 13, color: Colors.grey.shade600),
-                        ),
-                        const SizedBox(height: 20),
-                        DropdownButtonFormField<String>(
-                          value: selectedReason,
-                          decoration: InputDecoration(
-                            labelText: 'Raison *',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                  color: Colors.grey.shade300),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: _primaryColor, width: 1.5),
-                            ),
-                            isDense: true,
-                          ),
-                          items: const [
-                            DropdownMenuItem(
-                                value: 'inappropriate',
-                                child: Text('Contenu inapproprié')),
-                            DropdownMenuItem(
-                                value: 'harassment',
-                                child: Text('Harcèlement')),
-                            DropdownMenuItem(
-                                value: 'spam', child: Text('Spam')),
-                            DropdownMenuItem(
-                                value: 'other', child: Text('Autre')),
-                          ],
-                          onChanged: isSubmitting
-                              ? null
-                              : (v) =>
-                                  setSheetState(() => selectedReason = v),
-                        ),
-                        const SizedBox(height: 14),
-                        TextField(
-                          controller: commentController,
-                          maxLines: 4,
-                          maxLength: 2000,
-                          enabled: !isSubmitting,
-                          decoration: InputDecoration(
-                            labelText: 'Commentaire * (min. 10 caractères)',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                  color: Colors.grey.shade300),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: _primaryColor, width: 1.5),
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Colors.red),
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: Colors.red, width: 1.5),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
-                            errorText: commentError,
-                          ),
-                          onChanged: (_) {
-                            if (commentError != null) {
-                              setSheetState(() => commentError = null);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: isSubmitting
-                                    ? null
-                                    : () => Navigator.pop(ctx),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 13),
-                                  side: BorderSide(
-                                      color: Colors.grey.shade300),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text('Annuler',
-                                    style:
-                                        TextStyle(color: Colors.black87)),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: FilledButton.icon(
-                                onPressed:
-                                    (selectedReason == null || isSubmitting)
-                                        ? null
-                                        : () async {
-                                            final comment =
-                                                commentController.text
-                                                    .trim();
-                                            if (comment.length < 10) {
-                                              setSheetState(() =>
-                                                  commentError =
-                                                      'Minimum 10 caractères.');
-                                              return;
-                                            }
-                                            setSheetState(() =>
-                                                isSubmitting = true);
-                                            try {
-                                              final result = await notifier
-                                                  .reportConversation(
-                                                      selectedReason!,
-                                                      comment);
-                                              supportUuid = result
-                                                  .supportConversationUuid;
-                                              setSheetState(() {
-                                                isSubmitting = false;
-                                                submitted = true;
-                                              });
-                                            } catch (e) {
-                                              setSheetState(() =>
-                                                  isSubmitting = false);
-                                              if (ctx.mounted) {
-                                                ScaffoldMessenger.of(
-                                                        context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                      content:
-                                                          Text('Erreur : ${ApiResponseHandler.extractError(e)}'),
-                                                      backgroundColor:
-                                                          Colors.red),
-                                                );
-                                              }
-                                            }
-                                          },
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.red.shade600,
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 13),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                icon: isSubmitting
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white))
-                                    : const Icon(Icons.flag, size: 18),
-                                label: const Text('Signaler'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-            ),
-          );
-        },
-      ),
-    ).then((_) => commentController.dispose());
-  }
-
-  Widget _buildReportSuccess({
-    required BuildContext ctx,
-    required String? supportUuid,
-    required BuildContext context,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 40),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.flag, size: 36, color: Colors.orange.shade400),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Signalement transmis',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Votre signalement a bien été transmis à l\'équipe LeHiboo.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-          ),
-          const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                if (supportUuid != null && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                          'Un ticket support a été créé pour le suivi.'),
-                      action: SnackBarAction(
-                        label: 'Voir',
-                        onPressed: () =>
-                            context.push('/messages/support/$supportUuid'),
-                      ),
-                    ),
-                  );
-                }
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: _primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('OK'),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -779,9 +498,11 @@ class _MessagesListState extends State<_MessagesList> {
     final messages = widget.messages;
 
     if (messages.isEmpty) {
-      return const Center(
-        child: Text('Aucun message. Soyez le premier à écrire !',
-            style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text(
+          context.l10n.messagesEmptyThread,
+          style: const TextStyle(color: Colors.grey),
+        ),
       );
     }
 
@@ -826,10 +547,10 @@ class _MessagesListState extends State<_MessagesList> {
     // System messages sort before non-system ones so they always appear
     // at the top of their day group, regardless of the backend timestamp.
     final sorted = [...msgs]..sort((a, b) {
-      if (a.isSystem && !b.isSystem) return -1;
-      if (!a.isSystem && b.isSystem) return 1;
-      return a.createdAt.compareTo(b.createdAt);
-    });
+        if (a.isSystem && !b.isSystem) return -1;
+        if (!a.isSystem && b.isSystem) return 1;
+        return a.createdAt.compareTo(b.createdAt);
+      });
     final reversed = sorted.reversed.toList();
     final items = <Object>[];
 
@@ -862,11 +583,13 @@ class _MessagesListState extends State<_MessagesList> {
 
     String label;
     if (date == today) {
-      label = "Aujourd'hui";
+      label = context.l10n.commonToday;
     } else if (date == yesterday) {
-      label = 'Hier';
+      label = context.l10n.commonYesterday;
     } else {
-      label = DateFormat('d MMMM yyyy', 'fr_FR').format(date);
+      label = context
+          .appDateFormat('d MMMM yyyy', enPattern: 'MMMM d, yyyy')
+          .format(date);
     }
 
     return Center(

@@ -44,8 +44,8 @@ class CheckinFailure implements Exception {
   final int? statusCode;
 
   /// True for transport-level failures (timeout, no connection). The UI
-  /// uses this to render the spec §15 copy: "Réseau instable — re-scannez
-  /// pour confirmer." — and SHOULD NOT auto-retry.
+  /// uses this to render the localized spec §15 network warning and SHOULD
+  /// NOT auto-retry.
   final bool isNetworkError;
 
   const CheckinFailure({

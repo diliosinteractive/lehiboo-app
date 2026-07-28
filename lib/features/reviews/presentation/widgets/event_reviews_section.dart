@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/can_review_result.dart';
 import '../../domain/entities/review.dart';
 import '../../domain/entities/review_stats.dart';
@@ -56,15 +58,21 @@ class EventReviewsSection extends ConsumerWidget {
         // l'utilisateur a déjà un avis (entry-point d'édition dans le bloc
         // "Votre avis"). Le tap est protégé par GuestGuard côté parent —
         // les non-authentifiés sont invités à se connecter.
-        _buildHeader(statsAsync, hasMyReview: myReview != null),
+        _buildHeader(context, statsAsync, hasMyReview: myReview != null),
         const SizedBox(height: 16),
         statsAsync.when(
           loading: _buildLoading,
-          error: (e, _) => _buildError(e.toString()),
+          error: (e, _) => _buildError(
+            context,
+            ApiResponseHandler.extractError(e),
+          ),
           data: (stats) {
             return reviewsAsync.when(
               loading: _buildLoading,
-              error: (e, _) => _buildError(e.toString()),
+              error: (e, _) => _buildError(
+                context,
+                ApiResponseHandler.extractError(e),
+              ),
               data: (page) {
                 // Évite le doublon : si l'avis user est déjà dans la liste
                 // publique (status approved), on le retire du bloc dédié.
@@ -73,9 +81,10 @@ class EventReviewsSection extends ConsumerWidget {
                 final myReviewToShow = myInList ? null : myReview;
 
                 if (!stats.hasReviews && myReviewToShow == null) {
-                  return _buildEmpty();
+                  return _buildEmpty(context);
                 }
                 return _buildContent(
+                  context,
                   ref,
                   stats,
                   page.items,
@@ -90,6 +99,7 @@ class EventReviewsSection extends ConsumerWidget {
   }
 
   Widget _buildHeader(
+    BuildContext context,
     AsyncValue<ReviewStats> statsAsync, {
     bool hasMyReview = false,
   }) {
@@ -99,8 +109,7 @@ class EventReviewsSection extends ConsumerWidget {
     );
     // Pas besoin du bouton "Écrire" en header quand l'utilisateur a déjà
     // son bloc "Votre avis" en haut de la section (qui contient déjà Modifier).
-    final showWriteButton =
-        onWriteReview != null && hasReviews && !hasMyReview;
+    final showWriteButton = onWriteReview != null && hasReviews && !hasMyReview;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -109,9 +118,9 @@ class EventReviewsSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Text(
-                'Avis',
-                style: TextStyle(
+              Text(
+                context.l10n.reviewsSectionTitle,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: HbColors.textPrimary,
@@ -151,7 +160,7 @@ class EventReviewsSection extends ConsumerWidget {
                 onWriteReview!();
               },
               icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('Écrire'),
+              label: Text(context.l10n.reviewsWriteAction),
               style: TextButton.styleFrom(
                 foregroundColor: HbColors.brandPrimary,
               ),
@@ -170,7 +179,7 @@ class EventReviewsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(String message) {
+  Widget _buildError(BuildContext context, String message) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -185,7 +194,7 @@ class EventReviewsSection extends ConsumerWidget {
             Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
             const SizedBox(height: 12),
             Text(
-              'Erreur de chargement',
+              context.l10n.organizerReviewsLoadError,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -204,7 +213,7 @@ class EventReviewsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -231,19 +240,19 @@ class EventReviewsSection extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Pas encore d\'avis',
-              style: TextStyle(
+            Text(
+              context.l10n.reviewsEmptyTitle,
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
                 color: HbColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Partagez votre expérience et\naidez les autres à choisir !',
+            Text(
+              context.l10n.reviewsEmptyBody,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: HbColors.grey500,
                 height: 1.4,
@@ -253,12 +262,12 @@ class EventReviewsSection extends ConsumerWidget {
               const SizedBox(height: 20),
               FilledButton.icon(
                 icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Écrire le premier avis'),
+                label: Text(context.l10n.reviewsWriteFirstAction),
                 style: FilledButton.styleFrom(
                   backgroundColor: HbColors.brandPrimary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -276,6 +285,7 @@ class EventReviewsSection extends ConsumerWidget {
   }
 
   Widget _buildContent(
+    BuildContext context,
     WidgetRef ref,
     ReviewStats stats,
     List<Review> reviews, {
@@ -327,7 +337,7 @@ class EventReviewsSection extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Voir tous les avis (${stats.totalReviews})'),
+                  Text(context.l10n.reviewsViewAllAction(stats.totalReviews)),
                   const SizedBox(width: 4),
                   const Icon(Icons.arrow_forward, size: 16),
                 ],
@@ -370,7 +380,7 @@ class ReviewStatsCard extends StatelessWidget {
               RatingStars(rating: stats.averageRating, size: 18),
               const SizedBox(height: 4),
               Text(
-                '${stats.totalReviews} avis',
+                context.l10n.reviewsTotalCount(stats.totalReviews),
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],

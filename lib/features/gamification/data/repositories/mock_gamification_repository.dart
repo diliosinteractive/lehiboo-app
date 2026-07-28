@@ -108,6 +108,8 @@ class MockGamificationRepository implements GamificationRepository {
   Future<TransactionsListResult> getTransactions({
     String? type,
     String? pillar,
+    int? page,
+    int? perPage,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return TransactionsListResult(
@@ -432,9 +434,4 @@ class MockGamificationRepository implements GamificationRepository {
     throw UnimplementedError('Hibons are earned through daily rewards, wheel spins, etc.');
   }
 
-  @override
-  Future<HibonBadgesResult> getBadges() {
-    // TODO: implement getBadges
-    throw UnimplementedError();
-  }
 }

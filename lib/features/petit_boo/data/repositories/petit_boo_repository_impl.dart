@@ -33,10 +33,12 @@ class PetitBooRepositoryImpl implements PetitBooRepository {
   Stream<PetitBooEventDto> sendMessage({
     String? sessionUuid,
     required String message,
+    required bool memoryEnabled,
   }) {
     return _sseDataSource.sendMessage(
       sessionUuid: sessionUuid,
       message: message,
+      memoryEnabled: memoryEnabled,
     );
   }
 
@@ -78,6 +80,16 @@ class PetitBooRepositoryImpl implements PetitBooRepository {
   @override
   Future<QuotaDto> getQuota() {
     return _apiDataSource.getQuota();
+  }
+
+  @override
+  Future<Map<String, dynamic>> confirmPendingAction(String actionId) {
+    return _apiDataSource.confirmPendingAction(actionId);
+  }
+
+  @override
+  Future<void> cancelPendingAction(String actionId) {
+    return _apiDataSource.cancelPendingAction(actionId);
   }
 
   @override

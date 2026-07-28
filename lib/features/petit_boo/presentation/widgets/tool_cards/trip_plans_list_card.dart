@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/petit_boo_theme.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -31,16 +31,15 @@ class TripPlansListCard extends StatelessWidget {
       }
     }
     if (data['plans'] is List) {
-      return (data['plans'] as List)
-          .whereType<Map<String, dynamic>>()
-          .toList();
+      return (data['plans'] as List).whereType<Map<String, dynamic>>().toList();
     }
     return [];
   }
 
-  int get _total => (data['total'] as num?)?.toInt() ??
-                    (data['data']?['total'] as num?)?.toInt() ??
-                    _plans.length;
+  int get _total =>
+      (data['total'] as num?)?.toInt() ??
+      (data['data']?['total'] as num?)?.toInt() ??
+      _plans.length;
 
   /// Check if backend returned an error
   bool get _hasError {
@@ -56,17 +55,18 @@ class TripPlansListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = parseHexColor(schema.color, fallback: const Color(0xFF27AE60));
+    final accentColor =
+        parseHexColor(schema.color, fallback: const Color(0xFF27AE60));
 
     // Check for errors first
     if (_hasError) {
-      return _buildErrorState(accentColor);
+      return _buildErrorState(context, accentColor);
     }
 
     final plans = _plans;
 
     if (plans.isEmpty) {
-      return _buildEmptyState(accentColor);
+      return _buildEmptyState(context, accentColor);
     }
 
     return Container(
@@ -81,7 +81,7 @@ class TripPlansListCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          _buildHeader(accentColor),
+          _buildHeader(context, accentColor),
           const Divider(height: 1, color: PetitBooTheme.border),
 
           // Plans list
@@ -89,7 +89,8 @@ class TripPlansListCard extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: plans.length.clamp(0, 5), // Show max 5 plans
-            separatorBuilder: (_, __) => const Divider(height: 1, color: PetitBooTheme.border),
+            separatorBuilder: (_, __) =>
+                const Divider(height: 1, color: PetitBooTheme.border),
             itemBuilder: (context, index) {
               return _PlanListItem(
                 plan: plans[index],
@@ -108,7 +109,9 @@ class TripPlansListCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(Color accentColor) {
+  Widget _buildHeader(BuildContext context, Color accentColor) {
+    final l10n = context.l10n;
+
     return Padding(
       padding: const EdgeInsets.all(PetitBooTheme.spacing16),
       child: Row(
@@ -132,13 +135,13 @@ class TripPlansListCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  schema.title ?? 'Tes sorties',
+                  schema.title ?? l10n.petitBooToolTripPlansTitle,
                   style: PetitBooTheme.headingSm.copyWith(
                     color: PetitBooTheme.textPrimary,
                   ),
                 ),
                 Text(
-                  '$_total plan${_total > 1 ? 's' : ''} sauvegardé${_total > 1 ? 's' : ''}',
+                  l10n.petitBooTripSavedPlansCount(_total),
                   style: PetitBooTheme.caption.copyWith(
                     color: PetitBooTheme.textTertiary,
                   ),
@@ -151,7 +154,7 @@ class TripPlansListCard extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorState(Color accentColor) {
+  Widget _buildErrorState(BuildContext context, Color accentColor) {
     return Container(
       padding: const EdgeInsets.all(PetitBooTheme.spacing24),
       decoration: BoxDecoration(
@@ -177,7 +180,7 @@ class TripPlansListCard extends StatelessWidget {
           ),
           const SizedBox(height: PetitBooTheme.spacing16),
           Text(
-            'Impossible de charger tes sorties',
+            context.l10n.petitBooTripLoadErrorTitle,
             style: PetitBooTheme.bodyMd.copyWith(
               color: PetitBooTheme.textSecondary,
             ),
@@ -185,7 +188,7 @@ class TripPlansListCard extends StatelessWidget {
           ),
           const SizedBox(height: PetitBooTheme.spacing8),
           Text(
-            'Réessaie dans quelques instants',
+            context.l10n.petitBooTripLoadErrorRetry,
             style: PetitBooTheme.caption.copyWith(
               color: PetitBooTheme.textTertiary,
             ),
@@ -196,7 +199,7 @@ class TripPlansListCard extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(Color accentColor) {
+  Widget _buildEmptyState(BuildContext context, Color accentColor) {
     return Container(
       padding: const EdgeInsets.all(PetitBooTheme.spacing24),
       decoration: BoxDecoration(
@@ -222,7 +225,7 @@ class TripPlansListCard extends StatelessWidget {
           ),
           const SizedBox(height: PetitBooTheme.spacing16),
           Text(
-            schema.emptyMessage ?? 'Aucune sortie planifiée',
+            schema.emptyMessage ?? context.l10n.petitBooToolTripPlansEmpty,
             style: PetitBooTheme.bodyMd.copyWith(
               color: PetitBooTheme.textSecondary,
             ),
@@ -230,7 +233,7 @@ class TripPlansListCard extends StatelessWidget {
           ),
           const SizedBox(height: PetitBooTheme.spacing8),
           Text(
-            'Demande-moi de planifier une sortie !',
+            context.l10n.petitBooTripEmptyPrompt,
             style: PetitBooTheme.caption.copyWith(
               color: PetitBooTheme.textTertiary,
             ),
@@ -253,7 +256,7 @@ class TripPlansListCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Voir toutes mes sorties',
+              context.l10n.petitBooTripViewAll,
               style: PetitBooTheme.label.copyWith(
                 color: accentColor,
                 fontWeight: FontWeight.w600,
@@ -277,11 +280,15 @@ class _PlanListItem extends StatelessWidget {
     required this.accentColor,
   });
 
-  String get _title => plan['title'] as String? ?? 'Plan sans titre';
+  String _title(AppLocalizations l10n) =>
+      plan['title'] as String? ?? l10n.petitBooTripFallbackListTitle;
   String? get _plannedDate => plan['planned_date'] as String?;
-  int? get _totalDurationMinutes => (plan['total_duration_minutes'] as num?)?.toInt();
-  int get _stopsCount => (plan['stops_count'] as num?)?.toInt() ??
-                          (plan['stops'] as List?)?.length ?? 0;
+  int? get _totalDurationMinutes =>
+      (plan['total_duration_minutes'] as num?)?.toInt();
+  int get _stopsCount =>
+      (plan['stops_count'] as num?)?.toInt() ??
+      (plan['stops'] as List?)?.length ??
+      0;
 
   List<Map<String, dynamic>> get _stops {
     final stopsData = plan['stops'] as List?;
@@ -291,6 +298,8 @@ class _PlanListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return InkWell(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -306,7 +315,7 @@ class _PlanListItem extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    _title,
+                    _title(l10n),
                     style: PetitBooTheme.bodyMd.copyWith(
                       fontWeight: FontWeight.w600,
                       color: PetitBooTheme.textPrimary,
@@ -331,10 +340,15 @@ class _PlanListItem extends StatelessWidget {
               runSpacing: 4,
               children: [
                 if (_plannedDate != null)
-                  _buildMetaChip(Icons.calendar_today, _formatDate(_plannedDate!)),
+                  _buildMetaChip(
+                    Icons.calendar_today,
+                    _formatDate(context, _plannedDate!),
+                  ),
                 if (_totalDurationMinutes != null)
-                  _buildMetaChip(Icons.schedule, _formatDuration(_totalDurationMinutes!)),
-                _buildMetaChip(Icons.flag, '$_stopsCount étape${_stopsCount > 1 ? 's' : ''}'),
+                  _buildMetaChip(
+                      Icons.schedule, _formatDuration(_totalDurationMinutes!)),
+                _buildMetaChip(
+                    Icons.flag, l10n.petitBooTripStopsCount(_stopsCount)),
               ],
             ),
 
@@ -342,7 +356,9 @@ class _PlanListItem extends StatelessWidget {
             if (_stops.isNotEmpty) ...[
               const SizedBox(height: 10),
               ...(_stops.take(2).map((stop) {
-                final title = stop['event_title'] as String? ?? stop['title'] as String? ?? 'Étape';
+                final title = stop['event_title'] as String? ??
+                    stop['title'] as String? ??
+                    l10n.petitBooTripFallbackStop;
                 final time = stop['arrival_time'] as String?;
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
@@ -383,7 +399,7 @@ class _PlanListItem extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4, left: 14),
                   child: Text(
-                    '+${_stopsCount - 2} autres étapes',
+                    l10n.petitBooTripMoreStops(_stopsCount - 2),
                     style: PetitBooTheme.caption.copyWith(
                       color: PetitBooTheme.textTertiary,
                       fontStyle: FontStyle.italic,
@@ -433,7 +449,8 @@ class _PlanListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+      IconData icon, String label, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -475,7 +492,7 @@ class _PlanListItem extends StatelessWidget {
 
     if (validStops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucune coordonnée disponible')),
+        SnackBar(content: Text(context.l10n.petitBooTripNoCoordinates)),
       );
       return;
     }
@@ -502,7 +519,7 @@ class _PlanListItem extends StatelessWidget {
 
     if (validStops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucune coordonnée disponible')),
+        SnackBar(content: Text(context.l10n.petitBooTripNoCoordinates)),
       );
       return;
     }
@@ -516,10 +533,11 @@ class _PlanListItem extends StatelessWidget {
     launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
-  String _formatDate(String dateStr) {
+  String _formatDate(BuildContext context, String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      final formatter = DateFormat('EEE d MMM', 'fr_FR');
+      final formatter =
+          context.appDateFormat('EEE d MMM', enPattern: 'EEE, MMM d');
       final formatted = formatter.format(date);
       return formatted[0].toUpperCase() + formatted.substring(1);
     } catch (_) {

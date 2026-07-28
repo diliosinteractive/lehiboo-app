@@ -82,7 +82,7 @@ class MembershipsApiDataSource {
     int perPage = 20,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/me/memberships',
+      '/me/memberships/all',
       queryParameters: {
         if (status != null) 'status': status.name,
         if (search != null && search.isNotEmpty) 'search': search,

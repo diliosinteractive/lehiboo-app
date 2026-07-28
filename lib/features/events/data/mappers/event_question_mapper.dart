@@ -1,3 +1,4 @@
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/event_question.dart';
 import '../models/event_question_dto.dart';
 
@@ -39,7 +40,7 @@ class EventQuestionMapper {
 
   static QuestionAuthor _authorFromDto(QuestionAuthorDto dto) {
     return QuestionAuthor(
-      name: dto.name.isNotEmpty ? dto.name : 'Anonyme',
+      name: dto.name.isNotEmpty ? dto.name : cachedAppLocalizations().eventAnonymous,
       avatarUrl: dto.avatar,
       initials: dto.initials,
       isGuest: dto.isGuest || dto.isGuestCamel,

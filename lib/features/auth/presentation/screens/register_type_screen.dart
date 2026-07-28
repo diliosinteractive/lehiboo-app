@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 /// Account type selection
 enum AccountType { customer, business }
 
@@ -29,6 +31,8 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -40,119 +44,136 @@ class _RegisterTypeScreenState extends State<RegisterTypeScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Section label
-              const Text(
-                'TYPE DE COMPTE',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _orangeColor,
-                  letterSpacing: 1.2,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Section label
+                        Text(
+                          l10n.authRegisterTypeEyebrow,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _orangeColor,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Title
+                        Text(
+                          l10n.authRegisterTypeTitle,
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Subtitle
+                        Text(
+                          l10n.authRegisterTypeSubtitle,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Customer option - Un particulier
+                        _AccountTypeCard(
+                          icon: Icons.person_outline,
+                          title: l10n.authRegisterTypeCustomerTitle,
+                          description: l10n.authRegisterTypeCustomerDescription,
+                          isSelected: _selectedType == AccountType.customer,
+                          onTap: () => setState(
+                              () => _selectedType = AccountType.customer),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Business option - Une organisation (temporarily disabled)
+                        _AccountTypeCard(
+                          icon: Icons.business_outlined,
+                          title: l10n.authRegisterTypeBusinessTitle,
+                          description: l10n.authRegisterTypeBusinessDescription,
+                          isSelected: false,
+                          onTap: () {},
+                          disabled: true,
+                          badge: l10n.authRegisterTypeComingSoon,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        const Spacer(),
+
+                        // Continue button
+                        SizedBox(
+                          height: 56,
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed:
+                                _selectedType != null ? _handleContinue : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _orangeColor,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: Colors.grey[300],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              l10n.authRegisterCreateMyAccount,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Login link
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${l10n.authAlreadyHaveAccount} ',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                            TextButton(
+                              onPressed: () => context.go('/login'),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                l10n.authLoginSubmit,
+                                style: const TextStyle(
+                                  color: _orangeColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-
-              // Title
-              const Text(
-                'Vous \u00eates...',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3748),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Subtitle
-              Text(
-                'S\u00e9lectionnez votre profil pour personnaliser votre exp\u00e9rience',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Customer option - Un particulier
-              _AccountTypeCard(
-                icon: Icons.person_outline,
-                title: 'Un particulier',
-                description: 'Je r\u00e9serve des activit\u00e9s pour moi ou mes proches.',
-                isSelected: _selectedType == AccountType.customer,
-                onTap: () => setState(() => _selectedType = AccountType.customer),
-              ),
-              const SizedBox(height: 16),
-
-              // Business option - Une organisation
-              _AccountTypeCard(
-                icon: Icons.business_outlined,
-                title: 'Une organisation',
-                description: 'Entreprise, association ou collectivit\u00e9 - je r\u00e9serve pour mon \u00e9quipe.',
-                isSelected: _selectedType == AccountType.business,
-                onTap: () => setState(() => _selectedType = AccountType.business),
-              ),
-
-              const Spacer(),
-
-              // Continue button
-              SizedBox(
-                height: 56,
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _selectedType != null ? _handleContinue : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _orangeColor,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[300],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Cr\u00e9er mon compte',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Login link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'D\u00e9j\u00e0 un compte ? ',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  TextButton(
-                    onPressed: () => context.go('/login'),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text(
-                      'Se connecter',
-                      style: TextStyle(
-                        color: _orangeColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -166,6 +187,8 @@ class _AccountTypeCard extends StatelessWidget {
   final String description;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool disabled;
+  final String? badge;
 
   static const _orangeColor = Color(0xFFFF601F);
 
@@ -175,12 +198,34 @@ class _AccountTypeCard extends StatelessWidget {
     required this.description,
     required this.isSelected,
     required this.onTap,
+    this.disabled = false,
+    this.badge,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color titleColor = disabled
+        ? Colors.grey[500]!
+        : (isSelected ? _orangeColor : const Color(0xFF2D3748));
+    final Color descColor = disabled
+        ? Colors.grey[400]!
+        : (isSelected
+            ? _orangeColor.withValues(alpha: 0.8)
+            : Colors.grey[600]!);
+    final Color iconBg = disabled
+        ? Colors.grey[100]!
+        : (isSelected
+            ? _orangeColor.withValues(alpha: 0.15)
+            : Colors.grey[100]!);
+    final Color iconColor = disabled
+        ? Colors.grey[400]!
+        : (isSelected ? _orangeColor : Colors.grey[600]!);
+    final Color borderColor = disabled
+        ? Colors.grey[200]!
+        : (isSelected ? _orangeColor : Colors.grey[300]!);
+
     return InkWell(
-      onTap: onTap,
+      onTap: disabled ? null : onTap,
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -188,12 +233,14 @@ class _AccountTypeCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? _orangeColor : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
+            color: borderColor,
+            width: isSelected && !disabled ? 2 : 1,
           ),
-          color: isSelected
-              ? _orangeColor.withValues(alpha: 0.06)
-              : Colors.white,
+          color: disabled
+              ? Colors.grey[50]
+              : (isSelected
+                  ? _orangeColor.withValues(alpha: 0.06)
+                  : Colors.white),
         ),
         child: Row(
           children: [
@@ -202,14 +249,12 @@ class _AccountTypeCard extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? _orangeColor.withValues(alpha: 0.15)
-                    : Colors.grey[100],
+                color: iconBg,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: isSelected ? _orangeColor : Colors.grey[600],
+                color: iconColor,
                 size: 26,
               ),
             ),
@@ -225,15 +270,36 @@ class _AccountTypeCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? _orangeColor : const Color(0xFF2D3748),
+                      color: titleColor,
                     ),
                   ),
+                  if (badge != null) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _orangeColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        badge!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: _orangeColor,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     description,
                     style: TextStyle(
                       fontSize: 13,
-                      color: isSelected ? _orangeColor.withValues(alpha: 0.8) : Colors.grey[600],
+                      color: descColor,
                     ),
                   ),
                 ],
@@ -248,11 +314,13 @@ class _AccountTypeCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? _orangeColor : Colors.grey[400]!,
+                  color: disabled
+                      ? Colors.grey[300]!
+                      : (isSelected ? _orangeColor : Colors.grey[400]!),
                   width: 2,
                 ),
               ),
-              child: isSelected
+              child: isSelected && !disabled
                   ? Center(
                       child: Container(
                         width: 12,

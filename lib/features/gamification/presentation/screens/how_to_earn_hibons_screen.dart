@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../data/models/hibons_action_entry.dart';
 import '../providers/gamification_provider.dart';
 
@@ -18,7 +19,7 @@ class HowToEarnHibonsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('Comment gagner des Hibons'),
+        title: Text(context.l10n.gamificationHowToEarnTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -33,14 +34,14 @@ class HowToEarnHibonsScreen extends ConsumerWidget {
               children: [
                 const Icon(Icons.error_outline, size: 48, color: Colors.grey),
                 const SizedBox(height: 12),
-                const Text(
-                  'Impossible de charger le catalogue',
-                  style: TextStyle(fontSize: 16),
+                Text(
+                  context.l10n.gamificationActionsCatalogLoadError,
+                  style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton(
                   onPressed: () => ref.invalidate(actionsCatalogProvider),
-                  child: const Text('Réessayer'),
+                  child: Text(context.l10n.commonRetry),
                 ),
               ],
             ),
@@ -48,8 +49,8 @@ class HowToEarnHibonsScreen extends ConsumerWidget {
         ),
         data: (entries) {
           if (entries.isEmpty) {
-            return const Center(
-              child: Text('Aucune action disponible pour le moment'),
+            return Center(
+              child: Text(context.l10n.gamificationActionsEmpty),
             );
           }
 
@@ -177,7 +178,7 @@ class _ActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final pillarColor = _parseHexColor(action.pillarColor);
     final reachable = action.reachable;
-    final progress = _formatProgress(action);
+    final progress = _formatProgress(context, action);
 
     return Opacity(
       opacity: reachable ? 1.0 : 0.55,
@@ -246,7 +247,7 @@ class _ActionTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Atteint',
+                  context.l10n.gamificationCapReached,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -291,20 +292,28 @@ class _ActionTile extends StatelessWidget {
   }
 
   /// Compteurs de cap selon le scope (lifetime / weekly / daily).
-  String? _formatProgress(HibonsActionEntry e) {
+  String? _formatProgress(BuildContext context, HibonsActionEntry e) {
     if (e.completedThisWeek != null && e.remainingThisWeek != null) {
-      return '${e.completedThisWeek}/${e.completedThisWeek! + e.remainingThisWeek!} cette semaine';
+      return context.l10n.gamificationProgressThisWeek(
+        e.completedThisWeek!,
+        e.completedThisWeek! + e.remainingThisWeek!,
+      );
     }
     if (e.completedToday != null && e.remainingToday != null) {
-      return '${e.completedToday}/${e.completedToday! + e.remainingToday!} aujourd\'hui';
+      return context.l10n.gamificationProgressToday(
+        e.completedToday!,
+        e.completedToday! + e.remainingToday!,
+      );
     }
     if (e.completedLifetime != null && e.remainingLifetime != null) {
       return e.remainingLifetime! > 0
-          ? '${e.remainingLifetime} restant'
-          : 'Effectué';
+          ? context.l10n.gamificationRemainingLifetime(e.remainingLifetime!)
+          : context.l10n.gamificationCompleted;
     }
     if (e.completedLifetime != null) {
-      return e.completedLifetime! > 0 ? 'Effectué' : null;
+      return e.completedLifetime! > 0
+          ? context.l10n.gamificationCompleted
+          : null;
     }
     return null;
   }

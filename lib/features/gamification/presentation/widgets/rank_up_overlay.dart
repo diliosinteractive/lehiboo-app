@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 /// Overlay plein écran affiché lors du franchissement d'un palier de rang.
 /// Auto-dismiss après 6 s ou au tap sur le bouton "Continuer".
 class RankUpOverlay {
@@ -124,9 +126,9 @@ class _RankUpContentState extends State<_RankUpContent>
                       color: Colors.white,
                     ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Bravo !',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.gamificationRankUpCongratsTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -134,7 +136,7 @@ class _RankUpContentState extends State<_RankUpContent>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tu es maintenant ${widget.rankLabel} !',
+                    context.l10n.gamificationRankUpNowRank(widget.rankLabel),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
@@ -153,9 +155,9 @@ class _RankUpContentState extends State<_RankUpContent>
                       ),
                     ),
                     onPressed: widget.onDismiss,
-                    child: const Text(
-                      'Continuer',
-                      style: TextStyle(
+                    child: Text(
+                      context.l10n.commonContinue,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),

@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../data/models/toggle_favorite_result.dart';
 import '../../domain/repositories/favorites_repository.dart';
-import '../../data/repositories/favorites_repository_impl.dart';
 import 'favorite_lists_provider.dart';
 
 /// Callback type for toggle error handling
@@ -25,8 +27,28 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   /// Callback for error notifications (can be set by UI)
   FavoriteErrorCallback? onFavoriteError;
 
-  FavoritesNotifier(this._repository, this._ref) : super(const AsyncValue.loading()) {
+  FavoritesNotifier(this._repository, this._ref)
+      : super(const AsyncValue.loading()) {
     loadFavorites();
+    // Favorites are user-scoped; reset state on real auth transitions so a
+    // second sign-in on the same app session doesn't show the previous user's
+    // list. Skip the `loading` hop that logout() flips through.
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          _favoriteIds.clear();
+          _currentListId = null;
+          state = const AsyncValue.data([]);
+        } else if (loggedIn) {
+          loadFavorites();
+        }
+      },
+    );
   }
 
   Future<void> loadFavorites({String? listId}) async {
@@ -68,13 +90,15 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   ///
   /// Retourne `null` en cas d'échec, sinon un [ToggleFavoriteResult] qui
   /// peut contenir la récompense hibons créditée par le backend.
-  Future<ToggleFavoriteResult?> toggleFavorite(Event event, {int? internalId, String? listId}) async {
+  Future<ToggleFavoriteResult?> toggleFavorite(Event event,
+      {int? internalId, String? listId}) async {
     // event.id contient l'UUID (voir FavoritesRepositoryImpl qui utilise stringId)
     final eventUuid = event.id;
 
     if (eventUuid.isEmpty) {
       debugPrint('Cannot toggle favorite: no valid UUID found for event');
-      onFavoriteError?.call('Impossible de modifier le favori', false);
+      onFavoriteError?.call(
+          cachedAppLocalizations().favoriteUpdateError, false);
       return null;
     }
 
@@ -94,7 +118,23 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     state = AsyncValue.data(newList);
 
     try {
-      final result = await _repository.toggleFavorite(eventUuid, listId: listId);
+      final result =
+          await _repository.toggleFavorite(eventUuid, listId: listId);
+
+      // Analytics : add_to_wishlist (standard GA4) ou remove_from_wishlist
+      // (custom). Le résultat backend `result.isFavorite` est la source de
+      // vérité — `wasAdding` peut diverger en cas de désynchro.
+      final added = result.isFavorite;
+      _ref.read(analyticsServiceProvider).logEvent(
+        added
+            ? AnalyticsEvent.addToWishlist
+            : AnalyticsEvent.removeFromWishlist,
+        params: {
+          AnalyticsParam.itemId: eventUuid,
+          AnalyticsParam.itemName: event.title,
+          AnalyticsParam.itemCategory: event.category.name,
+        },
+      );
 
       // Update list counter if adding to a specific list
       if (wasAdding && listId != null) {
@@ -103,7 +143,9 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         // If removing, decrement the list counter
         final oldListId = event.additionalInfo?['list_id'] as String?;
         if (oldListId != null) {
-          _ref.read(favoriteListsProvider.notifier).decrementListCount(oldListId);
+          _ref
+              .read(favoriteListsProvider.notifier)
+              .decrementListCount(oldListId);
         }
       }
 
@@ -131,7 +173,9 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
       // Notify error
       onFavoriteError?.call(
-        wasAdding ? 'Impossible d\'ajouter aux favoris' : 'Impossible de retirer des favoris',
+        wasAdding
+            ? cachedAppLocalizations().favoriteAddError
+            : cachedAppLocalizations().favoriteRemoveError,
         wasAdding,
       );
 
@@ -145,7 +189,8 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   /// `hasReward` indique si une récompense hibons a été créditée (seulement
   /// possible sur la branche "ajout aux favoris", jamais sur un simple
   /// déplacement entre listes).
-  Future<ToggleFavoriteResult?> addToList(Event event, String listId, {int? internalId}) async {
+  Future<ToggleFavoriteResult?> addToList(Event event, String listId,
+      {int? internalId}) async {
     // event.id contient l'UUID
     final eventUuid = event.id;
 
@@ -191,7 +236,8 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   }
 
   /// Déplacer un favori vers une autre liste
-  Future<bool> moveToList(Event event, String? newListId, {int? internalId}) async {
+  Future<bool> moveToList(Event event, String? newListId,
+      {int? internalId}) async {
     // event.id contient l'UUID
     final eventUuid = event.id;
 
@@ -235,7 +281,9 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   /// Check if an event is favorited by numeric ID
   bool isFavoriteById(int eventId) {
     return isFavorite(eventId.toString()) ||
-           state.valueOrNull?.any((e) => e.additionalInfo?['internal_id'] == eventId) == true;
+        state.valueOrNull
+                ?.any((e) => e.additionalInfo?['internal_id'] == eventId) ==
+            true;
   }
 
   /// Obtenir l'ID de liste actuel d'un événement.
@@ -257,8 +305,9 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   }
 }
 
-final favoritesProvider = StateNotifierProvider<FavoritesNotifier, AsyncValue<List<Event>>>((ref) {
-  final repository = ref.watch(favoritesRepositoryImplProvider);
+final favoritesProvider =
+    StateNotifierProvider<FavoritesNotifier, AsyncValue<List<Event>>>((ref) {
+  final repository = ref.watch(favoritesRepositoryProvider);
   return FavoritesNotifier(repository, ref);
 });
 
@@ -279,6 +328,8 @@ final filteredFavoritesProvider = Provider<AsyncValue<List<Event>>>((ref) {
     }
 
     // Filtrer par liste spécifique
-    return events.where((e) => e.additionalInfo?['list_id'] == selectedListId).toList();
+    return events
+        .where((e) => e.additionalInfo?['list_id'] == selectedListId)
+        .toList();
   });
 });

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/models/event_filter.dart';
+import '../utils/search_l10n.dart';
 import '../../../home/presentation/providers/home_providers.dart';
 
 // =============================================================================
@@ -214,7 +215,8 @@ class ToggleRow extends StatelessWidget {
             child: AnimatedAlign(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
-              alignment: isSelected ? Alignment.centerRight : Alignment.centerLeft,
+              alignment:
+                  isSelected ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
                 width: 28,
                 height: 28,
@@ -347,8 +349,10 @@ class _MiniCalendarState extends State<MiniCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    final daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
-    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final daysInMonth =
+        DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+    final firstDayOfMonth =
+        DateTime(_currentMonth.year, _currentMonth.month, 1);
     final startingWeekday = (firstDayOfMonth.weekday - 1) % 7;
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
@@ -370,12 +374,15 @@ class _MiniCalendarState extends State<MiniCalendar> {
                 icon: Icon(Icons.chevron_left, color: Colors.grey.shade700),
                 onPressed: () {
                   setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+                    _currentMonth =
+                        DateTime(_currentMonth.year, _currentMonth.month - 1);
                   });
                 },
               ),
               Text(
-                DateFormat('MMMM yyyy', 'fr_FR').format(_currentMonth),
+                context
+                    .appDateFormat('MMMM yyyy', enPattern: 'MMMM yyyy')
+                    .format(_currentMonth),
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -385,16 +392,20 @@ class _MiniCalendarState extends State<MiniCalendar> {
                 icon: Icon(Icons.chevron_right, color: Colors.grey.shade700),
                 onPressed: () {
                   setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+                    _currentMonth =
+                        DateTime(_currentMonth.year, _currentMonth.month + 1);
                   });
                 },
               ),
             ],
           ),
           const SizedBox(height: 12),
-          // Weekday headers
+          // Weekday headers (localized narrow names, Monday-first)
           Row(
-            children: ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day) {
+            children: List.generate(7, (index) {
+              final day = context
+                  .appDateFormat('EEEEE')
+                  .format(DateTime(2024, 1, 1).add(Duration(days: index)));
               return Expanded(
                 child: Center(
                   child: Text(
@@ -407,7 +418,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ),
           const SizedBox(height: 8),
           // Calendar grid
@@ -426,7 +437,8 @@ class _MiniCalendarState extends State<MiniCalendar> {
                 return const SizedBox();
               }
 
-              final date = DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
+              final date =
+                  DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
               final isPast = date.isBefore(todayDate);
               final isToday = date.isAtSameMomentAs(todayDate);
               final isSelected = _isDateSelected(date);
@@ -453,7 +465,9 @@ class _MiniCalendarState extends State<MiniCalendar> {
                       '$dayNumber',
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
-                        fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isToday || isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isPast
                             ? Colors.grey.shade300
                             : isSelected
@@ -534,12 +548,15 @@ class LocationSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasLocation = filter.latitude != null;
-    final citiesAsync = ref.watch(homeCitiesProvider);
+    final popularCities = ref.watch(popularCitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle(title: 'Localisation', icon: Icons.location_on),
+        SectionTitle(
+          title: context.l10n.searchSectionLocation,
+          icon: Icons.location_on,
+        ),
         const SizedBox(height: 20),
 
         // Géolocalisation
@@ -554,7 +571,8 @@ class LocationSection extends ConsumerWidget {
                   : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
+                color:
+                    hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
                 width: hasLocation ? 2 : 1,
               ),
             ),
@@ -591,7 +609,7 @@ class LocationSection extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'À proximité',
+                        context.l10n.homeSearchNearby,
                         style: GoogleFonts.montserrat(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -600,8 +618,8 @@ class LocationSection extends ConsumerWidget {
                       ),
                       Text(
                         hasLocation
-                            ? 'Dans un rayon de ${filter.radiusKm.toInt()} km'
-                            : 'Utiliser ma position actuelle',
+                            ? context.searchWithinRadiusLabel(filter.radiusKm)
+                            : context.l10n.searchUseCurrentLocation,
                         style: GoogleFonts.montserrat(
                           fontSize: 13,
                           color: Colors.grey.shade600,
@@ -613,7 +631,8 @@ class LocationSection extends ConsumerWidget {
                 if (hasLocation)
                   IconButton(
                     onPressed: onClearLocation,
-                    icon: Icon(Icons.close, size: 20, color: Colors.grey.shade500),
+                    icon: Icon(Icons.close,
+                        size: 20, color: Colors.grey.shade500),
                   ),
               ],
             ),
@@ -626,7 +645,7 @@ class LocationSection extends ConsumerWidget {
           Row(
             children: [
               Text(
-                'Rayon : ',
+                context.l10n.searchRadiusLabel,
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   color: Colors.grey.shade700,
@@ -664,7 +683,7 @@ class LocationSection extends ConsumerWidget {
 
         // Villes populaires
         Text(
-          'VILLES POPULAIRES',
+          context.l10n.searchPopularCities,
           style: GoogleFonts.montserrat(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -674,12 +693,24 @@ class LocationSection extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
 
-        citiesAsync.when(
-          data: (cities) {
+        popularCities.when(
+          data: (result) {
+            final displayedCities = result.cities.take(6).toList();
+
+            if (displayedCities.isEmpty) {
+              return Text(
+                context.l10n.searchNoCityFound,
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                ),
+              );
+            }
+
             return Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: cities.take(6).map((city) {
+              children: displayedCities.map((city) {
                 final isSelected = filter.citySlug == city.slug;
                 return SelectableChip(
                   label: city.name,
@@ -705,31 +736,12 @@ class LocationSection extends ConsumerWidget {
               ),
             ),
           ),
-          error: (_, __) => Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              ('Paris', 'paris'),
-              ('Lyon', 'lyon'),
-              ('Marseille', 'marseille'),
-              ('Bordeaux', 'bordeaux'),
-              ('Toulouse', 'toulouse'),
-              ('Nantes', 'nantes'),
-            ].map((city) {
-              final isSelected = filter.citySlug == city.$2;
-              return SelectableChip(
-                label: city.$1,
-                icon: Icons.location_city,
-                isSelected: isSelected,
-                onTap: () {
-                  if (isSelected) {
-                    onClearCity();
-                  } else {
-                    onCitySelected(city.$2, city.$1);
-                  }
-                },
-              );
-            }).toList(),
+          error: (_, __) => Text(
+            context.l10n.searchCitiesUnavailable,
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
           ),
         ),
       ],
@@ -808,7 +820,7 @@ class FilterHeader extends StatelessWidget {
             GestureDetector(
               onTap: onClear,
               child: Text(
-                'Effacer',
+                context.l10n.searchClear,
                 style: GoogleFonts.montserrat(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -897,7 +909,8 @@ class FilterFooter extends StatelessWidget {
                   // Badge compteur
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -967,12 +980,14 @@ class FilterFooterWithClear extends StatelessWidget {
             GestureDetector(
               onTap: hasFilters ? onClear : null,
               child: Text(
-                'Tout effacer',
+                context.l10n.searchClearFilters,
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: hasFilters ? Colors.black87 : Colors.grey.shade400,
-                  decoration: hasFilters ? TextDecoration.underline : TextDecoration.none,
+                  decoration: hasFilters
+                      ? TextDecoration.underline
+                      : TextDecoration.none,
                 ),
               ),
             ),
@@ -982,7 +997,8 @@ class FilterFooterWithClear extends StatelessWidget {
               onTap: onPressed,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [HbColors.brandPrimary, HbColors.brandPrimaryDark],
@@ -1016,7 +1032,8 @@ class FilterFooterWithClear extends StatelessWidget {
                     if (activeFilterCount > 0) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(10),

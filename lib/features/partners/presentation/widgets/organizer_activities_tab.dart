@@ -1,12 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
+import '../../../events/presentation/utils/open_event.dart';
 import '../providers/organizer_profile_providers.dart';
 import '../utils/event_timing_bucket.dart';
 
@@ -26,31 +26,18 @@ class OrganizerActivitiesTab extends ConsumerStatefulWidget {
 
 class _OrganizerActivitiesTabState
     extends ConsumerState<OrganizerActivitiesTab> {
-  final _scrollController = ScrollController();
   EventTimingBucket _bucket = EventTimingBucket.currentUpcoming;
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 240) {
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.depth == 0 &&
+        notification.metrics.axis == Axis.vertical &&
+        notification.metrics.extentAfter <= 240) {
       ref
           .read(organizerEventsControllerProvider(widget.organizerIdentifier)
               .notifier)
           .loadMore();
     }
+    return false;
   }
 
   @override
@@ -67,7 +54,7 @@ class _OrganizerActivitiesTabState
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'Impossible de charger les activités.',
+            context.l10n.organizerActivitiesLoadError,
             style: TextStyle(color: Colors.grey[700]),
           ),
         ),
@@ -95,44 +82,45 @@ class _OrganizerActivitiesTabState
           past = const [];
         }
 
-        final visible = _bucket == EventTimingBucket.currentUpcoming
-            ? current
-            : past;
+        final visible =
+            _bucket == EventTimingBucket.currentUpcoming ? current : past;
 
         if (events.isEmpty) {
-          return _empty('Aucune activité publiée pour le moment.');
+          return _empty(context.l10n.organizerActivitiesEmpty);
         }
 
-        return ListView(
-          controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
-          children: [
-            _SegmentedToggle(
-              bucket: _bucket,
-              currentCount: current.length,
-              pastCount: past.length,
-              onChanged: (b) => setState(() => _bucket = b),
-            ),
-            const SizedBox(height: 16),
-            if (visible.isEmpty)
-              _empty(_bucket == EventTimingBucket.currentUpcoming
-                  ? 'Pas d\'événement à venir.'
-                  : 'Pas d\'événement passé.')
-            else
-              ...visible.map((e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: _OrganizerEventTile(event: e),
-                  )),
-            if (state.isLoadingMore)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: HbColors.brandPrimary,
+        return NotificationListener<ScrollNotification>(
+          onNotification: _onScrollNotification,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
+            children: [
+              _SegmentedToggle(
+                bucket: _bucket,
+                currentCount: current.length,
+                pastCount: past.length,
+                onChanged: (b) => setState(() => _bucket = b),
+              ),
+              const SizedBox(height: 16),
+              if (visible.isEmpty)
+                _empty(_bucket == EventTimingBucket.currentUpcoming
+                    ? context.l10n.organizerActivitiesNoUpcoming
+                    : context.l10n.organizerActivitiesNoPast)
+              else
+                ...visible.map((e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _OrganizerEventTile(event: e),
+                    )),
+              if (state.isLoadingMore)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: HbColors.brandPrimary,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -177,14 +165,14 @@ class _SegmentedToggle extends StatelessWidget {
         children: [
           Expanded(
             child: _segment(
-              label: 'En cours ($currentCount)',
+              label: context.l10n.organizerActivitiesCurrentTab(currentCount),
               selected: bucket == EventTimingBucket.currentUpcoming,
               onTap: () => onChanged(EventTimingBucket.currentUpcoming),
             ),
           ),
           Expanded(
             child: _segment(
-              label: 'Passés ($pastCount)',
+              label: context.l10n.organizerActivitiesPastTab(pastCount),
               selected: bucket == EventTimingBucket.past,
               onTap: () => onChanged(EventTimingBucket.past),
             ),
@@ -232,14 +220,14 @@ class _SegmentedToggle extends StatelessWidget {
   }
 }
 
-class _OrganizerEventTile extends StatelessWidget {
+class _OrganizerEventTile extends ConsumerWidget {
   final Event event;
   const _OrganizerEventTile({required this.event});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () => context.push('/event/${event.id}'),
+      onTap: () => openEvent(context, ref, event),
       borderRadius: BorderRadius.circular(12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,7 +241,8 @@ class _OrganizerEventTile extends StatelessWidget {
                   ? CachedNetworkImage(
                       imageUrl: event.coverImage!,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: Colors.grey[100]),
+                      placeholder: (_, __) =>
+                          Container(color: Colors.grey[100]),
                       errorWidget: (_, __, ___) => _imageFallback(),
                     )
                   : _imageFallback(),
@@ -266,16 +255,31 @@ class _OrganizerEventTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    event.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: Color(0xFF1A1A2E),
-                      height: 1.25,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: Color(0xFF1A1A2E),
+                            height: 1.25,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (event.isPasswordProtected) ...[
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.lock_outline,
+                          size: 14,
+                          color: HbColors.brandPrimary,
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -285,7 +289,11 @@ class _OrganizerEventTile extends StatelessWidget {
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          DateFormat('dd MMM yyyy', 'fr')
+                          context
+                              .appDateFormat(
+                                'dd MMM yyyy',
+                                enPattern: 'MMM d, yyyy',
+                              )
                               .format(event.startDate),
                           style: TextStyle(
                             fontSize: 12,
@@ -303,7 +311,9 @@ class _OrganizerEventTile extends StatelessWidget {
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          event.city.isEmpty ? 'France' : event.city,
+                          event.city.isEmpty
+                              ? context.l10n.commonCountryFrance
+                              : event.city,
                           style: const TextStyle(
                             fontSize: 12,
                             color: HbColors.brandPrimary,

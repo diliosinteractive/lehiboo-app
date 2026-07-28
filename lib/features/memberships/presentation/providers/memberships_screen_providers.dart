@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/invitation_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
@@ -11,8 +14,7 @@ import 'personalized_feed_provider.dart';
 ///
 /// Not paginated. Returns an empty list when unauthenticated to avoid a
 /// useless 401 round-trip.
-final myInvitationsProvider =
-    FutureProvider<List<InvitationDto>>((ref) async {
+final myInvitationsProvider = FutureProvider<List<InvitationDto>>((ref) async {
   final isAuthenticated = ref.watch(
     authProvider.select((s) => s.isAuthenticated),
   );
@@ -37,7 +39,8 @@ class InvitationAction {
 class InvitationActionController
     extends FamilyAsyncNotifier<InvitationAction, String> {
   @override
-  Future<InvitationAction> build(String token) async => const InvitationAction();
+  Future<InvitationAction> build(String token) async =>
+      const InvitationAction();
 
   /// Accept — spec §8.
   ///
@@ -57,6 +60,9 @@ class InvitationActionController
       // Membership signal changed — drop the personalized feed (spec §7).
       ref.invalidate(personalizedFeedProvider);
       state = const AsyncData(InvitationAction());
+      ref.read(analyticsServiceProvider).logEvent(
+            AnalyticsEvent.membershipInviteAccepted,
+          );
       return true;
     } catch (e, st) {
       state = AsyncData(InvitationAction(error: _humanReadable(e)));
@@ -90,13 +96,12 @@ class InvitationActionController
   }
 
   String _humanReadable(Object e) {
-    final message = e.toString();
+    final message = ApiResponseHandler.extractError(e);
     return message.length > 200 ? message.substring(0, 200) : message;
   }
 }
 
-final invitationActionControllerProvider =
-    AsyncNotifierProvider.family<InvitationActionController, InvitationAction,
-        String>(
+final invitationActionControllerProvider = AsyncNotifierProvider.family<
+    InvitationActionController, InvitationAction, String>(
   InvitationActionController.new,
 );

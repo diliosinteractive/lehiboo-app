@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
+import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
 import 'package:lehiboo/shared/widgets/animations/spring_button.dart';
 
 /// Barre de réservation sticky en bas de l'écran
@@ -25,16 +27,22 @@ class EventStickyBookingBar extends StatefulWidget {
   final VoidCallback? onBookPressed;
   final VoidCallback? onViewDatesPressed;
   final bool isLoading;
+
   /// ID du slot/date sélectionné
   final String? selectedSlotId;
+
   /// Label formaté de la date sélectionnée (ex: "Sam 15 Mars à 14:00")
   final String? selectedDateLabel;
+
   /// The full selected slot object (for spots remaining, time range)
   final CalendarDateSlot? selectedSlot;
+
   /// Number of active reminders for discovery events
   final int reminderCount;
+
   /// Whether the currently selected slot has a reminder
   final bool isSelectedSlotReminded;
+
   /// Callback to toggle reminder on the selected slot
   final VoidCallback? onReminderToggled;
 
@@ -87,38 +95,15 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
 
   bool get _isDiscovery => !widget.event.hasDirectBooking;
 
-  /// Formats the selected slot as "Sam 9 Mai 2026 de 14:00 à 16:00"
-  String? get _formattedSlotDate {
+  String? _formattedSlotDate(BuildContext context) {
     final slot = widget.selectedSlot;
     if (slot == null) return null;
 
-    const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-    const months = [
-      'Jan', 'Fév', 'Mars', 'Avr', 'Mai', 'Juin',
-      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc',
-    ];
-
-    final dayName = days[slot.date.weekday - 1];
-    final monthName = months[slot.date.month - 1];
-    var result = '$dayName ${slot.date.day} $monthName ${slot.date.year}';
-
-    final start = _stripSeconds(slot.startTime);
-    final end = _stripSeconds(slot.endTime);
-    if (start != null && end != null) {
-      result += ' de $start à $end';
-    } else if (start != null) {
-      result += ' à $start';
-    }
-
-    return result;
-  }
-
-  /// "14:00:00" → "14:00"
-  static String? _stripSeconds(String? time) {
-    if (time == null) return null;
-    final parts = time.split(':');
-    if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
-    return time;
+    return context.eventSlotDateRange(
+      date: slot.date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+    );
   }
 
   @override
@@ -173,7 +158,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
             children: [
               // Partie gauche: Prix/Info avec animations
               Expanded(
-                child: _buildPriceSection(),
+                child: _buildPriceSection(context),
               ),
               const SizedBox(width: 16),
               // Partie droite: Bouton avec animations
@@ -185,7 +170,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
     );
   }
 
-  Widget _buildPriceSection() {
+  Widget _buildPriceSection(BuildContext context) {
     // AnimatedSwitcher pour transition smooth entre états
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
@@ -203,11 +188,11 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
           ),
         );
       },
-      child: _buildPriceContent(),
+      child: _buildPriceContent(context),
     );
   }
 
-  Widget _buildPriceContent() {
+  Widget _buildPriceContent(BuildContext context) {
     // Sold-out and ticket-selection only apply to bookable events,
     // not discovery events (they don't manage inventory / tickets).
     if (!_isDiscovery && _isSoldOut) {
@@ -231,20 +216,20 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
                 ),
               ),
               const SizedBox(width: 10),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Complet',
-                    style: TextStyle(
+                    context.l10n.eventFull,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.red,
                     ),
                   ),
                   Text(
-                    'Plus de places disponibles',
-                    style: TextStyle(
+                    context.l10n.eventNoSeatsAvailable,
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
                     ),
@@ -259,7 +244,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
 
     if (!_isDiscovery && _hasTicketSelection) {
       // Affichage avec billets sélectionnés (+ date si disponible)
-      final dateLabel = _formattedSlotDate ?? widget.selectedDateLabel;
+      final dateLabel = _formattedSlotDate(context) ?? widget.selectedDateLabel;
       return Column(
         key: ValueKey('selection_$_totalTickets'),
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,9 +271,9 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
                 },
               ),
               const SizedBox(width: 4),
-              const Text(
-                'total',
-                style: TextStyle(
+              Text(
+                context.l10n.eventTotal,
+                style: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
                 ),
@@ -299,8 +284,8 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
           // Info billets + date
           Text(
             _hasDateSelection && dateLabel != null
-                ? '$_totalTickets billet${_totalTickets > 1 ? 's' : ''} • $dateLabel'
-                : '$_totalTickets billet${_totalTickets > 1 ? 's' : ''} sélectionné${_totalTickets > 1 ? 's' : ''}',
+                ? context.l10n.eventTicketsForDate(_totalTickets, dateLabel)
+                : context.l10n.eventTicketsSelected(_totalTickets),
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey.shade600,
@@ -312,7 +297,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
 
     // Date sélectionnée but no tickets yet
     if (_hasDateSelection) {
-      final dateLabel = _formattedSlotDate ?? widget.selectedDateLabel;
+      final dateLabel = _formattedSlotDate(context) ?? widget.selectedDateLabel;
       final spots = widget.selectedSlot?.spotsRemaining;
 
       if (_isDiscovery) {
@@ -334,7 +319,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
             if (spots != null) ...[
               const SizedBox(height: 2),
               Text(
-                'Capacité prévue : $spots',
+                context.l10n.eventExpectedCapacity(spots),
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade600,
@@ -357,7 +342,8 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
               textBaseline: TextBaseline.alphabetic,
               children: [
                 Text(
-                  _formatPrice(widget.event.minPrice ?? widget.event.price ?? 0),
+                  _formatPrice(
+                      widget.event.minPrice ?? widget.event.price ?? 0),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -383,8 +369,8 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
             const SizedBox(height: 2),
             Text(
               spots > 0
-                  ? '$spots place${spots > 1 ? 's' : ''} restante${spots > 1 ? 's' : ''}'
-                  : 'Complet',
+                  ? context.l10n.eventSpotsRemaining(spots)
+                  : context.l10n.eventFull,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
@@ -407,14 +393,18 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
             color: HbColors.brandPrimary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.calendar_today, size: 14, color: HbColors.brandPrimary),
-              SizedBox(width: 6),
+              const Icon(
+                Icons.calendar_today,
+                size: 14,
+                color: HbColors.brandPrimary,
+              ),
+              const SizedBox(width: 6),
               Text(
-                'Voir les dates',
-                style: TextStyle(
+                context.l10n.eventViewDates,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: HbColors.brandPrimary,
@@ -437,9 +427,9 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              const Text(
-                'À partir de ',
-                style: TextStyle(
+              Text(
+                context.l10n.eventPriceFromPrefix,
+                style: const TextStyle(
                   fontSize: 12,
                   color: Colors.grey,
                 ),
@@ -465,18 +455,18 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
               color: HbColors.brandPrimary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.calendar_today,
                   size: 14,
                   color: HbColors.brandPrimary,
                 ),
-                SizedBox(width: 6),
+                const SizedBox(width: 6),
                 Text(
-                  'Voir les dates',
-                  style: TextStyle(
+                  context.l10n.eventViewDates,
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: HbColors.brandPrimary,
@@ -517,14 +507,14 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
                 ),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.calendar_today, size: 18, color: Colors.white),
-                SizedBox(width: 8),
+                const Icon(Icons.calendar_today, size: 18, color: Colors.white),
+                const SizedBox(width: 8),
                 Text(
-                  'Choisir une date',
-                  style: TextStyle(
+                  context.l10n.eventChooseDate,
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                     color: Colors.white,
@@ -571,7 +561,9 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
               ),
               const SizedBox(width: 8),
               Text(
-                isReminded ? 'Rappelé' : 'Me rappeler',
+                isReminded
+                    ? context.l10n.eventReminded
+                    : context.l10n.eventRemindMe,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -603,14 +595,14 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
             ),
             elevation: 0,
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.block, size: 18, color: Colors.white),
-              SizedBox(width: 8),
+              const Icon(Icons.block, size: 18, color: Colors.white),
+              const SizedBox(width: 8),
               Text(
-                'Complet',
-                style: TextStyle(
+                context.l10n.eventFull,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -657,9 +649,9 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
               else
                 const Icon(Icons.open_in_new, size: 18, color: Colors.white),
               const SizedBox(width: 8),
-              const Text(
-                'Voir le site',
-                style: TextStyle(
+              Text(
+                context.l10n.eventViewWebsite,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -679,15 +671,15 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
 
     if (!_hasDateSelection) {
       // Pas de date sélectionnée -> guider vers la sélection de date
-      buttonText = 'Choisir une date';
+      buttonText = context.l10n.eventChooseDate;
       buttonIcon = Icons.calendar_today;
     } else if (_hasTicketSelection) {
       // Billets sélectionnés -> prêt pour réserver
-      buttonText = 'Réserver';
+      buttonText = context.l10n.eventBookNow;
       buttonIcon = Icons.shopping_cart_checkout;
     } else {
       // Billetterie: date sélectionnée mais pas de billets
-      buttonText = 'Choisir';
+      buttonText = context.l10n.eventChoose;
       buttonIcon = null;
     }
 
@@ -803,9 +795,9 @@ class EventExternalBookingBar extends StatelessWidget {
                           color: HbColors.textPrimary,
                         ),
                       ),
-                      const Text(
-                        'Prix indicatif',
-                        style: TextStyle(
+                      Text(
+                        context.l10n.eventIndicativePrice,
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.grey,
                         ),

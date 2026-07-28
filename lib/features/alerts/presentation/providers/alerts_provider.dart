@@ -1,33 +1,36 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/analytics/analytics_event.dart';
+import '../../../../core/analytics/analytics_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../domain/repositories/alerts_repository.dart';
-import '../../data/repositories/alerts_repository_impl.dart';
 import '../../../search/domain/models/event_filter.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
 
 final alertsProvider =
     StateNotifierProvider<AlertsNotifier, AsyncValue<List<Alert>>>((ref) {
-  final repository = ref.watch(alertsRepositoryImplProvider);
   final authenticatedUserId = ref.watch(
     authProvider.select(
       (state) => state.isAuthenticated ? state.user?.id : null,
     ),
   );
   return AlertsNotifier(
-    repository,
+    ref.watch(alertsRepositoryProvider),
+    ref,
     isAuthenticated: authenticatedUserId != null,
   );
 });
 
 class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
   final AlertsRepository _repository;
+  final Ref _ref;
   final bool _isAuthenticated;
   Future<void>? _loadInFlight;
 
   AlertsNotifier(
-    this._repository, {
+    this._repository,
+    this._ref, {
     required bool isAuthenticated,
   })  : _isAuthenticated = isAuthenticated,
         super(const AsyncValue.data([])) {
@@ -89,9 +92,18 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
       if (!mounted) return;
       final currentList = state.valueOrNull ?? [];
       state = AsyncValue.data([newAlert, ...currentList]);
+
+      _ref.read(analyticsServiceProvider).logEvent(
+        AnalyticsEvent.searchSaved,
+        params: {
+          AnalyticsParam.enablePush: enablePush,
+          AnalyticsParam.enableEmail: enableEmail,
+          AnalyticsParam.citySlug: filter.citySlug ?? 'none',
+        },
+      );
     } catch (e, stack) {
       if (!mounted) return;
-      // TODO: Handle error properly (show snackbar etc in UI)
+      // Error handling delegated to UI (snackbar etc.)
       state = AsyncValue.error(e, stack);
     }
   }

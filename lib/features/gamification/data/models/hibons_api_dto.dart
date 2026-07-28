@@ -152,12 +152,13 @@ class HibonsRewardResponseDto with _$HibonsRewardResponseDto {
 @freezed
 class TransactionDto with _$TransactionDto {
   const factory TransactionDto({
-    required String id,
-    required String type, // earn, spend, purchase, refund
+    // L'API expose l'identifiant public sous la clé `uuid` (cf. spec), pas `id`.
+    @JsonKey(name: 'uuid') required String id,
+    required String type, // earned, spent, bonus, purchase, refund
     @JsonKey(name: 'type_label') String? typeLabel,
     required int amount,
     @JsonKey(name: 'formatted_amount') String? formattedAmount,
-    required String description,
+    String? description,
     String? source,
     String? pillar,
     @JsonKey(name: 'pillar_label') String? pillarLabel,
@@ -217,6 +218,11 @@ class TransactionsListResponseDto with _$TransactionsListResponseDto {
     @JsonKey(name: 'earnings_by_pillar')
     @Default(<EarningsByPillarEntryDto>[])
     List<EarningsByPillarEntryDto> earningsByPillar,
+    // Champs de pagination (mode paginé uniquement, null en mode legacy).
+    @JsonKey(name: 'current_page') int? currentPage,
+    @JsonKey(name: 'last_page') int? lastPage,
+    @JsonKey(name: 'per_page') int? perPage,
+    int? total,
   }) = _TransactionsListResponseDto;
 
   factory TransactionsListResponseDto.fromJson(Map<String, dynamic> json) =>
@@ -252,6 +258,8 @@ class HibonsUpdateDto with _$HibonsUpdateDto {
     @JsonKey(name: 'new_rank_label') String? newRankLabel,
     @JsonKey(name: 'animation_label') String? animationLabel,
     String? pillar,
+    String? source,
+    @JsonKey(name: 'reward_message') String? rewardMessage,
   }) = _HibonsUpdateDto;
 
   factory HibonsUpdateDto.fromJson(Map<String, dynamic> json) =>

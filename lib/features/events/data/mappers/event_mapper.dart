@@ -1,3 +1,4 @@
+import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_submodels.dart';
 import '../models/event_dto.dart';
@@ -61,11 +62,13 @@ class EventMapper {
     // Resolve primary category: prefer primaryCategory (mobile v2),
     // then categories[] with is_primary flag, then legacy category field.
     EventCategoryDto? resolvedCategory = dto.primaryCategory;
-    if (resolvedCategory == null && dto.categories != null && dto.categories!.isNotEmpty) {
+    if (resolvedCategory == null &&
+        dto.categories != null &&
+        dto.categories!.isNotEmpty) {
       resolvedCategory = dto.categories!.cast<EventCategoryDto?>().firstWhere(
-        (c) => c?.isPrimary == true,
-        orElse: () => dto.categories!.first,
-      );
+            (c) => c?.isPrimary == true,
+            orElse: () => dto.categories!.first,
+          );
     }
     resolvedCategory ??= dto.category;
 
@@ -73,6 +76,27 @@ class EventMapper {
     if (resolvedCategory != null) {
       category = _parseCategorySlug(resolvedCategory.slug);
     }
+
+    final venueName = _firstNonEmpty(
+      dto.location?.venueName,
+      dto.venueName,
+    );
+    final venueAddress = _firstNonEmpty(
+      dto.location?.address,
+      dto.venueAddress,
+    );
+    final city = _firstNonEmpty(
+      dto.location?.city,
+      dto.city,
+    );
+    final postalCode = _firstNonEmpty(
+      dto.location?.postalCode,
+      dto.postalCode,
+    );
+    final country = _firstNonEmpty(
+      dto.country,
+      dto.location?.country,
+    );
 
     // Get featured image URL (prefer large or full from featuredImage, fallback to thumbnail)
     String? imageUrl;
@@ -155,10 +179,10 @@ class EventMapper {
       targetAudiences: _resolveTargetAudiences(dto),
       startDate: startDate,
       endDate: endDate,
-      venue: dto.location?.venueName ?? '',
-      address: dto.location?.address ?? '',
-      city: dto.location?.city ?? '',
-      postalCode: dto.location?.postalCode ?? '',
+      venue: venueName ?? '',
+      address: venueAddress ?? '',
+      city: city ?? '',
+      postalCode: postalCode ?? '',
       latitude: dto.location?.lat ?? 0.0,
       longitude: dto.location?.lng ?? 0.0,
       distance: null,
@@ -232,7 +256,8 @@ class EventMapper {
               : null,
       targetAudienceTerms: _resolveTargetAudienceTerms(dto),
       allCategoryNames: _resolveAllCategoryNames(dto),
-      thematiqueName: dto.thematique?.name.isNotEmpty == true ? dto.thematique!.name : null,
+      thematiqueName:
+          dto.thematique?.name.isNotEmpty == true ? dto.thematique!.name : null,
       themeNames: dto.themes,
       emotionNames: dto.emotions,
 
@@ -252,18 +277,22 @@ class EventMapper {
           ? SocialMediaConfig.fromJson(dto.socialMedia!)
           : null,
       rawCategorySlug: resolvedCategory?.slug,
-      venueDetails: dto.venueData != null
-          ? EventVenue.fromJson(dto.venueData!)
-          : null,
+      venueDetails:
+          dto.venueData != null ? EventVenue.fromJson(dto.venueData!) : null,
       creationSource: dto.creationSource,
       originalOrganizerName: dto.originalOrganizerName,
+      relatedEvents: _mapRelatedEvents(
+        dto,
+        fallbackVenue: venueName,
+        fallbackCity: city,
+      ),
 
       // HOME_FEED §4 — surface raw spec fields for downstream UI.
       version: dto.version,
       timezone: dto.timezone,
       calendarMode: dto.calendarMode,
       eventTypeMode: dto.eventTypeMode,
-      country: dto.country ?? dto.location?.country,
+      country: country,
       addressSource: dto.addressSource,
       venueId: dto.venueId,
       capacityGlobal: dto.capacityGlobal,
@@ -272,6 +301,7 @@ class EventMapper {
       saleEndAt: _tryParseDateTime(dto.saleEndAt),
       allowCancellation: dto.allowCancellation,
       cancelBeforeHours: dto.cancelBeforeHours,
+      vendorCancellationPolicy: dto.vendorCancellationPolicy,
       generateQrCodes: dto.generateQrCodes,
       publicationStatus: dto.status,
       visibility: dto.visibility,
@@ -291,9 +321,52 @@ class EventMapper {
     );
   }
 
+  static List<Event> _mapRelatedEvents(
+    EventDto dto, {
+    String? fallbackVenue,
+    String? fallbackCity,
+  }) {
+    final related = dto.relatedEvents;
+    if (related == null || related.isEmpty) return const [];
+
+    final currentId = dto.uuid ?? dto.id.toString();
+    return related.where((item) {
+      final id = _firstNonEmpty(item.uuid, item.id);
+      return id != null &&
+          item.slug.trim().isNotEmpty &&
+          item.title.trim().isNotEmpty &&
+          id != currentId &&
+          item.slug != dto.slug;
+    }).map((item) {
+      final imageUrl = _firstNonEmpty(item.featuredImage, item.coverImage);
+      return Event.minimal(
+        id: _firstNonEmpty(item.uuid, item.id)!,
+        slug: item.slug,
+        title: item.title,
+        venue: fallbackVenue ?? '',
+        city: fallbackCity ?? '',
+        images: imageUrl == null ? const [] : [imageUrl],
+      );
+    }).toList(growable: false);
+  }
+
   static DateTime? _tryParseDateTime(String? value) {
     if (value == null || value.isEmpty) return null;
     return DateTime.tryParse(value);
+  }
+
+  static String? _firstNonEmpty(String? primary, String? fallback) {
+    final primaryTrimmed = primary?.trim();
+    if (primaryTrimmed != null && primaryTrimmed.isNotEmpty) {
+      return primaryTrimmed;
+    }
+
+    final fallbackTrimmed = fallback?.trim();
+    if (fallbackTrimmed != null && fallbackTrimmed.isNotEmpty) {
+      return fallbackTrimmed;
+    }
+
+    return null;
   }
 
   static EventCategory _parseCategorySlug(String slug) {
@@ -397,9 +470,10 @@ class EventMapper {
     Map<String, dynamic>? accessibilityMap;
     if (dto.services != null) {
       if (dto.services!['services'] is Map) {
-        flatServices = Map<String, dynamic>.from(dto.services!['services'] as Map);
+        flatServices = Map<String, dynamic>.from(dto.services!['services']);
         if (dto.services!['accessibility'] is Map) {
-          accessibilityMap = Map<String, dynamic>.from(dto.services!['accessibility'] as Map);
+          accessibilityMap =
+              Map<String, dynamic>.from(dto.services!['accessibility']);
         }
       } else {
         flatServices = dto.services;
@@ -409,7 +483,7 @@ class EventMapper {
     // Venue services (from the venue object)
     final venueServicesRaw = dto.venueData?['services'];
     final venueServices = venueServicesRaw is Map
-        ? Map<String, dynamic>.from(venueServicesRaw as Map)
+        ? Map<String, dynamic>.from(venueServicesRaw)
         : null;
 
     // Merge: event services override venue services
@@ -418,56 +492,71 @@ class EventMapper {
       ...?flatServices,
     };
 
-    bool _isTrue(dynamic v) => v == true || v == 1 || v == '1';
+    bool isTrue(dynamic v) => v == true || v == 1 || v == '1';
 
-    final hasParking = _isTrue(allServices['parking'])
-        || practicalInfo?.stationnement != null;
-    final hasFood = _isTrue(allServices['restauration'])
-        || practicalInfo?.restauration == true;
-    final hasDrinks = _isTrue(allServices['bar'])
-        || _isTrue(allServices['boisson'])
-        || practicalInfo?.boisson == true;
-    final hasWifi = _isTrue(allServices['wifi']);
-    final hasTransport = _isTrue(allServices['transport']);
-    final hasPmr = (accessibilityMap?.values.any(_isTrue) == true)
-        || practicalInfo?.pmr == true;
+    final hasParking =
+        isTrue(allServices['parking']) || practicalInfo?.stationnement != null;
+    final hasFood = isTrue(allServices['restauration']) ||
+        practicalInfo?.restauration == true;
+    final hasDrinks = isTrue(allServices['bar']) ||
+        isTrue(allServices['boisson']) ||
+        practicalInfo?.boisson == true;
+    final hasWifi = isTrue(allServices['wifi']);
+    final hasTransport = isTrue(allServices['transport']);
+    final hasPmr = (accessibilityMap?.values.any(isTrue) == true) ||
+        practicalInfo?.pmr == true;
 
     // Collect remaining services not handled by dedicated fields
-    const handledKeys = {'parking', 'restauration', 'bar', 'boisson', 'wifi', 'transport'};
+    const handledKeys = {
+      'parking',
+      'restauration',
+      'bar',
+      'boisson',
+      'wifi',
+      'transport'
+    };
     final otherServices = allServices.entries
-        .where((e) => !handledKeys.contains(e.key) && _isTrue(e.value))
+        .where((e) => !handledKeys.contains(e.key) && isTrue(e.value))
         .map((e) => e.key)
         .toList();
 
     // Collect individual accessibility features
     final accessibilityFeatures = accessibilityMap?.entries
-        .where((e) => _isTrue(e.value))
-        .map((e) => e.key)
-        .toList() ?? <String>[];
+            .where((e) => isTrue(e.value))
+            .map((e) => e.key)
+            .toList() ??
+        <String>[];
 
     final parking = hasParking
         ? RichInfoConfig(
-            description: practicalInfo?.stationnement ?? 'Parking disponible')
+            description: practicalInfo?.stationnement ??
+                cachedAppLocalizations().eventParkingAvailableFallback)
         : null;
     final food = hasFood
-        ? AccessibilityConfig(available: true, note: practicalInfo?.restaurationInfos)
+        ? AccessibilityConfig(
+            available: true, note: practicalInfo?.restaurationInfos)
         : null;
     final drinks = hasDrinks
-        ? AccessibilityConfig(available: true, note: practicalInfo?.boissonInfos)
+        ? AccessibilityConfig(
+            available: true, note: practicalInfo?.boissonInfos)
         : null;
     final pmr = hasPmr
         ? AccessibilityConfig(available: true, note: practicalInfo?.pmrInfos)
         : null;
-    final wifi = hasWifi
-        ? const AccessibilityConfig(available: true)
-        : null;
+    final wifi = hasWifi ? const AccessibilityConfig(available: true) : null;
     final transport = hasTransport
-        ? const RichInfoConfig(description: 'Transport disponible')
+        ? RichInfoConfig(
+            description: cachedAppLocalizations().eventTransportAvailableFallback)
         : null;
 
-    if (parking == null && food == null && drinks == null && pmr == null
-        && wifi == null && transport == null
-        && otherServices.isEmpty && accessibilityFeatures.isEmpty) {
+    if (parking == null &&
+        food == null &&
+        drinks == null &&
+        pmr == null &&
+        wifi == null &&
+        transport == null &&
+        otherServices.isEmpty &&
+        accessibilityFeatures.isEmpty) {
       return null;
     }
 
@@ -515,34 +604,38 @@ class EventMapper {
     final terms = _resolveTargetAudienceTerms(dto);
     if (terms.isEmpty) return const [EventAudience.all];
 
-    final audiences = terms.map((t) {
-      switch (t.slug.toLowerCase()) {
-        case 'familles':
-        case 'famille':
-        case 'families':
-          return EventAudience.family;
-        case 'enfants':
-        case 'children':
-          return EventAudience.children;
-        case 'adolescents':
-        case 'ados':
-        case 'teenagers':
-          return EventAudience.teenagers;
-        case 'adultes':
-        case 'adults':
-          return EventAudience.adults;
-        case 'seniors':
-          return EventAudience.seniors;
-        default:
-          return EventAudience.all;
-      }
-    }).toSet().toList();
+    final audiences = terms
+        .map((t) {
+          switch (t.slug.toLowerCase()) {
+            case 'familles':
+            case 'famille':
+            case 'families':
+              return EventAudience.family;
+            case 'enfants':
+            case 'children':
+              return EventAudience.children;
+            case 'adolescents':
+            case 'ados':
+            case 'teenagers':
+              return EventAudience.teenagers;
+            case 'adultes':
+            case 'adults':
+              return EventAudience.adults;
+            case 'seniors':
+              return EventAudience.seniors;
+            default:
+              return EventAudience.all;
+          }
+        })
+        .toSet()
+        .toList();
 
     return audiences.isNotEmpty ? audiences : const [EventAudience.all];
   }
 
   /// Parse a slot from the mobile v2 format into CalendarDateSlot
-  static CalendarDateSlot _parseSlotFromMobileFormat(Map<String, dynamic> json) {
+  static CalendarDateSlot _parseSlotFromMobileFormat(
+      Map<String, dynamic> json) {
     return CalendarDateSlot.fromJson(<String, dynamic>{
       'id': json['uuid']?.toString() ?? json['id']?.toString() ?? '',
       'date': json['date']?.toString() ?? '',

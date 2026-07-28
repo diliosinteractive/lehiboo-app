@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../../data/models/quota_dto.dart';
@@ -83,8 +84,10 @@ class QuotaExplanationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final color = _getColor();
     final progress = 1 - quota.usagePercentage;
+    final resetTime = quota.effectiveResetsAt;
 
     return Container(
       decoration: BoxDecoration(
@@ -131,14 +134,14 @@ class QuotaExplanationSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Vos messages avec Petit Boo',
+                          l10n.petitBooQuotaHeaderTitle,
                           style: PetitBooTheme.headingSm.copyWith(
                             fontSize: 18,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Comment fonctionne votre quota',
+                          l10n.petitBooQuotaHeaderSubtitle,
                           style: PetitBooTheme.bodySm.copyWith(
                             color: PetitBooTheme.textSecondary,
                           ),
@@ -181,7 +184,7 @@ class QuotaExplanationSheet extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'restants',
+                          l10n.petitBooQuotaRemainingLabel,
                           style: PetitBooTheme.caption.copyWith(
                             color: PetitBooTheme.textSecondary,
                           ),
@@ -196,7 +199,7 @@ class QuotaExplanationSheet extends StatelessWidget {
 
               // Usage text
               Text(
-                '${quota.used} message${quota.used > 1 ? 's' : ''} utilisé${quota.used > 1 ? 's' : ''} sur ${quota.limit}',
+                l10n.petitBooQuotaUsage(quota.used, quota.limit),
                 style: PetitBooTheme.bodySm.copyWith(
                   color: PetitBooTheme.textSecondary,
                 ),
@@ -208,10 +211,14 @@ class QuotaExplanationSheet extends StatelessWidget {
               _buildExplanationCard(
                 icon: Icons.refresh_rounded,
                 iconColor: PetitBooTheme.success,
-                title: 'Renouvellement ${_getPeriodText()}',
-                description: quota.resetsAt != null
-                    ? 'Votre quota se renouvelle ${_formatResetTime(quota.resetsAt!)}'
-                    : 'Votre quota se renouvelle automatiquement',
+                title: l10n.petitBooQuotaRenewalTitle(
+                  _getPeriodText(context),
+                ),
+                description: resetTime != null
+                    ? l10n.petitBooQuotaRenewsAt(
+                        _formatResetTime(context, resetTime),
+                      )
+                    : l10n.petitBooQuotaRenewsAutomatically,
               ),
 
               const SizedBox(height: 12),
@@ -219,8 +226,8 @@ class QuotaExplanationSheet extends StatelessWidget {
               _buildExplanationCard(
                 icon: Icons.lightbulb_outline_rounded,
                 iconColor: PetitBooTheme.warning,
-                title: 'Astuce',
-                description: 'Posez des questions précises pour obtenir des réponses plus pertinentes et économiser vos messages !',
+                title: l10n.petitBooQuotaTipTitle,
+                description: l10n.petitBooQuotaTipDescription,
               ),
 
               const SizedBox(height: 12),
@@ -228,8 +235,8 @@ class QuotaExplanationSheet extends StatelessWidget {
               _buildExplanationCard(
                 icon: Icons.auto_awesome_rounded,
                 iconColor: PetitBooTheme.primary,
-                title: 'Pourquoi un quota ?',
-                description: 'Petit Boo utilise une IA avancée pour vous aider. Le quota nous permet de garantir un service de qualité pour tous.',
+                title: l10n.petitBooQuotaWhyTitle,
+                description: l10n.petitBooQuotaWhyDescription,
               ),
 
               const SizedBox(height: 24),
@@ -247,9 +254,9 @@ class QuotaExplanationSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'J\'ai compris',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  child: Text(
+                    l10n.petitBooQuotaUnderstood,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -319,44 +326,48 @@ class QuotaExplanationSheet extends StatelessWidget {
     return PetitBooTheme.primary;
   }
 
-  String _getPeriodText() {
+  String _getPeriodText(BuildContext context) {
+    final l10n = context.l10n;
+
     switch (quota.period) {
       case 'daily':
-        return 'quotidien';
+        return l10n.petitBooQuotaPeriodDaily;
       case 'weekly':
-        return 'hebdomadaire';
+        return l10n.petitBooQuotaPeriodWeekly;
       case 'monthly':
-        return 'mensuel';
+        return l10n.petitBooQuotaPeriodMonthly;
       default:
-        return 'automatique';
+        return l10n.petitBooQuotaPeriodAutomatic;
     }
   }
 
-  String _formatResetTime(String isoTime) {
+  String _formatResetTime(BuildContext context, String isoTime) {
+    final l10n = context.l10n;
+
     try {
       final resetTime = DateTime.parse(isoTime);
       final now = DateTime.now();
       final difference = resetTime.difference(now);
 
       if (difference.isNegative) {
-        return 'très bientôt';
+        return l10n.petitBooQuotaResetVerySoon;
       }
 
       if (difference.inDays > 1) {
-        return 'dans ${difference.inDays} jours';
+        return l10n.petitBooQuotaResetInDays(difference.inDays);
       } else if (difference.inDays == 1) {
-        return 'demain';
+        return l10n.petitBooQuotaResetTomorrow;
       } else if (difference.inHours > 1) {
-        return 'dans ${difference.inHours} heures';
+        return l10n.petitBooQuotaResetInHours(difference.inHours);
       } else if (difference.inHours == 1) {
-        return 'dans 1 heure';
-      } else if (difference.inMinutes > 1) {
-        return 'dans ${difference.inMinutes} minutes';
+        return l10n.petitBooQuotaResetInOneHour;
+      } else if (difference.inMinutes >= 1) {
+        return l10n.petitBooQuotaResetInMinutes(difference.inMinutes);
       } else {
-        return 'dans quelques instants';
+        return l10n.petitBooQuotaResetSoon;
       }
     } catch (e) {
-      return 'automatiquement';
+      return l10n.petitBooQuotaResetAutomatically;
     }
   }
 }
@@ -542,8 +553,8 @@ class QuotaDisplay extends StatelessWidget {
                 color: HbColors.brandPrimary,
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Message Quota',
+              Text(
+                context.l10n.petitBooQuotaDisplayTitle,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -571,10 +582,12 @@ class QuotaDisplay extends StatelessWidget {
               minHeight: 8,
             ),
           ),
-          if (quota.resetsAt != null) ...[
+          if (quota.effectiveResetsAt != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Resets: ${_formatResetTime(quota.resetsAt!)}',
+              context.l10n.petitBooQuotaDisplayResets(
+                _formatResetTime(context, quota.effectiveResetsAt!),
+              ),
               style: TextStyle(
                 fontSize: 12,
                 color: HbColors.textSecondary,
@@ -592,20 +605,24 @@ class QuotaDisplay extends StatelessWidget {
     return HbColors.success;
   }
 
-  String _formatResetTime(String isoTime) {
+  String _formatResetTime(BuildContext context, String isoTime) {
+    final l10n = context.l10n;
+
     try {
       final resetTime = DateTime.parse(isoTime);
       final now = DateTime.now();
       final difference = resetTime.difference(now);
 
       if (difference.inHours > 24) {
-        return 'in ${difference.inDays} days';
+        return l10n.petitBooQuotaResetInDays(difference.inDays);
       } else if (difference.inHours > 0) {
-        return 'in ${difference.inHours} hours';
-      } else if (difference.inMinutes > 0) {
-        return 'in ${difference.inMinutes} minutes';
+        return difference.inHours == 1
+            ? l10n.petitBooQuotaResetInOneHour
+            : l10n.petitBooQuotaResetInHours(difference.inHours);
+      } else if (difference.inMinutes >= 1) {
+        return l10n.petitBooQuotaResetInMinutes(difference.inMinutes);
       } else {
-        return 'soon';
+        return l10n.petitBooQuotaResetSoon;
       }
     } catch (e) {
       return isoTime;

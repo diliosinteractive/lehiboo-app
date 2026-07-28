@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_status_badge.dart';
 
@@ -32,9 +33,9 @@ class BookingHeroHeader extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
-                  errorWidget: (_, __, ___) => _buildPlaceholder(),
+                  errorWidget: (_, __, ___) => _buildPlaceholder(context),
                 )
-              : _buildPlaceholder(),
+              : _buildPlaceholder(context),
         ),
         // Gradient overlay at bottom
         Positioned(
@@ -49,7 +50,7 @@ class BookingHeroHeader extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  Colors.black.withOpacity(0.5),
+                  Colors.black.withValues(alpha: 0.5),
                 ],
               ),
             ),
@@ -69,7 +70,7 @@ class BookingHeroHeader extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -86,7 +87,7 @@ class BookingHeroHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(BuildContext context) {
     return Container(
       color: HbColors.orangePastel,
       child: Center(
@@ -96,13 +97,13 @@ class BookingHeroHeader extends StatelessWidget {
             Icon(
               Icons.event,
               size: 64,
-              color: HbColors.brandPrimary.withOpacity(0.5),
+              color: HbColors.brandPrimary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 8),
             Text(
-              'Événement',
+              context.l10n.bookingEventFallback,
               style: TextStyle(
-                color: HbColors.brandPrimary.withOpacity(0.5),
+                color: HbColors.brandPrimary.withValues(alpha: 0.5),
                 fontWeight: FontWeight.w600,
               ),
             ),

@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/noop_analytics_service.dart';
 import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 import 'package:lehiboo/domain/entities/user.dart';
-import 'package:lehiboo/features/alerts/data/repositories/alerts_repository_impl.dart';
 import 'package:lehiboo/features/alerts/domain/entities/alert.dart';
 import 'package:lehiboo/features/alerts/domain/repositories/alerts_repository.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
-import 'package:lehiboo/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/gamification/data/models/daily_reward.dart';
@@ -119,6 +119,8 @@ class _FakeGamificationRepository implements GamificationRepository {
   Future<TransactionsListResult> getTransactions({
     String? type,
     String? pillar,
+    int? page,
+    int? perPage,
   }) async {
     transactionCalls++;
     return TransactionsListResult(
@@ -231,8 +233,11 @@ void main() {
     alertsRepository.nextResponse = pendingAlerts;
     final container = ProviderContainer(
       overrides: [
-        authRepositoryImplProvider.overrideWithValue(authRepository),
-        alertsRepositoryImplProvider.overrideWithValue(alertsRepository),
+        analyticsServiceProvider.overrideWithValue(
+          const NoopAnalyticsService(),
+        ),
+        authRepositoryProvider.overrideWithValue(authRepository),
+        alertsRepositoryProvider.overrideWithValue(alertsRepository),
       ],
     );
     addTearDown(container.dispose);
@@ -270,7 +275,10 @@ void main() {
     gamificationRepository.nextWalletResponse = coldLoad;
     final container = ProviderContainer(
       overrides: [
-        authRepositoryImplProvider.overrideWithValue(authRepository),
+        analyticsServiceProvider.overrideWithValue(
+          const NoopAnalyticsService(),
+        ),
+        authRepositoryProvider.overrideWithValue(authRepository),
         gamificationRepositoryProvider.overrideWithValue(
           gamificationRepository,
         ),
@@ -316,9 +324,12 @@ void main() {
       final membershipsRepository = _FakeMembershipsRepository();
       final container = ProviderContainer(
         overrides: [
+          analyticsServiceProvider.overrideWithValue(
+            const NoopAnalyticsService(),
+          ),
           sharedPreferencesProvider.overrideWithValue(preferences),
-          authRepositoryImplProvider.overrideWithValue(authRepository),
-          alertsRepositoryImplProvider.overrideWithValue(alertsRepository),
+          authRepositoryProvider.overrideWithValue(authRepository),
+          alertsRepositoryProvider.overrideWithValue(alertsRepository),
           gamificationRepositoryProvider.overrideWithValue(
             gamificationRepository,
           ),
@@ -411,6 +422,7 @@ void main() {
           .read(purchaseNotifierProvider.notifier)
           .createPurchase('package');
       await container.read(chatUnlockProvider.notifier).unlock();
+      await _awaitGamificationReads(container);
       expect(container.read(wheelSpinProvider).valueOrNull?.prize, 11);
       expect(
         container.read(purchaseNotifierProvider).valueOrNull?.paymentIntentId,

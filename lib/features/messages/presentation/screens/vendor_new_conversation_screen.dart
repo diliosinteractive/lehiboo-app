@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
@@ -27,13 +28,9 @@ class VendorNewConversationScreen extends ConsumerStatefulWidget {
 class _VendorNewConversationScreenState
     extends ConsumerState<VendorNewConversationScreen> {
   static const _primaryColor = Color(0xFFFF601F);
-  static const _maxFiles = 3;
-  static const _maxFileBytes = 5 * 1024 * 1024;
-  static const _allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
 
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
-  final List<XFile> _attachments = [];
 
   ConversationParticipant? _selectedParticipant;
   AcceptedPartner? _selectedPartner;
@@ -74,85 +71,6 @@ class _VendorNewConversationScreenState
     }
   }
 
-  // ── Attachments ──────────────────────────────────────────────────────────────
-
-  Future<void> _pickAttachment() async {
-    if (_attachments.length >= _maxFiles) {
-      _showSnack('Maximum $_maxFiles fichiers par message.');
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Photo / Image'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await _pickImages();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf),
-              title: const Text('Document (PDF)'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await _pickPdf();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickImages() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickMultiImage();
-    await _addFiles(picked.map((x) => XFile(x.path, name: x.name)).toList());
-  }
-
-  Future<void> _pickPdf() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-      allowMultiple: false,
-    );
-    if (result == null || result.files.isEmpty) return;
-    final path = result.files.single.path;
-    final name = result.files.single.name;
-    if (path != null) await _addFiles([XFile(path, name: name)]);
-  }
-
-  Future<void> _addFiles(List<XFile> files) async {
-    for (final file in files) {
-      if (_attachments.length >= _maxFiles) {
-        _showSnack('Maximum $_maxFiles fichiers.');
-        break;
-      }
-      final ext = file.name.split('.').last.toLowerCase();
-      if (!_allowedExtensions.contains(ext)) {
-        _showSnack('Type non supporté : .$ext');
-        continue;
-      }
-      final size = await file.length();
-      if (size > _maxFileBytes) {
-        _showSnack('${file.name} dépasse 5 Mo.');
-        continue;
-      }
-      setState(() => _attachments.add(file));
-    }
-  }
-
-  void _showSnack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
-  }
-
   // ── Search modals ─────────────────────────────────────────────────────────────
 
   Future<void> _openParticipantSearch() async {
@@ -184,12 +102,12 @@ class _VendorNewConversationScreenState
 
     if (widget.mode != VendorConversationMode.supportThread) {
       if (subject.isEmpty) {
-        setState(() => _error = 'Le sujet est requis.');
+        setState(() => _error = context.l10n.messagesSubjectRequired);
         return;
       }
     }
     if (message.isEmpty) {
-      setState(() => _error = 'Le message est requis.');
+      setState(() => _error = context.l10n.messagesMessageRequired);
       return;
     }
 
@@ -200,7 +118,6 @@ class _VendorNewConversationScreenState
 
     try {
       final repo = ref.read(messagesRepositoryProvider);
-      final files = _attachments.isNotEmpty ? _attachments : null;
       late final String convUuid;
       late final bool isOrgRoute;
 
@@ -208,7 +125,7 @@ class _VendorNewConversationScreenState
         case VendorConversationMode.toParticipant:
           if (_selectedParticipant == null) {
             setState(() {
-              _error = 'Veuillez sélectionner un participant.';
+              _error = context.l10n.messagesSelectParticipantRequired;
               _submitting = false;
             });
             return;
@@ -217,7 +134,6 @@ class _VendorNewConversationScreenState
             participantId: _selectedParticipant!.id,
             subject: subject,
             message: message,
-            attachments: files,
           );
           convUuid = conv.uuid;
           isOrgRoute = false;
@@ -225,7 +141,7 @@ class _VendorNewConversationScreenState
         case VendorConversationMode.toPartner:
           if (_selectedPartner == null) {
             setState(() {
-              _error = 'Veuillez sélectionner un partenaire.';
+              _error = context.l10n.messagesSelectPartnerRequired;
               _submitting = false;
             });
             return;
@@ -234,16 +150,15 @@ class _VendorNewConversationScreenState
             partnerOrganizationId: _selectedPartner!.id,
             subject: subject,
             message: message,
-            attachments: files,
           );
           convUuid = conv.uuid;
           isOrgRoute = true;
 
         case VendorConversationMode.supportThread:
           final conv = await repo.createVendorSupportThread(
-            subject: subject.isEmpty ? 'Support' : subject,
+            subject:
+                subject.isEmpty ? context.l10n.messagesTabSupport : subject,
             message: message,
-            attachments: files,
           );
           convUuid = conv.uuid;
           isOrgRoute = false;
@@ -257,27 +172,33 @@ class _VendorNewConversationScreenState
       }
     } catch (e) {
       if (mounted) {
+        final isForbidden = e is DioException && e.response?.statusCode == 403;
         setState(() {
           _submitting = false;
-          _error = e.toString().contains('403')
-              ? _forbiddenMessage()
-              : 'Erreur : $e';
+          _error = isForbidden
+              ? _forbiddenMessage(context)
+              : context.l10n.messagesLoadError(
+                  ApiResponseHandler.extractError(e),
+                );
         });
       }
     }
   }
 
-  String _forbiddenMessage() => switch (widget.mode) {
+  String _forbiddenMessage(BuildContext context) => switch (widget.mode) {
         VendorConversationMode.toParticipant =>
-          'Ce participant n\'a pas d\'interaction avec votre organisation.',
-        VendorConversationMode.toPartner => 'Ce partenariat n\'est pas accepté.',
-        _ => 'Accès refusé.',
+          context.l10n.messagesVendorParticipantAccessDenied,
+        VendorConversationMode.toPartner =>
+          context.l10n.messagesVendorPartnerAccessDenied,
+        _ => context.l10n.messagesAccessDenied,
       };
 
-  String get _title => switch (widget.mode) {
-        VendorConversationMode.toParticipant => 'Contacter un participant',
-        VendorConversationMode.toPartner => 'Contacter un partenaire',
-        VendorConversationMode.supportThread => 'Ticket support',
+  String _title(BuildContext context) => switch (widget.mode) {
+        VendorConversationMode.toParticipant =>
+          context.l10n.messagesContactParticipant,
+        VendorConversationMode.toPartner => context.l10n.messagesContactPartner,
+        VendorConversationMode.supportThread =>
+          context.l10n.messagesSupportTicket,
       };
 
   // ── Build ─────────────────────────────────────────────────────────────────────
@@ -285,7 +206,7 @@ class _VendorNewConversationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_title)),
+      appBar: AppBar(title: Text(_title(context))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -304,8 +225,14 @@ class _VendorNewConversationScreenState
               maxLength: 100,
               decoration: InputDecoration(
                 labelText: widget.mode == VendorConversationMode.supportThread
-                    ? 'Sujet (optionnel)'
-                    : 'Sujet *',
+                    ? _optionalLabel(
+                        context,
+                        context.l10n.messagesSubjectLabel,
+                      )
+                    : _requiredLabel(
+                        context,
+                        context.l10n.messagesSubjectLabel,
+                      ),
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -315,14 +242,13 @@ class _VendorNewConversationScreenState
               maxLines: 5,
               maxLength: 2000,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Message *',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText:
+                    _requiredLabel(context, context.l10n.messagesMessageLabel),
+                border: const OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
             ),
-            const SizedBox(height: 8),
-            _buildAttachmentsSection(),
             if (_error != null) ...[
               const SizedBox(height: 8),
               Text(_error!, style: const TextStyle(color: Colors.red)),
@@ -342,7 +268,7 @@ class _VendorNewConversationScreenState
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Envoyer'),
+                  : Text(context.l10n.messagesSend),
             ),
           ],
         ),
@@ -356,7 +282,7 @@ class _VendorNewConversationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Participant *',
+        Text(_requiredLabel(context, context.l10n.messagesParticipantLabel),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
         if (_selectedParticipant != null)
@@ -368,7 +294,7 @@ class _VendorNewConversationScreenState
           )
         else
           _SearchTapField(
-            hint: 'Rechercher un participant…',
+            hint: context.l10n.messagesSearchParticipantPlaceholder,
             icon: Icons.person_search_outlined,
             onTap: _openParticipantSearch,
           ),
@@ -380,7 +306,7 @@ class _VendorNewConversationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Partenaire *',
+        Text(_requiredLabel(context, context.l10n.messagesPartnerLabel),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         const SizedBox(height: 8),
         if (_selectedPartner != null)
@@ -398,69 +324,19 @@ class _VendorNewConversationScreenState
                   ),
                 )
               : _SearchTapField(
-                  hint: 'Rechercher un partenaire…',
+                  hint: context.l10n.messagesSearchPartnerPlaceholder,
                   icon: Icons.handshake_outlined,
                   onTap: _openPartnerSearch,
                 ),
       ],
     );
   }
-
-  Widget _buildAttachmentsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Pièces jointes',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(width: 6),
-            Text('(max 3 • 5 Mo)',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-            const Spacer(),
-            if (_attachments.length < _maxFiles)
-              TextButton.icon(
-                onPressed: _pickAttachment,
-                icon: const Icon(Icons.attach_file, size: 16),
-                label: const Text('Ajouter', style: TextStyle(fontSize: 13)),
-                style: TextButton.styleFrom(foregroundColor: _primaryColor),
-              ),
-          ],
-        ),
-        if (_attachments.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: _attachments.map((f) {
-              final isPdf = f.name.toLowerCase().endsWith('.pdf');
-              return Chip(
-                avatar: Icon(
-                  isPdf ? Icons.picture_as_pdf : Icons.image_outlined,
-                  size: 14,
-                  color: isPdf ? Colors.red.shade400 : Colors.blue.shade400,
-                ),
-                label: Text(f.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11)),
-                deleteIcon: const Icon(Icons.close, size: 14),
-                onDeleted: () => setState(() => _attachments.remove(f)),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              );
-            }).toList(),
-          ),
-        ],
-      ],
-    );
-  }
 }
+
+String _requiredLabel(BuildContext context, String label) => '$label *';
+
+String _optionalLabel(BuildContext context, String label) =>
+    '$label ${context.l10n.messagesOptionalLabel}';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared selector UI
@@ -496,8 +372,7 @@ class _SearchTapField extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(hint,
-                  style:
-                      TextStyle(color: Colors.grey.shade500, fontSize: 15)),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 15)),
             ),
             Icon(icon, size: 18, color: _primaryColor),
           ],
@@ -554,12 +429,11 @@ class _SelectedCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
                 if (subtitle != null)
                   Text(subtitle!,
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600)),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600)),
               ],
             ),
           ),
@@ -668,21 +542,23 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
       builder: (_, scrollCtrl) => Column(
         children: [
           _dragHandle(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Text('Rechercher un participant',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              context.l10n.messagesSearchParticipantTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
             child: Text(
-              'Seuls les participants ayant interagi avec votre organisation.',
+              context.l10n.messagesVendorParticipantSearchHelper,
               style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: _searchField(onChanged: _onChanged),
+            child: _searchField(context, onChanged: _onChanged),
           ),
           Expanded(
             child: _loading
@@ -691,19 +567,18 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
                     ? _emptyState(
                         icon: Icons.person_search,
                         label: !_searched
-                            ? 'Chargement…'
-                            : 'Aucun résultat',
+                            ? context.l10n.commonLoading
+                            : context.l10n.messagesNoResults,
                       )
                     : ListView.builder(
                         controller: scrollCtrl,
                         itemCount: _results.length,
                         itemBuilder: (ctx, i) {
                           final p = _results[i];
-                          final hasUrl = p.avatarUrl != null &&
-                              p.avatarUrl!.isNotEmpty;
-                          final initial = p.name.isNotEmpty
-                              ? p.name[0].toUpperCase()
-                              : '?';
+                          final hasUrl =
+                              p.avatarUrl != null && p.avatarUrl!.isNotEmpty;
+                          final initial =
+                              p.name.isNotEmpty ? p.name[0].toUpperCase() : '?';
                           return ListTile(
                             leading: CircleAvatar(
                               backgroundColor:
@@ -723,8 +598,7 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
                                     fontWeight: FontWeight.w500)),
                             subtitle: Text(p.email,
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600)),
+                                    fontSize: 12, color: Colors.grey.shade600)),
                             onTap: () => Navigator.pop(ctx, p),
                           );
                         },
@@ -773,14 +647,17 @@ class _PartnerSearchSheetState extends State<_PartnerSearchSheet> {
       builder: (_, scrollCtrl) => Column(
         children: [
           _dragHandle(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text('Rechercher un partenaire',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              context.l10n.messagesSearchPartnerTitle,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: _searchField(
+              context,
               onChanged: (v) => setState(() => _query = v.trim()),
             ),
           ),
@@ -789,8 +666,8 @@ class _PartnerSearchSheetState extends State<_PartnerSearchSheet> {
                 ? _emptyState(
                     icon: Icons.handshake_outlined,
                     label: widget.partners.isEmpty
-                        ? 'Aucun partenaire accepté'
-                        : 'Aucun résultat',
+                        ? context.l10n.messagesNoAcceptedPartners
+                        : context.l10n.messagesNoResults,
                   )
                 : ListView.builder(
                     controller: scrollCtrl,
@@ -804,11 +681,9 @@ class _PartnerSearchSheetState extends State<_PartnerSearchSheet> {
                           : '?';
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor:
-                              _primaryColor.withValues(alpha: 0.1),
-                          backgroundImage: hasUrl
-                              ? CachedNetworkImageProvider(url)
-                              : null,
+                          backgroundColor: _primaryColor.withValues(alpha: 0.1),
+                          backgroundImage:
+                              hasUrl ? CachedNetworkImageProvider(url) : null,
                           child: hasUrl
                               ? null
                               : Text(initial,
@@ -822,8 +697,7 @@ class _PartnerSearchSheetState extends State<_PartnerSearchSheet> {
                         subtitle: p.organizationName != p.companyName
                             ? Text(p.organizationName,
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600))
+                                    fontSize: 12, color: Colors.grey.shade600))
                             : null,
                         onTap: () => Navigator.pop(ctx, p),
                       );
@@ -854,12 +728,15 @@ Widget _dragHandle() => Center(
       ),
     );
 
-Widget _searchField({required void Function(String) onChanged}) {
+Widget _searchField(
+  BuildContext context, {
+  required void Function(String) onChanged,
+}) {
   return TextField(
     autofocus: true,
     onChanged: onChanged,
     decoration: InputDecoration(
-      hintText: 'Rechercher…',
+      hintText: context.l10n.messagesSearchHint,
       prefixIcon: const Icon(Icons.search, size: 20),
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(vertical: 10),

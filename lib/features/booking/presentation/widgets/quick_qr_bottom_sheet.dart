@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/large_qr_code.dart';
@@ -64,7 +65,8 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
         opaque: false,
         pageBuilder: (_, __, ___) => FullscreenQRSheet(
           qrData: _getQRData(),
-          title: widget.booking.activity?.title ?? 'Billet',
+          title:
+              widget.booking.activity?.title ?? context.l10n.bookingTicketTitle,
           subtitle: _getSubtitle(),
         ),
         transitionsBuilder: (_, animation, __, child) {
@@ -88,10 +90,13 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
   String _getSubtitle() {
     final activity = widget.booking.activity;
     final slot = widget.booking.slot;
+    final startDateTime = slot?.startDateTime;
 
-    if (slot?.startDateTime != null) {
-      final date = DateFormat('E d MMM', 'fr_FR').format(slot!.startDateTime!);
-      final time = DateFormat('HH:mm').format(slot.startDateTime!);
+    if (startDateTime != null) {
+      final date = context
+          .appDateFormat('E d MMM', enPattern: 'EEE, MMM d')
+          .format(startDateTime);
+      final time = DateFormat('HH:mm').format(startDateTime);
       return '$date • $time';
     }
 
@@ -102,16 +107,20 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
   Widget build(BuildContext context) {
     final activity = widget.booking.activity;
     final slot = widget.booking.slot;
+    final startDateTime = slot?.startDateTime;
 
-    final dateStr = slot?.startDateTime != null
-        ? DateFormat('EEEE d MMMM', 'fr_FR').format(slot!.startDateTime!)
+    final dateStr = startDateTime != null
+        ? context
+            .appDateFormat('EEEE d MMMM', enPattern: 'EEEE, MMMM d')
+            .format(startDateTime)
         : '';
-    final timeStr = slot?.startDateTime != null
-        ? DateFormat('HH:mm').format(slot!.startDateTime!)
-        : '';
+    final timeStr =
+        startDateTime != null ? DateFormat('HH:mm').format(startDateTime) : '';
 
     final ticketCount = widget.booking.quantity ?? 1;
-    final ticketLabel = ticketCount > 1 ? '$ticketCount billets' : '1 billet';
+    final ticketLabel = ticketCount > 1
+        ? context.l10n.bookingTicketPlural(ticketCount)
+        : context.l10n.bookingTicketSingular;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.65,
@@ -138,7 +147,7 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
                 children: [
                   // Title
                   Text(
-                    activity?.title ?? 'Réservation',
+                    activity?.title ?? context.l10n.bookingReservationFallback,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -191,7 +200,7 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
                   const SizedBox(height: 16),
                   // Hint text
                   Text(
-                    'Appuyez sur le QR code pour l\'afficher en plein écran',
+                    context.l10n.bookingQrTapFullscreenHint,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade500,
@@ -222,9 +231,9 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Fermer',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.commonClose,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),

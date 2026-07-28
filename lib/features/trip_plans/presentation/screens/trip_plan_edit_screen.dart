@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/trip_plan.dart';
 import '../providers/trip_plans_provider.dart';
 
@@ -56,7 +57,7 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
       loading: () => Scaffold(
         backgroundColor: const Color(0xFFF7F8FA),
         appBar: AppBar(
-          title: const Text('Modifier'),
+          title: Text(context.l10n.tripPlanEditTitle),
           backgroundColor: Colors.white,
           elevation: 0,
           foregroundColor: const Color(0xFF2D3748),
@@ -65,12 +66,13 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
             onPressed: () => context.pop(),
           ),
         ),
-        body: const Center(child: CircularProgressIndicator(color: _accentColor)),
+        body:
+            const Center(child: CircularProgressIndicator(color: _accentColor)),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: const Color(0xFFF7F8FA),
         appBar: AppBar(
-          title: const Text('Modifier'),
+          title: Text(context.l10n.tripPlanEditTitle),
           backgroundColor: Colors.white,
           elevation: 0,
           foregroundColor: const Color(0xFF2D3748),
@@ -79,7 +81,13 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
             onPressed: () => context.pop(),
           ),
         ),
-        body: Center(child: Text('Erreur: $e')),
+        body: Center(
+          child: Text(
+            context.l10n.tripPlanEditErrorWithMessage(
+              ApiResponseHandler.extractError(e),
+            ),
+          ),
+        ),
       ),
       data: (plans) {
         final plan = plans.where((p) => p.uuid == widget.planUuid).firstOrNull;
@@ -87,7 +95,7 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
           return Scaffold(
             backgroundColor: const Color(0xFFF7F8FA),
             appBar: AppBar(
-              title: const Text('Modifier'),
+              title: Text(context.l10n.tripPlanEditTitle),
               backgroundColor: Colors.white,
               elevation: 0,
               foregroundColor: const Color(0xFF2D3748),
@@ -96,7 +104,7 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
                 onPressed: () => context.pop(),
               ),
             ),
-            body: const Center(child: Text('Plan non trouvé')),
+            body: Center(child: Text(context.l10n.tripPlanEditNotFound)),
           );
         }
 
@@ -117,7 +125,7 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
-        title: const Text('Modifier'),
+        title: Text(context.l10n.tripPlanEditTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: const Color(0xFF2D3748),
@@ -138,7 +146,7 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
                     ),
                   )
                 : Text(
-                    'Enregistrer',
+                    context.l10n.commonSave,
                     style: TextStyle(
                       color: _hasChanges ? _accentColor : Colors.grey,
                       fontWeight: FontWeight.w600,
@@ -147,132 +155,140 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
           ),
         ],
       ),
-      body: !_initialized
-          ? const Center(child: CircularProgressIndicator(color: _accentColor))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title field
-                  _buildSectionLabel('Titre'),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: !_initialized
+            ? const Center(
+                child: CircularProgressIndicator(color: _accentColor))
+            : SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title field
+                    _buildSectionLabel(context.l10n.tripPlanEditTitleLabel),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _titleController,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: _accentColor, width: 2),
+                        ),
+                        hintText: context.l10n.tripPlanEditNameHint,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: _accentColor, width: 2),
-                      ),
-                      hintText: 'Nom de la sortie',
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
+                      onChanged: (_) => _checkChanges(),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Date picker
+                    _buildSectionLabel(context.l10n.tripPlanEditDateLabel),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _pickDate,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today,
+                              size: 20,
+                              color: _accentColor,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _selectedDate != null
+                                  ? _formatDate(context, _selectedDate!)
+                                  : context.l10n.tripPlanEditSelectDate,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: _selectedDate != null
+                                    ? const Color(0xFF2D3748)
+                                    : Colors.grey[500],
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              Icons.chevron_right,
+                              color: Colors.grey[400],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    onChanged: (_) => _checkChanges(),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // Date picker
-                  _buildSectionLabel('Date'),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: _pickDate,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
+                    // Stops reorderable list
+                    Row(
+                      children: [
+                        _buildSectionLabel(context.l10n.tripPlanEditStopsLabel),
+                        const Spacer(),
+                        Text(
+                          context.l10n.tripPlanEditReorderHint,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade200),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            size: 20,
-                            color: _accentColor,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            _selectedDate != null
-                                ? _formatDate(_selectedDate!)
-                                : 'Sélectionner une date',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: _selectedDate != null
-                                  ? const Color(0xFF2D3748)
-                                  : Colors.grey[500],
-                            ),
-                          ),
-                          const Spacer(),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Colors.grey[400],
-                          ),
-                        ],
+                      clipBehavior: Clip.antiAlias,
+                      child: ReorderableListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        buildDefaultDragHandles: false,
+                        itemCount: _stops.length,
+                        onReorder: _onReorder,
+                        itemBuilder: (context, index) {
+                          final stop = _stops[index];
+                          return _buildStopItem(
+                            key: ValueKey(stop.eventUuid ?? index),
+                            index: index,
+                            stop: stop,
+                          );
+                        },
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Stops reorderable list
-                  Row(
-                    children: [
-                      _buildSectionLabel('Étapes'),
-                      const Spacer(),
-                      Text(
-                        'Glisser pour réorganiser',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ReorderableListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      buildDefaultDragHandles: false,
-                      itemCount: _stops.length,
-                      onReorder: _onReorder,
-                      itemBuilder: (context, index) {
-                        final stop = _stops[index];
-                        return _buildStopItem(
-                          key: ValueKey(stop.eventUuid ?? index),
-                          index: index,
-                          stop: stop,
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 
@@ -345,7 +361,7 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    stop.eventTitle,
+                    _stopTitle(context, stop),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -432,7 +448,8 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
   }
 
   void _checkChanges() {
-    final plan = ref.read(tripPlansProvider.notifier).getTripPlan(widget.planUuid);
+    final plan =
+        ref.read(tripPlansProvider.notifier).getTripPlan(widget.planUuid);
     if (plan == null) return;
 
     final titleChanged = _titleController.text != plan.title;
@@ -465,16 +482,16 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
           .toList();
 
       await ref.read(tripPlansProvider.notifier).updateTripPlan(
-        uuid: widget.planUuid,
-        title: _titleController.text.trim(),
-        plannedDate: _selectedDate,
-        stopsOrder: stopsOrder.isNotEmpty ? stopsOrder : null,
-      );
+            uuid: widget.planUuid,
+            title: _titleController.text.trim(),
+            plannedDate: _selectedDate,
+            stopsOrder: stopsOrder.isNotEmpty ? stopsOrder : null,
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Plan mis à jour'),
+            content: Text(context.l10n.tripPlanEditUpdatedSnack),
             behavior: SnackBarBehavior.floating,
             backgroundColor: _accentColor,
             shape: RoundedRectangleBorder(
@@ -488,7 +505,11 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text(
+              context.l10n.tripPlanEditErrorWithMessage(
+                ApiResponseHandler.extractError(e),
+              ),
+            ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
             shape: RoundedRectangleBorder(
@@ -509,14 +530,15 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Abandonner les modifications ?'),
-          content: const Text('Vos modifications ne seront pas sauvegardées.'),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(context.l10n.tripPlanEditDiscardChangesTitle),
+          content: Text(context.l10n.tripPlanEditDiscardChangesBody),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Continuer',
+                context.l10n.commonContinue,
                 style: TextStyle(color: Colors.grey[600]),
               ),
             ),
@@ -532,7 +554,7 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Abandonner'),
+              child: Text(context.l10n.tripPlanEditDiscard),
             ),
           ],
         ),
@@ -542,9 +564,17 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    final formatter = DateFormat('EEEE d MMMM yyyy', 'fr_FR');
+  String _formatDate(BuildContext context, DateTime date) {
+    final formatter = context.appDateFormat(
+      'EEEE d MMMM yyyy',
+      enPattern: 'EEEE, MMMM d, yyyy',
+    );
     final formatted = formatter.format(date);
     return formatted[0].toUpperCase() + formatted.substring(1);
+  }
+
+  String _stopTitle(BuildContext context, TripStop stop) {
+    final title = stop.eventTitle.trim();
+    return title.isEmpty ? context.l10n.tripPlansStopFallback : title;
   }
 }

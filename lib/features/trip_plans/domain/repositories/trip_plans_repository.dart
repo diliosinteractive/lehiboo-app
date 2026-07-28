@@ -1,4 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../entities/trip_plan.dart';
+
+final tripPlansRepositoryProvider = Provider<TripPlansRepository>((ref) {
+  throw UnimplementedError('tripPlansRepositoryProvider not initialized');
+});
 
 abstract class TripPlansRepository {
   /// Get all saved trip plans

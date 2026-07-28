@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 class FilterScreen extends StatelessWidget {
   const FilterScreen({super.key});
 
@@ -7,10 +9,10 @@ class FilterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Filtres'),
+        title: Text(context.l10n.searchFiltersTitle),
       ),
-      body: const Center(
-        child: Text('Écran des filtres'),
+      body: Center(
+        child: Text(context.l10n.searchFiltersTitle),
       ),
     );
   }

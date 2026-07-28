@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../data/models/ticket_summary_dto.dart';
 
@@ -11,12 +11,15 @@ class TicketSummaryCard extends StatelessWidget {
 
   const TicketSummaryCard({super.key, required this.ticket});
 
-  String? _formatSlotStart() {
+  String? _formatSlotStart(BuildContext context) {
     final raw = ticket.slotStartDatetime;
     if (raw == null || raw.isEmpty) return null;
     final dt = DateTime.tryParse(raw);
     if (dt == null) return raw;
-    final fmt = DateFormat("EEE d MMM 'à' HH:mm", 'fr_FR');
+    final fmt = context.appDateFormat(
+      "EEE d MMM 'à' HH:mm",
+      enPattern: 'EEE, MMM d, HH:mm',
+    );
     return fmt.format(dt.toLocal());
   }
 
@@ -25,7 +28,7 @@ class TicketSummaryCard extends StatelessWidget {
     final attendee = ticket.attendeeFullName;
     final eventTitle = ticket.eventTitle ?? '—';
     final ticketType = ticket.ticketTypeName;
-    final slotLabel = _formatSlotStart();
+    final slotLabel = _formatSlotStart(context);
 
     return Container(
       padding: const EdgeInsets.all(16),

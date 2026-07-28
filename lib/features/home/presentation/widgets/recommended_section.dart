@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 
 class RecommendedSection extends StatelessWidget {
   const RecommendedSection({super.key});
@@ -14,16 +15,16 @@ class RecommendedSection extends StatelessWidget {
         'date': '15-17 juin',
         'price': '25€',
         'image': 'https://picsum.photos/300/200?random=10',
-        'tag': 'NOUVEAU',
+        'tag': context.l10n.eventNew,
         'tagColor': Colors.green,
       },
       {
         'id': '2',
         'title': 'Exposition d\'art moderne',
         'date': '14 juin - 30 août',
-        'price': 'Gratuit',
+        'price': context.l10n.commonFree,
         'image': 'https://picsum.photos/300/200?random=11',
-        'tag': 'POPULAIRE',
+        'tag': context.l10n.homeRecommendedPopularTag,
         'tagColor': Colors.orange,
       },
       {
@@ -32,7 +33,7 @@ class RecommendedSection extends StatelessWidget {
         'date': '20 juin',
         'price': '45€',
         'image': 'https://picsum.photos/300/200?random=12',
-        'tag': 'DERNIÈRES PLACES',
+        'tag': context.l10n.homeRecommendedLastSpotsTag,
         'tagColor': Colors.red,
       },
     ];
@@ -45,8 +46,8 @@ class RecommendedSection extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Recommandés pour vous',
+              Text(
+                context.l10n.routeRecommendedTitle,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -55,8 +56,8 @@ class RecommendedSection extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () => context.push('/recommended'),
-                child: const Text(
-                  'Voir tout',
+                child: Text(
+                  context.l10n.homeViewAll,
                   style: TextStyle(
                     color: Color(0xFFFF601F),
                     fontWeight: FontWeight.w600,
@@ -186,15 +187,18 @@ class RecommendedSection extends StatelessWidget {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: event['price'] == 'Gratuit'
+                                    color: event['price'] ==
+                                            context.l10n.commonFree
                                         ? Colors.green.withOpacity(0.1)
-                                        : const Color(0xFFFF601F).withOpacity(0.1),
+                                        : const Color(0xFFFF601F)
+                                            .withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
                                     event['price'] as String,
                                     style: TextStyle(
-                                      color: event['price'] == 'Gratuit'
+                                      color: event['price'] ==
+                                              context.l10n.commonFree
                                           ? Colors.green[700]
                                           : const Color(0xFFFF601F),
                                       fontSize: 12,

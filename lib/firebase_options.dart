@@ -42,7 +42,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBqGSXYTnOvwFjqZUmYGf9yMFgAdEDEUPQ',
-    appId: '1:44786304054:android:ed9fc5833d30d57ac74497',
+    appId: '1:44786304054:android:ac1b33ef6dc4f152c74497',
     messagingSenderId: '44786304054',
     projectId: 'lehiboo-77c35',
     storageBucket: 'lehiboo-77c35.firebasestorage.app',

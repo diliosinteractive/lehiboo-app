@@ -1,10 +1,26 @@
+import 'dart:ui' show PlatformDispatcher;
+
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'firebase_options.dart';
+import 'core/analytics/analytics_consent.dart';
+import 'core/analytics/analytics_event.dart';
+import 'core/analytics/analytics_provider.dart';
+import 'core/analytics/analytics_service.dart';
+import 'core/analytics/noop_analytics_service.dart';
+import 'core/constants/app_constants.dart';
+import 'core/deeplinks/deeplink_listener.dart';
+import 'core/l10n/app_locale.dart';
+import 'core/l10n/l10n.dart';
 import 'core/themes/app_theme.dart';
+import 'core/services/push_notification_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'routes/app_router.dart';
 import 'config/dio_client.dart';
@@ -20,6 +36,14 @@ import 'features/booking/data/repositories/api_booking_repository_impl.dart';
 import 'features/booking/presentation/controllers/booking_flow_controller.dart'; // For bookingRepositoryProvider
 import 'features/favorites/data/repositories/favorites_repository_impl.dart';
 import 'features/favorites/domain/repositories/favorites_repository.dart';
+import 'features/alerts/data/repositories/alerts_repository_impl.dart';
+import 'features/alerts/domain/repositories/alerts_repository.dart';
+import 'features/notifications/data/repositories/in_app_notifications_repository_impl.dart';
+import 'features/notifications/domain/repositories/in_app_notifications_repository.dart';
+import 'features/stories/data/repositories/stories_repository_impl.dart';
+import 'features/stories/domain/repositories/stories_repository.dart';
+import 'features/trip_plans/data/repositories/trip_plans_repository_impl.dart';
+import 'features/trip_plans/domain/repositories/trip_plans_repository.dart';
 import 'features/blog/data/repositories/blog_repository_impl.dart';
 import 'features/blog/domain/repositories/blog_repository.dart';
 import 'features/petit_boo/data/repositories/petit_boo_repository_impl.dart';
@@ -43,13 +67,20 @@ import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 
 // Push Notifications
 import 'features/notifications/presentation/providers/push_notification_provider.dart';
+import 'features/notifications/presentation/providers/in_app_notifications_provider.dart';
 
 // Messages realtime (Pusher WebSocket — eagerly initialised at app boot)
 import 'features/messages/presentation/providers/messages_realtime_provider.dart';
+// Conversation list (eagerly initialised to sync badge count and realtime events)
+import 'features/messages/presentation/providers/conversations_provider.dart';
+import 'features/messages/presentation/providers/vendor_conversations_provider.dart';
+import 'features/messages/presentation/providers/admin_conversations_provider.dart';
+import 'domain/entities/user.dart';
 
 // Hibons session heartbeat (auto-credits 10 H after 3 min foreground/day)
 import 'features/gamification/presentation/providers/session_heartbeat_provider.dart';
 import 'features/gamification/application/hibons_service.dart';
+import 'features/gamification/application/hibons_auth_sync.dart';
 import 'features/gamification/presentation/widgets/hibons_animation_coordinator.dart';
 
 // Vendor check-in (rehydrate active org + clear on logout)
@@ -60,17 +91,21 @@ const bool useRealApi = true;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('fr_FR', null);
+  await Future.wait([
+    initializeDateFormatting('fr_FR', null),
+    initializeDateFormatting('en_US', null),
+  ]);
 
   // Load environment variables
   // Use dart-define to specify environment: --dart-define=ENV=production or --dart-define=ENV=staging
-  const String environment = String.fromEnvironment('ENV', defaultValue: 'development');
+  const String environment =
+      String.fromEnvironment('ENV', defaultValue: 'development');
   final String envFile = switch (environment) {
     'production' => '.env.production',
     'staging' => '.env.staging',
-    _ => '.env.development',
+    _ => '.env.staging',
   };
-  
+
   try {
     await dotenv.load(fileName: envFile);
     debugPrint('Loaded environment: $environment from $envFile');
@@ -86,25 +121,52 @@ void main() async {
   // Initialize Dio client
   DioClient.initialize();
 
-  // Initialize Firebase
+  // Initialize Firebase + Analytics service (push notifications are handled
+  // by OneSignal below).
+  //
+  // RGPD: la collecte est désactivée par défaut au boot. Elle sera activée
+  // par le consent gate (étape 7). La user property `env` permet de filtrer
+  // dev/staging/prod sur un même projet Firebase (lehiboo-77c35).
+  late final AnalyticsService analytics;
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    analytics = FirebaseAnalyticsService(FirebaseAnalytics.instance);
+    await _configureCrashlytics();
     debugPrint('Firebase initialized successfully');
   } catch (e) {
+    analytics = const NoopAnalyticsService();
     debugPrint('Firebase initialization failed: $e');
+  }
+  await analytics.setCollectionEnabled(false);
+  await analytics.setUserProperty(
+    AnalyticsUserProperty.env,
+    EnvConfig.environment,
+  );
+
+  // Initialize OneSignal BEFORE runApp() so the click listener is registered
+  // in time to capture cold-start payloads (app launched from a notification
+  // tap). The listener stashes the payload; PushNotificationService.initialize()
+  // replays it once the DeepLinkService is built.
+  final oneSignalAppId = EnvConfig.oneSignalAppId;
+  if (oneSignalAppId.isNotEmpty) {
+    try {
+      OneSignal.initialize(oneSignalAppId);
+      OneSignal.Notifications.addClickListener(oneSignalColdStartClickListener);
+      markOneSignalConfigured();
+      debugPrint('OneSignal initialized (app_id=$oneSignalAppId)');
+    } catch (e) {
+      debugPrint('OneSignal initialization failed: $e');
+    }
+  } else {
+    debugPrint('Warning: ONESIGNAL_APP_ID not configured — push disabled');
   }
 
   // Initialize Stripe
   final stripeKey = EnvConfig.stripePublishableKey;
   if (stripeKey.isNotEmpty) {
     Stripe.publishableKey = stripeKey;
-    // Required on iOS to prevent PaymentSheet hangs during the Apple Pay
-    // capability check, even when Apple Pay isn't enabled. Use a stable
-    // placeholder; replace with a real Apple-registered ID if/when Apple
-    // Pay is enabled.
-    Stripe.merchantIdentifier = 'merchant.com.lehiboo.app';
     try {
       await Stripe.instance.applySettings();
       debugPrint('Stripe initialized successfully');
@@ -118,11 +180,37 @@ void main() async {
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
 
+  // User property `app_locale` — résolution eager de la même logique que
+  // AppLocaleController pour avoir la valeur dès le boot (le controller la
+  // re-poussera ensuite à chaque setLanguageCode).
+  final bootLocale = resolveAppLocale(
+    savedLanguageCode: prefs.getString(AppConstants.keyLanguage),
+    platformLocale: PlatformDispatcher.instance.locale,
+  );
+  await analytics.setUserProperty(
+    AnalyticsUserProperty.appLocale,
+    bootLocale.languageCode,
+  );
+
+  // Consent RGPD — relit le statut persisté et applique la collecte en
+  // conséquence. Si `unknown` ou `denied`, on reste sur le no-op activé plus
+  // haut. Si `granted`, on (ré)active la collecte. Le consent gate modal de
+  // MainScaffold prend le relais pour faire trancher les nouveaux users.
+  final bootConsent = readConsentStatusFromPrefs(prefs);
+  if (bootConsent == AnalyticsConsentStatus.granted) {
+    await analytics.setCollectionEnabled(true);
+  }
+  await analytics.setUserProperty(
+    AnalyticsUserProperty.notifConsent,
+    bootConsent.name,
+  );
+
   // Container Riverpod explicite pour permettre à HibonsService (singleton)
   // de lire l'état depuis l'intercepteur Dio (qui n'a pas de Ref).
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
+      analyticsServiceProvider.overrideWithValue(analytics),
       ...(useRealApi ? _getRealApiOverrides() : _getFakeDataOverrides()),
     ],
   );
@@ -135,6 +223,30 @@ void main() async {
       child: const LeHibooApp(),
     ),
   );
+}
+
+Future<void> _configureCrashlytics() async {
+  final crashlytics = FirebaseCrashlytics.instance;
+  final crashlyticsEnabled = AppConstants.enableCrashlytics &&
+      EnvConfig.crashlyticsEnabled &&
+      !kDebugMode;
+
+  await crashlytics.setCrashlyticsCollectionEnabled(crashlyticsEnabled);
+
+  if (!crashlyticsEnabled) {
+    debugPrint('Firebase Crashlytics disabled');
+    return;
+  }
+
+  await crashlytics.setCustomKey('env', EnvConfig.environment);
+
+  FlutterError.onError = crashlytics.recordFlutterFatalError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    crashlytics.recordError(error, stack, fatal: true);
+    return true;
+  };
+
+  debugPrint('Firebase Crashlytics enabled');
 }
 
 /// Real API repositories - connects to LeHiboo WordPress API v2
@@ -155,6 +267,22 @@ List<Override> _getRealApiOverrides() {
     // Favorites Repository
     favoritesRepositoryProvider.overrideWith((ref) {
       return ref.read(favoritesRepositoryImplProvider);
+    }),
+    // Alerts Repository
+    alertsRepositoryProvider.overrideWith((ref) {
+      return ref.read(alertsRepositoryImplProvider);
+    }),
+    // Stories Repository
+    storiesRepositoryProvider.overrideWith((ref) {
+      return ref.read(storiesRepositoryImplProvider);
+    }),
+    // Trip Plans Repository
+    tripPlansRepositoryProvider.overrideWith((ref) {
+      return ref.read(tripPlansRepositoryImplProvider);
+    }),
+    // In-app Notifications Repository
+    inAppNotificationsRepositoryProvider.overrideWith((ref) {
+      return ref.read(inAppNotificationsRepositoryImplProvider);
     }),
     // Blog Repository
     blogRepositoryProvider.overrideWith((ref) {
@@ -188,8 +316,26 @@ List<Override> _getRealApiOverrides() {
 /// Fake data repositories - for offline testing and development
 List<Override> _getFakeDataOverrides() {
   return [
+    authRepositoryProvider.overrideWith((ref) {
+      return ref.read(authRepositoryImplProvider);
+    }),
     activityRepositoryProvider.overrideWithValue(FakeActivityRepositoryImpl()),
     bookingRepositoryProvider.overrideWithValue(FakeBookingRepositoryImpl()),
+    favoritesRepositoryProvider.overrideWith((ref) {
+      return ref.read(favoritesRepositoryImplProvider);
+    }),
+    alertsRepositoryProvider.overrideWith((ref) {
+      return ref.read(alertsRepositoryImplProvider);
+    }),
+    storiesRepositoryProvider.overrideWith((ref) {
+      return ref.read(storiesRepositoryImplProvider);
+    }),
+    tripPlansRepositoryProvider.overrideWith((ref) {
+      return ref.read(tripPlansRepositoryImplProvider);
+    }),
+    inAppNotificationsRepositoryProvider.overrideWith((ref) {
+      return ref.read(inAppNotificationsRepositoryImplProvider);
+    }),
   ];
 }
 
@@ -198,23 +344,46 @@ class LeHibooApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(appLocaleControllerProvider);
     final router = ref.watch(routerProvider);
 
     // Wire force logout so the 401 interceptor can trigger auth state change.
-    DioClient.onForceLogout = () => ref.read(authProvider.notifier).forceLogout();
+    DioClient.onForceLogout =
+        () => ref.read(authProvider.notifier).forceLogout();
 
     // Watch push notification provider to initialize on auth state changes
     // The provider will auto-initialize when user logs in and unregister on logout
     ref.watch(pushNotificationProvider);
+    ref.watch(inAppNotificationsProvider);
 
     // Eagerly initialize the Pusher WebSocket so it connects as soon as the
     // user authenticates — not lazily when they navigate to the messages screen.
     // This mirrors the web frontend which subscribes globally at app boot.
     ref.watch(messagesRealtimeProvider);
 
+    // Eagerly initialize the role-appropriate conversation provider when
+    // authenticated so the global unread badge syncs against the correct API.
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    if (authState.status == AuthStatus.authenticated && user != null) {
+      switch (user.role) {
+        case UserRole.partner:
+          ref.watch(vendorConversationsProvider);
+        case UserRole.admin:
+          ref.watch(adminConversationsProvider('user_support'));
+        default:
+          ref.watch(conversationsProvider);
+      }
+    }
+
     // Hibons session heartbeat : observe le lifecycle et envoie 1×/jour après
     // 3 min en foreground si l'user est authentifié.
     ref.watch(sessionHeartbeatProvider);
+
+    // Invalide les providers wallet/balance affichés sur la home dès qu'un
+    // login/logout survient — sinon HibonCounterWidget garde la valeur
+    // cachée du compte précédent.
+    ref.watch(hibonsAuthSyncProvider);
 
     // Vendor check-in: keep the active-org notifier alive for the whole app
     // session so it can rehydrate from secure storage on launch and clear
@@ -225,6 +394,9 @@ class LeHibooApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Le Hiboo',
       debugShowCheckedModeBanner: false,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
@@ -233,8 +405,13 @@ class LeHibooApp extends ConsumerWidget {
       // Le coordinateur écoute HibonsService et déclenche les SnackBars +X Hibons
       // et l'overlay rank-up via les clés globales (rootNavigatorKey,
       // scaffoldMessengerKey) — son BuildContext est au-dessus du Navigator.
-      builder: (context, child) =>
-          HibonsAnimationCoordinator(child: child ?? const SizedBox()),
+      //
+      // DeeplinkListener est monté SOUS MaterialApp.router pour pouvoir appeler
+      // GoRouter.of(context) une fois la navigation prête (Universal Links iOS
+      // + App Links Android).
+      builder: (context, child) => DeeplinkListener(
+        child: HibonsAnimationCoordinator(child: child ?? const SizedBox()),
+      ),
     );
   }
 }

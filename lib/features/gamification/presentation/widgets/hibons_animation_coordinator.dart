@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../routes/app_router.dart';
 import '../../application/hibons_service.dart';
 import '../../data/models/hibons_update.dart';
@@ -60,13 +61,15 @@ class _HibonsAnimationCoordinatorState
   }
 
   void _enqueueToast(HibonsUpdate update) {
-    debugPrint('🪙 HibonsAnimationCoordinator: enqueue toast delta=${update.delta}');
+    debugPrint(
+        '🪙 HibonsAnimationCoordinator: enqueue toast delta=${update.delta}');
     _toastQueue.add(update);
     _drainToastQueue();
   }
 
   Future<void> _drainToastQueue() async {
-    debugPrint('🪙 drain start: showing=$_showingToast queue=${_toastQueue.length} mounted=$mounted');
+    debugPrint(
+        '🪙 drain start: showing=$_showingToast queue=${_toastQueue.length} mounted=$mounted');
     if (_showingToast) {
       debugPrint('🪙 drain: already showing, skip');
       return;
@@ -92,10 +95,22 @@ class _HibonsAnimationCoordinatorState
   void _showToast(HibonsUpdate update) {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger == null) {
-      debugPrint('🪙 HibonsAnimationCoordinator: no messenger, skipping snackbar');
+      debugPrint(
+          '🪙 HibonsAnimationCoordinator: no messenger, skipping snackbar');
       return;
     }
-    debugPrint('🪙 HibonsAnimationCoordinator: showing snackbar delta=${update.delta}');
+    debugPrint(
+      '🪙 HibonsAnimationCoordinator: showing snackbar delta=${update.delta} source=${update.source}',
+    );
+
+    // Règle de fallback (cf. HIBONS_REWARD_MESSAGE_MOBILE_SPEC §"Règle d'affichage mobile") :
+    // reward_message (i18n backend) → animation_label (générique "+N Hibons")
+    // → fallback dur si tout est null.
+    final fallback = update.delta > 0
+        ? context.l10n.gamificationHibonsGainedToast(update.delta)
+        : context.l10n.gamificationHibonsDelta(update.delta);
+    final title = update.rewardMessage ?? update.animationLabel ?? fallback;
+
     if (update.delta > 0) {
       messenger
         ..hideCurrentSnackBar()
@@ -106,10 +121,12 @@ class _HibonsAnimationCoordinatorState
                 const Icon(Icons.monetization_on,
                     color: Color(0xFFFFB300), size: 22),
                 const SizedBox(width: 12),
-                Text(
-                  '+${update.delta} Hibons 🪙 gagnés !',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -128,7 +145,7 @@ class _HibonsAnimationCoordinatorState
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text('${update.delta} Hibons'),
+            content: Text(title),
             backgroundColor: const Color(0xFF6B7280),
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,

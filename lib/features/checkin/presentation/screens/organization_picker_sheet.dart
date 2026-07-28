@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../memberships/data/models/membership_dto.dart';
 import '../../../memberships/presentation/providers/membership_state_providers.dart';
@@ -37,6 +38,7 @@ class _OrgPickerSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final memberships = ref.watch(vendorMembershipsProvider);
     final asyncList = ref.watch(myMembershipsListProvider);
+    final l10n = context.l10n;
 
     return SafeArea(
       child: Padding(
@@ -56,18 +58,18 @@ class _OrgPickerSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Choisir une organisation',
-              style: TextStyle(
+            Text(
+              l10n.checkinChooseOrganizationTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: HbColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
-              "Le scanner enverra les billets à l'organisation sélectionnée.",
-              style: TextStyle(
+            Text(
+              l10n.checkinChooseOrganizationBody,
+              style: const TextStyle(
                 fontSize: 13,
                 color: HbColors.textSecondary,
               ),
@@ -127,14 +129,15 @@ class _OrgTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final org = membership.organization;
+    final l10n = context.l10n;
     // When the backend doesn't ship per-row role yet, don't render a
-    // potentially misleading label like "Membre" for a vendor staff —
-    // show the org's address (or nothing) instead.
+    // potentially misleading viewer label for a vendor staff member; show the
+    // org's address (or nothing) instead.
     final subtitle = switch (membership.role) {
-      MembershipRole.owner => 'Propriétaire',
-      MembershipRole.admin => 'Administrateur',
-      MembershipRole.staff => 'Équipe',
-      MembershipRole.viewer => 'Membre',
+      MembershipRole.owner => l10n.checkinRoleOwner,
+      MembershipRole.admin => l10n.checkinRoleAdmin,
+      MembershipRole.staff => l10n.checkinRoleStaff,
+      MembershipRole.viewer => l10n.checkinRoleViewer,
       null => org?.address ?? '',
     };
     return InkWell(
@@ -146,9 +149,10 @@ class _OrgTile extends StatelessWidget {
             CircleAvatar(
               radius: 22,
               backgroundColor: HbColors.surfaceElevated,
-              backgroundImage: org?.logoOrUrl != null && org!.logoOrUrl!.isNotEmpty
-                  ? NetworkImage(org.logoOrUrl!)
-                  : null,
+              backgroundImage:
+                  org?.logoOrUrl != null && org!.logoOrUrl!.isNotEmpty
+                      ? NetworkImage(org.logoOrUrl!)
+                      : null,
               child: org?.logoOrUrl == null || org!.logoOrUrl!.isEmpty
                   ? const Icon(Icons.business, color: HbColors.textSecondary)
                   : null,
@@ -191,6 +195,8 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
@@ -198,26 +204,28 @@ class _EmptyState extends StatelessWidget {
           const Icon(Icons.workspaces_outline,
               size: 40, color: HbColors.textSecondary),
           const SizedBox(height: 12),
-          const Text(
-            'Aucune organisation vendeur trouvée',
+          Text(
+            l10n.checkinNoVendorOrganizationTitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: HbColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            "Si vous attendiez d'apparaître ici, contactez le support — "
-            "votre profil n'est peut-être pas encore lié à une organisation.",
+          Text(
+            l10n.checkinNoVendorOrganizationBody,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: HbColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 13,
+              color: HbColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 16),
           OutlinedButton(
             onPressed: refresh,
-            child: const Text('Actualiser'),
+            child: Text(l10n.checkinRefresh),
           ),
         ],
       ),

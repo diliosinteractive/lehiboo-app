@@ -22,18 +22,19 @@ class EnvConfig {
   static String get apiHost => dotenv.env['API_HOST'] ?? '';
 
   // Website URLs
-  static String get websiteUrl => dotenv.env['WEBSITE_URL'] ?? 'https://lehiboo.fr';
+  static String get websiteUrl =>
+      dotenv.env['WEBSITE_URL'] ?? 'https://lehiboo.com';
 
-  static String get privacyPolicyUrl =>
-      dotenv.env['PRIVACY_POLICY_URL'] ?? 'https://lehiboo.fr/privacy';
-
-  static String get termsOfServiceUrl =>
-      dotenv.env['TERMS_OF_SERVICE_URL'] ?? 'https://lehiboo.fr/terms';
+  /// URL publique d'un événement, utilisée pour le partage natif.
+  static String eventShareUrl(String slug) => '$websiteUrl/events/$slug';
 
   // Firebase Configuration
   static String get firebaseProjectId => dotenv.env['FIREBASE_PROJECT_ID'] ?? '';
   static String get firebaseMessagingSenderId => dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '';
   static String get firebaseAppId => dotenv.env['FIREBASE_APP_ID'] ?? '';
+
+  // OneSignal Push Notifications
+  static String get oneSignalAppId => dotenv.env['ONESIGNAL_APP_ID'] ?? '';
 
   // Google Maps
   static String get googleMapsApiKey => dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';

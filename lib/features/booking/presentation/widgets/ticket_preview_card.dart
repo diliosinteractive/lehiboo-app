@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 
 enum TicketStatus {
   active,
@@ -10,19 +12,6 @@ enum TicketStatus {
 }
 
 extension TicketStatusExtension on TicketStatus {
-  String get label {
-    switch (this) {
-      case TicketStatus.active:
-        return 'Actif';
-      case TicketStatus.used:
-        return 'Utilisé';
-      case TicketStatus.cancelled:
-        return 'Annulé';
-      case TicketStatus.expired:
-        return 'Expiré';
-    }
-  }
-
   Color get color {
     switch (this) {
       case TicketStatus.active:
@@ -69,8 +58,10 @@ class TicketPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = TicketStatusExtension.fromString(ticket.status);
-    final displayName = attendeeName ?? 'Participant';
-    final displayType = ticketTypeName ?? ticket.ticketType ?? 'Standard';
+    final displayName = attendeeName ?? context.l10n.bookingParticipantDefault;
+    final displayType = ticketTypeName ??
+        ticket.ticketType ??
+        context.l10n.bookingStandardTicket;
     final realName = [
       ticket.attendeeFirstName?.trim(),
       ticket.attendeeLastName?.trim(),
@@ -86,7 +77,7 @@ class TicketPreviewCard extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -99,7 +90,7 @@ class TicketPreviewCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: HbColors.brandPrimary.withOpacity(0.1),
+                color: HbColors.brandPrimary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -147,7 +138,7 @@ class TicketPreviewCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: status.color.withOpacity(0.12),
+                color: status.color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -163,7 +154,7 @@ class TicketPreviewCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    status.label,
+                    context.bookingTicketStatusLabel(ticket.status),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -208,7 +199,7 @@ class TicketsSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -223,7 +214,7 @@ class TicketsSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: HbColors.brandPrimary.withOpacity(0.1),
+                  color: HbColors.brandPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -234,7 +225,7 @@ class TicketsSection extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'MES BILLETS (${tickets.length})',
+                context.l10n.bookingMyTicketsCount(tickets.length),
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -256,7 +247,7 @@ class TicketsSection extends StatelessWidget {
               child: TicketPreviewCard(
                 ticket: ticket,
                 onTap: () => onTicketTap(ticket),
-                attendeeName: 'Participant ${index + 1}',
+                attendeeName: context.l10n.bookingParticipantNumber(index + 1),
               ),
             );
           }),
@@ -268,7 +259,7 @@ class TicketsSection extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onDownloadAll,
                 icon: const Icon(Icons.download, size: 18),
-                label: const Text('Télécharger tous les billets'),
+                label: Text(context.l10n.bookingDownloadAllTickets),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: HbColors.brandPrimary,
                   side: const BorderSide(color: HbColors.brandPrimary),

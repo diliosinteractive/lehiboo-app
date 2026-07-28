@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../events/domain/entities/event_question.dart';
 import 'question_status_badge.dart';
@@ -22,10 +23,11 @@ class UserQuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final eventTitle = question.event?.title.isNotEmpty == true
         ? question.event!.title
-        : 'Événement supprimé';
+        : l10n.userQuestionsDeletedEvent;
     final isDeleted = question.event?.isDeleted == true;
 
     return Material(
@@ -133,10 +135,11 @@ class _AnswerBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final org = answer.organizationName.isNotEmpty
         ? answer.organizationName
-        : 'Organisateur';
+        : l10n.userQuestionsOrganizerFallback;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -214,7 +217,7 @@ class _RejectedNotice extends StatelessWidget {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              'Cette question a été rejetée par la modération.',
+              context.l10n.userQuestionsRejectedNotice,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: HbColors.error,
                   ),

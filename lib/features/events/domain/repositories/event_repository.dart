@@ -1,13 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../entities/event.dart';
+import '../entities/popular_city.dart';
 import '../../data/models/event_dto.dart';
-import '../../data/models/event_availability_dto.dart';
+import '../../data/models/event_reference_data_dto.dart';
 import '../../data/models/home_feed_response_dto.dart' show HomeFeedDataDto;
+import '../../data/models/search_suggestions_dto.dart';
 
 import '../../../../domain/entities/city.dart';
 
 abstract class EventRepository {
   Future<List<City>> getCities();
+
+  /// Curated cities for the home "Villes populaires" section.
+  /// Pass `fallback: true` for the spec §5 fallback query (no `featured_only`).
+  Future<List<PopularCity>> getFeaturedCities({bool fallback = false});
   Future<EventsResult> getEvents({
     int page = 1,
     int perPage = 20,
@@ -16,13 +22,25 @@ abstract class EventRepository {
     String? categorySlug,
     String? thematique,
     String? city,
-    String? location, // event_loc taxonomy slug
+    String? location, // Mobile alias for city
     String? dateFrom,
     String? dateTo,
     double? priceMin,
     double? priceMax,
     bool? freeOnly,
+    int? cityRadiusKm,
     bool? familyFriendly,
+    bool? accessiblePmr,
+    bool? onlineOnly,
+    bool? inPersonOnly,
+    String? publicFilters,
+    String? targetAudiences,
+    String? eventTag,
+    String? specialEvents,
+    String? emotions,
+    bool? availableOnly,
+    String? locationType,
+    String? venueType,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -34,6 +52,7 @@ abstract class EventRepository {
     double? southWestLat,
     double? southWestLng,
     bool? lightweight,
+    String? sort,
     String? orderBy,
     String? order,
     bool includePast = true,
@@ -41,11 +60,11 @@ abstract class EventRepository {
 
   Future<Event> getEvent(String identifier);
 
-  Future<List<EventCategoryDto>> getCategories();
+  Future<Event> verifyEventPassword(String identifier, String password);
+
+  Future<List<EventCategoryDto>> getCategories({bool homeOnly = false});
 
   Future<List<ThematiqueDto>> getThematiques();
-
-
 
   Future<HomeFeedDataDto> getHomeFeed({
     double? lat,
@@ -55,6 +74,16 @@ abstract class EventRepository {
   });
 
   Future<FiltersResponseDto> getFilters();
+
+  Future<EventReferenceDataDto> getEventReferenceData({
+    bool onlyOnline = true,
+  });
+
+  Future<SearchSuggestionsDto> getSearchSuggestions({
+    required String query,
+    required List<String> types,
+    int limit = 5,
+  });
 }
 
 class EventsResult {

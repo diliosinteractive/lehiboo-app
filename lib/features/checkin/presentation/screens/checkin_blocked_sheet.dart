@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../data/models/ticket_summary_dto.dart';
 import '../../domain/entities/checkin_blocker.dart';
@@ -41,6 +42,8 @@ class _BlockedSheetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -80,7 +83,7 @@ class _BlockedSheetContent extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  reason.title,
+                  reason.localizedTitle(l10n),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -92,7 +95,7 @@ class _BlockedSheetContent extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            reason.subtitle,
+            reason.localizedSubtitle(l10n),
             style: const TextStyle(
               fontSize: 14,
               color: HbColors.textPrimary,
@@ -118,10 +121,37 @@ class _BlockedSheetContent extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
+            child: Text(l10n.commonClose),
           ),
         ],
       ),
     );
   }
+}
+
+extension _CheckinBlockerCopy on CheckinBlocker {
+  String localizedTitle(AppLocalizations l10n) => switch (this) {
+        CheckinBlocker.ticketCancelled =>
+          l10n.checkinBlockedTicketCancelledTitle,
+        CheckinBlocker.ticketRefunded => l10n.checkinBlockedTicketRefundedTitle,
+        CheckinBlocker.ticketTransferred =>
+          l10n.checkinBlockedTicketTransferredTitle,
+        CheckinBlocker.slotNotStarted => l10n.checkinBlockedSlotNotStartedTitle,
+        CheckinBlocker.wrongEvent => l10n.checkinBlockedWrongEventTitle,
+        CheckinBlocker.unauthorized => l10n.checkinBlockedUnauthorizedTitle,
+        CheckinBlocker.ticketNotFound => l10n.checkinBlockedTicketNotFoundTitle,
+        CheckinBlocker.unknown => l10n.checkinBlockedUnknownTitle,
+      };
+
+  String localizedSubtitle(AppLocalizations l10n) => switch (this) {
+        CheckinBlocker.ticketCancelled => l10n.checkinBlockedDoNotAdmit,
+        CheckinBlocker.ticketRefunded => l10n.checkinBlockedDoNotAdmit,
+        CheckinBlocker.ticketTransferred =>
+          l10n.checkinBlockedTicketTransferredBody,
+        CheckinBlocker.slotNotStarted => l10n.checkinBlockedSlotNotStartedBody,
+        CheckinBlocker.wrongEvent => l10n.checkinBlockedWrongEventBody,
+        CheckinBlocker.unauthorized => l10n.checkinBlockedUnauthorizedBody,
+        CheckinBlocker.ticketNotFound => l10n.checkinBlockedTicketNotFoundBody,
+        CheckinBlocker.unknown => l10n.checkinBlockedUnknownBody,
+      };
 }

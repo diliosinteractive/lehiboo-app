@@ -10,11 +10,16 @@ class OrganizerAvatar extends StatelessWidget {
   final String fallbackName;
   final double size;
 
+  /// Whether to draw the white ring + drop-shadow. Disable it for flat,
+  /// shadow-free layouts (e.g. the organizers directory cards).
+  final bool showShadow;
+
   const OrganizerAvatar({
     super.key,
     required this.logoUrl,
     required this.fallbackName,
     this.size = 72,
+    this.showShadow = true,
   });
 
   @override
@@ -28,14 +33,16 @@ class OrganizerAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white,
-        border: Border.all(color: Colors.white, width: 4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: Colors.white, width: showShadow ? 4 : 0),
+        boxShadow: showShadow
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
       ),
       child: ClipOval(
         child: logoUrl != null && logoUrl!.isNotEmpty

@@ -1,0 +1,333 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../../../core/l10n/l10n.dart';
+import '../../../../core/themes/colors.dart';
+import '../providers/organizers_directory_providers.dart';
+import '../widgets/organizer_directory_tile.dart';
+
+/// Public organizers directory — paginated, searchable and sortable list of
+/// verified organizers (`GET /organizers`).
+///
+/// Entry points: the bottom-nav "Organisateurs" tab for logged-out users, and
+/// a Profile menu item for authenticated users.
+class OrganizersDirectoryScreen extends ConsumerStatefulWidget {
+  const OrganizersDirectoryScreen({super.key});
+
+  @override
+  ConsumerState<OrganizersDirectoryScreen> createState() =>
+      _OrganizersDirectoryScreenState();
+}
+
+class _OrganizersDirectoryScreenState
+    extends ConsumerState<OrganizersDirectoryScreen> {
+  final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
+  Timer? _searchDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 240) {
+      ref.read(organizersDirectoryControllerProvider.notifier).loadMore();
+    }
+  }
+
+  /// Debounce keystrokes so we don't fire one network call per character.
+  /// 350 ms matches the in-house search bars elsewhere in the app.
+  void _onSearchChanged(String value) {
+    setState(() {}); // refresh suffix clear-icon visibility
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      ref.read(organizersDirectoryControllerProvider.notifier).setSearch(value);
+    });
+  }
+
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _onSearchChanged,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: context.l10n.organizersDirectorySearchHint,
+          hintStyle: GoogleFonts.figtree(
+            fontSize: 14,
+            color: Colors.grey[500],
+          ),
+          prefixIcon: Icon(Icons.search, color: Colors.grey[600], size: 20),
+          suffixIcon: _searchController.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: Icon(Icons.close, color: Colors.grey[600], size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                    _searchDebounce?.cancel();
+                    ref
+                        .read(organizersDirectoryControllerProvider.notifier)
+                        .setSearch('');
+                    setState(() {}); // refresh suffix-icon visibility
+                  },
+                ),
+          filled: true,
+          fillColor: Colors.grey[100],
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        style: GoogleFonts.figtree(fontSize: 14),
+      ),
+    );
+  }
+
+  Widget _buildSortChips(OrganizersSort current) {
+    Widget chip(OrganizersSort value, String label) {
+      final selected = value == current;
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: ChoiceChip(
+          label: Text(label),
+          selected: selected,
+          onSelected: (_) => ref
+              .read(organizersDirectoryControllerProvider.notifier)
+              .setSort(value),
+          showCheckmark: false,
+          labelStyle: GoogleFonts.figtree(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? Colors.white : HbColors.textPrimary,
+          ),
+          backgroundColor: Colors.grey[100],
+          selectedColor: HbColors.brandPrimary,
+          side: BorderSide.none,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.swap_vert_rounded,
+                    size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  context.l10n.organizersSortLabel,
+                  style: GoogleFonts.figtree(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  chip(OrganizersSort.name, context.l10n.organizersSortName),
+                  chip(OrganizersSort.eventsCount,
+                      context.l10n.organizersSortEvents),
+                  chip(OrganizersSort.followersCount,
+                      context.l10n.organizersSortFollowers),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final asyncState = ref.watch(organizersDirectoryControllerProvider);
+    final currentSort =
+        ref.watch(organizersDirectoryControllerProvider.notifier).sort;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          context.l10n.organizersDirectoryTitle,
+          style: const TextStyle(
+            color: HbColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: HbColors.textPrimary),
+      ),
+      body: Column(
+        children: [
+          _buildSearchField(),
+          _buildSortChips(currentSort),
+          Expanded(
+            child: asyncState.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: HbColors.brandPrimary),
+              ),
+              error: (e, _) => _ErrorState(
+                onRetry: () => ref
+                    .read(organizersDirectoryControllerProvider.notifier)
+                    .refresh(),
+              ),
+              data: (state) {
+                if (state.items.isEmpty) {
+                  return _EmptyState(
+                      isSearch: _searchController.text.isNotEmpty);
+                }
+                return RefreshIndicator(
+                  color: HbColors.brandPrimary,
+                  onRefresh: () => ref
+                      .read(organizersDirectoryControllerProvider.notifier)
+                      .refresh(),
+                  child: ListView.separated(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                    itemCount:
+                        state.items.length + (state.isLoadingMore ? 1 : 0),
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      if (index == state.items.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: HbColors.brandPrimary,
+                            ),
+                          ),
+                        );
+                      }
+                      return OrganizerDirectoryTile(
+                        organizer: state.items[index],
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final bool isSearch;
+
+  const _EmptyState({this.isSearch = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSearch ? Icons.search_off : Icons.storefront_outlined,
+              size: 56,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              context.l10n.organizersDirectoryEmptyTitle,
+              style: GoogleFonts.montserrat(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: HbColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.l10n.organizersDirectoryEmptyBody,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.figtree(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 56, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              context.l10n.organizerFollowedLoadError,
+              style: GoogleFonts.figtree(
+                fontSize: 16,
+                color: Colors.grey[700],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(context.l10n.commonRetry),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: HbColors.brandPrimary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

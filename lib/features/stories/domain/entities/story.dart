@@ -11,8 +11,10 @@ class Story extends Equatable {
   final String type; // "reserved" or "optional"
   final DateTime startDate;
   final DateTime endDate;
+  final DateTime? eventStartDate;
   final int slotPosition;
   final int impressionsCount;
+  final DateTime? updatedAt;
 
   // Flattened from nested event object
   final String eventUuid;
@@ -38,8 +40,10 @@ class Story extends Equatable {
     required this.type,
     required this.startDate,
     required this.endDate,
+    this.eventStartDate,
     required this.slotPosition,
     required this.impressionsCount,
+    this.updatedAt,
     required this.eventUuid,
     required this.eventSlug,
     required this.eventTitle,
@@ -51,6 +55,11 @@ class Story extends Equatable {
     this.categoryName,
   });
 
+  String get viewedStateKey {
+    final version = updatedAt?.toUtc().toIso8601String();
+    return version == null ? uuid : '$uuid:$version';
+  }
+
   @override
-  List<Object?> get props => [uuid];
+  List<Object?> get props => [uuid, updatedAt];
 }

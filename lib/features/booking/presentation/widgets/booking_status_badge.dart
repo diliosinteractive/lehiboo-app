@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 
 enum BookingStatus {
   pending,
@@ -10,21 +11,6 @@ enum BookingStatus {
 }
 
 extension BookingStatusExtension on BookingStatus {
-  String get label {
-    switch (this) {
-      case BookingStatus.pending:
-        return 'En attente';
-      case BookingStatus.confirmed:
-        return 'Confirmé';
-      case BookingStatus.cancelled:
-        return 'Annulé';
-      case BookingStatus.completed:
-        return 'Terminé';
-      case BookingStatus.refunded:
-        return 'Remboursé';
-    }
-  }
-
   Color get color {
     switch (this) {
       case BookingStatus.pending:
@@ -41,7 +27,7 @@ extension BookingStatusExtension on BookingStatus {
   }
 
   Color get backgroundColor {
-    return color.withOpacity(0.12);
+    return color.withValues(alpha: 0.12);
   }
 
   IconData get icon {
@@ -89,7 +75,8 @@ class BookingStatusBadge extends StatelessWidget {
     this.compact = false,
   });
 
-  factory BookingStatusBadge.fromString(String? statusString, {bool showIcon = true, bool compact = false}) {
+  factory BookingStatusBadge.fromString(String? statusString,
+      {bool showIcon = true, bool compact = false}) {
     return BookingStatusBadge(
       status: BookingStatusExtension.fromString(statusString),
       showIcon: showIcon,
@@ -120,7 +107,7 @@ class BookingStatusBadge extends StatelessWidget {
             SizedBox(width: compact ? 4 : 6),
           ],
           Text(
-            status.label,
+            context.bookingStatusLabel(status.name),
             style: TextStyle(
               fontSize: compact ? 11 : 12,
               fontWeight: FontWeight.w600,

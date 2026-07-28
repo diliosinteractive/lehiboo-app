@@ -1,9 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/events/presentation/utils/open_event.dart';
 
 /// Carousel horizontal d'événements similaires
 ///
@@ -16,21 +18,23 @@ class EventSimilarCarousel extends StatelessWidget {
   final List<Event> events;
   final String? currentEventId;
   final VoidCallback? onViewAll;
+  final String? title;
+  final bool showPriceBadge;
 
   const EventSimilarCarousel({
     super.key,
     required this.events,
     this.currentEventId,
     this.onViewAll,
+    this.title,
+    this.showPriceBadge = true,
   });
 
   @override
   Widget build(BuildContext context) {
     // Filtrer l'événement actuel
-    final filteredEvents = events
-        .where((e) => e.id != currentEventId)
-        .take(10)
-        .toList();
+    final filteredEvents =
+        events.where((e) => e.id != currentEventId).take(10).toList();
 
     if (filteredEvents.isEmpty) return const SizedBox.shrink();
 
@@ -43,9 +47,9 @@ class EventSimilarCarousel extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Événements similaires',
-                style: TextStyle(
+              Text(
+                title ?? context.l10n.eventSimilarEvents,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: HbColors.textPrimary,
@@ -54,9 +58,9 @@ class EventSimilarCarousel extends StatelessWidget {
               if (onViewAll != null)
                 TextButton(
                   onPressed: onViewAll,
-                  child: const Text(
-                    'Voir tout',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.eventShowMore,
+                    style: const TextStyle(
                       color: HbColors.brandPrimary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -80,6 +84,7 @@ class EventSimilarCarousel extends StatelessWidget {
                 child: _SimilarEventCard(
                   event: filteredEvents[index],
                   index: index,
+                  showPriceBadge: showPriceBadge,
                 ),
               );
             },
@@ -90,17 +95,19 @@ class EventSimilarCarousel extends StatelessWidget {
   }
 }
 
-class _SimilarEventCard extends StatelessWidget {
+class _SimilarEventCard extends ConsumerWidget {
   final Event event;
   final int index;
+  final bool showPriceBadge;
 
   const _SimilarEventCard({
     required this.event,
     required this.index,
+    required this.showPriceBadge,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 300 + (index * 50)),
@@ -117,7 +124,7 @@ class _SimilarEventCard extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
-          context.push('/event/${event.id}');
+          openEvent(context, ref, event);
         },
         child: Container(
           width: 160,
@@ -146,7 +153,8 @@ class _SimilarEventCard extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       CachedNetworkImage(
-                        imageUrl: event.images.isNotEmpty ? event.images.first : '',
+                        imageUrl:
+                            event.images.isNotEmpty ? event.images.first : '',
                         fit: BoxFit.cover,
                         placeholder: (_, __) => Container(
                           color: Colors.grey.shade200,
@@ -160,11 +168,12 @@ class _SimilarEventCard extends StatelessWidget {
                         ),
                       ),
                       // Badge prix
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: _buildPriceBadge(),
-                      ),
+                      if (showPriceBadge)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: _buildPriceBadge(context),
+                        ),
                     ],
                   ),
                 ),
@@ -178,39 +187,55 @@ class _SimilarEventCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Titre
-                      Text(
-                        event.title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: HbColors.textPrimary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const Spacer(),
-                      // Lieu + Distance
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 2),
                           Expanded(
                             child: Text(
-                              event.city ?? event.venue ?? '',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade600,
+                              event.title,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: HbColors.textPrimary,
                               ),
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (event.isPasswordProtected) ...[
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.lock_outline,
+                              size: 14,
+                              color: HbColors.brandPrimary,
+                            ),
+                          ],
                         ],
                       ),
+                      const Spacer(),
+                      // Lieu + Distance
+                      if (_locationLabel.isNotEmpty)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                _locationLabel,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -222,7 +247,13 @@ class _SimilarEventCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceBadge() {
+  String get _locationLabel {
+    final city = event.city.trim();
+    if (city.isNotEmpty) return city;
+    return event.venue.trim();
+  }
+
+  Widget _buildPriceBadge(BuildContext context) {
     final isFree = event.isAuthoritativelyFree;
 
     if (isFree) {
@@ -232,9 +263,9 @@ class _SimilarEventCard extends StatelessWidget {
           color: Colors.green,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Text(
-          'Gratuit',
-          style: TextStyle(
+        child: Text(
+          context.l10n.commonFree,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 10,
             fontWeight: FontWeight.bold,
@@ -243,7 +274,6 @@ class _SimilarEventCard extends StatelessWidget {
       );
     }
 
-    final price = event.minPrice ?? event.price ?? 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -257,7 +287,7 @@ class _SimilarEventCard extends StatelessWidget {
         ],
       ),
       child: Text(
-        '${price.toStringAsFixed(price == price.roundToDouble() ? 0 : 2)}€',
+        event.formattedPrice,
         style: const TextStyle(
           color: HbColors.brandPrimary,
           fontSize: 11,

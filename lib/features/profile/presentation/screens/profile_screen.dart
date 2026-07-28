@@ -1,12 +1,22 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../config/env_config.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../checkin/presentation/providers/vendor_eligibility_provider.dart';
 import '../../../messages/presentation/providers/unread_count_provider.dart';
 import '../../../reviews/presentation/providers/pending_count_provider.dart';
+import '../../../gamification/presentation/providers/gamification_provider.dart';
+import '../../data/datasources/profile_api_datasource.dart';
 import '../providers/profile_provider.dart';
 
 class _ProfileField {
@@ -26,7 +36,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profil'),
+        title: Text(context.l10n.profileTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -62,32 +72,11 @@ class ProfileScreen extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              // Avatar
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: HbColors.brandPrimary.withValues(alpha: 0.1),
-                ),
-                child: avatarUrl != null && avatarUrl.isNotEmpty
-                    ? ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: avatarUrl,
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: CircularProgressIndicator(
-                              color: HbColors.brandPrimary,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          errorWidget: (context, url, error) =>
-                              _buildDefaultAvatar(displayName),
-                        ),
-                      )
-                    : _buildDefaultAvatar(displayName),
+              // Avatar (tap to change — same flow as Mon Compte)
+              _EditableAvatar(
+                avatarUrl: avatarUrl,
+                displayName: displayName,
+                size: 80,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -95,7 +84,9 @@ class ProfileScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      displayName.isNotEmpty ? displayName : 'Utilisateur',
+                      displayName.isNotEmpty
+                          ? displayName
+                          : context.l10n.profileDefaultUser,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -128,23 +119,8 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: 8),
-                    // Badge role
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getRoleColor(user.role).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _getRoleLabel(user.role),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: _getRoleColor(user.role),
-                        ),
-                      ),
-                    ),
+                    // Badge rang HIBONs
+                    _buildRankBadge(ref),
                   ],
                 ),
               ),
@@ -158,118 +134,132 @@ class ProfileScreen extends ConsumerWidget {
         const SizedBox(height: 24),
 
         // Statistics Section
-        _buildStatisticsSection(ref),
+        _buildStatisticsSection(context, ref),
         const SizedBox(height: 24),
 
         // Menu Items
         _buildMenuItem(
           context,
           icon: Icons.confirmation_number_outlined,
-          title: 'Mes Réservations',
-          subtitle: 'Voir vos billets et réservations',
+          title: context.l10n.profileBookingsTitle,
+          subtitle: context.l10n.profileBookingsSubtitle,
           onTap: () => context.push('/my-bookings'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.person_add_alt_1_outlined,
-          title: 'Mes participants',
-          subtitle: 'Famille et proches pour attribuer les billets',
+          title: context.l10n.profileParticipantsTitle,
+          subtitle: context.l10n.profileParticipantsSubtitle,
           onTap: () => context.push('/participants'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.favorite_outline,
-          title: 'Mes Favoris',
-          subtitle: 'Activités sauvegardées',
+          title: context.l10n.profileFavoritesTitle,
+          subtitle: context.l10n.profileFavoritesSubtitle,
           onTap: () => context.push('/favorites'),
         ),
         _buildMenuItem(
           context,
+          icon: Icons.storefront_outlined,
+          title: context.l10n.profileOrganizersDirectoryTitle,
+          subtitle: context.l10n.profileOrganizersDirectorySubtitle,
+          onTap: () => context.push('/organizers'),
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.groups_outlined,
-          title: 'Organisateurs suivis',
-          subtitle: 'Gérer les organisateurs que vous suivez',
+          title: context.l10n.profileFollowedOrganizersTitle,
+          subtitle: context.l10n.profileFollowedOrganizersSubtitle,
           onTap: () => context.push('/me/followed-organizers'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.workspaces_outline,
-          title: 'Mes adhésions',
-          subtitle: 'Adhésions, invitations, événements privés',
+          title: context.l10n.profileMembershipsTitle,
+          subtitle: context.l10n.profileMembershipsSubtitle,
           onTap: () => context.push('/me/memberships'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.mail_outline,
-          title: 'Mes Messages',
-          subtitle: 'Conversations avec les organisateurs',
+          title: context.l10n.profileMessagesTitle,
+          subtitle: context.l10n.profileMessagesSubtitle,
           badge: ref.watch(unreadCountProvider),
           onTap: () => context.push('/messages'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.route,
-          title: 'Mes Sorties',
-          subtitle: 'Plans et itinéraires',
+          title: context.l10n.profileTripsTitle,
+          subtitle: context.l10n.profileTripsSubtitle,
           onTap: () => context.push('/trip-plans'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.notifications_active_outlined,
-          title: 'Mes Rappels',
-          subtitle: 'Rappels d\'activités à venir',
+          title: context.l10n.profileRemindersTitle,
+          subtitle: context.l10n.profileRemindersSubtitle,
           onTap: () => context.push('/my-reminders'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.question_answer_outlined,
-          title: 'Mes Questions',
-          subtitle: 'Vos questions sur les événements',
+          title: context.l10n.profileQuestionsTitle,
+          subtitle: context.l10n.profileQuestionsSubtitle,
           onTap: () => context.push('/my-questions'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.rate_review_outlined,
-          title: 'Mes Avis',
-          subtitle: 'Vos avis et réponses des organisateurs',
+          title: context.l10n.profileReviewsTitle,
+          subtitle: context.l10n.profileReviewsSubtitle,
           badge: ref.watch(pendingReviewCountProvider).valueOrNull,
           onTap: () => context.push('/my-reviews'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.person_outline,
-          title: 'Mon Compte',
-          subtitle: 'Modifier vos informations',
+          title: context.l10n.profileAccountTitle,
+          subtitle: context.l10n.profileAccountSubtitle,
           onTap: () => context.push('/account'),
         ),
         _buildMenuItem(
           context,
           icon: Icons
               .notifications_none_rounded, // Slightly more modern icon if possible
-          title: 'Mes Alertes & Recherches',
-          subtitle: 'Gérer vos recherches enregistrées',
-          onTap: () => context.push('/notifications'),
+          title: context.l10n.profileAlertsTitle,
+          subtitle: context.l10n.profileAlertsSubtitle,
+          onTap: () => context.push('/alerts'),
         ),
         if (ref.watch(vendorEligibilityProvider))
           _buildMenuItem(
             context,
             icon: Icons.qr_code_scanner_outlined,
-            title: 'Scanner les billets',
-            subtitle: 'Mode vendeur — contrôle d\'accès',
+            title: context.l10n.profileVendorScanTitle,
+            subtitle: context.l10n.profileVendorScanSubtitle,
             onTap: () => context.push('/vendor/scan'),
           ),
         _buildMenuItem(
           context,
+          icon: Icons.volunteer_activism_outlined,
+          title: context.l10n.profileSupportTitle,
+          subtitle: context.l10n.profileSupportSubtitle,
+          onTap: () => context.push('/donations'),
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.settings_outlined,
-          title: 'Paramètres',
-          subtitle: 'Langue, thème, confidentialité',
+          title: context.l10n.settingsTitle,
+          subtitle: context.l10n.profileSettingsSubtitle,
           onTap: () => context.push('/settings'),
         ),
         _buildMenuItem(
           context,
           icon: Icons.help_outline,
-          title: 'Aide & Support',
-          subtitle: 'FAQ et contact',
-          onTap: () {}, // TODO: Implement help
+          title: context.l10n.profileHelpTitle,
+          subtitle: context.l10n.profileHelpSubtitle,
+          onTap: () => _openFaq(context),
         ),
         const SizedBox(height: 24),
 
@@ -288,9 +278,9 @@ class ProfileScreen extends ConsumerWidget {
               ),
               child: const Icon(Icons.logout, color: Colors.red, size: 20),
             ),
-            title: const Text(
-              'Déconnexion',
-              style: TextStyle(
+            title: Text(
+              context.l10n.profileLogout,
+              style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 color: Colors.red,
               ),
@@ -303,7 +293,7 @@ class ProfileScreen extends ConsumerWidget {
         // App version
         Center(
           child: Text(
-            'Le Hiboo v1.0.0',
+            '${AppConstants.appName} v${AppConstants.appVersion}',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[400],
@@ -336,9 +326,9 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Connectez-vous',
-              style: TextStyle(
+            Text(
+              context.l10n.profileSignInPromptTitle,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textSlate,
@@ -346,7 +336,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Accédez à vos réservations, favoris et bien plus encore',
+              context.l10n.profileSignInPromptSubtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -367,9 +357,9 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Se connecter',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.authLoginSubmit,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -389,9 +379,9 @@ class ProfileScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Créer un compte',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.authCreateAccount,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -403,7 +393,7 @@ class ProfileScreen extends ConsumerWidget {
             TextButton(
               onPressed: () => context.go('/'),
               child: Text(
-                'Continuer sans compte',
+                context.l10n.authContinueAsGuest,
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 14,
@@ -421,11 +411,16 @@ class ProfileScreen extends ConsumerWidget {
   /// Récompense de 50 Hibons (1×/lifetime) au passage à 5/5.
   Widget _buildProfileCompletionCard(BuildContext context, user) {
     final fields = <_ProfileField>[
-      _ProfileField('Prénom', _isFilled(user.firstName)),
-      _ProfileField('Nom', _isFilled(user.lastName)),
-      _ProfileField('Photo', _isFilled(user.avatarUrl)),
-      _ProfileField('Date de naissance', user.birthDate != null),
-      _ProfileField('Ville d\'adhésion', _isFilled(user.membershipCity)),
+      _ProfileField(
+          context.l10n.profileCompletionFirstName, _isFilled(user.firstName)),
+      _ProfileField(
+          context.l10n.profileCompletionLastName, _isFilled(user.lastName)),
+      _ProfileField(
+          context.l10n.profileCompletionPhoto, _isFilled(user.avatarUrl)),
+      _ProfileField(
+          context.l10n.profileCompletionBirthDate, user.birthDate != null),
+      _ProfileField(context.l10n.profileCompletionMembershipCity,
+          _isFilled(user.membershipCity)),
     ];
     final completed = fields.where((f) => f.filled).length;
     final isComplete = completed == fields.length;
@@ -466,8 +461,11 @@ class ProfileScreen extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     isComplete
-                        ? 'Profil complet'
-                        : 'Profil $completed/${fields.length} — gagne 50 Hibons',
+                        ? context.l10n.profileCompletionComplete
+                        : context.l10n.profileCompletionProgress(
+                            completed,
+                            fields.length,
+                          ),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -531,8 +529,11 @@ class ProfileScreen extends ConsumerWidget {
 
   bool _isFilled(String? value) => value != null && value.trim().isNotEmpty;
 
-  Widget _buildStatisticsSection(WidgetRef ref) {
+  Widget _buildStatisticsSection(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(userStatsProvider);
+    final bookingsLabel = context.l10n.profileStatsBookings;
+    final favoritesLabel = context.l10n.profileStatsFavorites;
+    final reviewsLabel = context.l10n.profileStatsReviews;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -547,30 +548,30 @@ class ProfileScreen extends ConsumerWidget {
             _buildStatItem(
               icon: Icons.confirmation_number,
               value: stats.bookingsCount.toString(),
-              label: 'Réservations',
+              label: bookingsLabel,
             ),
             Container(width: 1, height: 40, color: Colors.grey[200]),
             _buildStatItem(
               icon: Icons.favorite,
               value: stats.favoritesCount.toString(),
-              label: 'Favoris',
+              label: favoritesLabel,
             ),
             Container(width: 1, height: 40, color: Colors.grey[200]),
             _buildStatItem(
               icon: Icons.star,
               value: stats.reviewsCount.toString(),
-              label: 'Avis',
+              label: reviewsLabel,
             ),
           ],
         ),
         loading: () => Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildStatItemLoading(label: 'Réservations'),
+            _buildStatItemLoading(label: bookingsLabel),
             Container(width: 1, height: 40, color: Colors.grey[200]),
-            _buildStatItemLoading(label: 'Favoris'),
+            _buildStatItemLoading(label: favoritesLabel),
             Container(width: 1, height: 40, color: Colors.grey[200]),
-            _buildStatItemLoading(label: 'Avis'),
+            _buildStatItemLoading(label: reviewsLabel),
           ],
         ),
         error: (_, __) => Row(
@@ -579,19 +580,19 @@ class ProfileScreen extends ConsumerWidget {
             _buildStatItem(
               icon: Icons.confirmation_number,
               value: '-',
-              label: 'Réservations',
+              label: bookingsLabel,
             ),
             Container(width: 1, height: 40, color: Colors.grey[200]),
             _buildStatItem(
               icon: Icons.favorite,
               value: '-',
-              label: 'Favoris',
+              label: favoritesLabel,
             ),
             Container(width: 1, height: 40, color: Colors.grey[200]),
             _buildStatItem(
               icon: Icons.star,
               value: '-',
-              label: 'Avis',
+              label: reviewsLabel,
             ),
           ],
         ),
@@ -727,60 +728,61 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDefaultAvatar(String displayName) {
-    final initials = displayName.isNotEmpty
-        ? displayName
-            .split(' ')
-            .take(2)
-            .map((e) => e.isNotEmpty ? e[0].toUpperCase() : '')
-            .join()
-        : 'U';
-    return Center(
-      child: Text(
-        initials,
-        style: const TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: HbColors.brandPrimary,
-        ),
+  /// Pill displaying the user's HIBONs rank (e.g. "🔍 Curieux").
+  ///
+  /// Prefers the full `gamificationNotifierProvider` wallet; falls back to
+  /// the lightweight `hibonsBalanceProvider` during cold-start (same trick
+  /// as `HibonCounterWidget`). Hidden entirely if neither source has data
+  /// yet — better than briefly flashing a stale "Membre"-style label.
+  Widget _buildRankBadge(WidgetRef ref) {
+    final wallet = ref.watch(gamificationNotifierProvider).valueOrNull;
+    final balance = ref.watch(hibonsBalanceProvider).valueOrNull;
+
+    final rankLabel = wallet?.rankLabel ?? balance?.rankLabel;
+    final rankIcon = wallet?.rankIcon ?? balance?.rankIcon;
+
+    if (rankLabel == null || rankLabel.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: HbColors.brandPrimary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (rankIcon != null && rankIcon.isNotEmpty) ...[
+            Text(rankIcon, style: const TextStyle(fontSize: 12)),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            rankLabel,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: HbColors.brandPrimary,
+            ),
+          ),
+        ],
       ),
     );
-  }
-
-  Color _getRoleColor(role) {
-    switch (role.toString()) {
-      case 'UserRole.partner':
-        return Colors.purple;
-      case 'UserRole.admin':
-        return Colors.red;
-      default:
-        return HbColors.brandPrimary;
-    }
-  }
-
-  String _getRoleLabel(role) {
-    switch (role.toString()) {
-      case 'UserRole.partner':
-        return 'Partenaire';
-      case 'UserRole.admin':
-        return 'Administrateur';
-      default:
-        return 'Membre';
-    }
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Déconnexion'),
-        content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
+        title: Text(context.l10n.profileLogout),
+        content: Text(context.l10n.profileLogoutDialogBody),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
-              'Annuler',
+              context.l10n.commonCancel,
               style: TextStyle(color: Colors.grey[600]),
             ),
           ),
@@ -793,7 +795,7 @@ class ProfileScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Déconnexion'),
+            child: Text(context.l10n.profileLogout),
           ),
         ],
       ),
@@ -803,6 +805,205 @@ class ProfileScreen extends ConsumerWidget {
       await ref.read(authProvider.notifier).logout();
       if (context.mounted) {
         context.go('/');
+      }
+    }
+  }
+
+  Future<void> _openFaq(BuildContext context) async {
+    final uri = Uri.parse('${EnvConfig.websiteUrl}/faq');
+    final ok = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    if (ok) return;
+    if (!context.mounted) return;
+
+    final fallbackOk =
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (fallbackOk) return;
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.profileHelpOpenFailed)),
+    );
+  }
+}
+
+class _EditableAvatar extends ConsumerStatefulWidget {
+  final String? avatarUrl;
+  final String displayName;
+  final double size;
+
+  const _EditableAvatar({
+    required this.avatarUrl,
+    required this.displayName,
+    this.size = 80,
+  });
+
+  @override
+  ConsumerState<_EditableAvatar> createState() => _EditableAvatarState();
+}
+
+class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
+  File? _selectedImage;
+  bool _isUploading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.size;
+    final badgeSize = (size * 0.32).clamp(24.0, 36.0);
+    final badgeIconSize = badgeSize * 0.55;
+
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: _isUploading ? null : _pickImage,
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: HbColors.brandPrimary.withValues(alpha: 0.1),
+            ),
+            child: _isUploading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: HbColors.brandPrimary,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : _selectedImage != null
+                    ? ClipOval(
+                        child: Image.file(
+                          _selectedImage!,
+                          width: size,
+                          height: size,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty
+                        ? ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: widget.avatarUrl!,
+                              width: size,
+                              height: size,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(
+                                  color: HbColors.brandPrimary,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  _buildDefaultAvatar(),
+                            ),
+                          )
+                        : _buildDefaultAvatar(),
+          ),
+        ),
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: GestureDetector(
+            onTap: _isUploading ? null : _pickImage,
+            child: Container(
+              width: badgeSize,
+              height: badgeSize,
+              decoration: BoxDecoration(
+                color: HbColors.brandPrimary,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: Icon(
+                Icons.camera_alt,
+                color: Colors.white,
+                size: badgeIconSize,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDefaultAvatar() {
+    final initials = widget.displayName.isNotEmpty
+        ? widget.displayName
+            .split(' ')
+            .take(2)
+            .map((e) => e.isNotEmpty ? e[0].toUpperCase() : '')
+            .join()
+        : 'U';
+    return Center(
+      child: Text(
+        initials,
+        style: TextStyle(
+          fontSize: widget.size * 0.35,
+          fontWeight: FontWeight.bold,
+          color: HbColors.brandPrimary,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+      await _uploadAvatar();
+    }
+  }
+
+  Future<void> _uploadAvatar() async {
+    if (_selectedImage == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final previousAvatarUrl = ref.read(authProvider).user?.avatarUrl;
+      final profileDataSource = ref.read(profileApiDataSourceProvider);
+      final updatedUser = await profileDataSource.uploadAvatar(_selectedImage!);
+
+      if (previousAvatarUrl != null && previousAvatarUrl.isNotEmpty) {
+        await CachedNetworkImage.evictFromCache(previousAvatarUrl);
+      }
+      if (updatedUser.avatarUrl != null && updatedUser.avatarUrl!.isNotEmpty) {
+        await CachedNetworkImage.evictFromCache(updatedUser.avatarUrl!);
+      }
+
+      ref.read(authProvider.notifier).updateUser(updatedUser);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.profileAvatarUpdated),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _selectedImage = null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              context.l10n.profileAvatarUploadError(
+                ApiResponseHandler.extractError(e),
+              ),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
       }
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 
@@ -49,6 +50,7 @@ class OrderCartItem extends Equatable {
           'images': event.images,
           'organizer_id': event.organizerId,
           'organizer_name': event.organizerName,
+          'vendor_cancellation_policy': event.vendorCancellationPolicy,
         },
         'slot': selectedSlot == null
             ? {
@@ -87,6 +89,8 @@ class OrderCartItem extends Equatable {
         images: (eventJson['images'] as List?)?.cast<String>() ?? const [],
         organizerId: eventJson['organizer_id']?.toString() ?? '',
         organizerName: eventJson['organizer_name']?.toString() ?? '',
+        vendorCancellationPolicy:
+            eventJson['vendor_cancellation_policy']?.toString(),
       );
 
       return OrderCartItem(
@@ -104,7 +108,8 @@ class OrderCartItem extends Equatable {
               ),
         ticket: Ticket(
           id: ticketJson['id']?.toString() ?? '',
-          name: ticketJson['name']?.toString() ?? 'Billet',
+          name: ticketJson['name']?.toString() ??
+              cachedAppLocalizations().bookingTicketFallback,
           price: (ticketJson['price'] as num?)?.toDouble() ?? 0,
           description: ticketJson['description']?.toString(),
         ),

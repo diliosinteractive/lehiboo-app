@@ -25,21 +25,8 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
       final hasDirectBooking = f.bookingMode != null
           ? f.bookingMode != 'discovery'
           : f.discoveryPricingType == null;
-      final dateTime = DateTime.tryParse(f.date) ?? DateTime.now();
-      DateTime startDate = dateTime;
-
-      if (f.time != null) {
-        final timeParts = f.time!.split(':');
-        if (timeParts.length >= 2) {
-          startDate = DateTime(
-            dateTime.year,
-            dateTime.month,
-            dateTime.day,
-            int.tryParse(timeParts[0]) ?? 0,
-            int.tryParse(timeParts[1]) ?? 0,
-          );
-        }
-      }
+      final startDate = _resolveStart(f);
+      final endDate = _resolveEnd(f, startDate);
 
       return Event(
         // Use stringId (prefers uuid, falls back to id.toString())
@@ -51,7 +38,7 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
         category: EventCategory.other,
         targetAudiences: const [EventAudience.all],
         startDate: startDate,
-        endDate: startDate,
+        endDate: endDate,
         venue: f.venue ?? '',
         address: '',
         city: f.city ?? '',
@@ -91,7 +78,8 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   }
 
   @override
-  Future<ToggleFavoriteResult> addToFavorites(String eventUuid, {String? listId}) async {
+  Future<ToggleFavoriteResult> addToFavorites(String eventUuid,
+      {String? listId}) async {
     return await _apiDataSource.addToFavorites(eventUuid, listId: listId);
   }
 
@@ -106,7 +94,8 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   }
 
   @override
-  Future<ToggleFavoriteResult> toggleFavorite(String eventUuid, {String? listId}) async {
+  Future<ToggleFavoriteResult> toggleFavorite(String eventUuid,
+      {String? listId}) async {
     return await _apiDataSource.toggleFavorite(eventUuid, listId: listId);
   }
 
@@ -171,5 +160,39 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   @override
   Future<void> reorderLists(List<String> orderedIds) async {
     await _apiDataSource.reorderLists(orderedIds);
+  }
+
+  // Prefer the full ISO `start_datetime` (carries the real time). Fall back
+  // to stitching the legacy `date` + `time` fields for older payloads.
+  DateTime _resolveStart(FavoriteEventDto f) {
+    final iso = f.startDatetime;
+    if (iso != null) {
+      final parsed = DateTime.tryParse(iso);
+      if (parsed != null) return parsed;
+    }
+    return _stitchDateAndTime(f.date, f.time);
+  }
+
+  DateTime _resolveEnd(FavoriteEventDto f, DateTime fallback) {
+    final iso = f.endDatetime;
+    if (iso != null) {
+      final parsed = DateTime.tryParse(iso);
+      if (parsed != null) return parsed;
+    }
+    return fallback;
+  }
+
+  DateTime _stitchDateAndTime(String date, String? time) {
+    final base = DateTime.tryParse(date) ?? DateTime.now();
+    if (time == null) return base;
+    final parts = time.split(':');
+    if (parts.length < 2) return base;
+    return DateTime(
+      base.year,
+      base.month,
+      base.day,
+      int.tryParse(parts[0]) ?? 0,
+      int.tryParse(parts[1]) ?? 0,
+    );
   }
 }

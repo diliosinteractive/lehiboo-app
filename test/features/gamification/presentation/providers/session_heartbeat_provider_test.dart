@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/noop_analytics_service.dart';
 import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
 import 'package:lehiboo/domain/entities/user.dart';
-import 'package:lehiboo/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/gamification/data/datasources/gamification_api_datasource.dart';
@@ -72,8 +73,11 @@ void main() {
       final api = _FakeGamificationApiDataSource();
       final container = ProviderContainer(
         overrides: [
+          analyticsServiceProvider.overrideWithValue(
+            const NoopAnalyticsService(),
+          ),
           sharedPreferencesProvider.overrideWithValue(preferences),
-          authRepositoryImplProvider.overrideWithValue(_FakeAuthRepository()),
+          authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
           gamificationApiDataSourceProvider.overrideWithValue(api),
         ],
       );
@@ -129,12 +133,12 @@ void main() {
         isNot(sessionHeartbeatDateKeyForUser(_userTwo.id)),
       );
 
-      // Logging out disposes the account notifier and cancels its pending
-      // timer, even while the app stays in the foreground.
+      // Returning to an unauthenticated state disposes the account notifier
+      // and cancels its pending timer, even while the app stays foregrounded.
       container.read(authProvider.notifier).setAuthenticatedUser(_userThree);
       await tester.pump();
       await tester.pump(const Duration(minutes: 2, seconds: 59));
-      await container.read(authProvider.notifier).logout();
+      await container.read(authProvider.notifier).refreshAuthStatus();
       await tester.pump();
       await tester.pump(const Duration(minutes: 5));
       expect(api.heartbeatCalls, 2);

@@ -5,25 +5,24 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
-import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
-import 'package:lehiboo/domain/entities/city.dart';
+import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
+import 'package:lehiboo/features/events/domain/entities/popular_city.dart';
 import 'package:lehiboo/features/blog/presentation/widgets/blog_section.dart';
 import 'package:lehiboo/features/blog/presentation/providers/blog_providers.dart';
-import 'package:lehiboo/features/events/presentation/providers/cities_provider.dart';
-import 'package:lehiboo/features/thematiques/presentation/widgets/thematiques_section.dart';
-import 'package:lehiboo/features/thematiques/presentation/widgets/categories_chips_section.dart';
-import 'package:lehiboo/features/thematiques/presentation/providers/thematiques_provider.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/providers/hero_slides_provider.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
 import 'package:lehiboo/features/messages/presentation/providers/unread_count_provider.dart';
+import 'package:lehiboo/features/notifications/presentation/providers/in_app_notifications_provider.dart';
 import 'package:lehiboo/features/stories/presentation/providers/stories_provider.dart';
 
 import '../widgets/ads_banners_section.dart';
 import '../../../../core/widgets/feedback/skeleton_event_card.dart';
-import '../widgets/home_cities_section.dart';
+import '../widgets/home_categories_section.dart';
+import '../widgets/home_section_title.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
 import 'package:lehiboo/features/gamification/presentation/providers/gamification_provider.dart';
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
@@ -188,29 +187,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (!mounted) return;
     }
 
-    // Derived activity providers watch homeFeedProvider.future and rebuild
-    // automatically. Every other provider below directly feeds a visible
-    // home section, so each refresh is started and awaited explicitly.
+    // Derived feed providers rebuild when homeFeed completes. Every other
+    // provider below directly feeds a visible Home surface.
     final results = await Future.wait([
       _safeRefresh(
         'home feed',
         () => ref.read(homeFeedProvider.notifier).refresh(),
       ),
       _safeRefresh(
+        'new activities',
+        () => ref.read(homeNewActivitiesProvider.notifier).refresh(),
+      ),
+      _safeRefresh(
+        'nearby activities',
+        () =>
+            ref.read(homeNearbyAvailableActivitiesProvider.notifier).refresh(),
+      ),
+      _safeRefresh(
         'stories',
         () => ref.read(activeStoriesProvider.notifier).refresh(),
       ),
       _safeRefresh(
-        'categories',
-        () => ref.read(categoriesProvider.notifier).refresh(),
-      ),
-      _safeRefresh(
-        'city chips',
-        () => ref.refresh(citiesProvider.future).then<void>((_) {}),
+        'home categories',
+        () => ref.read(homeCategoriesProvider.notifier).refresh(),
       ),
       _safeRefresh(
         'popular cities',
-        () => ref.read(homeCitiesProvider.notifier).refresh(),
+        () => ref.read(popularCitiesProvider.notifier).refresh(),
       ),
       _safeRefresh(
         'mobile config',
@@ -225,10 +228,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         () => ref.refresh(latestBlogPostsProvider.future).then<void>((_) {}),
       ),
       _safeRefresh(
-        'thematiques',
-        () => ref.refresh(thematiquesProvider.future).then<void>((_) {}),
-      ),
-      _safeRefresh(
         'personalized feed',
         () => ref.refresh(personalizedFeedProvider.future).then<void>((_) {}),
       ),
@@ -241,9 +240,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         () async {
           await Future.wait<void>([
             ref.read(gamificationNotifierProvider.notifier).refresh(),
-            ref
-                .refresh(hibonsBalanceProvider.future)
-                .then<void>((_) {}),
+            ref.refresh(hibonsBalanceProvider.future).then<void>((_) {}),
           ]);
         },
       ),
@@ -251,7 +248,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         'unread messages',
         () => ref.read(unreadCountProvider.notifier).refresh(),
       ),
+      _safeRefresh(
+        'notifications',
+        () =>
+            ref.read(inAppNotificationsProvider.notifier).refreshUnreadCount(),
+      ),
     ]);
+    ref.invalidate(viewedStoriesProvider);
     didAnyRefreshFail =
         didAnyRefreshFail || results.any((succeeded) => !succeeded);
 
@@ -289,7 +292,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final activitiesAsyncValue = ref.watch(homeActivitiesProvider);
+    final newActivitiesAsyncValue = ref.watch(homeNewActivitiesProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -321,9 +324,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
 
-            // 3. Section Filtre par Ville (chips)
+            // 3. Section Explorer par catégorie (source of truth: web homepage)
             const SliverToBoxAdapter(
-              child: HomeCitiesSection(),
+              child: HomeCategoriesSection(),
             ),
 
             // 5. "Pour vous" — server-driven personalized carousel.
@@ -337,40 +340,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: AdsBannersSection(),
             ),
 
-            // 7. Sections activités (Today, Tomorrow, Recommended)
+            // 7. Sections activités (nearby availability and new events)
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Urgency FOMO — événements qui commencent bientôt.
                   const UrgencySection(),
-                  _buildActivitySection(
-                    context,
-                    ref,
-                    provider: homeTodayActivitiesProvider,
-                    baseTitle: 'Activités disponibles aujourd\'hui',
-                    emptyMessage: 'Aucune activité pour aujourd\'hui',
-                    viewAllPath: '/search?date=today',
-                    isToday: true,
+                  _buildNearbyAvailableSection(context, ref),
+                  _buildSectionTitle(
+                    context.l10n.homeNewActivitiesTitle,
+                    '/explore?sort=published_at',
                   ),
-                  _buildActivitySection(
-                    context,
-                    ref,
-                    provider: homeTomorrowActivitiesProvider,
-                    baseTitle: 'Activités disponibles demain',
-                    emptyMessage: 'Aucune activité pour demain',
-                    viewAllPath: '/search?date=tomorrow',
-                    isTomorrow: true,
-                  ),
-                  _buildSectionTitle('Les recommandations', '/recommended'),
                   const SizedBox(height: 16),
                   _buildActivityState(
-                    activitiesAsyncValue,
-                    emptyMessage:
-                        'Aucune recommandation disponible pour le moment.',
-                    heroTagPrefix: 'home_main',
+                    newActivitiesAsyncValue,
+                    emptyMessage: context.l10n.homeNoNewActivities,
+                    heroTagPrefix: 'home_new',
                     onRetry: () =>
-                        ref.read(homeFeedProvider.notifier).refresh(),
+                        ref.read(homeNewActivitiesProvider.notifier).refresh(),
                   ),
                 ],
               ),
@@ -382,21 +370,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             //   child: PersonalizedSection(),
             // ),
 
-            // 9. Section thématiques
-            const SliverToBoxAdapter(
-              child: ThematiquesSection(),
-            ),
-
             // 10. Section Partenaire Premium (masquée en attendant l'API backend)
             // TODO: Réactiver quand l'API partners sera disponible
             // const SliverToBoxAdapter(
             //   child: PartnerHighlightSection(),
             // ),
-
-            // 11. Section Toutes les catégories (Chips list)
-            const SliverToBoxAdapter(
-              child: CategoriesChipsSection(),
-            ),
 
             // 12. Pub Native (masquée en attendant l'intégration backend)
             // TODO: Réactiver quand les pubs natives seront configurées via l'API
@@ -404,12 +382,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             //   child: NativeAdSection(),
             // ),
 
-            // 13. Section Web/Retrouvez-nous (CTA)
-            SliverToBoxAdapter(
-              child: _buildWebCTASection(),
-            ),
+            // 13. Section Web/Retrouvez-nous (CTA) — temporarily hidden
+            // SliverToBoxAdapter(
+            //   child: _buildWebCTASection(),
+            // ),
 
             // 14. Section Villes populaires
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
             SliverToBoxAdapter(
               child: _buildTopCitiesSection(),
             ),
@@ -433,35 +412,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         .fold<int>(0, (sum, item) => sum + item.quantity);
     final user = ref.watch(authProvider).user;
     final avatarUrl = user?.avatarUrl;
+    final notificationCount = ref.watch(
+      inAppNotificationsProvider.select((state) => state.unreadCount),
+    );
 
     return AppBar(
-      backgroundColor: Color.lerp(
-        Colors.transparent,
-        HbColors.brandPrimary,
-        opacity,
-      ),
+      backgroundColor: HbColors.brandPrimary.withValues(alpha: opacity),
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       centerTitle: false,
       toolbarHeight: 60,
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(
-            'assets/images/logo_picto_lehiboo_old.png',
-            width: 30,
-            height: 35,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => const Text(
-              'Le Hiboo',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo_picto_lehiboo_old.png',
+              width: 30,
+              height: 35,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Text(
+                'Le Hiboo',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: () => context.push('/hibons-dashboard'),
-            child: const HibonCounterWidget(compact: true),
-          ),
-        ],
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () => context.push('/hibons-dashboard'),
+              child: const HibonCounterWidget(compact: true),
+            ),
+          ],
+        ),
       ),
       titleSpacing: 8,
       actions: [
@@ -471,7 +456,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             final allowed = await GuestGuard.check(
               context: context,
               ref: ref,
-              featureName: 'voir vos favoris',
+              featureName: context.l10n.guestFeatureViewFavorites,
             );
             if (allowed && mounted) {
               context.push('/favorites');
@@ -494,7 +479,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 final allowed = await GuestGuard.check(
                   context: context,
                   ref: ref,
-                  featureName: 'voir vos messages',
+                  featureName: context.l10n.guestFeatureViewMessages,
                 );
                 if (allowed && context.mounted) {
                   context.push('/messages');
@@ -504,11 +489,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           },
         ),
         IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.white),
-          onPressed: () {},
+          tooltip: context.l10n.homeTooltipNotifications,
+          icon: Badge(
+            isLabelVisible: notificationCount > 0,
+            label: Text('$notificationCount'),
+            child: const Icon(Icons.notifications_none, color: Colors.white),
+          ),
+          onPressed: () async {
+            final allowed = await GuestGuard.check(
+              context: context,
+              ref: ref,
+              featureName: context.l10n.guestFeatureViewNotifications,
+            );
+            if (allowed && mounted) {
+              context.push('/notifications');
+            }
+          },
         ),
         IconButton(
-          tooltip: 'Mon panier',
+          tooltip: context.l10n.homeTooltipCart,
           icon: Badge(
             isLabelVisible: cartCount > 0,
             label: Text('$cartCount'),
@@ -524,7 +523,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: IconButton(
-            tooltip: 'Mon compte',
+            tooltip: context.l10n.homeTooltipAccount,
             icon: avatarUrl != null && avatarUrl.isNotEmpty
                 ? CircleAvatar(
                     radius: 14,
@@ -536,7 +535,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               final allowed = await GuestGuard.check(
                 context: context,
                 ref: ref,
-                featureName: 'accéder à votre profil',
+                featureName: context.l10n.guestFeatureAccessProfile,
               );
               if (allowed && mounted) {
                 context.push('/profile');
@@ -554,20 +553,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.montserrat(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textSlate,
+          Expanded(
+            child: HomeSectionTitle(
+              title: title,
             ),
           ),
           if (viewAllPath != null)
             TextButton(
               onPressed: () => context.push(viewAllPath),
-              child: const Text(
-                'Voir plus',
-                style: TextStyle(
+              child: Text(
+                context.l10n.homeViewMore,
+                style: const TextStyle(
                   color: HbColors.brandPrimary,
                   fontSize: 14,
                 ),
@@ -578,22 +574,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildActivitySection(
-    BuildContext context,
-    WidgetRef ref, {
-    required ProviderListenable<AsyncValue<List<Activity>>> provider,
-    required String baseTitle,
-    required String emptyMessage,
-    required String viewAllPath,
-    bool isToday = false,
-    bool isTomorrow = false,
-  }) {
-    final activitiesAsyncValue = ref.watch(provider);
-    final userLocationAsync = ref.watch(userLocationProvider);
-    final cityName = userLocationAsync.valueOrNull?.cityName;
-
-    // Construct dynamic title: "Title • City >"
-    final title = cityName != null ? '$baseTitle • $cityName' : baseTitle;
+  Widget _buildNearbyAvailableSection(BuildContext context, WidgetRef ref) {
+    final title = context.l10n.homeNearbyAvailableTitle;
+    final activitiesAsyncValue =
+        ref.watch(homeNearbyAvailableActivitiesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,22 +587,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
-                child: Text(
-                  title,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: HbColors.textSlate,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: HomeSectionTitle(
+                  title: title,
+                  fontSize: 18,
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.arrow_forward_ios,
                     size: 16, color: HbColors.textSlate),
-                onPressed: () => context.push(viewAllPath),
+                onPressed: () => context.push('/search'),
               )
             ],
           ),
@@ -626,11 +604,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         const SizedBox(height: 16),
         _buildActivityState(
           activitiesAsyncValue,
-          emptyMessage: emptyMessage,
-          heroTagPrefix: isTomorrow ? 'tomorrow' : 'today',
-          isToday: isToday,
-          isTomorrow: isTomorrow,
-          onRetry: () => ref.read(homeFeedProvider.notifier).refresh(),
+          emptyMessage: context.l10n.homeNoNewActivities,
+          heroTagPrefix: 'nearby_available',
+          classifyBySlotDate: true,
+          onRetry: () => ref
+              .read(homeNearbyAvailableActivitiesProvider.notifier)
+              .refresh(),
         ),
         const SizedBox(height: 4),
       ],
@@ -644,6 +623,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     required Future<void> Function() onRetry,
     bool isToday = false,
     bool isTomorrow = false,
+    bool classifyBySlotDate = false,
   }) {
     return activitiesAsyncValue.when(
       skipError: true,
@@ -660,14 +640,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             itemCount: activities.length,
             itemBuilder: (context, index) {
               final activity = activities[index];
+              final now = ref.read(homeNowProvider)();
+              final slotStart = activity.nextSlot?.startDateTime;
+              final cardIsToday = classifyBySlotDate
+                  ? slotStart != null && _isSameDay(slotStart, now)
+                  : isToday;
+              final cardIsTomorrow = classifyBySlotDate
+                  ? slotStart != null &&
+                      _isSameDay(
+                        slotStart,
+                        now.add(const Duration(days: 1)),
+                      )
+                  : isTomorrow;
               return Container(
                 width: 200,
                 margin: const EdgeInsets.only(right: 16),
                 child: EventCard(
                   activity: activity,
                   isCompact: true,
-                  isToday: isToday,
-                  isTomorrow: isTomorrow,
+                  isToday: cardIsToday,
+                  isTomorrow: cardIsTomorrow,
                   heroTagPrefix: heroTagPrefix,
                 ),
               );
@@ -683,6 +675,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
     );
   }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   Widget _buildCarouselSkeleton() {
     return SizedBox(
@@ -702,6 +697,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  // ignore: unused_element
   Widget _buildWebCTASection() {
     return Container(
       margin: const EdgeInsets.all(20),
@@ -725,7 +721,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Retrouvez vos événements en toute simplicité',
+            context.l10n.homeWebCtaTitle,
             style: GoogleFonts.montserrat(
               color: Colors.white,
               fontSize: 20,
@@ -734,7 +730,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
           const SizedBox(height: 12),
           Text(
-            'Notre site web offre une expérience complète pour découvrir et réserver vos activités locales.',
+            context.l10n.homeWebCtaBody,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
@@ -750,7 +746,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Découvrir le site'),
+            child: Text(context.l10n.homeWebCtaButton),
           ),
         ],
       ),
@@ -758,43 +754,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildTopCitiesSection() {
-    final citiesAsyncValue = ref.watch(homeCitiesProvider);
+    final resultAsync = ref.watch(popularCitiesProvider);
 
-    return citiesAsyncValue.when(
+    return resultAsync.when(
       skipError: true,
-      data: (cities) {
-        // Masquer la section si aucune ville disponible
-        if (cities.isEmpty) return const SizedBox.shrink();
+      data: (result) {
+        if (result.cities.isEmpty) return const SizedBox.shrink();
+
+        final title = result.isFallback
+            ? context.l10n.homeFallbackPopularCitiesTitle
+            : context.l10n.homePopularCitiesTitle;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: HbColors.brandPrimary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.location_city,
-                      color: HbColors.brandPrimary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Villes populaires',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textSlate,
-                    ),
-                  ),
-                ],
+              child: HomeSectionTitle(
+                title: title,
               ),
             ),
             const SizedBox(height: 16),
@@ -809,10 +786,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   crossAxisSpacing: 12,
                   childAspectRatio: 0.75,
                 ),
-                itemCount: cities.length,
+                itemCount: result.cities.length,
                 itemBuilder: (context, index) {
-                  final city = cities[index];
-                  return _buildCityCard(city);
+                  return _buildCityCard(result.cities[index]);
                 },
               ),
             ),
@@ -825,16 +801,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildCityCard(City city) {
+  Widget _buildCityCard(PopularCity city) {
+    final imageUrl = city.thumbnailUrl ?? city.imageUrl;
+
+    final cardChild = Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.7),
+          ],
+        ),
+      ),
+      alignment: Alignment.bottomLeft,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            city.name,
+            style: GoogleFonts.montserrat(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+
     return GestureDetector(
       onTap: () => context.push('/city/${city.slug}'),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          image: DecorationImage(
-            image: NetworkImage(city.imageUrl ?? 'https://placehold.co/200'),
-            fit: BoxFit.cover,
-          ),
+          image: imageUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.cover,
+                )
+              : null,
+          gradient: imageUrl == null
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    HbColors.brandPrimary,
+                    HbColors.brandPrimary.withValues(alpha: 0.7),
+                  ],
+                )
+              : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.15),
@@ -843,43 +863,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ],
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.7),
-              ],
-            ),
-          ),
-          alignment: Alignment.bottomLeft,
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                city.name,
-                style: GoogleFonts.montserrat(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (city.eventCount != null && city.eventCount! > 0)
-                Text(
-                  '${city.eventCount} événements',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 11,
-                  ),
-                ),
-            ],
-          ),
-        ),
+        child: cardChild,
       ),
     );
   }

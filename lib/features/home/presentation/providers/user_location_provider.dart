@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 class UserLocation {
   final double lat;
   final double lng;
@@ -32,11 +34,12 @@ class UserLocationNotifier extends StateNotifier<AsyncValue<UserLocation?>>
     }
 
     try {
+      final l10n = cachedAppLocalizations();
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         _setErrorIfNoFallback(
           previousLocation,
-          'Location services are disabled.',
+          l10n.searchLocationDisabled,
           StackTrace.empty,
         );
         return;
@@ -48,7 +51,7 @@ class UserLocationNotifier extends StateNotifier<AsyncValue<UserLocation?>>
         if (permission == LocationPermission.denied) {
           _setErrorIfNoFallback(
             previousLocation,
-            'Location permissions are denied',
+            l10n.searchPermissionDenied,
             StackTrace.empty,
           );
           return;
@@ -58,7 +61,7 @@ class UserLocationNotifier extends StateNotifier<AsyncValue<UserLocation?>>
       if (permission == LocationPermission.deniedForever) {
         _setErrorIfNoFallback(
           previousLocation,
-          'Location permissions are permanently denied, we cannot request permissions.',
+          l10n.searchLocationSettingsRequired,
           StackTrace.empty,
         );
         return;
@@ -72,8 +75,10 @@ class UserLocationNotifier extends StateNotifier<AsyncValue<UserLocation?>>
           position.latitude,
           position.longitude,
         );
+
         if (placemarks.isNotEmpty) {
           cityName = placemarks.first.locality;
+          // Some providers only expose the administrative area.
           if (cityName == null || cityName.isEmpty) {
             cityName = placemarks.first.subAdministrativeArea;
           }

@@ -241,6 +241,7 @@ mixin _$EventFilter {
   bool get onlyFree => throw _privateConstructorUsedError; // Location filters
   String? get citySlug => throw _privateConstructorUsedError;
   String? get cityName => throw _privateConstructorUsedError;
+  double get cityRadiusKm => throw _privateConstructorUsedError;
   double? get latitude => throw _privateConstructorUsedError;
   double? get longitude => throw _privateConstructorUsedError;
   double get radiusKm =>
@@ -257,13 +258,21 @@ mixin _$EventFilter {
   String? get organizerName =>
       throw _privateConstructorUsedError; // Tags filter (multi-select)
   List<String> get tagsSlugs =>
+      throw _privateConstructorUsedError; // Web /events reference-data filters
+  List<String> get targetAudienceSlugs => throw _privateConstructorUsedError;
+  String? get eventTagSlug => throw _privateConstructorUsedError;
+  List<String> get specialEventSlugs => throw _privateConstructorUsedError;
+  List<String> get emotionSlugs => throw _privateConstructorUsedError;
+  bool get availableOnly => throw _privateConstructorUsedError;
+  LocationTypeFilter? get locationType =>
       throw _privateConstructorUsedError; // Audience filter
   bool get familyFriendly => throw _privateConstructorUsedError;
   bool get accessiblePMR =>
       throw _privateConstructorUsedError; // Online/In-person
   bool get onlineOnly => throw _privateConstructorUsedError;
   bool get inPersonOnly => throw _privateConstructorUsedError; // Sorting
-  SortOption get sortBy => throw _privateConstructorUsedError; // Pagination
+  SortOption get sortBy => throw _privateConstructorUsedError;
+  bool get hasExplicitSort => throw _privateConstructorUsedError; // Pagination
   int get page => throw _privateConstructorUsedError;
   int get perPage => throw _privateConstructorUsedError;
 
@@ -290,6 +299,7 @@ abstract class $EventFilterCopyWith<$Res> {
       bool onlyFree,
       String? citySlug,
       String? cityName,
+      double cityRadiusKm,
       double? latitude,
       double? longitude,
       double radiusKm,
@@ -302,11 +312,18 @@ abstract class $EventFilterCopyWith<$Res> {
       String? organizerSlug,
       String? organizerName,
       List<String> tagsSlugs,
+      List<String> targetAudienceSlugs,
+      String? eventTagSlug,
+      List<String> specialEventSlugs,
+      List<String> emotionSlugs,
+      bool availableOnly,
+      LocationTypeFilter? locationType,
       bool familyFriendly,
       bool accessiblePMR,
       bool onlineOnly,
       bool inPersonOnly,
       SortOption sortBy,
+      bool hasExplicitSort,
       int page,
       int perPage});
 }
@@ -334,6 +351,7 @@ class _$EventFilterCopyWithImpl<$Res, $Val extends EventFilter>
     Object? onlyFree = null,
     Object? citySlug = freezed,
     Object? cityName = freezed,
+    Object? cityRadiusKm = null,
     Object? latitude = freezed,
     Object? longitude = freezed,
     Object? radiusKm = null,
@@ -346,11 +364,18 @@ class _$EventFilterCopyWithImpl<$Res, $Val extends EventFilter>
     Object? organizerSlug = freezed,
     Object? organizerName = freezed,
     Object? tagsSlugs = null,
+    Object? targetAudienceSlugs = null,
+    Object? eventTagSlug = freezed,
+    Object? specialEventSlugs = null,
+    Object? emotionSlugs = null,
+    Object? availableOnly = null,
+    Object? locationType = freezed,
     Object? familyFriendly = null,
     Object? accessiblePMR = null,
     Object? onlineOnly = null,
     Object? inPersonOnly = null,
     Object? sortBy = null,
+    Object? hasExplicitSort = null,
     Object? page = null,
     Object? perPage = null,
   }) {
@@ -395,6 +420,10 @@ class _$EventFilterCopyWithImpl<$Res, $Val extends EventFilter>
           ? _value.cityName
           : cityName // ignore: cast_nullable_to_non_nullable
               as String?,
+      cityRadiusKm: null == cityRadiusKm
+          ? _value.cityRadiusKm
+          : cityRadiusKm // ignore: cast_nullable_to_non_nullable
+              as double,
       latitude: freezed == latitude
           ? _value.latitude
           : latitude // ignore: cast_nullable_to_non_nullable
@@ -443,6 +472,30 @@ class _$EventFilterCopyWithImpl<$Res, $Val extends EventFilter>
           ? _value.tagsSlugs
           : tagsSlugs // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      targetAudienceSlugs: null == targetAudienceSlugs
+          ? _value.targetAudienceSlugs
+          : targetAudienceSlugs // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      eventTagSlug: freezed == eventTagSlug
+          ? _value.eventTagSlug
+          : eventTagSlug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      specialEventSlugs: null == specialEventSlugs
+          ? _value.specialEventSlugs
+          : specialEventSlugs // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      emotionSlugs: null == emotionSlugs
+          ? _value.emotionSlugs
+          : emotionSlugs // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      availableOnly: null == availableOnly
+          ? _value.availableOnly
+          : availableOnly // ignore: cast_nullable_to_non_nullable
+              as bool,
+      locationType: freezed == locationType
+          ? _value.locationType
+          : locationType // ignore: cast_nullable_to_non_nullable
+              as LocationTypeFilter?,
       familyFriendly: null == familyFriendly
           ? _value.familyFriendly
           : familyFriendly // ignore: cast_nullable_to_non_nullable
@@ -463,6 +516,10 @@ class _$EventFilterCopyWithImpl<$Res, $Val extends EventFilter>
           ? _value.sortBy
           : sortBy // ignore: cast_nullable_to_non_nullable
               as SortOption,
+      hasExplicitSort: null == hasExplicitSort
+          ? _value.hasExplicitSort
+          : hasExplicitSort // ignore: cast_nullable_to_non_nullable
+              as bool,
       page: null == page
           ? _value.page
           : page // ignore: cast_nullable_to_non_nullable
@@ -494,6 +551,7 @@ abstract class _$$EventFilterImplCopyWith<$Res>
       bool onlyFree,
       String? citySlug,
       String? cityName,
+      double cityRadiusKm,
       double? latitude,
       double? longitude,
       double radiusKm,
@@ -506,11 +564,18 @@ abstract class _$$EventFilterImplCopyWith<$Res>
       String? organizerSlug,
       String? organizerName,
       List<String> tagsSlugs,
+      List<String> targetAudienceSlugs,
+      String? eventTagSlug,
+      List<String> specialEventSlugs,
+      List<String> emotionSlugs,
+      bool availableOnly,
+      LocationTypeFilter? locationType,
       bool familyFriendly,
       bool accessiblePMR,
       bool onlineOnly,
       bool inPersonOnly,
       SortOption sortBy,
+      bool hasExplicitSort,
       int page,
       int perPage});
 }
@@ -536,6 +601,7 @@ class __$$EventFilterImplCopyWithImpl<$Res>
     Object? onlyFree = null,
     Object? citySlug = freezed,
     Object? cityName = freezed,
+    Object? cityRadiusKm = null,
     Object? latitude = freezed,
     Object? longitude = freezed,
     Object? radiusKm = null,
@@ -548,11 +614,18 @@ class __$$EventFilterImplCopyWithImpl<$Res>
     Object? organizerSlug = freezed,
     Object? organizerName = freezed,
     Object? tagsSlugs = null,
+    Object? targetAudienceSlugs = null,
+    Object? eventTagSlug = freezed,
+    Object? specialEventSlugs = null,
+    Object? emotionSlugs = null,
+    Object? availableOnly = null,
+    Object? locationType = freezed,
     Object? familyFriendly = null,
     Object? accessiblePMR = null,
     Object? onlineOnly = null,
     Object? inPersonOnly = null,
     Object? sortBy = null,
+    Object? hasExplicitSort = null,
     Object? page = null,
     Object? perPage = null,
   }) {
@@ -597,6 +670,10 @@ class __$$EventFilterImplCopyWithImpl<$Res>
           ? _value.cityName
           : cityName // ignore: cast_nullable_to_non_nullable
               as String?,
+      cityRadiusKm: null == cityRadiusKm
+          ? _value.cityRadiusKm
+          : cityRadiusKm // ignore: cast_nullable_to_non_nullable
+              as double,
       latitude: freezed == latitude
           ? _value.latitude
           : latitude // ignore: cast_nullable_to_non_nullable
@@ -645,6 +722,30 @@ class __$$EventFilterImplCopyWithImpl<$Res>
           ? _value._tagsSlugs
           : tagsSlugs // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      targetAudienceSlugs: null == targetAudienceSlugs
+          ? _value._targetAudienceSlugs
+          : targetAudienceSlugs // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      eventTagSlug: freezed == eventTagSlug
+          ? _value.eventTagSlug
+          : eventTagSlug // ignore: cast_nullable_to_non_nullable
+              as String?,
+      specialEventSlugs: null == specialEventSlugs
+          ? _value._specialEventSlugs
+          : specialEventSlugs // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      emotionSlugs: null == emotionSlugs
+          ? _value._emotionSlugs
+          : emotionSlugs // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      availableOnly: null == availableOnly
+          ? _value.availableOnly
+          : availableOnly // ignore: cast_nullable_to_non_nullable
+              as bool,
+      locationType: freezed == locationType
+          ? _value.locationType
+          : locationType // ignore: cast_nullable_to_non_nullable
+              as LocationTypeFilter?,
       familyFriendly: null == familyFriendly
           ? _value.familyFriendly
           : familyFriendly // ignore: cast_nullable_to_non_nullable
@@ -665,6 +766,10 @@ class __$$EventFilterImplCopyWithImpl<$Res>
           ? _value.sortBy
           : sortBy // ignore: cast_nullable_to_non_nullable
               as SortOption,
+      hasExplicitSort: null == hasExplicitSort
+          ? _value.hasExplicitSort
+          : hasExplicitSort // ignore: cast_nullable_to_non_nullable
+              as bool,
       page: null == page
           ? _value.page
           : page // ignore: cast_nullable_to_non_nullable
@@ -691,9 +796,10 @@ class _$EventFilterImpl extends _EventFilter {
       this.onlyFree = false,
       this.citySlug,
       this.cityName,
+      this.cityRadiusKm = 10,
       this.latitude,
       this.longitude,
-      this.radiusKm = 50,
+      this.radiusKm = 10,
       this.northEastLat,
       this.northEastLng,
       this.southWestLat,
@@ -703,16 +809,26 @@ class _$EventFilterImpl extends _EventFilter {
       this.organizerSlug,
       this.organizerName,
       final List<String> tagsSlugs = const [],
+      final List<String> targetAudienceSlugs = const [],
+      this.eventTagSlug,
+      final List<String> specialEventSlugs = const [],
+      final List<String> emotionSlugs = const [],
+      this.availableOnly = false,
+      this.locationType,
       this.familyFriendly = false,
       this.accessiblePMR = false,
       this.onlineOnly = false,
       this.inPersonOnly = false,
-      this.sortBy = SortOption.relevance,
+      this.sortBy = SortOption.dateAsc,
+      this.hasExplicitSort = false,
       this.page = 1,
       this.perPage = 20})
       : _thematiquesSlugs = thematiquesSlugs,
         _categoriesSlugs = categoriesSlugs,
         _tagsSlugs = tagsSlugs,
+        _targetAudienceSlugs = targetAudienceSlugs,
+        _specialEventSlugs = specialEventSlugs,
+        _emotionSlugs = emotionSlugs,
         super._();
 
   factory _$EventFilterImpl.fromJson(Map<String, dynamic> json) =>
@@ -746,6 +862,9 @@ class _$EventFilterImpl extends _EventFilter {
   final String? citySlug;
   @override
   final String? cityName;
+  @override
+  @JsonKey()
+  final double cityRadiusKm;
   @override
   final double? latitude;
   @override
@@ -799,6 +918,44 @@ class _$EventFilterImpl extends _EventFilter {
     return EqualUnmodifiableListView(_tagsSlugs);
   }
 
+// Web /events reference-data filters
+  final List<String> _targetAudienceSlugs;
+// Web /events reference-data filters
+  @override
+  @JsonKey()
+  List<String> get targetAudienceSlugs {
+    if (_targetAudienceSlugs is EqualUnmodifiableListView)
+      return _targetAudienceSlugs;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_targetAudienceSlugs);
+  }
+
+  @override
+  final String? eventTagSlug;
+  final List<String> _specialEventSlugs;
+  @override
+  @JsonKey()
+  List<String> get specialEventSlugs {
+    if (_specialEventSlugs is EqualUnmodifiableListView)
+      return _specialEventSlugs;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_specialEventSlugs);
+  }
+
+  final List<String> _emotionSlugs;
+  @override
+  @JsonKey()
+  List<String> get emotionSlugs {
+    if (_emotionSlugs is EqualUnmodifiableListView) return _emotionSlugs;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_emotionSlugs);
+  }
+
+  @override
+  @JsonKey()
+  final bool availableOnly;
+  @override
+  final LocationTypeFilter? locationType;
 // Audience filter
   @override
   @JsonKey()
@@ -817,6 +974,9 @@ class _$EventFilterImpl extends _EventFilter {
   @override
   @JsonKey()
   final SortOption sortBy;
+  @override
+  @JsonKey()
+  final bool hasExplicitSort;
 // Pagination
   @override
   @JsonKey()
@@ -827,7 +987,7 @@ class _$EventFilterImpl extends _EventFilter {
 
   @override
   String toString() {
-    return 'EventFilter(searchQuery: $searchQuery, dateFilterType: $dateFilterType, startDate: $startDate, endDate: $endDate, priceFilterType: $priceFilterType, priceMin: $priceMin, priceMax: $priceMax, onlyFree: $onlyFree, citySlug: $citySlug, cityName: $cityName, latitude: $latitude, longitude: $longitude, radiusKm: $radiusKm, northEastLat: $northEastLat, northEastLng: $northEastLng, southWestLat: $southWestLat, southWestLng: $southWestLng, thematiquesSlugs: $thematiquesSlugs, categoriesSlugs: $categoriesSlugs, organizerSlug: $organizerSlug, organizerName: $organizerName, tagsSlugs: $tagsSlugs, familyFriendly: $familyFriendly, accessiblePMR: $accessiblePMR, onlineOnly: $onlineOnly, inPersonOnly: $inPersonOnly, sortBy: $sortBy, page: $page, perPage: $perPage)';
+    return 'EventFilter(searchQuery: $searchQuery, dateFilterType: $dateFilterType, startDate: $startDate, endDate: $endDate, priceFilterType: $priceFilterType, priceMin: $priceMin, priceMax: $priceMax, onlyFree: $onlyFree, citySlug: $citySlug, cityName: $cityName, cityRadiusKm: $cityRadiusKm, latitude: $latitude, longitude: $longitude, radiusKm: $radiusKm, northEastLat: $northEastLat, northEastLng: $northEastLng, southWestLat: $southWestLat, southWestLng: $southWestLng, thematiquesSlugs: $thematiquesSlugs, categoriesSlugs: $categoriesSlugs, organizerSlug: $organizerSlug, organizerName: $organizerName, tagsSlugs: $tagsSlugs, targetAudienceSlugs: $targetAudienceSlugs, eventTagSlug: $eventTagSlug, specialEventSlugs: $specialEventSlugs, emotionSlugs: $emotionSlugs, availableOnly: $availableOnly, locationType: $locationType, familyFriendly: $familyFriendly, accessiblePMR: $accessiblePMR, onlineOnly: $onlineOnly, inPersonOnly: $inPersonOnly, sortBy: $sortBy, hasExplicitSort: $hasExplicitSort, page: $page, perPage: $perPage)';
   }
 
   @override
@@ -854,6 +1014,8 @@ class _$EventFilterImpl extends _EventFilter {
                 other.citySlug == citySlug) &&
             (identical(other.cityName, cityName) ||
                 other.cityName == cityName) &&
+            (identical(other.cityRadiusKm, cityRadiusKm) ||
+                other.cityRadiusKm == cityRadiusKm) &&
             (identical(other.latitude, latitude) ||
                 other.latitude == latitude) &&
             (identical(other.longitude, longitude) ||
@@ -878,6 +1040,18 @@ class _$EventFilterImpl extends _EventFilter {
                 other.organizerName == organizerName) &&
             const DeepCollectionEquality()
                 .equals(other._tagsSlugs, _tagsSlugs) &&
+            const DeepCollectionEquality()
+                .equals(other._targetAudienceSlugs, _targetAudienceSlugs) &&
+            (identical(other.eventTagSlug, eventTagSlug) ||
+                other.eventTagSlug == eventTagSlug) &&
+            const DeepCollectionEquality()
+                .equals(other._specialEventSlugs, _specialEventSlugs) &&
+            const DeepCollectionEquality()
+                .equals(other._emotionSlugs, _emotionSlugs) &&
+            (identical(other.availableOnly, availableOnly) ||
+                other.availableOnly == availableOnly) &&
+            (identical(other.locationType, locationType) ||
+                other.locationType == locationType) &&
             (identical(other.familyFriendly, familyFriendly) ||
                 other.familyFriendly == familyFriendly) &&
             (identical(other.accessiblePMR, accessiblePMR) ||
@@ -887,6 +1061,8 @@ class _$EventFilterImpl extends _EventFilter {
             (identical(other.inPersonOnly, inPersonOnly) ||
                 other.inPersonOnly == inPersonOnly) &&
             (identical(other.sortBy, sortBy) || other.sortBy == sortBy) &&
+            (identical(other.hasExplicitSort, hasExplicitSort) ||
+                other.hasExplicitSort == hasExplicitSort) &&
             (identical(other.page, page) || other.page == page) &&
             (identical(other.perPage, perPage) || other.perPage == perPage));
   }
@@ -905,6 +1081,7 @@ class _$EventFilterImpl extends _EventFilter {
         onlyFree,
         citySlug,
         cityName,
+        cityRadiusKm,
         latitude,
         longitude,
         radiusKm,
@@ -917,11 +1094,18 @@ class _$EventFilterImpl extends _EventFilter {
         organizerSlug,
         organizerName,
         const DeepCollectionEquality().hash(_tagsSlugs),
+        const DeepCollectionEquality().hash(_targetAudienceSlugs),
+        eventTagSlug,
+        const DeepCollectionEquality().hash(_specialEventSlugs),
+        const DeepCollectionEquality().hash(_emotionSlugs),
+        availableOnly,
+        locationType,
         familyFriendly,
         accessiblePMR,
         onlineOnly,
         inPersonOnly,
         sortBy,
+        hasExplicitSort,
         page,
         perPage
       ]);
@@ -952,6 +1136,7 @@ abstract class _EventFilter extends EventFilter {
       final bool onlyFree,
       final String? citySlug,
       final String? cityName,
+      final double cityRadiusKm,
       final double? latitude,
       final double? longitude,
       final double radiusKm,
@@ -964,11 +1149,18 @@ abstract class _EventFilter extends EventFilter {
       final String? organizerSlug,
       final String? organizerName,
       final List<String> tagsSlugs,
+      final List<String> targetAudienceSlugs,
+      final String? eventTagSlug,
+      final List<String> specialEventSlugs,
+      final List<String> emotionSlugs,
+      final bool availableOnly,
+      final LocationTypeFilter? locationType,
       final bool familyFriendly,
       final bool accessiblePMR,
       final bool onlineOnly,
       final bool inPersonOnly,
       final SortOption sortBy,
+      final bool hasExplicitSort,
       final int page,
       final int perPage}) = _$EventFilterImpl;
   const _EventFilter._() : super._();
@@ -997,6 +1189,8 @@ abstract class _EventFilter extends EventFilter {
   @override
   String? get cityName;
   @override
+  double get cityRadiusKm;
+  @override
   double? get latitude;
   @override
   double? get longitude;
@@ -1020,6 +1214,18 @@ abstract class _EventFilter extends EventFilter {
   String? get organizerName;
   @override // Tags filter (multi-select)
   List<String> get tagsSlugs;
+  @override // Web /events reference-data filters
+  List<String> get targetAudienceSlugs;
+  @override
+  String? get eventTagSlug;
+  @override
+  List<String> get specialEventSlugs;
+  @override
+  List<String> get emotionSlugs;
+  @override
+  bool get availableOnly;
+  @override
+  LocationTypeFilter? get locationType;
   @override // Audience filter
   bool get familyFriendly;
   @override
@@ -1030,6 +1236,8 @@ abstract class _EventFilter extends EventFilter {
   bool get inPersonOnly;
   @override // Sorting
   SortOption get sortBy;
+  @override
+  bool get hasExplicitSort;
   @override // Pagination
   int get page;
   @override

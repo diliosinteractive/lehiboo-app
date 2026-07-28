@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import 'organizer_avatar.dart';
@@ -26,7 +26,7 @@ class FollowedOrganizerTile extends StatelessWidget {
     final displayName = organizer.displayName?.isNotEmpty ?? false
         ? organizer.displayName!
         : organizer.name;
-    final compact = NumberFormat.compact(locale: 'fr');
+    final compact = context.appCompactNumberFormat;
 
     return InkWell(
       onTap: () => context.push('/organizers/${organizer.uuid}'),
@@ -78,8 +78,10 @@ class FollowedOrganizerTile extends StatelessWidget {
                     [
                       if (organizer.city != null && organizer.city!.isNotEmpty)
                         organizer.city,
-                      '${compact.format(organizer.eventsCount)} '
-                          '${organizer.eventsCount > 1 ? "événements" : "événement"}',
+                      context.l10n.organizerEventsCount(
+                        compact.format(organizer.eventsCount),
+                        organizer.eventsCount,
+                      ),
                     ].whereType<String>().join(' • '),
                     style: GoogleFonts.figtree(
                       fontSize: 12,
@@ -123,7 +125,7 @@ class _UnfollowButton extends StatelessWidget {
                 size: 14, color: HbColors.brandPrimary),
             const SizedBox(width: 4),
             Text(
-              'Ne plus suivre',
+              context.l10n.organizerUnfollowAction,
               style: GoogleFonts.figtree(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

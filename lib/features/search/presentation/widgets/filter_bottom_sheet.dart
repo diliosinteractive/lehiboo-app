@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../providers/filter_provider.dart';
+import '../utils/search_l10n.dart';
 import '../../domain/models/event_filter.dart';
-import '../../../thematiques/presentation/providers/thematiques_provider.dart';
-import '../../../thematiques/data/models/thematique_dto.dart';
+import '../../../events/data/models/event_reference_data_dto.dart';
+import '../../../events/data/models/search_suggestions_dto.dart';
 import '../../../home/presentation/providers/home_providers.dart';
+import 'category_cascade.dart';
 
 /// Show the filter bottom sheet
 Future<void> showFilterBottomSheet(BuildContext context) {
@@ -29,38 +33,72 @@ class FilterBottomSheet extends ConsumerStatefulWidget {
 
 class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late EventFilter _tempFilter;
+  SelectedSearchEvent? _tempSelectedEvent;
   bool _isLoadingLocation = false;
 
   @override
   void initState() {
     super.initState();
     _tempFilter = ref.read(eventFilterProvider);
+    final selectedEvent = ref.read(selectedSearchEventProvider);
+    if (selectedEvent != null &&
+        selectedEvent.title.trim() == _tempFilter.searchQuery.trim()) {
+      _tempSelectedEvent = selectedEvent;
+    }
   }
 
   /// Compte les filtres actifs pour le badge
   int get _activeFilterCount {
+    final publicFilters =
+        selectedPublicAudienceFilters(_tempFilter.targetAudienceSlugs);
     int count = 0;
-    if (_tempFilter.dateFilterType != null || _tempFilter.startDate != null) count++;
-    if (_tempFilter.onlyFree || _tempFilter.priceMin > 0 || _tempFilter.priceMax < 500) count++;
-    if (_tempFilter.citySlug != null) count++;
-    if (_tempFilter.latitude != null) count++;
+    if (_tempFilter.searchQuery.isNotEmpty) {
+      count++;
+    }
+    if (_tempFilter.dateFilterType != null || _tempFilter.startDate != null) {
+      count++;
+    }
+    if (_tempFilter.onlyFree ||
+        _tempFilter.priceMin > 0 ||
+        _tempFilter.priceMax < 500) {
+      count++;
+    }
+    if (_tempFilter.citySlug != null) {
+      count++;
+    }
+    if (_tempFilter.latitude != null) {
+      count++;
+    }
     count += _tempFilter.thematiquesSlugs.length;
     count += _tempFilter.categoriesSlugs.length;
-    if (_tempFilter.familyFriendly) count++;
-    if (_tempFilter.accessiblePMR) count++;
+    count += _tempFilter.targetAudienceSlugs.length;
+    if (_tempFilter.eventTagSlug != null) count++;
+    count += _tempFilter.specialEventSlugs.length;
+    count += _tempFilter.emotionSlugs.length;
+    if (_tempFilter.availableOnly) count++;
+    if (_tempFilter.locationType != null) count++;
+    if (_tempFilter.familyFriendly && !publicFilters.contains('family')) {
+      count++;
+    }
+    if (_tempFilter.accessiblePMR && !publicFilters.contains('pmr')) count++;
     if (_tempFilter.onlineOnly) count++;
     if (_tempFilter.inPersonOnly) count++;
-    if (_tempFilter.sortBy != SortOption.relevance) count++;
+    if (_tempFilter.hasExplicitSort) count++;
     return count;
   }
 
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoadingLocation = true);
+    final locationDisabled = context.l10n.searchLocationDisabled;
+    final permissionDenied = context.l10n.searchPermissionDenied;
+    final locationSettingsRequired =
+        context.l10n.searchLocationSettingsRequired;
+    final locationNotFound = context.l10n.searchLocationNotFound;
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _showError('Activez la localisation');
+        _showError(locationDisabled);
         return;
       }
 
@@ -68,13 +106,13 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showError('Permission refusée');
+          _showError(permissionDenied);
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showError('Activez la localisation dans les paramètres');
+        _showError(locationSettingsRequired);
         return;
       }
 
@@ -94,7 +132,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         );
       });
     } catch (e) {
-      _showError('Position introuvable');
+      _showError(locationNotFound);
     } finally {
       setState(() => _isLoadingLocation = false);
     }
@@ -108,7 +146,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           backgroundColor: Colors.red[400],
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -118,6 +157,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   Widget build(BuildContext context) {
     final filterNotifier = ref.read(eventFilterProvider.notifier);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final referenceDataAsync = ref.watch(eventReferenceDataProvider);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
@@ -149,6 +189,19 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   controller: scrollController,
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                   children: [
+                    _FilterCard(
+                      child: _SearchFilterSection(
+                        query: _tempFilter.searchQuery,
+                        onChanged: (query) {
+                          setState(() {
+                            _tempSelectedEvent = null;
+                            _tempFilter =
+                                _tempFilter.copyWith(searchQuery: query);
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     // 1. Section Localisation (NOUVELLE)
                     _FilterCard(
                       child: _LocationFilterSection(
@@ -165,7 +218,14 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         },
                         onRadiusChanged: (radius) {
                           setState(() {
-                            _tempFilter = _tempFilter.copyWith(radiusKm: radius);
+                            _tempFilter =
+                                _tempFilter.copyWith(radiusKm: radius);
+                          });
+                        },
+                        onCityRadiusChanged: (radius) {
+                          setState(() {
+                            _tempFilter =
+                                _tempFilter.copyWith(cityRadiusKm: radius);
                           });
                         },
                         onCitySelected: (slug, name) {
@@ -173,6 +233,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             _tempFilter = _tempFilter.copyWith(
                               citySlug: slug,
                               cityName: name,
+                              cityRadiusKm: 10,
                               latitude: null,
                               longitude: null,
                             );
@@ -238,69 +299,93 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    // 4. Section Catégories
-                    Consumer(
-                      builder: (context, ref, child) {
-                        final filterOptions = ref.watch(filterOptionsProvider);
-                        if (filterOptions.categories.isEmpty) return const SizedBox();
-
-                        return _FilterCard(
-                          child: _CategoriesFilterSection(
-                            selectedSlugs: _tempFilter.categoriesSlugs,
-                            categories: filterOptions.categories,
-                            onChanged: (slugs) {
-                              setState(() {
-                                _tempFilter = _tempFilter.copyWith(categoriesSlugs: slugs);
-                              });
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    // 5. Section Thématiques
-                    Consumer(
-                      builder: (context, ref, child) {
-                        final thematiquesAsync = ref.watch(thematiquesProvider);
-                        return thematiquesAsync.when(
-                          data: (thematiques) => _FilterCard(
-                            child: _ThematiquesFilterSection(
-                              selectedSlugs: _tempFilter.thematiquesSlugs,
-                              thematiques: thematiques,
+                    ...referenceDataAsync.when<List<Widget>>(
+                      data: (referenceData) => [
+                        if (referenceData.categories.isNotEmpty) ...[
+                          _FilterCard(
+                            child: _CategoriesFilterSection(
+                              selectedSlugs: _tempFilter.categoriesSlugs,
+                              categories: referenceData.categories,
                               onChanged: (slugs) {
                                 setState(() {
-                                  _tempFilter = _tempFilter.copyWith(thematiquesSlugs: slugs);
+                                  _tempFilter = _tempFilter.copyWith(
+                                      categoriesSlugs: slugs);
                                 });
                               },
                             ),
                           ),
-                          loading: () => const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(20),
-                              child: CircularProgressIndicator(color: HbColors.brandPrimary),
+                          const SizedBox(height: 12),
+                        ],
+                        if (referenceData.themes.isNotEmpty) ...[
+                          _FilterCard(
+                            child: _ReferenceMultiSelectSection(
+                              title: context.l10n.searchSectionThemes,
+                              icon: Icons.category,
+                              selectedSlugs: _tempFilter.thematiquesSlugs,
+                              options: referenceData.themes,
+                              showCounts: false,
+                              collapsedOptionLimit: 8,
+                              onChanged: (slugs) {
+                                setState(() {
+                                  _tempFilter = _tempFilter.copyWith(
+                                    thematiquesSlugs: slugs,
+                                  );
+                                });
+                              },
                             ),
                           ),
-                          error: (_, __) => const SizedBox(),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    // 6. Section Public
-                    _FilterCard(
-                      child: _AudienceFilterSection(
-                        familyFriendly: _tempFilter.familyFriendly,
-                        accessiblePMR: _tempFilter.accessiblePMR,
-                        onFamilyChanged: (value) {
-                          setState(() {
-                            _tempFilter = _tempFilter.copyWith(familyFriendly: value);
-                          });
-                        },
-                        onPMRChanged: (value) {
-                          setState(() {
-                            _tempFilter = _tempFilter.copyWith(accessiblePMR: value);
-                          });
-                        },
-                      ),
+                          const SizedBox(height: 12),
+                        ],
+                        _FilterCard(
+                          child: _AudienceFilterSection(
+                            selectedPublicFilterKeys:
+                                _tempFilter.targetAudienceSlugs,
+                            publicFilters: referenceData.publicFilters,
+                            onPublicFiltersChanged: (keys) {
+                              setState(() {
+                                _tempFilter = _tempFilter.copyWith(
+                                  targetAudienceSlugs: keys,
+                                  familyFriendly: false,
+                                  accessiblePMR: false,
+                                );
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (referenceData.eventTags.isNotEmpty) ...[
+                          _FilterCard(
+                            child: _ReferenceSingleSelectSection(
+                              title: context.l10n.searchSectionEventType,
+                              icon: Icons.local_activity,
+                              selectedSlug: _tempFilter.eventTagSlug,
+                              options: referenceData.eventTags,
+                              collapsedOptionLimit: 8,
+                              onChanged: (slug) {
+                                setState(() {
+                                  _tempFilter =
+                                      _tempFilter.copyWith(eventTagSlug: slug);
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ],
+                      loading: () => [
+                        const _FilterCard(
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(20),
+                              child: CircularProgressIndicator(
+                                color: HbColors.brandPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      error: (_, __) => const [],
                     ),
                     const SizedBox(height: 12),
                     // 7. Section Format
@@ -312,7 +397,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           setState(() {
                             _tempFilter = _tempFilter.copyWith(
                               onlineOnly: value,
-                              inPersonOnly: value ? false : _tempFilter.inPersonOnly,
+                              inPersonOnly:
+                                  value ? false : _tempFilter.inPersonOnly,
                             );
                           });
                         },
@@ -320,20 +406,93 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           setState(() {
                             _tempFilter = _tempFilter.copyWith(
                               inPersonOnly: value,
-                              onlineOnly: value ? false : _tempFilter.onlineOnly,
+                              onlineOnly:
+                                  value ? false : _tempFilter.onlineOnly,
                             );
                           });
                         },
                       ),
                     ),
                     const SizedBox(height: 12),
+                    _FilterCard(
+                      child: _AvailabilityFilterSection(
+                        availableOnly: _tempFilter.availableOnly,
+                        onChanged: (value) {
+                          setState(() {
+                            _tempFilter =
+                                _tempFilter.copyWith(availableOnly: value);
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _FilterCard(
+                      child: _LocationTypeFilterSection(
+                        selectedType: _tempFilter.locationType,
+                        onChanged: (type) {
+                          setState(() {
+                            _tempFilter =
+                                _tempFilter.copyWith(locationType: type);
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...referenceDataAsync.when<List<Widget>>(
+                      data: (referenceData) => [
+                        if (referenceData.specialEvents.isNotEmpty) ...[
+                          _FilterCard(
+                            child: _ReferenceMultiSelectSection(
+                              title: context.l10n.searchSectionSpecialEvents,
+                              icon: Icons.celebration,
+                              selectedSlugs: _tempFilter.specialEventSlugs,
+                              options: referenceData.specialEvents,
+                              onChanged: (slugs) {
+                                setState(() {
+                                  _tempFilter = _tempFilter.copyWith(
+                                    specialEventSlugs: slugs,
+                                  );
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (referenceData.emotions.isNotEmpty) ...[
+                          _FilterCard(
+                            child: _ReferenceMultiSelectSection(
+                              title: context.l10n.searchSectionMood,
+                              icon: Icons.mood,
+                              selectedSlugs: _tempFilter.emotionSlugs,
+                              options: referenceData.emotions,
+                              showCounts: false,
+                              collapsedOptionLimit: 8,
+                              onChanged: (slugs) {
+                                setState(() {
+                                  _tempFilter = _tempFilter.copyWith(
+                                    emotionSlugs: slugs,
+                                  );
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ],
+                      loading: () => const [],
+                      error: (_, __) => const [],
+                    ),
+                    // 8. Section Tri
                     // 8. Section Tri
                     _FilterCard(
                       child: _SortFilterSection(
-                        selectedSort: _tempFilter.sortBy,
+                        selectedSort: _tempFilter.effectiveSortBy,
                         onChanged: (sort) {
                           setState(() {
-                            _tempFilter = _tempFilter.copyWith(sortBy: sort);
+                            _tempFilter = _tempFilter.copyWith(
+                              sortBy: sort,
+                              hasExplicitSort: true,
+                            );
                           });
                         },
                       ),
@@ -378,7 +537,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 border: Border.all(color: Colors.grey.shade300),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha:0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -390,7 +549,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           const Spacer(),
           // Titre centré
           Text(
-            'Filtres',
+            context.l10n.searchFiltersTitle,
             style: GoogleFonts.montserrat(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -402,10 +561,13 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           GestureDetector(
             onTap: () {
               filterNotifier.resetAll();
-              setState(() => _tempFilter = const EventFilter());
+              setState(() {
+                _tempFilter = const EventFilter();
+                _tempSelectedEvent = null;
+              });
             },
             child: Text(
-              'Effacer',
+              context.l10n.searchClear,
               style: GoogleFonts.montserrat(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -420,14 +582,15 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     );
   }
 
-  Widget _buildFooter(EventFilterNotifier filterNotifier, double bottomPadding) {
+  Widget _buildFooter(
+      EventFilterNotifier filterNotifier, double bottomPadding) {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding + 16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 16,
             offset: const Offset(0, -4),
           ),
@@ -437,7 +600,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         top: false,
         child: GestureDetector(
           onTap: () {
-            filterNotifier.applyFilters(_tempFilter);
+            filterNotifier.applyFilters(
+              _tempFilter,
+              selectedSearchEvent: _tempSelectedEvent,
+            );
             Navigator.pop(context);
           },
           child: AnimatedContainer(
@@ -453,7 +619,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: HbColors.brandPrimary.withValues(alpha:0.3),
+                  color: HbColors.brandPrimary.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -463,7 +629,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Appliquer les filtres',
+                  context.l10n.searchAction,
                   style: GoogleFonts.montserrat(
                     color: Colors.white,
                     fontSize: 16,
@@ -475,7 +641,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   // Badge compteur
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -517,7 +684,7 @@ class _FilterCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -560,16 +727,185 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+class _SearchFilterSection extends ConsumerStatefulWidget {
+  final String query;
+  final ValueChanged<String> onChanged;
+
+  const _SearchFilterSection({
+    required this.query,
+    required this.onChanged,
+  });
+
+  @override
+  ConsumerState<_SearchFilterSection> createState() =>
+      _SearchFilterSectionState();
+}
+
+class _SearchFilterSectionState extends ConsumerState<_SearchFilterSection> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.query);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SearchFilterSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.query != _controller.text) {
+      _controller.text = widget.query;
+      _controller.selection = TextSelection.collapsed(
+        offset: _controller.text.length,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(title: context.l10n.searchTitle, icon: Icons.search),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _controller,
+          onChanged: widget.onChanged,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: context.l10n.searchHintEventOrOrganization,
+            prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
+            suffixIcon: widget.query.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      _controller.clear();
+                      widget.onChanged('');
+                    },
+                    icon: Icon(Icons.close, color: Colors.grey.shade500),
+                  ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: HbColors.brandPrimary, width: 2),
+            ),
+          ),
+        ),
+        if (_shouldShowAutocomplete(widget.query)) ...[
+          const SizedBox(height: 12),
+          _buildEventOrganizationSuggestions(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildEventOrganizationSuggestions() {
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: widget.query,
+          types: 'events,organizations',
+          limit: 5,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        final items = [...data.events, ...data.organizations];
+        if (items.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoSuggestions);
+        }
+
+        return _SuggestionList(
+          children: items.map((item) {
+            final isOrganization = item.type == 'organization';
+            return _SuggestionTile(
+              icon: isOrganization ? Icons.apartment : Icons.event,
+              label: item.label,
+              subtitle: item.subtitle,
+              onTap: () {
+                // Un clic sur une suggestion navigue directement vers la page
+                // concernée (event ou organisation) plutôt que de compléter la
+                // barre de recherche.
+                final destination = _suggestionDestination(item);
+                if (destination != null) {
+                  // Ferme la feuille de filtres avant de naviguer. On capture
+                  // le GoRouter (app-level) avant le pop car le context de ce
+                  // widget devient invalide une fois la modale fermée.
+                  final router = GoRouter.of(context);
+                  Navigator.of(context).pop();
+                  router.push(destination);
+                  return;
+                }
+
+                // Fallback : identifiant manquant → on complète la barre.
+                _controller.text = item.label;
+                _controller.selection = TextSelection.collapsed(
+                  offset: _controller.text.length,
+                );
+                widget.onChanged(item.label);
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  bool _isEventSuggestion(SearchSuggestionItemDto suggestion) {
+    return const {'event', 'events', 'activity', 'activities'}
+        .contains(suggestion.type);
+  }
+
+  /// Route de destination pour une suggestion cliquée, ou `null` si aucun
+  /// identifiant exploitable n'est disponible.
+  ///
+  /// Les routes acceptent le slug ou l'UUID ; on privilégie le slug.
+  String? _suggestionDestination(SearchSuggestionItemDto suggestion) {
+    final identifier =
+        suggestion.slug.isNotEmpty ? suggestion.slug : suggestion.id;
+    if (identifier.isEmpty) return null;
+
+    if (_isEventSuggestion(suggestion)) {
+      return '/event/$identifier';
+    }
+    if (suggestion.type == 'organization') {
+      return '/organizers/$identifier';
+    }
+    return null;
+  }
+}
+
 // =============================================================================
 // SECTION LOCALISATION (NOUVELLE)
 // =============================================================================
 
-class _LocationFilterSection extends ConsumerWidget {
+class _LocationFilterSection extends ConsumerStatefulWidget {
   final EventFilter filter;
   final bool isLoadingLocation;
   final VoidCallback onLocationTap;
   final VoidCallback onClearLocation;
   final ValueChanged<double> onRadiusChanged;
+  final ValueChanged<double> onCityRadiusChanged;
   final void Function(String slug, String name) onCitySelected;
   final VoidCallback onClearCity;
 
@@ -579,34 +915,56 @@ class _LocationFilterSection extends ConsumerWidget {
     required this.onLocationTap,
     required this.onClearLocation,
     required this.onRadiusChanged,
+    required this.onCityRadiusChanged,
     required this.onCitySelected,
     required this.onClearCity,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LocationFilterSection> createState() =>
+      _LocationFilterSectionState();
+}
+
+class _LocationFilterSectionState
+    extends ConsumerState<_LocationFilterSection> {
+  final TextEditingController _citySearchController = TextEditingController();
+  String _cityQuery = '';
+
+  @override
+  void dispose() {
+    _citySearchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filter = widget.filter;
     final hasLocation = filter.latitude != null;
-    final citiesAsync = ref.watch(homeCitiesProvider);
+    final hasCity = filter.citySlug != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Localisation', icon: Icons.location_on),
+        _SectionTitle(
+          title: context.l10n.searchSectionLocation,
+          icon: Icons.location_on,
+        ),
         const SizedBox(height: 20),
 
         // Géolocalisation
         GestureDetector(
-          onTap: isLoadingLocation ? null : onLocationTap,
+          onTap: widget.isLoadingLocation ? null : widget.onLocationTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: hasLocation
-                  ? HbColors.brandPrimary.withValues(alpha:0.08)
+                  ? HbColors.brandPrimary.withValues(alpha: 0.08)
                   : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
+                color:
+                    hasLocation ? HbColors.brandPrimary : Colors.grey.shade200,
                 width: hasLocation ? 2 : 1,
               ),
             ),
@@ -617,11 +975,11 @@ class _LocationFilterSection extends ConsumerWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     color: hasLocation
-                        ? HbColors.brandPrimary.withValues(alpha:0.15)
+                        ? HbColors.brandPrimary.withValues(alpha: 0.15)
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: isLoadingLocation
+                  child: widget.isLoadingLocation
                       ? const Padding(
                           padding: EdgeInsets.all(12),
                           child: CircularProgressIndicator(
@@ -643,7 +1001,7 @@ class _LocationFilterSection extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'À proximité',
+                        context.l10n.homeSearchNearby,
                         style: GoogleFonts.montserrat(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -652,8 +1010,8 @@ class _LocationFilterSection extends ConsumerWidget {
                       ),
                       Text(
                         hasLocation
-                            ? 'Dans un rayon de ${filter.radiusKm.toInt()} km'
-                            : 'Utiliser ma position actuelle',
+                            ? context.searchWithinRadiusLabel(filter.radiusKm)
+                            : context.l10n.searchUseCurrentLocation,
                         style: GoogleFonts.montserrat(
                           fontSize: 13,
                           color: Colors.grey.shade600,
@@ -664,8 +1022,9 @@ class _LocationFilterSection extends ConsumerWidget {
                 ),
                 if (hasLocation)
                   IconButton(
-                    onPressed: onClearLocation,
-                    icon: Icon(Icons.close, size: 20, color: Colors.grey.shade500),
+                    onPressed: widget.onClearLocation,
+                    icon: Icon(Icons.close,
+                        size: 20, color: Colors.grey.shade500),
                   ),
               ],
             ),
@@ -678,7 +1037,7 @@ class _LocationFilterSection extends ConsumerWidget {
           Row(
             children: [
               Text(
-                'Rayon : ',
+                context.l10n.searchRadiusLabel,
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   color: Colors.grey.shade700,
@@ -699,7 +1058,7 @@ class _LocationFilterSection extends ConsumerWidget {
               activeTrackColor: HbColors.brandPrimary,
               inactiveTrackColor: Colors.grey.shade200,
               thumbColor: HbColors.brandPrimary,
-              overlayColor: HbColors.brandPrimary.withValues(alpha:0.2),
+              overlayColor: HbColors.brandPrimary.withValues(alpha: 0.2),
               trackHeight: 4,
             ),
             child: Slider(
@@ -707,8 +1066,83 @@ class _LocationFilterSection extends ConsumerWidget {
               min: 5,
               max: 100,
               divisions: 19,
-              onChanged: onRadiusChanged,
+              onChanged: widget.onRadiusChanged,
             ),
+          ),
+        ],
+
+        const SizedBox(height: 20),
+
+        TextField(
+          controller: _citySearchController,
+          onChanged: (value) => setState(() => _cityQuery = value.trim()),
+          decoration: InputDecoration(
+            hintText: context.l10n.searchHintCity,
+            prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
+            suffixIcon: _cityQuery.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      _citySearchController.clear();
+                      setState(() => _cityQuery = '');
+                    },
+                    icon: Icon(Icons.close, color: Colors.grey.shade500),
+                  ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: HbColors.brandPrimary, width: 2),
+            ),
+          ),
+        ),
+
+        if (hasCity) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  context.searchRadiusAroundCityLabel(
+                    filter.cityName ?? filter.citySlug!,
+                  ),
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+              Text(
+                '${filter.cityRadiusKm.toInt()} km',
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: HbColors.brandPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: const [5, 10, 20, 50].map((radius) {
+              return _SelectableChip(
+                label: '$radius km',
+                icon: Icons.radar,
+                isSelected: filter.cityRadiusKm.toInt() == radius,
+                onTap: () => widget.onCityRadiusChanged(radius.toDouble()),
+              );
+            }).toList(),
           ),
         ],
 
@@ -716,7 +1150,9 @@ class _LocationFilterSection extends ConsumerWidget {
 
         // Villes populaires
         Text(
-          'VILLES POPULAIRES',
+          _cityQuery.isEmpty
+              ? context.l10n.searchPopularCities
+              : context.l10n.searchResults,
           style: GoogleFonts.montserrat(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -726,65 +1162,114 @@ class _LocationFilterSection extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
 
-        citiesAsync.when(
-          data: (cities) {
-            return Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: cities.take(6).map((city) {
-                final isSelected = filter.citySlug == city.slug;
-                return _SelectableChip(
-                  label: city.name,
-                  icon: Icons.location_city,
-                  isSelected: isSelected,
-                  onTap: () {
-                    if (isSelected) {
-                      onClearCity();
-                    } else {
-                      onCitySelected(city.slug, city.name);
-                    }
-                  },
-                );
-              }).toList(),
-            );
-          },
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: HbColors.brandPrimary,
-              ),
+        if (_cityQuery.isNotEmpty && !_shouldShowAutocomplete(_cityQuery))
+          _AutocompleteMessage(
+            context.searchMinCharactersLabel(
+              searchAutocompleteMinQueryLength,
             ),
-          ),
-          error: (_, __) => Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              ('Paris', 'paris'),
-              ('Lyon', 'lyon'),
-              ('Marseille', 'marseille'),
-              ('Bordeaux', 'bordeaux'),
-              ('Toulouse', 'toulouse'),
-              ('Nantes', 'nantes'),
-            ].map((city) {
-              final isSelected = filter.citySlug == city.$2;
-              return _SelectableChip(
-                label: city.$1,
-                icon: Icons.location_city,
-                isSelected: isSelected,
-                onTap: () {
-                  if (isSelected) {
-                    onClearCity();
-                  } else {
-                    onCitySelected(city.$2, city.$1);
-                  }
-                },
-              );
-            }).toList(),
+          )
+        else if (_shouldShowAutocomplete(_cityQuery))
+          _buildCityAutocompleteResults(filter)
+        else
+          _buildPopularCityChips(filter),
+      ],
+    );
+  }
+
+  Widget _buildPopularCityChips(EventFilter filter) {
+    final popularCities = ref.watch(popularCitiesProvider);
+
+    return popularCities.when(
+      data: (result) {
+        final displayedCities = result.cities.take(6).toList();
+
+        if (displayedCities.isEmpty) {
+          return Text(
+            context.l10n.searchNoCityFound,
+            style: GoogleFonts.montserrat(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+          );
+        }
+
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: displayedCities.map((city) {
+            final isSelected = filter.citySlug == city.slug;
+            return _SelectableChip(
+              label: city.name,
+              icon: Icons.location_city,
+              isSelected: isSelected,
+              onTap: () {
+                if (isSelected) {
+                  widget.onClearCity();
+                } else {
+                  widget.onCitySelected(city.slug, city.name);
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: HbColors.brandPrimary,
           ),
         ),
-      ],
+      ),
+      error: (_, __) => Text(
+        context.l10n.searchCitiesUnavailable,
+        style: GoogleFonts.montserrat(
+          fontSize: 13,
+          color: Colors.grey.shade600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCityAutocompleteResults(EventFilter filter) {
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: _cityQuery,
+          types: 'cities',
+          limit: 10,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        if (data.cities.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoCityFound);
+        }
+
+        return _SuggestionList(
+          children: data.cities.map((city) {
+            final isSelected = filter.citySlug == city.slug;
+            return _SuggestionTile(
+              icon: Icons.location_city,
+              label: _labelWithCount(city.label, city.eventsCount),
+              isSelected: isSelected,
+              onTap: () {
+                if (isSelected) {
+                  widget.onClearCity();
+                } else {
+                  widget.onCitySelected(city.slug, city.label);
+                }
+              },
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) =>
+          _AutocompleteMessage(context.l10n.searchCitiesUnavailable),
     );
   }
 }
@@ -817,7 +1302,7 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
 
   String _formatDateRange() {
     if (widget.startDate == null) return '';
-    final formatter = DateFormat('d MMM', 'fr_FR');
+    final formatter = context.appDateFormat('d MMM', enPattern: 'MMM d');
     if (widget.endDate == null || widget.startDate == widget.endDate) {
       return formatter.format(widget.startDate!);
     }
@@ -831,14 +1316,19 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
     final tomorrow = today.add(const Duration(days: 1));
     final daysUntilSaturday = (DateTime.saturday - today.weekday) % 7;
     final saturday = today.add(Duration(
-      days: daysUntilSaturday == 0 && now.weekday != DateTime.saturday ? 7 : daysUntilSaturday,
+      days: daysUntilSaturday == 0 && now.weekday != DateTime.saturday
+          ? 7
+          : daysUntilSaturday,
     ));
     final sunday = saturday.add(const Duration(days: 1));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Date', icon: Icons.calendar_today),
+        _SectionTitle(
+          title: context.l10n.searchSectionDate,
+          icon: Icons.calendar_today,
+        ),
         const SizedBox(height: 16),
 
         // Quick date chips
@@ -847,41 +1337,56 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
           runSpacing: 10,
           children: [
             _DateQuickChip(
-              label: "Aujourd'hui",
-              subtitle: DateFormat('d MMM', 'fr_FR').format(today),
+              label: context.l10n.commonToday,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(today),
               isSelected: widget.selectedType == DateFilterType.today,
               onTap: () => widget.onTypeChanged(
-                widget.selectedType == DateFilterType.today ? null : DateFilterType.today,
+                widget.selectedType == DateFilterType.today
+                    ? null
+                    : DateFilterType.today,
               ),
             ),
             _DateQuickChip(
-              label: 'Demain',
-              subtitle: DateFormat('d MMM', 'fr_FR').format(tomorrow),
+              label: context.l10n.commonTomorrow,
+              subtitle: context
+                  .appDateFormat('d MMM', enPattern: 'MMM d')
+                  .format(tomorrow),
               isSelected: widget.selectedType == DateFilterType.tomorrow,
               onTap: () => widget.onTypeChanged(
-                widget.selectedType == DateFilterType.tomorrow ? null : DateFilterType.tomorrow,
+                widget.selectedType == DateFilterType.tomorrow
+                    ? null
+                    : DateFilterType.tomorrow,
               ),
             ),
             _DateQuickChip(
-              label: 'Ce week-end',
-              subtitle: '${DateFormat('d').format(saturday)}-${DateFormat('d MMM', 'fr_FR').format(sunday)}',
+              label: context.l10n.commonThisWeekend,
+              subtitle:
+                  '${DateFormat('d').format(saturday)}-${context.appDateFormat('d MMM', enPattern: 'MMM d').format(sunday)}',
               isSelected: widget.selectedType == DateFilterType.thisWeekend,
               onTap: () => widget.onTypeChanged(
-                widget.selectedType == DateFilterType.thisWeekend ? null : DateFilterType.thisWeekend,
+                widget.selectedType == DateFilterType.thisWeekend
+                    ? null
+                    : DateFilterType.thisWeekend,
               ),
             ),
             _DateQuickChip(
-              label: 'Cette semaine',
+              label: context.l10n.searchDateThisWeek,
               isSelected: widget.selectedType == DateFilterType.thisWeek,
               onTap: () => widget.onTypeChanged(
-                widget.selectedType == DateFilterType.thisWeek ? null : DateFilterType.thisWeek,
+                widget.selectedType == DateFilterType.thisWeek
+                    ? null
+                    : DateFilterType.thisWeek,
               ),
             ),
             _DateQuickChip(
-              label: 'Ce mois',
+              label: context.l10n.searchDateThisMonth,
               isSelected: widget.selectedType == DateFilterType.thisMonth,
               onTap: () => widget.onTypeChanged(
-                widget.selectedType == DateFilterType.thisMonth ? null : DateFilterType.thisMonth,
+                widget.selectedType == DateFilterType.thisMonth
+                    ? null
+                    : DateFilterType.thisMonth,
               ),
             ),
           ],
@@ -897,7 +1402,7 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: widget.selectedType == DateFilterType.custom
-                  ? HbColors.brandPrimary.withValues(alpha:0.08)
+                  ? HbColors.brandPrimary.withValues(alpha: 0.08)
                   : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
@@ -919,9 +1424,10 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    widget.selectedType == DateFilterType.custom && widget.startDate != null
+                    widget.selectedType == DateFilterType.custom &&
+                            widget.startDate != null
                         ? _formatDateRange()
-                        : 'Choisir des dates personnalisées',
+                        : context.l10n.searchChooseCustomDates,
                     style: GoogleFonts.montserrat(
                       fontSize: 14,
                       fontWeight: widget.selectedType == DateFilterType.custom
@@ -934,7 +1440,9 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
                   ),
                 ),
                 Icon(
-                  _showCalendar ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  _showCalendar
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
                   color: Colors.grey.shade500,
                 ),
               ],
@@ -945,7 +1453,9 @@ class _DateFilterSectionState extends State<_DateFilterSection> {
         // Mini Calendar (visible si ouvert)
         AnimatedCrossFade(
           duration: const Duration(milliseconds: 300),
-          crossFadeState: _showCalendar ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+          crossFadeState: _showCalendar
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
           firstChild: Padding(
             padding: const EdgeInsets.only(top: 16),
             child: _MiniCalendar(
@@ -994,7 +1504,7 @@ class _DateQuickChip extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha:0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1059,8 +1569,10 @@ class _MiniCalendarState extends State<_MiniCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    final daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
-    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final daysInMonth =
+        DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+    final firstDayOfMonth =
+        DateTime(_currentMonth.year, _currentMonth.month, 1);
     final startingWeekday = (firstDayOfMonth.weekday - 1) % 7;
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
@@ -1082,12 +1594,15 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                 icon: Icon(Icons.chevron_left, color: Colors.grey.shade700),
                 onPressed: () {
                   setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+                    _currentMonth =
+                        DateTime(_currentMonth.year, _currentMonth.month - 1);
                   });
                 },
               ),
               Text(
-                DateFormat('MMMM yyyy', 'fr_FR').format(_currentMonth),
+                context
+                    .appDateFormat('MMMM yyyy', enPattern: 'MMMM yyyy')
+                    .format(_currentMonth),
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1097,16 +1612,20 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                 icon: Icon(Icons.chevron_right, color: Colors.grey.shade700),
                 onPressed: () {
                   setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+                    _currentMonth =
+                        DateTime(_currentMonth.year, _currentMonth.month + 1);
                   });
                 },
               ),
             ],
           ),
           const SizedBox(height: 12),
-          // Weekday headers
+          // Weekday headers (localized narrow names, Monday-first)
           Row(
-            children: ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day) {
+            children: List.generate(7, (index) {
+              final day = context
+                  .appDateFormat('EEEEE')
+                  .format(DateTime(2024, 1, 1).add(Duration(days: index)));
               return Expanded(
                 child: Center(
                   child: Text(
@@ -1119,7 +1638,7 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ),
           const SizedBox(height: 8),
           // Calendar grid
@@ -1138,7 +1657,8 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                 return const SizedBox();
               }
 
-              final date = DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
+              final date =
+                  DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
               final isPast = date.isBefore(todayDate);
               final isToday = date.isAtSameMomentAs(todayDate);
               final isSelected = _isDateSelected(date);
@@ -1153,7 +1673,7 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                     color: isSelected
                         ? HbColors.brandPrimary
                         : isInRange
-                            ? HbColors.brandPrimary.withValues(alpha:0.15)
+                            ? HbColors.brandPrimary.withValues(alpha: 0.15)
                             : null,
                     shape: BoxShape.circle,
                     border: isToday && !isSelected
@@ -1165,7 +1685,9 @@ class _MiniCalendarState extends State<_MiniCalendar> {
                       '$dayNumber',
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
-                        fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isToday || isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isPast
                             ? Colors.grey.shade300
                             : isSelected
@@ -1251,13 +1773,14 @@ class _PriceFilterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Budget', icon: Icons.euro),
+        _SectionTitle(
+            title: context.l10n.searchSectionBudget, icon: Icons.euro),
         const SizedBox(height: 16),
 
         // Toggle gratuit
         _ToggleRow(
-          title: 'Gratuit uniquement',
-          subtitle: 'Afficher seulement les activités gratuites',
+          title: context.l10n.searchFreeOnlyTitle,
+          subtitle: context.l10n.searchFreeOnlySubtitle,
           icon: Icons.local_offer,
           isSelected: onlyFree,
           onTap: () => onFreeChanged(!onlyFree),
@@ -1269,7 +1792,7 @@ class _PriceFilterSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Fourchette de prix',
+                context.l10n.searchPriceRangeTitle,
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -1292,9 +1815,10 @@ class _PriceFilterSection extends StatelessWidget {
               activeTrackColor: HbColors.brandPrimary,
               inactiveTrackColor: Colors.grey.shade200,
               thumbColor: HbColors.brandPrimary,
-              overlayColor: HbColors.brandPrimary.withValues(alpha:0.2),
+              overlayColor: HbColors.brandPrimary.withValues(alpha: 0.2),
               trackHeight: 4,
-              rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 10),
+              rangeThumbShape:
+                  const RoundRangeSliderThumbShape(enabledThumbRadius: 10),
             ),
             child: RangeSlider(
               values: RangeValues(validMin, validMax),
@@ -1316,9 +1840,9 @@ class _PriceFilterSection extends StatelessWidget {
 // SECTION CATEGORIES
 // =============================================================================
 
-class _CategoriesFilterSection extends StatefulWidget {
+class _CategoriesFilterSection extends ConsumerStatefulWidget {
   final List<String> selectedSlugs;
-  final List<EventCategoryInfo> categories;
+  final List<EventReferenceCategoryDto> categories;
   final ValueChanged<List<String>> onChanged;
 
   const _CategoriesFilterSection({
@@ -1328,185 +1852,638 @@ class _CategoriesFilterSection extends StatefulWidget {
   });
 
   @override
-  State<_CategoriesFilterSection> createState() => _CategoriesFilterSectionState();
+  ConsumerState<_CategoriesFilterSection> createState() =>
+      _CategoriesFilterSectionState();
 }
 
-class _CategoriesFilterSectionState extends State<_CategoriesFilterSection> {
-  bool _isExpanded = false;
-  static const int _initialLimit = 8;
+class _CategoriesFilterSectionState
+    extends ConsumerState<_CategoriesFilterSection> {
+  static const int _collapsedCategoryGroupLimit = 8;
+
+  final TextEditingController _searchController = TextEditingController();
+  final Set<String> _expandedCategorySlugs = <String>{};
+  bool _showAllCategoryGroups = false;
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     if (widget.categories.isEmpty) return const SizedBox();
 
-    final showAll = _isExpanded || widget.categories.length <= _initialLimit;
-    final displayedCategories = showAll
-        ? widget.categories
-        : widget.categories.take(_initialLimit).toList();
-    final hiddenCount = widget.categories.length - _initialLimit;
+    final displayedCategories = _query.isEmpty
+        ? _visibleCategoryGroups()
+        : <EventReferenceCategoryDto>[];
+    final hiddenCategoryGroupCount = _query.isEmpty
+        ? widget.categories.length - displayedCategories.length
+        : 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Catégories', icon: Icons.grid_view_rounded),
+        _SectionTitle(
+          title: context.l10n.searchSectionCategories,
+          icon: Icons.grid_view_rounded,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _searchController,
+          onChanged: (value) => setState(() => _query = value.trim()),
+          decoration: InputDecoration(
+            hintText: context.l10n.searchHintCategory,
+            prefixIcon: const Icon(Icons.search, color: HbColors.brandPrimary),
+            suffixIcon: _query.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                    icon: Icon(Icons.close, color: Colors.grey.shade500),
+                  ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: HbColors.brandPrimary, width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_query.isNotEmpty && !_shouldShowAutocomplete(_query))
+          _AutocompleteMessage(
+            context.searchMinCharactersLabel(
+              searchAutocompleteMinQueryLength,
+            ),
+          )
+        else if (_shouldShowAutocomplete(_query))
+          _buildCategoryAutocompleteResults()
+        else ...[
+          ...displayedCategories.map(_buildCategoryGroup),
+          if (displayedCategories.isEmpty)
+            Text(
+              context.l10n.searchNoCategoryFound,
+              style: GoogleFonts.montserrat(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          if (hiddenCategoryGroupCount > 0 ||
+              (_showAllCategoryGroups &&
+                  widget.categories.length > _collapsedCategoryGroupLimit)) ...[
+            const SizedBox(height: 4),
+            _buildCategoryGroupVisibilityButton(hiddenCategoryGroupCount),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCategoryAutocompleteResults() {
+    final suggestions = ref.watch(
+      searchSuggestionsProvider(
+        SearchSuggestionsRequest(
+          query: _query,
+          types: 'categories',
+          limit: 10,
+        ),
+      ),
+    );
+
+    return suggestions.when(
+      data: (data) {
+        if (data.categories.isEmpty) {
+          return _AutocompleteMessage(context.l10n.searchNoCategoryFound);
+        }
+
+        return _SuggestionList(
+          children: data.categories.map((category) {
+            final isSelected = widget.selectedSlugs.contains(category.slug);
+            return _SuggestionTile(
+              icon: _iconForReference(null, category.slug),
+              label: category.label,
+              isSelected: isSelected,
+              onTap: () => _toggleSuggestionCategory(category),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const _AutocompleteLoading(),
+      error: (_, __) => _AutocompleteMessage(
+        context.l10n.searchCategoriesUnavailable,
+      ),
+    );
+  }
+
+  List<EventReferenceCategoryDto> _visibleCategoryGroups() {
+    if (_showAllCategoryGroups) return widget.categories;
+
+    final categoriesBySlug = {
+      for (final category in widget.categories) category.slug: category,
+    };
+    final visibleSlugs = prioritizedCategoryGroupSlugs(
+      orderedParentSlugs:
+          widget.categories.map((category) => category.slug).toList(),
+      selectedParentSlugs: selectedParentCategorySlugs(
+        selectedSlugs: widget.selectedSlugs,
+        childSlugsByParent: {
+          for (final category in widget.categories)
+            category.slug:
+                category.children.map((child) => child.slug).toList(),
+        },
+      ),
+      limit: _collapsedCategoryGroupLimit,
+    );
+
+    return [
+      for (final slug in visibleSlugs)
+        if (categoriesBySlug[slug] != null) categoriesBySlug[slug]!,
+    ];
+  }
+
+  Widget _buildCategoryGroup(EventReferenceCategoryDto category) {
+    final isSelected = widget.selectedSlugs.contains(category.slug);
+    final isExpanded = _expandedCategorySlugs.contains(category.slug);
+    final selectedChildren = category.children
+        .where((child) => widget.selectedSlugs.contains(child.slug))
+        .toList();
+    final visibleChildren = isExpanded
+        ? category.children
+        : isSelected
+            ? <EventReferenceCategoryDto>[]
+            : selectedChildren;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _CategoryParentTile(
+            label: category.name,
+            icon: _iconForReference(category.icon, category.slug),
+            eventCount: category.eventCount,
+            childCount: category.children.length,
+            isSelected: isSelected,
+            isExpanded: isExpanded,
+            onTap: () => _toggleParent(category),
+            onExpandTap: category.children.isEmpty
+                ? null
+                : () => _toggleExpandedCategory(category.slug),
+          ),
+          if (visibleChildren.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: visibleChildren.map((child) {
+                  final isChildSelected =
+                      widget.selectedSlugs.contains(child.slug);
+                  return _SelectableChip(
+                    label: child.name,
+                    icon: _iconForReference(child.icon, child.slug),
+                    isSelected: isChildSelected,
+                    onTap: () => _toggleChild(child.slug),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryGroupVisibilityButton(int hiddenCount) {
+    final isExpanded = _showAllCategoryGroups;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () {
+          setState(() {
+            _showAllCategoryGroups = !_showAllCategoryGroups;
+          });
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: HbColors.brandPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          textStyle: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        icon: Icon(
+          isExpanded ? Icons.expand_less : Icons.expand_more,
+          size: 20,
+        ),
+        label: Text(
+          isExpanded
+              ? context.l10n.searchShowLess
+              : context.l10n.searchShowMoreWithCount(hiddenCount),
+        ),
+      ),
+    );
+  }
+
+  void _toggleExpandedCategory(String slug) {
+    setState(() {
+      if (!_expandedCategorySlugs.add(slug)) {
+        _expandedCategorySlugs.remove(slug);
+      }
+    });
+  }
+
+  void _toggleChild(String slug) {
+    final newList = List<String>.from(widget.selectedSlugs);
+    if (newList.contains(slug)) {
+      newList.remove(slug);
+    } else {
+      newList.add(slug);
+    }
+    widget.onChanged(newList);
+  }
+
+  void _toggleSuggestionCategory(SearchSuggestionItemDto suggestion) {
+    final category = _findCategoryBySlug(suggestion.slug);
+    if (category != null && category.children.isNotEmpty) {
+      _toggleParent(category);
+      return;
+    }
+
+    _toggleChild(suggestion.slug);
+  }
+
+  void _toggleParent(EventReferenceCategoryDto category) {
+    final childSlugs = category.children.map((c) => c.slug).toList();
+    final newList = cascadeParentSelection(
+      currentSlugs: widget.selectedSlugs,
+      parentSlug: category.slug,
+      childSlugs: childSlugs,
+    );
+    widget.onChanged(newList);
+  }
+
+  EventReferenceCategoryDto? _findCategoryBySlug(String slug) {
+    for (final category in widget.categories) {
+      if (category.slug == slug) return category;
+      for (final child in category.children) {
+        if (child.slug == slug) return child;
+      }
+    }
+    return null;
+  }
+}
+
+class _CategoryParentTile extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final int? eventCount;
+  final int childCount;
+  final bool isSelected;
+  final bool isExpanded;
+  final VoidCallback onTap;
+  final VoidCallback? onExpandTap;
+
+  const _CategoryParentTile({
+    required this.label,
+    required this.icon,
+    required this.eventCount,
+    required this.childCount,
+    required this.isSelected,
+    required this.isExpanded,
+    required this.onTap,
+    required this.onExpandTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor =
+        isSelected ? HbColors.brandPrimary : HbColors.textDark;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.only(left: 12, right: 4, top: 8, bottom: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? HbColors.brandPrimary.withValues(alpha: 0.08)
+                : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? HbColors.brandPrimary : Colors.grey.shade200,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: foregroundColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _labelWithCount(label, eventCount),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: foregroundColor,
+                  ),
+                ),
+              ),
+              if (isSelected) ...[
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.check_circle,
+                  size: 18,
+                  color: HbColors.brandPrimary,
+                ),
+              ],
+              if (onExpandTap != null)
+                IconButton(
+                  onPressed: onExpandTap,
+                  tooltip: isExpanded
+                      ? context.l10n.searchShowLess
+                      : context.l10n.searchShowMoreWithCount(childCount),
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 40,
+                    height: 40,
+                  ),
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReferenceMultiSelectSection extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final List<String> selectedSlugs;
+  final List<EventReferenceOptionDto> options;
+  final bool showCounts;
+  final int? collapsedOptionLimit;
+  final ValueChanged<List<String>> onChanged;
+
+  const _ReferenceMultiSelectSection({
+    required this.title,
+    required this.icon,
+    required this.selectedSlugs,
+    required this.options,
+    this.showCounts = true,
+    this.collapsedOptionLimit,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ReferenceMultiSelectSection> createState() =>
+      _ReferenceMultiSelectSectionState();
+}
+
+class _ReferenceMultiSelectSectionState
+    extends State<_ReferenceMultiSelectSection> {
+  bool _showAllOptions = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.options.isEmpty) return const SizedBox();
+
+    final visibleOptions = _visibleOptions();
+    final hiddenOptionCount = widget.options.length - visibleOptions.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(title: widget.title, icon: widget.icon),
         const SizedBox(height: 16),
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: displayedCategories.map((c) {
-            final isSelected = widget.selectedSlugs.contains(c.slug);
-            IconData iconData = Icons.label_outline;
-            if (c.icon != null) {
-              if (c.icon!.contains('music')) {
-                iconData = Icons.music_note;
-              } else if (c.icon!.contains('movie')) {
-                iconData = Icons.movie;
-              } else if (c.icon!.contains('sport')) {
-                iconData = Icons.sports;
-              } else if (c.icon!.contains('restaurant')) {
-                iconData = Icons.restaurant;
-              } else if (c.icon!.contains('child')) {
-                iconData = Icons.child_care;
-              } else if (c.icon!.contains('palette')) {
-                iconData = Icons.palette;
-              } else if (c.icon!.contains('school')) {
-                iconData = Icons.school;
-              } else if (c.icon!.contains('book')) {
-                iconData = Icons.menu_book;
-              } else if (c.icon!.contains('park')) {
-                iconData = Icons.park;
-              } else if (c.icon!.contains('computer')) {
-                iconData = Icons.computer;
-              } else if (c.icon!.contains('castle')) {
-                iconData = Icons.castle;
-              } else if (c.icon!.contains('fitness')) {
-                iconData = Icons.fitness_center;
-              }
-            }
+          children: visibleOptions.map((option) {
+            final isSelected = widget.selectedSlugs.contains(option.slug);
 
             return _SelectableChip(
-              label: c.name,
-              icon: iconData,
+              label: widget.showCounts
+                  ? _labelWithCount(option.name, option.eventCount)
+                  : option.name,
+              icon: _iconForReference(option.icon, option.slug),
               isSelected: isSelected,
               onTap: () {
                 final newList = List<String>.from(widget.selectedSlugs);
                 if (isSelected) {
-                  newList.remove(c.slug);
+                  newList.remove(option.slug);
                 } else {
-                  newList.add(c.slug);
+                  newList.add(option.slug);
                 }
                 widget.onChanged(newList);
               },
             );
           }).toList(),
         ),
-        if (widget.categories.length > _initialLimit) ...[
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _isExpanded ? 'Voir moins' : 'Voir plus ($hiddenCount)',
-                  style: GoogleFonts.montserrat(
-                    color: HbColors.brandPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                  color: HbColors.brandPrimary,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
+        if (hiddenOptionCount > 0 ||
+            (_showAllOptions &&
+                widget.collapsedOptionLimit != null &&
+                widget.options.length > widget.collapsedOptionLimit!)) ...[
+          const SizedBox(height: 8),
+          _buildOptionsVisibilityButton(hiddenOptionCount),
         ],
       ],
     );
   }
+
+  List<EventReferenceOptionDto> _visibleOptions() {
+    final limit = widget.collapsedOptionLimit;
+    if (limit == null || _showAllOptions) return widget.options;
+
+    final optionsBySlug = {
+      for (final option in widget.options) option.slug: option,
+    };
+    final visibleSlugs = prioritizedFilterOptionSlugs(
+      orderedSlugs: widget.options.map((option) => option.slug).toList(),
+      selectedSlugs: widget.selectedSlugs.toSet(),
+      limit: limit,
+    );
+
+    return [
+      for (final slug in visibleSlugs)
+        if (optionsBySlug[slug] != null) optionsBySlug[slug]!,
+    ];
+  }
+
+  Widget _buildOptionsVisibilityButton(int hiddenCount) {
+    final isExpanded = _showAllOptions;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () {
+          setState(() {
+            _showAllOptions = !_showAllOptions;
+          });
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: HbColors.brandPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          textStyle: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        icon: Icon(
+          isExpanded ? Icons.expand_less : Icons.expand_more,
+          size: 20,
+        ),
+        label: Text(
+          isExpanded
+              ? context.l10n.searchShowLess
+              : context.l10n.searchShowMoreWithCount(hiddenCount),
+        ),
+      ),
+    );
+  }
 }
 
-// =============================================================================
-// SECTION THEMATIQUES
-// =============================================================================
+class _ReferenceSingleSelectSection extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final String? selectedSlug;
+  final List<EventReferenceOptionDto> options;
+  final int? collapsedOptionLimit;
+  final ValueChanged<String?> onChanged;
 
-class _ThematiquesFilterSection extends StatelessWidget {
-  final List<String> selectedSlugs;
-  final List<ThematiqueDto> thematiques;
-  final ValueChanged<List<String>> onChanged;
-
-  const _ThematiquesFilterSection({
-    required this.selectedSlugs,
-    required this.thematiques,
+  const _ReferenceSingleSelectSection({
+    required this.title,
+    required this.icon,
+    required this.selectedSlug,
+    required this.options,
+    this.collapsedOptionLimit,
     required this.onChanged,
   });
 
-  static const _iconMapping = {
-    'concert': Icons.music_note,
-    'spectacle': Icons.theater_comedy,
-    'sport': Icons.sports,
-    'atelier': Icons.build,
-    'exposition': Icons.museum,
-    'festival': Icons.celebration,
-    'conference': Icons.mic,
-    'cinema': Icons.movie,
-    'gastronomie': Icons.restaurant,
-    'marche': Icons.store,
-    'nature': Icons.park,
-    'visite': Icons.location_city,
-    'famille-enfants': Icons.child_care,
-    'art-culture': Icons.palette,
-    'musique-concert': Icons.music_note,
-    'cinema-spectacle': Icons.theater_comedy,
-    'cuisine-gastronomie': Icons.restaurant,
-    'formation-education': Icons.school,
-    'litterature-lecture': Icons.menu_book,
-    'mode-design': Icons.checkroom,
-    'nature-environnement': Icons.park,
-    'numerique-technologie': Icons.computer,
-    'patrimoine-histoire': Icons.castle,
-    'sport-bien-etre': Icons.fitness_center,
-  };
+  @override
+  State<_ReferenceSingleSelectSection> createState() =>
+      _ReferenceSingleSelectSectionState();
+}
+
+class _ReferenceSingleSelectSectionState
+    extends State<_ReferenceSingleSelectSection> {
+  bool _showAllOptions = false;
 
   @override
   Widget build(BuildContext context) {
-    if (thematiques.isEmpty) return const SizedBox();
+    if (widget.options.isEmpty) return const SizedBox();
+
+    final visibleOptions = _visibleOptions();
+    final hiddenOptionCount = widget.options.length - visibleOptions.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Thématiques', icon: Icons.category),
+        _SectionTitle(title: widget.title, icon: widget.icon),
         const SizedBox(height: 16),
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: thematiques.map((t) {
-            final isSelected = selectedSlugs.contains(t.slug);
-            final icon = _iconMapping[t.slug] ??
-                _iconMapping[t.slug.split('-').last] ??
-                Icons.local_activity;
+          children: visibleOptions.map((option) {
+            final isSelected = widget.selectedSlug == option.slug;
 
             return _SelectableChip(
-              label: t.name,
-              icon: icon,
+              label: _labelWithCount(option.name, option.eventCount),
+              icon: _iconForReference(option.icon, option.slug),
               isSelected: isSelected,
-              onTap: () {
-                final newList = List<String>.from(selectedSlugs);
-                if (isSelected) {
-                  newList.remove(t.slug);
-                } else {
-                  newList.add(t.slug);
-                }
-                onChanged(newList);
-              },
+              onTap: () => widget.onChanged(isSelected ? null : option.slug),
             );
           }).toList(),
         ),
+        if (hiddenOptionCount > 0 ||
+            (_showAllOptions &&
+                widget.collapsedOptionLimit != null &&
+                widget.options.length > widget.collapsedOptionLimit!)) ...[
+          const SizedBox(height: 8),
+          _buildOptionsVisibilityButton(hiddenOptionCount),
+        ],
       ],
+    );
+  }
+
+  List<EventReferenceOptionDto> _visibleOptions() {
+    final limit = widget.collapsedOptionLimit;
+    if (limit == null || _showAllOptions) return widget.options;
+
+    final optionsBySlug = {
+      for (final option in widget.options) option.slug: option,
+    };
+    final visibleSlugs = prioritizedFilterOptionSlugs(
+      orderedSlugs: widget.options.map((option) => option.slug).toList(),
+      selectedSlugs:
+          widget.selectedSlug == null ? <String>{} : {widget.selectedSlug!},
+      limit: limit,
+    );
+
+    return [
+      for (final slug in visibleSlugs)
+        if (optionsBySlug[slug] != null) optionsBySlug[slug]!,
+    ];
+  }
+
+  Widget _buildOptionsVisibilityButton(int hiddenCount) {
+    final isExpanded = _showAllOptions;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () {
+          setState(() {
+            _showAllOptions = !_showAllOptions;
+          });
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: HbColors.brandPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          textStyle: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        icon: Icon(
+          isExpanded ? Icons.expand_less : Icons.expand_more,
+          size: 20,
+        ),
+        label: Text(
+          isExpanded
+              ? context.l10n.searchShowLess
+              : context.l10n.searchShowMoreWithCount(hiddenCount),
+        ),
+      ),
     );
   }
 }
@@ -1516,43 +2493,147 @@ class _ThematiquesFilterSection extends StatelessWidget {
 // =============================================================================
 
 class _AudienceFilterSection extends StatelessWidget {
-  final bool familyFriendly;
-  final bool accessiblePMR;
-  final ValueChanged<bool> onFamilyChanged;
-  final ValueChanged<bool> onPMRChanged;
+  final List<String> selectedPublicFilterKeys;
+  final List<EventReferencePublicFilterDto> publicFilters;
+  final ValueChanged<List<String>> onPublicFiltersChanged;
 
   const _AudienceFilterSection({
-    required this.familyFriendly,
-    required this.accessiblePMR,
-    required this.onFamilyChanged,
-    required this.onPMRChanged,
+    required this.selectedPublicFilterKeys,
+    required this.publicFilters,
+    required this.onPublicFiltersChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    final options = _publicFilterOptions(publicFilters);
+    final selectedKeys =
+        selectedPublicAudienceFilters(selectedPublicFilterKeys);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Public', icon: Icons.people),
-        const SizedBox(height: 16),
-        _ToggleRow(
-          title: 'En famille',
-          subtitle: 'Activités adaptées aux enfants',
-          icon: Icons.family_restroom,
-          isSelected: familyFriendly,
-          onTap: () => onFamilyChanged(!familyFriendly),
+        _SectionTitle(
+          title: context.l10n.searchSectionAudience,
+          icon: Icons.people,
         ),
-        const Divider(height: 24),
-        _ToggleRow(
-          title: 'Accessible PMR',
-          subtitle: 'Accessibilité mobilité réduite',
-          icon: Icons.accessible,
-          isSelected: accessiblePMR,
-          onTap: () => onPMRChanged(!accessiblePMR),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((filter) {
+            final value = _publicFilterValue(filter);
+            final isSelected = selectedKeys.contains(value);
+
+            return _SelectableChip(
+              label: _publicFilterLabel(context, filter),
+              icon: _publicFilterIcon(value),
+              isSelected: isSelected,
+              onTap: () {
+                final newList = List<String>.from(selectedKeys);
+                if (isSelected) {
+                  newList.remove(value);
+                } else {
+                  newList.add(value);
+                }
+                onPublicFiltersChanged(newList);
+              },
+            );
+          }).toList(),
         ),
       ],
     );
   }
+}
+
+const _fallbackPublicFilters = [
+  EventReferencePublicFilterDto(
+    key: 'family',
+    label: '',
+    param: 'public_filters',
+    value: 'family',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'pmr',
+    label: '',
+    param: 'public_filters',
+    value: 'pmr',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'group',
+    label: '',
+    param: 'public_filters',
+    value: 'group',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'school',
+    label: '',
+    param: 'public_filters',
+    value: 'school',
+  ),
+  EventReferencePublicFilterDto(
+    key: 'professional',
+    label: '',
+    param: 'public_filters',
+    value: 'professional',
+  ),
+];
+
+List<EventReferencePublicFilterDto> _publicFilterOptions(
+  List<EventReferencePublicFilterDto> filters,
+) {
+  final options = filters.where((filter) {
+    return publicAudienceFilterKeys.contains(_publicFilterValue(filter));
+  }).toList();
+  if (options.isEmpty) return _fallbackPublicFilters;
+
+  final order = {
+    for (var i = 0; i < publicAudienceFilterKeys.length; i++)
+      publicAudienceFilterKeys.elementAt(i): i,
+  };
+  options.sort((a, b) {
+    final aOrder =
+        order[_publicFilterValue(a)] ?? publicAudienceFilterKeys.length;
+    final bOrder =
+        order[_publicFilterValue(b)] ?? publicAudienceFilterKeys.length;
+    return aOrder.compareTo(bOrder);
+  });
+
+  return options;
+}
+
+String _publicFilterValue(EventReferencePublicFilterDto filter) {
+  return filter.value.isNotEmpty ? filter.value : filter.key;
+}
+
+IconData _publicFilterIcon(String key) {
+  switch (key) {
+    case 'family':
+      return Icons.family_restroom;
+    case 'pmr':
+      return Icons.accessible;
+    case 'group':
+      return Icons.groups;
+    case 'school':
+      return Icons.school;
+    case 'professional':
+      return Icons.business_center;
+    default:
+      return Icons.people;
+  }
+}
+
+String _publicFilterLabel(
+  BuildContext context,
+  EventReferencePublicFilterDto filter,
+) {
+  return switch (_publicFilterValue(filter)) {
+    'family' => context.l10n.searchFamilyTitle,
+    'pmr' => context.l10n.searchAccessiblePmr,
+    'group' => context.l10n.searchAudienceGroup,
+    'school' => context.l10n.searchAudienceSchoolGroup,
+    'professional' => context.l10n.searchAudienceProfessional,
+    _ => filter.label,
+  };
 }
 
 // =============================================================================
@@ -1577,22 +2658,116 @@ class _FormatFilterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Format', icon: Icons.videocam),
+        _SectionTitle(
+          title: context.l10n.searchSectionFormat,
+          icon: Icons.videocam,
+        ),
         const SizedBox(height: 16),
         _ToggleRow(
-          title: 'En ligne',
-          subtitle: 'Activités virtuelles',
+          title: context.l10n.searchOnline,
+          subtitle: context.l10n.searchOnlineSubtitle,
           icon: Icons.videocam_outlined,
           isSelected: onlineOnly,
           onTap: () => onOnlineChanged(!onlineOnly),
         ),
         const Divider(height: 24),
         _ToggleRow(
-          title: 'En présentiel',
-          subtitle: 'Activités sur place',
+          title: context.l10n.searchInPerson,
+          subtitle: context.l10n.searchInPersonSubtitle,
           icon: Icons.location_on_outlined,
           isSelected: inPersonOnly,
           onTap: () => onInPersonChanged(!inPersonOnly),
+        ),
+      ],
+    );
+  }
+}
+
+class _AvailabilityFilterSection extends StatelessWidget {
+  final bool availableOnly;
+  final ValueChanged<bool> onChanged;
+
+  const _AvailabilityFilterSection({
+    required this.availableOnly,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(
+          title: context.l10n.searchAvailabilityTitle,
+          icon: Icons.event_available,
+        ),
+        const SizedBox(height: 16),
+        _ToggleRow(
+          title: context.l10n.searchAvailablePlaces,
+          subtitle: context.l10n.searchAvailabilitySubtitle,
+          icon: Icons.confirmation_number_outlined,
+          isSelected: availableOnly,
+          onTap: () => onChanged(!availableOnly),
+        ),
+      ],
+    );
+  }
+}
+
+class _LocationTypeFilterSection extends StatelessWidget {
+  final LocationTypeFilter? selectedType;
+  final ValueChanged<LocationTypeFilter?> onChanged;
+
+  const _LocationTypeFilterSection({
+    required this.selectedType,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(
+          title: context.l10n.searchSectionLocationType,
+          icon: Icons.place,
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _SelectableChip(
+              label: context.l10n.searchLocationIndoor,
+              icon: Icons.home_work_outlined,
+              isSelected: selectedType == LocationTypeFilter.physical,
+              onTap: () => onChanged(
+                selectedType == LocationTypeFilter.physical
+                    ? null
+                    : LocationTypeFilter.physical,
+              ),
+            ),
+            _SelectableChip(
+              label: context.l10n.searchLocationOutdoor,
+              icon: Icons.park_outlined,
+              isSelected: selectedType == LocationTypeFilter.offline,
+              onTap: () => onChanged(
+                selectedType == LocationTypeFilter.offline
+                    ? null
+                    : LocationTypeFilter.offline,
+              ),
+            ),
+            _SelectableChip(
+              label: context.l10n.searchLocationMixed,
+              icon: Icons.sync_alt,
+              isSelected: selectedType == LocationTypeFilter.hybrid,
+              onTap: () => onChanged(
+                selectedType == LocationTypeFilter.hybrid
+                    ? null
+                    : LocationTypeFilter.hybrid,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -1617,34 +2792,44 @@ class _SortFilterSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(title: 'Trier par', icon: Icons.sort),
+        _SectionTitle(title: context.l10n.searchSortBy, icon: Icons.sort),
         const SizedBox(height: 16),
         Wrap(
           spacing: 10,
           runSpacing: 10,
           children: [
             _SelectableChip(
-              label: 'Pertinence',
+              label: context.l10n.searchSortRelevance,
               isSelected: selectedSort == SortOption.relevance,
               onTap: () => onChanged(SortOption.relevance),
             ),
             _SelectableChip(
-              label: 'Date (proche)',
+              label: context.l10n.searchSortNewest,
+              isSelected: selectedSort == SortOption.newest,
+              onTap: () => onChanged(SortOption.newest),
+            ),
+            _SelectableChip(
+              label: context.l10n.searchSortDateAsc,
               isSelected: selectedSort == SortOption.dateAsc,
               onTap: () => onChanged(SortOption.dateAsc),
             ),
             _SelectableChip(
-              label: 'Prix croissant',
+              label: context.l10n.searchSortDistance,
+              isSelected: selectedSort == SortOption.distance,
+              onTap: () => onChanged(SortOption.distance),
+            ),
+            _SelectableChip(
+              label: context.l10n.searchSortPriceAsc,
               isSelected: selectedSort == SortOption.priceAsc,
               onTap: () => onChanged(SortOption.priceAsc),
             ),
             _SelectableChip(
-              label: 'Prix décroissant',
+              label: context.l10n.searchSortPriceDesc,
               isSelected: selectedSort == SortOption.priceDesc,
               onTap: () => onChanged(SortOption.priceDesc),
             ),
             _SelectableChip(
-              label: 'Popularité',
+              label: context.l10n.searchSortPopularity,
               isSelected: selectedSort == SortOption.popularity,
               onTap: () => onChanged(SortOption.popularity),
             ),
@@ -1658,6 +2843,175 @@ class _SortFilterSection extends StatelessWidget {
 // =============================================================================
 // COMPOSANTS REUTILISABLES
 // =============================================================================
+
+bool _shouldShowAutocomplete(String query) {
+  return query.trim().length >= searchAutocompleteMinQueryLength;
+}
+
+class _SuggestionList extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SuggestionList({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: Colors.grey.shade200),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SuggestionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.subtitle,
+    this.isSelected = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? HbColors.brandPrimary : Colors.grey.shade600,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? HbColors.brandPrimary
+                          : HbColors.textDark,
+                    ),
+                  ),
+                  if (subtitle != null && subtitle!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle,
+                size: 18,
+                color: HbColors.brandPrimary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AutocompleteMessage extends StatelessWidget {
+  final String message;
+
+  const _AutocompleteMessage(this.message);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      style: GoogleFonts.montserrat(
+        fontSize: 13,
+        color: Colors.grey.shade600,
+      ),
+    );
+  }
+}
+
+class _AutocompleteLoading extends StatelessWidget {
+  const _AutocompleteLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(12),
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: HbColors.brandPrimary,
+        ),
+      ),
+    );
+  }
+}
+
+String _labelWithCount(String label, int? count) {
+  if (count == null || count <= 0) return label;
+  return '$label ($count)';
+}
+
+IconData _iconForReference(String? icon, String slug) {
+  final key = '${icon ?? ''} $slug'.toLowerCase();
+
+  if (key.contains('music') || key.contains('concert')) return Icons.music_note;
+  if (key.contains('movie') || key.contains('cinema')) return Icons.movie;
+  if (key.contains('sport') || key.contains('fitness')) return Icons.sports;
+  if (key.contains('restaurant') || key.contains('gastronomie')) {
+    return Icons.restaurant;
+  }
+  if (key.contains('child') || key.contains('famille')) return Icons.child_care;
+  if (key.contains('palette') || key.contains('art')) return Icons.palette;
+  if (key.contains('school') || key.contains('formation')) return Icons.school;
+  if (key.contains('book') || key.contains('litterature')) {
+    return Icons.menu_book;
+  }
+  if (key.contains('park') || key.contains('nature')) return Icons.park;
+  if (key.contains('computer') || key.contains('numerique')) {
+    return Icons.computer;
+  }
+  if (key.contains('castle') || key.contains('patrimoine')) return Icons.castle;
+  if (key.contains('mood') || key.contains('emotion')) return Icons.mood;
+  if (key.contains('celebration') || key.contains('festival')) {
+    return Icons.celebration;
+  }
+  return Icons.local_activity;
+}
 
 /// Chip sélectionnable amélioré avec animation
 class _SelectableChip extends StatelessWidget {
@@ -1690,7 +3044,7 @@ class _SelectableChip extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: HbColors.brandPrimary.withValues(alpha:0.25),
+                    color: HbColors.brandPrimary.withValues(alpha: 0.25),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1753,7 +3107,7 @@ class _ToggleRow extends StatelessWidget {
             height: 44,
             decoration: BoxDecoration(
               color: isSelected
-                  ? HbColors.brandPrimary.withValues(alpha:0.1)
+                  ? HbColors.brandPrimary.withValues(alpha: 0.1)
                   : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
             ),
@@ -1798,7 +3152,8 @@ class _ToggleRow extends StatelessWidget {
             child: AnimatedAlign(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
-              alignment: isSelected ? Alignment.centerRight : Alignment.centerLeft,
+              alignment:
+                  isSelected ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
                 width: 28,
                 height: 28,
@@ -1808,7 +3163,7 @@ class _ToggleRow extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha:0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),

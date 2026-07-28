@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/large_qr_code.dart';
 import 'package:screen_brightness/screen_brightness.dart';
@@ -128,7 +129,7 @@ class _FullscreenQRSheetState extends State<FullscreenQRSheet>
                         const SizedBox(height: 40),
                         // Hint
                         Text(
-                          'Appuyez n\'importe où pour fermer',
+                          context.l10n.bookingQrTapCloseHint,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade400,

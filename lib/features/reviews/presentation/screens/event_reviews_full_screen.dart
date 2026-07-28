@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/guest_guard.dart';
 import '../../../../core/widgets/feedback/hb_feedback.dart';
@@ -91,7 +92,7 @@ class _EventReviewsFullScreenState
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = 'Impossible de charger les avis.';
+        _error = context.l10n.organizerReviewsLoadError;
       });
     }
   }
@@ -127,7 +128,7 @@ class _EventReviewsFullScreenState
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'laisser un avis',
+      featureName: context.l10n.guestFeatureWriteReview,
     );
     if (!allowed || !mounted) return;
     final created = await WriteReviewSheet.show(
@@ -142,7 +143,7 @@ class _EventReviewsFullScreenState
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'signaler un avis',
+      featureName: context.l10n.guestFeatureReportReview,
     );
     if (!allowed || !mounted) return;
     await ReportReviewSheet.show(context, reviewUuid: review.uuid);
@@ -227,7 +228,7 @@ class _EventReviewsFullScreenState
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Tous les avis'),
+        title: Text(context.l10n.reviewsAllTitle),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: HbColors.textPrimary,
@@ -244,9 +245,9 @@ class _EventReviewsFullScreenState
               },
               backgroundColor: HbColors.brandPrimary,
               icon: const Icon(Icons.edit_outlined, color: Colors.white),
-              label: const Text(
-                'Écrire un avis',
-                style: TextStyle(color: Colors.white),
+              label: Text(
+                context.l10n.reviewsWriteReviewAction,
+                style: const TextStyle(color: Colors.white),
               ),
             ),
       body: RefreshIndicator(
@@ -295,8 +296,7 @@ class _EventReviewsFullScreenState
                   if (r is CanReviewDenied &&
                       r.reason != CanReviewReason.alreadyReviewed) {
                     return Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: CanReviewMessage(denied: r),
                     );
                   }
@@ -326,9 +326,8 @@ class _EventReviewsFullScreenState
               children: [
                 _RatingChip(
                   selected: _query.rating == null,
-                  label: 'Tous',
-                  onTap: () =>
-                      _changeQuery((q) => q.copyWith(rating: null)),
+                  label: context.l10n.reviewsAllRatingsFilter,
+                  onTap: () => _changeQuery((q) => q.copyWith(rating: null)),
                 ),
                 const SizedBox(width: 6),
                 ...[5, 4, 3, 2, 1].map((star) {
@@ -350,29 +349,26 @@ class _EventReviewsFullScreenState
             children: [
               FilterChip(
                 selected: _query.verifiedOnly,
-                label: const Text('Vérifiés'),
+                label: Text(context.l10n.reviewsVerifiedFilter),
                 onSelected: (v) =>
                     _changeQuery((q) => q.copyWith(verifiedOnly: v)),
-                selectedColor:
-                    HbColors.brandPrimary.withValues(alpha: 0.15),
+                selectedColor: HbColors.brandPrimary.withValues(alpha: 0.15),
                 checkmarkColor: HbColors.brandPrimary,
               ),
               const SizedBox(width: 6),
               FilterChip(
                 selected: _query.featuredOnly,
-                label: const Text('Mis en avant'),
+                label: Text(context.l10n.reviewsFeaturedFilter),
                 onSelected: (v) =>
                     _changeQuery((q) => q.copyWith(featuredOnly: v)),
-                selectedColor:
-                    HbColors.brandPrimary.withValues(alpha: 0.15),
+                selectedColor: HbColors.brandPrimary.withValues(alpha: 0.15),
                 checkmarkColor: HbColors.brandPrimary,
               ),
               const Spacer(),
               PopupMenuButton<ReviewSortBy>(
-                tooltip: 'Trier',
+                tooltip: context.l10n.reviewsSortTooltip,
                 icon: const Icon(Icons.sort, color: HbColors.textPrimary),
-                onSelected: (v) =>
-                    _changeQuery((q) => q.copyWith(sortBy: v)),
+                onSelected: (v) => _changeQuery((q) => q.copyWith(sortBy: v)),
                 itemBuilder: (_) => ReviewSortBy.values
                     .map((v) => PopupMenuItem(
                           value: v,
@@ -380,11 +376,9 @@ class _EventReviewsFullScreenState
                             children: [
                               if (_query.sortBy == v)
                                 const Icon(Icons.check,
-                                    size: 16,
-                                    color: HbColors.brandPrimary),
-                              if (_query.sortBy == v)
-                                const SizedBox(width: 6),
-                              Text(v.displayLabel),
+                                    size: 16, color: HbColors.brandPrimary),
+                              if (_query.sortBy == v) const SizedBox(width: 6),
+                              Text(_sortLabel(context, v)),
                             ],
                           ),
                         ))
@@ -413,12 +407,12 @@ class _EventReviewsFullScreenState
       );
     }
     if (_items.isEmpty) {
-      return const SliverFillRemaining(
+      return SliverFillRemaining(
         hasScrollBody: false,
         child: HbEmptyState(
           icon: Icons.rate_review_outlined,
-          title: 'Aucun avis',
-          message: 'Aucun avis ne correspond aux filtres sélectionnés.',
+          title: context.l10n.reviewsNoReviewsTitle,
+          message: context.l10n.reviewsNoFilteredResults,
         ),
       );
     }
@@ -451,6 +445,17 @@ class _EventReviewsFullScreenState
       ),
     );
   }
+
+  String _sortLabel(BuildContext context, ReviewSortBy sortBy) {
+    switch (sortBy) {
+      case ReviewSortBy.helpful:
+        return context.l10n.reviewsSortMostHelpful;
+      case ReviewSortBy.rating:
+        return context.l10n.reviewsSortRating;
+      case ReviewSortBy.createdAt:
+        return context.l10n.reviewsSortNewest;
+    }
+  }
 }
 
 class _RatingChip extends StatelessWidget {
@@ -472,14 +477,10 @@ class _RatingChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected
-              ? HbColors.brandPrimary
-              : Colors.white,
+          color: selected ? HbColors.brandPrimary : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected
-                ? HbColors.brandPrimary
-                : Colors.grey.shade300,
+            color: selected ? HbColors.brandPrimary : Colors.grey.shade300,
           ),
         ),
         child: Text(

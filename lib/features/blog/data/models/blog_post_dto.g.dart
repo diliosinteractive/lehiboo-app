@@ -13,10 +13,7 @@ _$BlogPostDtoImpl _$$BlogPostDtoImplFromJson(Map<String, dynamic> json) =>
       slug: json['slug'] as String,
       excerpt: json['excerpt'] as String?,
       content: json['content'] as String?,
-      featuredImage: json['featured_image'] == null
-          ? null
-          : BlogImageDto.fromJson(
-              json['featured_image'] as Map<String, dynamic>),
+      featuredImage: _blogImageFromJson(json['featured_image']),
       categories: (json['categories'] as List<dynamic>?)
           ?.map((e) => BlogCategoryDto.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -97,8 +94,8 @@ Map<String, dynamic> _$$BlogTagDtoImplToJson(_$BlogTagDtoImpl instance) =>
 
 _$BlogAuthorDtoImpl _$$BlogAuthorDtoImplFromJson(Map<String, dynamic> json) =>
     _$BlogAuthorDtoImpl(
-      id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
+      id: (json['id'] as num?)?.toInt(),
+      name: json['name'] as String? ?? 'Le Hiboo',
       avatar: json['avatar'] as String?,
     );
 

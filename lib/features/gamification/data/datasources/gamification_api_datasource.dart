@@ -115,6 +115,10 @@ class GamificationApiDataSource {
       currentBalance: (meta['current_balance'] as num?)?.toInt() ?? 0,
       lifetimeEarned: (meta['lifetime_earned'] as num?)?.toInt() ?? 0,
       earningsByPillar: earningsByPillar,
+      currentPage: (meta['current_page'] as num?)?.toInt(),
+      lastPage: (meta['last_page'] as num?)?.toInt(),
+      perPage: (meta['per_page'] as num?)?.toInt(),
+      total: (meta['total'] as num?)?.toInt(),
     );
   }
 

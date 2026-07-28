@@ -20,7 +20,7 @@ class _CategoriesRepository implements EventRepository {
   int calls = 0;
 
   @override
-  Future<List<EventCategoryDto>> getCategories() async {
+  Future<List<EventCategoryDto>> getCategories({bool homeOnly = false}) async {
     calls++;
     final currentError = error;
     if (currentError != null) throw currentError;

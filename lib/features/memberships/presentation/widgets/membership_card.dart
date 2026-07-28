@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart' as intl;
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
 import '../../data/models/membership_dto.dart';
@@ -72,14 +72,14 @@ class MembershipCard extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        _chipFor(membership.status),
+                        _chipFor(context, membership.status),
                       ],
                     ),
                     const SizedBox(height: 2),
                     _OrgMetaRow(organization: org),
                     const SizedBox(height: 4),
                     Text(
-                      _subText(membership),
+                      _subText(context, membership),
                       style: GoogleFonts.figtree(
                         fontSize: 12,
                         color: Colors.grey[700],
@@ -96,7 +96,7 @@ class MembershipCard extends ConsumerWidget {
             runSpacing: 8,
             children: [
               _OutlinedAction(
-                label: 'Voir la fiche',
+                label: context.l10n.membershipViewOrganizer,
                 icon: Icons.open_in_new,
                 onTap: orgUuid.isEmpty
                     ? null
@@ -104,7 +104,7 @@ class MembershipCard extends ConsumerWidget {
               ),
               if (membership.status == MembershipStatus.active)
                 _OutlinedAction(
-                  label: 'Événements privés',
+                  label: context.l10n.membershipPrivateEventsAction,
                   icon: Icons.lock_outline,
                   onTap: orgUuid.isEmpty
                       ? null
@@ -125,26 +125,26 @@ class MembershipCard extends ConsumerWidget {
     );
   }
 
-  StatusChip _chipFor(MembershipStatus s) => switch (s) {
-        MembershipStatus.pending => StatusChip.pending(),
-        MembershipStatus.active => StatusChip.active(),
-        MembershipStatus.rejected => StatusChip.rejected(),
+  StatusChip _chipFor(BuildContext context, MembershipStatus s) => switch (s) {
+        MembershipStatus.pending => StatusChip.pending(context),
+        MembershipStatus.active => StatusChip.active(context),
+        MembershipStatus.rejected => StatusChip.rejected(context),
       };
 
-  String _subText(MembershipDto m) {
-    final fmt = intl.DateFormat('dd/MM/yyyy', 'fr');
+  String _subText(BuildContext context, MembershipDto m) {
+    final fmt = context.appDateFormat('dd/MM/yyyy', enPattern: 'MM/dd/yyyy');
     final approved = _parse(m.approvedAt);
     final requested = _parse(m.requestedAt);
     return switch (m.status) {
       MembershipStatus.active => approved != null
-          ? 'Membre depuis le ${fmt.format(approved)}'
-          : 'Membre',
+          ? context.l10n.membershipMemberSince(fmt.format(approved))
+          : context.l10n.membershipMember,
       MembershipStatus.pending => requested != null
-          ? 'Demande envoyée le ${fmt.format(requested)}'
-          : 'Demande envoyée',
+          ? context.l10n.membershipRequestSentOn(fmt.format(requested))
+          : context.l10n.membershipRequestSent,
       MembershipStatus.rejected => requested != null
-          ? 'Demande du ${fmt.format(requested)} — non acceptée'
-          : 'Demande non acceptée',
+          ? context.l10n.membershipRequestRejectedOn(fmt.format(requested))
+          : context.l10n.membershipRequestRejected,
     };
   }
 
@@ -187,7 +187,6 @@ class _OrgMetaRow extends StatelessWidget {
     final hasCount = count != null;
     if (!hasAddress && !hasCount) return const SizedBox.shrink();
 
-    final compact = intl.NumberFormat.compact(locale: 'fr');
     return Padding(
       padding: const EdgeInsets.only(top: 2),
       child: Wrap(
@@ -203,8 +202,7 @@ class _OrgMetaRow extends StatelessWidget {
           if (hasCount)
             _MetaChip(
               icon: Icons.groups_outlined,
-              label: '${compact.format(count)} '
-                  '${count > 1 ? "membres" : "membre"}',
+              label: context.l10n.membershipMembersCount(count),
             ),
         ],
       ),
@@ -255,13 +253,17 @@ class _PrimaryAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final spec = switch (membership.status) {
       MembershipStatus.pending => (
-          'Annuler la demande',
+          context.l10n.membershipCancelRequestAction,
           HbColors.brandPrimary,
           false,
         ),
-      MembershipStatus.active => ('Quitter', HbColors.error, false),
+      MembershipStatus.active => (
+          context.l10n.membershipLeaveAction,
+          HbColors.error,
+          false,
+        ),
       MembershipStatus.rejected => (
-          'Refaire la demande',
+          context.l10n.membershipRetryRequestAction,
           HbColors.brandPrimary,
           true,
         ),

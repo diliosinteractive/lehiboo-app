@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/checkin_blocker.dart';
 import '../../domain/entities/peek_result.dart';
 import '../../domain/repositories/checkin_repository.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../datasources/checkin_api_datasource.dart';
 import '../models/checkin_request_dto.dart';
 import '../models/checkin_response_dto.dart';
@@ -32,10 +33,9 @@ class CheckinRepositoryImpl implements CheckinRepository {
       return mapPeekResponseToResult(dto);
     } on DioException catch (e) {
       throw _mapDioException(e);
-    } on FormatException catch (e) {
-      throw CheckinFailure(
+    } on FormatException {
+      throw const CheckinFailure(
         blocker: CheckinBlocker.unknown,
-        message: e.message,
       );
     }
   }
@@ -49,10 +49,9 @@ class CheckinRepositoryImpl implements CheckinRepository {
       return await _api.commit(ticketUuid, request);
     } on DioException catch (e) {
       throw _mapDioException(e);
-    } on FormatException catch (e) {
-      throw CheckinFailure(
+    } on FormatException {
+      throw const CheckinFailure(
         blocker: CheckinBlocker.unknown,
-        message: e.message,
       );
     }
   }
@@ -68,9 +67,8 @@ class CheckinRepositoryImpl implements CheckinRepository {
         e.type == DioExceptionType.sendTimeout ||
         e.type == DioExceptionType.connectionError;
     if (isTransport) {
-      return CheckinFailure(
+      return const CheckinFailure(
         blocker: CheckinBlocker.unknown,
-        message: e.message,
         isNetworkError: true,
       );
     }
@@ -89,7 +87,7 @@ class CheckinRepositoryImpl implements CheckinRepository {
     if (errorCode != null && errorCode.isNotEmpty) {
       return CheckinFailure(
         blocker: checkinBlockerFromCode(errorCode),
-        message: message,
+        message: ApiResponseHandler.safeUserMessage(message),
         statusCode: status,
       );
     }
@@ -103,7 +101,7 @@ class CheckinRepositoryImpl implements CheckinRepository {
     };
     return CheckinFailure(
       blocker: fallback,
-      message: message,
+      message: ApiResponseHandler.safeUserMessage(message),
       statusCode: status,
     );
   }

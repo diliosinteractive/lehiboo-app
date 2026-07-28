@@ -25,7 +25,7 @@ mixin _$BlogPostDto {
   String get slug => throw _privateConstructorUsedError;
   String? get excerpt => throw _privateConstructorUsedError;
   String? get content => throw _privateConstructorUsedError;
-  @JsonKey(name: 'featured_image')
+  @JsonKey(name: 'featured_image', fromJson: _blogImageFromJson)
   BlogImageDto? get featuredImage => throw _privateConstructorUsedError;
   List<BlogCategoryDto>? get categories => throw _privateConstructorUsedError;
   List<BlogTagDto>? get tags => throw _privateConstructorUsedError;
@@ -56,7 +56,8 @@ abstract class $BlogPostDtoCopyWith<$Res> {
       String slug,
       String? excerpt,
       String? content,
-      @JsonKey(name: 'featured_image') BlogImageDto? featuredImage,
+      @JsonKey(name: 'featured_image', fromJson: _blogImageFromJson)
+      BlogImageDto? featuredImage,
       List<BlogCategoryDto>? categories,
       List<BlogTagDto>? tags,
       BlogAuthorDto? author,
@@ -191,7 +192,8 @@ abstract class _$$BlogPostDtoImplCopyWith<$Res>
       String slug,
       String? excerpt,
       String? content,
-      @JsonKey(name: 'featured_image') BlogImageDto? featuredImage,
+      @JsonKey(name: 'featured_image', fromJson: _blogImageFromJson)
+      BlogImageDto? featuredImage,
       List<BlogCategoryDto>? categories,
       List<BlogTagDto>? tags,
       BlogAuthorDto? author,
@@ -297,7 +299,8 @@ class _$BlogPostDtoImpl implements _BlogPostDto {
       required this.slug,
       this.excerpt,
       this.content,
-      @JsonKey(name: 'featured_image') this.featuredImage,
+      @JsonKey(name: 'featured_image', fromJson: _blogImageFromJson)
+      this.featuredImage,
       final List<BlogCategoryDto>? categories,
       final List<BlogTagDto>? tags,
       this.author,
@@ -322,7 +325,7 @@ class _$BlogPostDtoImpl implements _BlogPostDto {
   @override
   final String? content;
   @override
-  @JsonKey(name: 'featured_image')
+  @JsonKey(name: 'featured_image', fromJson: _blogImageFromJson)
   final BlogImageDto? featuredImage;
   final List<BlogCategoryDto>? _categories;
   @override
@@ -427,7 +430,8 @@ abstract class _BlogPostDto implements BlogPostDto {
           required final String slug,
           final String? excerpt,
           final String? content,
-          @JsonKey(name: 'featured_image') final BlogImageDto? featuredImage,
+          @JsonKey(name: 'featured_image', fromJson: _blogImageFromJson)
+          final BlogImageDto? featuredImage,
           final List<BlogCategoryDto>? categories,
           final List<BlogTagDto>? tags,
           final BlogAuthorDto? author,
@@ -451,7 +455,7 @@ abstract class _BlogPostDto implements BlogPostDto {
   @override
   String? get content;
   @override
-  @JsonKey(name: 'featured_image')
+  @JsonKey(name: 'featured_image', fromJson: _blogImageFromJson)
   BlogImageDto? get featuredImage;
   @override
   List<BlogCategoryDto>? get categories;
@@ -1017,7 +1021,7 @@ BlogAuthorDto _$BlogAuthorDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$BlogAuthorDto {
-  int get id => throw _privateConstructorUsedError;
+  int? get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String? get avatar => throw _privateConstructorUsedError;
 
@@ -1033,7 +1037,7 @@ abstract class $BlogAuthorDtoCopyWith<$Res> {
           BlogAuthorDto value, $Res Function(BlogAuthorDto) then) =
       _$BlogAuthorDtoCopyWithImpl<$Res, BlogAuthorDto>;
   @useResult
-  $Res call({int id, String name, String? avatar});
+  $Res call({int? id, String name, String? avatar});
 }
 
 /// @nodoc
@@ -1049,15 +1053,15 @@ class _$BlogAuthorDtoCopyWithImpl<$Res, $Val extends BlogAuthorDto>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? id = null,
+    Object? id = freezed,
     Object? name = null,
     Object? avatar = freezed,
   }) {
     return _then(_value.copyWith(
-      id: null == id
+      id: freezed == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
-              as int,
+              as int?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -1078,7 +1082,7 @@ abstract class _$$BlogAuthorDtoImplCopyWith<$Res>
       __$$BlogAuthorDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int id, String name, String? avatar});
+  $Res call({int? id, String name, String? avatar});
 }
 
 /// @nodoc
@@ -1092,15 +1096,15 @@ class __$$BlogAuthorDtoImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? id = null,
+    Object? id = freezed,
     Object? name = null,
     Object? avatar = freezed,
   }) {
     return _then(_$BlogAuthorDtoImpl(
-      id: null == id
+      id: freezed == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
-              as int,
+              as int?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -1116,15 +1120,15 @@ class __$$BlogAuthorDtoImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$BlogAuthorDtoImpl implements _BlogAuthorDto {
-  const _$BlogAuthorDtoImpl(
-      {required this.id, required this.name, this.avatar});
+  const _$BlogAuthorDtoImpl({this.id, this.name = 'Le Hiboo', this.avatar});
 
   factory _$BlogAuthorDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$BlogAuthorDtoImplFromJson(json);
 
   @override
-  final int id;
+  final int? id;
   @override
+  @JsonKey()
   final String name;
   @override
   final String? avatar;
@@ -1164,15 +1168,15 @@ class _$BlogAuthorDtoImpl implements _BlogAuthorDto {
 
 abstract class _BlogAuthorDto implements BlogAuthorDto {
   const factory _BlogAuthorDto(
-      {required final int id,
-      required final String name,
+      {final int? id,
+      final String name,
       final String? avatar}) = _$BlogAuthorDtoImpl;
 
   factory _BlogAuthorDto.fromJson(Map<String, dynamic> json) =
       _$BlogAuthorDtoImpl.fromJson;
 
   @override
-  int get id;
+  int? get id;
   @override
   String get name;
   @override

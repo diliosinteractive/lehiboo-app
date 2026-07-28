@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 class CategoryFilterChips extends StatelessWidget {
   final String selectedCategory;
   final Function(String) onCategorySelected;
@@ -13,13 +15,37 @@ class CategoryFilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final categories = [
-      {'id': 'all', 'label': 'Tous', 'icon': Icons.apps},
-      {'id': 'show', 'label': 'Spectacles', 'icon': Icons.theater_comedy},
-      {'id': 'workshop', 'label': 'Ateliers', 'icon': Icons.palette},
-      {'id': 'sport', 'label': 'Sport', 'icon': Icons.sports_basketball},
-      {'id': 'culture', 'label': 'Culture', 'icon': Icons.museum},
-      {'id': 'market', 'label': 'Marchés', 'icon': Icons.storefront},
-      {'id': 'leisure', 'label': 'Loisirs', 'icon': Icons.celebration},
+      {'id': 'all', 'label': context.l10n.homeCategoryAll, 'icon': Icons.apps},
+      {
+        'id': 'show',
+        'label': context.l10n.homeCategoryShows,
+        'icon': Icons.theater_comedy,
+      },
+      {
+        'id': 'workshop',
+        'label': context.l10n.homeCategoryWorkshops,
+        'icon': Icons.palette,
+      },
+      {
+        'id': 'sport',
+        'label': context.l10n.homeCategorySport,
+        'icon': Icons.sports_basketball,
+      },
+      {
+        'id': 'culture',
+        'label': context.l10n.homeCategoryCulture,
+        'icon': Icons.museum,
+      },
+      {
+        'id': 'market',
+        'label': context.l10n.homeCategoryMarkets,
+        'icon': Icons.storefront,
+      },
+      {
+        'id': 'leisure',
+        'label': context.l10n.homeCategoryLeisure,
+        'icon': Icons.celebration,
+      },
     ];
 
     return Container(

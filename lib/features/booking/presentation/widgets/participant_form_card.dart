@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 
 /// One ticket = one card. Layout matches the desktop accordion item:
@@ -60,20 +62,20 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
   bool _expanded = false;
   bool _contactExpanded = false;
 
-  static final DateFormat _displayDateFormat = DateFormat('dd/MM/yyyy');
-  static const Map<String, String> _relationshipLabels = {
-    'self': 'Moi',
-    'child': 'Enfant',
-    'spouse': 'Conjoint',
-    'family': 'Famille',
-    'friend': 'Ami',
-    'other': 'Autre',
-  };
+  static const List<String> _relationshipKeys = [
+    'self',
+    'child',
+    'spouse',
+    'family',
+    'friend',
+    'other',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _initFromInitial(widget.initialValue);
+    _initControllers(widget.initialValue);
+    _prefillSource = _resolvePrefillSource(widget.initialValue);
     _expanded = widget.initiallyExpanded || !widget.initialValue.isComplete;
     _saveForLater = widget.initialValue.saveForLater;
   }
@@ -84,21 +86,31 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
     // Parent-driven prefill (e.g. "Remplir tous avec mon profil") replaces
     // the initialValue. Sync the controllers if the data actually changed.
     if (oldWidget.initialValue != widget.initialValue) {
-      _initFromInitial(widget.initialValue);
-      setState(() {
-        _saveForLater = widget.initialValue.saveForLater;
-      });
+      _syncFieldsFromInitial(widget.initialValue);
+      _prefillSource = _resolvePrefillSource(widget.initialValue);
+      _saveForLater = widget.initialValue.saveForLater;
+    } else if ((oldWidget.savedParticipants != widget.savedParticipants ||
+            oldWidget.buyerInfo != widget.buyerInfo) &&
+        !_isPrefillSourceAvailable(_prefillSource)) {
+      _prefillSource = _resolvePrefillSource(widget.initialValue);
     }
   }
 
-  void _initFromInitial(ParticipantInfo info) {
-    _firstNameCtrl = TextEditingController(text: info.firstName ?? '');
-    _lastNameCtrl = TextEditingController(text: info.lastName ?? '');
-    _emailCtrl = TextEditingController(text: info.email ?? '');
-    _phoneCtrl = TextEditingController(text: info.phone ?? '');
-    _cityCtrl = TextEditingController(
-      text: info.membershipCity ?? info.city ?? '',
-    );
+  void _initControllers(ParticipantInfo info) {
+    _firstNameCtrl = TextEditingController();
+    _lastNameCtrl = TextEditingController();
+    _emailCtrl = TextEditingController();
+    _phoneCtrl = TextEditingController();
+    _cityCtrl = TextEditingController();
+    _syncFieldsFromInitial(info);
+  }
+
+  void _syncFieldsFromInitial(ParticipantInfo info) {
+    _firstNameCtrl.text = info.firstName ?? '';
+    _lastNameCtrl.text = info.lastName ?? '';
+    _emailCtrl.text = info.email ?? '';
+    _phoneCtrl.text = info.phone ?? '';
+    _cityCtrl.text = info.membershipCity ?? info.city ?? '';
     _birthDate = info.birthDate;
     _relationship = info.relationship;
   }
@@ -133,27 +145,92 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
     ));
   }
 
-  void _applyPrefill(String source) {
-    setState(() {
-      _prefillSource = source;
-    });
+  String _resolvePrefillSource(ParticipantInfo info) {
+    if (info.isBlank) return 'manual';
 
+    for (final participant in widget.savedParticipants) {
+      if (_matchesSavedParticipant(info, participant)) {
+        return participant.uuid;
+      }
+    }
+
+    if (_matchesBuyerInfo(info, widget.buyerInfo)) {
+      return 'self';
+    }
+
+    return 'manual';
+  }
+
+  bool _isPrefillSourceAvailable(String source) {
+    if (source == 'manual') return true;
+    if (source == 'self') return widget.buyerInfo != null;
+    return widget.savedParticipants.any((p) => p.uuid == source);
+  }
+
+  bool _matchesSavedParticipant(ParticipantInfo info, SavedParticipant saved) {
+    return _sameText(info.firstName, saved.firstName) &&
+        _sameText(info.lastName, saved.lastName) &&
+        _sameText(info.email, saved.email) &&
+        _sameText(info.phone, saved.phone) &&
+        _sameText(info.birthDate, saved.birthDate) &&
+        _sameText(_participantCity(info), saved.membershipCity) &&
+        _sameRelationship(info.relationship, saved.relationship);
+  }
+
+  bool _matchesBuyerInfo(ParticipantInfo info, BuyerInfo? buyer) {
+    if (buyer == null) return false;
+    return _sameText(info.firstName, buyer.firstName) &&
+        _sameText(info.lastName, buyer.lastName) &&
+        _sameText(info.email, buyer.email) &&
+        _sameText(info.phone, buyer.phone) &&
+        _sameText(info.birthDate, buyer.birthDate) &&
+        _sameText(_participantCity(info), buyer.town) &&
+        _normalize(info.relationship) == 'self';
+  }
+
+  String _participantCity(ParticipantInfo info) {
+    final membershipCity = _normalize(info.membershipCity);
+    return membershipCity.isNotEmpty ? membershipCity : _normalize(info.city);
+  }
+
+  bool _sameText(String? left, String? right) {
+    return _normalize(left) == _normalize(right);
+  }
+
+  bool _sameRelationship(String? infoRelationship, String? sourceRelationship) {
+    final info = _normalize(infoRelationship);
+    final source = _normalize(sourceRelationship);
+    if (source.isEmpty) {
+      return info.isEmpty || info == 'other';
+    }
+    return info == source;
+  }
+
+  String _normalize(String? value) => value?.trim() ?? '';
+
+  void _applyPrefill(String source) {
     if (source == 'manual') {
       // Don't wipe the user's input — manual just means "ne pas pré-remplir".
+      setState(() {
+        _prefillSource = source;
+      });
       _emitChange();
       return;
     }
 
     if (source == 'self' && widget.buyerInfo != null) {
       final buyer = widget.buyerInfo!;
-      _firstNameCtrl.text = buyer.firstName ?? '';
-      _lastNameCtrl.text = buyer.lastName ?? '';
-      _emailCtrl.text = buyer.email ?? '';
-      _phoneCtrl.text = buyer.phone ?? '';
-      _cityCtrl.text = buyer.town ?? '';
-      _birthDate = buyer.birthDate;
-      _relationship = 'self';
-      _saveForLater = false;
+      setState(() {
+        _prefillSource = source;
+        _firstNameCtrl.text = buyer.firstName ?? '';
+        _lastNameCtrl.text = buyer.lastName ?? '';
+        _emailCtrl.text = buyer.email ?? '';
+        _phoneCtrl.text = buyer.phone ?? '';
+        _cityCtrl.text = buyer.town ?? '';
+        _birthDate = buyer.birthDate;
+        _relationship = 'self';
+        _saveForLater = false;
+      });
       _emitChange();
       return;
     }
@@ -163,14 +240,17 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
         .cast<SavedParticipant?>()
         .firstWhere((_) => true, orElse: () => null);
     if (saved != null) {
-      _firstNameCtrl.text = saved.firstName;
-      _lastNameCtrl.text = saved.lastName;
-      _emailCtrl.text = saved.email ?? '';
-      _phoneCtrl.text = saved.phone ?? '';
-      _cityCtrl.text = saved.membershipCity ?? '';
-      _birthDate = saved.birthDate;
-      _relationship = saved.relationship ?? 'other';
-      _saveForLater = false;
+      setState(() {
+        _prefillSource = source;
+        _firstNameCtrl.text = saved.firstName;
+        _lastNameCtrl.text = saved.lastName;
+        _emailCtrl.text = saved.email ?? '';
+        _phoneCtrl.text = saved.phone ?? '';
+        _cityCtrl.text = saved.membershipCity ?? '';
+        _birthDate = saved.birthDate;
+        _relationship = saved.relationship ?? 'other';
+        _saveForLater = false;
+      });
       _emitChange();
     }
   }
@@ -184,9 +264,9 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
       initialDate: initial,
       firstDate: DateTime(1900),
       lastDate: now,
-      helpText: 'Date de naissance',
-      cancelText: 'Annuler',
-      confirmText: 'Valider',
+      helpText: context.l10n.bookingBirthDateHelp,
+      cancelText: context.l10n.commonCancel,
+      confirmText: context.l10n.bookingConfirm,
     );
     if (picked == null || !mounted) return;
 
@@ -206,7 +286,9 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
     final fn = _firstNameCtrl.text.trim();
     final ln = _lastNameCtrl.text.trim();
     final composed = [fn, ln].where((v) => v.isNotEmpty).join(' ');
-    return composed.isNotEmpty ? composed : 'Billet ${widget.participantIndex}';
+    return composed.isNotEmpty
+        ? composed
+        : '${context.l10n.bookingTicketFallback} ${widget.participantIndex}';
   }
 
   @override
@@ -230,7 +312,10 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
             duration: const Duration(milliseconds: 220),
             firstChild: const SizedBox.shrink(),
             secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              // Top inset gives the first field's outline floating label room
+              // to render — without it AnimatedCrossFade's Stack clips the
+              // label's upper half (the part that sits above the field).
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
               child: _buildBody(),
             ),
             crossFadeState: _expanded
@@ -332,30 +417,33 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
+          key: ValueKey('prefill-$_prefillSource'),
           initialValue: _prefillSource,
-          decoration: _inputDecoration('Pre-remplir ce billet').copyWith(
-            // The compact (isDense) decoration clips the floating label.
-            // Use the default density + a bit more vertical padding here.
+          decoration:
+              _inputDecoration(context.l10n.bookingPrefillTicket).copyWith(
+            // Base helper uses isDense + symmetric padding, which clips the
+            // floating label. Switch to non-dense and use asymmetric padding
+            // that mirrors Flutter's default for outline + floating label
+            // (extra top room so the label has space to sit).
             isDense: false,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            contentPadding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
           ),
           isExpanded: true,
           items: [
-            const DropdownMenuItem(
+            DropdownMenuItem(
               value: 'manual',
-              child: Text('Saisie manuelle'),
+              child: Text(context.l10n.bookingManualEntry),
             ),
             if (widget.buyerInfo != null)
-              const DropdownMenuItem(
+              DropdownMenuItem(
                 value: 'self',
-                child: Text('Moi (acheteur)'),
+                child: Text(context.l10n.bookingBuyerSelf),
               ),
             for (final p in widget.savedParticipants)
               DropdownMenuItem(
                 value: p.uuid,
                 child: Text(
-                  '${p.displayName}${p.relationship != null ? ' · ${_relationshipLabels[p.relationship!] ?? p.relationship!}' : ''}',
+                  '${p.displayName}${p.relationship != null ? ' · ${context.bookingRelationshipLabel(p.relationship!)}' : ''}',
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -376,18 +464,21 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                 width: fieldWidth,
                 child: TextFormField(
                   controller: _firstNameCtrl,
-                  decoration: _inputDecoration('Prenom *'),
+                  decoration: _inputDecoration(
+                      context.l10n.bookingFirstNameLabelRequired),
                   textCapitalization: TextCapitalization.words,
                   onChanged: (_) => _emitChange(),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Prenom requis' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? context.l10n.bookingFirstNameShortRequired
+                      : null,
                 ),
               ),
               SizedBox(
                 width: fieldWidth,
                 child: TextFormField(
                   controller: _lastNameCtrl,
-                  decoration: _inputDecoration('Nom'),
+                  decoration:
+                      _inputDecoration(context.l10n.bookingLastNameLabel),
                   textCapitalization: TextCapitalization.words,
                   onChanged: (_) => _emitChange(),
                 ),
@@ -400,26 +491,32 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                 width: fieldWidth,
                 child: TextFormField(
                   controller: _cityCtrl,
-                  decoration: _inputDecoration('Ville d\'appartenance *'),
+                  decoration:
+                      _inputDecoration(context.l10n.bookingMembershipCityLabel),
                   textCapitalization: TextCapitalization.words,
                   onChanged: (_) => _emitChange(),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Ville requise' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? context.l10n.bookingCityRequired
+                      : null,
                 ),
               ),
               SizedBox(
                 width: constraints.maxWidth,
                 child: DropdownButtonFormField<String>(
+                  key: ValueKey('relationship-${_relationship ?? ''}'),
                   initialValue:
                       (_relationship != null && _relationship!.isNotEmpty)
                           ? _relationship
                           : null,
-                  decoration: _inputDecoration('Relation *'),
-                  items: _relationshipLabels.entries
+                  decoration: _inputDecoration(
+                      context.l10n.bookingRelationLabelRequired),
+                  items: _relationshipKeys
                       .map(
-                        (entry) => DropdownMenuItem(
-                          value: entry.key,
-                          child: Text(entry.value),
+                        (relationship) => DropdownMenuItem(
+                          value: relationship,
+                          child: Text(
+                            context.bookingRelationshipLabel(relationship),
+                          ),
                         ),
                       )
                       .toList(),
@@ -428,7 +525,7 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                     _emitChange();
                   },
                   validator: (value) => value == null || value.isEmpty
-                      ? 'Relation requise'
+                      ? context.l10n.bookingRelationRequired
                       : null,
                 ),
               ),
@@ -450,7 +547,7 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Contact optionnel',
+                  context.l10n.bookingContactOptional,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -469,14 +566,14 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _emailCtrl,
-                decoration: _inputDecoration('Email'),
+                decoration: _inputDecoration(context.l10n.authEmailLabel),
                 keyboardType: TextInputType.emailAddress,
                 onChanged: (_) => _emitChange(),
               ),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _phoneCtrl,
-                decoration: _inputDecoration('Telephone'),
+                decoration: _inputDecoration(context.l10n.bookingPhoneLabel),
                 keyboardType: TextInputType.phone,
                 onChanged: (_) => _emitChange(),
               ),
@@ -510,7 +607,7 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
                     _emitChange();
                   },
                   child: Text(
-                    'Ajouter a Mes participants',
+                    context.l10n.bookingSaveParticipant,
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade700,
@@ -531,11 +628,16 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
       onTap: _pickBirthDate,
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
-        decoration: _inputDecoration('Date de naissance *').copyWith(
+        decoration: _inputDecoration(context.l10n.bookingBirthDateLabelRequired)
+            .copyWith(
           suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
         ),
         child: Text(
-          parsed != null ? _displayDateFormat.format(parsed) : 'jj/mm/aaaa',
+          parsed != null
+              ? context
+                  .appDateFormat('dd/MM/yyyy', enPattern: 'MM/dd/yyyy')
+                  .format(parsed)
+              : context.l10n.bookingBirthDatePlaceholder,
           style: TextStyle(
             color: parsed != null ? HbColors.textPrimary : Colors.grey.shade500,
           ),
@@ -613,7 +715,9 @@ class _StatusPill extends StatelessWidget {
         ? const Color(0xFFD1FAE5) // emerald-100
         : const Color(0xFFFFEDD5); // orange-100
     final icon = complete ? Icons.check_circle : Icons.error_outline;
-    final label = complete ? 'Complete' : 'Action requise';
+    final label = complete
+        ? context.l10n.bookingParticipantComplete
+        : context.l10n.bookingParticipantActionRequired;
 
     return Container(
       margin: const EdgeInsets.only(right: 4),

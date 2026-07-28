@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+
+import '../../../../core/l10n/l10n.dart';
 import 'event_submodels.dart';
 
 enum EventCategory {
@@ -124,6 +126,7 @@ class Event extends Equatable {
   final EventVenue? venueDetails;
   final String? creationSource;
   final String? originalOrganizerName;
+  final List<Event> relatedEvents;
 
   // ---- HOME_FEED MobileEventResource fields (spec: docs/HOME_FEED_MOBILE_SPEC.md §4) ----
 
@@ -131,6 +134,7 @@ class Event extends Equatable {
   final int? version;
   final String? timezone;
   final String? calendarMode;
+
   /// Spec §4.2: "offline" | "online" | "hybrid". Distinct from the legacy
   /// taxonomy term `eventTypeTerm`.
   final String? eventTypeMode;
@@ -142,6 +146,7 @@ class Event extends Equatable {
 
   // §4.5 / §4.6 — pricing & capacity (top-level)
   final int? capacityGlobal;
+
   /// Spec §4.6: "available" | "unavailable". Drives Book CTA gating.
   final String? availabilityStatus;
 
@@ -150,6 +155,7 @@ class Event extends Equatable {
   final DateTime? saleEndAt;
   final bool allowCancellation;
   final int? cancelBeforeHours;
+  final String? vendorCancellationPolicy;
   final bool generateQrCodes;
 
   // §4.8 — status & flags
@@ -157,6 +163,7 @@ class Event extends Equatable {
   /// `status: EventStatus`.
   final String? publicationStatus;
   final String? visibility;
+
   /// Spec §4.8 caveat: gates the password modal. Not the same as
   /// `hasPassword`, which is informational only.
   final bool isPasswordProtected;
@@ -171,9 +178,11 @@ class Event extends Equatable {
   final bool canAcceptBookings;
   final bool canAcceptDiscovery;
   final bool isDiscovery;
+
   /// Spec §4.9: only present when `bookingMode == "discovery"`.
   final int? participationCount;
   final bool isParticipating;
+
   /// Spec §4.9: when set, the mobile UI opens this URL instead of the
   /// in-app booking flow.
   final String? externalTicketingUrl;
@@ -265,6 +274,7 @@ class Event extends Equatable {
     this.venueDetails,
     this.creationSource,
     this.originalOrganizerName,
+    this.relatedEvents = const [],
     // HOME_FEED §4 fields
     this.version,
     this.timezone,
@@ -279,6 +289,7 @@ class Event extends Equatable {
     this.saleEndAt,
     this.allowCancellation = false,
     this.cancelBeforeHours,
+    this.vendorCancellationPolicy,
     this.generateQrCodes = false,
     this.publicationStatus,
     this.visibility,
@@ -306,6 +317,7 @@ class Event extends Equatable {
     List<String> images = const [],
     String organizerId = '',
     String organizerName = '',
+    String? vendorCancellationPolicy,
   }) {
     final now = DateTime.now();
 
@@ -332,6 +344,8 @@ class Event extends Equatable {
       tags: const [],
       organizerId: organizerId,
       organizerName: organizerName,
+      vendorCancellationPolicy: vendorCancellationPolicy,
+      relatedEvents: const [],
       isFavorite: false,
       isFeatured: false,
       isRecommended: false,
@@ -383,11 +397,9 @@ class Event extends Equatable {
       return true;
     }
 
-    final numericMatch =
-        RegExp(r'[-+]?\d+(?:[.,]\d+)?').firstMatch(normalized);
+    final numericMatch = RegExp(r'[-+]?\d+(?:[.,]\d+)?').firstMatch(normalized);
     if (numericMatch == null) return false;
-    final amount =
-        double.tryParse(numericMatch.group(0)!.replaceAll(',', '.'));
+    final amount = double.tryParse(numericMatch.group(0)!.replaceAll(',', '.'));
     return amount == 0;
   }
 
@@ -418,79 +430,85 @@ class Event extends Equatable {
   }
 
   String get formattedPrice {
+    final l10n = cachedAppLocalizations();
     if (isAuthoritativelyFree) {
-      return 'Gratuit';
+      return l10n.commonFree;
     } else if (!hasDirectBooking && discoveryPricingType == 'paid') {
-      return discoveryPaidPriceLabel ?? 'Prix non communiqué';
+      return discoveryPaidPriceLabel ?? l10n.eventUndefined;
     } else if (!hasDirectBooking) {
-      return 'Prix non défini';
+      return l10n.eventUndefined;
     } else if (priceType == PriceType.donation) {
-      return 'Participation libre';
+      return l10n.eventPriceDonation;
     } else if (price != null) {
       return '${price!.toStringAsFixed(2)} €';
     } else if (minPrice != null && maxPrice != null) {
-      return 'De ${minPrice!.toStringAsFixed(0)} à ${maxPrice!.toStringAsFixed(0)} €';
+      return l10n.eventPriceRange(
+        '${minPrice!.toStringAsFixed(0)} €',
+        '${maxPrice!.toStringAsFixed(0)} €',
+      );
     }
-    return priceDetails ?? 'Prix variable';
+    return priceDetails ?? l10n.eventPriceVariable;
   }
 
   String get categoryLabel {
+    final l10n = cachedAppLocalizations();
     // Prefer the new TaxonomyTerm if available
     if (eventTypeTerm != null) {
       return eventTypeTerm!.name;
     }
     switch (category) {
       case EventCategory.show:
-        return 'Spectacle';
+        return l10n.eventCategoryShow;
       case EventCategory.workshop:
-        return 'Atelier';
+        return l10n.eventCategoryWorkshop;
       case EventCategory.sport:
-        return 'Sport';
+        return l10n.eventCategorySport;
       case EventCategory.culture:
-        return 'Culture';
+        return l10n.eventCategoryCulture;
       case EventCategory.market:
-        return 'Marché';
+        return l10n.eventCategoryMarket;
       case EventCategory.leisure:
-        return 'Loisirs';
+        return l10n.eventCategoryLeisure;
       case EventCategory.outdoor:
-        return 'Plein air';
+        return l10n.eventCategoryOutdoor;
       case EventCategory.indoor:
-        return 'Intérieur';
+        return l10n.eventCategoryIndoor;
       case EventCategory.festival:
-        return 'Festival';
+        return l10n.eventCategoryFestival;
       case EventCategory.exhibition:
-        return 'Exposition';
+        return l10n.eventCategoryExhibition;
       case EventCategory.concert:
-        return 'Concert';
+        return l10n.eventCategoryConcert;
       case EventCategory.theater:
-        return 'Théâtre';
+        return l10n.eventCategoryTheater;
       case EventCategory.cinema:
-        return 'Cinéma';
+        return l10n.eventCategoryCinema;
       case EventCategory.other:
-        return 'Autre';
+        return l10n.eventCategoryOther;
     }
   }
 
   String get audienceLabel {
+    final l10n = cachedAppLocalizations();
     // Prefer new TaxonomyTerms
     if (targetAudienceTerms.isNotEmpty) {
       return targetAudienceTerms.map((t) => t.name).join(', ');
     }
     if (targetAudiences.contains(EventAudience.all)) {
-      return 'Tout public';
+      return l10n.eventAudienceAll;
     }
     return targetAudiences.map((a) {
       switch (a) {
         case EventAudience.family:
-          return 'Famille';
+          return l10n.eventAudienceFamily;
         case EventAudience.children:
-          return 'Enfants';
+          return l10n.eventAudienceChildren;
         case EventAudience.teenagers:
-          return 'Adolescents';
+          return l10n.eventAudienceTeenagers;
         case EventAudience.adults:
-          return 'Adultes';
+          return l10n.eventAudienceAdults;
         case EventAudience.seniors:
-          return 'Seniors';
+          return l10n.eventAudienceSeniors;
         default:
           return '';
       }
@@ -498,16 +516,18 @@ class Event extends Equatable {
   }
 
   String? get ageRangeLabel {
+    final l10n = cachedAppLocalizations();
     if (minAge == null && maxAge == null) return null;
-    if (minAge != null && maxAge == null) return '$minAge ans et +';
-    if (minAge == null && maxAge != null) return 'Jusqu\'à $maxAge ans';
-    return '$minAge-$maxAge ans';
+    if (minAge != null && maxAge == null) return l10n.eventAgeMinimum(minAge!);
+    if (minAge == null && maxAge != null) return l10n.eventAgeMaximum(maxAge!);
+    return l10n.eventAgeRange(minAge!, maxAge!);
   }
 
   String get locationTypeLabel {
-    if (isIndoor && isOutdoor) return 'Intérieur/Extérieur';
-    if (isIndoor) return 'Intérieur';
-    if (isOutdoor) return 'Extérieur';
+    final l10n = cachedAppLocalizations();
+    if (isIndoor && isOutdoor) return l10n.eventLocationIndoorOutdoor;
+    if (isIndoor) return l10n.searchLocationIndoor;
+    if (isOutdoor) return l10n.searchLocationOutdoor;
     return '';
   }
 
@@ -622,6 +642,7 @@ class Event extends Equatable {
     EventVenue? venueDetails,
     String? creationSource,
     String? originalOrganizerName,
+    List<Event>? relatedEvents,
     int? version,
     String? timezone,
     String? calendarMode,
@@ -635,6 +656,7 @@ class Event extends Equatable {
     DateTime? saleEndAt,
     bool? allowCancellation,
     int? cancelBeforeHours,
+    String? vendorCancellationPolicy,
     bool? generateQrCodes,
     String? publicationStatus,
     String? visibility,
@@ -741,6 +763,7 @@ class Event extends Equatable {
       creationSource: creationSource ?? this.creationSource,
       originalOrganizerName:
           originalOrganizerName ?? this.originalOrganizerName,
+      relatedEvents: relatedEvents ?? this.relatedEvents,
       version: version ?? this.version,
       timezone: timezone ?? this.timezone,
       calendarMode: calendarMode ?? this.calendarMode,
@@ -754,6 +777,8 @@ class Event extends Equatable {
       saleEndAt: saleEndAt ?? this.saleEndAt,
       allowCancellation: allowCancellation ?? this.allowCancellation,
       cancelBeforeHours: cancelBeforeHours ?? this.cancelBeforeHours,
+      vendorCancellationPolicy:
+          vendorCancellationPolicy ?? this.vendorCancellationPolicy,
       generateQrCodes: generateQrCodes ?? this.generateQrCodes,
       publicationStatus: publicationStatus ?? this.publicationStatus,
       visibility: visibility ?? this.visibility,
@@ -860,6 +885,7 @@ class Event extends Equatable {
         venueDetails,
         creationSource,
         originalOrganizerName,
+        relatedEvents,
         version,
         timezone,
         calendarMode,
@@ -873,6 +899,7 @@ class Event extends Equatable {
         saleEndAt,
         allowCancellation,
         cancelBeforeHours,
+        vendorCancellationPolicy,
         generateQrCodes,
         publicationStatus,
         visibility,

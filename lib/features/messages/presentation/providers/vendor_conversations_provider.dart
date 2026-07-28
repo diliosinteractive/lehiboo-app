@@ -50,8 +50,7 @@ class VendorConversationsState {
       statusFilter:
           clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
       unreadOnly: unreadOnly ?? this.unreadOnly,
-      searchQuery:
-          clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
+      searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
       period: clearPeriod ? null : (period ?? this.period),
     );
   }
@@ -93,6 +92,7 @@ class VendorConversationsNotifier
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
+  final Map<String, int> _realtimeUnreadByUuid = {};
 
   VendorConversationsNotifier(this._repo, this._ref)
       : super(const VendorConversationsState()) {
@@ -112,13 +112,23 @@ class VendorConversationsNotifier
   }
 
   void _subscribeToRealtime() {
-    _realtimeSub = _ref
-        .read(messagesRealtimeProvider.notifier)
-        .events
-        .listen((event) {
+    _realtimeSub =
+        _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
       if (!mounted) return;
-      // Accept events that explicitly match OR have no type (backend may omit it)
       final type = event.conversationType;
+      // messageReceived: validate by UUID in _applyNewMessage — not by type.
+      if (event.type == RealtimeEventType.messageReceived) {
+        if (type != null && type != 'participant_vendor') {
+          if (type == 'vendor_admin') _refreshUnreadCount();
+          dev.log(
+            '[VendorConv] skipping messageReceived convType=$type (not participant_vendor)',
+          );
+          return;
+        }
+        _applyNewMessage(event);
+        return;
+      }
+      // For all other events keep the type guard.
       if (type != null && type != 'participant_vendor') {
         dev.log(
           '[VendorConv] skipping event type=${event.type.name} convType=$type (not participant_vendor)',
@@ -129,8 +139,6 @@ class VendorConversationsNotifier
         '[VendorConv] handling event type=${event.type.name} conv=${event.conversationUuid} convType=$type',
       );
       switch (event.type) {
-        case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
         case RealtimeEventType.conversationCreated:
           refresh();
           _refreshUnreadCount();
@@ -153,21 +161,29 @@ class VendorConversationsNotifier
     if (current == null) return;
     state = state.copyWith(
       conversations: AsyncValue.data(
-        current.map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c).toList(),
+        current
+            .map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c)
+            .toList(),
       ),
     );
   }
 
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
+    if (uuid == null) return;
+    // New message invalidates the "already read" marker so _silentRefresh
+    // doesn't zero out the unread indicator for this conversation.
+    _readUuids.remove(uuid);
+    _realtimeUnreadByUuid[uuid] = (_realtimeUnreadByUuid[uuid] ?? 0) + 1;
     final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
-      refresh();
+    if (current == null) {
+      _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
     if (idx == -1) {
-      refresh();
+      // Not in this list (e.g. vendor_admin message) — still refresh badge.
+      _silentRefresh();
       return;
     }
     final updated = current[idx].copyWith(
@@ -177,6 +193,7 @@ class VendorConversationsNotifier
     list.removeAt(idx);
     list.insert(0, updated);
     state = state.copyWith(conversations: AsyncValue.data(list));
+    _silentRefresh();
   }
 
   Future<void> load() async {
@@ -195,15 +212,7 @@ class VendorConversationsNotifier
         page: 1,
       );
       if (!mounted) return;
-      var conversations = result.conversations;
-      if (_readUuids.isNotEmpty) {
-        conversations = conversations.map((c) {
-          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
-            return c.copyWith(unreadCount: 0);
-          }
-          return c;
-        }).toList();
-      }
+      final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
@@ -216,7 +225,9 @@ class VendorConversationsNotifier
           .map((c) => c.organization?.id)
           .firstWhere((id) => id != null && id > 0, orElse: () => null);
       if (orgId != null) {
-        _ref.read(messagesRealtimeProvider.notifier).subscribeToOrganization(orgId);
+        _ref
+            .read(messagesRealtimeProvider.notifier)
+            .subscribeToOrganization(orgId);
       }
     } catch (e, st) {
       if (!mounted) return;
@@ -249,14 +260,46 @@ class VendorConversationsNotifier
 
   Future<void> refresh() async => load();
 
+  Future<void> _silentRefresh() async {
+    try {
+      final result = await _repo.getVendorConversations(
+        conversationType: 'participant_vendor',
+        status: state.statusFilter,
+        unreadOnly: state.unreadOnly ? true : null,
+        search: state.searchQuery,
+        period: state.period,
+        page: 1,
+      );
+      if (!mounted) return;
+      final conversations = _mergeUnreadState(result.conversations);
+      state = state.copyWith(
+        conversations: AsyncValue.data(conversations),
+        currentPage: 1,
+        hasMore: result.hasMore,
+      );
+      _refreshUnreadCount();
+    } catch (_) {}
+  }
+
   void applyRead(String uuid) {
     _readUuids.add(uuid);
+    _realtimeUnreadByUuid.remove(uuid);
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
     if (idx == -1 || current[idx].unreadCount == 0) return;
     final updated = [...current];
     updated[idx] = current[idx].copyWith(unreadCount: 0);
+    state = state.copyWith(conversations: AsyncValue.data(updated));
+  }
+
+  void applyReported(String uuid) {
+    final current = state.conversations.valueOrNull;
+    if (current == null) return;
+    final idx = current.indexWhere((c) => c.uuid == uuid);
+    if (idx == -1 || current[idx].userHasReported) return;
+    final updated = [...current];
+    updated[idx] = current[idx].copyWith(userHasReported: true);
     state = state.copyWith(conversations: AsyncValue.data(updated));
   }
 
@@ -299,6 +342,34 @@ class VendorConversationsNotifier
     } catch (_) {}
   }
 
+  List<Conversation> _mergeUnreadState(List<Conversation> incoming) {
+    final current = state.conversations.valueOrNull;
+    final localUnreadByUuid = {
+      for (final conversation in current ?? const <Conversation>[])
+        conversation.uuid: conversation.unreadCount,
+    };
+
+    return incoming.map((conversation) {
+      if (_readUuids.contains(conversation.uuid)) {
+        return conversation.unreadCount == 0
+            ? conversation
+            : conversation.copyWith(unreadCount: 0);
+      }
+
+      final localUnread = localUnreadByUuid[conversation.uuid] ?? 0;
+      final realtimeUnread = _realtimeUnreadByUuid[conversation.uuid] ?? 0;
+      final unread = [
+        conversation.unreadCount,
+        localUnread,
+        realtimeUnread,
+      ].reduce((a, b) => a > b ? a : b);
+
+      return unread == conversation.unreadCount
+          ? conversation
+          : conversation.copyWith(unreadCount: unread);
+    }).toList();
+  }
+
   @override
   void dispose() {
     _realtimeSub?.cancel();
@@ -317,6 +388,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
   final Ref _ref;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
+  final Map<String, int> _realtimeUnreadByUuid = {};
 
   VendorSupportNotifier(this._repo, this._ref)
       : super(const VendorSupportState()) {
@@ -325,12 +397,22 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
   }
 
   void _subscribeToRealtime() {
-    _realtimeSub = _ref
-        .read(messagesRealtimeProvider.notifier)
-        .events
-        .listen((event) {
+    _realtimeSub =
+        _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
       if (!mounted) return;
       final type = event.conversationType;
+      // messageReceived: validate by UUID in _applyNewMessage — not by type.
+      if (event.type == RealtimeEventType.messageReceived) {
+        if (type != null && type != 'vendor_admin') {
+          dev.log(
+            '[VendorSupport] skipping messageReceived convType=$type (not vendor_admin)',
+          );
+          return;
+        }
+        _applyNewMessage(event);
+        return;
+      }
+      // For all other events keep the type guard.
       if (type != null && type != 'vendor_admin') {
         dev.log(
           '[VendorSupport] skipping event type=${event.type.name} convType=$type (not vendor_admin)',
@@ -341,8 +423,6 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         '[VendorSupport] handling event type=${event.type.name} conv=${event.conversationUuid} convType=$type',
       );
       switch (event.type) {
-        case RealtimeEventType.messageReceived:
-          _applyNewMessage(event);
         case RealtimeEventType.conversationCreated:
           refresh();
         case RealtimeEventType.conversationClosed:
@@ -361,14 +441,17 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
 
   void _applyNewMessage(RealtimeEvent event) {
     final uuid = event.conversationUuid;
+    if (uuid == null) return;
+    _readUuids.remove(uuid);
+    _realtimeUnreadByUuid[uuid] = (_realtimeUnreadByUuid[uuid] ?? 0) + 1;
     final current = state.conversations.valueOrNull;
-    if (current == null || uuid == null) {
-      refresh();
+    if (current == null) {
+      _silentRefresh();
       return;
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
     if (idx == -1) {
-      refresh();
+      _silentRefresh();
       return;
     }
     final updated = current[idx].copyWith(
@@ -378,6 +461,23 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
     list.removeAt(idx);
     list.insert(0, updated);
     state = state.copyWith(conversations: AsyncValue.data(list));
+    _silentRefresh();
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final result = await _repo.getVendorConversations(
+        conversationType: 'vendor_admin',
+        page: 1,
+      );
+      if (!mounted) return;
+      final conversations = _mergeUnreadState(result.conversations);
+      state = state.copyWith(
+        conversations: AsyncValue.data(conversations),
+        currentPage: 1,
+        hasMore: result.hasMore,
+      );
+    } catch (_) {}
   }
 
   void _applyStatus(String convUuid, String status) {
@@ -385,7 +485,9 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
     if (current == null) return;
     state = state.copyWith(
       conversations: AsyncValue.data(
-        current.map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c).toList(),
+        current
+            .map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c)
+            .toList(),
       ),
     );
   }
@@ -402,15 +504,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         page: 1,
       );
       if (!mounted) return;
-      var conversations = result.conversations;
-      if (_readUuids.isNotEmpty) {
-        conversations = conversations.map((c) {
-          if (_readUuids.contains(c.uuid) && c.unreadCount > 0) {
-            return c.copyWith(unreadCount: 0);
-          }
-          return c;
-        }).toList();
-      }
+      final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
@@ -445,6 +539,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
 
   void applyRead(String uuid) {
     _readUuids.add(uuid);
+    _realtimeUnreadByUuid.remove(uuid);
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -452,6 +547,44 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
     final updated = [...current];
     updated[idx] = current[idx].copyWith(unreadCount: 0);
     state = state.copyWith(conversations: AsyncValue.data(updated));
+  }
+
+  void applyReported(String uuid) {
+    final current = state.conversations.valueOrNull;
+    if (current == null) return;
+    final idx = current.indexWhere((c) => c.uuid == uuid);
+    if (idx == -1 || current[idx].userHasReported) return;
+    final updated = [...current];
+    updated[idx] = current[idx].copyWith(userHasReported: true);
+    state = state.copyWith(conversations: AsyncValue.data(updated));
+  }
+
+  List<Conversation> _mergeUnreadState(List<Conversation> incoming) {
+    final current = state.conversations.valueOrNull;
+    final localUnreadByUuid = {
+      for (final conversation in current ?? const <Conversation>[])
+        conversation.uuid: conversation.unreadCount,
+    };
+
+    return incoming.map((conversation) {
+      if (_readUuids.contains(conversation.uuid)) {
+        return conversation.unreadCount == 0
+            ? conversation
+            : conversation.copyWith(unreadCount: 0);
+      }
+
+      final localUnread = localUnreadByUuid[conversation.uuid] ?? 0;
+      final realtimeUnread = _realtimeUnreadByUuid[conversation.uuid] ?? 0;
+      final unread = [
+        conversation.unreadCount,
+        localUnread,
+        realtimeUnread,
+      ].reduce((a, b) => a > b ? a : b);
+
+      return unread == conversation.unreadCount
+          ? conversation
+          : conversation.copyWith(unreadCount: unread);
+    }).toList();
   }
 
   @override

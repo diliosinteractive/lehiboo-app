@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
 import 'list_color_picker.dart';
@@ -46,13 +47,13 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
     final iconKey = FavoriteListIcons.toIconKey(_selectedIcon);
 
     final newList = await ref.read(favoriteListsProvider.notifier).createList(
-      name: _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      color: colorKey,
-      icon: iconKey,
-    );
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          color: colorKey,
+          icon: iconKey,
+        );
 
     if (mounted) {
       setState(() => _isLoading = false);
@@ -62,8 +63,8 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
         Navigator.of(context).pop(newList);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de la création de la liste'),
+          SnackBar(
+            content: Text(context.l10n.favoriteListCreateError),
             backgroundColor: Colors.red,
           ),
         );
@@ -104,15 +105,15 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Nouvelle liste',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.favoriteListNewTitle,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            'Organisez vos favoris',
+                            context.l10n.favoriteListOrganizeSubtitle,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -134,8 +135,8 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Nom de la liste',
-                    hintText: 'Ex: Concerts à voir',
+                    labelText: context.l10n.favoriteListNameLabel,
+                    hintText: context.l10n.favoriteListNameHint,
                     filled: true,
                     fillColor: Colors.grey[50],
                     border: OutlineInputBorder(
@@ -149,13 +150,13 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Veuillez entrer un nom';
+                      return context.l10n.favoriteListNameRequired;
                     }
                     if (value.trim().length < 2) {
-                      return 'Le nom doit contenir au moins 2 caractères';
+                      return context.l10n.favoriteListNameMinLength;
                     }
                     if (value.trim().length > 50) {
-                      return 'Le nom ne peut pas dépasser 50 caractères';
+                      return context.l10n.favoriteListNameMaxLength;
                     }
                     return null;
                   },
@@ -169,8 +170,8 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
                 TextFormField(
                   controller: _descriptionController,
                   decoration: InputDecoration(
-                    labelText: 'Description (optionnelle)',
-                    hintText: 'Ex: Mes événements musicaux préférés',
+                    labelText: context.l10n.favoriteListDescriptionLabel,
+                    hintText: context.l10n.favoriteListDescriptionHint,
                     filled: true,
                     fillColor: Colors.grey[50],
                     border: OutlineInputBorder(
@@ -189,9 +190,9 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
                 const SizedBox(height: 24),
 
                 // Couleur
-                const Text(
-                  'Couleur',
-                  style: TextStyle(
+                Text(
+                  context.l10n.favoriteListColorLabel,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -208,9 +209,9 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
                 const SizedBox(height: 24),
 
                 // Icône
-                const Text(
-                  'Icône',
-                  style: TextStyle(
+                Text(
+                  context.l10n.favoriteListIconLabel,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -232,14 +233,16 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                        onPressed: _isLoading
+                            ? null
+                            : () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Annuler'),
+                        child: Text(context.l10n.commonCancel),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -263,9 +266,10 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
-                                'Créer',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                            : Text(
+                                context.l10n.favoriteListCreateAction,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                       ),
                     ),

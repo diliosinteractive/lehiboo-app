@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 
 /// Galerie d'images style Airbnb avec format 9/16
@@ -199,7 +200,7 @@ class EventGalleryGrid extends StatelessWidget {
           onViewAll?.call();
         },
         icon: const Icon(Icons.photo_library_outlined, size: 18),
-        label: Text('Voir toutes les photos (${images.length})'),
+        label: Text(context.l10n.eventViewAllPhotosCount(images.length)),
         style: OutlinedButton.styleFrom(
           foregroundColor: HbColors.textPrimary,
           side: BorderSide(color: Colors.grey.shade300),
@@ -244,19 +245,19 @@ class EventGalleryGrid extends StatelessWidget {
     return Container(
       height: 250,
       color: Colors.grey.shade200,
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.image_outlined,
               color: Colors.grey,
               size: 48,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Aucune image',
-              style: TextStyle(color: Colors.grey),
+              context.l10n.eventNoImage,
+              style: const TextStyle(color: Colors.grey),
             ),
           ],
         ),

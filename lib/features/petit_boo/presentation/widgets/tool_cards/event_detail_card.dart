@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
@@ -19,43 +20,85 @@ class EventDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final itemSchema = schema.responseSchema?.itemSchema;
+    final eventData = _unwrapData(data);
 
-    final title =
-        _getValue(itemSchema?.titleField, 'title') as String? ?? 'Événement';
-    final imageUrl = _getValue(itemSchema?.imageField, 'image_url') as String?;
-    final description = data['description'] as String?;
-    final isFavorite = data['is_favorite'] == true;
-    final canBook = data['can_book'] != false;
-    final category = data['category'] as String?;
-    final tags = (data['tags'] as List?)?.cast<String>();
+    final title = _getStringValue(eventData, [
+      itemSchema?.titleField,
+      'title',
+      'name',
+      'event_title',
+    ]);
+    final imageUrl = _getStringValue(eventData, [
+      itemSchema?.imageField,
+      'image_url',
+      'cover_image',
+      'featured_image',
+      'image',
+    ]);
+    final description = _getStringValue(eventData, ['description']);
+    final isFavorite = _getBoolValue(eventData, ['is_favorite']) ?? false;
+    final category = _getStringValue(eventData, ['category', 'category_name']);
+    final tags = _getStringList(eventData['tags']);
 
     // Venue info
-    final venue = data['venue'] as Map<String, dynamic>?;
-    final venueName = venue?['name'] as String?;
-    final venueAddress = venue?['address'] as String?;
-    final venueCity = venue?['city'] as String?;
+    final venue = _asStringKeyedMap(eventData['venue']);
+    final venueName = _getStringValue(venue ?? eventData, [
+      'name',
+      'venue_name',
+    ]);
+    final venueCity = _getStringValue(venue ?? eventData, [
+      'city',
+      'venue_city',
+      'city_name',
+    ]);
 
     // Next slot
-    final nextSlot = data['next_slot'] as Map<String, dynamic>?;
-    final slotDate = nextSlot?['slot_date'] as String?;
-    final startTime = nextSlot?['start_time'] as String?;
+    final nextSlot = _asStringKeyedMap(eventData['next_slot']);
+    final slotDate = _getStringValue(nextSlot ?? eventData, [
+      'slot_date',
+      'date',
+      'next_slot_date',
+      'start_date',
+      'start_datetime',
+    ]);
+    final startTime = _getStringValue(nextSlot ?? eventData, [
+      'start_time',
+      'time',
+      'next_slot_time',
+    ]);
 
     // Ticket types
-    final ticketTypes =
-        (data['ticket_types'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final ticketTypes = _getMapList(eventData['ticket_types']);
+    final slug = _getStringValue(eventData, ['slug']);
+    final canBook = (_getBoolValue(eventData, [
+              'can_book',
+              'can_accept_bookings',
+            ]) ??
+            true) &&
+        slug != null;
+    final hasRenderableEvent = title != null ||
+        slug != null ||
+        imageUrl != null ||
+        description != null ||
+        venueName != null;
+
+    if (!hasRenderableEvent) {
+      return const SizedBox.shrink();
+    }
 
     final accentColor = parseHexColor(schema.color);
 
     return GestureDetector(
-      onTap: () => _navigate(context, itemSchema),
+      onTap: canBook ? () => _navigate(context, itemSchema, eventData) : null,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -125,7 +168,7 @@ class EventDetailCard extends StatelessWidget {
                       ),
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.1),
+                        color: accentColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -140,7 +183,7 @@ class EventDetailCard extends StatelessWidget {
 
                   // Title
                   Text(
-                    title,
+                    title ?? l10n.petitBooToolEventFallbackTitle,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -165,7 +208,7 @@ class EventDetailCard extends StatelessWidget {
                             [venueName, venueCity]
                                 .where((e) => e != null)
                                 .join(', '),
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 13,
                               color: HbColors.textSecondary,
                             ),
@@ -189,10 +232,13 @@ class EventDetailCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            [slotDate, startTime]
-                                .where((e) => e != null)
-                                .join(' à '),
-                            style: TextStyle(
+                            startTime != null
+                                ? l10n.petitBooEventDateTime(
+                                    slotDate,
+                                    startTime,
+                                  )
+                                : slotDate,
+                            style: const TextStyle(
                               fontSize: 13,
                               color: HbColors.textSecondary,
                             ),
@@ -207,7 +253,7 @@ class EventDetailCard extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
                         description,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
                           color: HbColors.textSecondary,
                           height: 1.4,
@@ -236,7 +282,7 @@ class EventDetailCard extends StatelessWidget {
                             ),
                             child: Text(
                               tag,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 11,
                                 color: HbColors.textSecondary,
                               ),
@@ -260,7 +306,8 @@ class EventDetailCard extends StatelessWidget {
                       child: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () => _navigate(context, itemSchema),
+                          onPressed: () =>
+                              _navigate(context, itemSchema, eventData),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: accentColor,
                             foregroundColor: Colors.white,
@@ -269,9 +316,11 @@ class EventDetailCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: const Text(
-                            'Voir les disponibilités',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                          child: Text(
+                            l10n.petitBooEventAvailabilityAction,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -285,24 +334,76 @@ class EventDetailCard extends StatelessWidget {
     );
   }
 
-  dynamic _getValue(String? schemaField, String defaultField) {
-    if (schemaField != null && schemaField.contains('.')) {
-      return getNestedValue(data, schemaField);
-    }
-    return data[schemaField ?? defaultField] ?? data[defaultField];
+  Map<String, dynamic> _unwrapData(Map<String, dynamic> source) {
+    final nested = source['data'];
+    if (nested is Map<String, dynamic>) return nested;
+    if (nested is Map) return Map<String, dynamic>.from(nested);
+    return source;
   }
 
-  void _navigate(BuildContext context, ToolItemSchemaDto? itemSchema) {
+  String? _getStringValue(
+    Map<String, dynamic> source,
+    List<String?> fields,
+  ) {
+    for (final field in fields.whereType<String>()) {
+      final value = field.contains('.')
+          ? getNestedValue(source, field)
+          : source[field] ?? getNestedValue(source, field);
+      if (value != null && value.toString().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return null;
+  }
+
+  bool? _getBoolValue(Map<String, dynamic> source, List<String> fields) {
+    for (final field in fields) {
+      final value = source[field];
+      if (value is bool) return value;
+      if (value is String) {
+        final normalized = value.toLowerCase();
+        if (normalized == 'true') return true;
+        if (normalized == 'false') return false;
+      }
+    }
+    return null;
+  }
+
+  List<String>? _getStringList(dynamic value) {
+    if (value is! List) return null;
+    final values = value.map((item) => item.toString()).toList();
+    return values.isEmpty ? null : values;
+  }
+
+  List<Map<String, dynamic>> _getMapList(dynamic value) {
+    if (value is! List) return [];
+    return value
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
+  Map<String, dynamic>? _asStringKeyedMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
+  }
+
+  void _navigate(
+    BuildContext context,
+    ToolItemSchemaDto? itemSchema,
+    Map<String, dynamic> eventData,
+  ) {
     final nav = itemSchema?.navigation;
     if (nav != null) {
-      final id = data[nav.idField];
+      final id = eventData[nav.idField];
       if (id != null) {
         final route = nav.route.replaceAll('{${nav.idField}}', id.toString());
         context.push(route);
       }
     } else {
       // Fallback
-      final slug = data['slug'];
+      final slug = eventData['slug'];
       if (slug != null) {
         context.push('/event/$slug');
       }
@@ -317,6 +418,7 @@ class _PriceInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final prices = ticketTypes
         .map((t) => t['price'] as num?)
         .where((p) => p != null)
@@ -329,15 +431,16 @@ class _PriceInfo extends StatelessWidget {
 
     return Row(
       children: [
-        Text(
-          hasMultiple ? 'À partir de ' : '',
-          style: TextStyle(
-            fontSize: 13,
-            color: HbColors.textSecondary,
+        if (hasMultiple)
+          Text(
+            '${l10n.petitBooEventPriceFrom} ',
+            style: const TextStyle(
+              fontSize: 13,
+              color: HbColors.textSecondary,
+            ),
           ),
-        ),
         Text(
-          minPrice == 0 ? 'Gratuit' : '${minPrice.toStringAsFixed(0)}€',
+          minPrice == 0 ? l10n.commonFree : '${minPrice.toStringAsFixed(0)}€',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -346,8 +449,8 @@ class _PriceInfo extends StatelessWidget {
         ),
         if (hasMultiple && minPrice > 0)
           Text(
-            ' • ${ticketTypes.length} tarifs',
-            style: TextStyle(
+            ' • ${l10n.petitBooEventPriceTiers(ticketTypes.length)}',
+            style: const TextStyle(
               fontSize: 13,
               color: HbColors.textSecondary,
             ),

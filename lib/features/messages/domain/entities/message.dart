@@ -1,28 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-class MessageAttachment extends Equatable {
-  final String uuid;
-  final String url;
-  final String originalName;
-  final String mimeType;
-  final int size; // bytes
-  final bool isImage;
-  final bool isPdf;
-
-  const MessageAttachment({
-    required this.uuid,
-    required this.url,
-    required this.originalName,
-    required this.mimeType,
-    required this.size,
-    required this.isImage,
-    required this.isPdf,
-  });
-
-  @override
-  List<Object?> get props => [uuid, url, originalName, mimeType, size, isImage, isPdf];
-}
-
 class MessageSender extends Equatable {
   final int? id;
   final String name;
@@ -43,13 +20,12 @@ class Message extends Equatable {
   final String senderType; // 'participant' | 'organization' | 'admin' | 'system'
   final bool isSystem;
   final MessageSender? sender;
-  final String? content; // null when deleted or attachment-only
+  final String? content; // null when deleted
   final bool isDeleted;
   final bool isEdited;
   final bool isRead;
   final bool isDelivered;
   final bool isMine;
-  final List<MessageAttachment> attachments;
   final DateTime createdAt;
   final DateTime? editedAt;
   final DateTime? readAt;
@@ -66,7 +42,6 @@ class Message extends Equatable {
     required this.isRead,
     required this.isDelivered,
     required this.isMine,
-    required this.attachments,
     required this.createdAt,
     this.editedAt,
     this.readAt,
@@ -84,7 +59,6 @@ class Message extends Equatable {
     bool? isRead,
     bool? isDelivered,
     bool? isMine,
-    List<MessageAttachment>? attachments,
     DateTime? createdAt,
     DateTime? editedAt,
     DateTime? readAt,
@@ -101,7 +75,6 @@ class Message extends Equatable {
       isRead: isRead ?? this.isRead,
       isDelivered: isDelivered ?? this.isDelivered,
       isMine: isMine ?? this.isMine,
-      attachments: attachments ?? this.attachments,
       createdAt: createdAt ?? this.createdAt,
       editedAt: editedAt ?? this.editedAt,
       readAt: readAt ?? this.readAt,
@@ -121,7 +94,6 @@ class Message extends Equatable {
         isRead,
         isDelivered,
         isMine,
-        attachments,
         createdAt,
         editedAt,
         readAt,

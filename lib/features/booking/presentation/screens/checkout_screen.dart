@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,14 +5,17 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/domain/models/checkout_params.dart';
+import 'package:lehiboo/features/booking/domain/models/refund_policy.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
+import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_forms_section.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
@@ -51,6 +52,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // État
   bool _isLoading = false;
   bool _acceptedTerms = false;
+  bool _acceptedRefundPolicy = false;
   final bool _acceptNewsletter = false;
   String? _errorMessage;
 
@@ -140,7 +142,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Finaliser ma réservation'),
+        title: Text(context.l10n.bookingCheckoutTitle),
         backgroundColor: Colors.white,
         foregroundColor: HbColors.textPrimary,
         elevation: 0,
@@ -149,65 +151,70 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Récapitulatif de la commande
-            _buildOrderSummary(),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Récapitulatif de la commande
+              _buildOrderSummary(context),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Formulaire acheteur
-            _buildBuyerForm(),
+              // Formulaire acheteur
+              _buildBuyerForm(context),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Formulaires participants
-            _buildParticipantsSection(),
+              // Formulaires participants
+              _buildParticipantsSection(),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // CGV
-            _buildTermsSection(),
+              // CGV
+              _buildTermsSection(context),
 
-            // Message d'erreur
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(color: Colors.red),
+              // Message d'erreur
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border:
+                          Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-            // Espace pour le bouton
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
-          ],
+              // Espace pour le bouton
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: _buildConfirmButton(),
     );
   }
 
-  Widget _buildOrderSummary() {
+  Widget _buildOrderSummary(BuildContext context) {
     final event = widget.params.event;
     final tickets = widget.params.ticketQuantities;
 
@@ -217,9 +224,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Récapitulatif',
-            style: TextStyle(
+          Text(
+            context.l10n.bookingSummaryTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: HbColors.textPrimary,
@@ -275,7 +282,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                     const SizedBox(height: 4),
                     // Date
-                    if (widget.params.formattedDate != null)
+                    if (widget.params.selectedSlot != null)
                       Row(
                         children: [
                           Icon(Icons.calendar_today,
@@ -283,7 +290,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              widget.params.formattedDate!,
+                              context
+                                  .bookingSlotLabel(widget.params.selectedSlot),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey.shade600,
@@ -327,7 +335,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ...tickets.entries.where((e) => e.value > 0).map((entry) {
             final ticket = event.tickets.firstWhere(
               (t) => t.id == entry.key,
-              orElse: () => const Ticket(id: '', name: 'Billet', price: 0),
+              orElse: () => Ticket(
+                id: '',
+                name: context.l10n.bookingTicketFallback,
+                price: 0,
+              ),
             );
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -362,9 +374,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total',
-                style: TextStyle(
+              Text(
+                context.l10n.bookingTotal,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: HbColors.textPrimary,
@@ -372,7 +384,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               Text(
                 widget.params.isFree
-                    ? 'Gratuit'
+                    ? context.l10n.commonFree
                     : _formatPrice(widget.params.totalPrice),
                 style: TextStyle(
                   fontSize: 20,
@@ -389,7 +401,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildBuyerForm() {
+  Widget _buildBuyerForm(BuildContext context) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
@@ -398,9 +410,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Vos coordonnées',
-              style: TextStyle(
+            Text(
+              context.l10n.bookingBuyerContactTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: HbColors.textPrimary,
@@ -411,11 +423,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Prénom
             TextFormField(
               controller: _firstNameController,
-              decoration: _inputDecoration('Prénom *'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingFirstNameLabelRequired),
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Le prénom est requis';
+                  return context.l10n.bookingFirstNameRequired;
                 }
                 return null;
               },
@@ -425,11 +438,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Nom
             TextFormField(
               controller: _lastNameController,
-              decoration: _inputDecoration('Nom *'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingLastNameLabelRequired),
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Le nom est requis';
+                  return context.l10n.bookingLastNameRequired;
                 }
                 return null;
               },
@@ -439,14 +453,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Email
             TextFormField(
               controller: _emailController,
-              decoration: _inputDecoration('Email *'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingEmailLabelRequired),
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'L\'email est requis';
+                  return context.l10n.bookingEmailRequired;
                 }
                 if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                  return 'Email invalide';
+                  return context.l10n.bookingEmailInvalid;
                 }
                 return null;
               },
@@ -456,7 +471,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Téléphone
             TextFormField(
               controller: _phoneController,
-              decoration: _inputDecoration('Téléphone'),
+              decoration: _inputDecoration(context.l10n.bookingPhoneLabel),
               keyboardType: TextInputType.phone,
             ),
 
@@ -464,7 +479,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
             // Informations complémentaires (optionnel)
             Text(
-              'Informations complémentaires (optionnel)',
+              context.l10n.bookingAdditionalInfoOptional,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -476,7 +491,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Age
             TextFormField(
               controller: _ageController,
-              decoration: _inputDecoration('Age'),
+              decoration: _inputDecoration(context.l10n.bookingAgeLabel),
               keyboardType: TextInputType.number,
               onChanged: (value) {
                 final age = int.tryParse(value);
@@ -492,11 +507,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Ville
             TextFormField(
               controller: _townController,
-              decoration: _inputDecoration('Ville d\'appartenance'),
+              decoration:
+                  _inputDecoration(context.l10n.bookingMembershipCityLabel),
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value != null && value.length > 255) {
-                  return 'La ville ne doit pas dépasser 255 caractères';
+                  return context.l10n.bookingCityMaxLength;
                 }
                 return null;
               },
@@ -534,54 +550,140 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildTermsSection() {
+  Widget _buildTermsSection(BuildContext context) {
+    final policy = widget.params.event.vendorCancellationPolicy?.trim();
+    final hasRefundPolicy = policy != null && policy.isNotEmpty;
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: Checkbox(
-              value: _acceptedTerms,
-              onChanged: (value) {
-                setState(() => _acceptedTerms = value ?? false);
-              },
-              activeColor: HbColors.brandPrimary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _acceptedTerms = !_acceptedTerms);
-              },
-              child: Text.rich(
-                TextSpan(
-                  text: 'J\'accepte les ',
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                  children: const [
-                    TextSpan(
-                      text: 'conditions générales de vente',
-                      style: TextStyle(
-                        color: HbColors.brandPrimary,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                    TextSpan(text: ' et la '),
-                    TextSpan(
-                      text: 'politique de confidentialité',
-                      style: TextStyle(
-                        color: HbColors.brandPrimary,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ],
+          if (hasRefundPolicy) ...[
+            _buildRefundPolicyAcceptance(context),
+            const Divider(height: 22),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: _acceptedTerms,
+                  onChanged: (value) {
+                    setState(() => _acceptedTerms = value ?? false);
+                  },
+                  activeColor: HbColors.brandPrimary,
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _acceptedTerms = !_acceptedTerms);
+                  },
+                  child: Text.rich(
+                    TextSpan(
+                      text: context.l10n.bookingTermsPrefix,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                      children: [
+                        TextSpan(
+                          text: context.l10n.legalSales.toLowerCase(),
+                          style: const TextStyle(
+                            color: HbColors.brandPrimary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                        TextSpan(text: context.l10n.bookingTermsConnector),
+                        TextSpan(
+                          text: context.l10n.legalPrivacy.toLowerCase(),
+                          style: const TextStyle(
+                            color: HbColors.brandPrimary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefundPolicyAcceptance(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: _acceptedRefundPolicy,
+            onChanged: (value) {
+              setState(() => _acceptedRefundPolicy = value ?? false);
+            },
+            activeColor: HbColors.brandPrimary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(
+                    () => _acceptedRefundPolicy = !_acceptedRefundPolicy,
+                  );
+                },
+                child: Text(
+                  context.l10n.bookingRefundPolicyAcceptance,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                ),
+              ),
+              TextButton(
+                onPressed: _openRefundPolicy,
+                style: TextButton.styleFrom(
+                  foregroundColor: HbColors.brandPrimary,
+                  padding: const EdgeInsets.only(top: 2),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  context.l10n.refundPolicyOpenLink,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openRefundPolicy() {
+    final policy = widget.params.event.vendorCancellationPolicy?.trim();
+    if (policy == null || policy.isEmpty) return;
+
+    context.push(
+      '/refund-policy',
+      extra: RefundPolicyRouteArgs(
+        title: context.l10n.refundPolicyTitle,
+        policies: [
+          RefundPolicyEntry(
+            eventTitle: widget.params.event.title,
+            policy: policy,
           ),
         ],
       ),
@@ -615,7 +717,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   children: [
                     Text(
                       isFree
-                          ? 'Gratuit'
+                          ? context.l10n.commonFree
                           : _formatPrice(widget.params.totalPrice),
                       style: TextStyle(
                         fontSize: 22,
@@ -624,7 +726,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ),
                     Text(
-                      '${widget.params.totalTickets} billet${widget.params.totalTickets > 1 ? 's' : ''}',
+                      context.l10n.bookingTicketsCount(
+                        widget.params.totalTickets,
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -666,7 +770,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            isFree ? 'Confirmer' : 'Payer',
+                            isFree
+                                ? context.l10n.bookingConfirm
+                                : context.l10n.bookingPay,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -719,10 +825,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
+    final policy = widget.params.event.vendorCancellationPolicy?.trim();
+    final hasRefundPolicy = policy != null && policy.isNotEmpty;
+    if (hasRefundPolicy && !_acceptedRefundPolicy) {
+      setState(() {
+        _errorMessage = context.l10n.bookingRefundPolicyRequired;
+      });
+      return;
+    }
+
     // Vérifier les CGV
     if (!_acceptedTerms) {
       setState(() {
-        _errorMessage = 'Veuillez accepter les conditions générales de vente';
+        _errorMessage = context.l10n.bookingAcceptSalesRequired;
       });
       return;
     }
@@ -733,7 +848,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final attendees = _attendeesMap[entry.key] ?? [];
       if (attendees.length != entry.value) {
         setState(() {
-          _errorMessage = 'Chaque billet doit avoir un participant renseigné';
+          _errorMessage = context.l10n.bookingEveryTicketNeedsParticipant;
         });
         return;
       }
@@ -744,8 +859,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             (a.birthDate ?? '').trim().isEmpty ||
             (a.membershipCity ?? a.city ?? '').trim().isEmpty) {
           setState(() {
-            _errorMessage =
-                'Veuillez renseigner le prénom, le nom, la date de naissance, la ville et la relation de chaque participant';
+            _errorMessage = context.l10n.bookingParticipantsMissingDetails;
           });
           return;
         }
@@ -798,6 +912,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         promoCode: widget.params.couponCode,
         paymentMethod: widget.params.isFree ? 'free' : 'card',
         acceptTerms: _acceptedTerms,
+        acceptRefundPolicy: _acceptedRefundPolicy,
         acceptNewsletter: _acceptNewsletter,
       );
 
@@ -822,22 +937,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         );
 
-        // iOS belt-and-suspenders: settle delay + post-frame callback so
-        // the view hierarchy is stable before Stripe walks it. The real
-        // fix lives in AppDelegate.window, but these add safety against
-        // future plugins that might leave transient presented VCs.
+        // iOS belt-and-suspenders: settle delay + explicit end-of-frame wait
+        // so the view hierarchy is stable before Stripe walks it. In release,
+        // addPostFrameCallback can stall if no new frame is scheduled here.
         await Future<void>.delayed(const Duration(milliseconds: 500));
+        await WidgetsBinding.instance.endOfFrame;
 
-        final presentCompleter = Completer<void>();
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          try {
-            await Stripe.instance.presentPaymentSheet();
-            presentCompleter.complete();
-          } catch (e) {
-            presentCompleter.completeError(e);
-          }
-        });
-        await presentCompleter.future;
+        if (!mounted) {
+          throw StateError(
+            'Payment screen closed before Stripe sheet presentation.',
+          );
+        }
+
+        await Stripe.instance.presentPaymentSheet();
 
         // 4. Confirmer le brouillon après paiement réussi et récupérer le Booking.
         confirmationBooking = await bookingDataSource.confirmDraftBooking(
@@ -861,7 +973,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // Paiement annulé ou échoué
       setState(() {
         _isLoading = false;
-        _errorMessage = e.error.localizedMessage ?? 'Paiement annulé';
+        _errorMessage =
+            e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
       });
     } catch (e) {
       setState(() {

@@ -26,6 +26,18 @@ abstract class OrganizerRepository {
     int perPage,
   });
 
+  /// Public organizers directory (`GET /organizers`).
+  ///
+  /// Spec: docs/organizer/ORGANIZERS_LIST_API_MOBILE.md
+  Future<OrganizersDirectoryPage> getOrganizers({
+    String? search,
+    String? city,
+    String sortBy,
+    String? sortOrder,
+    int page,
+    int perPage,
+  });
+
   Future<ReviewsResponseDto> getReviews(
     String identifier, {
     int? rating,

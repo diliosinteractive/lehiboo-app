@@ -64,7 +64,12 @@ abstract class GamificationRepository {
   Future<HibonsWallet> getWallet();
   Future<HibonsBalance> getBalance();
   Future<List<HibonsActionEntry>> getActionsCatalog();
-  Future<TransactionsListResult> getTransactions({String? type, String? pillar});
+  Future<TransactionsListResult> getTransactions({
+    String? type,
+    String? pillar,
+    int? page,
+    int? perPage,
+  });
 
   // Daily Rewards & Streaks
   Future<DailyRewardState> getDailyRewardState();

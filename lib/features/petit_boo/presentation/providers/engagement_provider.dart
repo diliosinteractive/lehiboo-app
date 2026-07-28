@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:ui' show Locale;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/providers/shared_preferences_provider.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 // -----------------------------------------------------------------------------
 // STATE
@@ -88,7 +92,7 @@ class PetitBooEngagementNotifier extends StateNotifier<EngagementState> {
     Future.delayed(const Duration(seconds: 5), () {
       if (!state.hasClickedChatToday && mounted) {
         _showBubble(
-          "Bonjour ! Je peux vous aider ? 🌟",
+          _l10n.petitBooEngagementWelcome,
           duration: const Duration(seconds: 6),
         );
       }
@@ -103,7 +107,7 @@ class PetitBooEngagementNotifier extends StateNotifier<EngagementState> {
 
     // High activity without chat - every 8 pages
     if (_pageViewCount > 0 && _pageViewCount % 8 == 0) {
-      _showBubble("Vous cherchez l'inspiration ? 💡");
+      _showBubble(_l10n.petitBooEngagementInspiration);
     }
   }
 
@@ -112,7 +116,7 @@ class PetitBooEngagementNotifier extends StateNotifier<EngagementState> {
 
     // Zero results -> immediate help
     _showBubble(
-      "Oups, rien trouvé ? Je peux chercher pour vous ! 🕵️‍♂️",
+      _l10n.petitBooEngagementNoResults,
       duration: const Duration(seconds: 8),
     );
   }
@@ -123,16 +127,18 @@ class PetitBooEngagementNotifier extends StateNotifier<EngagementState> {
 
     // Idle for > 20s
     if (_lastActionTime != null &&
-        DateTime.now().difference(_lastActionTime!) > const Duration(seconds: 20)) {
+        DateTime.now().difference(_lastActionTime!) >
+            const Duration(seconds: 20)) {
       if (DateTime.now().second % 30 == 0) {
-        _showBubble("Psst... Je connais des coins sympas ! 🗺️");
+        _showBubble(_l10n.petitBooEngagementIdle);
       }
     }
   }
 
   // --- INTERNAL ---
 
-  void _showBubble(String message, {Duration duration = const Duration(seconds: 5)}) {
+  void _showBubble(String message,
+      {Duration duration = const Duration(seconds: 5)}) {
     if (state.hasClickedChatToday) return;
 
     state = state.copyWith(
@@ -145,6 +151,10 @@ class PetitBooEngagementNotifier extends StateNotifier<EngagementState> {
       _hideBubble();
     });
   }
+
+  AppLocalizations get _l10n => lookupAppLocalizations(
+        Locale(AppLocaleCache.languageCode),
+      );
 
   void _hideBubble() {
     state = state.copyWith(isVisible: false);

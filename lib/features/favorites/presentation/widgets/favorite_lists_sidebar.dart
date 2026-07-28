@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
@@ -44,10 +45,10 @@ class FavoriteListsSidebar extends ConsumerWidget {
               children: [
                 const Icon(Icons.folder_special, color: HbColors.brandPrimary),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Mes listes',
-                    style: TextStyle(
+                    context.l10n.favoriteListsTitle,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -56,9 +57,10 @@ class FavoriteListsSidebar extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.add, size: 22),
                   onPressed: () => CreateListDialog.show(context),
-                  tooltip: 'Nouvelle liste',
+                  tooltip: context.l10n.favoriteListNewTitle,
                   style: IconButton.styleFrom(
-                    backgroundColor: HbColors.brandPrimary.withValues(alpha: 0.1),
+                    backgroundColor:
+                        HbColors.brandPrimary.withValues(alpha: 0.1),
                     foregroundColor: HbColors.brandPrimary,
                   ),
                 ),
@@ -69,7 +71,8 @@ class FavoriteListsSidebar extends ConsumerWidget {
           // Listes
           Expanded(
             child: listsAsync.when(
-              data: (lists) => _buildListView(context, ref, lists, selectedListId),
+              data: (lists) =>
+                  _buildListView(context, ref, lists, selectedListId),
               loading: () => const Center(
                 child: CircularProgressIndicator(color: HbColors.brandPrimary),
               ),
@@ -77,16 +80,17 @@ class FavoriteListsSidebar extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+                    Icon(Icons.error_outline,
+                        size: 48, color: Colors.grey[400]),
                     const SizedBox(height: 16),
                     Text(
-                      'Erreur de chargement',
+                      context.l10n.favoriteListsLoadError,
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: () => ref.refresh(favoriteListsProvider),
-                      child: const Text('Réessayer'),
+                      child: Text(context.l10n.commonRetry),
                     ),
                   ],
                 ),
@@ -113,7 +117,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
         _SidebarListItem(
           icon: Icons.favorite,
           iconColor: HbColors.brandPrimary,
-          title: 'Tous les favoris',
+          title: context.l10n.favoriteListsAllFavorites,
           count: totalCount,
           isSelected: selectedListId == null,
           onTap: () {
@@ -126,12 +130,13 @@ class FavoriteListsSidebar extends ConsumerWidget {
         _SidebarListItem(
           icon: Icons.favorite_border,
           iconColor: Colors.grey[600]!,
-          title: 'Non classés',
+          title: context.l10n.favoriteListsUncategorized,
           count: null, // On ne connaît pas le compte exact
           isSelected: selectedListId == 'uncategorized',
           onTap: () {
             HapticFeedback.selectionClick();
-            ref.read(selectedFavoriteListProvider.notifier).state = 'uncategorized';
+            ref.read(selectedFavoriteListProvider.notifier).state =
+                'uncategorized';
           },
         ),
 
@@ -139,7 +144,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
-              'MES LISTES',
+              context.l10n.favoriteListsSectionTitle,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -152,25 +157,25 @@ class FavoriteListsSidebar extends ConsumerWidget {
 
         // Listes personnalisées
         ...lists.map((list) => _SidebarListItem(
-          icon: list.icon,
-          iconColor: list.color,
-          title: list.name,
-          count: list.favoritesCount,
-          isSelected: selectedListId == list.id,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            ref.read(selectedFavoriteListProvider.notifier).state = list.id;
-          },
-          onLongPress: () async {
-            HapticFeedback.mediumImpact();
-            final result = await EditListDialog.show(context, list);
+              icon: list.icon,
+              iconColor: list.color,
+              title: list.name,
+              count: list.favoritesCount,
+              isSelected: selectedListId == list.id,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                ref.read(selectedFavoriteListProvider.notifier).state = list.id;
+              },
+              onLongPress: () async {
+                HapticFeedback.mediumImpact();
+                final result = await EditListDialog.show(context, list);
 
-            // Si la liste a été supprimée et était sélectionnée, revenir à "tous"
-            if (result == null && selectedListId == list.id) {
-              ref.read(selectedFavoriteListProvider.notifier).state = null;
-            }
-          },
-        )),
+                // Si la liste a été supprimée et était sélectionnée, revenir à "tous"
+                if (result == null && selectedListId == list.id) {
+                  ref.read(selectedFavoriteListProvider.notifier).state = null;
+                }
+              },
+            )),
 
         // Bouton créer
         const SizedBox(height: 8),
@@ -179,7 +184,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
           child: TextButton.icon(
             onPressed: () => CreateListDialog.show(context),
             icon: const Icon(Icons.add, size: 20),
-            label: const Text('Nouvelle liste'),
+            label: Text(context.l10n.favoriteListNewTitle),
             style: TextButton.styleFrom(
               foregroundColor: HbColors.brandPrimary,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -218,7 +223,8 @@ class _SidebarListItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Material(
-        color: isSelected ? iconColor.withValues(alpha: 0.15) : Colors.transparent,
+        color:
+            isSelected ? iconColor.withValues(alpha: 0.15) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
@@ -243,7 +249,8 @@ class _SidebarListItem extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected ? iconColor : Colors.black87,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -251,9 +258,12 @@ class _SidebarListItem extends StatelessWidget {
                 ),
                 if (count != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isSelected ? iconColor.withValues(alpha: 0.2) : Colors.grey[200],
+                      color: isSelected
+                          ? iconColor.withValues(alpha: 0.2)
+                          : Colors.grey[200],
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -375,7 +385,7 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
             children: [
               // Tous
               _FolderChip(
-                label: 'Tous',
+                label: context.l10n.favoriteListsAllShort,
                 icon: Icons.favorite,
                 color: HbColors.brandPrimary,
                 count: totalCount,
@@ -389,7 +399,7 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
 
               // Non classés
               _FolderChip(
-                label: 'Non classés',
+                label: context.l10n.favoriteListsUncategorized,
                 icon: Icons.folder_off_outlined,
                 color: Colors.grey[500]!,
                 isSelected: selectedListId == 'uncategorized',
@@ -417,8 +427,9 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
                       onEdit: () async {
                         final result = await EditListDialog.show(context, list);
                         if (result == null && selectedListId == list.id) {
-                          ref.read(selectedFavoriteListProvider.notifier).state =
-                              null;
+                          ref
+                              .read(selectedFavoriteListProvider.notifier)
+                              .state = null;
                         }
                       },
                     ),
@@ -609,11 +620,14 @@ class _FolderChip extends StatelessWidget {
                 },
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Icon(
                     Icons.more_vert,
                     size: 16,
-                    color: isSelected ? Colors.white.withValues(alpha: 0.8) : Colors.grey[500],
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.8)
+                        : Colors.grey[500],
                   ),
                 ),
               ),
@@ -663,9 +677,9 @@ class _AddFolderButton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
-              'Créer',
-              style: TextStyle(
+            Text(
+              context.l10n.favoriteListCreateAction,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: HbColors.brandPrimary,
@@ -677,4 +691,3 @@ class _AddFolderButton extends StatelessWidget {
     );
   }
 }
-

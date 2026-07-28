@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
-import 'package:lehiboo/features/favorites/data/repositories/favorites_repository_impl.dart';
 import 'package:lehiboo/features/favorites/domain/repositories/favorites_repository.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
+import 'package:lehiboo/l10n/generated/app_localizations.dart';
 
 class _FakeFavoritesRepository implements FavoritesRepository {
   @override
@@ -35,11 +35,14 @@ Future<void> _pumpCard(WidgetTester tester, Activity activity) async {
     ProviderScope(
       overrides: [
         isAuthenticatedProvider.overrideWithValue(false),
-        favoritesRepositoryImplProvider.overrideWithValue(
+        favoritesRepositoryProvider.overrideWithValue(
           _FakeFavoritesRepository(),
         ),
       ],
       child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SizedBox(
             width: 200,

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
+import '../widgets/conversation_load_error_view.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
 import '../widgets/new_conversation_form.dart';
@@ -31,11 +33,12 @@ class _SupportDetailScreenState extends ConsumerState<SupportDetailScreen> {
     super.initState();
     if (widget.isNew) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await NewConversationForm.show(
+        final created = await NewConversationForm.show(
           context,
           conversationContext: SupportConversationContext(),
         );
-        if (mounted) {
+        // Only navigate back if the user cancelled (form already navigates on success)
+        if (mounted && created != true) {
           context.canPop() ? context.pop() : context.go('/messages');
         }
       });
@@ -53,25 +56,75 @@ class _SupportDetailScreenState extends ConsumerState<SupportDetailScreen> {
   }
 }
 
-class _SupportThreadView extends ConsumerWidget {
+class _SupportThreadView extends ConsumerStatefulWidget {
   final String conversationUuid;
 
   const _SupportThreadView({required this.conversationUuid});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final providerKey = (uuid: conversationUuid, route: ConversationRoute.participantSupport);
-    final state = ref.watch(conversationDetailProvider(providerKey));
-    final notifier = ref.read(conversationDetailProvider(providerKey).notifier);
+  ConsumerState<_SupportThreadView> createState() => _SupportThreadViewState();
+}
 
-    ref.listen(conversationDetailProvider(providerKey), (prev, next) {
+class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
+  ({String uuid, ConversationRoute route}) get _pk => (
+        uuid: widget.conversationUuid,
+        route: ConversationRoute.participantSupport,
+      );
+
+  Future<void> _handleClose(ConversationDetailNotifier notifier) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.l10n.messagesCloseConversation),
+        content: Text(context.l10n.messagesCloseConversationBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              context.l10n.commonClose,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      try {
+        await notifier.closeConversation();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                context.l10n.messagesLoadError(
+                  ApiResponseHandler.extractError(e),
+                ),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(conversationDetailProvider(_pk));
+    final notifier = ref.read(conversationDetailProvider(_pk).notifier);
+
+    ref.listen(conversationDetailProvider(_pk), (prev, next) {
       if (next.sendError != null && prev?.sendError != next.sendError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.sendError!),
             backgroundColor: Colors.red,
             action: SnackBarAction(
-              label: 'OK',
+              label: context.l10n.commonOk,
               textColor: Colors.white,
               onPressed: notifier.clearSendError,
             ),
@@ -83,21 +136,36 @@ class _SupportThreadView extends ConsumerWidget {
 
     return Scaffold(
       body: state.conversation.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 40),
-              const SizedBox(height: 8),
-              Text('Erreur : $e', style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: notifier.load,
-                child: const Text('Réessayer'),
+        loading: () => Column(
+          children: [
+            AppBar(
+              leading: BackButton(
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/messages'),
               ),
-            ],
-          ),
+              title: Text(context.l10n.messagesTabSupportLeHiboo),
+            ),
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          ],
+        ),
+        error: (e, _) => Column(
+          children: [
+            AppBar(
+              leading: BackButton(
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/messages'),
+              ),
+              title: Text(context.l10n.messagesTabSupportLeHiboo),
+            ),
+            Expanded(
+              child: ConversationLoadErrorView(
+                error: e,
+                onRetry: notifier.load,
+              ),
+            ),
+          ],
         ),
         data: (conversation) {
           final isClosed = conversation.status == 'closed';
@@ -109,38 +177,83 @@ class _SupportThreadView extends ConsumerWidget {
                       ? context.pop()
                       : context.go('/messages'),
                 ),
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                title: Row(
                   children: [
-                    Text(
-                      conversation.subject,
-                      style: const TextStyle(fontSize: 16),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor:
+                          const Color(0xFFFF601F).withValues(alpha: 0.15),
+                      child: const Icon(
+                        Icons.support_agent,
+                        size: 20,
+                        color: Color(0xFFFF601F),
+                      ),
                     ),
-                    Text(
-                      'Support LeHiboo',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.normal,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            context.l10n.messagesTabSupportLeHiboo,
+                            style: const TextStyle(fontSize: 16),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            conversation.subject,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.normal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
+                actions: [
+                  if (!isClosed)
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'close') _handleClose(notifier);
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'close',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.lock_outline, size: 18),
+                              const SizedBox(width: 8),
+                              Text(context.l10n.messagesCloseConversation),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
               ),
               if (isClosed)
-                MaterialBanner(
-                  content: const Text('Cette conversation est fermée.'),
-                  leading: const Icon(Icons.lock_outline),
-                  backgroundColor: Colors.grey.shade100,
-                  actions: [
-                    TextButton(
-                      onPressed: () => ScaffoldMessenger.of(context)
-                          .hideCurrentMaterialBanner(),
-                      child: const Text('OK'),
-                    ),
-                  ],
+                Container(
+                  width: double.infinity,
+                  color: Colors.grey.shade100,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock_outline,
+                          size: 18, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Text(
+                        context.l10n.messagesClosedNotice,
+                        style: TextStyle(
+                            color: Colors.grey.shade700, fontSize: 13),
+                      ),
+                    ],
+                  ),
                 ),
               Expanded(
                 child: _MessagesList(
@@ -149,11 +262,10 @@ class _SupportThreadView extends ConsumerWidget {
                 ),
               ),
               MessageComposer(
-                conversationUuid: conversationUuid,
+                conversationUuid: widget.conversationUuid,
                 disabled: isClosed,
-                onSend: (content, attachments) => notifier.sendMessage(
+                onSend: (content) => notifier.sendMessage(
                   content: content,
-                  attachments: attachments,
                 ),
               ),
             ],
@@ -173,9 +285,11 @@ class _MessagesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (messages.isEmpty) {
-      return const Center(
-        child: Text('Aucun message. Soyez le premier à écrire !',
-            style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text(
+          context.l10n.messagesEmptyThread,
+          style: const TextStyle(color: Colors.grey),
+        ),
       );
     }
 
@@ -195,7 +309,7 @@ class _MessagesList extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = items[index];
         if (item is _DateSeparator) {
-          return _buildDateChip(item.date);
+          return _buildDateChip(context, item.date);
         }
         final msg = (item as _MessageItem).message;
         final originalIndex = messages.indexOf(msg);
@@ -236,18 +350,20 @@ class _MessagesList extends StatelessWidget {
     return items;
   }
 
-  Widget _buildDateChip(DateTime date) {
+  Widget _buildDateChip(BuildContext context, DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
 
     String label;
     if (date == today) {
-      label = "Aujourd'hui";
+      label = context.l10n.commonToday;
     } else if (date == yesterday) {
-      label = 'Hier';
+      label = context.l10n.commonYesterday;
     } else {
-      label = DateFormat('d MMMM yyyy', 'fr_FR').format(date);
+      label = context
+          .appDateFormat('d MMMM yyyy', enPattern: 'MMMM d, yyyy')
+          .format(date);
     }
 
     return Center(

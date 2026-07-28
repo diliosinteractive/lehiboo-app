@@ -2,7 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/checkin/presentation/providers/vendor_eligibility_provider.dart';
 import '../../features/petit_boo/presentation/providers/engagement_provider.dart';
+import '../analytics/analytics_consent.dart';
+import '../analytics/widgets/consent_gate_modal.dart';
+import '../l10n/l10n.dart';
 import '../utils/guest_guard.dart';
 import 'voice_fab/voice_fab.dart';
 
@@ -16,7 +21,6 @@ class MainScaffold extends ConsumerStatefulWidget {
 }
 
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
-  int _selectedIndex = 0;
   Timer? _idleCheckTimer;
 
   @override
@@ -26,6 +30,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Initial Trigger
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(petitBooEngagementProvider.notifier).onAppStart();
+      _maybeShowConsentGate();
     });
 
     // Idle Checker Loop
@@ -34,6 +39,17 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
         ref.read(petitBooEngagementProvider.notifier).checkIdle();
       }
     });
+  }
+
+  /// Affiche le consent gate RGPD si l'utilisateur n'a pas encore tranché.
+  /// Premier point d'entrée dans la navigation principale → moment naturel
+  /// pour demander le consentement (option A du plan : avant l'accès à la
+  /// home complète).
+  void _maybeShowConsentGate() {
+    final consent = ref.read(analyticsConsentProvider);
+    if (consent.status != AnalyticsConsentStatus.unknown) return;
+    if (!mounted) return;
+    ConsentGateModal.show(context);
   }
 
   @override
@@ -49,16 +65,24 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     }
 
     if (index == 3) {
-      _navigateToBookings();
+      // Logged-out: the 4th slot is the public organizers directory.
+      if (!ref.read(isAuthenticatedProvider)) {
+        ref.read(petitBooEngagementProvider.notifier).onNavigation();
+        context.go('/organizers');
+        return;
+      }
+      // Logged-in: scanner sees Scan, everyone else sees Bookings.
+      if (ref.read(vendorEligibilityProvider)) {
+        ref.read(petitBooEngagementProvider.notifier).onNavigation();
+        context.push('/vendor/scan');
+      } else {
+        _navigateToBookings();
+      }
       return;
     }
 
     // Track navigation
     ref.read(petitBooEngagementProvider.notifier).onNavigation();
-
-    setState(() {
-      _selectedIndex = index;
-    });
 
     switch (index) {
       case 0:
@@ -74,28 +98,41 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
-      featureName: 'mes réservations',
+      featureName: context.l10n.guestFeatureBookings,
     );
     if (!allowed) return;
 
     // Track navigation
     ref.read(petitBooEngagementProvider.notifier).onNavigation();
 
-    setState(() {
-      _selectedIndex = 3;
-    });
-
     if (mounted) {
       context.go('/my-bookings');
     }
   }
 
+  // Source of truth for the highlighted tab is the current route, so back
+  // navigation, deeplinks and programmatic context.go all stay in sync.
+  int _indexForLocation(String path, bool canScan, bool isAuthenticated) {
+    if (path.startsWith('/explore')) return 1;
+    // Logged-out organizers directory occupies the 4th slot.
+    if (!isAuthenticated && path.startsWith('/organizers')) return 3;
+    if (path.startsWith('/my-bookings')) return canScan ? -1 : 3;
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final canScan = ref.watch(vendorEligibilityProvider);
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final selectedIndex = _indexForLocation(
+        GoRouterState.of(context).uri.path, canScan, isAuthenticated);
+
     return Scaffold(
       body: widget.child,
       // Nouveau VoiceFab avec appui prolongé pour parler
-      floatingActionButton: const VoiceFab(),
+      floatingActionButton: isKeyboardVisible ? null : const VoiceFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
@@ -109,14 +146,35 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 16.0),
-              child: _buildNavItem(Icons.home_rounded, 'Accueil', 0),
+              child:
+                  _buildNavItem(Icons.home_rounded, l10n.navHome, 0, selectedIndex),
             ),
-            _buildNavItem(Icons.explore_outlined, 'Explorer', 1),
+            _buildNavItem(
+                Icons.explore_outlined, l10n.navExplore, 1, selectedIndex),
             const SizedBox(width: 64), // Space for FAB
-            _buildNavItem(Icons.map_outlined, 'Carte', 2),
+            _buildNavItem(Icons.map_outlined, l10n.navMap, 2, selectedIndex),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
-              child: _buildNavItem(Icons.confirmation_number_outlined, 'Réservations', 3),
+              child: !isAuthenticated
+                  ? _buildNavItem(
+                      Icons.storefront_outlined,
+                      l10n.navOrganizers,
+                      3,
+                      selectedIndex,
+                    )
+                  : canScan
+                      ? _buildNavItem(
+                          Icons.qr_code_scanner_outlined,
+                          l10n.navScan,
+                          3,
+                          selectedIndex,
+                        )
+                      : _buildNavItem(
+                          Icons.confirmation_number_outlined,
+                          l10n.navBookings,
+                          3,
+                          selectedIndex,
+                        ),
             ),
           ],
         ),
@@ -124,8 +182,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    final isActive = _selectedIndex == index;
+  Widget _buildNavItem(
+      IconData icon, String label, int index, int selectedIndex) {
+    final isActive = selectedIndex == index;
 
     return InkWell(
       onTap: () => _onItemTapped(index),

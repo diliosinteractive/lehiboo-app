@@ -42,17 +42,24 @@ class TripPlanDto {
 
     return TripPlanDto(
       uuid: json['uuid'] as String? ?? '',
-      title: json['title'] as String? ?? 'Plan sans titre',
-      plannedDate: json['planned_date'] as String? ?? json['plannedDate'] as String?,
+      title: json['title'] as String? ?? '',
+      plannedDate:
+          json['planned_date'] as String? ?? json['plannedDate'] as String?,
       startTime: json['start_time'] as String? ?? json['startTime'] as String?,
       endTime: json['end_time'] as String? ?? json['endTime'] as String?,
-      totalDurationMinutes: _parseIntOrNull(json['total_duration_minutes'] ?? json['duration_minutes'] ?? json['durationMinutes']),
-      totalDistanceKm: _parseDoubleOrNull(json['total_distance_km'] ?? json['totalDistanceKm']),
+      totalDurationMinutes: _parseIntOrNull(json['total_duration_minutes'] ??
+          json['duration_minutes'] ??
+          json['durationMinutes']),
+      totalDistanceKm: _parseDoubleOrNull(
+          json['total_distance_km'] ?? json['totalDistanceKm']),
       score: _parseDoubleOrNull(json['score']),
-      stopsCount: _parseIntOrNull(json['stops_count'] ?? json['stopsCount']) ?? stops.length,
+      stopsCount: _parseIntOrNull(json['stops_count'] ?? json['stopsCount']) ??
+          stops.length,
       stops: stops,
       recommendations: recommendations,
-      createdAt: json['created_at'] as String? ?? json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+      createdAt: json['created_at'] as String? ??
+          json['createdAt'] as String? ??
+          DateTime.now().toIso8601String(),
     );
   }
 
@@ -161,7 +168,7 @@ class TripStopDto {
 
     String? eventUuid = json['event_uuid'] as String?;
     String? eventSlug;
-    String eventTitle = 'Étape';
+    String eventTitle = '';
     String? venueName = json['venue_name'] as String?;
     String? city = json['city'] as String?;
     String? imageUrl;
@@ -169,16 +176,15 @@ class TripStopDto {
     if (eventObj != null) {
       eventUuid ??= eventObj['uuid'] as String?;
       eventSlug = eventObj['slug'] as String?;
-      eventTitle = eventObj['title'] as String? ??
-                   json['event_title'] as String? ??
-                   'Étape';
+      eventTitle =
+          eventObj['title'] as String? ?? json['event_title'] as String? ?? '';
       venueName ??= eventObj['venue_name'] as String?;
       city ??= eventObj['city'] as String?;
-      imageUrl = eventObj['image'] as String? ?? eventObj['image_url'] as String?;
+      imageUrl =
+          eventObj['image'] as String? ?? eventObj['image_url'] as String?;
     } else {
-      eventTitle = json['event_title'] as String? ??
-                   json['title'] as String? ??
-                   'Étape';
+      eventTitle =
+          json['event_title'] as String? ?? json['title'] as String? ?? '';
     }
 
     return TripStopDto(
@@ -193,8 +199,10 @@ class TripStopDto {
       arrivalTime: json['arrival_time'] as String?,
       departureTime: json['departure_time'] as String?,
       durationMinutes: (json['duration_minutes'] as num?)?.toInt(),
-      travelFromPreviousKm: (json['travel_from_previous_km'] as num?)?.toDouble(),
-      travelFromPreviousMinutes: (json['travel_from_previous_minutes'] as num?)?.toInt(),
+      travelFromPreviousKm:
+          (json['travel_from_previous_km'] as num?)?.toDouble(),
+      travelFromPreviousMinutes:
+          (json['travel_from_previous_minutes'] as num?)?.toInt(),
       latitude: lat,
       longitude: lng,
     );

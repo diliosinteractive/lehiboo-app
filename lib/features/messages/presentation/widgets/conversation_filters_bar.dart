@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 class ConversationFiltersBar extends StatefulWidget {
   // Which rows to show
   final bool showSearch;
@@ -106,7 +108,7 @@ class _ConversationFiltersBarState extends State<ConversationFiltersBar> {
               controller: _searchCtrl,
               onChanged: _onTextChanged,
               decoration: InputDecoration(
-                hintText: 'Rechercher…',
+                hintText: context.l10n.messagesSearchHint,
                 prefixIcon: const Icon(Icons.search, size: 20),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
@@ -148,7 +150,7 @@ class _ConversationFiltersBarState extends State<ConversationFiltersBar> {
                 ],
                 if (widget.showUnreadOnly) ...[
                   _FilterChip(
-                    label: 'Non lus',
+                    label: context.l10n.messagesFilterUnread,
                     selected: widget.unreadOnly,
                     onTap: () => widget.onUnreadOnlyChanged(!widget.unreadOnly),
                   ),
@@ -156,8 +158,9 @@ class _ConversationFiltersBarState extends State<ConversationFiltersBar> {
                 ],
                 if (widget.showStatus) ...[
                   _FilterChip(
-                    label: 'Ouverts',
-                    selected: !widget.unreadOnly && widget.statusFilter == 'open',
+                    label: context.l10n.messagesFilterOpen,
+                    selected:
+                        !widget.unreadOnly && widget.statusFilter == 'open',
                     onTap: () {
                       if (!widget.unreadOnly && widget.statusFilter == 'open') {
                         widget.onStatusChanged(null);
@@ -169,10 +172,12 @@ class _ConversationFiltersBarState extends State<ConversationFiltersBar> {
                   ),
                   const SizedBox(width: 6),
                   _FilterChip(
-                    label: 'Fermés',
-                    selected: !widget.unreadOnly && widget.statusFilter == 'closed',
+                    label: context.l10n.messagesFilterClosed,
+                    selected:
+                        !widget.unreadOnly && widget.statusFilter == 'closed',
                     onTap: () {
-                      if (!widget.unreadOnly && widget.statusFilter == 'closed') {
+                      if (!widget.unreadOnly &&
+                          widget.statusFilter == 'closed') {
                         widget.onStatusChanged(null);
                       } else {
                         widget.onUnreadOnlyChanged(false);
@@ -184,28 +189,28 @@ class _ConversationFiltersBarState extends State<ConversationFiltersBar> {
                 ],
                 if (widget.showPeriod) ...[
                   _FilterChip(
-                    label: "Aujourd'hui",
+                    label: context.l10n.commonToday,
                     selected: widget.periodFilter == 'today',
                     onTap: () => widget.onPeriodChanged(
                         widget.periodFilter == 'today' ? null : 'today'),
                   ),
                   const SizedBox(width: 6),
                   _FilterChip(
-                    label: 'Cette semaine',
+                    label: context.l10n.messagesFilterThisWeek,
                     selected: widget.periodFilter == 'week',
                     onTap: () => widget.onPeriodChanged(
                         widget.periodFilter == 'week' ? null : 'week'),
                   ),
                   const SizedBox(width: 6),
                   _FilterChip(
-                    label: 'Ce mois',
+                    label: context.l10n.messagesFilterThisMonth,
                     selected: widget.periodFilter == 'month',
                     onTap: () => widget.onPeriodChanged(
                         widget.periodFilter == 'month' ? null : 'month'),
                   ),
                   const SizedBox(width: 6),
                   _FilterChip(
-                    label: 'Plus ancien',
+                    label: context.l10n.messagesFilterOlder,
                     selected: widget.periodFilter == 'older',
                     onTap: () => widget.onPeriodChanged(
                         widget.periodFilter == 'older' ? null : 'older'),
@@ -214,7 +219,7 @@ class _ConversationFiltersBarState extends State<ConversationFiltersBar> {
                 ],
                 if (widget.showReason) ...[
                   _FilterChip(
-                    label: 'Inapproprié',
+                    label: context.l10n.messagesReasonInappropriate,
                     selected: widget.reasonFilter == 'inappropriate',
                     onTap: () => widget.onReasonChanged(
                         widget.reasonFilter == 'inappropriate'
@@ -223,7 +228,7 @@ class _ConversationFiltersBarState extends State<ConversationFiltersBar> {
                   ),
                   const SizedBox(width: 6),
                   _FilterChip(
-                    label: 'Harcèlement',
+                    label: context.l10n.messagesReasonHarassment,
                     selected: widget.reasonFilter == 'harassment',
                     onTap: () => widget.onReasonChanged(
                         widget.reasonFilter == 'harassment'
@@ -232,14 +237,14 @@ class _ConversationFiltersBarState extends State<ConversationFiltersBar> {
                   ),
                   const SizedBox(width: 6),
                   _FilterChip(
-                    label: 'Spam',
+                    label: context.l10n.messagesReasonSpam,
                     selected: widget.reasonFilter == 'spam',
                     onTap: () => widget.onReasonChanged(
                         widget.reasonFilter == 'spam' ? null : 'spam'),
                   ),
                   const SizedBox(width: 6),
                   _FilterChip(
-                    label: 'Autre',
+                    label: context.l10n.messagesReasonOther,
                     selected: widget.reasonFilter == 'other',
                     onTap: () => widget.onReasonChanged(
                         widget.reasonFilter == 'other' ? null : 'other'),
@@ -318,13 +323,15 @@ class _ResetChip extends StatelessWidget {
           color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.close, size: 14, color: Colors.black54),
-            SizedBox(width: 4),
-            Text('Réinitialiser',
-                style: TextStyle(fontSize: 12, color: Colors.black54)),
+            const Icon(Icons.close, size: 14, color: Colors.black54),
+            const SizedBox(width: 4),
+            Text(
+              context.l10n.messagesFilterReset,
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
+            ),
           ],
         ),
       ),

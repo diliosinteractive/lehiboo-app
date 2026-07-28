@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/l10n/l10n.dart';
+
 /// Storage for Petit Boo user context, history, and preferences.
 ///
 /// Stores user preferences like city, age_group, children_ages, etc.
@@ -172,59 +174,60 @@ class PetitBooContextStorage {
 
   /// Get a human-readable label for a context key
   static String getKeyLabel(String key) {
+    final l10n = cachedAppLocalizations();
     switch (key) {
       case 'first_name':
-        return 'Prénom';
+        return l10n.petitBooMemoryLabelFirstName;
       case 'last_name':
-        return 'Nom';
+        return l10n.petitBooMemoryLabelLastName;
       case 'nickname':
-        return 'Surnom';
+        return l10n.petitBooMemoryLabelNickname;
       case 'age':
-        return 'Âge';
+        return l10n.petitBooMemoryLabelAge;
       case 'birth_year':
-        return 'Année de naissance';
+        return l10n.petitBooMemoryLabelBirthYear;
       case 'age_group':
-        return 'Tranche d\'âge';
+        return l10n.petitBooMemoryLabelAgeGroup;
       case 'city':
-        return 'Ville';
+        return l10n.petitBooMemoryLabelCity;
       case 'region':
-        return 'Région';
+        return l10n.petitBooMemoryLabelRegion;
       case 'country':
-        return 'Pays';
+        return l10n.petitBooMemoryLabelCountry;
       case 'latitude':
-        return 'Latitude';
+        return l10n.petitBooMemoryLabelLatitude;
       case 'longitude':
-        return 'Longitude';
+        return l10n.petitBooMemoryLabelLongitude;
       case 'max_distance':
-        return 'Distance max (km)';
+        return l10n.petitBooMemoryLabelMaxDistance;
       case 'favorite_activities':
-        return 'Activités préférées';
+        return l10n.petitBooMemoryLabelFavoriteActivities;
       case 'disliked_activities':
-        return 'Activités à éviter';
+        return l10n.petitBooMemoryLabelDislikedActivities;
       case 'favorite_categories':
-        return 'Catégories préférées';
+        return l10n.petitBooMemoryLabelFavoriteCategories;
       case 'budget_preference':
-        return 'Budget';
+        return l10n.petitBooMemoryLabelBudgetPreference;
       case 'group_type':
-        return 'Type de groupe';
+        return l10n.petitBooMemoryLabelGroupType;
       case 'has_children':
-        return 'A des enfants';
+        return l10n.petitBooMemoryLabelHasChildren;
       case 'children_ages':
-        return 'Âge des enfants';
+        return l10n.petitBooMemoryLabelChildrenAges;
       case 'dietary_preferences':
-        return 'Régime alimentaire';
+        return l10n.petitBooMemoryLabelDietaryPreferences;
       case 'mobility_constraints':
-        return 'Contraintes de mobilité';
+        return l10n.petitBooMemoryLabelMobilityConstraints;
       case 'pet_friendly_needed':
-        return 'Animaux acceptés';
+        return l10n.petitBooMemoryLabelPetFriendlyNeeded;
       case 'preferred_times':
-        return 'Moments préférés';
+        return l10n.petitBooMemoryLabelPreferredTimes;
       case 'preferred_language':
-        return 'Langue préférée';
+        return l10n.petitBooMemoryLabelPreferredLanguage;
       case 'interests':
-        return 'Centres d\'intérêt';
+        return l10n.petitBooMemoryLabelInterests;
       case '_lastUpdated':
-        return 'Dernière mise à jour';
+        return l10n.petitBooMemoryLabelLastUpdated;
       default:
         return key;
     }
@@ -282,14 +285,15 @@ class PetitBooContextStorage {
 
   /// Format a value for display
   static String formatValue(String key, dynamic value) {
-    if (value == null) return 'Non défini';
+    final l10n = cachedAppLocalizations();
+    if (value == null) return l10n.petitBooMemoryUndefined;
 
     if (value is List) {
       return value.join(', ');
     }
 
     if (value is bool) {
-      return value ? 'Oui' : 'Non';
+      return value ? l10n.petitBooMemoryYes : l10n.petitBooMemoryNo;
     }
 
     if (key == 'age_group') {

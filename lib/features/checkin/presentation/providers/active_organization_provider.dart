@@ -106,9 +106,7 @@ final activeOrganizationProvider =
     ref.listen<AuthStatus>(
       authProvider.select((s) => s.status),
       (previous, next) {
-        if (next == AuthStatus.unauthenticated &&
-            previous != AuthStatus.unauthenticated &&
-            previous != AuthStatus.initial) {
+        if (didTransitionToUnauthenticated(previous, next)) {
           unawaited(notifier.clear());
         }
       },

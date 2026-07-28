@@ -232,7 +232,7 @@ void main() {
       );
 
       expect(event.isAuthoritativelyFree, isFalse);
-      expect(event.formattedPrice, 'Prix non défini');
+      expect(event.formattedPrice, 'Non définie');
     });
   });
 }

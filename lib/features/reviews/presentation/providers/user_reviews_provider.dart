@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/paginated_reviews.dart';
 import '../../domain/entities/user_review.dart';
 import '../../domain/repositories/reviews_repository.dart';
@@ -48,10 +50,25 @@ const Object _sentinel = Object();
 
 class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
   final ReviewsRepository _repo;
+  final Ref _ref;
   static const int _perPage = 10;
 
-  UserReviewsNotifier(this._repo) : super(const UserReviewsState()) {
+  UserReviewsNotifier(this._repo, this._ref) : super(const UserReviewsState()) {
     refresh();
+    _ref.listen<AuthStatus>(
+      authProvider.select((s) => s.status),
+      (previous, next) {
+        final loggedOut = didTransitionToUnauthenticated(previous, next);
+        final loggedIn = next == AuthStatus.authenticated &&
+            previous != AuthStatus.authenticated &&
+            previous != AuthStatus.initial;
+        if (loggedOut) {
+          state = const UserReviewsState();
+        } else if (loggedIn) {
+          refresh();
+        }
+      },
+    );
   }
 
   Future<void> refresh() async {
@@ -68,7 +85,7 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
       debugPrint('UserReviewsNotifier.refresh error: $e');
       state = state.copyWith(
         isLoading: false,
-        error: 'Impossible de charger vos avis.',
+        error: cachedAppLocalizations().reviewsUserLoadError,
       );
     }
   }
@@ -91,7 +108,7 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
       debugPrint('UserReviewsNotifier.loadMore error: $e');
       state = state.copyWith(
         isLoadingMore: false,
-        error: 'Impossible de charger la suite.',
+        error: cachedAppLocalizations().reviewsUserLoadMoreError,
       );
     }
   }
@@ -106,9 +123,8 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
   /// Optimistic update (utilisé après édition d'un avis).
   void updateLocal(UserReview updated) {
     state = state.copyWith(
-      items: state.items
-          .map((r) => r.uuid == updated.uuid ? updated : r)
-          .toList(),
+      items:
+          state.items.map((r) => r.uuid == updated.uuid ? updated : r).toList(),
     );
   }
 }
@@ -116,7 +132,7 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
 final userReviewsProvider =
     StateNotifierProvider<UserReviewsNotifier, UserReviewsState>((ref) {
   final repo = ref.watch(reviewsRepositoryProvider);
-  return UserReviewsNotifier(repo);
+  return UserReviewsNotifier(repo, ref);
 });
 
 /// Helper pour récupérer un PaginatedUserReviews factice depuis le state.

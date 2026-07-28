@@ -47,6 +47,24 @@ class OrganizerRepositoryImpl implements OrganizerRepository {
       );
 
   @override
+  Future<OrganizersDirectoryPage> getOrganizers({
+    String? search,
+    String? city,
+    String sortBy = 'name',
+    String? sortOrder,
+    int page = 1,
+    int perPage = 20,
+  }) =>
+      _api.getOrganizers(
+        search: search,
+        city: city,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+        page: page,
+        perPage: perPage,
+      );
+
+  @override
   Future<ReviewsResponseDto> getReviews(
     String identifier, {
     int? rating,

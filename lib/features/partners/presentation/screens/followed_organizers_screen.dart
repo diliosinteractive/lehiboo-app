@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/followed_organizers_providers.dart';
 import '../widgets/followed_organizer_tile.dart';
@@ -67,7 +68,7 @@ class _FollowedOrganizersScreenState
         onChanged: _onSearchChanged,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'Rechercher un organisateur',
+          hintText: context.l10n.organizerFollowedSearchHint,
           hintStyle: GoogleFonts.figtree(
             fontSize: 14,
             color: Colors.grey[500],
@@ -110,9 +111,9 @@ class _FollowedOrganizersScreenState
         elevation: 0,
         // Style on the Text widget (not on AppBar.titleTextStyle) so it
         // *merges* with the theme's Montserrat instead of replacing it.
-        title: const Text(
-          'Organisateurs suivis',
-          style: TextStyle(
+        title: Text(
+          context.l10n.profileFollowedOrganizersTitle,
+          style: const TextStyle(
             color: HbColors.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -135,7 +136,8 @@ class _FollowedOrganizersScreenState
               ),
               data: (state) {
                 if (state.items.isEmpty) {
-                  return _EmptyState(isSearch: _searchController.text.isNotEmpty);
+                  return _EmptyState(
+                      isSearch: _searchController.text.isNotEmpty);
                 }
                 return RefreshIndicator(
                   color: HbColors.brandPrimary,
@@ -146,7 +148,8 @@ class _FollowedOrganizersScreenState
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.only(top: 4, bottom: 24),
-                    itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
+                    itemCount:
+                        state.items.length + (state.isLoadingMore ? 1 : 0),
                     separatorBuilder: (_, __) => Divider(
                       height: 1,
                       thickness: 1,
@@ -205,8 +208,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               isSearch
-                  ? 'Aucun organisateur trouvé'
-                  : 'Vous ne suivez aucun organisateur',
+                  ? context.l10n.organizerFollowedEmptySearchTitle
+                  : context.l10n.organizerFollowedEmptyTitle,
               style: GoogleFonts.montserrat(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -217,8 +220,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               isSearch
-                  ? 'Essayez un autre mot-clé.'
-                  : 'Suivez un organisateur depuis sa page pour le retrouver ici.',
+                  ? context.l10n.organizerFollowedEmptySearchBody
+                  : context.l10n.organizerFollowedEmptyBody,
               textAlign: TextAlign.center,
               style: GoogleFonts.figtree(
                 fontSize: 14,
@@ -248,7 +251,7 @@ class _ErrorState extends StatelessWidget {
             const Icon(Icons.error_outline, size: 56, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              'Impossible de charger la liste.',
+              context.l10n.organizerFollowedLoadError,
               style: GoogleFonts.figtree(
                 fontSize: 16,
                 color: Colors.grey[700],
@@ -259,7 +262,7 @@ class _ErrorState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Réessayer'),
+              label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: HbColors.brandPrimary,
                 foregroundColor: Colors.white,

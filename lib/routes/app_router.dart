@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/analytics/analytics_provider.dart';
 import '../core/constants/app_constants.dart';
+import '../core/l10n/l10n.dart';
 import '../core/providers/shared_preferences_provider.dart';
 import '../features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -11,6 +13,7 @@ import '../features/home/presentation/screens/city_detail_screen.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart'; // Corrected import
 import 'package:lehiboo/features/events/presentation/screens/event_list_screen.dart'; // Re-added for /recommended route
 import 'package:lehiboo/features/events/presentation/screens/event_questions_screen.dart';
+import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/search/presentation/screens/search_screen.dart';
 import '../features/search/presentation/screens/filter_screen.dart';
 import '../features/favorites/presentation/screens/favorites_screen.dart';
@@ -18,6 +21,7 @@ import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/profile/presentation/screens/profile_edit_screen.dart';
 import '../features/profile/presentation/screens/settings_screen.dart';
 import '../features/profile/presentation/screens/saved_participants_screen.dart';
+import '../features/donations/presentation/screens/donation_support_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/auth_bootstrap_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
@@ -26,6 +30,9 @@ import '../features/auth/presentation/screens/customer_register_screen.dart';
 import '../features/auth/presentation/screens/business_register_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/otp_verification_screen.dart';
+import '../features/auth/presentation/screens/permission_audio_screen.dart';
+import '../features/auth/presentation/screens/permission_location_screen.dart';
+import '../features/auth/presentation/screens/permission_notifications_screen.dart';
 import '../features/reminders/presentation/screens/reminders_list_screen.dart';
 import '../features/user_questions/presentation/screens/user_questions_screen.dart';
 import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
@@ -39,14 +46,17 @@ import '../features/booking/presentation/screens/checkout_screen.dart';
 import '../features/booking/presentation/screens/booking_success_screen.dart';
 import '../features/booking/presentation/screens/order_cart_screen.dart';
 import '../features/booking/presentation/screens/order_success_screen.dart';
+import '../features/booking/presentation/screens/refund_policy_screen.dart';
 import '../features/booking/domain/models/checkout_params.dart';
 import '../features/booking/data/models/order_api_dto.dart';
+import '../features/booking/domain/models/refund_policy.dart';
 import '../domain/entities/booking.dart' as booking_entity;
 import '../domain/entities/activity.dart'; // Add Activity import
 import '../features/events/presentation/screens/map_view_screen.dart';
 import '../core/widgets/main_scaffold.dart';
 import '../features/partners/presentation/screens/organizer_profile_screen.dart';
 import '../features/partners/presentation/screens/followed_organizers_screen.dart';
+import '../features/partners/presentation/screens/organizers_directory_screen.dart';
 import '../features/memberships/presentation/screens/invitation_landing_screen.dart';
 import '../features/memberships/presentation/screens/memberships_screen.dart';
 import '../features/memberships/presentation/screens/private_events_screen.dart';
@@ -54,9 +64,11 @@ import '../features/checkin/presentation/screens/checkin_scan_screen.dart';
 import '../features/checkin/presentation/screens/checkin_manual_entry_screen.dart';
 // Legacy AI Chat imports removed - redirects to Petit Boo
 import '../features/alerts/presentation/screens/alerts_list_screen.dart'; // Import AlertsListScreen
-// HibonShopScreen import retiré : route /hibons-shop redirigée vers
-// /hibons-dashboard (Plan 04 — achats Hibons désactivés). Le fichier source
+import '../features/notifications/presentation/screens/notifications_inbox_screen.dart';
+// HibonShopScreen non importé : route /hibons-shop redirigée vers
+// /hibons-dashboard (boutique d'achats Hibons indisponible). Le fichier source
 // est conservé pour réactivation v2.
+import '../features/gamification/presentation/screens/hibons_transactions_screen.dart';
 import '../features/gamification/presentation/screens/lucky_wheel_screen.dart';
 import '../features/gamification/presentation/screens/achievements_screen.dart';
 import '../features/gamification/presentation/screens/gamification_dashboard_screen.dart';
@@ -71,6 +83,8 @@ import '../features/messages/presentation/screens/conversation_detail_screen.dar
 import '../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../features/messages/presentation/screens/support_detail_screen.dart';
 import '../features/messages/presentation/screens/vendor_new_conversation_screen.dart';
+import '../features/messages/presentation/screens/broadcast_detail_screen.dart';
+import '../features/messages/presentation/screens/create_broadcast_screen.dart';
 import '../features/messages/presentation/screens/admin_new_conversation_screen.dart';
 import '../features/messages/presentation/screens/admin_report_detail_screen.dart';
 import '../features/messages/domain/entities/conversation_route.dart';
@@ -115,8 +129,45 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 /// n'importe où (ex: l'intercepteur Dio Hibons via le coordinateur).
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
+const List<String> protectedRoutePrefixes = [
+  '/messages',
+  '/notifications',
+  '/alerts',
+  '/trip-plans',
+  '/my-reminders',
+  '/my-questions',
+  '/my-reviews',
+];
+
+bool isProtectedRoute(String matchedLocation) {
+  return protectedRoutePrefixes.any(
+    (prefix) =>
+        matchedLocation == prefix || matchedLocation.startsWith('$prefix/'),
+  );
+}
+
+String loginRedirectLocation(Uri attemptedUri) {
+  final redirectTarget =
+      attemptedUri.toString().isEmpty ? '/' : attemptedUri.toString();
+  return Uri(
+    path: '/login',
+    queryParameters: {'redirect': redirectTarget},
+  ).toString();
+}
+
+String? protectedRouteRedirect({
+  required AuthStatus authStatus,
+  required String matchedLocation,
+  required Uri attemptedUri,
+}) {
+  if (authStatus != AuthStatus.unauthenticated) return null;
+  if (!isProtectedRoute(matchedLocation)) return null;
+  return loginRedirectLocation(attemptedUri);
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final prefs = ref.read(sharedPreferencesProvider);
+  final analytics = ref.read(analyticsServiceProvider);
   final refresh = _AuthRouterRefresh(ref);
   ref.onDispose(refresh.dispose);
 
@@ -124,6 +175,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: '/bootstrap',
     refreshListenable: refresh,
+    observers: [analytics.createObserver()],
     redirect: (context, state) {
       final authState = ref.read(authProvider);
       final onboardingCompleted =
@@ -194,13 +246,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       // the navigation stack (losing e.g. the EventDetail a guest guard was
       // invoked from).
 
-      // 4. Messages require authentication — redirect to login if not authenticated.
-      //    Covers direct navigation, deep links from FCM, and URL-bar entry.
-      // 4. Messages require authentication — handled via GuestGuard in UI entries
-      // for a better UX (modal instead of full-screen redirect).
-      if (state.matchedLocation.startsWith('/messages') &&
-          authState.status == AuthStatus.unauthenticated) {
-        return null;
+      final protectedRedirect = protectedRouteRedirect(
+        authStatus: authState.status,
+        matchedLocation: state.matchedLocation,
+        attemptedUri: state.uri,
+      );
+      if (protectedRedirect != null) {
+        debugPrint('🔀 Protected route - redirecting to $protectedRedirect');
+        return protectedRedirect;
       }
 
       debugPrint('🔀 No redirect');
@@ -222,6 +275,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Main shell route with bottom navigation
       ShellRoute(
+        observers: [analytics.createObserver()],
         builder: (context, state, child) {
           return MainScaffold(child: child);
         },
@@ -237,9 +291,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final categorySlug = state.uri.queryParameters['categorySlug'];
               final city = state.uri.queryParameters['city'];
+              final openFilter =
+                  state.uri.queryParameters['openFilter'] == 'true';
+              final filterParams =
+                  Map<String, String>.from(state.uri.queryParameters)
+                    ..remove('openFilter');
+              final initialFilter = filterParams.isEmpty
+                  ? null
+                  : eventFilterFromQueryParams(filterParams);
               return SearchScreen(
                 categorySlug: categorySlug,
                 city: city,
+                initialFilter: initialFilter,
+                searchBarOpensFilters: true,
+                autoOpenFilter: openFilter,
               );
             },
           ),
@@ -252,6 +317,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/my-bookings',
             name: 'my-bookings',
             builder: (context, state) => const BookingsListScreen(),
+          ),
+          // Public organizers directory — inside the shell so the bottom nav
+          // stays visible (it is the logged-out 4th tab, and a Profile entry
+          // for authed users).
+          GoRoute(
+            path: '/organizers',
+            name: 'organizers-directory',
+            builder: (context, state) => const OrganizersDirectoryScreen(),
           ),
         ],
       ),
@@ -296,6 +369,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Vendor routes (static before parameterized) ───────────────────────
+      GoRoute(
+        path: '/messages/vendor/broadcasts/new',
+        name: 'messages-vendor-broadcasts-new',
+        builder: (_, __) => const CreateBroadcastScreen(),
+      ),
+      GoRoute(
+        path: '/messages/vendor/broadcasts/:broadcastUuid',
+        name: 'messages-vendor-broadcast-detail',
+        builder: (_, state) => BroadcastDetailScreen(
+          broadcastUuid: state.pathParameters['broadcastUuid']!,
+        ),
+      ),
       GoRoute(
         path: '/messages/vendor/new/participant',
         name: 'messages-vendor-new-participant',
@@ -423,10 +508,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'register-business',
         builder: (context, state) => const BusinessRegisterScreen(),
       ),
+      // Permission explainer screens. Top-level, outside the ShellRoute,
+      // so the bottom nav stays hidden.
+      //
+      // Location + audio are the last two steps of first-launch onboarding
+      // (carousel → location → audio → /login). Notifications fires only
+      // after a successful signup (customer/business → notifications → /).
+      GoRoute(
+        path: '/post-signup/location',
+        name: 'post-signup-location',
+        builder: (context, state) => const PermissionLocationScreen(),
+      ),
+      GoRoute(
+        path: '/post-signup/audio',
+        name: 'post-signup-audio',
+        builder: (context, state) => const PermissionAudioScreen(),
+      ),
+      GoRoute(
+        path: '/post-signup/notifications',
+        name: 'post-signup-notifications',
+        builder: (context, state) => const PermissionNotificationsScreen(),
+      ),
       GoRoute(
         path: '/forgot-password',
         name: 'forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        builder: (context, state) => ForgotPasswordScreen(
+          initialEmail: state.uri.queryParameters['email'],
+        ),
       ),
       GoRoute(
         path: '/verify-otp',
@@ -459,8 +567,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       // Alias route for /events/:id
+      // `name:` distinct de `event-detail` car GoRouter refuse les doublons.
+      // Si besoin d'agréger ces deux routes dans GA4, le faire côté rapport
+      // ou via un `nameExtractor` custom dans FirebaseAnalyticsObserver.
       GoRoute(
         path: '/events/:id',
+        name: 'event-detail-alias',
         builder: (context, state) {
           final eventId = state.pathParameters['id']!;
           return EventDetailScreen(eventId: eventId);
@@ -474,8 +586,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           final eventId = state.pathParameters['id']!;
           final extra = state.extra;
           final title = extra is Map<String, dynamic>
-              ? (extra['title']?.toString() ?? 'Événement')
-              : 'Événement';
+              ? (extra['title']?.toString() ??
+                  context.l10n.routeEventFallbackTitle)
+              : context.l10n.routeEventFallbackTitle;
           return EventQuestionsScreen(
             eventSlug: eventId,
             eventTitle: title,
@@ -567,10 +680,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           final city = state.uri.queryParameters['city'];
           final dateFilter = state.uri.queryParameters['date'];
           final openFilter = state.uri.queryParameters['openFilter'] == 'true';
+          final filterParams =
+              Map<String, String>.from(state.uri.queryParameters)
+                ..remove('openFilter');
+          final initialFilter = filterParams.isEmpty
+              ? null
+              : eventFilterFromQueryParams(filterParams);
           return SearchScreen(
             categorySlug: categorySlug,
             city: city,
             dateFilter: dateFilter,
+            initialFilter: initialFilter,
             autoOpenFilter: openFilter,
           );
         },
@@ -662,6 +782,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const OrderCartScreen(),
       ),
       GoRoute(
+        path: '/refund-policy',
+        name: 'refund-policy',
+        builder: (context, state) {
+          final extra = state.extra;
+          final args = extra is RefundPolicyRouteArgs
+              ? extra
+              : RefundPolicyRouteArgs(
+                  title: context.l10n.refundPolicyTitle,
+                  policies: const [],
+                );
+          return RefundPolicyScreen(args: args);
+        },
+      ),
+      GoRoute(
         path: '/order-confirmation/:id',
         name: 'order-confirmation',
         builder: (context, state) {
@@ -714,20 +848,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SettingsScreen(),
       ),
 
+      // Donations — soutien volontaire à la plateforme
+      GoRoute(
+        path: '/donations',
+        name: 'donations',
+        builder: (context, state) => const DonationSupportScreen(),
+      ),
+
       // Recommended events
       GoRoute(
         path: '/recommended',
         name: 'recommended',
-        builder: (context, state) => const EventListScreen(
-          title: 'Recommandés pour vous',
+        builder: (context, state) => EventListScreen(
+          title: context.l10n.routeRecommendedTitle,
           filterType: 'recommended',
         ),
       ),
 
-      // Notifications (Now Alerts & Saved Searches)
+      // In-app notifications inbox
       GoRoute(
         path: '/notifications',
         name: 'notifications',
+        builder: (context, state) => const NotificationsInboxScreen(),
+      ),
+      // Saved searches and search alerts
+      GoRoute(
+        path: '/alerts',
+        name: 'alerts',
         builder: (context, state) => const AlertsListScreen(),
       ),
       // AI Chat (Legacy redirects to Petit Boo)
@@ -742,13 +889,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirect: (_, __) => '/petit-boo',
       ),
       // Gamification
-      // Plan 04: boutique de packs Hibons désactivée (404 backend).
-      // Le code de HibonShopScreen reste en place pour réactivation v2 ;
-      // on redirige les anciens deep-links vers le dashboard.
+      // Boutique d'achats Hibons indisponible : on redirige vers le dashboard.
+      // L'historique des transactions a son propre écran (/hibons/transactions).
       GoRoute(
         path: '/hibons-shop',
         name: 'hibons-shop',
         redirect: (_, __) => '/hibons-dashboard',
+      ),
+      GoRoute(
+        path: '/hibons/transactions',
+        name: 'hibons-transactions',
+        builder: (context, state) => const HibonsTransactionsScreen(),
       ),
       GoRoute(
         path: '/hibons-dashboard',
@@ -862,17 +1013,17 @@ class ErrorScreen extends StatelessWidget {
               color: Colors.red,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Oops! Page non trouvée',
-              style: TextStyle(
+            Text(
+              context.l10n.routeNotFoundTitle,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'La page que vous recherchez n\'existe pas',
-              style: TextStyle(
+            Text(
+              context.l10n.routeNotFoundBody,
+              style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
               ),
@@ -890,9 +1041,9 @@ class ErrorScreen extends StatelessWidget {
                   vertical: 12,
                 ),
               ),
-              child: const Text(
-                'Retour à l\'accueil',
-                style: TextStyle(
+              child: Text(
+                context.l10n.bookingBackHome,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),

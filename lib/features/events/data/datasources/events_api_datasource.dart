@@ -5,11 +5,16 @@ import '../../../../config/dio_client.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../memberships/data/models/membership_dto.dart';
 import '../../../memberships/domain/exceptions/members_only_exception.dart';
+import '../../domain/exceptions/event_password_exceptions.dart';
 import '../models/event_dto.dart';
 import '../models/event_availability_dto.dart';
+import '../models/event_reference_data_dto.dart';
 import '../models/home_feed_response_dto.dart' show HomeFeedDataDto;
+import '../models/locked_event_shell_dto.dart';
 import '../../../../domain/entities/city.dart';
 import '../models/city_with_coordinates_dto.dart';
+import '../models/popular_city_dto.dart';
+import '../models/search_suggestions_dto.dart';
 
 final eventsApiDataSourceProvider = Provider<EventsApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
@@ -29,13 +34,25 @@ class EventsApiDataSource {
     String? categorySlug,
     String? thematique,
     String? city,
-    String? location, // event_loc taxonomy slug
+    String? location, // Mobile alias for city
     String? dateFrom,
     String? dateTo,
     double? priceMin,
     double? priceMax,
     bool? freeOnly,
+    int? cityRadiusKm,
     bool? familyFriendly,
+    bool? accessiblePmr,
+    bool? onlineOnly,
+    bool? inPersonOnly,
+    String? publicFilters,
+    String? targetAudiences,
+    String? eventTag,
+    String? specialEvents,
+    String? emotions,
+    bool? availableOnly,
+    String? locationType,
+    String? venueType,
     bool? indoor,
     bool? outdoor,
     int? ageMin,
@@ -47,9 +64,11 @@ class EventsApiDataSource {
     double? southWestLat,
     double? southWestLng,
     bool? lightweight,
+    String? sort,
     String? orderBy,
     String? order,
-    bool includePast = true, // Include past events (preprod has incomplete date data)
+    bool includePast =
+        true, // Include past events (preprod has incomplete date data)
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,
@@ -61,14 +80,44 @@ class EventsApiDataSource {
     if (categoryId != null) queryParams['category'] = categoryId;
     if (categorySlug != null) queryParams['category'] = categorySlug;
     if (thematique != null) queryParams['thematique'] = thematique;
-    if (city != null) queryParams['city'] = city;
-    if (location != null) queryParams['location'] = location;
+    if (lat == null || lng == null) {
+      final cityAlias = location ?? city;
+      if (cityAlias != null) queryParams['location'] = cityAlias;
+      if (cityAlias != null && cityRadiusKm != null) {
+        queryParams['radius_km'] = cityRadiusKm;
+      }
+    }
     if (dateFrom != null) queryParams['date_from'] = dateFrom;
     if (dateTo != null) queryParams['date_to'] = dateTo;
     if (priceMin != null) queryParams['price_min'] = priceMin;
     if (priceMax != null) queryParams['price_max'] = priceMax;
-    if (freeOnly == true) queryParams['free_only'] = true;
-    if (familyFriendly == true) queryParams['family_friendly'] = true;
+    if (freeOnly == true) queryParams['free_only'] = 1;
+    if (familyFriendly == true) queryParams['family_friendly'] = 1;
+    if (accessiblePmr == true) queryParams['accessible_pmr'] = 1;
+    if (onlineOnly == true) queryParams['online'] = 1;
+    if (inPersonOnly == true) queryParams['in_person'] = 1;
+    if (publicFilters != null && publicFilters.isNotEmpty) {
+      queryParams['public_filters'] = publicFilters;
+    }
+    if (targetAudiences != null && targetAudiences.isNotEmpty) {
+      queryParams['target_audiences'] = targetAudiences;
+    }
+    if (eventTag != null && eventTag.isNotEmpty) {
+      queryParams['event_tag'] = eventTag;
+    }
+    if (specialEvents != null && specialEvents.isNotEmpty) {
+      queryParams['special_events'] = specialEvents;
+    }
+    if (emotions != null && emotions.isNotEmpty) {
+      queryParams['emotions'] = emotions;
+    }
+    if (availableOnly == true) queryParams['available_only'] = 1;
+    if (locationType != null && locationType.isNotEmpty) {
+      queryParams['location_type'] = locationType;
+    }
+    if (venueType != null && venueType.isNotEmpty) {
+      queryParams['venue_type'] = venueType;
+    }
     if (indoor == true) queryParams['indoor'] = true;
     if (outdoor == true) queryParams['outdoor'] = true;
     if (ageMin != null) queryParams['age_min'] = ageMin;
@@ -77,18 +126,22 @@ class EventsApiDataSource {
       queryParams['lng'] = lng;
       if (radius != null) queryParams['radius'] = radius;
     }
-    
-    if (northEastLat != null && northEastLng != null && southWestLat != null && southWestLng != null) {
+
+    if (northEastLat != null &&
+        northEastLng != null &&
+        southWestLat != null &&
+        southWestLng != null) {
       queryParams['north_east_lat'] = northEastLat;
       queryParams['north_east_lng'] = northEastLng;
       queryParams['south_west_lat'] = southWestLat;
       queryParams['south_west_lng'] = southWestLng;
     }
-    
+
     if (lightweight == true) queryParams['lightweight'] = true;
 
-    if (orderBy != null) queryParams['orderby'] = orderBy;
-    if (order != null) queryParams['order'] = order;
+    if (sort != null && sort.isNotEmpty) queryParams['sort'] = sort;
+    if (orderBy != null) queryParams['sort_by'] = orderBy;
+    if (order != null) queryParams['sort_order'] = order;
 
     debugPrint('=== EventsApiDataSource.getEvents ===');
     debugPrint('Query params: $queryParams');
@@ -110,11 +163,13 @@ class EventsApiDataSource {
         eventsData = {
           'events': innerData,
           'pagination': {
-            'current_page': data['meta']?['page'] ?? data['meta']?['current_page'] ?? 1,
+            'current_page':
+                data['meta']?['page'] ?? data['meta']?['current_page'] ?? 1,
             'per_page': data['meta']?['per_page'] ?? perPage,
             'total_items': data['meta']?['total'] ?? innerData.length,
             'total_pages': data['meta']?['last_page'] ?? 1,
-            'has_next': (data['meta']?['page'] ?? 1) < (data['meta']?['last_page'] ?? 1),
+            'has_next': (data['meta']?['page'] ?? 1) <
+                (data['meta']?['last_page'] ?? 1),
             'has_prev': (data['meta']?['page'] ?? 1) > 1,
           },
         };
@@ -154,7 +209,8 @@ class EventsApiDataSource {
       // Debug: log pin coordinates
       for (var i = 0; i < pins.length && i < 5; i++) {
         final pin = pins[i];
-        debugPrint('📍 Pin[$i] id=${pin['id']}, lat=${pin['lat']}, lng=${pin['lng']}');
+        debugPrint(
+            '📍 Pin[$i] id=${pin['id']}, lat=${pin['lat']}, lng=${pin['lng']}');
       }
 
       // Map pins to EventDto structure
@@ -212,11 +268,13 @@ class EventsApiDataSource {
       }
     }
 
-    debugPrint('Events count in response: ${(eventsData['events'] as List?)?.length ?? 0}');
+    debugPrint(
+        'Events count in response: ${(eventsData['events'] as List?)?.length ?? 0}');
 
     try {
       final result = EventsResponseDto.fromJson(eventsData);
-      debugPrint('Successfully parsed EventsResponseDto with ${result.events.length} events');
+      debugPrint(
+          'Successfully parsed EventsResponseDto with ${result.events.length} events');
       return result;
     } catch (parseError, parseStack) {
       debugPrint('Error parsing EventsResponseDto: $parseError');
@@ -238,14 +296,77 @@ class EventsApiDataSource {
     } on DioException catch (e) {
       if (e.response?.statusCode == 403) {
         final body = e.response?.data;
-        if (body is Map<String, dynamic> && body['error'] == 'members_only') {
-          final org = body['organization'];
-          if (org is Map<String, dynamic>) {
-            throw MembersOnlyException(OrganizationSummaryDto.fromJson(org));
+        if (body is Map<String, dynamic>) {
+          if (body['error'] == 'password_required') {
+            final shell = body['data'];
+            if (shell is Map<String, dynamic>) {
+              throw EventPasswordRequiredException(
+                LockedEventShellDto.fromJson(shell).toEntity(),
+              );
+            }
+          }
+          if (body['error'] == 'members_only') {
+            final org = body['organization'];
+            if (org is Map<String, dynamic>) {
+              throw MembersOnlyException(OrganizationSummaryDto.fromJson(org));
+            }
           }
         }
       }
       rethrow;
+    }
+  }
+
+  /// Unlock a password-protected event in a single round-trip.
+  ///
+  /// On `200` the API returns the full `MobileEventResource` — callers
+  /// don't need a follow-up `GET /events/{id}`. Status codes map to the
+  /// typed exceptions in `event_password_exceptions.dart` (and reuse
+  /// [MembersOnlyException] for `403 + members_only`). Spec §5.
+  Future<EventDto> verifyEventPassword(
+    String identifier,
+    String password,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/events/$identifier/verify-password',
+        data: {'password': password},
+      );
+      final payload = ApiResponseHandler.extractObject(response.data);
+      return EventDto.fromJson(payload);
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final body = e.response?.data;
+      switch (status) {
+        case 400:
+          throw const EventNotProtectedException();
+        case 403:
+          if (body is Map<String, dynamic>) {
+            if (body['error'] == 'members_only') {
+              final org = body['organization'];
+              if (org is Map<String, dynamic>) {
+                throw MembersOnlyException(
+                  OrganizationSummaryDto.fromJson(org),
+                );
+              }
+            }
+            if (body['error'] == 'invalid_password') {
+              throw const InvalidEventPasswordException();
+            }
+          }
+          throw const InvalidEventPasswordException();
+        case 404:
+          throw const EventNotFoundException();
+        case 422:
+          throw const EventValidationException();
+        case 429:
+          final retry =
+              int.tryParse(e.response?.headers.value('retry-after') ?? '') ??
+                  60;
+          throw EventPasswordRateLimitedException(Duration(seconds: retry));
+        default:
+          rethrow;
+      }
     }
   }
 
@@ -278,7 +399,8 @@ class EventsApiDataSource {
   }
 
   /// Fetch availability (slots & tickets) for an event
-  Future<EventAvailabilityResponseDto> getEventAvailability(String eventId, {String? date}) async {
+  Future<EventAvailabilityResponseDto> getEventAvailability(String eventId,
+      {String? date}) async {
     final queryParams = <String, dynamic>{};
     if (date != null && date.isNotEmpty) queryParams['date'] = date;
 
@@ -292,15 +414,18 @@ class EventsApiDataSource {
       final rawSlots = ApiResponseHandler.extractList(response.data);
       debugPrint('getEventAvailability: ${rawSlots.length} slots for $eventId');
 
-      final transformedSlots = rawSlots.map((slot) => {
-        'id': slot['id']?.toString() ?? '',
-        'date': slot['slot_date'] ?? slot['date'] ?? '',
-        'start_time': slot['start_time'],
-        'end_time': slot['end_time'],
-        'spots_total': slot['total_capacity'] ?? slot['spots_total'],
-        'spots_remaining': slot['available_count'] ?? slot['spots_remaining'],
-        'is_available': slot['is_available'] ?? true,
-      }).toList();
+      final transformedSlots = rawSlots
+          .map((slot) => {
+                'id': slot['id']?.toString() ?? '',
+                'date': slot['slot_date'] ?? slot['date'] ?? '',
+                'start_time': slot['start_time'],
+                'end_time': slot['end_time'],
+                'spots_total': slot['total_capacity'] ?? slot['spots_total'],
+                'spots_remaining':
+                    slot['available_count'] ?? slot['spots_remaining'],
+                'is_available': slot['is_available'] ?? true,
+              })
+          .toList();
 
       return EventAvailabilityResponseDto.fromJson({
         'event_id': 0,
@@ -318,22 +443,30 @@ class EventsApiDataSource {
   Future<List<EventCategoryDto>> getCategories({
     bool includeCount = true,
     bool parentOnly = false,
+    bool homeOnly = false,
   }) async {
     final queryParams = <String, dynamic>{
       'include_count': includeCount,
     };
     if (parentOnly) queryParams['parent_only'] = true;
+    if (homeOnly) queryParams['home_only'] = '1';
 
-    final response = await _dio.get('/categories', queryParameters: queryParams);
+    final response =
+        await _dio.get('/categories', queryParameters: queryParams);
 
-    final categoriesJson = ApiResponseHandler.extractList(
-      response.data,
-      key: 'categories',
-    );
+    final categoriesJson = _extractCategoriesList(response.data);
     return categoriesJson
         .cast<Map<String, dynamic>>()
         .map(EventCategoryDto.fromJson)
         .toList();
+  }
+
+  List<dynamic> _extractCategoriesList(dynamic responseData) {
+    try {
+      return ApiResponseHandler.extractList(responseData, key: 'categories');
+    } on ApiFormatException {
+      return ApiResponseHandler.extractList(responseData);
+    }
   }
 
   Future<List<ThematiqueDto>> getThematiques() async {
@@ -350,7 +483,12 @@ class EventsApiDataSource {
   }
 
   Future<List<City>> getCities() async {
-    final response = await _dio.get('/cities');
+    final response = await _dio.get(
+      '/cities',
+      queryParameters: const {
+        'only_with_upcoming_slots': '1',
+      },
+    );
 
     final citiesJson = ApiResponseHandler.extractList(
       response.data,
@@ -362,14 +500,41 @@ class EventsApiDataSource {
       return City(
         id: dto.name,
         name: dto.name,
-        slug: dto.name.toLowerCase().replaceAll(' ', '-'),
+        slug: dto.slug,
         lat: dto.lat,
         lng: dto.lng,
         region: dto.region,
         eventCount: dto.eventCount,
-        imageUrl: dto.imageUrl,
+        imageUrl: dto.imageUrl ?? dto.thumbnailUrl,
       );
     }).toList();
+  }
+
+  /// Curated cities for the "Villes populaires" home section.
+  ///
+  /// When [fallback] is false (default), queries the admin-curated set
+  /// (`featured_only=1`). When the curated set is empty, callers should
+  /// retry with `fallback: true` per spec §5 to display "where it's
+  /// happening" instead of an empty section.
+  Future<List<PopularCityDto>> getFeaturedCities(
+      {bool fallback = false}) async {
+    final response = await _dio.get(
+      '/cities',
+      queryParameters: {
+        if (!fallback) 'featured_only': '1',
+        'only_with_upcoming_slots': '1',
+      },
+    );
+
+    final citiesJson = ApiResponseHandler.extractList(
+      response.data,
+      key: 'cities',
+    );
+
+    return citiesJson
+        .cast<Map<String, dynamic>>()
+        .map(PopularCityDto.fromJson)
+        .toList();
   }
 
   Future<FiltersResponseDto> getFilters() async {
@@ -377,5 +542,37 @@ class EventsApiDataSource {
 
     final payload = ApiResponseHandler.extractObject(response.data);
     return FiltersResponseDto.fromJson(payload);
+  }
+
+  Future<EventReferenceDataDto> getEventReferenceData({
+    bool onlyOnline = true,
+  }) async {
+    final response = await _dio.get(
+      '/events/reference-data',
+      queryParameters: {
+        if (onlyOnline) 'only_online': '1',
+      },
+    );
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return EventReferenceDataDto.fromJson(payload);
+  }
+
+  Future<SearchSuggestionsDto> getSearchSuggestions({
+    required String query,
+    required List<String> types,
+    int limit = 5,
+  }) async {
+    final response = await _dio.get(
+      '/search/suggestions',
+      queryParameters: {
+        'q': query,
+        'types': types.join(','),
+        'limit': limit,
+      },
+    );
+
+    final payload = ApiResponseHandler.extractObject(response.data);
+    return SearchSuggestionsDto.fromJson(payload);
   }
 }

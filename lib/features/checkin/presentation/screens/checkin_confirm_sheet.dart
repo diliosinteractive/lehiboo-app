@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../data/models/ticket_summary_dto.dart';
 import '../widgets/ticket_summary_card.dart';
@@ -43,9 +44,12 @@ class _ConfirmSheetContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = isReEntry ? HbColors.warning : HbColors.success;
     final icon = isReEntry ? Icons.repeat : Icons.check_circle;
-    final title = isReEntry ? 'Ré-entrée détectée' : 'Billet valide';
+    final l10n = context.l10n;
+    final title = isReEntry
+        ? l10n.checkinReEntryDetectedTitle
+        : l10n.checkinValidTicketTitle;
     final ctaLabel =
-        isReEntry ? 'Confirmer la ré-entrée' : "Confirmer l'entrée";
+        isReEntry ? l10n.checkinConfirmReEntry : l10n.checkinConfirmEntry;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -101,7 +105,7 @@ class _ConfirmSheetContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                'Déjà entré ${ticket.checkInCount}× — vérifiez avant d\'admettre.',
+                l10n.checkinAlreadyEnteredWarning(ticket.checkInCount),
                 style: const TextStyle(
                   fontSize: 13,
                   color: HbColors.textPrimary,
@@ -120,7 +124,7 @@ class _ConfirmSheetContent extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: const Text('Annuler'),
+                  child: Text(l10n.commonCancel),
                 ),
               ),
               const SizedBox(width: 12),

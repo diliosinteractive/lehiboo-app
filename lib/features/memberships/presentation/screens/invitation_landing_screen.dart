@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
@@ -35,9 +36,9 @@ class InvitationLandingScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Invitation',
-          style: TextStyle(
+        title: Text(
+          context.l10n.membershipInvitationTitle,
+          style: const TextStyle(
             color: HbColors.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -120,9 +121,9 @@ class _Body extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       if (invitation.isExpired)
-                        StatusChip.expired()
+                        StatusChip.expired(context)
                       else
-                        StatusChip.invitation(),
+                        StatusChip.invitation(context),
                     ],
                   ),
                   if (org?.city != null && org!.city!.isNotEmpty)
@@ -146,7 +147,7 @@ class _Body extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              'Invité par ${invitation.invitedBy!.name}',
+              context.l10n.membershipInvitedBy(invitation.invitedBy!.name),
               style: GoogleFonts.figtree(
                 fontSize: 14,
                 color: Colors.grey[800],
@@ -154,7 +155,7 @@ class _Body extends ConsumerWidget {
             ),
           ),
         Text(
-          _statusBlurb(invitation, preview),
+          _statusBlurb(context, invitation, preview),
           style: GoogleFonts.figtree(
             fontSize: 14,
             color: Colors.grey[700],
@@ -176,23 +177,23 @@ class _Body extends ConsumerWidget {
     );
   }
 
-  String _statusBlurb(InvitationDto i, InvitationPreviewDto preview) {
+  String _statusBlurb(
+    BuildContext context,
+    InvitationDto i,
+    InvitationPreviewDto preview,
+  ) {
+    final l10n = context.l10n;
     if (i.isExpired) {
-      return "Cette invitation a expiré. Demandez à l'organisation de "
-          "vous renvoyer une invitation.";
+      return l10n.membershipInvitationExpiredBlurb;
     }
     if (i.isAccepted) {
-      return "Cette invitation a déjà été acceptée. Retrouvez l'organisation "
-          "dans votre liste d'adhésions.";
+      return l10n.membershipInvitationAcceptedBlurb;
     }
     final hours = preview.meta?.expiresInHours;
     if (hours != null && hours > 0) {
-      return "Vous êtes invité(e) à rejoindre cet espace privé. "
-          "Acceptez l'invitation pour accéder aux événements exclusifs. "
-          "Cette invitation expire dans $hours h.";
+      return l10n.membershipInvitationActiveWithExpiryBlurb(hours);
     }
-    return "Vous êtes invité(e) à rejoindre cet espace privé. "
-        "Acceptez l'invitation pour accéder aux événements exclusifs.";
+    return l10n.membershipInvitationActiveBlurb;
   }
 
   Future<void> _onAccept(
@@ -206,13 +207,15 @@ class _Body extends ConsumerWidget {
     if (!context.mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Bienvenue dans $orgName')),
+        SnackBar(
+          content: Text(context.l10n.membershipInvitationWelcome(orgName)),
+        ),
       );
       context.go('/me/memberships?tab=active');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Impossible d'accepter cette invitation."),
+        SnackBar(
+          content: Text(context.l10n.membershipInvitationAcceptFailed),
         ),
       );
     }
@@ -226,17 +229,19 @@ class _Body extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Décliner l'invitation ?"),
-        content: Text("Refuser l'invitation de $orgName ?"),
+        title: Text(context.l10n.membershipInvitationDeclineTitle),
+        content: Text(
+          context.l10n.membershipInvitationDeclineBody(orgName),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Retour'),
+            child: Text(context.l10n.commonBack),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: HbColors.error),
-            child: const Text('Décliner'),
+            child: Text(context.l10n.membershipInvitationDeclineAction),
           ),
         ],
       ),
@@ -248,7 +253,7 @@ class _Body extends ConsumerWidget {
     if (!context.mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invitation déclinée')),
+        SnackBar(content: Text(context.l10n.membershipInvitationDeclined)),
       );
       context.go('/me/memberships');
     }
@@ -281,7 +286,7 @@ class _AcceptDeclineRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Décliner'),
+            child: Text(context.l10n.membershipInvitationDeclineAction),
           ),
         ),
         const SizedBox(width: 12),
@@ -305,7 +310,7 @@ class _AcceptDeclineRow extends StatelessWidget {
                       color: Colors.white,
                     ),
                   )
-                : const Text('Accepter'),
+                : Text(context.l10n.membershipInvitationAcceptAction),
           ),
         ),
       ],
@@ -336,9 +341,9 @@ class _LoginCta extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'Se connecter pour accepter',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            child: Text(
+              context.l10n.membershipInvitationSignInToAccept,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -346,7 +351,7 @@ class _LoginCta extends StatelessWidget {
           const SizedBox(height: 12),
           TextButton(
             onPressed: () => context.push('/register'),
-            child: const Text('Créer un compte'),
+            child: Text(context.l10n.authCreateAccount),
           ),
         ],
       ],
@@ -379,8 +384,8 @@ class _DismissedNotice extends StatelessWidget {
           Expanded(
             child: Text(
               invitation.isAccepted
-                  ? 'Invitation déjà acceptée.'
-                  : 'Invitation expirée.',
+                  ? context.l10n.membershipInvitationAlreadyAccepted
+                  : context.l10n.membershipInvitationExpired,
               style: GoogleFonts.figtree(
                 fontSize: 14,
                 color: Colors.grey[700],
@@ -405,7 +410,7 @@ class _NotFoundState extends StatelessWidget {
             const Icon(Icons.link_off, size: 56, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              'Cette invitation est introuvable.',
+              context.l10n.membershipInvitationNotFoundTitle,
               style: GoogleFonts.figtree(
                 fontSize: 16,
                 color: Colors.grey[700],
@@ -414,8 +419,7 @@ class _NotFoundState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "Le lien a peut-être été désactivé. Demandez à l'organisateur "
-              "de vous renvoyer une invitation.",
+              context.l10n.membershipInvitationNotFoundBody,
               textAlign: TextAlign.center,
               style: GoogleFonts.figtree(
                 fontSize: 13,
