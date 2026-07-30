@@ -79,6 +79,59 @@ void main() {
     expect(find.text('Événement'), findsNothing);
     expect(find.text('Voir les disponibilités'), findsNothing);
   });
+
+  testWidgets(
+    'shows the exact buyer-inclusive price from supported API shapes',
+    (tester) async {
+      AppLocaleCache.setLanguageCode('fr');
+
+      final ticketCases = <Map<String, dynamic>>[
+        {
+          'name': 'Standard',
+          'price': 5,
+          'all_inclusive_price': 5.5,
+        },
+        {
+          'name': 'Standard',
+          'price': '5',
+          'allInclusivePrice': '5.5',
+        },
+        {
+          'name': 'Standard',
+          'price': 5,
+          'buyer_pricing': {
+            'all_inclusive_price': '5.5',
+          },
+        },
+      ];
+
+      for (final ticket in ticketCases) {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: EventDetailCard(
+                schema: _eventDetailsSchema,
+                data: {
+                  'data': {
+                    'title': 'Atelier créatif',
+                    'slug': 'atelier-creatif',
+                    'ticket_types': [ticket],
+                  },
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('5,5€'), findsOneWidget);
+        expect(find.text('5€'), findsNothing);
+        expect(find.text('6€'), findsNothing);
+      }
+    },
+  );
 }
 
 const _eventDetailsSchema = ToolSchemaDto(

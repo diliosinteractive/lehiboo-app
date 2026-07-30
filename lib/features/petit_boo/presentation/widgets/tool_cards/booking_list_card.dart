@@ -252,7 +252,14 @@ class _BookingItem extends StatelessWidget {
     final status = _safeString(_getValue(schema?.statusField, 'status'));
     final ticketsCount =
         _safeInt(item['tickets_count']) ?? _safeInt(item['quantity']) ?? 1;
-    final totalPrice = _parsePrice(item['total_price'] ?? item['total_amount']);
+    final totalPrice = _firstPrice([
+      item['buyer_total'],
+      item['buyerTotal'],
+      item['grand_total'],
+      item['grandTotal'],
+      item['total_price'],
+      item['total_amount'],
+    ]);
 
     // Parse et format la date
     final formattedDate = _formatDate(context, dateStr);
@@ -350,7 +357,7 @@ class _BookingItem extends StatelessWidget {
                             const Spacer(),
                             if (totalPrice > 0)
                               Text(
-                                '${totalPrice.toStringAsFixed(0)}€',
+                                context.appEuroAmount(totalPrice),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -458,11 +465,18 @@ class _BookingItem extends StatelessWidget {
     return timeStr;
   }
 
-  double _parsePrice(dynamic price) {
-    if (price == null) return 0;
-    if (price is num) return price.toDouble();
-    if (price is String) return double.tryParse(price) ?? 0;
+  num _firstPrice(Iterable<dynamic> values) {
+    for (final value in values) {
+      final price = _parsePrice(value);
+      if (price != null) return price;
+    }
     return 0;
+  }
+
+  num? _parsePrice(dynamic price) {
+    if (price is num) return price;
+    if (price is String) return num.tryParse(price);
+    return null;
   }
 
   dynamic _getValue(String? schemaField, String defaultField) {

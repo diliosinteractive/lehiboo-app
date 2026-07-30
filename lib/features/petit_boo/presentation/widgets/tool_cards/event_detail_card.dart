@@ -419,14 +419,11 @@ class _PriceInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final prices = ticketTypes
-        .map((t) => t['price'] as num?)
-        .where((p) => p != null)
-        .toList();
+    final prices = ticketTypes.map(_buyerPrice).whereType<num>().toList();
 
     if (prices.isEmpty) return const SizedBox.shrink();
 
-    final minPrice = prices.reduce((a, b) => a! < b! ? a : b)!;
+    final minPrice = prices.reduce((a, b) => a < b ? a : b);
     final hasMultiple = ticketTypes.length > 1;
 
     return Row(
@@ -440,7 +437,7 @@ class _PriceInfo extends StatelessWidget {
             ),
           ),
         Text(
-          minPrice == 0 ? l10n.commonFree : '${minPrice.toStringAsFixed(0)}€',
+          minPrice == 0 ? l10n.commonFree : context.appEuroAmount(minPrice),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -457,5 +454,39 @@ class _PriceInfo extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  num? _buyerPrice(Map<String, dynamic> ticketType) {
+    final buyerPricing = _asStringKeyedMap(
+      ticketType['buyer_pricing'] ?? ticketType['buyerPricing'],
+    );
+
+    return _firstPrice([
+      ticketType['all_inclusive_price'],
+      ticketType['allInclusivePrice'],
+      buyerPricing?['all_inclusive_price'],
+      buyerPricing?['allInclusivePrice'],
+      ticketType['price'],
+    ]);
+  }
+
+  num? _firstPrice(Iterable<dynamic> values) {
+    for (final value in values) {
+      final price = _parsePrice(value);
+      if (price != null) return price;
+    }
+    return null;
+  }
+
+  num? _parsePrice(dynamic value) {
+    if (value is num) return value;
+    if (value is String) return num.tryParse(value);
+    return null;
+  }
+
+  Map<String, dynamic>? _asStringKeyedMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
   }
 }
