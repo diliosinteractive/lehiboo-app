@@ -208,7 +208,7 @@ class MapEventCard extends ConsumerWidget {
                     }
 
                     return Text(
-                      '${price.toStringAsFixed(0)}€',
+                      context.appEuroAmount(price),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,

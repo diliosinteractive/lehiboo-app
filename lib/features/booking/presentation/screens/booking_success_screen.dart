@@ -475,8 +475,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   }
 
   String _formatAmount(double amount) {
-    if (amount == amount.roundToDouble()) return '${amount.toInt()} €';
-    return '${amount.toStringAsFixed(2).replaceAll('.', ',')} €';
+    return '${context.appAmount(amount)} €';
   }
 
   Widget _buildTicketsSection() {

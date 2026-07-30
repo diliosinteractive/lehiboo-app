@@ -1318,8 +1318,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   }
 
   String _formatPrice(double price) {
-    if (price == price.roundToDouble()) return '${price.toInt()}€';
-    return '${price.toStringAsFixed(2)}€';
+    return context.appCalculatedEuroAmount(price);
   }
 }
 

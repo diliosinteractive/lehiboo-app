@@ -14,7 +14,7 @@ class BookingSummaryCard extends StatelessWidget {
     final currency = state.currency ?? 'EUR';
     final totalLabel = state.isFree
         ? context.l10n.commonFree
-        : '${totalPrice.toStringAsFixed(2)} $currency';
+        : '${context.appCalculatedAmount(totalPrice)} $currency';
 
     return HbCard.elevated(
       child: Column(

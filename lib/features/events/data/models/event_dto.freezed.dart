@@ -5080,7 +5080,9 @@ EventPriceDto _$EventPriceDtoFromJson(Map<String, dynamic> json) {
 mixin _$EventPriceDto {
   @JsonKey(name: 'is_free')
   bool get isFree => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseDoubleOrNull)
   double? get min => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseDoubleOrNull)
   double? get max => throw _privateConstructorUsedError;
   String get currency => throw _privateConstructorUsedError;
 
@@ -5098,8 +5100,8 @@ abstract class $EventPriceDtoCopyWith<$Res> {
   @useResult
   $Res call(
       {@JsonKey(name: 'is_free') bool isFree,
-      double? min,
-      double? max,
+      @JsonKey(fromJson: _parseDoubleOrNull) double? min,
+      @JsonKey(fromJson: _parseDoubleOrNull) double? max,
       String currency});
 }
 
@@ -5152,8 +5154,8 @@ abstract class _$$EventPriceDtoImplCopyWith<$Res>
   @useResult
   $Res call(
       {@JsonKey(name: 'is_free') bool isFree,
-      double? min,
-      double? max,
+      @JsonKey(fromJson: _parseDoubleOrNull) double? min,
+      @JsonKey(fromJson: _parseDoubleOrNull) double? max,
       String currency});
 }
 
@@ -5199,8 +5201,8 @@ class __$$EventPriceDtoImplCopyWithImpl<$Res>
 class _$EventPriceDtoImpl implements _EventPriceDto {
   const _$EventPriceDtoImpl(
       {@JsonKey(name: 'is_free') this.isFree = false,
-      this.min,
-      this.max,
+      @JsonKey(fromJson: _parseDoubleOrNull) this.min,
+      @JsonKey(fromJson: _parseDoubleOrNull) this.max,
       this.currency = 'EUR'});
 
   factory _$EventPriceDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -5210,8 +5212,10 @@ class _$EventPriceDtoImpl implements _EventPriceDto {
   @JsonKey(name: 'is_free')
   final bool isFree;
   @override
+  @JsonKey(fromJson: _parseDoubleOrNull)
   final double? min;
   @override
+  @JsonKey(fromJson: _parseDoubleOrNull)
   final double? max;
   @override
   @JsonKey()
@@ -5255,8 +5259,8 @@ class _$EventPriceDtoImpl implements _EventPriceDto {
 abstract class _EventPriceDto implements EventPriceDto {
   const factory _EventPriceDto(
       {@JsonKey(name: 'is_free') final bool isFree,
-      final double? min,
-      final double? max,
+      @JsonKey(fromJson: _parseDoubleOrNull) final double? min,
+      @JsonKey(fromJson: _parseDoubleOrNull) final double? max,
       final String currency}) = _$EventPriceDtoImpl;
 
   factory _EventPriceDto.fromJson(Map<String, dynamic> json) =
@@ -5266,8 +5270,10 @@ abstract class _EventPriceDto implements EventPriceDto {
   @JsonKey(name: 'is_free')
   bool get isFree;
   @override
+  @JsonKey(fromJson: _parseDoubleOrNull)
   double? get min;
   @override
+  @JsonKey(fromJson: _parseDoubleOrNull)
   double? get max;
   @override
   String get currency;

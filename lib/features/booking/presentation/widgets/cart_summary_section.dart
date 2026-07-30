@@ -20,11 +20,8 @@ class CartSummarySection extends StatelessWidget {
     this.onRemove,
   });
 
-  String _formatPrice(double value) {
-    if (value == value.roundToDouble()) {
-      return '${value.toInt()} €';
-    }
-    return '${value.toStringAsFixed(2).replaceAll('.', ',')} €';
+  String _formatPrice(BuildContext context, double value) {
+    return '${context.appCalculatedAmount(value)} €';
   }
 
   @override
@@ -85,7 +82,7 @@ class CartSummarySection extends StatelessWidget {
               items: entry.value,
               onUpdateQuantity: onUpdateQuantity,
               onRemove: onRemove,
-              formatPrice: _formatPrice,
+              formatPrice: (value) => _formatPrice(context, value),
             ),
             const SizedBox(height: 10),
           ],
@@ -122,23 +119,23 @@ class CartSummarySection extends StatelessWidget {
           if (hasServiceFees) ...[
             _PriceSummaryRow(
               label: context.l10n.ticketPriceSubtotal,
-              value: _formatPrice(organizerTotal),
+              value: _formatPrice(context, organizerTotal),
             ),
             const SizedBox(height: 4),
             _PriceSummaryRow(
               label: context.l10n.serviceFees,
-              value: _formatPrice(feeTotal),
+              value: _formatPrice(context, feeTotal),
             ),
             const SizedBox(height: 6),
             _PriceSummaryRow(
               label: context.l10n.totalPaid,
-              value: _formatPrice(totalAmount),
+              value: _formatPrice(context, totalAmount),
               isTotal: true,
             ),
           ] else
             _PriceSummaryRow(
               label: context.l10n.bookingTotal,
-              value: _formatPrice(totalAmount),
+              value: _formatPrice(context, totalAmount),
               isTotal: true,
             ),
         ],
@@ -274,7 +271,7 @@ class _CartLineRow extends StatelessWidget {
                     ),
                     Text(
                       context.l10n.bookingPerTicket(
-                        formatPrice(item.ticket.buyerPrice),
+                        '${context.appAmount(item.ticket.buyerPrice)} €',
                       ),
                       style:
                           TextStyle(fontSize: 11, color: Colors.grey.shade500),

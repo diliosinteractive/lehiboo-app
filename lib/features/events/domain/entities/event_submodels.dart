@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 
 // --- Sub-models for Event ---
 
@@ -565,8 +566,8 @@ class IndicativePrice extends Equatable {
 
   String get formattedPrice {
     if (price == 0) return 'Gratuit';
-    final symbol = currency == 'EUR' ? '€' : currency;
-    return '${price.toStringAsFixed(2)} $symbol';
+    if (currency.toUpperCase() == 'EUR') return cachedEuroAmount(price);
+    return '${cachedApiAmountText(price)} $currency';
   }
 
   @override

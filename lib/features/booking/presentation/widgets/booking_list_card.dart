@@ -42,7 +42,7 @@ class BookingListCard extends StatelessWidget {
 
     final totalPrice = booking.totalPrice ?? 0;
     final priceText = totalPrice > 0
-        ? '${totalPrice.toStringAsFixed(0)}€'
+        ? context.appEuroAmount(totalPrice)
         : context.l10n.commonFree;
 
     final ticketCount = booking.quantity ?? 1;

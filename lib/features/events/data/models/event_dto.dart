@@ -420,8 +420,8 @@ class EventCategoryDto with _$EventCategoryDto {
 class EventPriceDto with _$EventPriceDto {
   const factory EventPriceDto({
     @JsonKey(name: 'is_free') @Default(false) bool isFree,
-    double? min,
-    double? max,
+    @JsonKey(fromJson: _parseDoubleOrNull) double? min,
+    @JsonKey(fromJson: _parseDoubleOrNull) double? max,
     @Default('EUR') String currency,
   }) = _EventPriceDto;
 

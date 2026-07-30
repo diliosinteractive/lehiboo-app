@@ -106,7 +106,7 @@ class BookingPaymentScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: HbButton.primary(
               label: context.l10n.bookingPayAmount(
-                totalPrice.toStringAsFixed(2),
+                context.appCalculatedAmount(totalPrice),
                 currency,
               ),
               isLoading: state.isSubmitting,

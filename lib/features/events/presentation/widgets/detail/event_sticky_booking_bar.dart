@@ -254,21 +254,26 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              // Prix animé
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: widget.totalPrice),
+              // Animate the label transition without interpolating the amount:
+              // tweened doubles can expose binary floating-point artifacts.
+              AnimatedSwitcher(
                 duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  return Text(
-                    _formatPrice(value),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: HbColors.textPrimary,
-                    ),
-                  );
-                },
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                child: Text(
+                  context.appCalculatedEuroAmount(widget.totalPrice),
+                  key: ValueKey(widget.totalPrice),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
               ),
               const SizedBox(width: 4),
               Text(
@@ -737,13 +742,6 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
               ),
       ),
     );
-  }
-
-  String _formatPrice(double price) {
-    if (price == price.roundToDouble()) {
-      return '${price.toInt()}€';
-    }
-    return '${price.toStringAsFixed(2)}€';
   }
 }
 

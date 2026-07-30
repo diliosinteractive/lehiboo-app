@@ -421,10 +421,7 @@ class Event extends Equatable {
   }
 
   String _formatDiscoveryPrice(double amount) {
-    if (amount == amount.roundToDouble()) {
-      return '${amount.toStringAsFixed(0)}€';
-    }
-    return '${amount.toStringAsFixed(2).replaceAll('.', ',')}€';
+    return cachedEuroAmount(amount);
   }
 
   bool get isToday {
@@ -458,11 +455,11 @@ class Event extends Equatable {
       return l10n.eventPriceDonation;
     } else if (buyerPriceFrom != null &&
         (buyerMaxPrice == null || buyerPriceFrom == buyerMaxPrice)) {
-      return '${buyerPriceFrom!.toStringAsFixed(2)} €';
+      return cachedEuroAmount(buyerPriceFrom!);
     } else if (buyerPriceFrom != null && buyerMaxPrice != null) {
       return l10n.eventPriceRange(
-        '${buyerPriceFrom!.toStringAsFixed(0)} €',
-        '${buyerMaxPrice!.toStringAsFixed(0)} €',
+        cachedEuroAmount(buyerPriceFrom!),
+        cachedEuroAmount(buyerMaxPrice!),
       );
     }
     return priceDetails ?? l10n.eventPriceVariable;

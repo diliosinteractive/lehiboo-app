@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/l10n/app_locale.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/events/presentation/widgets/detail/event_indicative_prices.dart';
 import 'package:lehiboo/l10n/generated/app_localizations.dart';
 
 void main() {
+  setUp(() {
+    AppLocaleCache.setLanguageCode('en');
+  });
+
+  tearDown(() {
+    AppLocaleCache.setLanguageCode('fr');
+  });
+
   testWidgets('displays indicative service prices', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -24,7 +33,7 @@ void main() {
               IndicativePrice(
                 uuid: 'price-2',
                 label: 'Massage parlor',
-                price: 5,
+                price: 5.5,
                 currency: 'EUR',
                 sortOrder: 1,
               ),
@@ -38,6 +47,7 @@ void main() {
     expect(find.text('Cloack room'), findsOneWidget);
     expect(find.text('Free'), findsOneWidget);
     expect(find.text('Massage parlor'), findsOneWidget);
-    expect(find.text('5.00 €'), findsOneWidget);
+    expect(find.text('€5.5'), findsOneWidget);
+    expect(find.text('€5.50'), findsNothing);
   });
 }

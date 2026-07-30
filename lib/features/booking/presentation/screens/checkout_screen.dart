@@ -1034,10 +1034,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   String _formatPrice(double price) {
-    if (price == price.roundToDouble()) {
-      return '${price.toInt()}€';
-    }
-    return '${price.toStringAsFixed(2)}€';
+    return context.appCalculatedEuroAmount(price);
   }
 }
 

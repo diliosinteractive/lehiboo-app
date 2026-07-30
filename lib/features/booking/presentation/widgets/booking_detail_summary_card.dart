@@ -140,7 +140,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${platformFeeAmount!.toStringAsFixed(2)}$currency',
+                  '${context.appAmount(platformFeeAmount!)}$currency',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -179,7 +179,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
               Text(
                 isFree
                     ? context.l10n.commonFree
-                    : '${totalPrice.toStringAsFixed(2)}$currency',
+                    : '${context.appAmount(totalPrice)}$currency',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -218,7 +218,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     context.l10n.bookingPerTicket(
-                      '${item.unitPrice.toStringAsFixed(2)}${item.currency}',
+                      '${context.appCalculatedAmount(item.unitPrice)}${item.currency}',
                     ),
                     style: const TextStyle(
                       fontSize: 12,
@@ -231,7 +231,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '${item.totalPrice.toStringAsFixed(2)}${item.currency}',
+            '${context.appCalculatedAmount(item.totalPrice)}${item.currency}',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -261,7 +261,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
           ],
         ),
         Text(
-          '-${discount!.toStringAsFixed(2)}$currency',
+          '-${context.appAmount(discount!)}$currency',
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,

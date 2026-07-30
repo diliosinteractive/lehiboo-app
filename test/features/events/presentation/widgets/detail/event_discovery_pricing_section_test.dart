@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/l10n/app_locale.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/events/presentation/widgets/detail/event_discovery_pricing_section.dart';
@@ -41,6 +42,10 @@ Future<void> _pumpSection(WidgetTester tester, Event event) {
 }
 
 void main() {
+  setUp(() {
+    AppLocaleCache.setLanguageCode('fr');
+  });
+
   group('EventDiscoveryPricingSection', () {
     testWidgets('shows the localized API display for a paid event', (
       tester,
@@ -71,7 +76,8 @@ void main() {
       );
 
       expect(find.text('Payant'), findsOneWidget);
-      expect(find.text('15,50€'), findsOneWidget);
+      expect(find.text('15,5€'), findsOneWidget);
+      expect(find.text('15,50€'), findsNothing);
       expect(find.text('0,00€'), findsNothing);
 
       await _pumpSection(
@@ -137,14 +143,14 @@ void main() {
             IndicativePrice(
               uuid: 'parking',
               label: 'Parking',
-              price: 5,
+              price: 5.5,
               currency: 'EUR',
               sortOrder: 2,
             ),
             IndicativePrice(
               uuid: 'cloakroom',
               label: 'Vestiaire',
-              price: 2,
+              price: 2.5,
               currency: 'EUR',
               sortOrder: 1,
             ),
@@ -157,8 +163,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('20,00€'), findsOneWidget);
-      expect(find.text('2.00 €'), findsOneWidget);
-      expect(find.text('5.00 €'), findsOneWidget);
+      expect(find.text('2,5€'), findsOneWidget);
+      expect(find.text('5,5€'), findsOneWidget);
+      expect(find.text('2,50€'), findsNothing);
+      expect(find.text('5,50€'), findsNothing);
 
       final labels = tester
           .widgetList<Text>(find.byType(Text))

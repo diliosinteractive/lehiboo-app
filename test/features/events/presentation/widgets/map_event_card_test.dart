@@ -30,6 +30,18 @@ Activity _discoveryActivity({
   );
 }
 
+Activity _bookingActivity(double price) {
+  return Activity(
+    id: 'map-booking-event',
+    title: 'Map booking event',
+    slug: 'map-booking-event',
+    description: '',
+    isFree: false,
+    priceMin: price,
+    reservationMode: ReservationMode.lehibooPaid,
+  );
+}
+
 Future<void> _pumpCard(WidgetTester tester, Activity activity) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -57,6 +69,19 @@ Future<void> _pumpCard(WidgetTester tester, Activity activity) async {
 }
 
 void main() {
+  group('MapEventCard booking pricing', () {
+    testWidgets('preserves an API decimal price without rounding or padding', (
+      tester,
+    ) async {
+      await _pumpCard(tester, _bookingActivity(5.5));
+
+      expect(find.text('5,5€'), findsOneWidget);
+      expect(find.text('5€'), findsNothing);
+      expect(find.text('6€'), findsNothing);
+      expect(find.text('5,50€'), findsNothing);
+    });
+  });
+
   group('MapEventCard discovery pricing', () {
     testWidgets(
       'shows Gratuit from the authoritative value without numeric prices',

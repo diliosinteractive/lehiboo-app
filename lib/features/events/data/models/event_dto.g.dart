@@ -404,8 +404,8 @@ Map<String, dynamic> _$$EventCategoryDtoImplToJson(
 _$EventPriceDtoImpl _$$EventPriceDtoImplFromJson(Map<String, dynamic> json) =>
     _$EventPriceDtoImpl(
       isFree: json['is_free'] as bool? ?? false,
-      min: (json['min'] as num?)?.toDouble(),
-      max: (json['max'] as num?)?.toDouble(),
+      min: _parseDoubleOrNull(json['min']),
+      max: _parseDoubleOrNull(json['max']),
       currency: json['currency'] as String? ?? 'EUR',
     );
 

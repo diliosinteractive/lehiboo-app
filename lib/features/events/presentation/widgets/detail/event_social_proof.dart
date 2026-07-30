@@ -318,7 +318,7 @@ class EventPriceDisplay extends StatelessWidget {
             ),
           ),
           TextSpan(
-            text: _formatMainPrice(),
+            text: context.appEuroAmount(minPrice ?? maxPrice ?? 0),
             style: TextStyle(
               fontSize: large ? 28 : 22,
               fontWeight: FontWeight.w700,
@@ -328,14 +328,6 @@ class EventPriceDisplay extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatMainPrice() {
-    final price = minPrice ?? maxPrice ?? 0;
-    if (price == price.roundToDouble()) {
-      return '${price.toInt()}€';
-    }
-    return '${price.toStringAsFixed(2)}€';
   }
 }
 

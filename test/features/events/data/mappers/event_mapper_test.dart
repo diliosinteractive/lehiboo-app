@@ -1,8 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/l10n/app_locale.dart';
 import 'package:lehiboo/features/events/data/mappers/event_mapper.dart';
 import 'package:lehiboo/features/events/data/models/event_dto.dart';
 
 void main() {
+  setUp(() {
+    AppLocaleCache.setLanguageCode('fr');
+  });
+
   group('EventMapper', () {
     test('maps flat mobile venue fields when location object is absent', () {
       final event = EventMapper.toEvent(
@@ -75,7 +80,7 @@ void main() {
             {
               'uuid': 'price-2',
               'label': 'Massage parlor',
-              'price': 5,
+              'price': 5.5,
               'currency': 'EUR',
               'sort_order': 1,
             },
@@ -88,7 +93,8 @@ void main() {
       expect(event.indicativePrices.first.label, 'Cloack room');
       expect(event.indicativePrices.first.price, 0);
       expect(event.indicativePrices.last.label, 'Massage parlor');
-      expect(event.indicativePrices.last.formattedPrice, '5.00 €');
+      expect(event.indicativePrices.last.price, 5.5);
+      expect(event.indicativePrices.last.formattedPrice, '5,5€');
     });
 
     test('maps related events from event detail response', () {

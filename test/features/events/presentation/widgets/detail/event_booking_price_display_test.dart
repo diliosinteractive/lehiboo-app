@@ -73,5 +73,25 @@ void main() {
         },
       );
     }
+
+    testWidgets('sticky bar preserves a selected ticket total of 5.5', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _localizedApp(
+          EventStickyBookingBar(
+            event: _bookingEvent(5.5),
+            ticketQuantities: const {'standard': 1},
+            totalPrice: 5.5,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('5,5€'), findsOneWidget);
+      expect(find.text('5€'), findsNothing);
+      expect(find.text('6€'), findsNothing);
+      expect(find.text('5,50€'), findsNothing);
+    });
   });
 }
