@@ -99,6 +99,8 @@ _$EventDtoImpl _$$EventDtoImplFromJson(Map<String, dynamic> json) =>
       startDate: _parseStringOrNull(json['start_date']),
       endDate: _parseStringOrNull(json['end_date']),
       priceFrom: _parseDoubleOrNull(json['price_from']),
+      allInclusivePriceFrom:
+          _parseDoubleOrNull(json['all_inclusive_price_from']),
       isFree: json['is_free'] == null ? false : _parseBool(json['is_free']),
       capacityGlobal: _parseIntOrNull(json['capacity_global']),
       saleStartAt: _parseStringOrNull(json['sale_start_at']),
@@ -218,6 +220,7 @@ Map<String, dynamic> _$$EventDtoImplToJson(_$EventDtoImpl instance) =>
       'start_date': instance.startDate,
       'end_date': instance.endDate,
       'price_from': instance.priceFrom,
+      'all_inclusive_price_from': instance.allInclusivePriceFrom,
       'is_free': instance.isFree,
       'capacity_global': instance.capacityGlobal,
       'sale_start_at': instance.saleStartAt,
@@ -323,6 +326,9 @@ _$EventPricingDtoImpl _$$EventPricingDtoImplFromJson(
       max: json['max'] == null ? 0 : _parseDouble(json['max']),
       currency: json['currency'] as String? ?? 'EUR',
       display: _parseStringOrNull(json['display']),
+      allInclusiveMin: _parseDoubleOrNull(json['all_inclusive_min']),
+      allInclusiveMax: _parseDoubleOrNull(json['all_inclusive_max']),
+      allInclusiveDisplay: _parseStringOrNull(json['all_inclusive_display']),
     );
 
 Map<String, dynamic> _$$EventPricingDtoImplToJson(
@@ -333,6 +339,9 @@ Map<String, dynamic> _$$EventPricingDtoImplToJson(
       'max': instance.max,
       'currency': instance.currency,
       'display': instance.display,
+      'all_inclusive_min': instance.allInclusiveMin,
+      'all_inclusive_max': instance.allInclusiveMax,
+      'all_inclusive_display': instance.allInclusiveDisplay,
     };
 
 _$EventAvailabilityDtoImpl _$$EventAvailabilityDtoImplFromJson(

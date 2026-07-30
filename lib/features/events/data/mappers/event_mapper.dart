@@ -158,6 +158,9 @@ class EventMapper {
         !hasDirectBooking && (pricingMin == null || pricingMin <= 0);
     final mappedMinPrice =
         shouldUsePriceFrom ? dto.priceFrom ?? pricingMin : pricingMin;
+    final allInclusivePriceFrom = hasDirectBooking
+        ? dto.allInclusivePriceFrom ?? dto.pricing?.allInclusiveMin
+        : null;
     double? mappedPrice;
     if (dto.pricing != null && dto.pricing!.min == dto.pricing!.max) {
       mappedPrice =
@@ -192,6 +195,9 @@ class EventMapper {
       price: mappedPrice,
       minPrice: mappedMinPrice,
       maxPrice: dto.pricing?.max,
+      allInclusivePriceFrom: allInclusivePriceFrom,
+      allInclusiveMaxPrice:
+          hasDirectBooking ? dto.pricing?.allInclusiveMax : null,
       priceDetails: hasDirectBooking ? null : dto.pricing?.display,
       isIndoor: dto.venueType?.toLowerCase() != 'outdoor',
       isOutdoor: dto.venueType?.toLowerCase() != 'indoor',
@@ -546,7 +552,8 @@ class EventMapper {
     final wifi = hasWifi ? const AccessibilityConfig(available: true) : null;
     final transport = hasTransport
         ? RichInfoConfig(
-            description: cachedAppLocalizations().eventTransportAvailableFallback)
+            description:
+                cachedAppLocalizations().eventTransportAvailableFallback)
         : null;
 
     if (parking == null &&

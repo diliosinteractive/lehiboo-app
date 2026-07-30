@@ -177,6 +177,8 @@ mixin _$EventDto {
       throw _privateConstructorUsedError; // §4.5 Top-level pricing
   @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
   double? get priceFrom => throw _privateConstructorUsedError;
+  @JsonKey(name: 'all_inclusive_price_from', fromJson: _parseDoubleOrNull)
+  double? get allInclusivePriceFrom => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_free', fromJson: _parseBool)
   bool get isFree =>
       throw _privateConstructorUsedError; // §4.6 Capacity (top-level cap)
@@ -365,6 +367,8 @@ abstract class $EventDtoCopyWith<$Res> {
       @JsonKey(name: 'end_date', fromJson: _parseStringOrNull) String? endDate,
       @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
       double? priceFrom,
+      @JsonKey(name: 'all_inclusive_price_from', fromJson: _parseDoubleOrNull)
+      double? allInclusivePriceFrom,
       @JsonKey(name: 'is_free', fromJson: _parseBool) bool isFree,
       @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
       int? capacityGlobal,
@@ -378,8 +382,7 @@ abstract class $EventDtoCopyWith<$Res> {
       int? cancelBeforeHours,
       @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
       String? vendorCancellationPolicy,
-      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
-      bool generateQrCodes,
+      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool) bool generateQrCodes,
       @JsonKey(fromJson: _parseStringOrNull) String? status,
       @JsonKey(fromJson: _parseStringOrNull) String? visibility,
       @JsonKey(name: 'is_password_protected', fromJson: _parseBool) bool isPasswordProtected,
@@ -495,6 +498,7 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
     Object? startDate = freezed,
     Object? endDate = freezed,
     Object? priceFrom = freezed,
+    Object? allInclusivePriceFrom = freezed,
     Object? isFree = null,
     Object? capacityGlobal = freezed,
     Object? saleStartAt = freezed,
@@ -795,6 +799,10 @@ class _$EventDtoCopyWithImpl<$Res, $Val extends EventDto>
       priceFrom: freezed == priceFrom
           ? _value.priceFrom
           : priceFrom // ignore: cast_nullable_to_non_nullable
+              as double?,
+      allInclusivePriceFrom: freezed == allInclusivePriceFrom
+          ? _value.allInclusivePriceFrom
+          : allInclusivePriceFrom // ignore: cast_nullable_to_non_nullable
               as double?,
       isFree: null == isFree
           ? _value.isFree
@@ -1146,6 +1154,8 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       @JsonKey(name: 'end_date', fromJson: _parseStringOrNull) String? endDate,
       @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
       double? priceFrom,
+      @JsonKey(name: 'all_inclusive_price_from', fromJson: _parseDoubleOrNull)
+      double? allInclusivePriceFrom,
       @JsonKey(name: 'is_free', fromJson: _parseBool) bool isFree,
       @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
       int? capacityGlobal,
@@ -1159,8 +1169,7 @@ abstract class _$$EventDtoImplCopyWith<$Res>
       int? cancelBeforeHours,
       @JsonKey(name: 'vendor_cancellation_policy', fromJson: _parseStringOrNull)
       String? vendorCancellationPolicy,
-      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool)
-      bool generateQrCodes,
+      @JsonKey(name: 'generate_qr_codes', fromJson: _parseBool) bool generateQrCodes,
       @JsonKey(fromJson: _parseStringOrNull) String? status,
       @JsonKey(fromJson: _parseStringOrNull) String? visibility,
       @JsonKey(name: 'is_password_protected', fromJson: _parseBool) bool isPasswordProtected,
@@ -1283,6 +1292,7 @@ class __$$EventDtoImplCopyWithImpl<$Res>
     Object? startDate = freezed,
     Object? endDate = freezed,
     Object? priceFrom = freezed,
+    Object? allInclusivePriceFrom = freezed,
     Object? isFree = null,
     Object? capacityGlobal = freezed,
     Object? saleStartAt = freezed,
@@ -1584,6 +1594,10 @@ class __$$EventDtoImplCopyWithImpl<$Res>
           ? _value.priceFrom
           : priceFrom // ignore: cast_nullable_to_non_nullable
               as double?,
+      allInclusivePriceFrom: freezed == allInclusivePriceFrom
+          ? _value.allInclusivePriceFrom
+          : allInclusivePriceFrom // ignore: cast_nullable_to_non_nullable
+              as double?,
       isFree: null == isFree
           ? _value.isFree
           : isFree // ignore: cast_nullable_to_non_nullable
@@ -1820,6 +1834,8 @@ class _$EventDtoImpl implements _EventDto {
       @JsonKey(name: 'start_date', fromJson: _parseStringOrNull) this.startDate,
       @JsonKey(name: 'end_date', fromJson: _parseStringOrNull) this.endDate,
       @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull) this.priceFrom,
+      @JsonKey(name: 'all_inclusive_price_from', fromJson: _parseDoubleOrNull)
+      this.allInclusivePriceFrom,
       @JsonKey(name: 'is_free', fromJson: _parseBool) this.isFree = false,
       @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
       this.capacityGlobal,
@@ -1837,8 +1853,7 @@ class _$EventDtoImpl implements _EventDto {
       this.generateQrCodes = false,
       @JsonKey(fromJson: _parseStringOrNull) this.status,
       @JsonKey(fromJson: _parseStringOrNull) this.visibility,
-      @JsonKey(name: 'is_password_protected', fromJson: _parseBool)
-      this.isPasswordProtected = false,
+      @JsonKey(name: 'is_password_protected', fromJson: _parseBool) this.isPasswordProtected = false,
       @JsonKey(name: 'has_password', fromJson: _parseBool) this.hasPassword = false,
       @JsonKey(name: 'published_at', fromJson: _parseStringOrNull) this.publishedAt,
       @JsonKey(name: 'scheduled_publish_at', fromJson: _parseStringOrNull) this.scheduledPublishAt,
@@ -2327,6 +2342,9 @@ class _$EventDtoImpl implements _EventDto {
   @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
   final double? priceFrom;
   @override
+  @JsonKey(name: 'all_inclusive_price_from', fromJson: _parseDoubleOrNull)
+  final double? allInclusivePriceFrom;
+  @override
   @JsonKey(name: 'is_free', fromJson: _parseBool)
   final bool isFree;
 // §4.6 Capacity (top-level cap)
@@ -2447,7 +2465,7 @@ class _$EventDtoImpl implements _EventDto {
 
   @override
   String toString() {
-    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTypeMode: $eventTypeMode, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, relatedEvents: $relatedEvents, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite, isMembersOnly: $isMembersOnly, version: $version, calendarMode: $calendarMode, timezone: $timezone, venueName: $venueName, venueAddress: $venueAddress, city: $city, postalCode: $postalCode, country: $country, addressSource: $addressSource, venueId: $venueId, startDate: $startDate, endDate: $endDate, priceFrom: $priceFrom, isFree: $isFree, capacityGlobal: $capacityGlobal, saleStartAt: $saleStartAt, saleEndAt: $saleEndAt, allowCancellation: $allowCancellation, cancelBeforeHours: $cancelBeforeHours, vendorCancellationPolicy: $vendorCancellationPolicy, generateQrCodes: $generateQrCodes, status: $status, visibility: $visibility, isPasswordProtected: $isPasswordProtected, hasPassword: $hasPassword, publishedAt: $publishedAt, scheduledPublishAt: $scheduledPublishAt, isActive: $isActive, isOnSale: $isOnSale, isLive: $isLive, canAcceptBookings: $canAcceptBookings, canAcceptDiscovery: $canAcceptDiscovery, isDiscovery: $isDiscovery, participationCount: $participationCount, isParticipating: $isParticipating, externalTicketingUrl: $externalTicketingUrl, otherServices: $otherServices, entryTypeId: $entryTypeId, eventTagId: $eventTagId, metaTitle: $metaTitle, metaDescription: $metaDescription, meta: $meta, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'EventDto(id: $id, uuid: $uuid, internalId: $internalId, title: $title, slug: $slug, excerpt: $excerpt, content: $content, fullDescription: $fullDescription, featuredImage: $featuredImage, thumbnail: $thumbnail, gallery: $gallery, category: $category, thematique: $thematique, dates: $dates, location: $location, pricing: $pricing, availability: $availability, ratings: $ratings, organizer: $organizer, tags: $tags, ticketTypes: $ticketTypes, tickets: $tickets, timeSlots: $timeSlots, calendar: $calendar, recurrence: $recurrence, extraServices: $extraServices, indicativePrices: $indicativePrices, services: $services, venueType: $venueType, isFeatured: $isFeatured, coupons: $coupons, seatConfig: $seatConfig, externalBooking: $externalBooking, eventType: $eventType, eventTypeMode: $eventTypeMode, eventTag: $eventTag, targetAudience: $targetAudience, targetAudiences: $targetAudiences, bookingMode: $bookingMode, discoveryPricingType: $discoveryPricingType, locationDetails: $locationDetails, coOrganizers: $coOrganizers, socialMedia: $socialMedia, primaryCategory: $primaryCategory, categories: $categories, relatedEvents: $relatedEvents, slots: $slots, venueData: $venueData, creationSource: $creationSource, originalOrganizerName: $originalOrganizerName, themes: $themes, emotions: $emotions, isFavorite: $isFavorite, isMembersOnly: $isMembersOnly, version: $version, calendarMode: $calendarMode, timezone: $timezone, venueName: $venueName, venueAddress: $venueAddress, city: $city, postalCode: $postalCode, country: $country, addressSource: $addressSource, venueId: $venueId, startDate: $startDate, endDate: $endDate, priceFrom: $priceFrom, allInclusivePriceFrom: $allInclusivePriceFrom, isFree: $isFree, capacityGlobal: $capacityGlobal, saleStartAt: $saleStartAt, saleEndAt: $saleEndAt, allowCancellation: $allowCancellation, cancelBeforeHours: $cancelBeforeHours, vendorCancellationPolicy: $vendorCancellationPolicy, generateQrCodes: $generateQrCodes, status: $status, visibility: $visibility, isPasswordProtected: $isPasswordProtected, hasPassword: $hasPassword, publishedAt: $publishedAt, scheduledPublishAt: $scheduledPublishAt, isActive: $isActive, isOnSale: $isOnSale, isLive: $isLive, canAcceptBookings: $canAcceptBookings, canAcceptDiscovery: $canAcceptDiscovery, isDiscovery: $isDiscovery, participationCount: $participationCount, isParticipating: $isParticipating, externalTicketingUrl: $externalTicketingUrl, otherServices: $otherServices, entryTypeId: $entryTypeId, eventTagId: $eventTagId, metaTitle: $metaTitle, metaDescription: $metaDescription, meta: $meta, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -2564,6 +2582,7 @@ class _$EventDtoImpl implements _EventDto {
                 other.startDate == startDate) &&
             (identical(other.endDate, endDate) || other.endDate == endDate) &&
             (identical(other.priceFrom, priceFrom) || other.priceFrom == priceFrom) &&
+            (identical(other.allInclusivePriceFrom, allInclusivePriceFrom) || other.allInclusivePriceFrom == allInclusivePriceFrom) &&
             (identical(other.isFree, isFree) || other.isFree == isFree) &&
             (identical(other.capacityGlobal, capacityGlobal) || other.capacityGlobal == capacityGlobal) &&
             (identical(other.saleStartAt, saleStartAt) || other.saleStartAt == saleStartAt) &&
@@ -2668,6 +2687,7 @@ class _$EventDtoImpl implements _EventDto {
         startDate,
         endDate,
         priceFrom,
+        allInclusivePriceFrom,
         isFree,
         capacityGlobal,
         saleStartAt,
@@ -2764,11 +2784,7 @@ abstract class _EventDto implements EventDto {
       final Map<String, dynamic>? externalBooking,
       @JsonKey(name: 'event_type', readValue: _readEventTypeMap, fromJson: _parseMapOrNull, includeToJson: false)
       final Map<String, dynamic>? eventType,
-      @JsonKey(
-          name: 'event_type',
-          readValue: _readEventTypeString,
-          fromJson: _parseStringOrNull,
-          includeToJson: false)
+      @JsonKey(name: 'event_type', readValue: _readEventTypeString, fromJson: _parseStringOrNull, includeToJson: false)
       final String? eventTypeMode,
       @JsonKey(name: 'event_tag', fromJson: _parseMapOrNull)
       final Map<String, dynamic>? eventTag,
@@ -2826,6 +2842,8 @@ abstract class _EventDto implements EventDto {
       final String? endDate,
       @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
       final double? priceFrom,
+      @JsonKey(name: 'all_inclusive_price_from', fromJson: _parseDoubleOrNull)
+      final double? allInclusivePriceFrom,
       @JsonKey(name: 'is_free', fromJson: _parseBool) final bool isFree,
       @JsonKey(name: 'capacity_global', fromJson: _parseIntOrNull)
       final int? capacityGlobal,
@@ -2866,7 +2884,8 @@ abstract class _EventDto implements EventDto {
       final bool isParticipating,
       @JsonKey(name: 'external_ticketing_url', fromJson: _parseStringOrNull)
       final String? externalTicketingUrl,
-      @JsonKey(name: 'other_services', fromJson: _parseMapOrNull) final Map<String, dynamic>? otherServices,
+      @JsonKey(name: 'other_services', fromJson: _parseMapOrNull)
+      final Map<String, dynamic>? otherServices,
       @JsonKey(name: 'entry_type_id', fromJson: _parseIntOrNull) final int? entryTypeId,
       @JsonKey(name: 'event_tag_id', fromJson: _parseIntOrNull) final int? eventTagId,
       @JsonKey(name: 'meta_title', fromJson: _parseStringOrNull) final String? metaTitle,
@@ -3084,6 +3103,9 @@ abstract class _EventDto implements EventDto {
   @override // §4.5 Top-level pricing
   @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
   double? get priceFrom;
+  @override
+  @JsonKey(name: 'all_inclusive_price_from', fromJson: _parseDoubleOrNull)
+  double? get allInclusivePriceFrom;
   @override
   @JsonKey(name: 'is_free', fromJson: _parseBool)
   bool get isFree;
@@ -3983,6 +4005,12 @@ mixin _$EventPricingDto {
   String get currency => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _parseStringOrNull)
   String? get display => throw _privateConstructorUsedError;
+  @JsonKey(name: 'all_inclusive_min', fromJson: _parseDoubleOrNull)
+  double? get allInclusiveMin => throw _privateConstructorUsedError;
+  @JsonKey(name: 'all_inclusive_max', fromJson: _parseDoubleOrNull)
+  double? get allInclusiveMax => throw _privateConstructorUsedError;
+  @JsonKey(name: 'all_inclusive_display', fromJson: _parseStringOrNull)
+  String? get allInclusiveDisplay => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -4001,7 +4029,13 @@ abstract class $EventPricingDtoCopyWith<$Res> {
       @JsonKey(fromJson: _parseDouble) double min,
       @JsonKey(fromJson: _parseDouble) double max,
       String currency,
-      @JsonKey(fromJson: _parseStringOrNull) String? display});
+      @JsonKey(fromJson: _parseStringOrNull) String? display,
+      @JsonKey(name: 'all_inclusive_min', fromJson: _parseDoubleOrNull)
+      double? allInclusiveMin,
+      @JsonKey(name: 'all_inclusive_max', fromJson: _parseDoubleOrNull)
+      double? allInclusiveMax,
+      @JsonKey(name: 'all_inclusive_display', fromJson: _parseStringOrNull)
+      String? allInclusiveDisplay});
 }
 
 /// @nodoc
@@ -4022,6 +4056,9 @@ class _$EventPricingDtoCopyWithImpl<$Res, $Val extends EventPricingDto>
     Object? max = null,
     Object? currency = null,
     Object? display = freezed,
+    Object? allInclusiveMin = freezed,
+    Object? allInclusiveMax = freezed,
+    Object? allInclusiveDisplay = freezed,
   }) {
     return _then(_value.copyWith(
       isFree: null == isFree
@@ -4044,6 +4081,18 @@ class _$EventPricingDtoCopyWithImpl<$Res, $Val extends EventPricingDto>
           ? _value.display
           : display // ignore: cast_nullable_to_non_nullable
               as String?,
+      allInclusiveMin: freezed == allInclusiveMin
+          ? _value.allInclusiveMin
+          : allInclusiveMin // ignore: cast_nullable_to_non_nullable
+              as double?,
+      allInclusiveMax: freezed == allInclusiveMax
+          ? _value.allInclusiveMax
+          : allInclusiveMax // ignore: cast_nullable_to_non_nullable
+              as double?,
+      allInclusiveDisplay: freezed == allInclusiveDisplay
+          ? _value.allInclusiveDisplay
+          : allInclusiveDisplay // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -4061,7 +4110,13 @@ abstract class _$$EventPricingDtoImplCopyWith<$Res>
       @JsonKey(fromJson: _parseDouble) double min,
       @JsonKey(fromJson: _parseDouble) double max,
       String currency,
-      @JsonKey(fromJson: _parseStringOrNull) String? display});
+      @JsonKey(fromJson: _parseStringOrNull) String? display,
+      @JsonKey(name: 'all_inclusive_min', fromJson: _parseDoubleOrNull)
+      double? allInclusiveMin,
+      @JsonKey(name: 'all_inclusive_max', fromJson: _parseDoubleOrNull)
+      double? allInclusiveMax,
+      @JsonKey(name: 'all_inclusive_display', fromJson: _parseStringOrNull)
+      String? allInclusiveDisplay});
 }
 
 /// @nodoc
@@ -4080,6 +4135,9 @@ class __$$EventPricingDtoImplCopyWithImpl<$Res>
     Object? max = null,
     Object? currency = null,
     Object? display = freezed,
+    Object? allInclusiveMin = freezed,
+    Object? allInclusiveMax = freezed,
+    Object? allInclusiveDisplay = freezed,
   }) {
     return _then(_$EventPricingDtoImpl(
       isFree: null == isFree
@@ -4102,6 +4160,18 @@ class __$$EventPricingDtoImplCopyWithImpl<$Res>
           ? _value.display
           : display // ignore: cast_nullable_to_non_nullable
               as String?,
+      allInclusiveMin: freezed == allInclusiveMin
+          ? _value.allInclusiveMin
+          : allInclusiveMin // ignore: cast_nullable_to_non_nullable
+              as double?,
+      allInclusiveMax: freezed == allInclusiveMax
+          ? _value.allInclusiveMax
+          : allInclusiveMax // ignore: cast_nullable_to_non_nullable
+              as double?,
+      allInclusiveDisplay: freezed == allInclusiveDisplay
+          ? _value.allInclusiveDisplay
+          : allInclusiveDisplay // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -4114,7 +4184,13 @@ class _$EventPricingDtoImpl implements _EventPricingDto {
       @JsonKey(fromJson: _parseDouble) this.min = 0,
       @JsonKey(fromJson: _parseDouble) this.max = 0,
       this.currency = 'EUR',
-      @JsonKey(fromJson: _parseStringOrNull) this.display});
+      @JsonKey(fromJson: _parseStringOrNull) this.display,
+      @JsonKey(name: 'all_inclusive_min', fromJson: _parseDoubleOrNull)
+      this.allInclusiveMin,
+      @JsonKey(name: 'all_inclusive_max', fromJson: _parseDoubleOrNull)
+      this.allInclusiveMax,
+      @JsonKey(name: 'all_inclusive_display', fromJson: _parseStringOrNull)
+      this.allInclusiveDisplay});
 
   factory _$EventPricingDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$EventPricingDtoImplFromJson(json);
@@ -4134,10 +4210,19 @@ class _$EventPricingDtoImpl implements _EventPricingDto {
   @override
   @JsonKey(fromJson: _parseStringOrNull)
   final String? display;
+  @override
+  @JsonKey(name: 'all_inclusive_min', fromJson: _parseDoubleOrNull)
+  final double? allInclusiveMin;
+  @override
+  @JsonKey(name: 'all_inclusive_max', fromJson: _parseDoubleOrNull)
+  final double? allInclusiveMax;
+  @override
+  @JsonKey(name: 'all_inclusive_display', fromJson: _parseStringOrNull)
+  final String? allInclusiveDisplay;
 
   @override
   String toString() {
-    return 'EventPricingDto(isFree: $isFree, min: $min, max: $max, currency: $currency, display: $display)';
+    return 'EventPricingDto(isFree: $isFree, min: $min, max: $max, currency: $currency, display: $display, allInclusiveMin: $allInclusiveMin, allInclusiveMax: $allInclusiveMax, allInclusiveDisplay: $allInclusiveDisplay)';
   }
 
   @override
@@ -4150,13 +4235,19 @@ class _$EventPricingDtoImpl implements _EventPricingDto {
             (identical(other.max, max) || other.max == max) &&
             (identical(other.currency, currency) ||
                 other.currency == currency) &&
-            (identical(other.display, display) || other.display == display));
+            (identical(other.display, display) || other.display == display) &&
+            (identical(other.allInclusiveMin, allInclusiveMin) ||
+                other.allInclusiveMin == allInclusiveMin) &&
+            (identical(other.allInclusiveMax, allInclusiveMax) ||
+                other.allInclusiveMax == allInclusiveMax) &&
+            (identical(other.allInclusiveDisplay, allInclusiveDisplay) ||
+                other.allInclusiveDisplay == allInclusiveDisplay));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, isFree, min, max, currency, display);
+  int get hashCode => Object.hash(runtimeType, isFree, min, max, currency,
+      display, allInclusiveMin, allInclusiveMax, allInclusiveDisplay);
 
   @JsonKey(ignore: true)
   @override
@@ -4175,12 +4266,17 @@ class _$EventPricingDtoImpl implements _EventPricingDto {
 
 abstract class _EventPricingDto implements EventPricingDto {
   const factory _EventPricingDto(
-          {@JsonKey(name: 'is_free', fromJson: _parseBool) final bool isFree,
-          @JsonKey(fromJson: _parseDouble) final double min,
-          @JsonKey(fromJson: _parseDouble) final double max,
-          final String currency,
-          @JsonKey(fromJson: _parseStringOrNull) final String? display}) =
-      _$EventPricingDtoImpl;
+      {@JsonKey(name: 'is_free', fromJson: _parseBool) final bool isFree,
+      @JsonKey(fromJson: _parseDouble) final double min,
+      @JsonKey(fromJson: _parseDouble) final double max,
+      final String currency,
+      @JsonKey(fromJson: _parseStringOrNull) final String? display,
+      @JsonKey(name: 'all_inclusive_min', fromJson: _parseDoubleOrNull)
+      final double? allInclusiveMin,
+      @JsonKey(name: 'all_inclusive_max', fromJson: _parseDoubleOrNull)
+      final double? allInclusiveMax,
+      @JsonKey(name: 'all_inclusive_display', fromJson: _parseStringOrNull)
+      final String? allInclusiveDisplay}) = _$EventPricingDtoImpl;
 
   factory _EventPricingDto.fromJson(Map<String, dynamic> json) =
       _$EventPricingDtoImpl.fromJson;
@@ -4199,6 +4295,15 @@ abstract class _EventPricingDto implements EventPricingDto {
   @override
   @JsonKey(fromJson: _parseStringOrNull)
   String? get display;
+  @override
+  @JsonKey(name: 'all_inclusive_min', fromJson: _parseDoubleOrNull)
+  double? get allInclusiveMin;
+  @override
+  @JsonKey(name: 'all_inclusive_max', fromJson: _parseDoubleOrNull)
+  double? get allInclusiveMax;
+  @override
+  @JsonKey(name: 'all_inclusive_display', fromJson: _parseStringOrNull)
+  String? get allInclusiveDisplay;
   @override
   @JsonKey(ignore: true)
   _$$EventPricingDtoImplCopyWith<_$EventPricingDtoImpl> get copyWith =>

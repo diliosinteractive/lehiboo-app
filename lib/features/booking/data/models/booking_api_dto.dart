@@ -47,16 +47,22 @@ class BookingTicketRequestDto with _$BookingTicketRequestDto {
 /// Format: { "message": "...", "data": { uuid, status, total_amount, ... } }
 @freezed
 class CreateBookingResponseDto with _$CreateBookingResponseDto {
+  const CreateBookingResponseDto._();
+
   const factory CreateBookingResponseDto({
     required String uuid,
     required String status,
     @JsonKey(name: 'total_amount') required double totalAmount,
+    @JsonKey(name: 'platform_fee_amount') double? platformFeeAmount,
+    @JsonKey(name: 'buyer_total') double? buyerTotal,
     @JsonKey(name: 'expires_at') String? expiresAt,
     String? reference,
   }) = _CreateBookingResponseDto;
 
   factory CreateBookingResponseDto.fromJson(Map<String, dynamic> json) =>
       _$CreateBookingResponseDtoFromJson(json);
+
+  double get paidTotal => buyerTotal ?? totalAmount;
 }
 
 /// Réponse POST /bookings/{uuid}/payment-intent
@@ -182,7 +188,9 @@ class BookingListItemDto with _$BookingListItemDto {
     String? eventImage,
     String? slotDate,
     double? grandTotal,
-    double? totalAmount,
+    @JsonKey(readValue: _readTotalAmount) double? totalAmount,
+    @JsonKey(readValue: _readPlatformFeeAmount) double? platformFeeAmount,
+    @JsonKey(readValue: _readBuyerTotal) double? buyerTotal,
     int? ticketCount,
     @JsonKey(name: 'customer_email') String? customerEmail,
     @JsonKey(name: 'customer_first_name') String? customerFirstName,
@@ -401,3 +409,12 @@ class TicketLocationDto with _$TicketLocationDto {
   factory TicketLocationDto.fromJson(Map<String, dynamic> json) =>
       _$TicketLocationDtoFromJson(json);
 }
+
+Object? _readTotalAmount(Map<dynamic, dynamic> json, String key) =>
+    json['total_amount'] ?? json[key];
+
+Object? _readPlatformFeeAmount(Map<dynamic, dynamic> json, String key) =>
+    json['platform_fee_amount'] ?? json[key];
+
+Object? _readBuyerTotal(Map<dynamic, dynamic> json, String key) =>
+    json['buyer_total'] ?? json[key];

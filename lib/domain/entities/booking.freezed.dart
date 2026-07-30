@@ -24,6 +24,9 @@ mixin _$Booking {
   String get activityId => throw _privateConstructorUsedError;
   int? get quantity => throw _privateConstructorUsedError;
   double? get totalPrice => throw _privateConstructorUsedError;
+  double? get organizerTotal => throw _privateConstructorUsedError;
+  double? get platformFeeAmount => throw _privateConstructorUsedError;
+  double? get buyerTotal => throw _privateConstructorUsedError;
   String? get currency => throw _privateConstructorUsedError;
   String? get status =>
       throw _privateConstructorUsedError; // pending, confirmed, cancelled, refunded, completed
@@ -68,6 +71,9 @@ abstract class $BookingCopyWith<$Res> {
       String activityId,
       int? quantity,
       double? totalPrice,
+      double? organizerTotal,
+      double? platformFeeAmount,
+      double? buyerTotal,
       String? currency,
       String? status,
       String? paymentProvider,
@@ -111,6 +117,9 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
     Object? activityId = null,
     Object? quantity = freezed,
     Object? totalPrice = freezed,
+    Object? organizerTotal = freezed,
+    Object? platformFeeAmount = freezed,
+    Object? buyerTotal = freezed,
     Object? currency = freezed,
     Object? status = freezed,
     Object? paymentProvider = freezed,
@@ -157,6 +166,18 @@ class _$BookingCopyWithImpl<$Res, $Val extends Booking>
       totalPrice: freezed == totalPrice
           ? _value.totalPrice
           : totalPrice // ignore: cast_nullable_to_non_nullable
+              as double?,
+      organizerTotal: freezed == organizerTotal
+          ? _value.organizerTotal
+          : organizerTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
+      platformFeeAmount: freezed == platformFeeAmount
+          ? _value.platformFeeAmount
+          : platformFeeAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      buyerTotal: freezed == buyerTotal
+          ? _value.buyerTotal
+          : buyerTotal // ignore: cast_nullable_to_non_nullable
               as double?,
       currency: freezed == currency
           ? _value.currency
@@ -282,6 +303,9 @@ abstract class _$$BookingImplCopyWith<$Res> implements $BookingCopyWith<$Res> {
       String activityId,
       int? quantity,
       double? totalPrice,
+      double? organizerTotal,
+      double? platformFeeAmount,
+      double? buyerTotal,
       String? currency,
       String? status,
       String? paymentProvider,
@@ -326,6 +350,9 @@ class __$$BookingImplCopyWithImpl<$Res>
     Object? activityId = null,
     Object? quantity = freezed,
     Object? totalPrice = freezed,
+    Object? organizerTotal = freezed,
+    Object? platformFeeAmount = freezed,
+    Object? buyerTotal = freezed,
     Object? currency = freezed,
     Object? status = freezed,
     Object? paymentProvider = freezed,
@@ -372,6 +399,18 @@ class __$$BookingImplCopyWithImpl<$Res>
       totalPrice: freezed == totalPrice
           ? _value.totalPrice
           : totalPrice // ignore: cast_nullable_to_non_nullable
+              as double?,
+      organizerTotal: freezed == organizerTotal
+          ? _value.organizerTotal
+          : organizerTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
+      platformFeeAmount: freezed == platformFeeAmount
+          ? _value.platformFeeAmount
+          : platformFeeAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      buyerTotal: freezed == buyerTotal
+          ? _value.buyerTotal
+          : buyerTotal // ignore: cast_nullable_to_non_nullable
               as double?,
       currency: freezed == currency
           ? _value.currency
@@ -447,7 +486,7 @@ class __$$BookingImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$BookingImpl implements _Booking {
+class _$BookingImpl extends _Booking {
   const _$BookingImpl(
       {required this.id,
       this.numericId,
@@ -456,6 +495,9 @@ class _$BookingImpl implements _Booking {
       required this.activityId,
       this.quantity,
       this.totalPrice,
+      this.organizerTotal,
+      this.platformFeeAmount,
+      this.buyerTotal,
       this.currency,
       this.status,
       this.paymentProvider,
@@ -474,7 +516,8 @@ class _$BookingImpl implements _Booking {
       this.customerTown,
       this.reference})
       : _tickets = tickets,
-        _attendees = attendees;
+        _attendees = attendees,
+        super._();
 
   @override
   final String id;
@@ -492,6 +535,12 @@ class _$BookingImpl implements _Booking {
   final int? quantity;
   @override
   final double? totalPrice;
+  @override
+  final double? organizerTotal;
+  @override
+  final double? platformFeeAmount;
+  @override
+  final double? buyerTotal;
   @override
   final String? currency;
   @override
@@ -556,7 +605,7 @@ class _$BookingImpl implements _Booking {
 
   @override
   String toString() {
-    return 'Booking(id: $id, numericId: $numericId, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, attendees: $attendees, cancellation: $cancellation, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, customerBirthDate: $customerBirthDate, customerTown: $customerTown, reference: $reference)';
+    return 'Booking(id: $id, numericId: $numericId, userId: $userId, slotId: $slotId, activityId: $activityId, quantity: $quantity, totalPrice: $totalPrice, organizerTotal: $organizerTotal, platformFeeAmount: $platformFeeAmount, buyerTotal: $buyerTotal, currency: $currency, status: $status, paymentProvider: $paymentProvider, paymentReference: $paymentReference, createdAt: $createdAt, activity: $activity, slot: $slot, tickets: $tickets, attendees: $attendees, cancellation: $cancellation, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerPhone: $customerPhone, customerBirthDate: $customerBirthDate, customerTown: $customerTown, reference: $reference)';
   }
 
   @override
@@ -575,6 +624,12 @@ class _$BookingImpl implements _Booking {
                 other.quantity == quantity) &&
             (identical(other.totalPrice, totalPrice) ||
                 other.totalPrice == totalPrice) &&
+            (identical(other.organizerTotal, organizerTotal) ||
+                other.organizerTotal == organizerTotal) &&
+            (identical(other.platformFeeAmount, platformFeeAmount) ||
+                other.platformFeeAmount == platformFeeAmount) &&
+            (identical(other.buyerTotal, buyerTotal) ||
+                other.buyerTotal == buyerTotal) &&
             (identical(other.currency, currency) ||
                 other.currency == currency) &&
             (identical(other.status, status) || other.status == status) &&
@@ -618,6 +673,9 @@ class _$BookingImpl implements _Booking {
         activityId,
         quantity,
         totalPrice,
+        organizerTotal,
+        platformFeeAmount,
+        buyerTotal,
         currency,
         status,
         paymentProvider,
@@ -644,7 +702,7 @@ class _$BookingImpl implements _Booking {
       __$$BookingImplCopyWithImpl<_$BookingImpl>(this, _$identity);
 }
 
-abstract class _Booking implements Booking {
+abstract class _Booking extends Booking {
   const factory _Booking(
       {required final String id,
       final int? numericId,
@@ -653,6 +711,9 @@ abstract class _Booking implements Booking {
       required final String activityId,
       final int? quantity,
       final double? totalPrice,
+      final double? organizerTotal,
+      final double? platformFeeAmount,
+      final double? buyerTotal,
       final String? currency,
       final String? status,
       final String? paymentProvider,
@@ -670,6 +731,7 @@ abstract class _Booking implements Booking {
       final String? customerBirthDate,
       final String? customerTown,
       final String? reference}) = _$BookingImpl;
+  const _Booking._() : super._();
 
   @override
   String get id;
@@ -685,6 +747,12 @@ abstract class _Booking implements Booking {
   int? get quantity;
   @override
   double? get totalPrice;
+  @override
+  double? get organizerTotal;
+  @override
+  double? get platformFeeAmount;
+  @override
+  double? get buyerTotal;
   @override
   String? get currency;
   @override

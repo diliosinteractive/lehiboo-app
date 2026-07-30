@@ -6,6 +6,8 @@ class Ticket extends Equatable {
   final String id;
   final String name;
   final double price;
+  final double? allInclusivePrice;
+  final double? platformFee;
   final String? description;
   final int? quantity;
   final int? minPerBooking;
@@ -16,6 +18,8 @@ class Ticket extends Equatable {
     required this.id,
     required this.name,
     required this.price,
+    this.allInclusivePrice,
+    this.platformFee,
     this.description,
     this.quantity,
     this.minPerBooking,
@@ -24,10 +28,19 @@ class Ticket extends Equatable {
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
+    final buyerPricingRaw = json['buyer_pricing'];
+    final buyerPricing = buyerPricingRaw is Map
+        ? Map<String, dynamic>.from(buyerPricingRaw)
+        : const <String, dynamic>{};
+
     return Ticket(
       id: json['uuid']?.toString() ?? json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      allInclusivePrice: (json['all_inclusive_price'] as num?)?.toDouble() ??
+          (buyerPricing['all_inclusive_price'] as num?)?.toDouble(),
+      platformFee: (json['platform_fee'] as num?)?.toDouble() ??
+          (buyerPricing['platform_fee'] as num?)?.toDouble(),
       description: json['description'],
       quantity: json['quantity'],
       minPerBooking: json['min_per_order'] ?? json['min_per_booking'],
@@ -36,8 +49,21 @@ class Ticket extends Equatable {
     );
   }
 
+  double get buyerPrice => allInclusivePrice ?? price;
+
   @override
-  List<Object?> get props => [id, name, price, description, quantity, minPerBooking, maxPerBooking, remainingPlaces];
+  List<Object?> get props => [
+        id,
+        name,
+        price,
+        allInclusivePrice,
+        platformFee,
+        description,
+        quantity,
+        minPerBooking,
+        maxPerBooking,
+        remainingPlaces,
+      ];
 }
 
 class TimeSlotConfig extends Equatable {
@@ -54,17 +80,19 @@ class TimeSlotConfig extends Equatable {
   factory TimeSlotConfig.fromJson(Map<String, dynamic> json) {
     Map<String, List<String>>? weeklySlotsMap;
     final weeklySlotsRaw = json['weekly_slots'];
-    
+
     // Explicitly handle Map vs List (empty list [] returned by PHP for empty associative array)
     if (weeklySlotsRaw is Map) {
       weeklySlotsMap = weeklySlotsRaw.map(
-        (key, value) => MapEntry(key.toString(), (value as List).map((e) => e.toString()).toList()),
+        (key, value) => MapEntry(
+            key.toString(), (value as List).map((e) => e.toString()).toList()),
       );
     }
 
     return TimeSlotConfig(
       calendarType: json['calendar_type'] ?? 'auto',
-      schedules: (json['schedules'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      schedules:
+          (json['schedules'] as List?)?.map((e) => e.toString()).toList() ?? [],
       weeklySlots: weeklySlotsMap,
     );
   }
@@ -97,14 +125,16 @@ class CalendarDateSlot extends Equatable {
     if (dateStr != null) {
       date = _parseDate(dateStr);
     }
-    
+
     return CalendarDateSlot(
       id: json['id']?.toString() ?? '',
       date: date ?? DateTime.now(),
       startTime: json['start_time']?.toString(),
       endTime: json['end_time']?.toString(),
-      spotsRemaining: json['spots_remaining'] is int ? json['spots_remaining'] : null,
-      totalCapacity: json['total_capacity'] is int ? json['total_capacity'] : null,
+      spotsRemaining:
+          json['spots_remaining'] is int ? json['spots_remaining'] : null,
+      totalCapacity:
+          json['total_capacity'] is int ? json['total_capacity'] : null,
     );
   }
 
@@ -113,7 +143,7 @@ class CalendarDateSlot extends Equatable {
     // Try standard ISO format first
     var result = DateTime.tryParse(dateStr);
     if (result != null) return result;
-    
+
     // Try dd-MM-yyyy format
     final parts = dateStr.split('-');
     if (parts.length == 3) {
@@ -205,9 +235,13 @@ class RecurrenceConfig extends Equatable {
     return RecurrenceConfig(
       frequency: json['frequency'] ?? 'daily',
       interval: json['interval'] ?? 1,
-      byDays: (json['by_days'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      startDate: json['start_date'] != null ? DateTime.tryParse(json['start_date']) : null,
-      endDate: json['end_date'] != null ? DateTime.tryParse(json['end_date']) : null,
+      byDays:
+          (json['by_days'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      startDate: json['start_date'] != null
+          ? DateTime.tryParse(json['start_date'])
+          : null,
+      endDate:
+          json['end_date'] != null ? DateTime.tryParse(json['end_date']) : null,
     );
   }
 
@@ -264,8 +298,12 @@ class Coupon extends Equatable {
       code: json['code'] ?? '',
       type: json['type'] ?? 'fixed',
       value: (json['value'] as num?)?.toDouble() ?? 0.0,
-      validFrom: json['valid_from'] != null ? DateTime.tryParse(json['valid_from']) : null,
-      validUntil: json['valid_until'] != null ? DateTime.tryParse(json['valid_until']) : null,
+      validFrom: json['valid_from'] != null
+          ? DateTime.tryParse(json['valid_from'])
+          : null,
+      validUntil: json['valid_until'] != null
+          ? DateTime.tryParse(json['valid_until'])
+          : null,
     );
   }
 
@@ -332,7 +370,9 @@ class TaxonomyTerm extends Equatable {
 
   factory TaxonomyTerm.fromJson(Map<String, dynamic> json) {
     return TaxonomyTerm(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()) ?? 0,
       name: json['name'] ?? '',
       slug: json['slug'] ?? '',
     );
@@ -369,7 +409,9 @@ class AccessibilityConfig extends Equatable {
 
   factory AccessibilityConfig.fromJson(Map<String, dynamic> json) {
     return AccessibilityConfig(
-      available: json['available'] == true || json['available'] == 1 || json['available'] == '1',
+      available: json['available'] == true ||
+          json['available'] == 1 ||
+          json['available'] == '1',
       note: json['note']?.toString(),
     );
   }
@@ -385,9 +427,11 @@ class LocationDetails extends Equatable {
   final AccessibilityConfig? food;
   final AccessibilityConfig? drinks;
   final AccessibilityConfig? wifi;
+
   /// All active service keys from the API (e.g. "vestiaire", "hebergement")
   /// that don't have a dedicated field above.
   final List<String> otherServices;
+
   /// Accessibility features from the API (e.g. "stationnement_handicap", "places_handicap")
   final List<String> accessibilityFeatures;
 
@@ -404,16 +448,35 @@ class LocationDetails extends Equatable {
 
   factory LocationDetails.fromJson(Map<String, dynamic> json) {
     return LocationDetails(
-      parking: json['parking'] != null ? RichInfoConfig.fromJson(json['parking']) : null,
-      transport: json['transport'] != null ? RichInfoConfig.fromJson(json['transport']) : null,
-      pmr: json['pmr'] != null ? AccessibilityConfig.fromJson(json['pmr']) : null,
-      food: json['food'] != null ? AccessibilityConfig.fromJson(json['food']) : null,
-      drinks: json['drinks'] != null ? AccessibilityConfig.fromJson(json['drinks']) : null,
+      parking: json['parking'] != null
+          ? RichInfoConfig.fromJson(json['parking'])
+          : null,
+      transport: json['transport'] != null
+          ? RichInfoConfig.fromJson(json['transport'])
+          : null,
+      pmr: json['pmr'] != null
+          ? AccessibilityConfig.fromJson(json['pmr'])
+          : null,
+      food: json['food'] != null
+          ? AccessibilityConfig.fromJson(json['food'])
+          : null,
+      drinks: json['drinks'] != null
+          ? AccessibilityConfig.fromJson(json['drinks'])
+          : null,
     );
   }
 
   @override
-  List<Object?> get props => [parking, transport, pmr, food, drinks, wifi, otherServices, accessibilityFeatures];
+  List<Object?> get props => [
+        parking,
+        transport,
+        pmr,
+        food,
+        drinks,
+        wifi,
+        otherServices,
+        accessibilityFeatures
+      ];
 }
 
 class CoOrganizer extends Equatable {
@@ -436,7 +499,8 @@ class CoOrganizer extends Equatable {
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       role: json['role'],
-      imageUrl: json['logo'] ?? json['image'], // Handle both potential keys if needed, DTO says logo
+      imageUrl: json['logo'] ??
+          json['image'], // Handle both potential keys if needed, DTO says logo
       url: json['url'],
     );
   }
